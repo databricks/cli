@@ -13,9 +13,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type validateArtifactPath struct{}
@@ -99,7 +97,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 	}
 	volumeFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
 	w := rb.WorkspaceClient()
-	p, err := w.Grants.GetEffectiveBySecurableTypeAndFullName(ctx, catalog.SecurableTypeVolume, volumeFullName)
+	_, err = w.Volumes.GetByName(ctx, volumeFullName)
 
 	if errors.Is(err, apierr.ErrPermissionDenied) {
 		return wrapErrorMsg(fmt.Sprintf("cannot access volume %s: %s", volumeFullName, err))
@@ -125,31 +123,7 @@ the artifact_path.`,
 
 	}
 	if err != nil {
-		return wrapErrorMsg(fmt.Sprintf("could not fetch grants for volume %s: %s", volumeFullName, err))
+		return wrapErrorMsg(fmt.Sprintf("cannot read volume %s: %s", volumeFullName, err))
 	}
-
-	allPrivileges := []catalog.Privilege{}
-	for _, assignments := range p.PrivilegeAssignments {
-		for _, privilege := range assignments.Privileges {
-			allPrivileges = append(allPrivileges, privilege.Privilege)
-		}
-	}
-
-	// UC Volumes have the following privileges: [READ_VOLUME, WRITE_VOLUME, MANAGE, ALL_PRIVILEGES, APPLY TAG]
-	// The user needs to have either WRITE_VOLUME or ALL_PRIVILEGES to write to the volume.
-	canWrite := slices.Contains(allPrivileges, catalog.PrivilegeWriteVolume) || slices.Contains(allPrivileges, catalog.PrivilegeAllPrivileges)
-	if !canWrite {
-		log.Debugf(ctx, "Current privileges on Volume at artifact_path: %v", allPrivileges)
-		return wrapErrorMsg(fmt.Sprintf("user does not have WRITE_VOLUME grant on volume %s", volumeFullName))
-	}
-
-	// READ_VOLUME is implied since the user was able to fetch the associated grants with the volume.
-	// We still add this explicit check out of caution incase the API behavior changes in the future.
-	canRead := slices.Contains(allPrivileges, catalog.PrivilegeReadVolume) || slices.Contains(allPrivileges, catalog.PrivilegeAllPrivileges)
-	if !canRead {
-		log.Debugf(ctx, "Current privileges on Volume at artifact_path: %v", allPrivileges)
-		return wrapErrorMsg(fmt.Sprintf("user does not have READ_VOLUME grant on volume %s", volumeFullName))
-	}
-
 	return nil
 }

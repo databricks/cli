@@ -45,8 +45,8 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockGrantsAPI()
-	api.EXPECT().GetEffectiveBySecurableTypeAndFullName(mock.Anything, catalog.SecurableTypeVolume, "catalogN.schemaN.volumeN").Return(nil, &apierr.APIError{
+	api := m.GetMockVolumesAPI()
+	api.EXPECT().GetByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, &apierr.APIError{
 		StatusCode: 404,
 	})
 	b.SetWorkpaceClient(m.WorkspaceClient)
@@ -90,22 +90,11 @@ func TestValidateArtifactPath(t *testing.T) {
 		}}, diags)
 	}
 
-	wrapPrivileges := func(privileges ...catalog.Privilege) *catalog.EffectivePermissionsList {
-		perms := &catalog.EffectivePermissionsList{}
-		for _, p := range privileges {
-			perms.PrivilegeAssignments = append(perms.PrivilegeAssignments, catalog.EffectivePrivilegeAssignment{
-				Privileges: []catalog.EffectivePrivilege{{Privilege: p}},
-			})
-		}
-		return perms
-	}
-
 	rb := bundle.ReadOnly(b)
 	ctx := context.Background()
 
 	tcases := []struct {
 		err             error
-		permissions     *catalog.EffectivePermissionsList
 		expectedSummary string
 	}{
 		{
@@ -126,36 +115,18 @@ func TestValidateArtifactPath(t *testing.T) {
 				StatusCode: 500,
 				Message:    "Internal Server Error",
 			},
-			expectedSummary: "could not fetch grants for volume catalogN.schemaN.volumeN: Internal Server Error",
-		},
-		{
-			permissions: wrapPrivileges(catalog.PrivilegeAllPrivileges),
-		},
-		{
-			permissions:     wrapPrivileges(catalog.PrivilegeApplyTag, catalog.PrivilegeManage),
-			expectedSummary: "user does not have WRITE_VOLUME grant on volume catalogN.schemaN.volumeN",
-		},
-		{
-			permissions:     wrapPrivileges(catalog.PrivilegeWriteVolume),
-			expectedSummary: "user does not have READ_VOLUME grant on volume catalogN.schemaN.volumeN",
-		},
-		{
-			permissions: wrapPrivileges(catalog.PrivilegeWriteVolume, catalog.PrivilegeReadVolume),
+			expectedSummary: "cannot read volume catalogN.schemaN.volumeN: Internal Server Error",
 		},
 	}
 
 	for _, tc := range tcases {
 		m := mocks.NewMockWorkspaceClient(t)
-		api := m.GetMockGrantsAPI()
-		api.EXPECT().GetEffectiveBySecurableTypeAndFullName(mock.Anything, catalog.SecurableTypeVolume, "catalogN.schemaN.volumeN").Return(tc.permissions, tc.err)
+		api := m.GetMockVolumesAPI()
+		api.EXPECT().GetByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, tc.err)
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
 		diags := bundle.ApplyReadOnly(ctx, rb, ValidateArtifactPath())
-		if tc.expectedSummary != "" {
-			assertDiags(t, diags, tc.expectedSummary)
-		} else {
-			assert.Len(t, diags, 0)
-		}
+		assertDiags(t, diags, tc.expectedSummary)
 	}
 }
 
