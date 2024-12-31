@@ -7,11 +7,11 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-// FastValidate runs a set of fast validation checks. This is a subset of the full
+// FastValidate runs a subset of fast validation checks. This is a subset of the full
 // suite of validation mutators that satisfy ANY ONE of the following criteria:
 //
 // 1. No file i/o or network requests are made in the mutator.
-// 2. Only returns errors which are blocking for a bundle deployment.
+// 2. The validation is blocking for bundle deployments.
 //
 // The full suite of validation mutators is available in the [Validate] mutator.
 type fastValidateReadonly struct{}
