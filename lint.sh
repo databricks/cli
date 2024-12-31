@@ -5,5 +5,5 @@ set -euo pipefail
 # However, running goimports first alone will actually fix some of the compilation issues.
 # Fixing formatting is also reasonable thing to do.
 # For this reason, this script runs golangci-lint in two stages:
-golangci-lint run --fix --no-config --disable-all --enable gofumpt,goimports $@
+golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix $@
 exec golangci-lint run --fix $@
