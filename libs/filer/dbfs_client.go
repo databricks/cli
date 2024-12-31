@@ -131,11 +131,16 @@ func (w *DbfsClient) putFile(ctx context.Context, path string, overwrite bool, f
 		return err
 	}
 
-	// Request bodies of Content-Type multipart/form-data must are not supported by
+	// Request bodies of Content-Type multipart/form-data are not supported by
 	// the Go SDK directly for DBFS. So we use the Do method directly.
-	return w.apiClient.Do(ctx, http.MethodPost, "/api/2.0/dbfs/put", map[string]string{
+	err = w.apiClient.Do(ctx, http.MethodPost, "/api/2.0/dbfs/put", map[string]string{
 		"Content-Type": writer.FormDataContentType(),
 	}, buf.Bytes(), nil)
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
+		return FileAlreadyExistsError{path}
+	}
+	return err
 }
 
 func (w *DbfsClient) streamFile(ctx context.Context, path string, overwrite bool, reader io.Reader) error {

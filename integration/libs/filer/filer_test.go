@@ -924,6 +924,17 @@ func TestDbfsFilerForStreamingUploads(t *testing.T) {
 
 	// Assert contents
 	filerTest{t, f}.assertContents(ctx, "foo.txt", "foobar")
+
+	// Overwrite the file with streaming upload, and fail
+	err = f.Write(ctx, "foo.txt", strings.NewReader("barfoo"))
+	require.ErrorIs(t, err, fs.ErrExist)
+
+	// Overwrite the file with streaming upload, and succeed
+	err = f.Write(ctx, "foo.txt", strings.NewReader("barfoo"), filer.OverwriteIfExists)
+	require.NoError(t, err)
+
+	// Assert contents
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "barfoo")
 }
 
 func TestDbfsFilerForPutUploads(t *testing.T) {
@@ -934,15 +945,36 @@ func TestDbfsFilerForPutUploads(t *testing.T) {
 	tmpDir := t.TempDir()
 	err := os.WriteFile(filepath.Join(tmpDir, "foo.txt"), []byte("foobar"), 0o644)
 	require.NoError(t, err)
-
-	fd, err := os.Open(filepath.Join(tmpDir, "foo.txt"))
+	err = os.WriteFile(filepath.Join(tmpDir, "bar.txt"), []byte("barfoo"), 0o644)
 	require.NoError(t, err)
-	defer fd.Close()
+
+	fdFoo, err := os.Open(filepath.Join(tmpDir, "foo.txt"))
+	require.NoError(t, err)
+	defer fdFoo.Close()
+
+	fdBar, err := os.Open(filepath.Join(tmpDir, "bar.txt"))
+	require.NoError(t, err)
+	defer fdBar.Close()
 
 	// Write a file with PUT upload
-	err = f.Write(ctx, "foo.txt", fd)
+	err = f.Write(ctx, "foo.txt", fdFoo)
 	require.NoError(t, err)
 
 	// Assert contents
 	filerTest{t, f}.assertContents(ctx, "foo.txt", "foobar")
+
+	// Try to overwrite the file, and fail.
+	err = f.Write(ctx, "foo.txt", fdBar)
+	require.ErrorIs(t, err, fs.ErrExist)
+
+	// Reset the file descriptor.
+	_, err = fdBar.Seek(0, io.SeekStart)
+	require.NoError(t, err)
+
+	// Overwrite the file with OverwriteIfExists flag
+	err = f.Write(ctx, "foo.txt", fdBar, filer.OverwriteIfExists)
+	require.NoError(t, err)
+
+	// Assert contents
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "barfoo")
 }
