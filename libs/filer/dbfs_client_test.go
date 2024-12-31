@@ -55,6 +55,7 @@ func TestDbfsClientForSmallFiles(t *testing.T) {
 
 	// write file to DBFS
 	fd, err := os.Open(localPath)
+	defer fd.Close()
 	require.NoError(t, err)
 	err = dbfsClient.Write(context.Background(), "hello.txt", fd)
 	require.NoError(t, err)
@@ -114,6 +115,7 @@ func TestDbfsClientForLargerFiles(t *testing.T) {
 
 	// write file to DBFS
 	fd, err := os.Open(localPath)
+	defer fd.Close()
 	require.NoError(t, err)
 	err = dbfsClient.Write(context.Background(), "hello.txt", fd)
 	require.NoError(t, err)
