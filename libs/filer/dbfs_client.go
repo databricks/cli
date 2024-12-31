@@ -174,14 +174,6 @@ func (w *DbfsClient) streamFile(ctx context.Context, path string, overwrite bool
 	return err
 }
 
-// TODO CONTINUE:
-// 1. Write the unit tests that make sure the filer write method works correctly
-//    in either case.
-// 2. Write a intergration test that asserts write continues works for big file
-//    uploads. Also test the overwrite flag in the integration test.
-//    We can change MaxDbfsUploadLimitForPutApi in the test to avoid creating
-//    massive test fixtures.
-
 // MaxUploadLimitForPutApi is the maximum size in bytes of a file that can be uploaded
 // using the /dbfs/put API. If the file is larger than this limit, the streaming
 // API (/dbfs/create and /dbfs/add-block) will be used instead.
