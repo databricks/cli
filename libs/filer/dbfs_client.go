@@ -69,6 +69,8 @@ func (info dbfsFileInfo) Sys() any {
 }
 
 // Interface to allow mocking of the Databricks API client.
+//
+//nolint:gofumpt
 type databricksClient interface {
 	Do(ctx context.Context, method, path string, headers map[string]string,
 		requestBody any, responseBody any, visitors ...func(*http.Request) error) error
