@@ -96,3 +96,61 @@ func TestConvertApp(t *testing.T) {
 		},
 	}, out.Permissions["app_my_app"])
 }
+
+func TestConvertAppWithNoDescription(t *testing.T) {
+	src := resources.App{
+		SourceCodePath: "./app",
+		Config: map[string]any{
+			"command": []string{"python", "app.py"},
+		},
+		App: &apps.App{
+			Name: "app_id",
+			Resources: []apps.AppResource{
+				{
+					Name: "job1",
+					Job: &apps.AppResourceJob{
+						Id:         "1234",
+						Permission: "CAN_MANAGE_RUN",
+					},
+				},
+				{
+					Name: "sql1",
+					SqlWarehouse: &apps.AppResourceSqlWarehouse{
+						Id:         "5678",
+						Permission: "CAN_USE",
+					},
+				},
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = appConverter{}.Convert(ctx, "my_app", vin, out)
+	require.NoError(t, err)
+
+	app := out.App["my_app"]
+	assert.Equal(t, map[string]any{
+		"name":        "app_id",
+		"description": "", // Due to Apps API always returning a description field, we set it in the output as well to avoid permanent TF drift
+		"resources": []any{
+			map[string]any{
+				"name": "job1",
+				"job": map[string]any{
+					"id":         "1234",
+					"permission": "CAN_MANAGE_RUN",
+				},
+			},
+			map[string]any{
+				"name": "sql1",
+				"sql_warehouse": map[string]any{
+					"id":         "5678",
+					"permission": "CAN_USE",
+				},
+			},
+		},
+	}, app)
+}

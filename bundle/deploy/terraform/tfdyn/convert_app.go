@@ -12,6 +12,14 @@ import (
 )
 
 func convertAppResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+	// Check if the description is not set and if it's not, set it to an empty string.
+	if _, err := dyn.Get(vin, "description"); err != nil {
+		vin, err = dyn.Set(vin, "description", dyn.V(""))
+		if err != nil {
+			return vin, err
+		}
+	}
+
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(apps.App{}, vin)
 	for _, diag := range diags {
