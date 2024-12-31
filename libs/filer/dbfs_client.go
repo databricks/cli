@@ -143,6 +143,11 @@ func (w *DbfsClient) putFile(ctx context.Context, path string, overwrite bool, f
 	return err
 }
 
+// MaxUploadLimitForPutApi is the maximum size in bytes of a file that can be uploaded
+// using the /dbfs/put API. If the file is larger than this limit, the streaming
+// API (/dbfs/create and /dbfs/add-block) will be used instead.
+var MaxDbfsPutFileSize int64 = 2 * 1024 * 1024 * 1024
+
 func (w *DbfsClient) streamFile(ctx context.Context, path string, overwrite bool, reader io.Reader) error {
 	fileMode := files.FileModeWrite
 	if overwrite {
@@ -173,11 +178,6 @@ func (w *DbfsClient) streamFile(ctx context.Context, path string, overwrite bool
 	}
 	return err
 }
-
-// MaxUploadLimitForPutApi is the maximum size in bytes of a file that can be uploaded
-// using the /dbfs/put API. If the file is larger than this limit, the streaming
-// API (/dbfs/create and /dbfs/add-block) will be used instead.
-var MaxDbfsPutFileSize int64 = 2 * 1024 * 1024 * 1024
 
 func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
