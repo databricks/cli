@@ -97,7 +97,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 	}
 	volumeFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
 	w := rb.WorkspaceClient()
-	_, err = w.Volumes.GetByName(ctx, volumeFullName)
+	_, err = w.Volumes.ReadByName(ctx, volumeFullName)
 
 	if errors.Is(err, apierr.ErrPermissionDenied) {
 		return wrapErrorMsg(fmt.Sprintf("cannot access volume %s: %s", volumeFullName, err))

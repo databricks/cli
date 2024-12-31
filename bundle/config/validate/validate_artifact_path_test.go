@@ -46,7 +46,7 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
 	api := m.GetMockVolumesAPI()
-	api.EXPECT().GetByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, &apierr.APIError{
+	api.EXPECT().ReadByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, &apierr.APIError{
 		StatusCode: 404,
 	})
 	b.SetWorkpaceClient(m.WorkspaceClient)
@@ -122,7 +122,7 @@ func TestValidateArtifactPath(t *testing.T) {
 	for _, tc := range tcases {
 		m := mocks.NewMockWorkspaceClient(t)
 		api := m.GetMockVolumesAPI()
-		api.EXPECT().GetByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, tc.err)
+		api.EXPECT().ReadByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, tc.err)
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
 		diags := bundle.ApplyReadOnly(ctx, rb, ValidateArtifactPath())
