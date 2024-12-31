@@ -75,7 +75,6 @@ func TestMergeMaps(t *testing.T) {
 		assert.Equal(t, l1, out.Get("foo").Location())
 		assert.Equal(t, l2, out.Get("qux").Location())
 	}
-
 }
 
 func TestMergeMapsNil(t *testing.T) {

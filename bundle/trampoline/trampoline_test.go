@@ -52,7 +52,8 @@ func TestGenerateTrampoline(t *testing.T) {
 			PythonWheelTask: &jobs.PythonWheelTask{
 				PackageName: "test",
 				EntryPoint:  "run",
-			}},
+			},
+		},
 	}
 
 	b := &bundle.Bundle{

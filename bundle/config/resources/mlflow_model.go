@@ -58,3 +58,7 @@ func (s *MlflowModel) GetName() string {
 func (s *MlflowModel) GetURL() string {
 	return s.URL
 }
+
+func (s *MlflowModel) IsNil() bool {
+	return s.Model == nil
+}

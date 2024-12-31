@@ -74,7 +74,7 @@ func TestStatePush(t *testing.T) {
 	data, err := json.Marshal(state)
 	require.NoError(t, err)
 
-	err = os.WriteFile(statePath, data, 0644)
+	err = os.WriteFile(statePath, data, 0o644)
 	require.NoError(t, err)
 
 	diags := bundle.Apply(ctx, b, s)

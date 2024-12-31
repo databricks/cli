@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExecutorWithSimpleInput(t *testing.T) {
@@ -86,9 +87,11 @@ func testExecutorWithShell(t *testing.T, shell string) {
 	tmpDir := t.TempDir()
 	t.Setenv("PATH", tmpDir)
 	if runtime.GOOS == "windows" {
-		os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
+		err = os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
+		require.NoError(t, err)
 	} else {
-		os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+		err = os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+		require.NoError(t, err)
 	}
 
 	executor, err := NewCommandExecutor(".")

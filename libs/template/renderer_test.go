@@ -3,9 +3,9 @@ package template
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
@@ -26,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func assertFileContent(t *testing.T, path string, content string) {
+func assertFileContent(t *testing.T, path, content string) {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Equal(t, content, string(b))
@@ -38,12 +39,11 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, info.Mode().Perm())
 }
 
-func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
+func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
 	ctx := context.Background()
 
-	templatePath, err := prepareBuiltinTemplates(template, tempDir)
+	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))
 	require.NoError(t, err)
-	libraryPath := filepath.Join(templatePath, "library")
 
 	w := &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
@@ -58,16 +58,18 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	ctx = root.SetWorkspaceClient(ctx, w)
 	helpers := loadHelpers(ctx)
 
-	renderer, err := newRenderer(ctx, settings, helpers, templatePath, libraryPath, tempDir)
+	renderer, err := newRenderer(ctx, settings, helpers, templateFS, templateDirName, libraryDirName)
 	require.NoError(t, err)
 
 	// Evaluate template
 	err = renderer.walk()
 	require.NoError(t, err)
-	err = renderer.persistToDisk()
+	out, err := filer.NewLocalClient(tempDir)
+	require.NoError(t, err)
+	err = renderer.persistToDisk(ctx, out)
 	require.NoError(t, err)
 
-	b, err := bundle.Load(ctx, filepath.Join(tempDir, "template", "my_project"))
+	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
 	require.NoError(t, err)
 	diags := bundle.Apply(ctx, b, phases.LoadNamedTarget(target))
 	require.NoError(t, diags.Error())
@@ -94,18 +96,6 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 		diags = bundle.Apply(ctx, b, phases.Build())
 		require.NoError(t, diags.Error())
 	}
-}
-
-func TestPrepareBuiltInTemplatesWithRelativePaths(t *testing.T) {
-	// CWD should not be resolved as a built in template
-	dir, err := prepareBuiltinTemplates(".", t.TempDir())
-	assert.NoError(t, err)
-	assert.Equal(t, ".", dir)
-
-	// relative path should not be resolved as a built in template
-	dir, err = prepareBuiltinTemplates("./default-python", t.TempDir())
-	assert.NoError(t, err)
-	assert.Equal(t, "./default-python", dir)
 }
 
 func TestBuiltinPythonTemplateValid(t *testing.T) {
@@ -194,13 +184,14 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/email/template", "./testdata/email/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/email/template", "./testdata/email/library")
 	require.NoError(t, err)
 
 	err = r.walk()
 	require.NoError(t, err)
-
-	err = r.persistToDisk()
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
 	require.NoError(t, err)
 
 	b, err := os.ReadFile(filepath.Join(tmpDir, "my_email"))
@@ -209,8 +200,7 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 }
 
 func TestRendererExecuteTemplate(t *testing.T) {
-	templateText :=
-		`"{{.count}} items are made of {{.Material}}".
+	templateText := `"{{.count}} items are made of {{.Material}}".
 {{if eq .Animal "sheep" }}
 Sheep wool is the best!
 {{else}}
@@ -265,7 +255,6 @@ func TestRendererExecuteTemplateWithUnknownProperty(t *testing.T) {
 }
 
 func TestRendererIsSkipped(t *testing.T) {
-
 	skipPatterns := []string{"a*", "*yz", "def", "a/b/*"}
 
 	// skipped paths
@@ -325,63 +314,51 @@ func TestRendererPersistToDisk(t *testing.T) {
 
 	r := &renderer{
 		ctx:          ctx,
-		instanceRoot: tmpDir,
 		skipPatterns: []string{"a/b/c", "mn*"},
 		files: []file{
 			&inMemoryFile{
-				dstPath: &destinationPath{
-					root:    tmpDir,
-					relPath: "a/b/c",
-				},
-				perm:    0444,
+				perm:    0o444,
+				relPath: "a/b/c",
 				content: nil,
 			},
 			&inMemoryFile{
-				dstPath: &destinationPath{
-					root:    tmpDir,
-					relPath: "mno",
-				},
-				perm:    0444,
+				perm:    0o444,
+				relPath: "mno",
 				content: nil,
 			},
 			&inMemoryFile{
-				dstPath: &destinationPath{
-					root:    tmpDir,
-					relPath: "a/b/d",
-				},
-				perm:    0444,
+				perm:    0o444,
+				relPath: "a/b/d",
 				content: []byte("123"),
 			},
 			&inMemoryFile{
-				dstPath: &destinationPath{
-					root:    tmpDir,
-					relPath: "mmnn",
-				},
-				perm:    0444,
+				perm:    0o444,
+				relPath: "mmnn",
 				content: []byte("456"),
 			},
 		},
 	}
 
-	err := r.persistToDisk()
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
 	require.NoError(t, err)
 
 	assert.NoFileExists(t, filepath.Join(tmpDir, "a", "b", "c"))
 	assert.NoFileExists(t, filepath.Join(tmpDir, "mno"))
 
 	assertFileContent(t, filepath.Join(tmpDir, "a", "b", "d"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a", "b", "d"), 0444)
+	assertFilePermissions(t, filepath.Join(tmpDir, "a", "b", "d"), 0o444)
 	assertFileContent(t, filepath.Join(tmpDir, "mmnn"), "456")
-	assertFilePermissions(t, filepath.Join(tmpDir, "mmnn"), 0444)
+	assertFilePermissions(t, filepath.Join(tmpDir, "mmnn"), 0o444)
 }
 
 func TestRendererWalk(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/walk/template", "./testdata/walk/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/walk/template", "./testdata/walk/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -389,21 +366,12 @@ func TestRendererWalk(t *testing.T) {
 
 	getContent := func(r *renderer, path string) string {
 		for _, f := range r.files {
-			if f.DstPath().relPath != path {
+			if f.RelPath() != path {
 				continue
 			}
-			switch v := f.(type) {
-			case *inMemoryFile:
-				return strings.Trim(string(v.content), "\r\n")
-			case *copyFile:
-				r, err := r.templateFiler.Read(context.Background(), v.srcPath)
-				require.NoError(t, err)
-				b, err := io.ReadAll(r)
-				require.NoError(t, err)
-				return strings.Trim(string(b), "\r\n")
-			default:
-				require.FailNow(t, "execution should not reach here")
-			}
+			b, err := f.contents()
+			require.NoError(t, err)
+			return strings.Trim(string(b), "\r\n")
 		}
 		require.FailNow(t, "file is absent: "+path)
 		return ""
@@ -419,10 +387,9 @@ func TestRendererWalk(t *testing.T) {
 func TestRendererFailFunction(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/fail/template", "./testdata/fail/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/fail/template", "./testdata/fail/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -432,10 +399,9 @@ func TestRendererFailFunction(t *testing.T) {
 func TestRendererSkipsDirsEagerly(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/skip-dir-eagerly/template", "./testdata/skip-dir-eagerly/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/skip-dir-eagerly/template", "./testdata/skip-dir-eagerly/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -452,7 +418,7 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/skip-all-files-in-cwd/template", "./testdata/skip-all-files-in-cwd/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/skip-all-files-in-cwd/template", "./testdata/skip-all-files-in-cwd/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -460,7 +426,9 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	// All 3 files are executed and have in memory representations
 	require.Len(t, r.files, 3)
 
-	err = r.persistToDisk()
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
 	require.NoError(t, err)
 
 	entries, err := os.ReadDir(tmpDir)
@@ -472,10 +440,9 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/skip-is-relative/template", "./testdata/skip-is-relative/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/skip-is-relative/template", "./testdata/skip-is-relative/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -493,7 +460,7 @@ func TestRendererSkip(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/skip/template", "./testdata/skip/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/skip/template", "./testdata/skip/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -502,7 +469,9 @@ func TestRendererSkip(t *testing.T) {
 	// This is because "dir2/*" matches the files in dir2, but not dir2 itself
 	assert.Len(t, r.files, 6)
 
-	err = r.persistToDisk()
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
 	require.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(tmpDir, "file1"))
@@ -520,12 +489,11 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.SkipNow()
 	}
-	tmpDir := t.TempDir()
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/executable-bit-read/template", "./testdata/executable-bit-read/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/executable-bit-read/template", "./testdata/executable-bit-read/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -533,7 +501,7 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 
 	getPermissions := func(r *renderer, path string) fs.FileMode {
 		for _, f := range r.files {
-			if f.DstPath().relPath != path {
+			if f.RelPath() != path {
 				continue
 			}
 			switch v := f.(type) {
@@ -550,12 +518,13 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	}
 
 	assert.Len(t, r.files, 2)
-	assert.Equal(t, getPermissions(r, "script.sh"), fs.FileMode(0755))
-	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0644))
+	assert.Equal(t, getPermissions(r, "script.sh"), fs.FileMode(0o755))
+	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0o644))
 }
 
 func TestRendererErrorOnConflictingFile(t *testing.T) {
 	tmpDir := t.TempDir()
+	ctx := context.Background()
 
 	f, err := os.Create(filepath.Join(tmpDir, "a"))
 	require.NoError(t, err)
@@ -566,17 +535,16 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 		skipPatterns: []string{},
 		files: []file{
 			&inMemoryFile{
-				dstPath: &destinationPath{
-					root:    tmpDir,
-					relPath: "a",
-				},
-				perm:    0444,
+				perm:    0o444,
+				relPath: "a",
 				content: []byte("123"),
 			},
 		},
 	}
-	err = r.persistToDisk()
-	assert.EqualError(t, err, fmt.Sprintf("failed to initialize template, one or more files already exist: %s", filepath.Join(tmpDir, "a")))
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
+	assert.EqualError(t, err, fmt.Sprintf("failed to initialize template, one or more files already exist: %s", "a"))
 }
 
 func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
@@ -593,16 +561,15 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 		skipPatterns: []string{"a"},
 		files: []file{
 			&inMemoryFile{
-				dstPath: &destinationPath{
-					root:    tmpDir,
-					relPath: "a",
-				},
-				perm:    0444,
+				perm:    0o444,
+				relPath: "a",
 				content: []byte("123"),
 			},
 		},
 	}
-	err = r.persistToDisk()
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
 	// No error is returned even though a conflicting file exists. This is because
 	// the generated file is being skipped
 	assert.NoError(t, err)
@@ -612,10 +579,9 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/copy-file-walk/template", "./testdata/copy-file-walk/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/copy-file-walk/template", "./testdata/copy-file-walk/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -623,7 +589,7 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 
 	assert.Len(t, r.files, 1)
 	assert.Equal(t, r.files[0].(*copyFile).srcPath, "not-a-template")
-	assert.Equal(t, r.files[0].DstPath().absPath(), filepath.Join(tmpDir, "not-a-template"))
+	assert.Equal(t, r.files[0].RelPath(), "not-a-template")
 }
 
 func TestRendererFileTreeRendering(t *testing.T) {
@@ -635,7 +601,7 @@ func TestRendererFileTreeRendering(t *testing.T) {
 	r, err := newRenderer(ctx, map[string]any{
 		"dir_name":  "my_directory",
 		"file_name": "my_file",
-	}, helpers, "./testdata/file-tree-rendering/template", "./testdata/file-tree-rendering/library", tmpDir)
+	}, helpers, os.DirFS("."), "./testdata/file-tree-rendering/template", "./testdata/file-tree-rendering/library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -643,9 +609,11 @@ func TestRendererFileTreeRendering(t *testing.T) {
 
 	// Assert in memory representation is created.
 	assert.Len(t, r.files, 1)
-	assert.Equal(t, r.files[0].DstPath().absPath(), filepath.Join(tmpDir, "my_directory", "my_file"))
+	assert.Equal(t, r.files[0].RelPath(), "my_directory/my_file")
 
-	err = r.persistToDisk()
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
 	require.NoError(t, err)
 
 	// Assert files and directories are correctly materialized.
@@ -667,8 +635,7 @@ func TestRendererSubTemplateInPath(t *testing.T) {
 	// https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file.
 	testutil.Touch(t, filepath.Join(templateDir, "template/{{template `dir_name`}}/{{template `file_name`}}"))
 
-	tmpDir := t.TempDir()
-	r, err := newRenderer(ctx, nil, nil, filepath.Join(templateDir, "template"), filepath.Join(templateDir, "library"), tmpDir)
+	r, err := newRenderer(ctx, nil, nil, os.DirFS(templateDir), "template", "library")
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -676,7 +643,6 @@ func TestRendererSubTemplateInPath(t *testing.T) {
 
 	if assert.Len(t, r.files, 2) {
 		f := r.files[1]
-		assert.Equal(t, filepath.Join(tmpDir, "my_directory", "my_file"), f.DstPath().absPath())
-		assert.Equal(t, "my_directory/my_file", f.DstPath().relPath)
+		assert.Equal(t, "my_directory/my_file", f.RelPath())
 	}
 }

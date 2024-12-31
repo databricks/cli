@@ -317,6 +317,8 @@ type DataSourceClusterClusterInfoSpec struct {
 	EnableLocalDiskEncryption bool                                               `json:"enable_local_disk_encryption,omitempty"`
 	IdempotencyToken          string                                             `json:"idempotency_token,omitempty"`
 	InstancePoolId            string                                             `json:"instance_pool_id,omitempty"`
+	IsSingleNode              bool                                               `json:"is_single_node,omitempty"`
+	Kind                      string                                             `json:"kind,omitempty"`
 	NodeTypeId                string                                             `json:"node_type_id,omitempty"`
 	NumWorkers                int                                                `json:"num_workers,omitempty"`
 	PolicyId                  string                                             `json:"policy_id,omitempty"`
@@ -326,6 +328,7 @@ type DataSourceClusterClusterInfoSpec struct {
 	SparkEnvVars              map[string]string                                  `json:"spark_env_vars,omitempty"`
 	SparkVersion              string                                             `json:"spark_version"`
 	SshPublicKeys             []string                                           `json:"ssh_public_keys,omitempty"`
+	UseMlRuntime              bool                                               `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *DataSourceClusterClusterInfoSpecAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *DataSourceClusterClusterInfoSpecAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *DataSourceClusterClusterInfoSpecAzureAttributes   `json:"azure_attributes,omitempty"`
@@ -369,7 +372,9 @@ type DataSourceClusterClusterInfo struct {
 	EnableElasticDisk         bool                                           `json:"enable_elastic_disk,omitempty"`
 	EnableLocalDiskEncryption bool                                           `json:"enable_local_disk_encryption,omitempty"`
 	InstancePoolId            string                                         `json:"instance_pool_id,omitempty"`
+	IsSingleNode              bool                                           `json:"is_single_node,omitempty"`
 	JdbcPort                  int                                            `json:"jdbc_port,omitempty"`
+	Kind                      string                                         `json:"kind,omitempty"`
 	LastRestartedTime         int                                            `json:"last_restarted_time,omitempty"`
 	LastStateLossTime         int                                            `json:"last_state_loss_time,omitempty"`
 	NodeTypeId                string                                         `json:"node_type_id,omitempty"`
@@ -386,6 +391,7 @@ type DataSourceClusterClusterInfo struct {
 	State                     string                                         `json:"state,omitempty"`
 	StateMessage              string                                         `json:"state_message,omitempty"`
 	TerminatedTime            int                                            `json:"terminated_time,omitempty"`
+	UseMlRuntime              bool                                           `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *DataSourceClusterClusterInfoAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *DataSourceClusterClusterInfoAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *DataSourceClusterClusterInfoAzureAttributes   `json:"azure_attributes,omitempty"`

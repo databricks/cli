@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -103,8 +104,13 @@ func (t *translateContext) rewritePath(
 		return fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
-	// Prefix remote path with its remote root path.
-	remotePath := path.Join(t.b.Config.Workspace.FilePath, filepath.ToSlash(localRelPath))
+	var workspacePath string
+	if config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment) {
+		workspacePath = t.b.SyncRootPath
+	} else {
+		workspacePath = t.b.Config.Workspace.FilePath
+	}
+	remotePath := path.Join(workspacePath, filepath.ToSlash(localRelPath))
 
 	// Convert local path into workspace path via specified function.
 	interp, err := fn(*p, localPath, localRelPath, remotePath)
@@ -120,7 +126,33 @@ func (t *translateContext) rewritePath(
 func (t *translateContext) translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
-		return "", fmt.Errorf("notebook %s not found", literal)
+		if filepath.Ext(localFullPath) != notebook.ExtensionNone {
+			return "", fmt.Errorf("notebook %s not found", literal)
+		}
+
+		extensions := []string{
+			notebook.ExtensionPython,
+			notebook.ExtensionR,
+			notebook.ExtensionScala,
+			notebook.ExtensionSql,
+			notebook.ExtensionJupyter,
+		}
+
+		// Check whether a file with a notebook extension already exists. This
+		// way we can provide a more targeted error message.
+		for _, ext := range extensions {
+			literalWithExt := literal + ext
+			localRelPathWithExt := filepath.ToSlash(localRelPath + ext)
+			if _, err := fs.Stat(t.b.SyncRoot, localRelPathWithExt); err == nil {
+				return "", fmt.Errorf(`notebook %s not found. Did you mean %s?
+Local notebook references are expected to contain one of the following
+file extensions: [%s]`, literal, literalWithExt, strings.Join(extensions, ", "))
+			}
+		}
+
+		// Return a generic error message if no matching possible file is found.
+		return "", fmt.Errorf(`notebook %s not found. Local notebook references are expected
+to contain one of the following file extensions: [%s]`, literal, strings.Join(extensions, ", "))
 	}
 	if err != nil {
 		return "", fmt.Errorf("unable to determine if %s is a notebook: %w", localFullPath, err)
@@ -243,8 +275,8 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 }
 
 func gatherFallbackPaths(v dyn.Value, typ string) (map[string]string, error) {
-	var fallback = make(map[string]string)
-	var pattern = dyn.NewPattern(dyn.Key("resources"), dyn.Key(typ), dyn.AnyKey())
+	fallback := make(map[string]string)
+	pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key(typ), dyn.AnyKey())
 
 	// Previous behavior was to use a resource's location as the base path to resolve
 	// relative paths in its definition. With the introduction of [dyn.Value] throughout,

@@ -194,7 +194,7 @@ func newGet() *cobra.Command {
   configuration are specified by ID.
 
   Arguments:
-    BUDGET_ID: The Databricks budget configuration ID.`
+    BUDGET_ID: The budget configuration ID`
 
 	cmd.Annotations = make(map[string]string)
 

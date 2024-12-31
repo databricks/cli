@@ -57,12 +57,13 @@ func TestJsonFlagFile(t *testing.T) {
 	var request any
 
 	var fpath string
-	var payload = []byte(`{"foo": "bar"}`)
+	payload := []byte(`{"foo": "bar"}`)
 
 	{
 		f, err := os.Create(path.Join(t.TempDir(), "file"))
 		require.NoError(t, err)
-		f.Write(payload)
+		_, err = f.Write(payload)
+		require.NoError(t, err)
 		f.Close()
 		fpath = f.Name()
 	}

@@ -27,7 +27,7 @@ func newTestRepository(t *testing.T) *testRepository {
 	require.NoError(t, err)
 	defer f1.Close()
 
-	f1.WriteString(
+	_, err = f1.WriteString(
 		`[core]
 	repositoryformatversion = 0
 	filemode = true
@@ -36,6 +36,7 @@ func newTestRepository(t *testing.T) *testRepository {
 	ignorecase = true
 	precomposeunicode = true
 `)
+	require.NoError(t, err)
 
 	f2, err := os.Create(filepath.Join(tmp, ".git", "HEAD"))
 	require.NoError(t, err)
@@ -62,7 +63,7 @@ func (testRepo *testRepository) checkoutCommit(commitId string) {
 	require.NoError(testRepo.t, err)
 }
 
-func (testRepo *testRepository) addBranch(name string, latestCommit string) {
+func (testRepo *testRepository) addBranch(name, latestCommit string) {
 	// create dir for branch head reference
 	branchDir := filepath.Join(testRepo.r.Root(), ".git", "refs", "heads")
 	err := os.MkdirAll(branchDir, os.ModePerm)

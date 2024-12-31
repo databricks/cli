@@ -9,11 +9,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
-
-	"strings"
 
 	"github.com/databricks/cli/libs/python"
 
@@ -94,11 +93,10 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
-	var mutateDiagsHasError = errors.New("unexpected error")
+	mutateDiagsHasError := errors.New("unexpected error")
 
 	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
 		pythonPath, err := detectExecutable(ctx, experimental.PyDABs.VEnvPath)
-
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to get Python interpreter path: %w", err)
 		}
@@ -141,7 +139,7 @@ func createCacheDir(ctx context.Context) (string, error) {
 		// use 'default' as target name
 		cacheDir := filepath.Join(tempDir, "default", "pydabs")
 
-		err := os.MkdirAll(cacheDir, 0700)
+		err := os.MkdirAll(cacheDir, 0o700)
 		if err != nil {
 			return "", err
 		}
@@ -152,7 +150,7 @@ func createCacheDir(ctx context.Context) (string, error) {
 	return os.MkdirTemp("", "-pydabs")
 }
 
-func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, rootPath string, pythonPath string, root dyn.Value) (dyn.Value, diag.Diagnostics) {
+func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath, pythonPath string, root dyn.Value) (dyn.Value, diag.Diagnostics) {
 	inputPath := filepath.Join(cacheDir, "input.json")
 	outputPath := filepath.Join(cacheDir, "output.json")
 	diagnosticsPath := filepath.Join(cacheDir, "diagnostics.json")
@@ -263,10 +261,10 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 		return fmt.Errorf("failed to marshal input: %w", err)
 	}
 
-	return os.WriteFile(inputPath, rootConfigJson, 0600)
+	return os.WriteFile(inputPath, rootConfigJson, 0o600)
 }
 
-func loadOutputFile(rootPath string, outputPath string) (dyn.Value, diag.Diagnostics) {
+func loadOutputFile(rootPath, outputPath string) (dyn.Value, diag.Diagnostics) {
 	outputFile, err := os.Open(outputPath)
 	if err != nil {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to open output file: %w", err))
@@ -381,7 +379,7 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 
 			return right, nil
 		},
-		VisitUpdate: func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error) {
+		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
 			return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
 		},
 	}
@@ -430,7 +428,7 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 
 			return right, nil
 		},
-		VisitUpdate: func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error) {
+		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
 			if !valuePath.HasPrefix(jobsPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
 			}

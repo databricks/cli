@@ -56,3 +56,7 @@ func (s *Cluster) GetName() string {
 func (s *Cluster) GetURL() string {
 	return s.URL
 }
+
+func (s *Cluster) IsNil() bool {
+	return s.ClusterSpec == nil
+}

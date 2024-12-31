@@ -1,5 +1,78 @@
 # Version changelog
 
+## [Release] Release v0.237.0
+
+Bundles:
+ * Allow overriding compute for non-development mode targets ([#1899](https://github.com/databricks/cli/pull/1899)).
+ * Show an error when using a cluster override with 'mode: production' ([#1994](https://github.com/databricks/cli/pull/1994)).
+
+API Changes:
+ * Added `databricks account federation-policy` command group.
+ * Added `databricks account service-principal-federation-policy` command group.
+ * Added `databricks aibi-dashboard-embedding-access-policy delete` command.
+ * Added `databricks aibi-dashboard-embedding-approved-domains delete` command.
+
+OpenAPI commit a6a317df8327c9b1e5cb59a03a42ffa2aabeef6d (2024-12-16)
+Dependency updates:
+ * Upgrade TF provider to 1.62.0 ([#2030](https://github.com/databricks/cli/pull/2030)).
+ * Upgrade Go SDK to 0.54.0 ([#2029](https://github.com/databricks/cli/pull/2029)).
+ * Bump TF codegen dependencies to latest ([#1961](https://github.com/databricks/cli/pull/1961)).
+ * Bump golang.org/x/term from 0.26.0 to 0.27.0 ([#1983](https://github.com/databricks/cli/pull/1983)).
+ * Bump golang.org/x/sync from 0.9.0 to 0.10.0 ([#1984](https://github.com/databricks/cli/pull/1984)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.52.0 to 0.53.0 ([#1985](https://github.com/databricks/cli/pull/1985)).
+ * Bump golang.org/x/crypto from 0.24.0 to 0.31.0 ([#2006](https://github.com/databricks/cli/pull/2006)).
+ * Bump golang.org/x/crypto from 0.30.0 to 0.31.0 in /bundle/internal/tf/codegen ([#2005](https://github.com/databricks/cli/pull/2005)).
+
+## [Release] Release v0.236.0
+
+**New features for Databricks Asset Bundles:**
+
+This release adds support for managing Unity Catalog volumes as part of your bundle configuration.
+
+Bundles:
+ * Add DABs support for Unity Catalog volumes ([#1762](https://github.com/databricks/cli/pull/1762)).
+ * Support lookup by name of notification destinations ([#1922](https://github.com/databricks/cli/pull/1922)).
+ * Extend "notebook not found" error to warn about missing extension ([#1920](https://github.com/databricks/cli/pull/1920)).
+ * Skip sync warning if no sync paths are defined ([#1926](https://github.com/databricks/cli/pull/1926)).
+ * Add validation for single node clusters ([#1909](https://github.com/databricks/cli/pull/1909)).
+ * Fix segfault in bundle summary command ([#1937](https://github.com/databricks/cli/pull/1937)).
+ * Add the `bundle_uuid` helper function for templates ([#1947](https://github.com/databricks/cli/pull/1947)).
+ * Add default value for `volume_type` for DABs ([#1952](https://github.com/databricks/cli/pull/1952)).
+ * Properly read Git metadata when running inside workspace ([#1945](https://github.com/databricks/cli/pull/1945)).
+ * Upgrade TF provider to 1.59.0 ([#1960](https://github.com/databricks/cli/pull/1960)).
+
+Internal:
+ * Breakout variable lookup into separate files and tests ([#1921](https://github.com/databricks/cli/pull/1921)).
+ * Add golangci-lint v1.62.2 ([#1953](https://github.com/databricks/cli/pull/1953)).
+
+Dependency updates:
+ * Bump golang.org/x/term from 0.25.0 to 0.26.0 ([#1907](https://github.com/databricks/cli/pull/1907)).
+ * Bump github.com/Masterminds/semver/v3 from 3.3.0 to 3.3.1 ([#1930](https://github.com/databricks/cli/pull/1930)).
+ * Bump github.com/stretchr/testify from 1.9.0 to 1.10.0 ([#1932](https://github.com/databricks/cli/pull/1932)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.51.0 to 0.52.0 ([#1931](https://github.com/databricks/cli/pull/1931)).
+## [Release] Release v0.235.0
+
+**Note:** the `bundle generate` command now uses the `.<resource-type>.yml`
+sub-extension for the configuration files it writes. Existing configuration
+files that do not use this sub-extension are renamed to include it.
+
+Bundles:
+ * Make `TableName` field part of quality monitor schema ([#1903](https://github.com/databricks/cli/pull/1903)).
+ * Do not prepend paths starting with ~ or variable reference ([#1905](https://github.com/databricks/cli/pull/1905)).
+ * Fix workspace extensions filer accidentally reading notebooks ([#1891](https://github.com/databricks/cli/pull/1891)).
+ * Fix template initialization when running on Databricks ([#1912](https://github.com/databricks/cli/pull/1912)).
+ * Source-linked deployments for bundles in the workspace ([#1884](https://github.com/databricks/cli/pull/1884)).
+ * Added integration test to deploy bundle to /Shared root path ([#1914](https://github.com/databricks/cli/pull/1914)).
+ * Update filenames used by bundle generate to use `.<resource-type>.yml` ([#1901](https://github.com/databricks/cli/pull/1901)).
+
+Internal:
+ * Extract functionality to detect if the CLI is running on DBR ([#1889](https://github.com/databricks/cli/pull/1889)).
+ * Consolidate test helpers for `io/fs` ([#1906](https://github.com/databricks/cli/pull/1906)).
+ * Use `fs.FS` interface to read template ([#1910](https://github.com/databricks/cli/pull/1910)).
+ * Use `filer.Filer` to write template instantiation ([#1911](https://github.com/databricks/cli/pull/1911)).
+
+
+
 ## [Release] Release v0.234.0
 
 Bundles:

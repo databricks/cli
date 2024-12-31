@@ -3,6 +3,8 @@
 package credentials
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -25,14 +27,11 @@ func New() *cobra.Command {
   
   To create credentials, you must be a Databricks account admin or have the
   CREATE SERVICE CREDENTIAL privilege. The user who creates the credential can
-  delegate ownership to another user or group to manage permissions on it`,
+  delegate ownership to another user or group to manage permissions on it.`,
 		GroupID: "catalog",
 		Annotations: map[string]string{
 			"package": "catalog",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Add methods
@@ -72,21 +71,39 @@ func newCreateCredential() *cobra.Command {
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
+	// TODO: complex arg: azure_service_principal
 	cmd.Flags().StringVar(&createCredentialReq.Comment, "comment", createCredentialReq.Comment, `Comment associated with the credential.`)
-	cmd.Flags().StringVar(&createCredentialReq.Name, "name", createCredentialReq.Name, `The credential name.`)
-	cmd.Flags().Var(&createCredentialReq.Purpose, "purpose", `Indicates the purpose of the credential. Supported values: [SERVICE]`)
+	// TODO: complex arg: databricks_gcp_service_account
+	cmd.Flags().Var(&createCredentialReq.Purpose, "purpose", `Indicates the purpose of the credential. Supported values: [SERVICE, STORAGE]`)
+	cmd.Flags().BoolVar(&createCredentialReq.ReadOnly, "read-only", createCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
 	cmd.Flags().BoolVar(&createCredentialReq.SkipValidation, "skip-validation", createCredentialReq.SkipValidation, `Optional.`)
 
-	cmd.Use = "create-credential"
+	cmd.Use = "create-credential NAME"
 	cmd.Short = `Create a credential.`
 	cmd.Long = `Create a credential.
   
-  Creates a new credential.`
+  Creates a new credential. The type of credential to be created is determined
+  by the **purpose** field, which should be either **SERVICE** or **STORAGE**.
+  
+  The caller must be a metastore admin or have the metastore privilege
+  **CREATE_STORAGE_CREDENTIAL** for storage credentials, or
+  **CREATE_SERVICE_CREDENTIAL** for service credentials.
+
+  Arguments:
+    NAME: The credential name. The name must be unique among storage and service
+      credentials within the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -106,6 +123,9 @@ func newCreateCredential() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createCredentialReq.Name = args[0]
 		}
 
 		response, err := w.Credentials.CreateCredential(ctx, createCredentialReq)
@@ -143,14 +163,14 @@ func newDeleteCredential() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force deletion even if there are dependent services.`)
+	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
 
 	cmd.Use = "delete-credential NAME_ARG"
 	cmd.Short = `Delete a credential.`
 	cmd.Long = `Delete a credential.
   
-  Deletes a credential from the metastore. The caller must be an owner of the
-  credential.
+  Deletes a service or storage credential from the metastore. The caller must be
+  an owner of the credential.
 
   Arguments:
     NAME_ARG: Name of the credential.`
@@ -207,20 +227,30 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 	cmd.Flags().Var(&generateTemporaryServiceCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: azure_options
-	cmd.Flags().StringVar(&generateTemporaryServiceCredentialReq.CredentialName, "credential-name", generateTemporaryServiceCredentialReq.CredentialName, `The name of the service credential used to generate a temporary credential.`)
+	// TODO: complex arg: gcp_options
 
-	cmd.Use = "generate-temporary-service-credential"
+	cmd.Use = "generate-temporary-service-credential CREDENTIAL_NAME"
 	cmd.Short = `Generate a temporary service credential.`
 	cmd.Long = `Generate a temporary service credential.
   
   Returns a set of temporary credentials generated using the specified service
   credential. The caller must be a metastore admin or have the metastore
-  privilege **ACCESS** on the service credential.`
+  privilege **ACCESS** on the service credential.
+
+  Arguments:
+    CREDENTIAL_NAME: The name of the service credential used to generate a temporary credential`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'credential_name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -240,6 +270,9 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if !cmd.Flags().Changed("json") {
+			generateTemporaryServiceCredentialReq.CredentialName = args[0]
 		}
 
 		response, err := w.Credentials.GenerateTemporaryServiceCredential(ctx, generateTemporaryServiceCredentialReq)
@@ -281,8 +314,9 @@ func newGetCredential() *cobra.Command {
 	cmd.Short = `Get a credential.`
 	cmd.Long = `Get a credential.
   
-  Gets a credential from the metastore. The caller must be a metastore admin,
-  the owner of the credential, or have any permission on the credential.
+  Gets a service or storage credential from the metastore. The caller must be a
+  metastore admin, the owner of the credential, or have any permission on the
+  credential.
 
   Arguments:
     NAME_ARG: Name of the credential.`
@@ -338,7 +372,7 @@ func newListCredentials() *cobra.Command {
 
 	cmd.Flags().IntVar(&listCredentialsReq.MaxResults, "max-results", listCredentialsReq.MaxResults, `Maximum number of credentials to return.`)
 	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Opaque token to retrieve the next page of results.`)
-	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE]`)
+	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE, STORAGE]`)
 
 	cmd.Use = "list-credentials"
 	cmd.Short = `List credentials.`
@@ -399,18 +433,21 @@ func newUpdateCredential() *cobra.Command {
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
+	// TODO: complex arg: azure_service_principal
 	cmd.Flags().StringVar(&updateCredentialReq.Comment, "comment", updateCredentialReq.Comment, `Comment associated with the credential.`)
-	cmd.Flags().BoolVar(&updateCredentialReq.Force, "force", updateCredentialReq.Force, `Force update even if there are dependent services.`)
+	// TODO: complex arg: databricks_gcp_service_account
+	cmd.Flags().BoolVar(&updateCredentialReq.Force, "force", updateCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
 	cmd.Flags().Var(&updateCredentialReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
 	cmd.Flags().StringVar(&updateCredentialReq.NewName, "new-name", updateCredentialReq.NewName, `New name of credential.`)
 	cmd.Flags().StringVar(&updateCredentialReq.Owner, "owner", updateCredentialReq.Owner, `Username of current owner of credential.`)
+	cmd.Flags().BoolVar(&updateCredentialReq.ReadOnly, "read-only", updateCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
 	cmd.Flags().BoolVar(&updateCredentialReq.SkipValidation, "skip-validation", updateCredentialReq.SkipValidation, `Supply true to this argument to skip validation of the updated credential.`)
 
 	cmd.Use = "update-credential NAME_ARG"
 	cmd.Short = `Update a credential.`
 	cmd.Long = `Update a credential.
   
-  Updates a credential on the metastore.
+  Updates a service or storage credential on the metastore.
   
   The caller must be the owner of the credential or a metastore admin or have
   the MANAGE permission. If the caller is a metastore admin, only the
@@ -485,7 +522,10 @@ func newValidateCredential() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	cmd.Flags().StringVar(&validateCredentialReq.CredentialName, "credential-name", validateCredentialReq.CredentialName, `Required.`)
-	cmd.Flags().Var(&validateCredentialReq.Purpose, "purpose", `The purpose of the credential. Supported values: [SERVICE]`)
+	cmd.Flags().StringVar(&validateCredentialReq.ExternalLocationName, "external-location-name", validateCredentialReq.ExternalLocationName, `The name of an existing external location to validate.`)
+	cmd.Flags().Var(&validateCredentialReq.Purpose, "purpose", `The purpose of the credential. Supported values: [SERVICE, STORAGE]`)
+	cmd.Flags().BoolVar(&validateCredentialReq.ReadOnly, "read-only", validateCredentialReq.ReadOnly, `Whether the credential is only usable for read operations.`)
+	cmd.Flags().StringVar(&validateCredentialReq.Url, "url", validateCredentialReq.Url, `The external location url to validate.`)
 
 	cmd.Use = "validate-credential"
 	cmd.Short = `Validate a credential.`
@@ -493,10 +533,19 @@ func newValidateCredential() *cobra.Command {
   
   Validates a credential.
   
-  Either the __credential_name__ or the cloud-specific credential must be
-  provided.
+  For service credentials (purpose is **SERVICE**), either the
+  __credential_name__ or the cloud-specific credential must be provided.
   
-  The caller must be a metastore admin or the credential owner.`
+  For storage credentials (purpose is **STORAGE**), at least one of
+  __external_location_name__ and __url__ need to be provided. If only one of
+  them is provided, it will be used for validation. And if both are provided,
+  the __url__ will be used for validation, and __external_location_name__ will
+  be ignored when checking overlapping urls. Either the __credential_name__ or
+  the cloud-specific credential must be provided.
+  
+  The caller must be a metastore admin or the credential owner or have the
+  required permission on the metastore and the credential (e.g.,
+  **CREATE_EXTERNAL_LOCATION** when purpose is **STORAGE**).`
 
 	cmd.Annotations = make(map[string]string)
 

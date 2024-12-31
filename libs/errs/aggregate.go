@@ -59,7 +59,7 @@ func (ec errorChain) Unwrap() error {
 	return ec[1:]
 }
 
-func (ec errorChain) As(target interface{}) bool {
+func (ec errorChain) As(target any) bool {
 	return errors.As(ec[0], target)
 }
 

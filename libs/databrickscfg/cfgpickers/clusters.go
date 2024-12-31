@@ -18,8 +18,10 @@ import (
 
 var minUcRuntime = canonicalVersion("v12.0")
 
-var dbrVersionRegex = regexp.MustCompile(`^(\d+\.\d+)\.x-.*`)
-var dbrSnapshotVersionRegex = regexp.MustCompile(`^(\d+)\.x-snapshot.*`)
+var (
+	dbrVersionRegex         = regexp.MustCompile(`^(\d+\.\d+)\.x-.*`)
+	dbrSnapshotVersionRegex = regexp.MustCompile(`^(\d+)\.x-snapshot.*`)
+)
 
 func canonicalVersion(v string) string {
 	return semver.Canonical("v" + strings.TrimPrefix(v, "v"))

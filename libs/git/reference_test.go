@@ -54,7 +54,8 @@ func TestReferenceLoadingForObjectID(t *testing.T) {
 	f, err := os.Create(filepath.Join(tmp, "HEAD"))
 	require.NoError(t, err)
 	defer f.Close()
-	f.WriteString(strings.Repeat("e", 40) + "\r\n")
+	_, err = f.WriteString(strings.Repeat("e", 40) + "\r\n")
+	require.NoError(t, err)
 
 	ref, err := LoadReferenceFile(vfs.MustNew(tmp), "HEAD")
 	assert.NoError(t, err)
@@ -67,7 +68,8 @@ func TestReferenceLoadingForReference(t *testing.T) {
 	f, err := os.OpenFile(filepath.Join(tmp, "HEAD"), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	require.NoError(t, err)
 	defer f.Close()
-	f.WriteString("ref: refs/heads/foo\n")
+	_, err = f.WriteString("ref: refs/heads/foo\n")
+	require.NoError(t, err)
 
 	ref, err := LoadReferenceFile(vfs.MustNew(tmp), "HEAD")
 	assert.NoError(t, err)
@@ -80,7 +82,8 @@ func TestReferenceLoadingFailsForInvalidContent(t *testing.T) {
 	f, err := os.OpenFile(filepath.Join(tmp, "HEAD"), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	require.NoError(t, err)
 	defer f.Close()
-	f.WriteString("abc")
+	_, err = f.WriteString("abc")
+	require.NoError(t, err)
 
 	_, err = LoadReferenceFile(vfs.MustNew(tmp), "HEAD")
 	assert.ErrorContains(t, err, "unknown format for git HEAD")

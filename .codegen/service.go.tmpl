@@ -411,5 +411,5 @@ func new{{.PascalName}}() *cobra.Command {
 {{- define "request-body-obj" -}}
 	{{- $method := .Method -}}
 	{{- $field := .Field -}}
-	{{$method.CamelName}}Req{{ if (and $method.RequestBodyField (not $field.IsPath)) }}.{{$method.RequestBodyField.PascalName}}{{end}}.{{$field.PascalName}}
+	{{$method.CamelName}}Req{{ if (and $method.RequestBodyField (and (not $field.IsPath) (not $field.IsQuery))) }}.{{$method.RequestBodyField.PascalName}}{{end}}.{{$field.PascalName}}
 {{- end -}}

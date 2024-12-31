@@ -20,6 +20,7 @@ type Resources struct {
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
+	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 }
@@ -41,6 +42,9 @@ type ConfigResource interface {
 
 	// InitializeURL initializes the URL field of the resource.
 	InitializeURL(baseURL url.URL)
+
+	// IsNil returns true if the resource is nil, for example, when it was removed from the bundle.
+	IsNil() bool
 }
 
 // ResourceGroup represents a group of resources of the same type.
@@ -57,6 +61,9 @@ func collectResourceMap[T ConfigResource](
 ) ResourceGroup {
 	resources := make(map[string]ConfigResource)
 	for key, resource := range input {
+		if resource.IsNil() {
+			continue
+		}
 		resources[key] = resource
 	}
 	return ResourceGroup{
@@ -79,6 +86,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
+		collectResourceMap(descriptions["volumes"], r.Volumes),
 	}
 }
 
@@ -182,6 +190,12 @@ func SupportedResources() map[string]ResourceDescription {
 			PluralName:    "dashboards",
 			SingularTitle: "Dashboard",
 			PluralTitle:   "Dashboards",
+		},
+		"volumes": {
+			SingularName:  "volume",
+			PluralName:    "volumes",
+			SingularTitle: "Volume",
+			PluralTitle:   "Volumes",
 		},
 	}
 }

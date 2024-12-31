@@ -62,3 +62,7 @@ func (s *QualityMonitor) GetName() string {
 func (s *QualityMonitor) GetURL() string {
 	return s.URL
 }
+
+func (s *QualityMonitor) IsNil() bool {
+	return s.CreateMonitor == nil
+}

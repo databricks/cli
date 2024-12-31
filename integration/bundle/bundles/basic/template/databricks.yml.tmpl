@@ -1,0 +1,22 @@
+bundle:
+  name: basic
+
+workspace:
+  {{ if .root_path }}
+  root_path: "{{.root_path}}/.bundle/{{.unique_id}}"
+  {{ else }}
+  root_path: "~/.bundle/{{.unique_id}}"
+  {{ end }}
+
+resources:
+  jobs:
+    foo:
+      name: test-job-basic-{{.unique_id}}
+      tasks:
+        - task_key: my_notebook_task
+          new_cluster:
+            num_workers: 1
+            spark_version: "{{.spark_version}}"
+            node_type_id: "{{.node_type_id}}"
+          spark_python_task:
+            python_file: ./hello_world.py

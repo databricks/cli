@@ -8,8 +8,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type validate struct {
-}
+type validate struct{}
 
 type location struct {
 	path string
@@ -36,6 +35,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		ValidateSyncPatterns(),
 		JobTaskClusterSpec(),
 		ValidateFolderPermissions(),
+		SingleNodeCluster(),
 	))
 }
 

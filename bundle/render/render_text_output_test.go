@@ -376,7 +376,8 @@ func TestRenderDiagnostics(t *testing.T) {
 					Locations: []dyn.Location{{
 						File:   "foo.yaml",
 						Line:   1,
-						Column: 2}},
+						Column: 2,
+					}},
 				},
 			},
 			expected: "Error: failed to load xxx\n" +
@@ -489,7 +490,8 @@ func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
 	err := renderSummaryHeaderTemplate(writer, nil)
 	require.NoError(t, err)
 
-	io.WriteString(writer, buildTrailer(nil))
+	_, err = io.WriteString(writer, buildTrailer(nil))
+	require.NoError(t, err)
 
 	assert.Equal(t, "Validation OK!\n", writer.String())
 }
@@ -518,6 +520,10 @@ func TestRenderSummary(t *testing.T) {
 						ID:          "2",
 						URL:         "https://url2",
 						JobSettings: &jobs.JobSettings{Name: "job2-name"},
+					},
+					"job3": {
+						ID:  "3",
+						URL: "https://url3", // This emulates deleted job
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{

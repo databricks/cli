@@ -23,10 +23,10 @@ var renderFuncMap = template.FuncMap{
 	"yellow":  color.YellowString,
 	"magenta": color.MagentaString,
 	"cyan":    color.CyanString,
-	"bold": func(format string, a ...interface{}) string {
+	"bold": func(format string, a ...any) string {
 		return color.New(color.Bold).Sprintf(format, a...)
 	},
-	"italic": func(format string, a ...interface{}) string {
+	"italic": func(format string, a ...any) string {
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
 }
@@ -110,7 +110,7 @@ func renderSummaryHeaderTemplate(out io.Writer, b *bundle.Bundle) error {
 		return renderSummaryHeaderTemplate(out, &bundle.Bundle{})
 	}
 
-	var currentUser = &iam.User{}
+	currentUser := &iam.User{}
 
 	if b.Config.Workspace.CurrentUser != nil {
 		if b.Config.Workspace.CurrentUser.User != nil {
@@ -171,10 +171,16 @@ func RenderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, 
 			if err != nil {
 				return fmt.Errorf("failed to render summary: %w", err)
 			}
-			io.WriteString(out, "\n")
+			_, err = io.WriteString(out, "\n")
+			if err != nil {
+				return err
+			}
 		}
 		trailer := buildTrailer(diags)
-		io.WriteString(out, trailer)
+		_, err = io.WriteString(out, trailer)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
