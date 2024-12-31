@@ -67,7 +67,6 @@ type mockDbfsHandle struct {
 	builder strings.Builder
 }
 
-func (h *mockDbfsHandle) Write(data []byte) (n int, err error)     { return 0, nil }
 func (h *mockDbfsHandle) Read(data []byte) (n int, err error)      { return 0, nil }
 func (h *mockDbfsHandle) Close() error                             { return nil }
 func (h *mockDbfsHandle) WriteTo(w io.Writer) (n int64, err error) { return 0, nil }
@@ -79,6 +78,10 @@ func (h *mockDbfsHandle) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 	num, err := h.builder.Write(b)
 	return int64(num), err
+}
+
+func (h *mockDbfsHandle) Write(data []byte) (n int, err error) {
+	return h.builder.Write(data)
 }
 
 func TestDbfsClientForLargerFiles(t *testing.T) {
@@ -106,7 +109,6 @@ func TestDbfsClientForLargerFiles(t *testing.T) {
 	}
 
 	h := &mockDbfsHandle{}
-
 	m.GetMockDbfsAPI().EXPECT().GetStatusByPath(mock.Anything, "dbfs:/a/b/c").Return(nil, nil)
 	m.GetMockDbfsAPI().EXPECT().Open(mock.Anything, "dbfs:/a/b/c/hello.txt", files.FileModeWrite).Return(h, nil)
 
@@ -114,6 +116,31 @@ func TestDbfsClientForLargerFiles(t *testing.T) {
 	fd, err := os.Open(localPath)
 	require.NoError(t, err)
 	err = dbfsClient.Write(context.Background(), "hello.txt", fd)
+	require.NoError(t, err)
+
+	// verify mock API client is NOT called
+	require.False(t, mockApiClient.isCalled)
+
+	// verify the file content was written to the mock handle
+	assert.Equal(t, "hello world", h.builder.String())
+}
+
+func TestDbfsClientForNonLocalFiles(t *testing.T) {
+	// setup DBFS client with mocks
+	m := mocks.NewMockWorkspaceClient(t)
+	mockApiClient := &mockDbfsApiClient{t: t}
+	dbfsClient := DbfsClient{
+		apiClient:       mockApiClient,
+		workspaceClient: m.WorkspaceClient,
+		root:            NewWorkspaceRootPath("dbfs:/a/b/c"),
+	}
+
+	h := &mockDbfsHandle{}
+	m.GetMockDbfsAPI().EXPECT().GetStatusByPath(mock.Anything, "dbfs:/a/b/c").Return(nil, nil)
+	m.GetMockDbfsAPI().EXPECT().Open(mock.Anything, "dbfs:/a/b/c/hello.txt", files.FileModeWrite).Return(h, nil)
+
+	// write file to DBFS
+	err := dbfsClient.Write(context.Background(), "hello.txt", strings.NewReader("hello world"))
 	require.NoError(t, err)
 
 	// verify mock API client is NOT called

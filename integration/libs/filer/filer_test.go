@@ -7,7 +7,9 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -894,4 +896,28 @@ func TestWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
+}
+
+func TestDbfsFilerForStreamingUploads(t *testing.T) {
+	ctx := context.Background()
+	f, _ := setupDbfsFiler(t)
+
+	// Set MaxDbfsPutFileSize to 1 to force streaming uploads
+	prevV := filer.MaxDbfsPutFileSize
+	filer.MaxDbfsPutFileSize = 1
+	t.Cleanup(func() {
+		filer.MaxDbfsPutFileSize = prevV
+	})
+
+	// Write a file to local disk.
+	tmpDir := t.TempDir()
+	err := os.WriteFile(filepath.Join(tmpDir, "foo.txt"), []byte("foobar"), 0o644)
+	require.NoError(t, err)
+
+	// Write a file with streaming upload
+	err = f.Write(ctx, "foo.txt", strings.NewReader("foo"))
+	require.NoError(t, err)
+
+	// Assert contents
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "foo")
 }
