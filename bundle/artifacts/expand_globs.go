@@ -97,7 +97,7 @@ func (m *expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		return dyn.SetByPath(v, base, dyn.V(output))
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		diags = diags.Extend(diag.FromErr(err))
 	}
 
 	return diags
