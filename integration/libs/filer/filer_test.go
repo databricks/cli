@@ -914,10 +914,35 @@ func TestDbfsFilerForStreamingUploads(t *testing.T) {
 	err := os.WriteFile(filepath.Join(tmpDir, "foo.txt"), []byte("foobar"), 0o644)
 	require.NoError(t, err)
 
+	fd, err := os.Open(filepath.Join(tmpDir, "foo.txt"))
+	require.NoError(t, err)
+	defer fd.Close()
+
 	// Write a file with streaming upload
-	err = f.Write(ctx, "foo.txt", strings.NewReader("foo"))
+	err = f.Write(ctx, "foo.txt", fd)
 	require.NoError(t, err)
 
 	// Assert contents
-	filerTest{t, f}.assertContents(ctx, "foo.txt", "foo")
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "foobar")
+}
+
+func TestDbfsFilerForPutUploads(t *testing.T) {
+	ctx := context.Background()
+	f, _ := setupDbfsFiler(t)
+
+	// Write a file to local disk.
+	tmpDir := t.TempDir()
+	err := os.WriteFile(filepath.Join(tmpDir, "foo.txt"), []byte("foobar"), 0o644)
+	require.NoError(t, err)
+
+	fd, err := os.Open(filepath.Join(tmpDir, "foo.txt"))
+	require.NoError(t, err)
+	defer fd.Close()
+
+	// Write a file with PUT upload
+	err = f.Write(ctx, "foo.txt", fd)
+	require.NoError(t, err)
+
+	// Assert contents
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "foobar")
 }
