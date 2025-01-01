@@ -55,7 +55,7 @@ jobs:
           pip3 install wheel
 
       - name: Run tests
-        run: make testonly
+        run: make test
 
   golangci:
     name: lint
