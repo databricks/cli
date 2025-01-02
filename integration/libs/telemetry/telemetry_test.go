@@ -43,9 +43,15 @@ func TestTelemetryLogger(t *testing.T) {
 			BundleInitEvent: &events.BundleInitEvent{
 				Uuid:         uuid.New().String(),
 				TemplateName: "abc",
-				TemplateEnumArgs: map[string]string{
-					"a": "b",
-					"c": "d",
+				TemplateEnumArgs: []events.BundleInitTemplateEnumArg{
+					{
+						Key:   "a",
+						Value: "b",
+					},
+					{
+						Key:   "c",
+						Value: "d",
+					},
 				},
 			},
 		},

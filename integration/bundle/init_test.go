@@ -74,12 +74,22 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 	require.Equal(t, 1, len(logs))
 	event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
 	assert.Equal(t, event.TemplateName, "mlops-stacks")
+
+	get := func(key string) string {
+		for _, v := range event.TemplateEnumArgs {
+			if v.Key == key {
+				return v.Value
+			}
+		}
+		return ""
+	}
+
 	// Enum values should be present in the telemetry payload.
-	assert.Equal(t, event.TemplateEnumArgs["input_include_models_in_unity_catalog"], "no")
-	assert.Equal(t, event.TemplateEnumArgs["input_cloud"], strings.ToLower(env))
+	assert.Equal(t, get("input_include_models_in_unity_catalog"), "no")
+	assert.Equal(t, get("input_cloud"), strings.ToLower(env))
 	// Freeform strings should not be present in the telemetry payload.
-	assert.NotContains(t, event.TemplateEnumArgs, "input_project_name")
-	assert.NotContains(t, event.TemplateEnumArgs, "input_root_dir")
+	assert.Equal(t, get("input_project_name"), "")
+	assert.Equal(t, get("input_root_dir"), "")
 
 	// Assert that the README.md file was created
 	contents := testutil.ReadFile(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
@@ -191,7 +201,21 @@ func TestBundleInitTelemetryForDefaultTemplates(t *testing.T) {
 		require.Equal(t, 1, len(logs))
 		event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
 		assert.Equal(t, event.TemplateName, tc.name)
-		assert.Equal(t, event.TemplateEnumArgs, tc.expectedArgs)
+
+		get := func(key string) string {
+			for _, v := range event.TemplateEnumArgs {
+				if v.Key == key {
+					return v.Value
+				}
+			}
+			return ""
+		}
+
+		// Assert the template enum args are correctly logged.
+		assert.Len(t, event.TemplateEnumArgs, len(tc.expectedArgs))
+		for k, v := range tc.expectedArgs {
+			assert.Equal(t, get(k), v)
+		}
 	}
 }
 

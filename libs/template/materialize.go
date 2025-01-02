@@ -109,9 +109,14 @@ func (t *Template) printSuccessMessage(ctx context.Context) error {
 func (t *Template) logTelemetry(ctx context.Context) error {
 	// Only log telemetry input for Databricks owned templates. This is to prevent
 	// accidentally collecting PII from custom user templates.
-	templateEnumArgs := map[string]string{}
+	templateEnumArgs := []events.BundleInitTemplateEnumArg{}
 	if t.IsDatabricksOwned {
-		templateEnumArgs = t.config.enumValues()
+		for k, v := range t.config.enumValues() {
+			templateEnumArgs = append(templateEnumArgs, events.BundleInitTemplateEnumArg{
+				Key:   k,
+				Value: v,
+			})
+		}
 	} else {
 		t.Name = "custom"
 	}

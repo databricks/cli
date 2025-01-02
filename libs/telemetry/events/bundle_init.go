@@ -19,5 +19,21 @@ type BundleInitEvent struct {
 	// We use a generic map representation here because a bundle template's args are
 	// managed in the template itself and maintaining a copy typed schema for it here
 	// will be untenable in the long term.
-	TemplateEnumArgs map[string]string `json:"template_enum_args,omitempty"`
+	TemplateEnumArgs []BundleInitTemplateEnumArg `json:"template_enum_args,omitempty"`
+}
+
+type BundleInitTemplateEnumArg struct {
+	// Valid key values for the template. These correspond to the keys specified in
+	// the "properties" section of the `databricks_template_schema.json` file.
+	//
+	// Note: `databricks_template_schema.json` contains a JSON schema type specification
+	// for the arguments that the template accepts.
+	Key string `json:"key"`
+
+	// Value that the user set for the field. This is only populated for properties
+	// that have the "enum" field specified in the JSON schema type specification.
+	//
+	// The Databricks CLI ensures that the value here is one of the "enum" values from
+	// the template specification.
+	Value string `json:"value"`
 }
