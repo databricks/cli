@@ -39,6 +39,6 @@ func SkipUntil(t TestingT, date string) {
 	require.NoError(t, err)
 
 	if time.Now().Before(deadline) {
-		t.Skipf("Skipping test until %s. Time right now: %s\n", deadline.Format(time.DateOnly), time.Now())
+		t.Skipf("Skipping test until %s. Time right now: %s", deadline.Format(time.DateOnly), time.Now())
 	}
 }
