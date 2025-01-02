@@ -55,7 +55,7 @@ func (d *dummyIterator) Next(ctx context.Context) (*provisioning.Workspace, erro
 func makeWorkspaces(count int) []*provisioning.Workspace {
 	res := make([]*provisioning.Workspace, 0, count)
 	next := []*provisioning.Workspace{&dummyWorkspace1, &dummyWorkspace2}
-	for i := 0; i < count; i++ {
+	for range count {
 		n := next[0]
 		next = append(next[1:], n)
 		res = append(res, n)

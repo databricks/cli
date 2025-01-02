@@ -39,7 +39,7 @@ func Heredoc(tmpl string) (trimmed string) {
 			break
 		}
 	}
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		if lines[i] == "" || strings.TrimSpace(lines[i]) == "" {
 			continue
 		}

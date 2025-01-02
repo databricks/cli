@@ -266,7 +266,7 @@ func prepareRepoFiles(t *testing.T) *testFiles {
 
 func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
 	tasks := make([]jobs.SubmitTask, 0)
-	for i := 0; i < len(versions); i++ {
+	for i := range versions {
 		task := jobs.SubmitTask{
 			TaskKey: fmt.Sprintf("notebook_%s", strings.ReplaceAll(versions[i], ".", "_")),
 			NotebookTask: &jobs.NotebookTask{
@@ -287,7 +287,7 @@ func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId st
 
 func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
 	tasks := make([]jobs.SubmitTask, 0)
-	for i := 0; i < len(versions); i++ {
+	for i := range versions {
 		task := jobs.SubmitTask{
 			TaskKey: fmt.Sprintf("spark_%s", strings.ReplaceAll(versions[i], ".", "_")),
 			SparkPythonTask: &jobs.SparkPythonTask{
@@ -308,7 +308,7 @@ func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId
 
 func GenerateWheelTasks(wheelPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
 	tasks := make([]jobs.SubmitTask, 0)
-	for i := 0; i < len(versions); i++ {
+	for i := range versions {
 		task := jobs.SubmitTask{
 			TaskKey: fmt.Sprintf("whl_%s", strings.ReplaceAll(versions[i], ".", "_")),
 			PythonWheelTask: &jobs.PythonWheelTask{

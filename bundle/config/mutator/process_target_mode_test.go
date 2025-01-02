@@ -382,7 +382,7 @@ func TestAllResourcesMocked(t *testing.T) {
 	b := mockBundle(config.Development)
 	resources := reflect.ValueOf(b.Config.Resources)
 
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 		if field.Kind() == reflect.Map {
 			assert.True(
@@ -411,7 +411,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 
 		if field.Kind() == reflect.Map {
