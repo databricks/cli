@@ -909,8 +909,7 @@ func TestDbfsFilerForStreamingUploads(t *testing.T) {
 
 	// Write a file to local disk.
 	tmpDir := t.TempDir()
-	err := os.WriteFile(filepath.Join(tmpDir, "foo.txt"), []byte("foobar"), 0o644)
-	require.NoError(t, err)
+	testutil.WriteFile(t, filepath.Join(tmpDir, "foo.txt"), "foobar")
 
 	fd, err := os.Open(filepath.Join(tmpDir, "foo.txt"))
 	require.NoError(t, err)
@@ -941,11 +940,8 @@ func TestDbfsFilerForPutUploads(t *testing.T) {
 
 	// Write a file to local disk.
 	tmpDir := t.TempDir()
-	err := os.WriteFile(filepath.Join(tmpDir, "foo.txt"), []byte("foobar"), 0o644)
-	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tmpDir, "bar.txt"), []byte("barfoo"), 0o644)
-	require.NoError(t, err)
-
+	testutil.WriteFile(t, filepath.Join(tmpDir, "foo.txt"), "foobar")
+	testutil.WriteFile(t, filepath.Join(tmpDir, "bar.txt"), "barfoo")
 	fdFoo, err := os.Open(filepath.Join(tmpDir, "foo.txt"))
 	require.NoError(t, err)
 	defer fdFoo.Close()

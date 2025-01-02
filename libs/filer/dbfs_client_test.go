@@ -41,8 +41,7 @@ func TestDbfsClientForSmallFiles(t *testing.T) {
 	// write file to local disk
 	tmp := t.TempDir()
 	localPath := filepath.Join(tmp, "hello.txt")
-	err := os.WriteFile(localPath, []byte("hello world"), 0o644)
-	require.NoError(t, err)
+	testutil.WriteFile(t, localPath, "hello world")
 
 	// setup DBFS client with mocks
 	m := mocks.NewMockWorkspaceClient(t)
