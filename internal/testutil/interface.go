@@ -24,4 +24,6 @@ type TestingT interface {
 	Setenv(key, value string)
 
 	TempDir() string
+
+	Helper()
 }
