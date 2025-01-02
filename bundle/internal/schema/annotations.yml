@@ -16,7 +16,7 @@ github.com/databricks/cli/bundle/config.Artifact:
       The source files for the artifact, defined as an [_](#artifact_file).
   "path":
     "description": |-
-      The location where the built artifact will be saved.
+      The location where the built artifact will be saved. ZZZ
   "type":
     "description": |-
       The type of the artifact.
