@@ -169,12 +169,12 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 		bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
 
 		diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), ValidateArtifactPath())
-		require.Equal(t, diags, diag.Diagnostics{{
+		require.Equal(t, diag.Diagnostics{{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p),
 			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
-		}})
+		}}, diags)
 	}
 }
 
