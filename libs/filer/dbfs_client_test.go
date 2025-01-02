@@ -31,9 +31,7 @@ func (m *mockDbfsApiClient) Do(ctx context.Context, method, path string,
 	require.Equal(m.t, "POST", method)
 	require.Equal(m.t, "/api/2.0/dbfs/put", path)
 	require.Contains(m.t, headers["Content-Type"], "multipart/form-data; boundary=")
-	contents, err := io.ReadAll(request.(io.Reader))
-	require.NoError(m.t, err)
-	require.Contains(m.t, string(contents), "hello world")
+	require.Contains(m.t, string(request.([]byte)), "hello world")
 	return nil
 }
 
