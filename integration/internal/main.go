@@ -36,7 +36,7 @@ func loadDebugEnvIfRunFromIDE(key string) error {
 	}
 	vars, ok := conf[key]
 	if !ok {
-		return fmt.Errorf("%s is not configured in ~/.databricks/debug-env.json", key)
+		return fmt.Errorf("~/.databricks/debug-env.json is not configured", key)
 	}
 	for k, v := range vars {
 		os.Setenv(k, v)
