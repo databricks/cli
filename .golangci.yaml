@@ -40,3 +40,5 @@ linters-settings:
       - require-error
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
+  max-issues-per-linter: 1000
+  max-same-issues: 1000
