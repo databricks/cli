@@ -434,7 +434,7 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	entries, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
 	// Assert none of the files are persisted to disk, because of {{skip "*"}}
-	assert.Len(t, entries, 0)
+	assert.Empty(t, entries)
 }
 
 func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
@@ -588,8 +588,8 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	assert.Equal(t, r.files[0].(*copyFile).srcPath, "not-a-template")
-	assert.Equal(t, r.files[0].RelPath(), "not-a-template")
+	assert.Equal(t, "not-a-template", r.files[0].(*copyFile).srcPath)
+	assert.Equal(t, "not-a-template", r.files[0].RelPath())
 }
 
 func TestRendererFileTreeRendering(t *testing.T) {
@@ -609,7 +609,7 @@ func TestRendererFileTreeRendering(t *testing.T) {
 
 	// Assert in memory representation is created.
 	assert.Len(t, r.files, 1)
-	assert.Equal(t, r.files[0].RelPath(), "my_directory/my_file")
+	assert.Equal(t, "my_directory/my_file", r.files[0].RelPath())
 
 	out, err := filer.NewLocalClient(tmpDir)
 	require.NoError(t, err)

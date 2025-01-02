@@ -12,7 +12,7 @@ func TestGetPanics(t *testing.T) {
 	defer func() {
 		r := recover()
 		require.NotNil(t, r, "The function did not panic")
-		assert.Equal(t, r, "context not configured with bundle")
+		assert.Equal(t, "context not configured with bundle", r)
 	}()
 
 	Get(context.Background())

@@ -54,7 +54,7 @@ func TestConvertPythonParams(t *testing.T) {
 	err = runner.convertPythonParams(opts)
 	require.NoError(t, err)
 	require.Contains(t, opts.Job.notebookParams, "__python_params")
-	require.Equal(t, opts.Job.notebookParams["__python_params"], `["param1","param2","param3"]`)
+	require.Equal(t, `["param1","param2","param3"]`, opts.Job.notebookParams["__python_params"])
 }
 
 func TestJobRunnerCancel(t *testing.T) {

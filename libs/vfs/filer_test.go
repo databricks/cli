@@ -2,7 +2,6 @@ package vfs
 
 import (
 	"context"
-	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -42,7 +41,7 @@ func TestFilerPath(t *testing.T) {
 
 	// Open non-existent file.
 	_, err = p.Open("doesntexist_test.go")
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Stat self.
 	s, err = p.Stat("filer_test.go")
@@ -52,7 +51,7 @@ func TestFilerPath(t *testing.T) {
 
 	// Stat non-existent file.
 	_, err = p.Stat("doesntexist_test.go")
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// ReadDir self.
 	entries, err := p.ReadDir(".")
@@ -61,7 +60,7 @@ func TestFilerPath(t *testing.T) {
 
 	// ReadDir non-existent directory.
 	_, err = p.ReadDir("doesntexist")
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// ReadFile self.
 	buf, err = p.ReadFile("filer_test.go")
@@ -70,7 +69,7 @@ func TestFilerPath(t *testing.T) {
 
 	// ReadFile non-existent file.
 	_, err = p.ReadFile("doesntexist_test.go")
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Parent self.
 	pp := p.Parent()

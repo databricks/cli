@@ -20,7 +20,7 @@ func assertExpected(t *testing.T, p *resources.ModelServingEndpoint) {
 func TestModelServingEndpointDevelopment(t *testing.T) {
 	b := loadTarget(t, "./model_serving_endpoint", "development")
 	assert.Len(t, b.Config.Resources.ModelServingEndpoints, 1)
-	assert.Equal(t, b.Config.Bundle.Mode, config.Development)
+	assert.Equal(t, config.Development, b.Config.Bundle.Mode)
 
 	p := b.Config.Resources.ModelServingEndpoints["my_model_serving_endpoint"]
 	assert.Equal(t, "my-dev-endpoint", p.Name)

@@ -12,14 +12,14 @@ func TestOverrideTasksDev(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Jobs["foo"].Tasks, 2)
 
 	tasks := b.Config.Resources.Jobs["foo"].Tasks
-	assert.Equal(t, tasks[0].TaskKey, "key1")
-	assert.Equal(t, tasks[0].NewCluster.NodeTypeId, "i3.xlarge")
-	assert.Equal(t, tasks[0].NewCluster.NumWorkers, 1)
-	assert.Equal(t, tasks[0].SparkPythonTask.PythonFile, "./test1.py")
+	assert.Equal(t, "key1", tasks[0].TaskKey)
+	assert.Equal(t, "i3.xlarge", tasks[0].NewCluster.NodeTypeId)
+	assert.Equal(t, 1, tasks[0].NewCluster.NumWorkers)
+	assert.Equal(t, "./test1.py", tasks[0].SparkPythonTask.PythonFile)
 
-	assert.Equal(t, tasks[1].TaskKey, "key2")
-	assert.Equal(t, tasks[1].NewCluster.SparkVersion, "13.3.x-scala2.12")
-	assert.Equal(t, tasks[1].SparkPythonTask.PythonFile, "./test2.py")
+	assert.Equal(t, "key2", tasks[1].TaskKey)
+	assert.Equal(t, "13.3.x-scala2.12", tasks[1].NewCluster.SparkVersion)
+	assert.Equal(t, "./test2.py", tasks[1].SparkPythonTask.PythonFile)
 }
 
 func TestOverrideTasksStaging(t *testing.T) {
@@ -28,12 +28,12 @@ func TestOverrideTasksStaging(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Jobs["foo"].Tasks, 2)
 
 	tasks := b.Config.Resources.Jobs["foo"].Tasks
-	assert.Equal(t, tasks[0].TaskKey, "key1")
-	assert.Equal(t, tasks[0].NewCluster.SparkVersion, "13.3.x-scala2.12")
-	assert.Equal(t, tasks[0].SparkPythonTask.PythonFile, "./test1.py")
+	assert.Equal(t, "key1", tasks[0].TaskKey)
+	assert.Equal(t, "13.3.x-scala2.12", tasks[0].NewCluster.SparkVersion)
+	assert.Equal(t, "./test1.py", tasks[0].SparkPythonTask.PythonFile)
 
-	assert.Equal(t, tasks[1].TaskKey, "key2")
-	assert.Equal(t, tasks[1].NewCluster.NodeTypeId, "i3.2xlarge")
-	assert.Equal(t, tasks[1].NewCluster.NumWorkers, 4)
-	assert.Equal(t, tasks[1].SparkPythonTask.PythonFile, "./test3.py")
+	assert.Equal(t, "key2", tasks[1].TaskKey)
+	assert.Equal(t, "i3.2xlarge", tasks[1].NewCluster.NodeTypeId)
+	assert.Equal(t, 4, tasks[1].NewCluster.NumWorkers)
+	assert.Equal(t, "./test3.py", tasks[1].SparkPythonTask.PythonFile)
 }

@@ -30,7 +30,7 @@ func TestComplexVariables(t *testing.T) {
 	require.Equal(t, "true", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkConf["spark.speculation"])
 	require.Equal(t, "true", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkConf["spark.random"])
 
-	require.Equal(t, 3, len(b.Config.Resources.Jobs["my_job"].Tasks[0].Libraries))
+	require.Len(t, b.Config.Resources.Jobs["my_job"].Tasks[0].Libraries, 3)
 	require.Contains(t, b.Config.Resources.Jobs["my_job"].Tasks[0].Libraries, compute.Library{
 		Jar: "/path/to/jar",
 	})

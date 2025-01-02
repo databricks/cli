@@ -1,7 +1,6 @@
 package bundle_test
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -71,11 +70,11 @@ func TestBundleDestroy(t *testing.T) {
 	// Assert snapshot file is deleted
 	entries, err = os.ReadDir(snapshotsDir)
 	require.NoError(t, err)
-	assert.Len(t, entries, 0)
+	assert.Empty(t, entries)
 
 	// Assert bundle deployment path is deleted
 	_, err = w.Workspace.GetStatusByPath(ctx, remoteRoot)
 	apiErr := &apierr.APIError{}
-	assert.True(t, errors.As(err, &apiErr))
+	assert.ErrorAs(t, err, &apiErr)
 	assert.Equal(t, "RESOURCE_DOES_NOT_EXIST", apiErr.ErrorCode)
 }
