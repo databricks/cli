@@ -14,7 +14,7 @@ func TestRepositories(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/users/databrickslabs/repos" {
 			_, err := w.Write([]byte(`[{"name": "x"}]`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		t.Logf("Requested: %s", r.URL.Path)

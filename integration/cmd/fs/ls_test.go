@@ -102,7 +102,7 @@ func TestFsLsWithAbsolutePaths(t *testing.T) {
 
 			assert.Equal(t, path.Join(tmpDir, "bye.txt"), parsedStdout[1]["name"])
 			assert.Equal(t, false, parsedStdout[1]["is_directory"])
-			assert.Equal(t, float64(3), parsedStdout[1]["size"])
+			assert.InDelta(t, float64(3), parsedStdout[1]["size"].(float64), 0.0001)
 		})
 	}
 }

@@ -169,17 +169,17 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/databrickslabs/blueprint/v0.3.15/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			_, err = w.Write(raw)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.3.15" {
 			raw, err := zipballFromFolder("testdata/installed-in-home/.databricks/labs/blueprint/lib")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			w.Header().Add("Content-Type", "application/octet-stream")
 			_, err = w.Write(raw)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
@@ -376,9 +376,9 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/databrickslabs/blueprint/v0.4.0/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			_, err = w.Write(raw)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.4.0" {

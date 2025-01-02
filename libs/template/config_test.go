@@ -24,7 +24,7 @@ func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
 	err = c.assignValuesFromFile(filepath.Join(testDir, "config.json"))
 	if assert.NoError(t, err) {
 		assert.Equal(t, int64(1), c.values["int_val"])
-		assert.Equal(t, float64(2), c.values["float_val"])
+		assert.InDelta(t, float64(2), c.values["float_val"].(float64), 0.0001)
 		assert.Equal(t, true, c.values["bool_val"])
 		assert.Equal(t, "hello", c.values["string_val"])
 	}
@@ -89,7 +89,7 @@ func TestTemplateConfigAssignValuesFromDefaultValues(t *testing.T) {
 	err = c.assignDefaultValues(r)
 	if assert.NoError(t, err) {
 		assert.Equal(t, int64(123), c.values["int_val"])
-		assert.Equal(t, float64(123), c.values["float_val"])
+		assert.InDelta(t, float64(123), c.values["float_val"].(float64), 0.0001)
 		assert.Equal(t, true, c.values["bool_val"])
 		assert.Equal(t, "hello", c.values["string_val"])
 	}

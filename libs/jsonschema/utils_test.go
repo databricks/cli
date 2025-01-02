@@ -104,7 +104,7 @@ func TestTemplateFromString(t *testing.T) {
 
 	v, err = fromString("123", NumberType)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(123), v)
+	assert.InDelta(t, float64(123), v.(float64), 0.0001)
 
 	_, err = fromString("qrt", ArrayType)
 	assert.EqualError(t, err, "cannot parse string as object of type array. Value of string: \"qrt\"")

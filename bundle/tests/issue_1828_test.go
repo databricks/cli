@@ -35,7 +35,7 @@ func TestIssue1828(t *testing.T) {
 	}
 
 	if assert.Contains(t, b.Config.Variables, "float") {
-		assert.Equal(t, 3.14, b.Config.Variables["float"].Default)
+		assert.InDelta(t, 3.14, b.Config.Variables["float"].Default, 0.0001)
 	}
 
 	if assert.Contains(t, b.Config.Variables, "time") {
