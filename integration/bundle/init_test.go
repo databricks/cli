@@ -41,11 +41,7 @@ func TestBundleInitErrorOnUnknownFields(t *testing.T) {
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestBundleInitOnMlopsStacks(t *testing.T) {
 	nineJan2025 := time.Date(2025, time.January, 9, 0, 0, 0, 0, time.UTC)
-	oneJan2025 := time.Date(2025, time.January, 1, 0, 0, 0, 0, time.UTC)
-	if time.Now().Before(nineJan2025) && time.Now().After(oneJan2025) {
-		fmt.Println("Skipping test until the MLOps Stacks is fixed upstream")
-		t.Skip()
-	}
+	testutil.SkipUntil(t, nineJan2025)
 
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W

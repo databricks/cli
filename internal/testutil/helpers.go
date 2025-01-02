@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 // GetEnvOrSkipTest proceeds with test only with that env variable.
@@ -29,4 +30,11 @@ func RandomName(prefix ...string) string {
 		return fmt.Sprintf("%s%s", strings.Join(prefix, ""), b)
 	}
 	return string(b)
+}
+
+func SkipUntil(t TestingT, deadline time.Time) {
+	if time.Now().Before(deadline) {
+		fmt.Printf("Skipping test until %s\n", deadline)
+		t.Skip()
+	}
 }
