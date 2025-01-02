@@ -91,8 +91,7 @@ func TestDbfsClientForLargerFiles(t *testing.T) {
 	// write file to local disk
 	tmp := t.TempDir()
 	localPath := filepath.Join(tmp, "hello.txt")
-	err := os.WriteFile(localPath, []byte("hello world"), 0o644)
-	require.NoError(t, err)
+	testutil.WriteFile(t, localPath, "hello world")
 
 	// Modify the max file size to 1 byte to simulate
 	// a large file that needs to be uploaded in chunks.
