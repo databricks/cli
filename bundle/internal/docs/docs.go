@@ -81,16 +81,7 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 	return nodes
 }
 
-const header = `---
-description: Configuration reference for databricks.yml
----
-
-# Configuration reference
-
-This article provides reference for keys supported by <DABS> configuration (YAML). See [\_](/dev-tools/bundles/index.md).
-`
-
-func buildMarkdown(nodes []rootNode, outputFile string) error {
+func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 	f, err := os.Create(outputFile)
 	if err != nil {
 		log.Fatal(err)
@@ -136,7 +127,7 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 
 		if node.Example != "" {
 			m = m.LF()
-			m = m.H3("Example")
+			m = m.PlainText("**Example**")
 			m = m.LF()
 			m = m.PlainText(node.Example)
 		}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"path"
 	"reflect"
 	"strings"
 
@@ -13,25 +13,68 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
+const (
+	rootFileName = "reference.md"
+	rootHeader   = `---
+description: Configuration reference for databricks.yml
+---
+
+# Configuration reference
+
+This article provides reference for keys supported by <DABS> configuration (YAML). See [\_](/dev-tools/bundles/index.md).
+`
+)
+
+const (
+	resourcesFileName = "resources-reference.md"
+	resourcesHeader   = `---
+description: Resources references for databricks.yml
+---
+
+# Resources reference
+
+This article provides reference for keys supported by <DABS> configuration (YAML). See [\_](/dev-tools/bundles/index.md).
+`
+)
+
 func main() {
 	if len(os.Args) != 3 {
 		fmt.Println("Usage: go run main.go <annotation-file> <output-file>")
 		os.Exit(1)
 	}
 
-	annotationFile := os.Args[1]
-	outputFile := os.Args[2]
+	annotationDir := os.Args[1]
+	docsDir := os.Args[2]
+	outputDir := path.Join(docsDir, "output")
 
-	err := generateDocs(annotationFile, outputFile)
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(outputDir, 0o755); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	err := generateDocs(
+		[]string{path.Join(annotationDir, "annotations.yml")},
+		path.Join(outputDir, rootFileName),
+		reflect.TypeOf(config.Root{}),
+		rootHeader,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = generateDocs(
+		[]string{path.Join(annotationDir, "annotations_openapi.yml"), path.Join(annotationDir, "annotations_openapi_overrides.yml")},
+		path.Join(outputDir, resourcesFileName),
+		reflect.TypeOf(config.Resources{}),
+		resourcesHeader,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func generateDocs(workdir, outputPath string) error {
-	annotationsPath := filepath.Join(workdir, "annotations.yml")
-
-	annotations, err := annotation.LoadAndMerge([]string{annotationsPath})
+func generateDocs(inputPaths []string, outputPath string, rootType reflect.Type, header string) error {
+	annotations, err := annotation.LoadAndMerge(inputPaths)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,7 +82,7 @@ func generateDocs(workdir, outputPath string) error {
 	schemas := map[string]jsonschema.Schema{}
 	customFields := map[string]bool{}
 
-	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+	s, err := jsonschema.FromType(rootType, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 			_, isCustomField := annotations[jsonschema.TypePath(typ)]
 			if isCustomField {
@@ -75,7 +118,7 @@ func generateDocs(workdir, outputPath string) error {
 	}
 
 	nodes := getNodes(s, schemas, customFields)
-	err = buildMarkdown(nodes, outputPath)
+	err = buildMarkdown(nodes, outputPath, header)
 	if err != nil {
 		log.Fatal(err)
 	}

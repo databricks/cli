@@ -36,7 +36,7 @@ schema:
 
 docs:
 	@echo "✓ Generating docs using ./bundle/internal/schema/annotations.yml file..."
-	@go run ./bundle/internal/docs ./bundle/internal/schema ./bundle/internal/docs/docs.md
+	@go run ./bundle/internal/docs ./bundle/internal/schema ./bundle/internal/docs
 	@echo "✓ Writing docs to ./bundle/internal/docs/docs.md"
 
 INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h
