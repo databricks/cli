@@ -384,10 +384,10 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.4.0" {
 			raw, err := zipballFromFolder("testdata/installed-in-home/.databricks/labs/blueprint/lib")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			w.Header().Add("Content-Type", "application/octet-stream")
 			_, err = w.Write(raw)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
