@@ -12,7 +12,7 @@ test: lint testonly
 
 testonly:
 	@echo "✓ Running tests ..."
-	@gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt ./...
+	@DATABRICKS_HOST= DATABRICKS_TOKEN= gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt ./...
 
 coverage: test
 	@echo "✓ Opening coverage for unit tests ..."
