@@ -10,6 +10,7 @@ import (
 
 	yaml3 "gopkg.in/yaml.v3"
 
+	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -18,61 +19,23 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
-type annotation struct {
-	Description         string `json:"description,omitempty"`
-	MarkdownDescription string `json:"markdown_description,omitempty"`
-	Title               string `json:"title,omitempty"`
-	Default             any    `json:"default,omitempty"`
-	Enum                []any  `json:"enum,omitempty"`
-	MarkdownExamples    string `json:"markdown_examples,omitempty"`
-}
-
 type annotationHandler struct {
 	// Annotations read from all annotation files including all overrides
-	parsedAnnotations annotationFile
+	parsedAnnotations annotation.File
 	// Missing annotations for fields that are found in config that need to be added to the annotation file
-	missingAnnotations annotationFile
+	missingAnnotations annotation.File
 }
-
-/**
- * Parsed file with annotations, expected format:
- * github.com/databricks/cli/bundle/config.Bundle:
- *  	cluster_id:
- *      description: "Description"
- */
-type annotationFile map[string]map[string]annotation
-
-const Placeholder = "PLACEHOLDER"
 
 // Adds annotations to the JSON schema reading from the annotation files.
 // More details https://json-schema.org/understanding-json-schema/reference/annotations
 func newAnnotationHandler(sources []string) (*annotationHandler, error) {
-	prev := dyn.NilValue
-	for _, path := range sources {
-		b, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		generated, err := yamlloader.LoadYAML(path, bytes.NewBuffer(b))
-		if err != nil {
-			return nil, err
-		}
-		prev, err = merge.Merge(prev, generated)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var data annotationFile
-
-	err := convert.ToTyped(&data, prev)
+	data, err := annotation.LoadAndMerge(sources)
 	if err != nil {
 		return nil, err
 	}
-
 	d := &annotationHandler{}
 	d.parsedAnnotations = data
-	d.missingAnnotations = annotationFile{}
+	d.missingAnnotations = annotation.File{}
 	return d, nil
 }
 
@@ -85,7 +48,7 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 
 	annotations := d.parsedAnnotations[refPath]
 	if annotations == nil {
-		annotations = map[string]annotation{}
+		annotations = map[string]annotation.Descriptor{}
 	}
 
 	rootTypeAnnotation, ok := annotations[RootTypeKey]
@@ -96,11 +59,11 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 	for k, v := range s.Properties {
 		item := annotations[k]
 		if item.Description == "" {
-			item.Description = Placeholder
+			item.Description = annotation.Placeholder
 
 			emptyAnnotations := d.missingAnnotations[refPath]
 			if emptyAnnotations == nil {
-				emptyAnnotations = map[string]annotation{}
+				emptyAnnotations = map[string]annotation.Descriptor{}
 				d.missingAnnotations[refPath] = emptyAnnotations
 			}
 			emptyAnnotations[k] = item
@@ -141,8 +104,8 @@ func getPath(typ reflect.Type) string {
 	return typ.PkgPath() + "." + typ.Name()
 }
 
-func assignAnnotation(s *jsonschema.Schema, a annotation) {
-	if a.Description != Placeholder {
+func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
+	if a.Description != annotation.Placeholder {
 		s.Description = a.Description
 	}
 

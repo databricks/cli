@@ -463,8 +463,8 @@ github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
   "ai21labs_api_key_plaintext":
     "description": |-
       PLACEHOLDER
-? github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig
-: "private_key":
+github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
+  "private_key":
     "description": |-
       PLACEHOLDER
   "private_key_plaintext":

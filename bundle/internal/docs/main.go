@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -10,59 +9,9 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/jsonschema"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
-
-const Placeholder = "PLACEHOLDER"
-
-func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	switch typ {
-	case reflect.TypeOf(resources.Job{}):
-		// This field has been deprecated in jobs API v2.1 and is always set to
-		// "MULTI_TASK" in the backend. We should not expose it to the user.
-		delete(s.Properties, "format")
-
-		// These fields are only meant to be set by the DABs client (ie the CLI)
-		// and thus should not be exposed to the user. These are used to annotate
-		// jobs that were created by DABs.
-		delete(s.Properties, "deployment")
-		delete(s.Properties, "edit_mode")
-
-	case reflect.TypeOf(jobs.GitSource{}):
-		// These fields are readonly and are not meant to be set by the user.
-		delete(s.Properties, "job_source")
-		delete(s.Properties, "git_snapshot")
-
-	default:
-		// Do nothing
-	}
-
-	return s
-}
-
-// While volume_type is required in the volume create API, DABs automatically sets
-// it's value to "MANAGED" if it's not provided. Thus, we make it optional
-// in the bundle schema.
-func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	if typ != reflect.TypeOf(resources.Volume{}) {
-		return s
-	}
-
-	res := []string{}
-	for _, r := range s.Required {
-		if r != "volume_type" {
-			res = append(res, r)
-		}
-	}
-	s.Required = res
-	return s
-}
 
 func main() {
 	if len(os.Args) != 3 {
@@ -79,21 +28,10 @@ func main() {
 	}
 }
 
-type annotationFile map[string]map[string]annotation
-
-type annotation struct {
-	Description         string `json:"description,omitempty"`
-	MarkdownDescription string `json:"markdown_description,omitempty"`
-	Title               string `json:"title,omitempty"`
-	Default             any    `json:"default,omitempty"`
-	Enum                []any  `json:"enum,omitempty"`
-	MarkdownExamples    string `json:"markdown_examples,omitempty"`
-}
-
 func generateDocs(workdir, outputPath string) error {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
 
-	annotations, err := LoadAndMergeAnnotations([]string{annotationsPath})
+	annotations, err := annotation.LoadAndMerge([]string{annotationsPath})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -102,9 +40,6 @@ func generateDocs(workdir, outputPath string) error {
 	customFields := map[string]bool{}
 
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		removeJobsFields,
-		makeVolumeTypeOptional,
-
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 			_, isCustomField := annotations[jsonschema.TypePath(typ)]
 			if isCustomField {
@@ -120,7 +55,7 @@ func generateDocs(workdir, outputPath string) error {
 
 			a := annotations[refPath]
 			if a == nil {
-				a = map[string]annotation{}
+				a = map[string]annotation.Descriptor{}
 			}
 
 			rootTypeAnnotation, ok := a["_"]
@@ -151,8 +86,8 @@ func getPath(typ reflect.Type) string {
 	return typ.PkgPath() + "." + typ.Name()
 }
 
-func assignAnnotation(s *jsonschema.Schema, a annotation) {
-	if a.Description != "" && a.Description != Placeholder {
+func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
+	if a.Description != "" && a.Description != annotation.Placeholder {
 		s.Description = a.Description
 	}
 	if a.MarkdownDescription != "" {
@@ -161,30 +96,4 @@ func assignAnnotation(s *jsonschema.Schema, a annotation) {
 	if a.MarkdownExamples != "" {
 		s.Examples = []any{a.MarkdownExamples}
 	}
-}
-
-func LoadAndMergeAnnotations(sources []string) (annotationFile, error) {
-	prev := dyn.NilValue
-	for _, path := range sources {
-		b, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		generated, err := yamlloader.LoadYAML(path, bytes.NewBuffer(b))
-		if err != nil {
-			return nil, err
-		}
-		prev, err = merge.Merge(prev, generated)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var data annotationFile
-
-	err := convert.ToTyped(&data, prev)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
 }
