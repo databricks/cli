@@ -12,25 +12,25 @@ func TestLibraryPath(t *testing.T) {
 
 	p, err := libraryPath(&compute.Library{Whl: path})
 	assert.Equal(t, path, p)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	p, err = libraryPath(&compute.Library{Jar: path})
 	assert.Equal(t, path, p)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	p, err = libraryPath(&compute.Library{Egg: path})
 	assert.Equal(t, path, p)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	p, err = libraryPath(&compute.Library{Requirements: path})
 	assert.Equal(t, path, p)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	p, err = libraryPath(&compute.Library{})
 	assert.Equal(t, "", p)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	p, err = libraryPath(&compute.Library{Pypi: &compute.PythonPyPiLibrary{Package: "pypipackage"}})
 	assert.Equal(t, "", p)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

@@ -33,6 +33,6 @@ func TestFindDirWithLeaf(t *testing.T) {
 	{
 		out, err := FindDirWithLeaf(root, "this-leaf-doesnt-exist-anywhere")
 		assert.ErrorIs(t, err, os.ErrNotExist)
-		assert.Equal(t, out, "")
+		assert.Equal(t, "", out)
 	}
 }

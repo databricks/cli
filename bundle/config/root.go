@@ -102,7 +102,8 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// Convert normalized configuration tree to typed configuration.
 	err = r.updateWithDynamicValue(v)
 	if err != nil {
-		return nil, diag.Errorf("failed to load %s: %v", path, err)
+		diags = diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
+		return nil, diags
 	}
 	return &r, diags
 }

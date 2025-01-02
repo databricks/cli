@@ -22,7 +22,7 @@ func TestCreatesDirectoryIfNeeded(t *testing.T) {
 	}
 	first, err := c.Load(ctx, tick)
 	assert.NoError(t, err)
-	assert.Equal(t, first, int64(1))
+	assert.Equal(t, int64(1), first)
 }
 
 func TestImpossibleToCreateDir(t *testing.T) {

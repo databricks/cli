@@ -21,8 +21,8 @@ func TestEnvironmentOverridesResourcesDev(t *testing.T) {
 	assert.Equal(t, "base job", b.Config.Resources.Jobs["job1"].Name)
 
 	// Base values are preserved in the development environment.
-	assert.Equal(t, true, b.Config.Resources.Pipelines["boolean1"].Photon)
-	assert.Equal(t, false, b.Config.Resources.Pipelines["boolean2"].Photon)
+	assert.True(t, b.Config.Resources.Pipelines["boolean1"].Photon)
+	assert.False(t, b.Config.Resources.Pipelines["boolean2"].Photon)
 }
 
 func TestEnvironmentOverridesResourcesStaging(t *testing.T) {
@@ -30,6 +30,6 @@ func TestEnvironmentOverridesResourcesStaging(t *testing.T) {
 	assert.Equal(t, "staging job", b.Config.Resources.Jobs["job1"].Name)
 
 	// Override values are applied in the staging environment.
-	assert.Equal(t, false, b.Config.Resources.Pipelines["boolean1"].Photon)
-	assert.Equal(t, true, b.Config.Resources.Pipelines["boolean2"].Photon)
+	assert.False(t, b.Config.Resources.Pipelines["boolean1"].Photon)
+	assert.True(t, b.Config.Resources.Pipelines["boolean2"].Photon)
 }

@@ -19,22 +19,25 @@ import (
 var OverwriteMode = os.Getenv("TESTS_OUTPUT") == "OVERWRITE"
 
 func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string {
+	t.Helper()
 	data, err := os.ReadFile(filename)
 	if os.IsNotExist(err) {
 		return ""
 	}
-	assert.NoError(t, err)
+	assert.NoError(t, err, "Failed to read %s", filename)
 	// On CI, on Windows \n in the file somehow end up as \r\n
 	return NormalizeNewlines(string(data))
 }
 
 func WriteFile(t testutil.TestingT, filename, data string) {
+	t.Helper()
 	t.Logf("Overwriting %s", filename)
 	err := os.WriteFile(filename, []byte(data), 0o644)
-	assert.NoError(t, err)
+	assert.NoError(t, err, "Failed to write %s", filename)
 }
 
 func AssertOutput(t testutil.TestingT, ctx context.Context, out, outTitle, expectedPath string) {
+	t.Helper()
 	expected := ReadFile(t, ctx, expectedPath)
 
 	out = ReplaceOutput(t, ctx, out)
@@ -49,6 +52,7 @@ func AssertOutput(t testutil.TestingT, ctx context.Context, out, outTitle, expec
 }
 
 func AssertOutputJQ(t testutil.TestingT, ctx context.Context, out, outTitle, expectedPath string, ignorePaths []string) {
+	t.Helper()
 	expected := ReadFile(t, ctx, expectedPath)
 
 	out = ReplaceOutput(t, ctx, out)
@@ -69,6 +73,7 @@ var (
 )
 
 func ReplaceOutput(t testutil.TestingT, ctx context.Context, out string) string {
+	t.Helper()
 	out = NormalizeNewlines(out)
 	replacements := GetReplacementsMap(ctx)
 	if replacements == nil {
@@ -136,6 +141,7 @@ func GetReplacementsMap(ctx context.Context) *ReplacementsContext {
 }
 
 func PrepareReplacements(t testutil.TestingT, r *ReplacementsContext, w *databricks.WorkspaceClient) {
+	t.Helper()
 	// in some clouds (gcp) w.Config.Host includes "https://" prefix in others it's really just a host (azure)
 	host := strings.TrimPrefix(strings.TrimPrefix(w.Config.Host, "http://"), "https://")
 	r.Set(host, "$DATABRICKS_HOST")
@@ -167,6 +173,7 @@ func PrepareReplacements(t testutil.TestingT, r *ReplacementsContext, w *databri
 }
 
 func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.User) {
+	t.Helper()
 	// There could be exact matches or overlap between different name fields, so sort them by length
 	// to ensure we match the largest one first and map them all to the same token
 	names := []string{

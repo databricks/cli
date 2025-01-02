@@ -225,7 +225,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	env := make(map[string]string, 0)
 	err := setProxyEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
-	assert.Len(t, env, 0)
+	assert.Empty(t, env)
 
 	// Lower case set.
 	clearEnv()
@@ -293,7 +293,7 @@ func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, env, "USERPROFILE")
-	assert.Equal(t, env["USERPROFILE"], "c:\\foo\\c")
+	assert.Equal(t, "c:\\foo\\c", env["USERPROFILE"])
 }
 
 func TestInheritEnvVarsWithAbsentTFConfigFile(t *testing.T) {
