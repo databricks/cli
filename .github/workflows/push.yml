@@ -75,7 +75,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.62.2
+          version: v1.63.1
           args: --timeout=15m
 
   validate-bundle-schema:
