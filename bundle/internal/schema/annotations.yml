@@ -183,6 +183,14 @@ github.com/databricks/cli/bundle/config.Root:
   "artifacts":
     "description": |-
       Defines the attributes to build an artifact
+    "markdown_examples": |-
+      ```yaml
+      artifacts:
+        default:
+          type: whl
+          build: poetry build
+          path: .
+      ```
   "bundle":
     "description": |-
       The attributes of the bundle.
@@ -201,6 +209,16 @@ github.com/databricks/cli/bundle/config.Root:
       Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle
     "markdown_description": |-
       Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
+    "markdown_examples": |-
+      ```yaml
+      permissions:
+        - level: CAN_VIEW
+          group_name: test-group
+        - level: CAN_MANAGE
+          user_name: someone@example.com
+        - level: CAN_RUN
+          service_principal_name: 123456-abcdef
+      ```
   "presets":
     "description": |-
       Defines bundle deployment presets.
@@ -445,8 +463,8 @@ github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
   "ai21labs_api_key_plaintext":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
-  "private_key":
+? github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig
+: "private_key":
     "description": |-
       PLACEHOLDER
   "private_key_plaintext":

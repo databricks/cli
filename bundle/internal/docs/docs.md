@@ -1,3 +1,11 @@
+---
+description: Configuration reference for databricks.yml
+---
+
+# Configuration reference
+
+This article provides reference for keys supported by <DABS> configuration (YAML). See [\_](/dev-tools/bundles/index.md).
+
   
 ## artifacts
   
@@ -45,6 +53,16 @@ Each item has the following attributes:
      - String
      - The type of the artifact. Valid values are `wheel` or `jar`
   
+  
+### Example
+  
+```yaml
+artifacts:
+  default:
+    type: whl
+    build: poetry build
+    path: .
+```
   
 ## bundle
   
@@ -245,6 +263,18 @@ Each item of `permissions` has the following attributes:
      - String
      - The name of the user that has the permission set in level.
   
+  
+### Example
+  
+```yaml
+permissions:
+  - level: CAN_VIEW
+    group_name: test-group
+  - level: CAN_MANAGE
+    user_name: someone@example.com
+  - level: CAN_RUN
+    service_principal_name: 123456-abcdef
+```
   
 ## presets
   

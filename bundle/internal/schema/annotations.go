@@ -24,6 +24,7 @@ type annotation struct {
 	Title               string `json:"title,omitempty"`
 	Default             any    `json:"default,omitempty"`
 	Enum                []any  `json:"enum,omitempty"`
+	MarkdownExamples    string `json:"markdown_examples,omitempty"`
 }
 
 type annotationHandler struct {

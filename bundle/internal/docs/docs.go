@@ -50,6 +50,7 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 			Title:       k,
 			Description: getDescription(v, item.topLevel),
 			TopLevel:    item.topLevel,
+			Example:     getExample(v),
 		}
 
 		node.Attributes = getAttributes(v.Properties, refs)
@@ -80,6 +81,15 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 	return nodes
 }
 
+const header = `---
+description: Configuration reference for databricks.yml
+---
+
+# Configuration reference
+
+This article provides reference for keys supported by <DABS> configuration (YAML). See [\_](/dev-tools/bundles/index.md).
+`
+
 func buildMarkdown(nodes []rootNode, outputFile string) error {
 	f, err := os.Create(outputFile)
 	if err != nil {
@@ -88,6 +98,7 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 	defer f.Close()
 
 	m := md.NewMarkdown(f)
+	m = m.PlainText(header)
 	for _, node := range nodes {
 		m = m.LF()
 		if node.TopLevel {
@@ -111,9 +122,15 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 			m = m.LF()
 			m = buildAttributeTable(m, node.ArrayItemAttributes)
 		} else if len(node.Attributes) > 0 {
-			// m = m.H4("Attributes")
 			m = m.LF()
 			m = buildAttributeTable(m, node.Attributes)
+		}
+
+		if node.Example != "" {
+			m = m.LF()
+			m = m.H3("Example")
+			m = m.LF()
+			m = m.PlainText(node.Example)
 		}
 	}
 
@@ -204,6 +221,7 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *js
 
 	description := s.Description
 	markdownDescription := s.MarkdownDescription
+	examples := s.Examples
 
 	for node.Reference != nil {
 		ref := strings.TrimPrefix(*node.Reference, "#/$defs/")
@@ -218,12 +236,16 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *js
 		if markdownDescription == "" {
 			markdownDescription = newNode.MarkdownDescription
 		}
+		if len(examples) == 0 {
+			examples = newNode.Examples
+		}
 
 		node = &newNode
 	}
 
 	node.Description = description
 	node.MarkdownDescription = markdownDescription
+	node.Examples = examples
 
 	return node
 }
@@ -246,4 +268,12 @@ func extractNodes(prefix string, props map[string]*jsonschema.Schema, refs map[s
 		}
 	}
 	return nodes
+}
+
+func getExample(v *jsonschema.Schema) string {
+	examples := v.Examples
+	if len(examples) == 0 {
+		return ""
+	}
+	return examples[0].(string)
 }

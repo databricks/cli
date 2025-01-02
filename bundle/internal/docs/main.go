@@ -87,6 +87,7 @@ type annotation struct {
 	Title               string `json:"title,omitempty"`
 	Default             any    `json:"default,omitempty"`
 	Enum                []any  `json:"enum,omitempty"`
+	MarkdownExamples    string `json:"markdown_examples,omitempty"`
 }
 
 func generateDocs(workdir, outputPath string) error {
@@ -156,6 +157,9 @@ func assignAnnotation(s *jsonschema.Schema, a annotation) {
 	}
 	if a.MarkdownDescription != "" {
 		s.MarkdownDescription = a.MarkdownDescription
+	}
+	if a.MarkdownExamples != "" {
+		s.Examples = []any{a.MarkdownExamples}
 	}
 }
 
