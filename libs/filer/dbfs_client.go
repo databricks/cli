@@ -69,11 +69,9 @@ func (info dbfsFileInfo) Sys() any {
 }
 
 // Interface to allow mocking of the Databricks API client.
-//
-//nolint:gofumpt
 type databricksClient interface {
 	Do(ctx context.Context, method, path string, headers map[string]string,
-		requestBody any, responseBody any, visitors ...func(*http.Request) error) error
+		requestBody, responseBody any, visitors ...func(*http.Request) error) error
 }
 
 // DbfsClient implements the [Filer] interface for the DBFS backend.
@@ -102,7 +100,7 @@ func NewDbfsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 
 // The PUT API for DBFS requires setting the content length header beforehand in the HTTP
 // request.
-func putContentLength(path, overwriteField string, file *os.File) (int64, error) {
+func contentLength(path, overwriteField string, file *os.File) (int64, error) {
 	buf := &bytes.Buffer{}
 	writer := multipart.NewWriter(buf)
 	err := writer.WriteField("path", path)
@@ -132,7 +130,7 @@ func putContentLength(path, overwriteField string, file *os.File) (int64, error)
 
 func contentLengthVisitor(path, overwriteField string, file *os.File) func(*http.Request) error {
 	return func(r *http.Request) error {
-		cl, err := putContentLength(path, overwriteField, file)
+		cl, err := contentLength(path, overwriteField, file)
 		if err != nil {
 			return fmt.Errorf("failed to calculate content length: %w", err)
 		}
