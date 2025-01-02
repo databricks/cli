@@ -64,11 +64,11 @@ func TestFsLs(t *testing.T) {
 
 			assert.Equal(t, "a", parsedStdout[0]["name"])
 			assert.Equal(t, true, parsedStdout[0]["is_directory"])
-			assert.Equal(t, float64(0), parsedStdout[0]["size"])
+			assert.InDelta(t, float64(0), parsedStdout[0]["size"], 0.0001)
 
 			assert.Equal(t, "bye.txt", parsedStdout[1]["name"])
 			assert.Equal(t, false, parsedStdout[1]["is_directory"])
-			assert.Equal(t, float64(3), parsedStdout[1]["size"])
+			assert.InDelta(t, float64(3), parsedStdout[1]["size"], 0.0001)
 		})
 	}
 }
@@ -98,7 +98,7 @@ func TestFsLsWithAbsolutePaths(t *testing.T) {
 
 			assert.Equal(t, path.Join(tmpDir, "a"), parsedStdout[0]["name"])
 			assert.Equal(t, true, parsedStdout[0]["is_directory"])
-			assert.Equal(t, float64(0), parsedStdout[0]["size"])
+			assert.InDelta(t, float64(0), parsedStdout[0]["size"], 0.0001)
 
 			assert.Equal(t, path.Join(tmpDir, "bye.txt"), parsedStdout[1]["name"])
 			assert.Equal(t, false, parsedStdout[1]["is_directory"])
