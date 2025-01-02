@@ -168,6 +168,10 @@ func (w *DbfsClient) putFile(ctx context.Context, path string, overwrite bool, f
 			return
 		}
 		_, err = io.Copy(contents, file)
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("error while streaming file to dbfs: %w", err))
+			return
+		}
 		err = writer.Close()
 		if err != nil {
 			pw.CloseWithError(fmt.Errorf("failed to close multipart form writer: %w", err))
