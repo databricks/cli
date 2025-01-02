@@ -102,7 +102,7 @@ func NewDbfsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 
 // The PUT API for DBFS requires setting the content length header beforehand in the HTTP
 // request.
-func putContentLength(path string, overwriteField string, file *os.File) (int64, error) {
+func putContentLength(path, overwriteField string, file *os.File) (int64, error) {
 	buf := &bytes.Buffer{}
 	writer := multipart.NewWriter(buf)
 	err := writer.WriteField("path", path)
