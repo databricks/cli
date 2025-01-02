@@ -28,8 +28,8 @@ func TestDefaultQueueingApplyNoJobs(t *testing.T) {
 		},
 	}
 	d := bundle.Apply(context.Background(), b, DefaultQueueing())
-	assert.Len(t, d, 0)
-	assert.Len(t, b.Config.Resources.Jobs, 0)
+	assert.Empty(t, d)
+	assert.Empty(t, b.Config.Resources.Jobs)
 }
 
 func TestDefaultQueueingApplyJobsAlreadyEnabled(t *testing.T) {
@@ -47,7 +47,7 @@ func TestDefaultQueueingApplyJobsAlreadyEnabled(t *testing.T) {
 		},
 	}
 	d := bundle.Apply(context.Background(), b, DefaultQueueing())
-	assert.Len(t, d, 0)
+	assert.Empty(t, d)
 	assert.True(t, b.Config.Resources.Jobs["job"].Queue.Enabled)
 }
 
@@ -66,7 +66,7 @@ func TestDefaultQueueingApplyEnableQueueing(t *testing.T) {
 		},
 	}
 	d := bundle.Apply(context.Background(), b, DefaultQueueing())
-	assert.Len(t, d, 0)
+	assert.Empty(t, d)
 	assert.NotNil(t, b.Config.Resources.Jobs["job"].Queue)
 	assert.True(t, b.Config.Resources.Jobs["job"].Queue.Enabled)
 }
@@ -96,7 +96,7 @@ func TestDefaultQueueingApplyWithMultipleJobs(t *testing.T) {
 		},
 	}
 	d := bundle.Apply(context.Background(), b, DefaultQueueing())
-	assert.Len(t, d, 0)
+	assert.Empty(t, d)
 	assert.False(t, b.Config.Resources.Jobs["job1"].Queue.Enabled)
 	assert.True(t, b.Config.Resources.Jobs["job2"].Queue.Enabled)
 	assert.True(t, b.Config.Resources.Jobs["job3"].Queue.Enabled)

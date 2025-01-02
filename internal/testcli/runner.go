@@ -69,6 +69,7 @@ func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan s
 }
 
 func (r *Runner) registerFlagCleanup(c *cobra.Command) {
+	r.Helper()
 	// Find target command that will be run. Example: if the command run is `databricks fs cp`,
 	// target command corresponds to `cp`
 	targetCmd, _, err := c.Find(r.args)
@@ -230,13 +231,48 @@ func (r *Runner) RunBackground() {
 }
 
 func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
-	r.RunBackground()
-	err := <-r.errch
-	return r.stdout, r.stderr, err
+	r.Helper()
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.NewContext(r.ctx, &cmdio.Logger{
+		Mode:   flags.ModeAppend,
+		Reader: bufio.Reader{},
+		Writer: &stderr,
+	})
+
+	cli := cmd.New(ctx)
+	cli.SetOut(&stdout)
+	cli.SetErr(&stderr)
+	cli.SetArgs(r.args)
+
+	r.Logf("  args: %s", strings.Join(r.args, ", "))
+
+	err := root.Execute(ctx, cli)
+	if err != nil {
+		r.Logf(" error: %s", err)
+	}
+
+	if stdout.Len() > 0 {
+		// Make a copy of the buffer such that it remains "unread".
+		scanner := bufio.NewScanner(bytes.NewBuffer(stdout.Bytes()))
+		for scanner.Scan() {
+			r.Logf("stdout: %s", scanner.Text())
+		}
+	}
+
+	if stderr.Len() > 0 {
+		// Make a copy of the buffer such that it remains "unread".
+		scanner := bufio.NewScanner(bytes.NewBuffer(stderr.Bytes()))
+		for scanner.Scan() {
+			r.Logf("stderr: %s", scanner.Text())
+		}
+	}
+
+	return stdout, stderr, err
 }
 
 // Like [require.Eventually] but errors if the underlying command has failed.
 func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, msgAndArgs ...any) {
+	r.Helper()
 	ch := make(chan bool, 1)
 
 	timer := time.NewTimer(waitFor)
@@ -269,12 +305,14 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 }
 
 func (r *Runner) RunAndExpectOutput(heredoc string) {
+	r.Helper()
 	stdout, _, err := r.Run()
 	require.NoError(r, err)
 	require.Equal(r, cmdio.Heredoc(heredoc), strings.TrimSpace(stdout.String()))
 }
 
 func (r *Runner) RunAndParseJSON(v any) {
+	r.Helper()
 	stdout, _, err := r.Run()
 	require.NoError(r, err)
 	err = json.Unmarshal(stdout.Bytes(), &v)
@@ -291,7 +329,7 @@ func NewRunner(t testutil.TestingT, ctx context.Context, args ...string) *Runner
 }
 
 func RequireSuccessfulRun(t testutil.TestingT, ctx context.Context, args ...string) (bytes.Buffer, bytes.Buffer) {
-	t.Logf("run args: [%s]", strings.Join(args, ", "))
+	t.Helper()
 	r := NewRunner(t, ctx, args...)
 	stdout, stderr, err := r.Run()
 	require.NoError(t, err)
@@ -299,6 +337,7 @@ func RequireSuccessfulRun(t testutil.TestingT, ctx context.Context, args ...stri
 }
 
 func RequireErrorRun(t testutil.TestingT, ctx context.Context, args ...string) (bytes.Buffer, bytes.Buffer, error) {
+	t.Helper()
 	r := NewRunner(t, ctx, args...)
 	stdout, stderr, err := r.Run()
 	require.Error(t, err)

@@ -28,7 +28,7 @@ func TestPermissionDiagnosticsApplyFail(t *testing.T) {
 	})
 
 	diags := permissions.PermissionDiagnostics().Apply(context.Background(), b)
-	require.Equal(t, diags[0].Severity, diag.Warning)
+	require.Equal(t, diag.Warning, diags[0].Severity)
 	require.Contains(t, diags[0].Summary, "permissions section should include testuser@databricks.com or one of their groups with CAN_MANAGE permissions")
 }
 

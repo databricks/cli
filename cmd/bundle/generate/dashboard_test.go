@@ -44,7 +44,7 @@ func TestDashboard_ErrorOnLegacyDashboard(t *testing.T) {
 
 	_, diags := d.resolveID(ctx, b)
 	require.Len(t, diags, 1)
-	assert.Equal(t, diags[0].Summary, "dashboard \"legacy dashboard\" is a legacy dashboard")
+	assert.Equal(t, "dashboard \"legacy dashboard\" is a legacy dashboard", diags[0].Summary)
 }
 
 func TestDashboard_ExistingID_Nominal(t *testing.T) {
