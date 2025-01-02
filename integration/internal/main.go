@@ -50,7 +50,7 @@ func loadDebugEnvIfRunFromIDE(key string) error {
 func WorkspaceMain(m *testing.M) {
 	err := loadDebugEnvIfRunFromIDE("workspace")
 	if err != nil {
-		fmt.Printf("failed to load debug env: %s\n", err)
+		fmt.Printf("failed to load debug env: %w\n", err)
 		return
 	}
 
