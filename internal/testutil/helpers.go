@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // GetEnvOrSkipTest proceeds with test only with that env variable.
@@ -32,9 +34,12 @@ func RandomName(prefix ...string) string {
 	return string(b)
 }
 
-func SkipUntil(t TestingT, deadline time.Time) {
+func SkipUntil(t TestingT, date string) {
+	deadline, err := time.Parse(time.DateOnly, date)
+	require.NoError(t, err)
+
 	if time.Now().Before(deadline) {
-		fmt.Printf("Skipping test until %s\n", deadline)
+		fmt.Printf("Skipping test until %s. Time right now: %s\n", deadline.Format(time.DateOnly), time.Now())
 		t.Skip()
 	}
 }
