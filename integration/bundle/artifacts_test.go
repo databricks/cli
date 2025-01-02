@@ -257,7 +257,7 @@ func TestUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "bundle", "deploy")
 
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/doesnotexist does not exist: Not Found
+	assert.Equal(t, fmt.Sprintf(`Error: volume main.%s.doesnotexist does not exist
   at workspace.artifact_path
   in databricks.yml:6:18
 
@@ -293,7 +293,7 @@ func TestUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
 	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "bundle", "deploy")
 
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/my_volume does not exist: Not Found
+	assert.Equal(t, fmt.Sprintf(`Error: volume main.%s.my_volume does not exist
   at workspace.artifact_path
      resources.volumes.foo
   in databricks.yml:6:18
