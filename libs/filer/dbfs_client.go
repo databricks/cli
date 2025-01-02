@@ -167,18 +167,7 @@ func (w *DbfsClient) putFile(ctx context.Context, path string, overwrite bool, f
 			pw.CloseWithError(fmt.Errorf("failed to write contents field in multipart form: %w", err))
 			return
 		}
-		for {
-			// Copy the file in 10 MB chunks. This reduces the memory usage of the
-			// program when copying large files.
-			_, err := io.CopyN(contents, file, 10*1024*1024)
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				pw.CloseWithError(fmt.Errorf("failed to copy file in multipart form: %w", err))
-				return
-			}
-		}
+		_, err = io.Copy(contents, file)
 		err = writer.Close()
 		if err != nil {
 			pw.CloseWithError(fmt.Errorf("failed to close multipart form writer: %w", err))
