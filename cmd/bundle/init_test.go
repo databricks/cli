@@ -54,5 +54,5 @@ func TestGetNativeTemplateByName(t *testing.T) {
 	assert.Equal(t, "The default Python template for Notebooks / Delta Live Tables / Workflows", getNativeTemplateByName("default-python").description)
 	assert.Equal(t, "", getNativeTemplateByName("default-python").gitUrl)
 
-	assert.Nil(t, nil, getNativeTemplateByName("invalid"))
+	assert.Nil(t, getNativeTemplateByName("invalid"))
 }

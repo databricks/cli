@@ -73,9 +73,9 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 	// Assert the telemetry payload is correctly logged.
 	logs := telemetry.GetLogs(ctx)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(logs))
+	require.Len(t, len(logs), 1)
 	event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
-	assert.Equal(t, event.TemplateName, "mlops-stacks")
+	assert.Equal(t, "mlops-stacks", event.TemplateName)
 
 	get := func(key string) string {
 		for _, v := range event.TemplateEnumArgs {
@@ -87,11 +87,11 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 	}
 
 	// Enum values should be present in the telemetry payload.
-	assert.Equal(t, get("input_include_models_in_unity_catalog"), "no")
-	assert.Equal(t, get("input_cloud"), strings.ToLower(env))
+	assert.Equal(t, "no", get("input_include_models_in_unity_catalog"))
+	assert.Equal(t, strings.ToLower(env), get("input_cloud"))
 	// Freeform strings should not be present in the telemetry payload.
-	assert.Equal(t, get("input_project_name"), "")
-	assert.Equal(t, get("input_root_dir"), "")
+	assert.Equal(t, "", get("input_project_name"))
+	assert.Equal(t, "", get("input_root_dir"))
 
 	// Assert that the README.md file was created
 	contents := testutil.ReadFile(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
@@ -200,7 +200,7 @@ func TestBundleInitTelemetryForDefaultTemplates(t *testing.T) {
 		// Assert the telemetry payload is correctly logged.
 		logs := telemetry.GetLogs(ctx)
 		require.NoError(t, err)
-		require.Equal(t, 1, len(logs))
+		require.Len(t, len(logs), 1)
 		event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
 		assert.Equal(t, event.TemplateName, tc.name)
 
@@ -269,9 +269,9 @@ func TestBundleInitTelemetryForCustomTemplates(t *testing.T) {
 	// never set template_enum_args.
 	logs := telemetry.GetLogs(ctx)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(logs))
+	require.Len(t, len(logs), 1)
 	event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
-	assert.Equal(t, event.TemplateName, "custom")
+	assert.Equal(t, "custom", event.TemplateName)
 	assert.Empty(t, event.TemplateEnumArgs)
 
 	// Ensure that the UUID returned by the `bundle_uuid` helper is the same UUID

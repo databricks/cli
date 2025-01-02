@@ -57,7 +57,7 @@ func TestTelemetryLogger(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, reflect.TypeOf(telemetry.DatabricksCliLog{}).NumField(), len(events),
+	assert.Len(t, reflect.TypeOf(telemetry.DatabricksCliLog{}).NumField(), len(events),
 		"Number of events should match the number of fields in DatabricksCliLog. Please add a new event to this test.")
 
 	ctx, w := acc.WorkspaceTest(t)
