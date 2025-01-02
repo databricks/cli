@@ -7,14 +7,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRepositories(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/users/databrickslabs/repos" {
 			_, err := w.Write([]byte(`[{"name": "x"}]`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		t.Logf("Requested: %s", r.URL.Path)
@@ -28,5 +27,5 @@ func TestRepositories(t *testing.T) {
 	r := NewRepositoryCache("databrickslabs", t.TempDir())
 	all, err := r.Load(ctx)
 	assert.NoError(t, err)
-	assert.True(t, len(all) > 0)
+	assert.NotEmpty(t, all)
 }

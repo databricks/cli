@@ -123,12 +123,12 @@ func TestJsonUnmarshalForRequest(t *testing.T) {
 	assert.Equal(t, "new job", r.NewSettings.Name)
 	assert.Equal(t, 0, r.NewSettings.TimeoutSeconds)
 	assert.Equal(t, 1, r.NewSettings.MaxConcurrentRuns)
-	assert.Equal(t, 1, len(r.NewSettings.Tasks))
+	assert.Len(t, r.NewSettings.Tasks, 1)
 	assert.Equal(t, "new task", r.NewSettings.Tasks[0].TaskKey)
 	assert.Equal(t, 0, r.NewSettings.Tasks[0].TimeoutSeconds)
 	assert.Equal(t, 0, r.NewSettings.Tasks[0].MaxRetries)
 	assert.Equal(t, 0, r.NewSettings.Tasks[0].MinRetryIntervalMillis)
-	assert.Equal(t, true, r.NewSettings.Tasks[0].RetryOnTimeout)
+	assert.True(t, r.NewSettings.Tasks[0].RetryOnTimeout)
 }
 
 const incorrectJsonData = `{
@@ -280,8 +280,8 @@ func TestJsonUnmarshalForRequestWithForceSendFields(t *testing.T) {
 	assert.NoError(t, diags.Error())
 	assert.Empty(t, diags)
 
-	assert.Equal(t, false, r.NewSettings.NotificationSettings.NoAlertForSkippedRuns)
-	assert.Equal(t, false, r.NewSettings.NotificationSettings.NoAlertForCanceledRuns)
+	assert.False(t, r.NewSettings.NotificationSettings.NoAlertForSkippedRuns)
+	assert.False(t, r.NewSettings.NotificationSettings.NoAlertForCanceledRuns)
 	assert.NotContains(t, r.NewSettings.NotificationSettings.ForceSendFields, "NoAlertForSkippedRuns")
 	assert.Contains(t, r.NewSettings.NotificationSettings.ForceSendFields, "NoAlertForCanceledRuns")
 }

@@ -52,7 +52,7 @@ func TestGlobFileset(t *testing.T) {
 
 	files, err = g.Files()
 	require.NoError(t, err)
-	require.Equal(t, len(files), 0)
+	require.Empty(t, files)
 }
 
 func TestGlobFilesetWithRelativeRoot(t *testing.T) {

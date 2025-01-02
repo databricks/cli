@@ -212,12 +212,12 @@ func TestFilerForVolumeWithInvalidVolumePaths(t *testing.T) {
 		bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
 
 		_, _, diags := GetFilerForLibraries(context.Background(), b)
-		require.Equal(t, diags, diag.Diagnostics{{
+		require.Equal(t, diag.Diagnostics{{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p),
 			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
-		}})
+		}}, diags)
 	}
 }
 

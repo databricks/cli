@@ -60,7 +60,7 @@ func TestStateUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, int64(1), state.Seq)
-	require.Equal(t, state.Files, Filelist{
+	require.Equal(t, Filelist{
 		{
 			LocalPath: "test1.py",
 		},
@@ -68,7 +68,7 @@ func TestStateUpdate(t *testing.T) {
 			LocalPath:  "test2.py",
 			IsNotebook: true,
 		},
-	})
+	}, state.Files)
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 
 	diags = bundle.Apply(ctx, b, s)
@@ -79,7 +79,7 @@ func TestStateUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, int64(2), state.Seq)
-	require.Equal(t, state.Files, Filelist{
+	require.Equal(t, Filelist{
 		{
 			LocalPath: "test1.py",
 		},
@@ -87,7 +87,7 @@ func TestStateUpdate(t *testing.T) {
 			LocalPath:  "test2.py",
 			IsNotebook: true,
 		},
-	})
+	}, state.Files)
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 
 	// Valid non-empty UUID is generated.
@@ -130,7 +130,7 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, int64(11), state.Seq)
-	require.Equal(t, state.Files, Filelist{
+	require.Equal(t, Filelist{
 		{
 			LocalPath: "test1.py",
 		},
@@ -138,7 +138,7 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 			LocalPath:  "test2.py",
 			IsNotebook: true,
 		},
-	})
+	}, state.Files)
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 
 	// Existing UUID is not overwritten.

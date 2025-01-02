@@ -11,14 +11,14 @@ import (
 )
 
 // Detects if test is run from "debug test" feature in VS Code.
-func isInDebug() bool {
+func IsInDebug() bool {
 	ex, _ := os.Executable()
 	return strings.HasPrefix(path.Base(ex), "__debug_bin")
 }
 
 // Loads debug environment from ~/.databricks/debug-env.json.
 func loadDebugEnvIfRunFromIDE(t testutil.TestingT, key string) {
-	if !isInDebug() {
+	if !IsInDebug() {
 		return
 	}
 	home, err := os.UserHomeDir()
