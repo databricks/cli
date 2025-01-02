@@ -1,20 +1,24 @@
 default: build
 
-lint: vendor
+PACKAGES=./libs/... ./internal/... ./cmd/... ./bundle/... .
+
+lint:
 	@echo "✓ Linting source code with https://golangci-lint.run/ (with --fix)..."
 	@./lint.sh ./...
 
-lintcheck: vendor
+lintcheck:
 	@echo "✓ Linting source code with https://golangci-lint.run/ ..."
 	@golangci-lint run ./...
 
-test: lint testonly
-
-testonly:
+test:
 	@echo "✓ Running tests ..."
-	@gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt ./...
+	@gotestsum --format pkgname-and-test-fails --no-summary=skipped -- ${PACKAGES}
 
-coverage: test
+cover:
+	@echo "✓ Running tests with coverage..."
+	@gotestsum --format pkgname-and-test-fails --no-summary=skipped -- -coverprofile=coverage.txt ${PACKAGES}
+
+showcover:
 	@echo "✓ Opening coverage for unit tests ..."
 	@go tool cover -html=coverage.txt
 
@@ -42,4 +46,4 @@ integration:
 integration-short:
 	$(INTEGRATION) -short
 
-.PHONY: lint lintcheck test testonly coverage build snapshot vendor schema integration integration-short
+.PHONY: lint lintcheck test cover showcover build snapshot vendor schema integration integration-short
