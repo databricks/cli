@@ -18,7 +18,7 @@ func TestAtLeastOnePythonInstalled(t *testing.T) {
 	assert.NoError(t, err)
 	a := all.Latest()
 	t.Logf("latest is: %s", a)
-	assert.Positive(t, all)
+	assert.NotEmpty(t, all)
 }
 
 func TestNoInterpretersFound(t *testing.T) {
