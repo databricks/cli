@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/integration/internal/acc"
@@ -39,6 +40,13 @@ func TestBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestBundleInitOnMlopsStacks(t *testing.T) {
+	nineJan2025 := time.Date(2025, time.January, 9, 0, 0, 0, 0, time.UTC)
+	oneJan2025 := time.Date(2025, time.January, 1, 0, 0, 0, 0, time.UTC)
+	if time.Now().Before(nineJan2025) && time.Now().After(oneJan2025) {
+		fmt.Println("Skipping test until the MLOps Stacks is fixed upstream")
+		t.Skip()
+	}
+
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
