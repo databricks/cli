@@ -62,6 +62,7 @@ func Initialize() bundle.Mutator {
 				"bundle",
 				"workspace",
 				"variables",
+				"presets",
 			),
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),
@@ -71,6 +72,7 @@ func Initialize() bundle.Mutator {
 			mutator.ConfigureVolumeDefaults(),
 			mutator.ProcessTargetMode(),
 			mutator.ApplyPresets(),
+			mutator.ApplyPresetsCatalogSchema(),
 			mutator.DefaultQueueing(),
 			mutator.ExpandPipelineGlobPaths(),
 

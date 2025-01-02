@@ -22,6 +22,8 @@ type applyPresets struct{}
 
 // Apply all presets, e.g. the prefix presets that
 // adds a prefix to all names of all resources.
+//
+// Note that the catalog/schema presets are applied in ApplyPresetsCatalogSchema.
 func ApplyPresets() *applyPresets {
 	return &applyPresets{}
 }
@@ -84,6 +86,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Pipelines presets: Prefix, PipelinesDevelopment
+	// Not supported: Tags (not in API as of 2024-12)
 	for key, p := range r.Pipelines {
 		if p.PipelineSpec == nil {
 			diags = diags.Extend(diag.Errorf("pipeline %s is not defined", key))
@@ -96,7 +99,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if t.TriggerPauseStatus == config.Paused {
 			p.Continuous = false
 		}
-		// As of 2024-06, pipelines don't yet support tags
 	}
 
 	// Models presets: Prefix, Tags
@@ -146,37 +148,36 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Model serving endpoint presets: Prefix
+	// Not supported: Tags (not in API as of 2024-12)
 	for key, e := range r.ModelServingEndpoints {
 		if e.CreateServingEndpoint == nil {
 			diags = diags.Extend(diag.Errorf("model serving endpoint %s is not defined", key))
 			continue
 		}
 		e.Name = normalizePrefix(prefix) + e.Name
-
-		// As of 2024-06, model serving endpoints don't yet support tags
 	}
 
 	// Registered models presets: Prefix
+	// Not supported: Tags (not in API as of 2024-12)
 	for key, m := range r.RegisteredModels {
 		if m.CreateRegisteredModelRequest == nil {
 			diags = diags.Extend(diag.Errorf("registered model %s is not defined", key))
 			continue
 		}
 		m.Name = normalizePrefix(prefix) + m.Name
-
-		// As of 2024-06, registered models don't yet support tags
 	}
 
 	// Quality monitors presets: Schedule
-	if t.TriggerPauseStatus == config.Paused {
-		for key, q := range r.QualityMonitors {
-			if q.CreateMonitor == nil {
-				diags = diags.Extend(diag.Errorf("quality monitor %s is not defined", key))
-				continue
-			}
-			// Remove all schedules from monitors, since they don't support pausing/unpausing.
-			// Quality monitors might support the "pause" property in the future, so at the
-			// CLI level we do respect that property if it is set to "unpaused."
+	// Not supported: Tags (not in API as of 2024-12)
+	for key, q := range r.QualityMonitors {
+		if q.CreateMonitor == nil {
+			diags = diags.Extend(diag.Errorf("quality monitor %s is not defined", key))
+			continue
+		}
+		// Remove all schedules from monitors, since they don't support pausing/unpausing.
+		// Quality monitors might support the "pause" property in the future, so at the
+		// CLI level we do respect that property if it is set to "unpaused."
+		if t.TriggerPauseStatus == config.Paused {
 			if q.Schedule != nil && q.Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
 				q.Schedule = nil
 			}
@@ -184,14 +185,13 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Schemas: Prefix
+	// Not supported: Tags (only supported in Databricks UI / SQL API as of 2024-12)
 	for key, s := range r.Schemas {
 		if s.CreateSchema == nil {
 			diags = diags.Extend(diag.Errorf("schema %s is not defined", key))
 			continue
 		}
 		s.Name = normalizePrefix(prefix) + s.Name
-		// HTTP API for schemas doesn't yet support tags. It's only supported in
-		// the Databricks UI and via the SQL API.
 	}
 
 	// Clusters: Prefix, Tags
@@ -205,10 +205,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			c.CustomTags = make(map[string]string)
 		}
 		for _, tag := range tags {
-			normalisedKey := b.Tagging.NormalizeKey(tag.Key)
-			normalisedValue := b.Tagging.NormalizeValue(tag.Value)
-			if _, ok := c.CustomTags[normalisedKey]; !ok {
-				c.CustomTags[normalisedKey] = normalisedValue
+			normalizedKey := b.Tagging.NormalizeKey(tag.Key)
+			normalizedValue := b.Tagging.NormalizeValue(tag.Value)
+			if _, ok := c.CustomTags[normalizedKey]; !ok {
+				c.CustomTags[normalizedKey] = normalizedValue
 			}
 		}
 	}
@@ -246,6 +246,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	return diags
 }
 
+// validatePauseStatus checks the user-provided pause status is valid.
 func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	p := b.Config.Presets.TriggerPauseStatus
 	if p == "" || p == config.Paused || p == config.Unpaused {
@@ -259,7 +260,7 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 }
 
 // toTagArray converts a map of tags to an array of tags.
-// We sort tags so ensure stable ordering.
+// We sort tags to ensure stable ordering.
 func toTagArray(tags map[string]string) []Tag {
 	var tagArray []Tag
 	if tags == nil {
