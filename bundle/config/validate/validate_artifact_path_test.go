@@ -31,7 +31,6 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
 							CatalogName: "catalogN",
 							Name:        "volumeN",
-							VolumeType:  "MANAGED",
 							SchemaName:  "schemaN",
 						},
 					},
