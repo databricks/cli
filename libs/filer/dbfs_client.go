@@ -130,6 +130,17 @@ func putContentLength(path string, overwriteField string, file *os.File) (int64,
 	return int64(buf.Len()) + stat.Size(), nil
 }
 
+func contentLengthVisitor(path string, overwriteField string, file *os.File) func(*http.Request) error {
+	return func(r *http.Request) error {
+		cl, err := putContentLength(path, overwriteField, file)
+		if err != nil {
+			return fmt.Errorf("failed to calculate content length: %w", err)
+		}
+		r.ContentLength = cl
+		return nil
+	}
+}
+
 func (w *DbfsClient) putFile(ctx context.Context, path string, overwrite bool, file *os.File) error {
 	overwriteField := "False"
 	if overwrite {
@@ -175,17 +186,15 @@ func (w *DbfsClient) putFile(ctx context.Context, path string, overwrite bool, f
 		}
 	}()
 
-	cl, err := putContentLength(path, overwriteField, file)
-	if err != nil {
-		return fmt.Errorf("failed to calculate content length: %w", err)
-	}
-
 	// Request bodies of Content-Type multipart/form-data are not supported by
 	// the Go SDK directly for DBFS. So we use the Do method directly.
-	err = w.apiClient.Do(ctx, http.MethodPost, "/api/2.0/dbfs/put", map[string]string{
-		"Content-Type":   writer.FormDataContentType(),
-		"Content-Length": fmt.Sprintf("%d", cl),
-	}, pr, nil)
+	err := w.apiClient.Do(ctx,
+		http.MethodPost,
+		"/api/2.0/dbfs/put",
+		map[string]string{"Content-Type": writer.FormDataContentType()},
+		pr,
+		nil,
+		contentLengthVisitor(path, overwriteField, file))
 	var aerr *apierr.APIError
 	if errors.As(err, &aerr) && aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
 		return FileAlreadyExistsError{path}
