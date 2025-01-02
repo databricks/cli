@@ -100,6 +100,8 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 	m := md.NewMarkdown(f)
 	m = m.PlainText(header)
 	for _, node := range nodes {
+		isArray := len(node.ArrayItemAttributes) > 0
+
 		m = m.LF()
 		if node.TopLevel {
 			m = m.H2(node.Title)
@@ -107,7 +109,13 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 			m = m.H3(node.Title)
 		}
 		m = m.LF()
-		m = m.PlainText(node.Description)
+		if isArray {
+			m = m.PlainText("**`Type: Array`**")
+			m = m.LF()
+			m = m.PlainText(node.Description)
+		} else {
+			m = m.PlainText(node.Description)
+		}
 		m = m.LF()
 
 		if len(node.ObjectKeyAttributes) > 0 {

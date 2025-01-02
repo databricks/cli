@@ -235,6 +235,8 @@ Specifies a list of path globs that contain configuration files to include withi
   
 ## permissions
   
+**`Type: Array`**
+  
 Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
   
 Each item of `permissions` has the following attributes:
