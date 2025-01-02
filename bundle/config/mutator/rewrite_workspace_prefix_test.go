@@ -71,7 +71,7 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 	}
 
 	for _, d := range diags {
-		require.Equal(t, d.Severity, diag.Warning)
+		require.Equal(t, diag.Warning, d.Severity)
 		require.Contains(t, expectedErrors, d.Summary)
 		delete(expectedErrors, d.Summary)
 	}

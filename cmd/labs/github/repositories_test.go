@@ -28,5 +28,5 @@ func TestRepositories(t *testing.T) {
 	r := NewRepositoryCache("databrickslabs", t.TempDir())
 	all, err := r.Load(ctx)
 	assert.NoError(t, err)
-	assert.True(t, len(all) > 0)
+	assert.Positive(t, all)
 }

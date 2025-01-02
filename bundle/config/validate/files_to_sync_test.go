@@ -87,7 +87,7 @@ func TestFilesToSync_EverythingIgnored(t *testing.T) {
 	ctx := context.Background()
 	rb := bundle.ReadOnly(b)
 	diags := bundle.ApplyReadOnly(ctx, rb, FilesToSync())
-	require.Equal(t, 1, len(diags))
+	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Equal(t, "There are no files to sync, please check your .gitignore", diags[0].Summary)
 }
@@ -101,7 +101,7 @@ func TestFilesToSync_EverythingExcluded(t *testing.T) {
 	ctx := context.Background()
 	rb := bundle.ReadOnly(b)
 	diags := bundle.ApplyReadOnly(ctx, rb, FilesToSync())
-	require.Equal(t, 1, len(diags))
+	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Equal(t, "There are no files to sync, please check your .gitignore and sync.exclude configuration", diags[0].Summary)
 }

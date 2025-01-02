@@ -23,7 +23,7 @@ func TestPythonWheelBuild(t *testing.T) {
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel/my_test_code/dist/my_test_code-*.whl")
 	require.NoError(t, err)
-	require.Equal(t, 1, len(matches))
+	require.Len(t, matches, 1)
 
 	match := libraries.ExpandGlobReferences()
 	diags = bundle.Apply(ctx, b, match)
@@ -39,7 +39,7 @@ func TestPythonWheelBuildAutoDetect(t *testing.T) {
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact/dist/my_test_code-*.whl")
 	require.NoError(t, err)
-	require.Equal(t, 1, len(matches))
+	require.Len(t, matches, 1)
 
 	match := libraries.ExpandGlobReferences()
 	diags = bundle.Apply(ctx, b, match)
@@ -55,7 +55,7 @@ func TestPythonWheelBuildAutoDetectWithNotebookTask(t *testing.T) {
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact_notebook/dist/my_test_code-*.whl")
 	require.NoError(t, err)
-	require.Equal(t, 1, len(matches))
+	require.Len(t, matches, 1)
 
 	match := libraries.ExpandGlobReferences()
 	diags = bundle.Apply(ctx, b, match)
@@ -108,7 +108,7 @@ func TestPythonWheelBuildWithEnvironmentKey(t *testing.T) {
 
 	matches, err := filepath.Glob("./python_wheel/environment_key/my_test_code/dist/my_test_code-*.whl")
 	require.NoError(t, err)
-	require.Equal(t, 1, len(matches))
+	require.Len(t, matches, 1)
 
 	match := libraries.ExpandGlobReferences()
 	diags = bundle.Apply(ctx, b, match)
@@ -124,7 +124,7 @@ func TestPythonWheelBuildMultiple(t *testing.T) {
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_multiple/my_test_code/dist/my_test_code*.whl")
 	require.NoError(t, err)
-	require.Equal(t, 2, len(matches))
+	require.Len(t, matches, 2)
 
 	match := libraries.ExpandGlobReferences()
 	diags = bundle.Apply(ctx, b, match)

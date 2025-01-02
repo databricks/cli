@@ -96,7 +96,7 @@ func TestTemplateFromString(t *testing.T) {
 	v, err = fromString("1.1", NumberType)
 	assert.NoError(t, err)
 	// Floating point conversions are not perfect
-	assert.True(t, (v.(float64)-1.1) < 0.000001)
+	assert.Less(t, (v.(float64) - 1.1), 0.000001)
 
 	v, err = fromString("12345", IntegerType)
 	assert.NoError(t, err)

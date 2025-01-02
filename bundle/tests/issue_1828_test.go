@@ -43,6 +43,6 @@ func TestIssue1828(t *testing.T) {
 	}
 
 	if assert.Contains(t, b.Config.Variables, "nil") {
-		assert.Equal(t, nil, b.Config.Variables["nil"].Default)
+		assert.Nil(t, b.Config.Variables["nil"].Default)
 	}
 }

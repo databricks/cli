@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io/fs"
 	"path"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -122,7 +121,7 @@ func TestFsLsOnFile(t *testing.T) {
 			setupLsFiles(t, f)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", path.Join(tmpDir, "a", "hello.txt"), "--output=json")
-			assert.Regexp(t, regexp.MustCompile("not a directory: .*/a/hello.txt"), err.Error())
+			assert.Regexp(t, "not a directory: .*/a/hello.txt", err.Error())
 			assert.ErrorAs(t, err, &filer.NotADirectory{})
 		})
 	}
@@ -147,7 +146,7 @@ func TestFsLsOnEmptyDir(t *testing.T) {
 			require.NoError(t, err)
 
 			// assert on ls output
-			assert.Equal(t, 0, len(parsedStdout))
+			assert.Empty(t, parsedStdout)
 		})
 	}
 }
@@ -166,7 +165,7 @@ func TestFsLsForNonexistingDir(t *testing.T) {
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", path.Join(tmpDir, "nonexistent"), "--output=json")
 			assert.ErrorIs(t, err, fs.ErrNotExist)
-			assert.Regexp(t, regexp.MustCompile("no such directory: .*/nonexistent"), err.Error())
+			assert.Regexp(t, "no such directory: .*/nonexistent", err.Error())
 		})
 	}
 }

@@ -163,18 +163,18 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["existing"], "tag")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
+	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["existing"])
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job1"].Tags["dev"])
+	assert.Equal(t, jobs.PauseStatusPaused, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus)
 
 	// Job 2
 	assert.Equal(t, "[dev lennart] job2", b.Config.Resources.Jobs["job2"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job2"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus, jobs.PauseStatusUnpaused)
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
+	assert.Equal(t, jobs.PauseStatusUnpaused, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus)
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.Equal(t, false, b.Config.Resources.Pipelines["pipeline1"].Continuous)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
 	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 
 	// Experiment 1
