@@ -130,7 +130,7 @@ func putContentLength(path string, overwriteField string, file *os.File) (int64,
 	return int64(buf.Len()) + stat.Size(), nil
 }
 
-func contentLengthVisitor(path string, overwriteField string, file *os.File) func(*http.Request) error {
+func contentLengthVisitor(path, overwriteField string, file *os.File) func(*http.Request) error {
 	return func(r *http.Request) error {
 		cl, err := putContentLength(path, overwriteField, file)
 		if err != nil {
