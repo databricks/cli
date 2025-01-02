@@ -107,7 +107,7 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 
 func (a *PersistentAuth) ProfileName() string {
 	if a.AccountID != "" {
-		return fmt.Sprintf("ACCOUNT-%s", a.AccountID)
+		return "ACCOUNT-" + a.AccountID
 	}
 	host := strings.TrimPrefix(a.Host, "https://")
 	split := strings.Split(host, ".")
@@ -210,12 +210,12 @@ func (a *PersistentAuth) oidcEndpoints(ctx context.Context) (*oauthAuthorization
 	prefix := a.key()
 	if a.AccountID != "" {
 		return &oauthAuthorizationServer{
-			AuthorizationEndpoint: fmt.Sprintf("%s/v1/authorize", prefix),
-			TokenEndpoint:         fmt.Sprintf("%s/v1/token", prefix),
+			AuthorizationEndpoint: prefix + "/v1/authorize",
+			TokenEndpoint:         prefix + "/v1/token",
 		}, nil
 	}
 	var oauthEndpoints oauthAuthorizationServer
-	oidc := fmt.Sprintf("%s/oidc/.well-known/oauth-authorization-server", prefix)
+	oidc := prefix + "/oidc/.well-known/oauth-authorization-server"
 	err := a.http.Do(ctx, "GET", oidc, httpclient.WithResponseUnmarshal(&oauthEndpoints))
 	if err != nil {
 		return nil, fmt.Errorf("fetch .well-known: %w", err)
@@ -247,7 +247,7 @@ func (a *PersistentAuth) oauth2Config(ctx context.Context) (*oauth2.Config, erro
 			TokenURL:  endpoints.TokenEndpoint,
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
-		RedirectURL: fmt.Sprintf("http://%s", appRedirectAddr),
+		RedirectURL: "http://" + appRedirectAddr,
 		Scopes:      scopes,
 	}, nil
 }
@@ -258,7 +258,7 @@ func (a *PersistentAuth) oauth2Config(ctx context.Context) (*oauth2.Config, erro
 func (a *PersistentAuth) key() string {
 	a.Host = strings.TrimSuffix(a.Host, "/")
 	if !strings.HasPrefix(a.Host, "http") {
-		a.Host = fmt.Sprintf("https://%s", a.Host)
+		a.Host = "https://" + a.Host
 	}
 	if a.AccountID != "" {
 		return fmt.Sprintf("%s/oidc/accounts/%s", a.Host, a.AccountID)

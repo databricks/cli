@@ -1,6 +1,7 @@
 package tags
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -21,13 +22,13 @@ type tag struct {
 
 func (t *tag) ValidateKey(s string) error {
 	if len(s) == 0 {
-		return fmt.Errorf("key must not be empty")
+		return errors.New("key must not be empty")
 	}
 	if len(s) > t.keyLength {
 		return fmt.Errorf("key length %d exceeds maximum of %d", len(s), t.keyLength)
 	}
 	if strings.ContainsFunc(s, func(r rune) bool { return !unicode.Is(latin1, r) }) {
-		return fmt.Errorf("key contains non-latin1 characters")
+		return errors.New("key contains non-latin1 characters")
 	}
 	if !t.keyPattern.MatchString(s) {
 		return fmt.Errorf("key %q does not match pattern %q", s, t.keyPattern)
@@ -40,7 +41,7 @@ func (t *tag) ValidateValue(s string) error {
 		return fmt.Errorf("value length %d exceeds maximum of %d", len(s), t.valueLength)
 	}
 	if strings.ContainsFunc(s, func(r rune) bool { return !unicode.Is(latin1, r) }) {
-		return fmt.Errorf("value contains non-latin1 characters")
+		return errors.New("value contains non-latin1 characters")
 	}
 	if !t.valuePattern.MatchString(s) {
 		return fmt.Errorf("value %q does not match pattern %q", s, t.valuePattern)

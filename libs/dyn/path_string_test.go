@@ -1,7 +1,7 @@
 package dyn_test
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	. "github.com/databricks/cli/libs/dyn"
@@ -52,31 +52,31 @@ func TestNewPathFromString(t *testing.T) {
 		},
 		{
 			input: "foo[123",
-			err:   fmt.Errorf("invalid path: foo[123"),
+			err:   errors.New("invalid path: foo[123"),
 		},
 		{
 			input: "foo[123]]",
-			err:   fmt.Errorf("invalid path: foo[123]]"),
+			err:   errors.New("invalid path: foo[123]]"),
 		},
 		{
 			input: "foo[[123]",
-			err:   fmt.Errorf("invalid path: foo[[123]"),
+			err:   errors.New("invalid path: foo[[123]"),
 		},
 		{
 			input: "foo[[123]]",
-			err:   fmt.Errorf("invalid path: foo[[123]]"),
+			err:   errors.New("invalid path: foo[[123]]"),
 		},
 		{
 			input: "foo[foo]",
-			err:   fmt.Errorf("invalid path: foo[foo]"),
+			err:   errors.New("invalid path: foo[foo]"),
 		},
 		{
 			input: "foo..bar",
-			err:   fmt.Errorf("invalid path: foo..bar"),
+			err:   errors.New("invalid path: foo..bar"),
 		},
 		{
 			input: "foo.bar.",
-			err:   fmt.Errorf("invalid path: foo.bar."),
+			err:   errors.New("invalid path: foo.bar."),
 		},
 		{
 			// Every component may have a leading dot.
@@ -86,7 +86,7 @@ func TestNewPathFromString(t *testing.T) {
 		{
 			// But after an index there must be a dot.
 			input: "foo[1]bar",
-			err:   fmt.Errorf("invalid path: foo[1]bar"),
+			err:   errors.New("invalid path: foo[1]bar"),
 		},
 	} {
 		p, err := NewPathFromString(tc.input)

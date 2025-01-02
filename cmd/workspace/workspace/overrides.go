@@ -36,7 +36,7 @@ func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the absolute path of the object or directory")
+			return errors.New("expected to have the absolute path of the object or directory")
 		}
 		exportReq.Path = args[0]
 

@@ -25,5 +25,5 @@ func (p Permission) String() string {
 		return fmt.Sprintf("level: %s, group_name: %s", p.Level, p.GroupName)
 	}
 
-	return fmt.Sprintf("level: %s", p.Level)
+	return "level: " + p.Level
 }
