@@ -417,10 +417,10 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
   "lookup":
     "description": |-
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-  "type":
+  "markdown_description":
     "description": |-
       The type of the variable.
-  "markdown_description":
+  "type":
     "description": |-
       The type of the variable.
 github.com/databricks/cli/bundle/config/variable.Variable:
@@ -438,64 +438,3 @@ github.com/databricks/cli/bundle/config/variable.Variable:
   "type":
     "description": |-
       The type of the variable.
-github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
-  "ai21labs_api_key":
-    "description": |-
-      PLACEHOLDER
-  "ai21labs_api_key_plaintext":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
-  "private_key":
-    "description": |-
-      PLACEHOLDER
-  "private_key_plaintext":
-    "description": |-
-      PLACEHOLDER
-  "project_id":
-    "description": |-
-      PLACEHOLDER
-  "region":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.OpenAiConfig:
-  "microsoft_entra_client_id":
-    "description": |-
-      PLACEHOLDER
-  "microsoft_entra_client_secret":
-    "description": |-
-      PLACEHOLDER
-  "microsoft_entra_client_secret_plaintext":
-    "description": |-
-      PLACEHOLDER
-  "microsoft_entra_tenant_id":
-    "description": |-
-      PLACEHOLDER
-  "openai_api_base":
-    "description": |-
-      PLACEHOLDER
-  "openai_api_key":
-    "description": |-
-      PLACEHOLDER
-  "openai_api_key_plaintext":
-    "description": |-
-      PLACEHOLDER
-  "openai_api_type":
-    "description": |-
-      PLACEHOLDER
-  "openai_api_version":
-    "description": |-
-      PLACEHOLDER
-  "openai_deployment_name":
-    "description": |-
-      PLACEHOLDER
-  "openai_organization":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.PaLmConfig:
-  "palm_api_key":
-    "description": |-
-      PLACEHOLDER
-  "palm_api_key_plaintext":
-    "description": |-
-      PLACEHOLDER

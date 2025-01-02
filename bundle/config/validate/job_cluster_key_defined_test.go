@@ -34,7 +34,7 @@ func TestJobClusterKeyDefined(t *testing.T) {
 	}
 
 	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), JobClusterKeyDefined())
-	require.Len(t, diags, 0)
+	require.Empty(t, diags)
 	require.NoError(t, diags.Error())
 }
 
@@ -59,8 +59,8 @@ func TestJobClusterKeyNotDefined(t *testing.T) {
 	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), JobClusterKeyDefined())
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
-	require.Equal(t, diags[0].Severity, diag.Warning)
-	require.Equal(t, diags[0].Summary, "job_cluster_key do-not-exist is not defined")
+	require.Equal(t, diag.Warning, diags[0].Severity)
+	require.Equal(t, "job_cluster_key do-not-exist is not defined", diags[0].Summary)
 }
 
 func TestJobClusterKeyDefinedInDifferentJob(t *testing.T) {
@@ -92,6 +92,6 @@ func TestJobClusterKeyDefinedInDifferentJob(t *testing.T) {
 	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), JobClusterKeyDefined())
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
-	require.Equal(t, diags[0].Severity, diag.Warning)
-	require.Equal(t, diags[0].Summary, "job_cluster_key do-not-exist is not defined")
+	require.Equal(t, diag.Warning, diags[0].Severity)
+	require.Equal(t, "job_cluster_key do-not-exist is not defined", diags[0].Summary)
 }
