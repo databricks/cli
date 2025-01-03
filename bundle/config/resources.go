@@ -23,6 +23,7 @@ type Resources struct {
 	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
+	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 }
 
 type ConfigResource interface {
@@ -87,6 +88,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
+		collectResourceMap(descriptions["apps"], r.Apps),
 	}
 }
 
@@ -97,9 +99,16 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 			found = append(found, r.Jobs[k])
 		}
 	}
+
 	for k := range r.Pipelines {
 		if k == key {
 			found = append(found, r.Pipelines[k])
+		}
+	}
+
+	for k := range r.Apps {
+		if k == key {
+			found = append(found, r.Apps[k])
 		}
 	}
 
@@ -126,76 +135,96 @@ type ResourceDescription struct {
 	// Singular and plural title when used in summaries / terminal UI.
 	SingularTitle string
 	PluralTitle   string
+
+	TerraformResourceName string
 }
 
 // The keys of the map corresponds to the resource key in the bundle configuration.
 func SupportedResources() map[string]ResourceDescription {
 	return map[string]ResourceDescription{
 		"jobs": {
-			SingularName:  "job",
-			PluralName:    "jobs",
-			SingularTitle: "Job",
-			PluralTitle:   "Jobs",
+			SingularName:          "job",
+			PluralName:            "jobs",
+			SingularTitle:         "Job",
+			PluralTitle:           "Jobs",
+			TerraformResourceName: "databricks_job",
 		},
 		"pipelines": {
-			SingularName:  "pipeline",
-			PluralName:    "pipelines",
-			SingularTitle: "Pipeline",
-			PluralTitle:   "Pipelines",
+			SingularName:          "pipeline",
+			PluralName:            "pipelines",
+			SingularTitle:         "Pipeline",
+			PluralTitle:           "Pipelines",
+			TerraformResourceName: "databricks_pipeline",
 		},
 		"models": {
-			SingularName:  "model",
-			PluralName:    "models",
-			SingularTitle: "Model",
-			PluralTitle:   "Models",
+			SingularName:          "model",
+			PluralName:            "models",
+			SingularTitle:         "Model",
+			PluralTitle:           "Models",
+			TerraformResourceName: "databricks_mlflow_model",
 		},
 		"experiments": {
-			SingularName:  "experiment",
-			PluralName:    "experiments",
-			SingularTitle: "Experiment",
-			PluralTitle:   "Experiments",
+			SingularName:          "experiment",
+			PluralName:            "experiments",
+			SingularTitle:         "Experiment",
+			PluralTitle:           "Experiments",
+			TerraformResourceName: "databricks_mlflow_experiment",
 		},
 		"model_serving_endpoints": {
-			SingularName:  "model_serving_endpoint",
-			PluralName:    "model_serving_endpoints",
-			SingularTitle: "Model Serving Endpoint",
-			PluralTitle:   "Model Serving Endpoints",
+			SingularName:          "model_serving_endpoint",
+			PluralName:            "model_serving_endpoints",
+			SingularTitle:         "Model Serving Endpoint",
+			PluralTitle:           "Model Serving Endpoints",
+			TerraformResourceName: "databricks_model_serving_endpoint",
 		},
 		"registered_models": {
-			SingularName:  "registered_model",
-			PluralName:    "registered_models",
-			SingularTitle: "Registered Model",
-			PluralTitle:   "Registered Models",
+			SingularName:          "registered_model",
+			PluralName:            "registered_models",
+			SingularTitle:         "Registered Model",
+			PluralTitle:           "Registered Models",
+			TerraformResourceName: "databricks_registered_model",
 		},
 		"quality_monitors": {
-			SingularName:  "quality_monitor",
-			PluralName:    "quality_monitors",
-			SingularTitle: "Quality Monitor",
-			PluralTitle:   "Quality Monitors",
+			SingularName:          "quality_monitor",
+			PluralName:            "quality_monitors",
+			SingularTitle:         "Quality Monitor",
+			PluralTitle:           "Quality Monitors",
+			TerraformResourceName: "databricks_quality_monitor",
 		},
 		"schemas": {
-			SingularName:  "schema",
-			PluralName:    "schemas",
-			SingularTitle: "Schema",
-			PluralTitle:   "Schemas",
+			SingularName:          "schema",
+			PluralName:            "schemas",
+			SingularTitle:         "Schema",
+			PluralTitle:           "Schemas",
+			TerraformResourceName: "databricks_schema",
 		},
 		"clusters": {
-			SingularName:  "cluster",
-			PluralName:    "clusters",
-			SingularTitle: "Cluster",
-			PluralTitle:   "Clusters",
+			SingularName:          "cluster",
+			PluralName:            "clusters",
+			SingularTitle:         "Cluster",
+			PluralTitle:           "Clusters",
+			TerraformResourceName: "databricks_cluster",
 		},
 		"dashboards": {
-			SingularName:  "dashboard",
-			PluralName:    "dashboards",
-			SingularTitle: "Dashboard",
-			PluralTitle:   "Dashboards",
+			SingularName:          "dashboard",
+			PluralName:            "dashboards",
+			SingularTitle:         "Dashboard",
+			PluralTitle:           "Dashboards",
+			TerraformResourceName: "databricks_dashboard",
 		},
 		"volumes": {
-			SingularName:  "volume",
-			PluralName:    "volumes",
-			SingularTitle: "Volume",
-			PluralTitle:   "Volumes",
+			SingularName:          "volume",
+			PluralName:            "volumes",
+			SingularTitle:         "Volume",
+			PluralTitle:           "Volumes",
+			TerraformResourceName: "databricks_volume",
+		},
+		"apps": {
+			SingularName:          "app",
+			PluralName:            "apps",
+			SingularTitle:         "App",
+			PluralTitle:           "Apps",
+			TerraformResourceName: "databricks_app",
 		},
 	}
 }
