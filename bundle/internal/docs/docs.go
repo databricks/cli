@@ -20,6 +20,7 @@ type rootNode struct {
 	ObjectKeyAttributes []attributeNode
 	ArrayItemAttributes []attributeNode
 	TopLevel            bool
+	Type                string
 }
 
 type attributeNode struct {
@@ -51,6 +52,7 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 			Description: getDescription(v, item.topLevel),
 			TopLevel:    item.topLevel,
 			Example:     getExample(v),
+			Type:        getHumanReadableType(v.Type),
 		}
 
 		node.Attributes = getAttributes(v.Properties, refs)
@@ -91,8 +93,6 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 	m := md.NewMarkdown(f)
 	m = m.PlainText(header)
 	for _, node := range nodes {
-		isArray := len(node.ArrayItemAttributes) > 0
-
 		m = m.LF()
 		if node.TopLevel {
 			m = m.H2(node.Title)
@@ -100,24 +100,24 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 			m = m.H3(node.Title)
 		}
 		m = m.LF()
-		if isArray {
-			m = m.PlainText("**`Type: Array`**")
+
+		if node.Type != "" {
+			m = m.PlainText(fmt.Sprintf("**`Type: %s`**", node.Type))
 			m = m.LF()
-			m = m.PlainText(node.Description)
-		} else {
-			m = m.PlainText(node.Description)
 		}
+		m = m.PlainText(node.Description)
 		m = m.LF()
 
 		if len(node.ObjectKeyAttributes) > 0 {
+			itemName := removePluralForm(node.Title)
+			fieldName := fmt.Sprintf("%s-name", itemName)
 			m = buildAttributeTable(m, []attributeNode{
-				{Title: fmt.Sprintf("<%s-entry-name>", node.Title), Type: "Map", Description: fmt.Sprintf("Item of the `%s` map", node.Title)},
+				{Title: fieldName, Type: "Map", Description: fmt.Sprintf("The definition of a %s. See %s", itemName, md.Link("_", "#"+fieldName))},
 			})
-			m = m.PlainText("Each item has the following attributes:")
 			m = m.LF()
+			m = m.H3(fieldName)
 			m = buildAttributeTable(m, node.ObjectKeyAttributes)
 		} else if len(node.ArrayItemAttributes) > 0 {
-			m = m.PlainTextf("Each item of `%s` has the following attributes:", node.Title)
 			m = m.LF()
 			m = buildAttributeTable(m, node.ArrayItemAttributes)
 		} else if len(node.Attributes) > 0 {
@@ -141,18 +141,28 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 	return nil
 }
 
+func removePluralForm(s string) string {
+	if strings.HasSuffix(s, "s") {
+		return strings.TrimSuffix(s, "s")
+	}
+	return s
+}
+
 func buildAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdown {
 	return buildCustomAttributeTable(m, attributes)
-	rows := [][]string{}
-	for _, n := range attributes {
-		rows = append(rows, []string{fmt.Sprintf("`%s`", n.Title), n.Type, formatDescription(n.Description)})
-	}
-	m = m.CustomTable(md.TableSet{
-		Header: []string{"Key", "Type", "Description"},
-		Rows:   rows,
-	}, md.TableOptions{AutoWrapText: false, AutoFormatHeaders: false})
 
-	return m
+	// Rows below are useful for debugging since it renders the table in a regular markdown format
+
+	// rows := [][]string{}
+	// for _, n := range attributes {
+	// 	rows = append(rows, []string{fmt.Sprintf("`%s`", n.Title), n.Type, formatDescription(n.Description)})
+	// }
+	// m = m.CustomTable(md.TableSet{
+	// 	Header: []string{"Key", "Type", "Description"},
+	// 	Rows:   rows,
+	// }, md.TableOptions{AutoWrapText: false, AutoFormatHeaders: false})
+
+	// return m
 }
 
 func formatDescription(s string) string {
@@ -172,7 +182,7 @@ func buildCustomAttributeTable(m *md.Markdown, attributes []attributeNode) *md.M
 	m = m.LF()
 
 	for _, a := range attributes {
-		m = m.PlainText("   * - " + a.Title)
+		m = m.PlainText("   * - " + fmt.Sprintf("`%s`", a.Title))
 		m = m.PlainText("     - " + a.Type)
 		m = m.PlainText("     - " + formatDescription(a.Description))
 		m = m.LF()
@@ -180,7 +190,7 @@ func buildCustomAttributeTable(m *md.Markdown, attributes []attributeNode) *md.M
 	return m
 }
 
-func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema) []attributeNode {
+func getHumanReadableType(t jsonschema.Type) string {
 	typesMapping := map[string]string{
 		"string":  "String",
 		"integer": "Integer",
@@ -188,11 +198,14 @@ func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonsche
 		"array":   "Sequence",
 		"object":  "Map",
 	}
+	return typesMapping[string(t)]
+}
 
+func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema) []attributeNode {
 	attributes := []attributeNode{}
 	for k, v := range props {
 		v = resolveRefs(v, refs)
-		typeString := typesMapping[string(v.Type)]
+		typeString := getHumanReadableType(v.Type)
 		if typeString == "" {
 			typeString = "Any"
 		}
