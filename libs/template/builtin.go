@@ -15,6 +15,7 @@ type BuiltinTemplate struct {
 }
 
 // Builtin returns the list of all built-in templates.
+// TODO: Make private?
 func Builtin() ([]BuiltinTemplate, error) {
 	templates, err := fs.Sub(builtinTemplates, "templates")
 	if err != nil {

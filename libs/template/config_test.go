@@ -564,3 +564,42 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 	assert.True(t, skip)
 	assert.Equal(t, "hello-world", c.values["xyz"])
 }
+
+func TestConfigEnumValues(t *testing.T) {
+	c := &config{
+		schema: &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"a": {
+					Type: jsonschema.StringType,
+				},
+				"b": {
+					Type: jsonschema.BooleanType,
+				},
+				"c": {
+					Type: jsonschema.StringType,
+					Enum: []any{"v1", "v2"},
+				},
+				"d": {
+					Type: jsonschema.StringType,
+					Enum: []any{"v3", "v4"},
+				},
+				"e": {
+					Type: jsonschema.StringType,
+					Enum: []any{"v5", "v6"},
+				},
+			},
+		},
+		values: map[string]any{
+			"a": "w1",
+			"b": false,
+			"c": "v1",
+			"d": "v3",
+			"e": "v7",
+		},
+	}
+
+	assert.Equal(t, map[string]string{
+		"c": "v1",
+		"d": "v3",
+	}, c.enumValues())
+}
