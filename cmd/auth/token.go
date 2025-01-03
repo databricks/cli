@@ -9,9 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/databricks-sdk-go/credentials/oauth"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 )
 
 type tokenErrorResponse struct {
@@ -19,7 +21,7 @@ type tokenErrorResponse struct {
 	ErrorDescription string `json:"error_description"`
 }
 
-func buildLoginCommand(profile string, persistentAuth *auth.PersistentAuth) string {
+func buildLoginCommand(ctx context.Context, profile string, persistentAuth oauth.OAuthArgument) string {
 	executable := os.Args[0]
 	cmd := []string{
 		executable,
@@ -29,20 +31,20 @@ func buildLoginCommand(profile string, persistentAuth *auth.PersistentAuth) stri
 	if profile != "" {
 		cmd = append(cmd, "--profile", profile)
 	} else {
-		cmd = append(cmd, "--host", persistentAuth.Host)
-		if persistentAuth.AccountID != "" {
-			cmd = append(cmd, "--account-id", persistentAuth.AccountID)
+		cmd = append(cmd, "--host", persistentAuth.GetHost(ctx))
+		if accountId := persistentAuth.GetAccountId(ctx); accountId != "" {
+			cmd = append(cmd, "--account-id", accountId)
 		}
 	}
 	return strings.Join(cmd, " ")
 }
 
-func helpfulError(profile string, persistentAuth *auth.PersistentAuth) string {
-	loginMsg := buildLoginCommand(profile, persistentAuth)
+func helpfulError(ctx context.Context, profile string, persistentAuth oauth.OAuthArgument) string {
+	loginMsg := buildLoginCommand(ctx, profile, persistentAuth)
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
 
-func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+func newTokenCommand(oauthArgument oauth.OAuthArgument) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [HOST]",
 		Short: "Get authentication token",
@@ -54,41 +56,22 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-
-		var profileName string
+		profileName := ""
 		profileFlag := cmd.Flag("profile")
 		if profileFlag != nil {
 			profileName = profileFlag.Value.String()
-			// If a profile is provided we read the host from the .databrickscfg file
-			if profileName != "" && len(args) > 0 {
-				return errors.New("providing both a profile and host is not supported")
-			}
 		}
 
-		err := setHostAndAccountId(ctx, profileName, persistentAuth, args)
+		t, err := loadToken(ctx, loadTokenArgs{
+			oauthArgument:      oauthArgument,
+			profileName:        profileName,
+			args:               args,
+			tokenTimeout:       tokenTimeout,
+			profiler:           profile.DefaultProfiler,
+			persistentAuthOpts: nil,
+		})
 		if err != nil {
 			return err
-		}
-		defer persistentAuth.Close()
-
-		ctx, cancel := context.WithTimeout(ctx, tokenTimeout)
-		defer cancel()
-		t, err := persistentAuth.Load(ctx)
-		var httpErr *httpclient.HttpError
-		if errors.As(err, &httpErr) {
-			helpMsg := helpfulError(profileName, persistentAuth)
-			t := &tokenErrorResponse{}
-			err = json.Unmarshal([]byte(httpErr.Message), t)
-			if err != nil {
-				return fmt.Errorf("unexpected parsing token response: %w. %s", err, helpMsg)
-			}
-			if t.ErrorDescription == "Refresh token is invalid" {
-				return fmt.Errorf("a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run `%s`", buildLoginCommand(profileName, persistentAuth))
-			} else {
-				return fmt.Errorf("unexpected error refreshing token: %s. %s", t.ErrorDescription, helpMsg)
-			}
-		} else if err != nil {
-			return fmt.Errorf("unexpected error refreshing token: %w. %s", err, helpfulError(profileName, persistentAuth))
 		}
 		raw, err := json.MarshalIndent(t, "", "  ")
 		if err != nil {
@@ -99,4 +82,51 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	}
 
 	return cmd
+}
+
+type loadTokenArgs struct {
+	oauthArgument      oauth.OAuthArgument
+	profileName        string
+	args               []string
+	tokenTimeout       time.Duration
+	profiler           profile.Profiler
+	persistentAuthOpts []oauth.PersistentAuthOption
+}
+
+func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
+	// If a profile is provided we read the host from the .databrickscfg file
+	if args.profileName != "" && len(args.args) > 0 {
+		return nil, errors.New("providing both a profile and host is not supported")
+	}
+
+	oauthArgument, err := setHostAndAccountId(ctx, args.profiler, args.profileName, args.oauthArgument, args.args)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, args.tokenTimeout)
+	defer cancel()
+	persistentAuth, err := oauth.NewPersistentAuth(ctx)
+	if err != nil {
+		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
+		return nil, fmt.Errorf("unexpected error creating persistent auth: %w. %s", err, helpMsg)
+	}
+	t, err := persistentAuth.Load(ctx, oauthArgument)
+	var httpErr *httpclient.HttpError
+	if errors.As(err, &httpErr) {
+		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
+		t := &tokenErrorResponse{}
+		err = json.Unmarshal([]byte(httpErr.Message), t)
+		if err != nil {
+			return nil, fmt.Errorf("unexpected parsing token response: %w. %s", err, helpMsg)
+		}
+		if t.ErrorDescription == "Refresh token is invalid" {
+			return nil, fmt.Errorf("a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run `%s`", buildLoginCommand(ctx, args.profileName, oauthArgument))
+		} else {
+			return nil, fmt.Errorf("unexpected error refreshing token: %s. %s", t.ErrorDescription, helpMsg)
+		}
+	} else if err != nil {
+		return nil, fmt.Errorf("unexpected error refreshing token: %w. %s", err, helpfulError(ctx, args.profileName, oauthArgument))
+	}
+	return t, nil
 }
