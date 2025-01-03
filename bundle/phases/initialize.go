@@ -51,6 +51,11 @@ func Initialize() bundle.Mutator {
 			mutator.RewriteWorkspacePrefix(),
 
 			mutator.SetVariables(),
+
+			// This mutator needs to be run before variable interpolation because it affects
+			// how workspace variables are resolved.
+			mutator.ApplySourceLinkedDeploymentPreset(),
+
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
 			// See what is expected in PythonMutatorPhaseInit doc

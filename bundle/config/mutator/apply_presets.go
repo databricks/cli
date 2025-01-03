@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
@@ -220,27 +219,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			continue
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
-	}
-
-	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
-		isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
-		if !isDatabricksWorkspace {
-			target := b.Config.Bundle.Target
-			path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("presets"), dyn.Key("source_linked_deployment"))
-			diags = diags.Append(
-				diag.Diagnostic{
-					Severity: diag.Warning,
-					Summary:  "source-linked deployment is available only in the Databricks Workspace",
-					Paths: []dyn.Path{
-						path,
-					},
-					Locations: b.Config.GetLocations(path[2:].String()),
-				},
-			)
-
-			disabled := false
-			b.Config.Presets.SourceLinkedDeployment = &disabled
-		}
 	}
 
 	return diags
