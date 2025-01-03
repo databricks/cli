@@ -1,39 +1,14 @@
 package bundle
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
-
-func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, error) {
-	outputDir, err := filepath.Abs(outputDir)
-	if err != nil {
-		return nil, err
-	}
-
-	// If the CLI is running on DBR and we're writing to the workspace file system,
-	// use the extension-aware workspace filesystem filer to instantiate the template.
-	//
-	// It is not possible to write notebooks through the workspace filesystem's FUSE mount.
-	// Therefore this is the only way we can initialize templates that contain notebooks
-	// when running the CLI on DBR and initializing a template to the workspace.
-	//
-	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		return filer.NewWorkspaceFilesExtensionsClient(root.WorkspaceClient(ctx), outputDir)
-	}
-
-	return filer.NewLocalClient(outputDir)
-}
 
 func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -62,61 +37,28 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	cmd.Flags().StringVar(&tag, "branch", "", "Git branch to use for template initialization")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if tag != "" && branch != "" {
-			return errors.New("only one of --tag or --branch can be specified")
+		r := template.Resolver{
+			TemplatePathOrUrl: args[0],
+			ConfigFile:        configFile,
+			OutputDir:         outputDir,
+			TemplateDir:       templateDir,
+			Tag:               tag,
+			Branch:            branch,
 		}
 
-		// Git ref to use for template initialization
-		ref := branch
-		if tag != "" {
-			ref = tag
-		}
-
-		var tmpl *template.Template
-		var err error
 		ctx := cmd.Context()
-
-		if len(args) > 0 {
-			// User already specified a template local path or a Git URL. Use that
-			// information to configure a reader for the template
-			tmpl = template.Get(template.Custom)
-			// TODO: Get rid of the name arg.
-			if template.IsGitRepoUrl(args[0]) {
-				tmpl.SetReader(template.NewGitReader("", args[0], ref, templateDir))
-			} else {
-				tmpl.SetReader(template.NewLocalReader("", args[0]))
-			}
-		} else {
-			tmplId, err := template.PromptForTemplateId(cmd.Context(), ref, templateDir)
-			if tmplId == template.Custom {
-				// If a user selects custom during the prompt, ask them to provide a path or Git URL
-				// as a positional argument.
-				cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
-				cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
-				return nil
-			}
-			if err != nil {
-				return err
-			}
-
-			tmpl = template.Get(tmplId)
+		tmpl, err := r.Resolve(ctx)
+		if errors.Is(err, template.ErrCustomSelected) {
+			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
+			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
+			return nil
 		}
-
+		if err != nil {
+			return err
+		}
 		defer tmpl.Reader.Close()
 
-		outputFiler, err := constructOutputFiler(ctx, outputDir)
-		if err != nil {
-			return err
-		}
-
-		tmpl.Writer.Initialize(tmpl.Reader, configFile, outputFiler)
-
-		err = tmpl.Writer.Materialize(ctx)
-		if err != nil {
-			return err
-		}
-
-		return tmpl.Writer.LogTelemetry(ctx)
+		return tmpl.Writer.Materialize(ctx, tmpl.Reader)
 	}
 	return cmd
 }

@@ -6,14 +6,14 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/filer"
 )
 
 type Template struct {
+	// TODO: Make private as much as possible.
 	Reader Reader
 	Writer Writer
 
-	Id          TemplateId
+	Name        TemplateName
 	Description string
 	Aliases     []string
 	Hidden      bool
@@ -30,52 +30,52 @@ type NativeTemplate struct {
 	IsOwnedByDatabricks bool
 }
 
-type TemplateId string
+type TemplateName string
 
 const (
-	DefaultPython TemplateId = "default-python"
-	DefaultSql    TemplateId = "default-sql"
-	DbtSql        TemplateId = "dbt-sql"
-	MlopsStacks   TemplateId = "mlops-stacks"
-	DefaultPydabs TemplateId = "default-pydabs"
-	Custom        TemplateId = "custom"
+	DefaultPython TemplateName = "default-python"
+	DefaultSql    TemplateName = "default-sql"
+	DbtSql        TemplateName = "dbt-sql"
+	MlopsStacks   TemplateName = "mlops-stacks"
+	DefaultPydabs TemplateName = "default-pydabs"
+	Custom        TemplateName = "custom"
 )
 
 var allTemplates = []Template{
 	{
-		Id:          DefaultPython,
+		Name:        DefaultPython,
 		Description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
 		Reader:      &builtinReader{name: "default-python"},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Id:          DefaultSql,
+		Name:        DefaultSql,
 		Description: "The default SQL template for .sql files that run with Databricks SQL",
 		Reader:      &builtinReader{name: "default-sql"},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Id:          DbtSql,
+		Name:        DbtSql,
 		Description: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
 		Reader:      &builtinReader{name: "dbt-sql"},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Id:          MlopsStacks,
+		Name:        MlopsStacks,
 		Description: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)",
 		Aliases:     []string{"mlops-stack"},
 		Reader:      &gitReader{gitUrl: "https://github.com/databricks/mlops-stacks"},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Id:          DefaultPydabs,
+		Name:        DefaultPydabs,
 		Hidden:      true,
 		Description: "The default PyDABs template",
 		Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git"},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Id:          Custom,
+		Name:        Custom,
 		Description: "Bring your own template",
 		Reader:      &failReader{},
 		Writer:      &defaultWriter{},
@@ -85,8 +85,8 @@ var allTemplates = []Template{
 func HelpDescriptions() string {
 	var lines []string
 	for _, template := range allTemplates {
-		if template.Id != Custom && !template.Hidden {
-			lines = append(lines, fmt.Sprintf("- %s: %s", template.Id, template.Description))
+		if template.Name != Custom && !template.Hidden {
+			lines = append(lines, fmt.Sprintf("- %s: %s", template.Name, template.Description))
 		}
 	}
 	return strings.Join(lines, "\n")
@@ -99,7 +99,7 @@ func options() []cmdio.Tuple {
 			continue
 		}
 		tuple := cmdio.Tuple{
-			Name: string(template.Id),
+			Name: string(template.Name),
 			Id:   template.Description,
 		}
 		names = append(names, tuple)
@@ -108,7 +108,7 @@ func options() []cmdio.Tuple {
 }
 
 // TODO CONTINUE defining the methods that the init command will finally rely on.
-func PromptForTemplateId(ctx context.Context, ref, templateDir string) (TemplateId, error) {
+func SelectTemplate(ctx context.Context) (TemplateName, error) {
 	if !cmdio.IsPromptSupported(ctx) {
 		return "", fmt.Errorf("please specify a template")
 	}
@@ -119,24 +119,16 @@ func PromptForTemplateId(ctx context.Context, ref, templateDir string) (Template
 
 	for _, template := range allTemplates {
 		if template.Description == description {
-			return template.Id, nil
+			return template.Name, nil
 		}
 	}
 
 	panic("this should never happen - template not found")
 }
 
-func (tmpl *Template) InitializeWriter(configPath string, outputFiler filer.Filer) {
-	tmpl.Writer.Initialize(tmpl.Reader, configPath, outputFiler)
-}
-
-func (tmpl *Template) SetReader(r Reader) {
-	tmpl.Reader = r
-}
-
-func Get(id TemplateId) *Template {
+func Get(name TemplateName) *Template {
 	for _, template := range allTemplates {
-		if template.Id == id {
+		if template.Name == name {
 			return &template
 		}
 	}

@@ -5,8 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
+	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
 )
 
@@ -30,7 +34,6 @@ import (
 // 	assert.EqualError(t, err, fmt.Sprintf("not a bundle template: expected to find a template schema file at %s", schemaFileName))
 // }
 
-
 // TODO: Add tests for these writers, mocking the cmdio library
 // at the same time.
 const (
@@ -40,13 +43,12 @@ const (
 )
 
 type Writer interface {
-	Initialize(reader Reader, configPath string, outputFiler filer.Filer)
-	Materialize(ctx context.Context) error
+	Configure(ctx context.Context, configPath, outputDir string) error
+	Materialize(ctx context.Context, r Reader) error
 	LogTelemetry(ctx context.Context) error
 }
 
 type defaultWriter struct {
-	reader      Reader
 	configPath  string
 	outputFiler filer.Filer
 
@@ -55,13 +57,40 @@ type defaultWriter struct {
 	renderer *renderer
 }
 
-func (tmpl *defaultWriter) Initialize(reader Reader, configPath string, outputFiler filer.Filer) {
-	tmpl.configPath = configPath
-	tmpl.outputFiler = outputFiler
+func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, error) {
+	outputDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the CLI is running on DBR and we're writing to the workspace file system,
+	// use the extension-aware workspace filesystem filer to instantiate the template.
+	//
+	// It is not possible to write notebooks through the workspace filesystem's FUSE mount.
+	// Therefore this is the only way we can initialize templates that contain notebooks
+	// when running the CLI on DBR and initializing a template to the workspace.
+	//
+	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
+		return filer.NewWorkspaceFilesExtensionsClient(root.WorkspaceClient(ctx), outputDir)
+	}
+
+	return filer.NewLocalClient(outputDir)
 }
 
-func (tmpl *defaultWriter) promptForInput(ctx context.Context) error {
-	readerFs, err := tmpl.reader.FS(ctx)
+func (tmpl *defaultWriter) Configure(ctx context.Context, configPath string, outputDir string) error {
+	tmpl.configPath = configPath
+
+	outputFiler, err := constructOutputFiler(ctx, outputDir)
+	if err != nil {
+		return err
+	}
+
+	tmpl.outputFiler = outputFiler
+	return nil
+}
+
+func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) error {
+	readerFs, err := reader.FS(ctx)
 	if err != nil {
 		return err
 	}
@@ -122,8 +151,8 @@ func (tmpl *defaultWriter) printSuccessMessage(ctx context.Context) error {
 	return nil
 }
 
-func (tmpl *defaultWriter) Materialize(ctx context.Context) error {
-	err := tmpl.promptForInput(ctx)
+func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error {
+	err := tmpl.promptForInput(ctx, reader)
 	if err != nil {
 		return err
 	}
@@ -156,14 +185,4 @@ type writerWithTelemetry struct {
 func (tmpl *writerWithTelemetry) LogTelemetry(ctx context.Context) error {
 	// Log telemetry. TODO.
 	return nil
-}
-
-func NewWriterWithTelemetry(reader Reader, configPath string, outputFiler filer.Filer) Writer {
-	return &writerWithTelemetry{
-		defaultWriter: defaultWriter{
-			reader:      reader,
-			configPath:  configPath,
-			outputFiler: outputFiler,
-		},
-	}
 }

@@ -21,12 +21,10 @@ type Reader interface {
 	// Close releases any resources associated with the reader
 	// like cleaning up temporary directories.
 	Close() error
-
-	Name() string
 }
 
 type builtinReader struct {
-	name     string
+	name     TemplateName
 	fsCached fs.FS
 }
 
@@ -43,7 +41,7 @@ func (r *builtinReader) FS(ctx context.Context) (fs.FS, error) {
 
 	var templateFS fs.FS
 	for _, entry := range builtin {
-		if entry.Name == r.name {
+		if entry.Name == string(r.name) {
 			templateFS = entry.FS
 			break
 		}
@@ -57,13 +55,7 @@ func (r *builtinReader) Close() error {
 	return nil
 }
 
-func (r *builtinReader) Name() string {
-	return r.name
-}
-
 type gitReader struct {
-	name string
-	// URL of the git repository that contains the template
 	gitUrl string
 	// tag or branch to checkout
 	ref string
@@ -88,7 +80,7 @@ var gitUrlPrefixes = []string{
 	"git@",
 }
 
-// TODO: Copy over tests for this function.
+// TODO: Make private?
 func IsGitRepoUrl(url string) bool {
 	result := false
 	for _, prefix := range gitUrlPrefixes {
@@ -98,16 +90,6 @@ func IsGitRepoUrl(url string) bool {
 		}
 	}
 	return result
-}
-
-// TODO: Can I remove the name from here and other readers?
-func NewGitReader(name, gitUrl, ref, templateDir string) Reader {
-	return &gitReader{
-		name:        name,
-		gitUrl:      gitUrl,
-		ref:         ref,
-		templateDir: templateDir,
-	}
 }
 
 // TODO: Test the idempotency of this function as well.
@@ -147,23 +129,12 @@ func (r *gitReader) Close() error {
 	return os.RemoveAll(r.tmpRepoDir)
 }
 
-func (r *gitReader) Name() string {
-	return r.name
-}
-
 type localReader struct {
 	name string
 	// Path on the local filesystem that contains the template
 	path string
 
 	fsCached fs.FS
-}
-
-func NewLocalReader(name, path string) Reader {
-	return &localReader{
-		name: name,
-		path: path,
-	}
 }
 
 func (r *localReader) FS(ctx context.Context) (fs.FS, error) {
@@ -180,10 +151,6 @@ func (r *localReader) Close() error {
 	return nil
 }
 
-func (r *localReader) Name() string {
-	return r.name
-}
-
 type failReader struct{}
 
 func (r *failReader) FS(ctx context.Context) (fs.FS, error) {
@@ -192,8 +159,4 @@ func (r *failReader) FS(ctx context.Context) (fs.FS, error) {
 
 func (r *failReader) Close() error {
 	return fmt.Errorf("this is a placeholder reader that always fails. Please configure a real reader.")
-}
-
-func (r *failReader) Name() string {
-	return "failReader"
 }
