@@ -15,7 +15,7 @@ jobs:
 
     # Only run this job for PRs from branches on the main repository and not from forks.
     # Workflows triggered by PRs from forks don't have access to the "test-trigger-is" environment.
-    if: ! github.event.pull_request.head.repo.fork
+    if: "${{ !github.event.pull_request.head.repo.fork }}"
 
     steps:
       - name: Generate GitHub App Token

@@ -19,7 +19,7 @@ jobs:
 
     # Only run this job for PRs from forks.
     # Integration tests are not run automatically for PRs from forks.
-    if: github.event.pull_request.head.repo.fork
+    if: "${{ github.event.pull_request.head.repo.fork }}"
 
     steps:
       - uses: actions/checkout@v4
