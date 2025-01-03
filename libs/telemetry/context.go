@@ -11,15 +11,32 @@ type telemetryLogger int
 // Key to store the telemetry logger in the context
 var telemetryLoggerKey telemetryLogger
 
+// TODO: Add tests for these methods.
 func WithDefaultLogger(ctx context.Context) context.Context {
 	v := ctx.Value(telemetryLoggerKey)
-	if v != nil {
-		panic(fmt.Sprintf("telemetry logger already set in the context: %v", v))
+
+	// If no logger is set in the context, set the default logger.
+	if v == nil {
+		nctx := context.WithValue(ctx, telemetryLoggerKey, &defaultLogger{logs: []FrontendLog{}})
+		return nctx
 	}
 
-	return context.WithValue(ctx, telemetryLoggerKey, &defaultLogger{logs: []FrontendLog{}})
+	switch v.(type) {
+	case *defaultLogger:
+		panic(fmt.Sprintf("default telemetry logger already set in the context: %v", v))
+	case *mockLogger:
+		// Do nothing. Unit and integration tests set the mock logger in the context
+		// to avoid making actual API calls. Thus WithDefaultLogger should silently
+		// ignore the mock logger.
+	default:
+		panic(fmt.Sprintf("unexpected telemetry logger type: %T", v))
+	}
+
+	return ctx
 }
 
+// WithMockLogger sets a mock telemetry logger in the context. It overrides the
+// default logger if it is already set in the context.
 func WithMockLogger(ctx context.Context) context.Context {
 	v := ctx.Value(telemetryLoggerKey)
 	if v != nil {
@@ -35,11 +52,11 @@ func fromContext(ctx context.Context) Logger {
 		panic("telemetry logger not found in the context")
 	}
 
-	switch v.(type) {
+	switch vv := v.(type) {
 	case *defaultLogger:
-		return v.(*defaultLogger)
+		return vv
 	case *mockLogger:
-		return v.(*mockLogger)
+		return vv
 	default:
 		panic(fmt.Sprintf("unexpected telemetry logger type: %T", v))
 	}

@@ -45,8 +45,8 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
-	// Configure a telemetry logger in the context.
-	ctx = telemetry.WithDefaultLogger(ctx)
+	// Use mock logger to introspect the telemetry payload.
+	ctx = telemetry.WithMockLogger(ctx)
 
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
@@ -71,10 +71,9 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 	testcli.RequireSuccessfulRun(t, ctx, "bundle", "init", "mlops-stacks", "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir1, "config.json"))
 
 	// Assert the telemetry payload is correctly logged.
-	logs := telemetry.Introspect(ctx)
-	require.NoError(t, err)
-	require.Len(t, len(logs), 1)
-	event := logs[0].BundleInitEvent
+	tlmyEvents := telemetry.Introspect(ctx)
+	require.Len(t, telemetry.Introspect(ctx), 1)
+	event := tlmyEvents[0].BundleInitEvent
 	assert.Equal(t, "mlops-stacks", event.TemplateName)
 
 	get := func(key string) string {
@@ -179,8 +178,8 @@ func TestBundleInitTelemetryForDefaultTemplates(t *testing.T) {
 	for _, tc := range tcases {
 		ctx, _ := acc.WorkspaceTest(t)
 
-		// Configure a telemetry logger in the context.
-		ctx = telemetry.WithDefaultLogger(ctx)
+		// Use mock logger to introspect the telemetry payload.
+		ctx = telemetry.WithMockLogger(ctx)
 
 		tmpDir1 := t.TempDir()
 		tmpDir2 := t.TempDir()
@@ -199,7 +198,7 @@ func TestBundleInitTelemetryForDefaultTemplates(t *testing.T) {
 
 		// Assert the telemetry payload is correctly logged.
 		logs := telemetry.Introspect(ctx)
-		require.Len(t, len(logs), 1)
+		require.Len(t, logs, 1)
 		event := logs[0].BundleInitEvent
 		assert.Equal(t, event.TemplateName, tc.name)
 
@@ -258,17 +257,17 @@ func TestBundleInitTelemetryForCustomTemplates(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tmpDir3, "config.json"), b, 0o644)
 	require.NoError(t, err)
 
-	// Configure a telemetry logger in the context.
-	ctx = telemetry.WithDefaultLogger(ctx)
+	// Use mock logger to introspect the telemetry payload.
+	ctx = telemetry.WithMockLogger(ctx)
 
 	// Run bundle init.
 	testcli.RequireSuccessfulRun(t, ctx, "bundle", "init", tmpDir1, "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir3, "config.json"))
 
 	// Assert the telemetry payload is correctly logged. For custom templates we should
 	// never set template_enum_args.
-	logs := telemetry.Introspect(ctx)
-	require.Len(t, len(logs), 1)
-	event := logs[0].BundleInitEvent
+	tlmyEvents := telemetry.Introspect(ctx)
+	require.Len(t, len(tlmyEvents), 1)
+	event := tlmyEvents[0].BundleInitEvent
 	assert.Equal(t, "custom", event.TemplateName)
 	assert.Empty(t, event.TemplateEnumArgs)
 
