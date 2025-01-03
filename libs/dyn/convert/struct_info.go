@@ -65,7 +65,7 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		}
 
 		nf := styp.NumField()
-		for j := 0; j < nf; j++ {
+		for j := range nf {
 			sf := styp.Field(j)
 
 			// Recurse into anonymous fields.
