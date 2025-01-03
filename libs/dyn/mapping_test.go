@@ -1,7 +1,7 @@
 package dyn_test
 
 import (
-	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -186,13 +186,13 @@ func TestMappingClone(t *testing.T) {
 func TestMappingMerge(t *testing.T) {
 	var m1 dyn.Mapping
 	for i := range 10 {
-		err := m1.Set(dyn.V(fmt.Sprintf("%d", i)), dyn.V(i))
+		err := m1.Set(dyn.V(strconv.Itoa(i)), dyn.V(i))
 		require.NoError(t, err)
 	}
 
 	var m2 dyn.Mapping
 	for i := 5; i < 15; i++ {
-		err := m2.Set(dyn.V(fmt.Sprintf("%d", i)), dyn.V(i))
+		err := m2.Set(dyn.V(strconv.Itoa(i)), dyn.V(i))
 		require.NoError(t, err)
 	}
 

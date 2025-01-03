@@ -2,7 +2,7 @@ package variable
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -35,7 +35,7 @@ func TestResolveNotificationDestination_ResolveError(t *testing.T) {
 	api := m.GetMockNotificationDestinationsAPI()
 	api.EXPECT().
 		ListAll(mock.Anything, mock.Anything).
-		Return(nil, fmt.Errorf("bad"))
+		Return(nil, errors.New("bad"))
 
 	ctx := context.Background()
 	l := resolveNotificationDestination{name: "destination"}

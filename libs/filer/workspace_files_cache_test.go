@@ -2,7 +2,7 @@ package filer
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"io/fs"
 	"testing"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var errNotImplemented = fmt.Errorf("not implemented")
+var errNotImplemented = errors.New("not implemented")
 
 type cacheTestFiler struct {
 	calls int

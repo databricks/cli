@@ -2,7 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/url"
 	"strings"
 
@@ -26,7 +26,7 @@ type Schema struct {
 }
 
 func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	return false, fmt.Errorf("schema.Exists() is not supported")
+	return false, errors.New("schema.Exists() is not supported")
 }
 
 func (s *Schema) TerraformResourceName() string {
@@ -37,7 +37,7 @@ func (s *Schema) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("explore/data/%s", strings.ReplaceAll(s.ID, ".", "/"))
+	baseURL.Path = "explore/data/" + strings.ReplaceAll(s.ID, ".", "/")
 	s.URL = baseURL.String()
 }
 

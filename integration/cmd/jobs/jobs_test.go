@@ -3,7 +3,7 @@ package jobs_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
@@ -20,5 +20,5 @@ func TestCreateJob(t *testing.T) {
 	var output map[string]int
 	err := json.Unmarshal(stdout.Bytes(), &output)
 	require.NoError(t, err)
-	testcli.RequireSuccessfulRun(t, ctx, "jobs", "delete", fmt.Sprint(output["job_id"]), "--log-level=debug")
+	testcli.RequireSuccessfulRun(t, ctx, "jobs", "delete", strconv.Itoa(output["job_id"]), "--log-level=debug")
 }

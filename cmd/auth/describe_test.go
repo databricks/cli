@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
@@ -102,7 +102,7 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
-		return cfg, false, fmt.Errorf("auth error")
+		return cfg, false, errors.New("auth error")
 	})
 	require.NoError(t, err)
 	require.NotNil(t, status)
@@ -151,7 +151,7 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
-		return cfg, false, fmt.Errorf("auth error")
+		return cfg, false, errors.New("auth error")
 	})
 	require.NoError(t, err)
 	require.NotNil(t, status)

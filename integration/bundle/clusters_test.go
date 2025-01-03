@@ -1,7 +1,6 @@
 package bundle_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
@@ -29,7 +28,7 @@ func TestDeployBundleWithCluster(t *testing.T) {
 	t.Cleanup(func() {
 		destroyBundle(t, ctx, root)
 
-		cluster, err := wt.W.Clusters.GetByClusterName(ctx, fmt.Sprintf("test-cluster-%s", uniqueId))
+		cluster, err := wt.W.Clusters.GetByClusterName(ctx, "test-cluster-"+uniqueId)
 		if err != nil {
 			require.ErrorContains(t, err, "does not exist")
 		} else {
@@ -40,7 +39,7 @@ func TestDeployBundleWithCluster(t *testing.T) {
 	deployBundle(t, ctx, root)
 
 	// Cluster should exists after bundle deployment
-	cluster, err := wt.W.Clusters.GetByClusterName(ctx, fmt.Sprintf("test-cluster-%s", uniqueId))
+	cluster, err := wt.W.Clusters.GetByClusterName(ctx, "test-cluster-"+uniqueId)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 

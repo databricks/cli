@@ -97,7 +97,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				if !pv.IsAnchor() {
 					diags = diags.Append(diag.Diagnostic{
 						Severity: diag.Warning,
-						Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
+						Summary:  "unknown field: " + pk.MustString(),
 						// Show all locations the unknown field is defined at.
 						Locations: pk.Locations(),
 						Paths:     []dyn.Path{path},

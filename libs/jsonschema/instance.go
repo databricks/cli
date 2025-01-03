@@ -2,6 +2,7 @@ package jsonschema
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -149,7 +150,7 @@ func (s *Schema) validateAnyOf(instance map[string]any) error {
 	// According to the JSON schema RFC, anyOf must contain at least one schema.
 	// https://json-schema.org/draft/2020-12/json-schema-core
 	if len(s.AnyOf) == 0 {
-		return fmt.Errorf("anyOf must contain at least one schema")
+		return errors.New("anyOf must contain at least one schema")
 	}
 
 	for _, anyOf := range s.AnyOf {
@@ -158,5 +159,5 @@ func (s *Schema) validateAnyOf(instance map[string]any) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("instance does not match any of the schemas in anyOf")
+	return errors.New("instance does not match any of the schemas in anyOf")
 }

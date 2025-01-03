@@ -1,7 +1,7 @@
 package labs
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/labs/project"
 	"github.com/databricks/cli/cmd/root"
@@ -34,7 +34,7 @@ func newShowCommand() *cobra.Command {
 				return err
 			}
 			if len(installed) == 0 {
-				return fmt.Errorf("no projects found")
+				return errors.New("no projects found")
 			}
 			name := args[0]
 			for _, v := range installed {

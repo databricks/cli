@@ -126,7 +126,7 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 				return err
 			}
 
-			cmdio.LogString(errCtx, fmt.Sprintf("File successfully saved to %s", targetPath))
+			cmdio.LogString(errCtx, "File successfully saved to "+targetPath)
 			return reader.Close()
 		})
 	}

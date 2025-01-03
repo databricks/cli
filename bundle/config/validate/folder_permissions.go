@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strconv"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
@@ -60,7 +61,7 @@ func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderP
 	}
 
 	objPermissions, err := w.GetPermissions(ctx, workspace.GetWorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
+		WorkspaceObjectId:   strconv.FormatInt(obj.ObjectId, 10),
 		WorkspaceObjectType: "directories",
 	})
 	if err != nil {

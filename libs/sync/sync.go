@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	stdsync "sync"
 	"time"
@@ -93,7 +94,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	// specify the workspace by its resource ID. tracked in: https://databricks.atlassian.net/browse/DECO-194
 	opts.Host = opts.WorkspaceClient.Config.Host
 	if opts.Host == "" {
-		return nil, fmt.Errorf("failed to resolve host for snapshot")
+		return nil, errors.New("failed to resolve host for snapshot")
 	}
 
 	// For full sync, we start with an empty snapshot.

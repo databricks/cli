@@ -1,7 +1,7 @@
 package bundle
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
@@ -19,7 +19,7 @@ func newLaunchCommand() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("TODO")
+		return errors.New("TODO")
 		// contents, err := os.ReadFile(args[0])
 		// if err != nil {
 		// 	return err

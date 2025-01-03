@@ -1,6 +1,7 @@
 package configure
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -62,12 +63,12 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 
 func configureNonInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config.Config) error {
 	if cfg.Host == "" {
-		return fmt.Errorf("host must be set in non-interactive mode")
+		return errors.New("host must be set in non-interactive mode")
 	}
 
 	// Check presence of cluster ID before reading token to fail fast.
 	if flags.ConfigureCluster && cfg.ClusterID == "" {
-		return fmt.Errorf("cluster ID must be set in non-interactive mode")
+		return errors.New("cluster ID must be set in non-interactive mode")
 	}
 
 	// Read token from stdin if not already set.

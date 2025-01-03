@@ -45,7 +45,7 @@ func TemporaryDbfsDir(t *WorkspaceT, name ...string) string {
 
 	// Prefix the name with "integration-test-" to make it easier to identify.
 	name = append([]string{"integration-test-"}, name...)
-	path := fmt.Sprintf("/tmp/%s", testutil.RandomName(name...))
+	path := "/tmp/" + testutil.RandomName(name...)
 
 	t.Logf("Creating DBFS directory %s", path)
 	err := t.W.Dbfs.MkdirsByPath(ctx, path)

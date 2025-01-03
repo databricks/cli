@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -25,7 +26,7 @@ func (f *Output) Set(s string) error {
 	case `json`, `text`:
 		*f = Output(lower)
 	default:
-		return fmt.Errorf("accepted arguments are json and text")
+		return errors.New("accepted arguments are json and text")
 	}
 	return nil
 }

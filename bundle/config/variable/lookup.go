@@ -2,7 +2,7 @@ package variable
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -83,11 +83,11 @@ func (l *Lookup) constructResolver() (resolver, error) {
 
 	switch len(resolvers) {
 	case 0:
-		return nil, fmt.Errorf("no valid lookup fields provided")
+		return nil, errors.New("no valid lookup fields provided")
 	case 1:
 		return resolvers[0], nil
 	default:
-		return nil, fmt.Errorf("exactly one lookup field must be provided")
+		return nil, errors.New("exactly one lookup field must be provided")
 	}
 }
 

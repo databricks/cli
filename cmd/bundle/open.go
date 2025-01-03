@@ -44,7 +44,7 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	}
 
 	if len(args) < 1 {
-		return "", fmt.Errorf("expected a KEY of the resource to open")
+		return "", errors.New("expected a KEY of the resource to open")
 	}
 
 	return args[0], nil
@@ -113,7 +113,7 @@ func newOpenCommand() *cobra.Command {
 		// Confirm that the resource has a URL.
 		url := ref.Resource.GetURL()
 		if url == "" {
-			return fmt.Errorf("resource does not have a URL associated with it (has it been deployed?)")
+			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
 		}
 
 		return browser.OpenURL(url)

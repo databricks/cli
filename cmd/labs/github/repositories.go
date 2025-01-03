@@ -12,7 +12,7 @@ import (
 const repositoryCacheTTL = 24 * time.Hour
 
 func NewRepositoryCache(org, cacheDir string) *repositoryCache {
-	filename := fmt.Sprintf("%s-repositories", org)
+	filename := org + "-repositories"
 	return &repositoryCache{
 		cache: localcache.NewLocalCache[Repositories](cacheDir, filename, repositoryCacheTTL),
 		Org:   org,

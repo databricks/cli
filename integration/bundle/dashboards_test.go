@@ -40,7 +40,7 @@ func TestDashboards(t *testing.T) {
 	// Load the dashboard by its ID and confirm its display name.
 	dashboard, err := wt.W.Lakeview.GetByDashboardId(ctx, oi.ResourceId)
 	require.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("test-dashboard-%s", uniqueID), dashboard.DisplayName)
+	assert.Equal(t, "test-dashboard-"+uniqueID, dashboard.DisplayName)
 
 	// Make an out of band modification to the dashboard and confirm that it is detected.
 	_, err = wt.W.Lakeview.Update(ctx, dashboards.UpdateDashboardRequest{

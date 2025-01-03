@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -68,7 +67,7 @@ func TestJsonFlagFile(t *testing.T) {
 		fpath = f.Name()
 	}
 
-	err := body.Set(fmt.Sprintf("@%s", fpath))
+	err := body.Set("@" + fpath)
 	require.NoError(t, err)
 
 	diags := body.Unmarshal(&request)

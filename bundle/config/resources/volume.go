@@ -2,7 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/url"
 	"strings"
 
@@ -34,7 +34,7 @@ func (v Volume) MarshalJSON() ([]byte, error) {
 }
 
 func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	return false, fmt.Errorf("volume.Exists() is not supported")
+	return false, errors.New("volume.Exists() is not supported")
 }
 
 func (v *Volume) TerraformResourceName() string {
@@ -45,7 +45,7 @@ func (v *Volume) InitializeURL(baseURL url.URL) {
 	if v.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("explore/data/volumes/%s", strings.ReplaceAll(v.ID, ".", "/"))
+	baseURL.Path = "explore/data/volumes/" + strings.ReplaceAll(v.ID, ".", "/")
 	v.URL = baseURL.String()
 }
 

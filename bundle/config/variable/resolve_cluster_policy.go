@@ -2,7 +2,6 @@ package variable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -16,9 +15,9 @@ func (l resolveClusterPolicy) Resolve(ctx context.Context, w *databricks.Workspa
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(entity.PolicyId), nil
+	return entity.PolicyId, nil
 }
 
 func (l resolveClusterPolicy) String() string {
-	return fmt.Sprintf("cluster-policy: %s", l.name)
+	return "cluster-policy: " + l.name
 }

@@ -176,7 +176,7 @@ depends on the existing profiles you have set in your configuration file
 func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	if len(args) > 0 && persistentAuth.Host != "" {
-		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
+		return errors.New("please only provide a host as an argument or a flag, not both")
 	}
 
 	profiler := profile.GetProfiler(ctx)

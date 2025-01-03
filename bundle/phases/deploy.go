@@ -2,7 +2,7 @@ package phases
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -54,7 +54,7 @@ func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceTyp
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	tf := b.Terraform
 	if tf == nil {
-		return false, fmt.Errorf("terraform not initialized")
+		return false, errors.New("terraform not initialized")
 	}
 
 	// read plan file
@@ -111,7 +111,7 @@ is removed from the catalog, but the underlying files are not deleted:`
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, fmt.Errorf("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 	}
 
 	cmdio.LogString(ctx, "")

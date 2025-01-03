@@ -1,7 +1,6 @@
 package bundle_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
@@ -23,7 +22,7 @@ func TestDeployBasicToSharedWorkspacePath(t *testing.T) {
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
-		"root_path":     fmt.Sprintf("/Shared/%s", currentUser.UserName),
+		"root_path":     "/Shared/" + currentUser.UserName,
 	})
 
 	t.Cleanup(func() {

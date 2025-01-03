@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strconv"
 
@@ -52,7 +51,7 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 	if j.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("jobs/%s", j.ID)
+	baseURL.Path = "jobs/" + j.ID
 	j.URL = baseURL.String()
 }
 

@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -57,7 +56,7 @@ func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("explore/data/models/%s", strings.ReplaceAll(s.ID, ".", "/"))
+	baseURL.Path = "explore/data/models/" + strings.ReplaceAll(s.ID, ".", "/")
 	s.URL = baseURL.String()
 }
 

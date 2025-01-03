@@ -1,7 +1,7 @@
 package merge
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -373,7 +373,7 @@ func TestOverride_Primitive(t *testing.T) {
 
 		if modified {
 			t.Run(tc.name+" - visitor has error", func(t *testing.T) {
-				_, visitor := createVisitor(visitorOpts{error: fmt.Errorf("unexpected change in test")})
+				_, visitor := createVisitor(visitorOpts{error: errors.New("unexpected change in test")})
 				_, err := override(dyn.EmptyPath, tc.left, tc.right, visitor)
 
 				assert.EqualError(t, err, "unexpected change in test")

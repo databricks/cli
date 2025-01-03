@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -58,7 +59,7 @@ func (l *load) validateState(state *resourcesState) error {
 	}
 
 	if len(state.Resources) == 0 && slices.Contains(l.modes, ErrorOnEmptyState) {
-		return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+		return errors.New("no deployment state. Did you forget to run 'databricks bundle deploy'?")
 	}
 
 	return nil

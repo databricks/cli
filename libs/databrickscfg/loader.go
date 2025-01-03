@@ -19,7 +19,7 @@ var errNoMatchingProfiles = errors.New("no matching config profiles found")
 type errMultipleProfiles []string
 
 func (e errMultipleProfiles) Error() string {
-	return fmt.Sprintf("multiple profiles matched: %s", strings.Join(e, ", "))
+	return "multiple profiles matched: " + strings.Join(e, ", ")
 }
 
 func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) bool) (*ini.Section, error) {

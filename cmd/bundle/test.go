@@ -1,7 +1,7 @@
 package bundle
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/spf13/cobra"
 )
@@ -17,7 +17,7 @@ func newTestCommand() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("TODO")
+		return errors.New("TODO")
 		// results := project.RunPythonOnDev(cmd.Context(), `return 1`)
 		// if results.Failed() {
 		// 	return results.Err()

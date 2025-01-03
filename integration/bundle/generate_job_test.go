@@ -2,10 +2,10 @@ package bundle_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -37,7 +37,7 @@ func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	c := testcli.NewRunner(t, ctx, "bundle", "generate", "job",
-		"--existing-job-id", fmt.Sprint(jobId),
+		"--existing-job-id", strconv.FormatInt(jobId, 10),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))
 	_, _, err := c.Run()
@@ -55,7 +55,7 @@ func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 	require.NoError(t, err)
 	generatedYaml := string(data)
 	require.Contains(t, generatedYaml, "notebook_task:")
-	require.Contains(t, generatedYaml, fmt.Sprintf("notebook_path: %s", filepath.Join("..", "src", "test.py")))
+	require.Contains(t, generatedYaml, "notebook_path: "+filepath.Join("..", "src", "test.py"))
 	require.Contains(t, generatedYaml, "task_key: test")
 	require.Contains(t, generatedYaml, "new_cluster:")
 	require.Contains(t, generatedYaml, "spark_version: 13.3.x-scala2.12")

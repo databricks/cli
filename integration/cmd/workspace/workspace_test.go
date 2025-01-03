@@ -114,7 +114,7 @@ func TestExportDir(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedLogs := strings.Join([]string{
-		fmt.Sprintf("Exporting files from %s", sourceDir),
+		"Exporting files from " + sourceDir,
 		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "a/b/c/file-b"), filepath.Join(targetDir, "a/b/c/file-b")),
 		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "file-a"), filepath.Join(targetDir, "file-a")),
 		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "pyNotebook"), filepath.Join(targetDir, "pyNotebook.py")),
@@ -185,7 +185,7 @@ func TestImportDir(t *testing.T) {
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "import-dir", "./testdata/import_dir", targetDir, "--log-level=debug")
 
 	expectedLogs := strings.Join([]string{
-		fmt.Sprintf("Importing files from %s", "./testdata/import_dir"),
+		"Importing files from " + "./testdata/import_dir",
 		fmt.Sprintf("%s -> %s", filepath.FromSlash("a/b/c/file-b"), path.Join(targetDir, "a/b/c/file-b")),
 		fmt.Sprintf("%s -> %s", filepath.FromSlash("file-a"), path.Join(targetDir, "file-a")),
 		fmt.Sprintf("%s -> %s", filepath.FromSlash("jupyterNotebook.ipynb"), path.Join(targetDir, "jupyterNotebook")),

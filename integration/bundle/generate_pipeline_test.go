@@ -2,7 +2,6 @@ package bundle_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -36,7 +35,7 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	c := testcli.NewRunner(t, ctx, "bundle", "generate", "pipeline",
-		"--existing-pipeline-id", fmt.Sprint(pipelineId),
+		"--existing-pipeline-id", pipelineId,
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))
 	_, _, err := c.Run()
@@ -65,9 +64,9 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 
 	require.Contains(t, generatedYaml, "libraries:")
 	require.Contains(t, generatedYaml, "- notebook:")
-	require.Contains(t, generatedYaml, fmt.Sprintf("path: %s", filepath.Join("..", "src", "notebook.py")))
+	require.Contains(t, generatedYaml, "path: "+filepath.Join("..", "src", "notebook.py"))
 	require.Contains(t, generatedYaml, "- file:")
-	require.Contains(t, generatedYaml, fmt.Sprintf("path: %s", filepath.Join("..", "src", "test.py")))
+	require.Contains(t, generatedYaml, "path: "+filepath.Join("..", "src", "test.py"))
 
 	deployBundle(t, ctx, bundleRoot)
 

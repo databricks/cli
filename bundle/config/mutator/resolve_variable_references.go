@@ -2,7 +2,7 @@ package mutator
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/variable"
@@ -68,7 +68,7 @@ func lookupForComplexVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 	}
 
 	if vv.Type == variable.VariableTypeComplex {
-		return dyn.InvalidValue, fmt.Errorf("complex variables cannot contain references to another complex variables")
+		return dyn.InvalidValue, errors.New("complex variables cannot contain references to another complex variables")
 	}
 
 	return lookup(v, path)
@@ -100,7 +100,7 @@ func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 	}
 
 	if vv.Lookup != nil && vv.Lookup.String() != "" {
-		return dyn.InvalidValue, fmt.Errorf("lookup variables cannot contain references to another lookup variables")
+		return dyn.InvalidValue, errors.New("lookup variables cannot contain references to another lookup variables")
 	}
 
 	return lookup(v, path)

@@ -150,7 +150,7 @@ func (e patternMatchError) Error() string {
 	// If custom user error message is defined, return error with the custom message
 	msg := e.FailureMessage
 	if msg == "" {
-		msg = fmt.Sprintf("Expected to match regex pattern: %s", e.Pattern)
+		msg = "Expected to match regex pattern: " + e.Pattern
 	}
 	return fmt.Sprintf("invalid value for %s: %q. %s", e.PropertyName, e.PropertyValue, msg)
 }

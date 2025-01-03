@@ -14,7 +14,7 @@ import (
 )
 
 func repoPathForPath(me *iam.User, remotePath string) string {
-	base := path.Clean(fmt.Sprintf("/Repos/%s", me.UserName))
+	base := path.Clean("/Repos/" + me.UserName)
 	remotePath = path.Clean(remotePath)
 	for strings.HasPrefix(path.Dir(remotePath), base) && path.Dir(remotePath) != base {
 		remotePath = path.Dir(remotePath)

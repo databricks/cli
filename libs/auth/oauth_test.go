@@ -112,7 +112,7 @@ func TestLoadRefresh(t *testing.T) {
 		},
 	}.ApplyClient(t, func(ctx context.Context, c *client.DatabricksClient) {
 		ctx = useInsecureOAuthHttpClientForTests(ctx)
-		expectedKey := fmt.Sprintf("%s/oidc/accounts/xyz", c.Config.Host)
+		expectedKey := c.Config.Host + "/oidc/accounts/xyz"
 		p := &PersistentAuth{
 			Host:      c.Config.Host,
 			AccountID: "xyz",
@@ -149,7 +149,7 @@ func TestChallenge(t *testing.T) {
 		},
 	}.ApplyClient(t, func(ctx context.Context, c *client.DatabricksClient) {
 		ctx = useInsecureOAuthHttpClientForTests(ctx)
-		expectedKey := fmt.Sprintf("%s/oidc/accounts/xyz", c.Config.Host)
+		expectedKey := c.Config.Host + "/oidc/accounts/xyz"
 
 		browserOpened := make(chan string)
 		p := &PersistentAuth{

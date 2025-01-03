@@ -2,7 +2,6 @@ package variable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -16,9 +15,9 @@ func (l resolveInstancePool) Resolve(ctx context.Context, w *databricks.Workspac
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(entity.InstancePoolId), nil
+	return entity.InstancePoolId, nil
 }
 
 func (l resolveInstancePool) String() string {
-	return fmt.Sprintf("instance-pool: %s", l.name)
+	return "instance-pool: " + l.name
 }

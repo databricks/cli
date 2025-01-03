@@ -2,7 +2,6 @@ package fs_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -24,6 +23,6 @@ func TestFsCompletion(t *testing.T) {
 	setupCompletionFile(t, f)
 
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "__complete", "fs", "ls", tmpDir+"/")
-	expectedOutput := fmt.Sprintf("%s/dir1/\n:2\n", tmpDir)
+	expectedOutput := tmpDir + "/dir1/\n:2\n"
 	assert.Equal(t, expectedOutput, stdout.String())
 }
