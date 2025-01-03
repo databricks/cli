@@ -74,8 +74,8 @@ func TestMergeJobTasks(t *testing.T) {
 	assert.Equal(t, "i3.2xlarge", cluster.NodeTypeId)
 	assert.Equal(t, 4, cluster.NumWorkers)
 	assert.Len(t, task0.Libraries, 2)
-	assert.Equal(t, task0.Libraries[0].Whl, "package1")
-	assert.Equal(t, task0.Libraries[1].Pypi.Package, "package2")
+	assert.Equal(t, "package1", task0.Libraries[0].Whl)
+	assert.Equal(t, "package2", task0.Libraries[1].Pypi.Package)
 
 	// This task was left untouched.
 	task1 := j.Tasks[1].NewCluster

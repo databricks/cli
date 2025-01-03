@@ -13,7 +13,7 @@ func TestLookup_Coverage(t *testing.T) {
 	val := reflect.ValueOf(lookup)
 	typ := val.Type()
 
-	for i := 0; i < val.NumField(); i++ {
+	for i := range val.NumField() {
 		field := val.Field(i)
 		if field.Kind() != reflect.String {
 			t.Fatalf("Field %s is not a string", typ.Field(i).Name)

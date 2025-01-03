@@ -95,7 +95,7 @@ func TestBackgroundNoStdin(t *testing.T) {
 func TestBackgroundFails(t *testing.T) {
 	ctx := context.Background()
 	_, err := Background(ctx, []string{"ls", "/dev/null/x"})
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestBackgroundFailsOnOption(t *testing.T) {

@@ -1,7 +1,6 @@
 package notebook
 
 import (
-	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func TestDetectCallsDetectJupyter(t *testing.T) {
 
 func TestDetectUnknownExtension(t *testing.T) {
 	_, _, err := Detect("./testdata/doesntexist.foobar")
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	nb, _, err := Detect("./testdata/unknown_extension.foobar")
 	require.NoError(t, err)
@@ -62,7 +61,7 @@ func TestDetectUnknownExtension(t *testing.T) {
 
 func TestDetectNoExtension(t *testing.T) {
 	_, _, err := Detect("./testdata/doesntexist")
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	nb, _, err := Detect("./testdata/no_extension")
 	require.NoError(t, err)
