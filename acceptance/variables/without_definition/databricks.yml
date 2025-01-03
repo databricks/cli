@@ -1,3 +1,5 @@
+bundle:
+  name: x
 variables:
   a:
   b:

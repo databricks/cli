@@ -46,6 +46,7 @@ variables:
 
 targets:
   default:
+    default: true
   dev:
     variables:
       node_type: "Standard_DS3_v3"
