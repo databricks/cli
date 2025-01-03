@@ -74,7 +74,7 @@ func makeIterator(count int) listing.Iterator[*provisioning.Workspace] {
 func makeBigOutput(count int) string {
 	res := bytes.Buffer{}
 	for _, ws := range makeWorkspaces(count) {
-		res.Write([]byte(fmt.Sprintf("%d  %s\n", ws.WorkspaceId, ws.WorkspaceName)))
+		res.WriteString(fmt.Sprintf("%d  %s\n", ws.WorkspaceId, ws.WorkspaceName))
 	}
 	return res.String()
 }
