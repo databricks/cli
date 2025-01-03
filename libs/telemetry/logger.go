@@ -17,9 +17,24 @@ type DatabricksApiClient interface {
 		visitors ...func(*http.Request) error) error
 }
 
-func Log(ctx context.Context, event DatabricksCliLog) {
-	l := fromContext(ctx)
+type Logger interface {
+	// Record a telemetry event, to be flushed later.
+	Log(event DatabricksCliLog)
 
+	// Flush all the telemetry events that have been logged so far. We expect
+	// this to be called once per CLI command for the default logger.
+	Flush(ctx context.Context, apiClient DatabricksApiClient)
+
+	// This function is meant to be only to be used in tests to introspect
+	// the telemetry logs that have been logged so far.
+	Introspect() []DatabricksCliLog
+}
+
+type defaultLogger struct {
+	logs []FrontendLog
+}
+
+func (l *defaultLogger) Log(event DatabricksCliLog) {
 	l.logs = append(l.logs, FrontendLog{
 		// The telemetry endpoint deduplicates logs based on the FrontendLogEventID.
 		// This it's important to generate a unique ID for each log event.
@@ -28,17 +43,6 @@ func Log(ctx context.Context, event DatabricksCliLog) {
 			DatabricksCliLog: event,
 		},
 	})
-}
-
-type logger struct {
-	logs []FrontendLog
-}
-
-// This function is meant to be only to be used in tests to introspect the telemetry logs
-// that have been logged so far.
-func GetLogs(ctx context.Context) []FrontendLog {
-	l := fromContext(ctx)
-	return l.logs
 }
 
 // Maximum additional time to wait for the telemetry event to flush. We expect the flush
@@ -50,11 +54,10 @@ var MaxAdditionalWaitTime = 3 * time.Second
 // right about as the CLI command is about to exit. The API endpoint can handle
 // payloads with ~1000 events easily. Thus we log all the events at once instead of
 // batching the logs across multiple API calls.
-func Flush(ctx context.Context, apiClient DatabricksApiClient) {
+func (l *defaultLogger) Flush(ctx context.Context, apiClient DatabricksApiClient) {
 	// Set a maximum time to wait for the telemetry event to flush.
 	ctx, cancel := context.WithTimeout(ctx, MaxAdditionalWaitTime)
 	defer cancel()
-	l := fromContext(ctx)
 
 	if len(l.logs) == 0 {
 		log.Debugf(ctx, "No telemetry events to flush")
@@ -111,4 +114,23 @@ func Flush(ctx context.Context, apiClient DatabricksApiClient) {
 		log.Debugf(ctx, "Successfully flushed telemetry events")
 		return
 	}
+}
+
+func (l *defaultLogger) Introspect() []DatabricksCliLog {
+	panic("not implemented")
+}
+
+func Log(ctx context.Context, event DatabricksCliLog) {
+	l := fromContext(ctx)
+	l.Log(event)
+}
+
+func Flush(ctx context.Context, apiClient DatabricksApiClient) {
+	l := fromContext(ctx)
+	l.Flush(ctx, apiClient)
+}
+
+func Introspect(ctx context.Context) []DatabricksCliLog {
+	l := fromContext(ctx)
+	return l.Introspect()
 }

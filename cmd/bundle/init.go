@@ -201,7 +201,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// Configure the logger to send telemetry to Databricks.
-		ctx := telemetry.ContextWithLogger(cmd.Context())
+		ctx := telemetry.WithDefaultLogger(cmd.Context())
 		cmd.SetContext(ctx)
 
 		return root.MustWorkspaceClient(cmd, args)

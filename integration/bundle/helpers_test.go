@@ -29,7 +29,6 @@ const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
 
 func initTestTemplate(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any) string {
 	bundleRoot := t.TempDir()
-	ctx = telemetry.ContextWithLogger(ctx)
 	return initTestTemplateWithBundleRoot(t, ctx, templateName, config, bundleRoot)
 }
 
@@ -38,10 +37,10 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 
 	configFilePath := writeConfigFile(t, config)
 
-	ctx = telemetry.ContextWithLogger(ctx)
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
+	ctx = telemetry.WithMockLogger(ctx)
 
 	out, err := filer.NewLocalClient(bundleRoot)
 	require.NoError(t, err)

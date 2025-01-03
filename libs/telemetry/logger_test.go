@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/telemetry/events"
 	"github.com/google/uuid"
@@ -64,7 +63,7 @@ func TestTelemetryLoggerFlushesEvents(t *testing.T) {
 		uuid.SetRand(nil)
 	})
 
-	ctx := ContextWithLogger(context.Background())
+	ctx := WithDefaultLogger(context.Background())
 
 	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
 		Log(ctx, DatabricksCliLog{
@@ -82,9 +81,10 @@ func TestTelemetryLoggerFlushesEvents(t *testing.T) {
 
 func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 	// Set the maximum additional wait time to 0 to ensure that the Flush method times out immediately.
+	oldV := MaxAdditionalWaitTime
 	MaxAdditionalWaitTime = 0
 	t.Cleanup(func() {
-		MaxAdditionalWaitTime = 2 * time.Second
+		MaxAdditionalWaitTime = oldV
 	})
 
 	mockClient := &mockDatabricksClient{
@@ -97,7 +97,7 @@ func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 		uuid.SetRand(nil)
 	})
 
-	ctx := ContextWithLogger(context.Background())
+	ctx := WithDefaultLogger(context.Background())
 
 	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
 		Log(ctx, DatabricksCliLog{

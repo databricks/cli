@@ -57,16 +57,17 @@ func TestTelemetryLogger(t *testing.T) {
 		},
 	}
 
-	assert.Len(t, reflect.TypeOf(telemetry.DatabricksCliLog{}).NumField(), len(events),
+	assert.Equal(t, len(events), reflect.TypeOf(telemetry.DatabricksCliLog{}).NumField(),
 		"Number of events should match the number of fields in DatabricksCliLog. Please add a new event to this test.")
 
 	ctx, w := acc.WorkspaceTest(t)
-	ctx = telemetry.ContextWithLogger(ctx)
+	ctx = telemetry.WithDefaultLogger(ctx)
 
 	// Extend the maximum wait time for the telemetry flush just for this test.
+	oldV := telemetry.MaxAdditionalWaitTime
 	telemetry.MaxAdditionalWaitTime = 1 * time.Hour
 	t.Cleanup(func() {
-		telemetry.MaxAdditionalWaitTime = 2 * time.Second
+		telemetry.MaxAdditionalWaitTime = oldV
 	})
 
 	for _, event := range events {
