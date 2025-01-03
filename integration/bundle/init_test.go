@@ -39,8 +39,6 @@ func TestBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestBundleInitOnMlopsStacks(t *testing.T) {
-	testutil.SkipUntil(t, "2025-01-09")
-
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
