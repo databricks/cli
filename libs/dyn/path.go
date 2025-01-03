@@ -65,7 +65,7 @@ func (p Path) Equal(q Path) bool {
 	if pl != ql {
 		return false
 	}
-	for i := 0; i < pl; i++ {
+	for i := range pl {
 		if p[i] != q[i] {
 			return false
 		}
@@ -81,7 +81,7 @@ func (p Path) HasPrefix(q Path) bool {
 	if pl < ql {
 		return false
 	}
-	for i := 0; i < ql; i++ {
+	for i := range ql {
 		if p[i] != q[i] {
 			return false
 		}

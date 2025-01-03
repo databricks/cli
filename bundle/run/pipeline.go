@@ -17,7 +17,7 @@ import (
 
 func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
 	result := []pipelines.PipelineEvent{}
-	for i := 0; i < len(events); i++ {
+	for i := range events {
 		if events[i].Origin.UpdateId == updateId {
 			result = append(result, events[i])
 		}
@@ -32,7 +32,7 @@ func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineE
 	}
 	if event.Error != nil && len(event.Error.Exceptions) > 0 {
 		logString += "trace for most recent exception: \n"
-		for i := 0; i < len(event.Error.Exceptions); i++ {
+		for i := range len(event.Error.Exceptions) {
 			logString += fmt.Sprintf("%s\n", event.Error.Exceptions[i].Message)
 		}
 	}

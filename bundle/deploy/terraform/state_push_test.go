@@ -71,7 +71,7 @@ func TestStatePushLargeState(t *testing.T) {
 	b := statePushTestBundle(t)
 
 	largeState := map[string]any{}
-	for i := 0; i < 1000000; i++ {
+	for i := range 1000000 {
 		largeState[fmt.Sprintf("field_%d", i)] = i
 	}
 

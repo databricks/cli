@@ -211,7 +211,7 @@ func getStructFields(typ reflect.Type) []reflect.StructField {
 	fields := []reflect.StructField{}
 	bfsQueue := list.New()
 
-	for i := 0; i < typ.NumField(); i++ {
+	for i := range typ.NumField() {
 		bfsQueue.PushBack(typ.Field(i))
 	}
 	for bfsQueue.Len() > 0 {
@@ -233,7 +233,7 @@ func getStructFields(typ reflect.Type) []reflect.StructField {
 			fieldType = fieldType.Elem()
 		}
 
-		for i := 0; i < fieldType.NumField(); i++ {
+		for i := range fieldType.NumField() {
 			bfsQueue.PushBack(fieldType.Field(i))
 		}
 	}

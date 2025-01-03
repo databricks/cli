@@ -107,7 +107,7 @@ func TestFsOpenDir(t *testing.T) {
 
 		de.Close()
 
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			tmp, err = de.ReadDir(1)
 			require.NoError(t, err)
 			entries = append(entries, tmp...)
