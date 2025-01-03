@@ -11,25 +11,24 @@ type telemetryLogger int
 // Key to store the telemetry logger in the context
 var telemetryLoggerKey telemetryLogger
 
-// TODO: Add tests for these methods.
 func WithDefaultLogger(ctx context.Context) context.Context {
 	v := ctx.Value(telemetryLoggerKey)
 
 	// If no logger is set in the context, set the default logger.
 	if v == nil {
-		nctx := context.WithValue(ctx, telemetryLoggerKey, &defaultLogger{logs: []FrontendLog{}})
+		nctx := context.WithValue(ctx, telemetryLoggerKey, &defaultLogger{})
 		return nctx
 	}
 
 	switch v.(type) {
 	case *defaultLogger:
-		panic(fmt.Sprintf("default telemetry logger already set in the context: %v", v))
+		panic(fmt.Errorf("default telemetry logger already set in the context: %T", v))
 	case *mockLogger:
 		// Do nothing. Unit and integration tests set the mock logger in the context
 		// to avoid making actual API calls. Thus WithDefaultLogger should silently
 		// ignore the mock logger.
 	default:
-		panic(fmt.Sprintf("unexpected telemetry logger type: %T", v))
+		panic(fmt.Errorf("unexpected telemetry logger type: %T", v))
 	}
 
 	return ctx
@@ -40,7 +39,7 @@ func WithDefaultLogger(ctx context.Context) context.Context {
 func WithMockLogger(ctx context.Context) context.Context {
 	v := ctx.Value(telemetryLoggerKey)
 	if v != nil {
-		panic(fmt.Sprintf("telemetry logger already set in the context: %v", v))
+		panic(fmt.Errorf("telemetry logger already set in the context: %T", v))
 	}
 
 	return context.WithValue(ctx, telemetryLoggerKey, &mockLogger{})
@@ -49,7 +48,7 @@ func WithMockLogger(ctx context.Context) context.Context {
 func fromContext(ctx context.Context) Logger {
 	v := ctx.Value(telemetryLoggerKey)
 	if v == nil {
-		panic("telemetry logger not found in the context")
+		panic(fmt.Errorf("telemetry logger not found in the context"))
 	}
 
 	switch vv := v.(type) {
@@ -58,6 +57,6 @@ func fromContext(ctx context.Context) Logger {
 	case *mockLogger:
 		return vv
 	default:
-		panic(fmt.Sprintf("unexpected telemetry logger type: %T", v))
+		panic(fmt.Errorf("unexpected telemetry logger type: %T", v))
 	}
 }

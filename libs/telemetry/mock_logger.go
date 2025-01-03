@@ -16,6 +16,9 @@ type mockLogger struct {
 }
 
 func (l *mockLogger) Log(event DatabricksCliLog) {
+	if l.events == nil {
+		l.events = make([]DatabricksCliLog, 0)
+	}
 	l.events = append(l.events, event)
 }
 

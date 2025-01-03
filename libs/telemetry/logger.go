@@ -35,6 +35,9 @@ type defaultLogger struct {
 }
 
 func (l *defaultLogger) Log(event DatabricksCliLog) {
+	if l.logs == nil {
+		l.logs = make([]FrontendLog, 0)
+	}
 	l.logs = append(l.logs, FrontendLog{
 		// The telemetry endpoint deduplicates logs based on the FrontendLogEventID.
 		// This it's important to generate a unique ID for each log event.
