@@ -9,10 +9,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/git"
 )
 
-// TODO: Add tests for all these readers.
 type Reader interface {
 	// FS returns a file system that contains the template
 	// definition files. This function is NOT thread safe.
@@ -24,7 +22,7 @@ type Reader interface {
 }
 
 type builtinReader struct {
-	name     TemplateName
+	name     string
 	fsCached fs.FS
 }
 
@@ -34,17 +32,21 @@ func (r *builtinReader) FS(ctx context.Context) (fs.FS, error) {
 		return r.fsCached, nil
 	}
 
-	builtin, err := Builtin()
+	builtin, err := builtin()
 	if err != nil {
 		return nil, err
 	}
 
 	var templateFS fs.FS
 	for _, entry := range builtin {
-		if entry.Name == string(r.name) {
+		if entry.Name == r.name {
 			templateFS = entry.FS
 			break
 		}
+	}
+
+	if templateFS == nil {
+		return nil, fmt.Errorf("builtin template %s not found", r.name)
 	}
 
 	r.fsCached = templateFS
@@ -64,6 +66,10 @@ type gitReader struct {
 	// temporary directory where the repository is cloned
 	tmpRepoDir string
 
+	// Function to clone the repository. This is a function pointer to allow
+	// mocking in tests.
+	cloneFunc func(ctx context.Context, url, reference, targetPath string) error
+
 	fsCached fs.FS
 }
 
@@ -80,8 +86,7 @@ var gitUrlPrefixes = []string{
 	"git@",
 }
 
-// TODO: Make private?
-func IsGitRepoUrl(url string) bool {
+func isRepoUrl(url string) bool {
 	result := false
 	for _, prefix := range gitUrlPrefixes {
 		if strings.HasPrefix(url, prefix) {
@@ -92,7 +97,6 @@ func IsGitRepoUrl(url string) bool {
 	return result
 }
 
-// TODO: Test the idempotency of this function as well.
 func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
 	// If the FS has already been loaded, return it.
 	if r.fsCached != nil {
@@ -111,7 +115,7 @@ func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
 	promptSpinner := cmdio.Spinner(ctx)
 	promptSpinner <- "Downloading the template\n"
 
-	err = git.Clone(ctx, r.gitUrl, r.ref, repoDir)
+	err = r.cloneFunc(ctx, r.gitUrl, r.ref, repoDir)
 	close(promptSpinner)
 	if err != nil {
 		return nil, err
@@ -130,7 +134,6 @@ func (r *gitReader) Close() error {
 }
 
 type localReader struct {
-	name string
 	// Path on the local filesystem that contains the template
 	path string
 

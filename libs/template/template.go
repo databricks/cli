@@ -6,28 +6,17 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/git"
 )
 
 type Template struct {
-	// TODO: Make private as much as possible.
 	Reader Reader
 	Writer Writer
 
-	Name        TemplateName
-	Description string
-	Aliases     []string
-	Hidden      bool
-}
-
-// TODO: Make details private?
-// TODO: Combine this with the generic template struct?
-type NativeTemplate struct {
-	Name                string
-	Description         string
-	Aliases             []string
-	GitUrl              string
-	Hidden              bool
-	IsOwnedByDatabricks bool
+	name        TemplateName
+	description string
+	aliases     []string
+	hidden      bool
 }
 
 type TemplateName string
@@ -43,40 +32,40 @@ const (
 
 var allTemplates = []Template{
 	{
-		Name:        DefaultPython,
-		Description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
+		name:        DefaultPython,
+		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
 		Reader:      &builtinReader{name: "default-python"},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Name:        DefaultSql,
-		Description: "The default SQL template for .sql files that run with Databricks SQL",
+		name:        DefaultSql,
+		description: "The default SQL template for .sql files that run with Databricks SQL",
 		Reader:      &builtinReader{name: "default-sql"},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Name:        DbtSql,
-		Description: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
+		name:        DbtSql,
+		description: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
 		Reader:      &builtinReader{name: "dbt-sql"},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Name:        MlopsStacks,
-		Description: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)",
-		Aliases:     []string{"mlops-stack"},
-		Reader:      &gitReader{gitUrl: "https://github.com/databricks/mlops-stacks"},
+		name:        MlopsStacks,
+		description: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)",
+		aliases:     []string{"mlops-stack"},
+		Reader:      &gitReader{gitUrl: "https://github.com/databricks/mlops-stacks", cloneFunc: git.Clone},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Name:        DefaultPydabs,
-		Hidden:      true,
-		Description: "The default PyDABs template",
-		Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git"},
+		name:        DefaultPydabs,
+		hidden:      true,
+		description: "The default PyDABs template",
+		Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git", cloneFunc: git.Clone},
 		Writer:      &writerWithTelemetry{},
 	},
 	{
-		Name:        Custom,
-		Description: "Bring your own template",
+		name:        Custom,
+		description: "Bring your own template",
 		Reader:      &failReader{},
 		Writer:      &defaultWriter{},
 	},
@@ -85,8 +74,8 @@ var allTemplates = []Template{
 func HelpDescriptions() string {
 	var lines []string
 	for _, template := range allTemplates {
-		if template.Name != Custom && !template.Hidden {
-			lines = append(lines, fmt.Sprintf("- %s: %s", template.Name, template.Description))
+		if template.name != Custom && !template.hidden {
+			lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
 		}
 	}
 	return strings.Join(lines, "\n")
@@ -95,12 +84,12 @@ func HelpDescriptions() string {
 func options() []cmdio.Tuple {
 	names := make([]cmdio.Tuple, 0, len(allTemplates))
 	for _, template := range allTemplates {
-		if template.Hidden {
+		if template.hidden {
 			continue
 		}
 		tuple := cmdio.Tuple{
-			Name: string(template.Name),
-			Id:   template.Description,
+			Name: string(template.name),
+			Id:   template.description,
 		}
 		names = append(names, tuple)
 	}
@@ -118,8 +107,8 @@ func SelectTemplate(ctx context.Context) (TemplateName, error) {
 	}
 
 	for _, template := range allTemplates {
-		if template.Description == description {
-			return template.Name, nil
+		if template.description == description {
+			return template.name, nil
 		}
 	}
 
@@ -128,7 +117,7 @@ func SelectTemplate(ctx context.Context) (TemplateName, error) {
 
 func Get(name TemplateName) *Template {
 	for _, template := range allTemplates {
-		if template.Name == name {
+		if template.name == name {
 			return &template
 		}
 	}

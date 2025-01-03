@@ -27,11 +27,11 @@ func TestTemplateOptions(t *testing.T) {
 }
 
 func TestBundleInitIsRepoUrl(t *testing.T) {
-	assert.True(t, IsGitRepoUrl("git@github.com:databricks/cli.git"))
-	assert.True(t, IsGitRepoUrl("https://github.com/databricks/cli.git"))
+	assert.True(t, isRepoUrl("git@github.com:databricks/cli.git"))
+	assert.True(t, isRepoUrl("https://github.com/databricks/cli.git"))
 
-	assert.False(t, IsGitRepoUrl("./local"))
-	assert.False(t, IsGitRepoUrl("foo"))
+	assert.False(t, isRepoUrl("./local"))
+	assert.False(t, isRepoUrl("foo"))
 }
 
 func TestBundleInitRepoName(t *testing.T) {

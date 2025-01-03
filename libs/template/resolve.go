@@ -3,6 +3,8 @@ package template
 import (
 	"context"
 	"errors"
+
+	"github.com/databricks/cli/libs/git"
 )
 
 type Resolver struct {
@@ -48,11 +50,12 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 		// Based on the provided template path or URL,
 		// configure a reader for the template.
 		tmpl = Get(Custom)
-		if IsGitRepoUrl(r.TemplatePathOrUrl) {
+		if isRepoUrl(r.TemplatePathOrUrl) {
 			tmpl.Reader = &gitReader{
 				gitUrl:      r.TemplatePathOrUrl,
 				ref:         ref,
 				templateDir: r.TemplateDir,
+				cloneFunc:   git.Clone,
 			}
 		} else {
 			tmpl.Reader = &localReader{
