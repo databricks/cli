@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/credentials/oauth"
 	"github.com/spf13/cobra"
 )
 
@@ -22,14 +22,14 @@ Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
 GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	}
 
-	var perisistentAuth auth.PersistentAuth
-	cmd.PersistentFlags().StringVar(&perisistentAuth.Host, "host", perisistentAuth.Host, "Databricks Host")
-	cmd.PersistentFlags().StringVar(&perisistentAuth.AccountID, "account-id", perisistentAuth.AccountID, "Databricks Account ID")
+	var oauthArgument oauth.BasicOAuthArgument
+	cmd.PersistentFlags().StringVar(&oauthArgument.Host, "host", oauthArgument.Host, "Databricks Host")
+	cmd.PersistentFlags().StringVar(&oauthArgument.AccountID, "account-id", oauthArgument.AccountID, "Databricks Account ID")
 
 	cmd.AddCommand(newEnvCommand())
-	cmd.AddCommand(newLoginCommand(&perisistentAuth))
+	cmd.AddCommand(newLoginCommand(&oauthArgument))
 	cmd.AddCommand(newProfilesCommand())
-	cmd.AddCommand(newTokenCommand(&perisistentAuth))
+	cmd.AddCommand(newTokenCommand(&oauthArgument))
 	cmd.AddCommand(newDescribeCommand())
 	return cmd
 }
