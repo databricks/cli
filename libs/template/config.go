@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"slices"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -273,24 +272,4 @@ func (c *config) validate() error {
 		return fmt.Errorf("validation for template input parameters failed. %w", err)
 	}
 	return nil
-}
-
-// Return enum values selected by the user during template initialization. These
-// values are safe to send over in telemetry events due to their limited cardinality.
-func (c *config) enumValues() map[string]string {
-	res := map[string]string{}
-	for k, p := range c.schema.Properties {
-		if p.Type != jsonschema.StringType {
-			continue
-		}
-		if p.Enum == nil {
-			continue
-		}
-		v := c.values[k]
-
-		if slices.Contains(p.Enum, v) {
-			res[k] = v.(string)
-		}
-	}
-	return res
 }
