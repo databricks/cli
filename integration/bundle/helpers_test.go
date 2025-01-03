@@ -44,7 +44,7 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 
 	out, err := filer.NewLocalClient(bundleRoot)
 	require.NoError(t, err)
-	tmpl := template.Template{
+	tmpl := template.TemplateX{
 		TemplateOpts: template.TemplateOpts{
 			ConfigFilePath: configFilePath,
 			TemplateFS:     os.DirFS(templateRoot),

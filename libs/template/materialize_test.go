@@ -18,7 +18,7 @@ func TestMaterializeForNonTemplateDirectory(t *testing.T) {
 	require.NoError(t, err)
 	ctx := root.SetWorkspaceClient(context.Background(), w)
 
-	tmpl := Template{
+	tmpl := TemplateX{
 		TemplateOpts: TemplateOpts{
 			ConfigFilePath: "",
 			TemplateFS:     os.DirFS(tmpDir),

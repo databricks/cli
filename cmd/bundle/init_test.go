@@ -38,14 +38,6 @@ func TestNativeTemplateOptions(t *testing.T) {
 	assert.Equal(t, expected, nativeTemplateOptions())
 }
 
-func TestNativeTemplateHelpDescriptions(t *testing.T) {
-	expected := `- default-python: The default Python template for Notebooks / Delta Live Tables / Workflows
-- default-sql: The default SQL template for .sql files that run with Databricks SQL
-- dbt-sql: The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)
-- mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)`
-	assert.Equal(t, expected, nativeTemplateHelpDescriptions())
-}
-
 func TestGetNativeTemplateByName(t *testing.T) {
 	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getNativeTemplateByName("mlops-stacks").gitUrl)
 	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getNativeTemplateByName("mlops-stack").gitUrl)

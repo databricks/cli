@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -14,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/template"
@@ -116,24 +113,6 @@ func getNativeTemplateByName(name string) *nativeTemplate {
 	return nil
 }
 
-func getFsForNativeTemplate(name string) (fs.FS, error) {
-	builtin, err := template.Builtin()
-	if err != nil {
-		return nil, err
-	}
-
-	// If this is a built-in template, the return value will be non-nil.
-	var templateFS fs.FS
-	for _, entry := range builtin {
-		if entry.Name == name {
-			templateFS = entry.FS
-			break
-		}
-	}
-
-	return templateFS, nil
-}
-
 func isRepoUrl(url string) bool {
 	result := false
 	for _, prefix := range gitUrlPrefixes {
@@ -185,7 +164,7 @@ TEMPLATE_PATH optionally specifies which template to use. It can be one of the f
 - a local file system path with a template directory
 - a Git repository URL, e.g. https://github.com/my/repository
 
-See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, nativeTemplateHelpDescriptions()),
+See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, template.HelpDescriptions()),
 	}
 
 	var configFile string
@@ -231,112 +210,51 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			ref = tag
 		}
 
+		var tmpl *template.Template
+		var err error
 		ctx := cmd.Context()
-		var templatePath string
+
 		if len(args) > 0 {
-			templatePath = args[0]
-		} else {
-			var err error
-			if !cmdio.IsPromptSupported(ctx) {
-				return errors.New("please specify a template")
+			// User already specified a template local path or a Git URL. Use that
+			// information to configure a reader for the template
+			tmpl = template.Get(template.Custom)
+			// TODO: Get rid of the name arg.
+			if template.IsGitRepoUrl(args[0]) {
+				tmpl.SetReader(template.NewGitReader("", args[0], ref, templateDir))
+			} else {
+				tmpl.SetReader(template.NewLocalReader("", args[0]))
 			}
-			description, err := cmdio.SelectOrdered(ctx, nativeTemplateOptions(), "Template to use")
+		} else {
+			tmplId, err := template.PromptForTemplateId(cmd.Context(), ref, templateDir)
+			if tmplId == template.Custom {
+				// If a user selects custom during the prompt, ask them to provide a path or Git URL
+				// as a positional argument.
+				cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
+				cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
+				return nil
+			}
 			if err != nil {
 				return err
 			}
-			templatePath = getNativeTemplateByDescription(description)
+
+			tmpl = template.Get(tmplId)
 		}
+
+		defer tmpl.Reader.Close()
 
 		outputFiler, err := constructOutputFiler(ctx, outputDir)
 		if err != nil {
 			return err
 		}
 
-		if templatePath == customTemplate {
-			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
-			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
-			return nil
-		}
+		tmpl.Writer.Initialize(tmpl.Reader, configFile, outputFiler)
 
-		nt := getNativeTemplateByName(templatePath)
-		var templateName string
-		isTemplateDatabricksOwned := false
-		if nt != nil {
-			// If the template is a native template, templatePath is the name of the template.
-			// Eg: templatePath = "default-python".
-			templateName = templatePath
-
-			// if we have a Git URL for the native template, expand templatePath
-			// to the full URL.
-			if nt.gitUrl != "" {
-				templatePath = nt.gitUrl
-			}
-
-			isTemplateDatabricksOwned = true
-		}
-
-		if !isRepoUrl(templatePath) {
-			if templateDir != "" {
-				return errors.New("--template-dir can only be used with a Git repository URL")
-			}
-
-			templateFS, err := getFsForNativeTemplate(templatePath)
-			if err != nil {
-				return err
-			}
-
-			// If this is not a built-in template, then it must be a local file system path.
-			if templateFS == nil {
-				templateFS = os.DirFS(templatePath)
-			}
-
-			t := template.Template{
-				TemplateOpts: template.TemplateOpts{
-					ConfigFilePath:    configFile,
-					TemplateFS:        templateFS,
-					OutputFiler:       outputFiler,
-					IsDatabricksOwned: isTemplateDatabricksOwned,
-					Name:              templateName,
-				},
-			}
-
-			// skip downloading the repo because input arg is not a URL. We assume
-			// it's a path on the local file system in that case
-			return t.Materialize(ctx)
-		}
-
-		// Create a temporary directory with the name of the repository.  The '*'
-		// character is replaced by a random string in the generated temporary directory.
-		repoDir, err := os.MkdirTemp("", repoName(templatePath)+"-*")
+		err = tmpl.Writer.Materialize(ctx)
 		if err != nil {
 			return err
 		}
 
-		// start the spinner
-		promptSpinner := cmdio.Spinner(ctx)
-		promptSpinner <- "Downloading the template\n"
-
-		// TODO: Add automated test that the downloaded git repo is cleaned up.
-		// Clone the repository in the temporary directory
-		err = git.Clone(ctx, templatePath, ref, repoDir)
-		close(promptSpinner)
-		if err != nil {
-			return err
-		}
-
-		// Clean up downloaded repository once the template is materialized.
-		defer os.RemoveAll(repoDir)
-		templateFS := os.DirFS(filepath.Join(repoDir, templateDir))
-		t := template.Template{
-			TemplateOpts: template.TemplateOpts{
-				ConfigFilePath:    configFile,
-				TemplateFS:        templateFS,
-				OutputFiler:       outputFiler,
-				IsDatabricksOwned: isTemplateDatabricksOwned,
-				Name:              templateName,
-			},
-		}
-		return t.Materialize(ctx)
+		return tmpl.Writer.LogTelemetry(ctx)
 	}
 	return cmd
 }

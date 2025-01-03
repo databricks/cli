@@ -12,12 +12,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry/events"
 )
 
-const (
-	libraryDirName  = "library"
-	templateDirName = "template"
-	schemaFileName  = "databricks_template_schema.json"
-)
-
 type TemplateOpts struct {
 	// file path containing user defined config values
 	ConfigFilePath string
@@ -32,7 +26,7 @@ type TemplateOpts struct {
 	Name string
 }
 
-type Template struct {
+type TemplateX struct {
 	TemplateOpts
 
 	// internal object used to prompt user for config values and store them.
@@ -47,7 +41,7 @@ type Template struct {
 //     has provided a config file path.
 //  2. For any values that are required by the template but not provided in the config
 //     file, this function prompts the user for them.
-func (t *Template) resolveTemplateInput(ctx context.Context) error {
+func (t *TemplateX) resolveTemplateInput(ctx context.Context) error {
 	if _, err := fs.Stat(t.TemplateFS, schemaFileName); errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaFileName)
 	}
@@ -91,7 +85,7 @@ func (t *Template) resolveTemplateInput(ctx context.Context) error {
 	return t.config.validate()
 }
 
-func (t *Template) printSuccessMessage(ctx context.Context) error {
+func (t *TemplateX) printSuccessMessage(ctx context.Context) error {
 	success := t.config.schema.SuccessMessage
 	if success == "" {
 		cmdio.LogString(ctx, "✨ Successfully initialized template")
@@ -106,7 +100,7 @@ func (t *Template) printSuccessMessage(ctx context.Context) error {
 	return nil
 }
 
-func (t *Template) logTelemetry(ctx context.Context) error {
+func (t *TemplateX) logTelemetry(ctx context.Context) error {
 	// Only log telemetry input for Databricks owned templates. This is to prevent
 	// accidentally collecting PII from custom user templates.
 	templateEnumArgs := []events.BundleInitTemplateEnumArg{}
@@ -135,7 +129,7 @@ func (t *Template) logTelemetry(ctx context.Context) error {
 
 // This function materializes the input templates as a project, using user defined
 // configurations.
-func (t *Template) Materialize(ctx context.Context) error {
+func (t *TemplateX) Materialize(ctx context.Context) error {
 	err := t.resolveTemplateInput(ctx)
 	if err != nil {
 		return err
