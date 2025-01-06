@@ -14,8 +14,8 @@ on:
 jobs:
   comment-on-pr:
     runs-on:
-      group: databricks-protected-runner-group
-      labels: linux-ubuntu-latest
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     permissions:
       pull-requests: write

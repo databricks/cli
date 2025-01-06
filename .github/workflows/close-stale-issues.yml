@@ -9,8 +9,8 @@ jobs:
   cleanup:
     name: Stale issue job
     runs-on:
-      group: databricks-protected-runner-group
-      labels: linux-ubuntu-latest
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     permissions:
       issues: write
