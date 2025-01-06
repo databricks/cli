@@ -88,5 +88,5 @@ func TestTemplateGet(t *testing.T) {
 	}
 
 	// Assert the alias works.
-	assert.Equal(t, Get(TemplateName("mlops-stack")).name, MlopsStacks)
+	assert.Equal(t, MlopsStacks, Get(TemplateName("mlops-stack")).name)
 }
