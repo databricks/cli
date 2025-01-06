@@ -2,6 +2,8 @@ default: build
 
 PACKAGES=./libs/... ./internal/... ./cmd/... ./bundle/... .
 
+GOTESTSUM_FORMAT ?= pkgname-and-test-fails
+
 lint:
 	./lint.sh ./...
 
@@ -9,10 +11,10 @@ lintcheck:
 	golangci-lint run ./...
 
 test:
-	gotestsum --format pkgname-and-test-fails --no-summary=skipped -- ${PACKAGES}
+	gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped -- ${PACKAGES}
 
 cover:
-	gotestsum --format pkgname-and-test-fails --no-summary=skipped -- -coverprofile=coverage.txt ${PACKAGES}
+	gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped -- -coverprofile=coverage.txt ${PACKAGES}
 
 showcover:
 	go tool cover -html=coverage.txt
