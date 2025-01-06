@@ -86,7 +86,13 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 		defer tmpl.Reader.Close()
 
-		return tmpl.Writer.Materialize(ctx, tmpl.Reader)
+		err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
+		if err != nil {
+			return err
+		}
+
+		tmpl.Writer.LogTelemetry(ctx)
+		return nil
 	}
 	return cmd
 }
