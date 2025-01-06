@@ -96,7 +96,6 @@ func options() []cmdio.Tuple {
 	return names
 }
 
-// TODO CONTINUE defining the methods that the init command will finally rely on.
 func SelectTemplate(ctx context.Context) (TemplateName, error) {
 	if !cmdio.IsPromptSupported(ctx) {
 		return "", fmt.Errorf("please specify a template")

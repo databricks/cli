@@ -14,28 +14,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-// TODO: Retain coverage for the missing schema test case
-// func TestMaterializeForNonTemplateDirectory(t *testing.T) {
-// 	tmpDir := t.TempDir()
-// 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
-// 	require.NoError(t, err)
-// 	ctx := root.SetWorkspaceClient(context.Background(), w)
-
-// 	tmpl := TemplateX{
-// 		TemplateOpts: TemplateOpts{
-// 			ConfigFilePath: "",
-// 			TemplateFS:     os.DirFS(tmpDir),
-// 			OutputFiler:    nil,
-// 		},
-// 	}
-
-// 	// Try to materialize a non-template directory.
-// 	err = tmpl.Materialize(ctx)
-// 	assert.EqualError(t, err, fmt.Sprintf("not a bundle template: expected to find a template schema file at %s", schemaFileName))
-// }
-
-// TODO: Add tests for these writers, mocking the cmdio library
-// at the same time.
+// TODO: Add some golden tests for these.
 const (
 	libraryDirName  = "library"
 	templateDirName = "template"
@@ -77,7 +56,7 @@ func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, e
 	return filer.NewLocalClient(outputDir)
 }
 
-func (tmpl *defaultWriter) Configure(ctx context.Context, configPath string, outputDir string) error {
+func (tmpl *defaultWriter) Configure(ctx context.Context, configPath, outputDir string) error {
 	tmpl.configPath = configPath
 
 	outputFiler, err := constructOutputFiler(ctx, outputDir)

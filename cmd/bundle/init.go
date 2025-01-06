@@ -36,6 +36,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	cmd.Flags().StringVar(&branch, "tag", "", "Git tag to use for template initialization")
 	cmd.Flags().StringVar(&tag, "branch", "", "Git branch to use for template initialization")
 
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		r := template.Resolver{
 			TemplatePathOrUrl: args[0],

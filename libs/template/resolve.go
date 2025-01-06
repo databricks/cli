@@ -8,12 +8,24 @@ import (
 )
 
 type Resolver struct {
+	// One of the following three:
+	// 1. Path to a local template directory.
+	// 2. URL to a Git repository containing a template.
+	// 3. Name of a built-in template.
 	TemplatePathOrUrl string
-	ConfigFile        string
-	OutputDir         string
-	TemplateDir       string
-	Tag               string
-	Branch            string
+
+	// Path to a JSON file containing the configuration values to be used for
+	// template initialization.
+	ConfigFile string
+
+	// Directory to write the initialized template to.
+	OutputDir string
+
+	// Directory path within a Git repository containing the template.
+	TemplateDir string
+
+	Tag    string
+	Branch string
 }
 
 var ErrCustomSelected = errors.New("custom template selected")
@@ -32,23 +44,32 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 		ref = r.Tag
 	}
 
-	var tmpl *Template
+	var err error
+	var templateName TemplateName
+
 	if r.TemplatePathOrUrl == "" {
 		// Prompt the user to select a template
 		// if a template path or URL is not provided.
-		tmplId, err := SelectTemplate(ctx)
+		templateName, err = SelectTemplate(ctx)
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		if tmplId == Custom {
-			return nil, ErrCustomSelected
-		}
+	templateName = TemplateName(r.TemplatePathOrUrl)
 
-		tmpl = Get(tmplId)
-	} else {
-		// Based on the provided template path or URL,
-		// configure a reader for the template.
+	// User should not directly select "custom" and instead should provide the
+	// file path or the Git URL for the template directly.
+	// Custom is just for internal representation purposes.
+	if templateName == Custom {
+		return nil, ErrCustomSelected
+	}
+
+	tmpl := Get(templateName)
+
+	// If the user directory provided a template path or URL that is not a built-in template,
+	// then configure a reader for the template.
+	if tmpl == nil {
 		tmpl = Get(Custom)
 		if isRepoUrl(r.TemplatePathOrUrl) {
 			tmpl.Reader = &gitReader{
@@ -62,9 +83,10 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 				path: r.TemplatePathOrUrl,
 			}
 		}
+
 	}
 
-	err := tmpl.Writer.Configure(ctx, r.ConfigFile, r.OutputDir)
+	err = tmpl.Writer.Configure(ctx, r.ConfigFile, r.OutputDir)
 	if err != nil {
 		return nil, err
 	}

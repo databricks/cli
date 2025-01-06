@@ -32,10 +32,10 @@ func TestBuiltInReader(t *testing.T) {
 		// message defined.
 		fd, err := fs.Open("databricks_template_schema.json")
 		require.NoError(t, err)
-		defer fd.Close()
 		b, err := io.ReadAll(fd)
 		require.NoError(t, err)
 		assert.Contains(t, string(b), "welcome_message")
+		assert.NoError(t, fd.Close())
 	}
 
 	r := &builtinReader{name: "doesnotexist"}
@@ -78,10 +78,10 @@ func TestGitUrlReader(t *testing.T) {
 	// Assert the fs returned is rooted at the templateDir.
 	fd, err := fs.Open("somefile")
 	require.NoError(t, err)
-	defer fd.Close()
 	b, err := io.ReadAll(fd)
 	require.NoError(t, err)
 	assert.Equal(t, "somecontent", string(b))
+	assert.NoError(t, fd.Close())
 
 	// Assert the FS is cached. cloneFunc should not be called again.
 	_, err = r.FS(ctx)
@@ -106,10 +106,10 @@ func TestLocalReader(t *testing.T) {
 	// Assert the fs returned is rooted at correct location.
 	fd, err := fs.Open("somefile")
 	require.NoError(t, err)
-	defer fd.Close()
 	b, err := io.ReadAll(fd)
 	require.NoError(t, err)
 	assert.Equal(t, "somecontent", string(b))
+	assert.NoError(t, fd.Close())
 
 	// Assert close does not error
 	assert.NoError(t, r.Close())
