@@ -60,3 +60,30 @@ func TestTemplateTelemetryIsCapturedForAllDefaultTemplates(t *testing.T) {
 		}
 	}
 }
+
+func TestTemplateGet(t *testing.T) {
+	names := []TemplateName{
+		DefaultPython,
+		DefaultSql,
+		DbtSql,
+		MlopsStacks,
+		DefaultPydabs,
+		Custom,
+	}
+
+	for _, name := range names {
+		tmpl := Get(name)
+		assert.Equal(t, tmpl.name, name)
+	}
+
+	notExist := []string{
+		"/some/path",
+		"doesnotexist",
+		"https://www.someurl.com",
+	}
+
+	for _, name := range notExist {
+		tmpl := Get(TemplateName(name))
+		assert.Nil(t, tmpl)
+	}
+}
