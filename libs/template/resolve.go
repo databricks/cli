@@ -24,6 +24,8 @@ type Resolver struct {
 	// Directory path within a Git repository containing the template.
 	TemplateDir string
 
+	// Git tag or branch to download the template from. Only one of these can be
+	// specified.
 	Tag    string
 	Branch string
 }
