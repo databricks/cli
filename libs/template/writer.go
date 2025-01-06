@@ -166,7 +166,6 @@ func (writer *defaultWriter) LogTelemetry(ctx context.Context) {
 	}
 
 	telemetry.Log(ctx, event)
-	return
 }
 
 type writerWithFullTelemetry struct {
