@@ -23,7 +23,7 @@ import (
 
 var KeepTmp = os.Getenv("KEEP_TMP") != ""
 
-func TestAll(t *testing.T) {
+func TestAccept(t *testing.T) {
 	execPath := BuildCLI(t)
 	t.Setenv("CLI", execPath)
 
