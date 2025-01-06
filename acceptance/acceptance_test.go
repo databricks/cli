@@ -23,6 +23,8 @@ import (
 
 var KeepTmp = os.Getenv("KEEP_TMP") != ""
 
+const EntryPointScript = "script"
+
 func TestAccept(t *testing.T) {
 	execPath := BuildCLI(t)
 	t.Setenv("CLI", execPath)
@@ -53,7 +55,7 @@ func getTests(t *testing.T) []string {
 			return err
 		}
 		name := filepath.Base(path)
-		if name == "script" {
+		if name == EntryPointScript {
 			// Presence of 'script' marks a test case in this directory
 			testDirs[filepath.Dir(path)] = true
 		}
@@ -80,14 +82,14 @@ func runTest(t *testing.T, dir string) {
 	}
 
 	scriptContents := readMergedScriptContents(t, dir)
-	testutil.WriteFile(t, filepath.Join(tmpDir, "script"), scriptContents)
+	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	args := []string{"bash", "-euo", "pipefail", "script"}
+	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = tmpDir
 	outB, err := cmd.CombinedOutput()
@@ -157,7 +159,7 @@ func doComparison(t *testing.T, pathExpected, pathNew, valueNew string) {
 // Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
 // Note, cleanups are not executed if main script fails; that's not a huge issue, since it runs it temp dir.
 func readMergedScriptContents(t *testing.T, dir string) string {
-	scriptContents := testutil.ReadFile(t, filepath.Join(dir, "script"))
+	scriptContents := testutil.ReadFile(t, filepath.Join(dir, EntryPointScript))
 	prepares := []string{}
 	cleanups := []string{}
 
@@ -275,7 +277,7 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 			inputs[relPath] = true
 		}
 
-		if name == "script" {
+		if name == EntryPointScript {
 			return nil
 		}
 
