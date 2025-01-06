@@ -138,7 +138,9 @@ func runTest(t *testing.T, dir string) {
 }
 
 func doComparison(t *testing.T, pathExpected, pathNew, valueNew string) {
+	valueNew = testdiff.NormalizeNewlines(valueNew)
 	valueExpected := string(readIfExists(t, pathExpected))
+	valueExpected = testdiff.NormalizeNewlines(valueExpected)
 	testdiff.AssertEqualTexts(t, pathExpected, pathNew, valueExpected, valueNew)
 	if testdiff.OverwriteMode {
 		if valueNew != "" {
