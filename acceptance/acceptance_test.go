@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sort"
 	"strings"
@@ -187,6 +188,9 @@ func BuildCLI(t *testing.T) string {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 	execPath := filepath.Join(cwd, "build", "databricks-cli")
+	if runtime.GOOS == "windows" {
+		execPath += ".exe"
+	}
 
 	start := time.Now()
 	args := []string{"go", "build", "-mod", "vendor", "-o", execPath}
