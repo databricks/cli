@@ -66,7 +66,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 	assert.Equal(t, "/config/file", tmpl.Writer.(*writerWithTelemetry).configPath)
 }
 
-func TestTemplateResolverForCustomTemplate(t *testing.T) {
+func TestTemplateResolverForCustomUrl(t *testing.T) {
 	r := Resolver{
 		TemplatePathOrUrl: "https://www.example.com/abc",
 		Tag:               "tag",
@@ -77,10 +77,30 @@ func TestTemplateResolverForCustomTemplate(t *testing.T) {
 	tmpl, err := r.Resolve(context.Background())
 	require.NoError(t, err)
 
+	assert.Equal(t, Custom, tmpl.name)
+
 	// Assert reader configuration
 	assert.Equal(t, "https://www.example.com/abc", tmpl.Reader.(*gitReader).gitUrl)
 	assert.Equal(t, "tag", tmpl.Reader.(*gitReader).ref)
 	assert.Equal(t, "/template/dir", tmpl.Reader.(*gitReader).templateDir)
+
+	// Assert writer configuration
+	assert.Equal(t, "/config/file", tmpl.Writer.(*defaultWriter).configPath)
+}
+
+func TestTemplateResolverForCustomPath(t *testing.T) {
+	r := Resolver{
+		TemplatePathOrUrl: "/custom/path",
+		ConfigFile:        "/config/file",
+	}
+
+	tmpl, err := r.Resolve(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, Custom, tmpl.name,)
+
+	// Assert reader configuration
+	assert.Equal(t, "/custom/path", tmpl.Reader.(*localReader).path)
 
 	// Assert writer configuration
 	assert.Equal(t, "/config/file", tmpl.Writer.(*defaultWriter).configPath)

@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/libs/git"
 )
@@ -37,7 +38,7 @@ var ErrCustomSelected = errors.New("custom template selected")
 // Prompts the user if needed.
 func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 	if r.Tag != "" && r.Branch != "" {
-		return nil, errors.New("only one of --tag or --branch can be specified")
+		return nil, fmt.Errorf("only one of --tag or --branch can be specified")
 	}
 
 	// Git ref to use for template initialization
