@@ -1,0 +1,2 @@
+# This incorrectly wipes out clusters. Should either prefer the one from target or raise an error.
+$CLI bundle validate -o json -t dev | jq .resources
