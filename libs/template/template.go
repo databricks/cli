@@ -31,7 +31,7 @@ const (
 	// Custom represents any template that is not one of the above default
 	// templates. It's a catch for any custom templates that customers provide
 	// as a path or URL.
-	Custom TemplateName = "custom"
+	Custom TemplateName = "custom..."
 )
 
 var allTemplates = []Template{

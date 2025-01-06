@@ -29,7 +29,7 @@ func TestTemplateResolverErrorsWhenPromptingIsNotSupported(t *testing.T) {
 
 func TestTemplateResolverErrorWhenUserSelectsCustom(t *testing.T) {
 	r := Resolver{
-		TemplatePathOrUrl: "custom",
+		TemplatePathOrUrl: "custom...",
 	}
 
 	_, err := r.Resolve(context.Background())
