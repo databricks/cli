@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/template"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -264,10 +265,10 @@ func TestBundleInitTelemetryForCustomTemplates(t *testing.T) {
 
 	// Assert the telemetry payload is correctly logged. For custom templates we should
 	// never set template_enum_args.
-	tlmyEvents := telemetry.Introspect(ctx)
-	require.Len(t, len(tlmyEvents), 1)
-	event := tlmyEvents[0].BundleInitEvent
-	assert.Equal(t, "custom", event.TemplateName)
+	telemetryEvents := telemetry.Introspect(ctx)
+	require.Len(t, telemetryEvents, 1)
+	event := telemetryEvents[0].BundleInitEvent
+	assert.Equal(t, string(template.Custom), event.TemplateName)
 	assert.Empty(t, event.TemplateEnumArgs)
 
 	// Ensure that the UUID returned by the `bundle_uuid` helper is the same UUID
