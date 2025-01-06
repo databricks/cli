@@ -152,15 +152,15 @@ func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error
 }
 
 func (tmpl *defaultWriter) LogTelemetry(ctx context.Context) error {
-	// no-op
+	// TODO, only log the template name and uuid.
 	return nil
 }
 
-type writerWithTelemetry struct {
+type writerWithFullTelemetry struct {
 	defaultWriter
 }
 
-func (tmpl *writerWithTelemetry) LogTelemetry(ctx context.Context) error {
-	// Log telemetry. TODO.
+func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) error {
+	// TODO, log template name, uuid and enum args as well.``
 	return nil
 }

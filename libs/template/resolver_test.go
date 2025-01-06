@@ -50,7 +50,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, &builtinReader{name: name}, tmpl.Reader)
-		assert.IsType(t, &writerWithTelemetry{}, tmpl.Writer)
+		assert.IsType(t, &writerWithFullTelemetry{}, tmpl.Writer)
 	}
 
 	r := Resolver{
@@ -63,7 +63,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 
 	// Assert reader and writer configuration
 	assert.Equal(t, "https://github.com/databricks/mlops-stacks", tmpl.Reader.(*gitReader).gitUrl)
-	assert.Equal(t, "/config/file", tmpl.Writer.(*writerWithTelemetry).configPath)
+	assert.Equal(t, "/config/file", tmpl.Writer.(*writerWithFullTelemetry).configPath)
 }
 
 func TestTemplateResolverForCustomUrl(t *testing.T) {

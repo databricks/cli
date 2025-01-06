@@ -56,7 +56,7 @@ func TestTemplateTelemetryIsCapturedForAllDefaultTemplates(t *testing.T) {
 		} else {
 			// Assert telemetry is captured for all other templates, i.e. templates
 			// owned by databricks.
-			assert.IsType(t, &writerWithTelemetry{}, w)
+			assert.IsType(t, &writerWithFullTelemetry{}, w)
 		}
 	}
 }
