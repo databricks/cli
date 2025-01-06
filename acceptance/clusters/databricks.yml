@@ -1,9 +1,6 @@
 bundle:
   name: clusters
 
-workspace:
-  host: https://acme.cloud.databricks.com/
-
 resources:
   clusters:
     foo:
