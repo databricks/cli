@@ -38,8 +38,12 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		var templatePathOrUrl string
+		if len(args) > 0 {
+			templatePathOrUrl = args[0]
+		}
 		r := template.Resolver{
-			TemplatePathOrUrl: args[0],
+			TemplatePathOrUrl: templatePathOrUrl,
 			ConfigFile:        configFile,
 			OutputDir:         outputDir,
 			TemplateDir:       templateDir,

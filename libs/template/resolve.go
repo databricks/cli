@@ -54,9 +54,9 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		templateName = TemplateName(r.TemplatePathOrUrl)
 	}
-
-	templateName = TemplateName(r.TemplatePathOrUrl)
 
 	// User should not directly select "custom" and instead should provide the
 	// file path or the Git URL for the template directly.
