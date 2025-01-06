@@ -1,7 +1,11 @@
 name: integration-approve
 
 on:
-  merge_group:
+  workflow_dispatch:
+
+  # Disable because of https://github.com/databricks/cli/issues/2084.
+  #
+  # merge_group:
 
 jobs:
   # Trigger for merge groups.
