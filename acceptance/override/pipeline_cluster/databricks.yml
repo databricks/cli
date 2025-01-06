@@ -1,9 +1,6 @@
 bundle:
   name: override_pipeline_cluster
 
-workspace:
-  host: https://acme.cloud.databricks.com/
-
 resources:
   pipelines:
     foo:
