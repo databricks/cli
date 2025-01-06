@@ -1,8 +1,12 @@
 name: integration-pr
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_dispatch:
+
+  # Disable because of https://github.com/databricks/cli/issues/2084.
+  #
+  # pull_request:
+  #   types: [opened, synchronize]
 
 jobs:
   # Trigger for pull requests.

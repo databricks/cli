@@ -1,9 +1,13 @@
 name: integration-main
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+
+  # Disable because of https://github.com/databricks/cli/issues/2084.
+  #
+  # push:
+  #   branches:
+  #     - main
 
 jobs:
   # Trigger for pushes to the main branch.
