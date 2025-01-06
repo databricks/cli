@@ -7,12 +7,16 @@ on:
 
 jobs:
   cleanup:
+    name: Stale issue job
+    runs-on:
+      group: databricks-protected-runner-group
+      labels: linux-ubuntu-latest
+
     permissions:
       issues: write
       contents: read
       pull-requests: write
-    runs-on: ubuntu-latest
-    name: Stale issue job
+
     steps:
       - uses: actions/stale@v9
         with:
