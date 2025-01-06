@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +33,7 @@ func TestAll(t *testing.T) {
 	t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
+	t.Setenv(env.HomeEnvVar(), homeDir)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
