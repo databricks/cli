@@ -32,7 +32,7 @@ func TestDefaultWriterConfigure(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, "/foo/bar", w2.configPath)
-	assert.IsType(t, &filer.WorkspaceFilesClient{}, w2.outputFiler)
+	assert.IsType(t, &filer.WorkspaceFilesExtensionsClient{}, w2.outputFiler)
 }
 
 func TestMaterializeForNonTemplateDirectory(t *testing.T) {
