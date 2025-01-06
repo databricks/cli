@@ -190,5 +190,4 @@ func (writer *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
 	}
 
 	telemetry.Log(ctx, event)
-	return
 }
