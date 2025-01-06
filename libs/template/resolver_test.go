@@ -97,7 +97,7 @@ func TestTemplateResolverForCustomPath(t *testing.T) {
 	tmpl, err := r.Resolve(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, Custom, tmpl.name,)
+	assert.Equal(t, Custom, tmpl.name)
 
 	// Assert reader configuration
 	assert.Equal(t, "/custom/path", tmpl.Reader.(*localReader).path)
