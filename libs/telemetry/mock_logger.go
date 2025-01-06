@@ -2,15 +2,6 @@ package telemetry
 
 import "context"
 
-// TODO CONTINUE:
-// 1. Continue cleaning up the telemetry PR. Cleanup the interfaces
-// and add a good mock / testing support by storing this in the context.
-//
-// 2. Test the logging is being done correctly. All componets work fine.
-//
-// 3. Ask once more for review. Also announce plans to do this by separately
-// spawning a new process. We can add a new CLI command in the executable to
-// do so.
 type mockLogger struct {
 	events []DatabricksCliLog
 }
