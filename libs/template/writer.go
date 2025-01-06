@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-// TODO: Add some golden tests for these.
 const (
 	libraryDirName  = "library"
 	templateDirName = "template"
