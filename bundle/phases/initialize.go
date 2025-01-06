@@ -41,6 +41,10 @@ func Initialize() bundle.Mutator {
 			mutator.PopulateCurrentUser(),
 			mutator.LoadGitDetails(),
 
+			// This mutator needs to be run before variable interpolation and defining default workspace paths
+			// because it affects how workspace variables are resolved.
+			mutator.ApplySourceLinkedDeploymentPreset(),
+
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
@@ -51,10 +55,6 @@ func Initialize() bundle.Mutator {
 			mutator.RewriteWorkspacePrefix(),
 
 			mutator.SetVariables(),
-
-			// This mutator needs to be run before variable interpolation because it affects
-			// how workspace variables are resolved.
-			mutator.ApplySourceLinkedDeploymentPreset(),
 
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.

@@ -29,10 +29,10 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 
 	var diags diag.Diagnostics
 	isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
+	target := b.Config.Bundle.Target
 
 	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
 		if !isDatabricksWorkspace {
-			target := b.Config.Bundle.Target
 			path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("presets"), dyn.Key("source_linked_deployment"))
 			diags = diags.Append(
 				diag.Diagnostic{
@@ -54,6 +54,21 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 	if isDatabricksWorkspace && b.Config.Bundle.Mode == config.Development {
 		enabled := true
 		b.Config.Presets.SourceLinkedDeployment = &enabled
+	}
+
+	if b.Config.Workspace.FilePath != "" && config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+		path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("workspace"), dyn.Key("file_path"))
+
+		diags = diags.Append(
+			diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "workspace.file_path setting will be ignored in source-linked deployment mode",
+				Paths: []dyn.Path{
+					path[2:],
+				},
+				Locations: b.Config.GetLocations(path[2:].String()),
+			},
+		)
 	}
 
 	return diags
