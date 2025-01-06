@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/folders"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
@@ -39,10 +40,19 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
+	ctx = telemetry.WithMockLogger(ctx)
 
 	out, err := filer.NewLocalClient(bundleRoot)
 	require.NoError(t, err)
-	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), out)
+	tmpl := template.TemplateX{
+		TemplateOpts: template.TemplateOpts{
+			ConfigFilePath: configFilePath,
+			TemplateFS:     os.DirFS(templateRoot),
+			OutputFiler:    out,
+		},
+	}
+
+	err = tmpl.Materialize(ctx)
 	require.NoError(t, err)
 	return bundleRoot
 }
