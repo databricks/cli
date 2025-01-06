@@ -285,3 +285,13 @@ func fromContext(ctx context.Context) *cmdIO {
 	}
 	return io
 }
+
+func MockContext(ctx context.Context) context.Context {
+	return InContext(ctx, &cmdIO{
+		interactive:  false,
+		outputFormat: flags.OutputText,
+		in:           io.NopCloser(strings.NewReader("")),
+		out:          io.Discard,
+		err:          io.Discard,
+	})
+}

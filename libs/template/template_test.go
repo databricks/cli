@@ -45,3 +45,18 @@ func TestBundleInitRepoName(t *testing.T) {
 	assert.Equal(t, "invalid-url", repoName("invalid-url"))
 	assert.Equal(t, "www.github.com", repoName("https://www.github.com"))
 }
+
+func TestTemplateTelemetryIsCapturedForAllDefaultTemplates(t *testing.T) {
+	for _, tmpl := range allTemplates {
+		w := tmpl.Writer
+
+		if tmpl.name == Custom {
+			// Assert telemetry is not captured for user templates.
+			assert.IsType(t, &defaultWriter{}, w)
+		} else {
+			// Assert telemetry is captured for all other templates, i.e. templates
+			// owned by databricks.
+			assert.IsType(t, &writerWithTelemetry{}, w)
+		}
+	}
+}

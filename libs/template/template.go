@@ -27,7 +27,11 @@ const (
 	DbtSql        TemplateName = "dbt-sql"
 	MlopsStacks   TemplateName = "mlops-stacks"
 	DefaultPydabs TemplateName = "default-pydabs"
-	Custom        TemplateName = "custom"
+
+	// Custom represents any template that is not one of the above default
+	// templates. It's a catch for any custom templates that customers provide
+	// as a path or URL.
+	Custom TemplateName = "custom"
 )
 
 var allTemplates = []Template{
@@ -98,7 +102,7 @@ func options() []cmdio.Tuple {
 
 func SelectTemplate(ctx context.Context) (TemplateName, error) {
 	if !cmdio.IsPromptSupported(ctx) {
-		return "", fmt.Errorf("please specify a template")
+		return "", fmt.Errorf("prompting is not supported. Please specify the path, name or URL of the template to use")
 	}
 	description, err := cmdio.SelectOrdered(ctx, options(), "Template to use")
 	if err != nil {

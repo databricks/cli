@@ -62,7 +62,6 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 
 	// User should not directly select "custom" and instead should provide the
 	// file path or the Git URL for the template directly.
-	// Custom is just for internal representation purposes.
 	if templateName == Custom {
 		return nil, ErrCustomSelected
 	}
