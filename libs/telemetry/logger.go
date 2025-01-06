@@ -49,7 +49,7 @@ func (l *defaultLogger) Log(event DatabricksCliLog) {
 }
 
 // Maximum additional time to wait for the telemetry event to flush. We expect the flush
-// method to be called when the CLI command is about to exist, so this caps the maximum
+// method to be called when the CLI command is about to exit, so this caps the maximum
 // additional time the user will experience because of us logging CLI telemetry.
 var MaxAdditionalWaitTime = 3 * time.Second
 
