@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -120,7 +121,7 @@ func SelectTemplate(ctx context.Context) (TemplateName, error) {
 
 func Get(name TemplateName) *Template {
 	for _, template := range allTemplates {
-		if template.name == name {
+		if template.name == name || slices.Contains(template.aliases, string(name)) {
 			return &template
 		}
 	}
