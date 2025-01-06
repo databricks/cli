@@ -1,9 +1,6 @@
 bundle:
   name: override_job_tasks
 
-workspace:
-  host: https://acme.cloud.databricks.com/
-
 resources:
   jobs:
     foo:
