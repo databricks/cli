@@ -29,8 +29,8 @@ const (
 	DefaultPydabs TemplateName = "default-pydabs"
 
 	// Custom represents any template that is not one of the above default
-	// templates. It's a catch for any custom templates that customers provide
-	// as a path or URL.
+	// templates. It's a catch all for any custom templates that customers provide
+	// as a path or URL argument.
 	Custom TemplateName = "custom..."
 )
 
