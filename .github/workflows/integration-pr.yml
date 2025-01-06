@@ -14,7 +14,10 @@ jobs:
   # This workflow triggers the integration test workflow in a different repository.
   # It requires secrets from the "test-trigger-is" environment, which are only available to authorized users.
   trigger:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     environment: "test-trigger-is"
 
     # Only run this job for PRs from branches on the main repository and not from forks.
