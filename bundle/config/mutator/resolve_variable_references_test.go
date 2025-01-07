@@ -436,7 +436,7 @@ func TestResolveComplexVariableWithVarReference(t *testing.T) {
 	require.Equal(t, "cicd_template==1.0.0", b.Config.Resources.Jobs["job1"].JobSettings.Tasks[0].Libraries[0].Pypi.Package)
 }
 
-func TestResolveVariableReferencesWithSourceLinkedDeploymentDisabled(t *testing.T) {
+func TestResolveVariableReferencesWithSourceLinkedDeployment(t *testing.T) {
 	testCases := []struct {
 		enabled bool
 		assert  func(t *testing.T, b *bundle.Bundle)
