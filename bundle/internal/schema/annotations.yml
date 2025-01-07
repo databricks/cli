@@ -1,21 +1,3 @@
-github.com/databricks/cli/bundle/config.Python:
-  "resources":
-    "description": |-
-      Resources contains a list of fully qualified function paths to load resources
-      defined in Python code.
-
-      Example: ["my_project.resources:load_resources"]
-  "mutators":
-    "description": |-
-      Mutators contains a list of fully qualified function paths to mutator functions.
-
-      Example: ["my_project.mutators:add_default_cluster"]
-  "venv_path":
-    "description": |-
-      VEnvPath is path to the virtual environment.
-
-      If enabled, Python code will execute within this environment. If disabled,
-      it defaults to using the Python interpreter available in the current shell.
 github.com/databricks/cli/bundle/config.Artifact:
   "build":
     "description": |-
@@ -84,12 +66,12 @@ github.com/databricks/cli/bundle/config.Deployment:
     "markdown_description": |-
       The deployment lock attributes. See [_](#lock).
 github.com/databricks/cli/bundle/config.Experimental:
-  "python":
-    "description": |-
-      Configures loading of Python code defined with 'databricks-bundles' package.
   "pydabs":
     "description": |-
       The PyDABs configuration.
+  "python":
+    "description": |-
+      Configures loading of Python code defined with 'databricks-bundles' package.
   "python_wheel_wrapper":
     "description": |-
       Whether to use a Python wheel wrapper
@@ -146,6 +128,24 @@ github.com/databricks/cli/bundle/config.PyDABs:
   "venv_path":
     "description": |-
       The Python virtual environment path
+github.com/databricks/cli/bundle/config.Python:
+  "mutators":
+    "description": |-
+      Mutators contains a list of fully qualified function paths to mutator functions.
+
+      Example: ["my_project.mutators:add_default_cluster"]
+  "resources":
+    "description": |-
+      Resources contains a list of fully qualified function paths to load resources
+      defined in Python code.
+
+      Example: ["my_project.resources:load_resources"]
+  "venv_path":
+    "description": |-
+      VEnvPath is path to the virtual environment.
+
+      If enabled, Python code will execute within this environment. If disabled,
+      it defaults to using the Python interpreter available in the current shell.
 github.com/databricks/cli/bundle/config.Resources:
   "clusters":
     "description": |-
