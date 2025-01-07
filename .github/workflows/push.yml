@@ -80,8 +80,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.63.1
-          skip-cache: true
-          args: --timeout=1h
+          args: --timeout=15m
 
   validate-bundle-schema:
     runs-on: ubuntu-latest
