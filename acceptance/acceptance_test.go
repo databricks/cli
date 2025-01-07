@@ -22,7 +22,17 @@ import (
 
 var KeepTmp = os.Getenv("KEEP_TMP") != ""
 
-const EntryPointScript = "script"
+const (
+	EntryPointScript = "script"
+	CleanupScript    = "script.cleanup"
+	PrepareScript    = "script.prepare"
+)
+
+var Scripts = map[string]bool{
+	EntryPointScript: true,
+	CleanupScript:    true,
+	PrepareScript:    true,
+}
 
 func TestAccept(t *testing.T) {
 	execPath := BuildCLI(t)
@@ -165,12 +175,12 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	cleanups := []string{}
 
 	for {
-		x := readIfExists(t, filepath.Join(dir, "script.cleanup"))
+		x := readIfExists(t, filepath.Join(dir, CleanupScript))
 		if len(x) > 0 {
 			cleanups = append(cleanups, string(x))
 		}
 
-		x = readIfExists(t, filepath.Join(dir, "script.prepare"))
+		x = readIfExists(t, filepath.Join(dir, PrepareScript))
 		if len(x) > 0 {
 			prepares = append(prepares, string(x))
 		}
@@ -278,7 +288,7 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 			inputs[relPath] = true
 		}
 
-		if name == EntryPointScript {
+		if _, ok := Scripts[name]; ok {
 			return nil
 		}
 
