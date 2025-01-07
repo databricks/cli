@@ -26,6 +26,7 @@ jobs:
       labels: ubuntu-latest-deco
     steps:
       - name: Clean up cache if running on schedule
+        if: ${{ github.event_name == 'schedule' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh cache delete --all --repo databricks/cli || true
