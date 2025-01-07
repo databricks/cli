@@ -13,12 +13,24 @@ on:
     # seed the build cache.
     branches:
       - main
+  schedule:
+    - cron: '0 0,12 * * *'  # Runs at 00:00 and 12:00 UTC daily
 
 env:
   GOTESTSUM_FORMAT: github-actions
 
 jobs:
+  cleanups:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up cache if running on schedule
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh cache delete --all
+
   tests:
+    needs: cleanups
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -61,6 +73,7 @@ jobs:
         run: make test
 
   golangci:
+    needs: cleanups
     name: lint
     runs-on: ubuntu-latest
     steps:
@@ -86,6 +99,7 @@ jobs:
           args: --timeout=15m
 
   validate-bundle-schema:
+    needs: cleanups
     runs-on: ubuntu-latest
 
     steps:
