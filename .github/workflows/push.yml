@@ -68,6 +68,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.23.4
+          cache: false
       - name: Run go mod tidy
         run: |
           go mod tidy
@@ -79,7 +80,8 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.63.1
-          args: --timeout=15m
+          skip-cache: true
+          args: --timeout=1h
 
   validate-bundle-schema:
     runs-on: ubuntu-latest
@@ -92,6 +94,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23.4
+          cache: false
 
       - name: Verify that the schema is up to date
         run: |

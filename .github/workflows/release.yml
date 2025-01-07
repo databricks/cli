@@ -27,13 +27,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23.4
-
-          # The default cache key for this action considers only the `go.sum` file.
-          # We include .goreleaser.yaml here to differentiate from the cache used by the push action
-          # that runs unit tests. This job produces and uses a different cache.
-          cache-dependency-path: |
-            go.sum
-            .goreleaser.yaml
+          cache: false
 
       # Log into the GitHub Container Registry. The goreleaser action will create
       # the docker images and push them to the GitHub Container Registry.
