@@ -109,13 +109,9 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 		m = m.LF()
 
 		if len(node.ObjectKeyAttributes) > 0 {
-			itemName := removePluralForm(node.Title)
-			fieldName := fmt.Sprintf("%s-name", itemName)
-			m = buildAttributeTable(m, []attributeNode{
-				{Title: fieldName, Type: "Map", Description: fmt.Sprintf("The definition of a %s. See %s", itemName, md.Link("_", "#"+fieldName))},
-			})
+			n := removePluralForm(node.Title)
+			m = m.CodeBlocks("yaml", fmt.Sprintf("%ss:\n  <%s-name>:\n    <%s-field-name>: <%s-field-value>", n, n, n, n))
 			m = m.LF()
-			m = m.H3(fieldName)
 			m = buildAttributeTable(m, node.ObjectKeyAttributes)
 		} else if len(node.ArrayItemAttributes) > 0 {
 			m = m.LF()
