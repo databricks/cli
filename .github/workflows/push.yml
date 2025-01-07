@@ -47,6 +47,9 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
 
+      - name: check mtime
+        run: ls -l bundle/deploy/state.go
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
