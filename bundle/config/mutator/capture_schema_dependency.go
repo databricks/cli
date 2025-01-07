@@ -51,7 +51,7 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 	v.SchemaName = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
 }
 
-func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
+func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
 	if p.PipelineSpec == nil {
 		return
 	}
@@ -66,7 +66,7 @@ func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
 	p.Schema = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
 }
 
-func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
+func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
 	if p.PipelineSpec == nil {
 		return
 	}
