@@ -132,7 +132,7 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
-		if err = persistentAuth.Challenge(ctx, oauthArgument); err != nil {
+		if _, err = persistentAuth.Challenge(ctx, oauthArgument); err != nil {
 			return err
 		}
 
