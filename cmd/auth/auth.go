@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
@@ -36,7 +36,7 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 
 func promptForHost(ctx context.Context) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
-		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify a host using --host")
+		return "", errors.New("the command is being run in a non-interactive environment, please specify a host using --host")
 	}
 
 	prompt := cmdio.Prompt(ctx)
@@ -46,7 +46,7 @@ func promptForHost(ctx context.Context) (string, error) {
 
 func promptForAccountID(ctx context.Context) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
-		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
+		return "", errors.New("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 	}
 
 	prompt := cmdio.Prompt(ctx)

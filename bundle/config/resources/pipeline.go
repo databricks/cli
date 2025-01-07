@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
@@ -47,7 +46,7 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 	if p.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("pipelines/%s", p.ID)
+	baseURL.Path = "pipelines/" + p.ID
 	p.URL = baseURL.String()
 }
 

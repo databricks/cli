@@ -2,7 +2,6 @@ package auth_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
@@ -21,14 +20,14 @@ func TestAuthDescribeSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEmpty(t, outStr)
-	require.Contains(t, outStr, fmt.Sprintf("Host: %s", w.Config.Host))
+	require.Contains(t, outStr, "Host: "+w.Config.Host)
 
 	me, err := w.CurrentUser.Me(context.Background())
 	require.NoError(t, err)
-	require.Contains(t, outStr, fmt.Sprintf("User: %s", me.UserName))
-	require.Contains(t, outStr, fmt.Sprintf("Authenticated with: %s", w.Config.AuthType))
+	require.Contains(t, outStr, "User: "+me.UserName)
+	require.Contains(t, outStr, "Authenticated with: "+w.Config.AuthType)
 	require.Contains(t, outStr, "Current configuration:")
-	require.Contains(t, outStr, fmt.Sprintf("✓ host: %s", w.Config.Host))
+	require.Contains(t, outStr, "✓ host: "+w.Config.Host)
 	require.Contains(t, outStr, "✓ profile: default")
 }
 
@@ -47,6 +46,6 @@ func TestAuthDescribeFailure(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
 	require.NoError(t, err)
 
-	require.Contains(t, outStr, fmt.Sprintf("✓ host: %s", w.Config.Host))
+	require.Contains(t, outStr, "✓ host: "+w.Config.Host)
 	require.Contains(t, outStr, "✓ profile: nonexistent (from --profile flag)")
 }

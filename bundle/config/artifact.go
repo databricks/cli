@@ -2,7 +2,7 @@ package config
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/libs/exec"
 )
@@ -37,7 +37,7 @@ type Artifact struct {
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 	if a.BuildCommand == "" {
-		return nil, fmt.Errorf("no build property defined")
+		return nil, errors.New("no build property defined")
 	}
 
 	var e *exec.Executor

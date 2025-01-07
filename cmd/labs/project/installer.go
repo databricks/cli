@@ -175,7 +175,7 @@ func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, err
 		return nil, fmt.Errorf("valid: %w", err)
 	}
 	if !i.HasAccountLevelCommands() && cfg.IsAccountClient() {
-		return nil, fmt.Errorf("got account-level client, but no account-level commands")
+		return nil, errors.New("got account-level client, but no account-level commands")
 	}
 	lc := &loginConfig{Entrypoint: i.Installer.Entrypoint}
 	w, err := lc.askWorkspace(ctx, cfg)
@@ -200,10 +200,10 @@ func (i *installer) downloadLibrary(ctx context.Context) error {
 	libTarget := i.LibDir()
 	// we may support wheels, jars, and golang binaries. but those are not zipballs
 	if i.IsZipball() {
-		feedback <- fmt.Sprintf("Downloading and unpacking zipball for %s", i.version)
+		feedback <- "Downloading and unpacking zipball for " + i.version
 		return i.downloadAndUnpackZipball(ctx, libTarget)
 	}
-	return fmt.Errorf("we only support zipballs for now")
+	return errors.New("we only support zipballs for now")
 }
 
 func (i *installer) downloadAndUnpackZipball(ctx context.Context, libTarget string) error {
@@ -234,7 +234,7 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 	log.Debugf(ctx, "Detected Python %s at: %s", py.Version, py.Path)
 	venvPath := i.virtualEnvPath(ctx)
 	log.Debugf(ctx, "Creating Python Virtual Environment at: %s", venvPath)
-	feedback <- fmt.Sprintf("Creating Virtual Environment with Python %s", py.Version)
+	feedback <- "Creating Virtual Environment with Python " + py.Version
 	_, err = process.Background(ctx, []string{py.Path, "-m", "venv", venvPath})
 	if err != nil {
 		return fmt.Errorf("create venv: %w", err)
@@ -251,8 +251,8 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 		if !ok {
 			return fmt.Errorf("unsupported runtime: %s", cluster.SparkVersion)
 		}
-		feedback <- fmt.Sprintf("Installing Databricks Connect v%s", runtimeVersion)
-		pipSpec := fmt.Sprintf("databricks-connect==%s", runtimeVersion)
+		feedback <- "Installing Databricks Connect v" + runtimeVersion
+		pipSpec := "databricks-connect==" + runtimeVersion
 		err = i.installPythonDependencies(ctx, pipSpec)
 		if err != nil {
 			return fmt.Errorf("dbconnect: %w", err)

@@ -2,7 +2,6 @@ package validate
 
 import (
 	"context"
-	"fmt"
 	"sort"
 
 	"github.com/databricks/cli/bundle"
@@ -102,7 +101,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		// If there are multiple resources with the same key, report an error.
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("multiple resources have been defined with the same key: %s", k),
+			Summary:   "multiple resources have been defined with the same key: " + k,
 			Locations: v.locations,
 			Paths:     v.paths,
 		})

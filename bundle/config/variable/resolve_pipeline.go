@@ -2,7 +2,6 @@ package variable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -16,9 +15,9 @@ func (l resolvePipeline) Resolve(ctx context.Context, w *databricks.WorkspaceCli
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(entity.PipelineId), nil
+	return entity.PipelineId, nil
 }
 
 func (l resolvePipeline) String() string {
-	return fmt.Sprintf("pipeline: %s", l.name)
+	return "pipeline: " + l.name
 }

@@ -1,12 +1,12 @@
 package fakefs
 
 import (
-	"fmt"
+	"errors"
 	"io/fs"
 	"time"
 )
 
-var ErrNotImplemented = fmt.Errorf("not implemented")
+var ErrNotImplemented = errors.New("not implemented")
 
 // DirEntry is a fake implementation of [fs.DirEntry].
 type DirEntry struct {

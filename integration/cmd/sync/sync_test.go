@@ -151,10 +151,7 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath, expected
 	filePath := path.Join(a.remoteRoot, relativePath)
 
 	// Remove leading "/" so we can use it in the URL.
-	urlPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/%s",
-		strings.TrimLeft(filePath, "/"),
-	)
+	urlPath := "/api/2.0/workspace-files/" + strings.TrimLeft(filePath, "/")
 
 	apiClient, err := client.New(a.w.Config)
 	require.NoError(a.t, err)
