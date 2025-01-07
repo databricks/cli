@@ -139,7 +139,7 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 	pythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
 
 	if pydabsEnabled && pythonEnabled {
-		return opts{}, fmt.Errorf("both experimental/pydabs and experimental/python are enabled, only one can be enabled")
+		return opts{}, errors.New("both experimental/pydabs and experimental/python are enabled, only one can be enabled")
 	} else if pydabsEnabled {
 		if !experimental.PyDABs.Enabled {
 			return opts{}, nil

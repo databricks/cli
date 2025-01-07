@@ -446,7 +446,7 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			name:        "apply_mutators: can't delete an existing job",
 			phase:       PythonMutatorPhaseInit,
 			deletePath:  dyn.MustPathFromString("resources.jobs.job0"),
-			deleteError: fmt.Errorf("unexpected change at \"resources.jobs.job0\" (delete)"),
+			deleteError: errors.New("unexpected change at \"resources.jobs.job0\" (delete)"),
 		},
 		{
 			name:        "apply_mutators: can insert 'resources'",
@@ -464,7 +464,7 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			name:        "apply_mutators: can't insert a job",
 			phase:       PythonMutatorPhaseApplyMutators,
 			insertPath:  dyn.MustPathFromString("resources.jobs.job0"),
-			insertError: fmt.Errorf("unexpected change at \"resources.jobs.job0\" (insert)"),
+			insertError: errors.New("unexpected change at \"resources.jobs.job0\" (insert)"),
 		},
 		{
 			name:        "apply_mutators: can't change include",
@@ -472,9 +472,9 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			deletePath:  dyn.MustPathFromString("include[0]"),
 			insertPath:  dyn.MustPathFromString("include[0]"),
 			updatePath:  dyn.MustPathFromString("include[0]"),
-			deleteError: fmt.Errorf("unexpected change at \"include[0]\" (delete)"),
-			insertError: fmt.Errorf("unexpected change at \"include[0]\" (insert)"),
-			updateError: fmt.Errorf("unexpected change at \"include[0]\" (update)"),
+			deleteError: errors.New("unexpected change at \"include[0]\" (delete)"),
+			insertError: errors.New("unexpected change at \"include[0]\" (insert)"),
+			updateError: errors.New("unexpected change at \"include[0]\" (update)"),
 		},
 	}
 
