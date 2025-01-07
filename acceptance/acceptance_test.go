@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -51,7 +50,7 @@ func TestAccept(t *testing.T) {
 }
 
 func getTests(t *testing.T) []string {
-	testDirs := make(map[string]bool, 128)
+	testDirs := make([]string, 0, 128)
 
 	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -60,15 +59,14 @@ func getTests(t *testing.T) []string {
 		name := filepath.Base(path)
 		if name == EntryPointScript {
 			// Presence of 'script' marks a test case in this directory
-			testDirs[filepath.Dir(path)] = true
+			testDirs = append(testDirs, filepath.Dir(path))
 		}
 		return nil
 	})
 	require.NoError(t, err)
 
-	keys := slices.Collect(maps.Keys(testDirs))
-	sort.Strings(keys)
-	return keys
+	sort.Strings(testDirs)
+	return testDirs
 }
 
 func runTest(t *testing.T, dir string) {
