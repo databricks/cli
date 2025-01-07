@@ -86,7 +86,7 @@ github.com/databricks/cli/bundle/config.Deployment:
 github.com/databricks/cli/bundle/config.Experimental:
   "python":
     "description": |-
-      PLACEHOLDER
+      Configures loading of Python code defined with 'databricks-bundles' package.
   "pydabs":
     "description": |-
       The PyDABs configuration.

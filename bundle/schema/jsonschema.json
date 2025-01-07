@@ -1101,6 +1101,7 @@
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs"
                     },
                     "python": {
+                      "description": "Configures loading of Python code defined with 'databricks-bundles' package.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python"
                     },
                     "python_wheel_wrapper": {
