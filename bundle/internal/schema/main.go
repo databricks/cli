@@ -30,6 +30,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		getTypeName(config.Bundle{}):     true,
 		getTypeName(config.Targets{}):    true,
 		getTypeName(config.Target{}):     true,
+		getTypeName(config.Workspace{}):  true,
 		// TODO add config.Root.Include - its type is "slice/string" in the schema and currently it is tricky to exclude only this exact field without affecting other "slice/string" fields
 	}
 

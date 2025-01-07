@@ -1392,82 +1392,74 @@
               "additionalProperties": false
             },
             "config.Workspace": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "artifact_path": {
-                      "description": "The artifact path to use within the workspace for both deployments and workflow runs",
-                      "$ref": "#/$defs/string"
-                    },
-                    "auth_type": {
-                      "description": "The authentication type.",
-                      "$ref": "#/$defs/string"
-                    },
-                    "azure_client_id": {
-                      "description": "The Azure client ID",
-                      "$ref": "#/$defs/string"
-                    },
-                    "azure_environment": {
-                      "description": "The Azure environment",
-                      "$ref": "#/$defs/string"
-                    },
-                    "azure_login_app_id": {
-                      "description": "The Azure login app ID",
-                      "$ref": "#/$defs/string"
-                    },
-                    "azure_tenant_id": {
-                      "description": "The Azure tenant ID",
-                      "$ref": "#/$defs/string"
-                    },
-                    "azure_use_msi": {
-                      "description": "Whether to use MSI for Azure",
-                      "$ref": "#/$defs/bool"
-                    },
-                    "azure_workspace_resource_id": {
-                      "description": "The Azure workspace resource ID",
-                      "$ref": "#/$defs/string"
-                    },
-                    "client_id": {
-                      "description": "The client ID for the workspace",
-                      "$ref": "#/$defs/string"
-                    },
-                    "file_path": {
-                      "description": "The file path to use within the workspace for both deployments and workflow runs",
-                      "$ref": "#/$defs/string"
-                    },
-                    "google_service_account": {
-                      "description": "The Google service account name",
-                      "$ref": "#/$defs/string"
-                    },
-                    "host": {
-                      "description": "The Databricks workspace host URL",
-                      "$ref": "#/$defs/string"
-                    },
-                    "profile": {
-                      "description": "The Databricks workspace profile name",
-                      "$ref": "#/$defs/string"
-                    },
-                    "resource_path": {
-                      "description": "The workspace resource path",
-                      "$ref": "#/$defs/string"
-                    },
-                    "root_path": {
-                      "description": "The Databricks workspace root path",
-                      "$ref": "#/$defs/string"
-                    },
-                    "state_path": {
-                      "description": "The workspace state path",
-                      "$ref": "#/$defs/string"
-                    }
-                  },
-                  "additionalProperties": false
+              "type": "object",
+              "properties": {
+                "artifact_path": {
+                  "description": "The artifact path to use within the workspace for both deployments and workflow runs",
+                  "$ref": "#/$defs/string"
                 },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                "auth_type": {
+                  "description": "The authentication type.",
+                  "$ref": "#/$defs/string"
+                },
+                "azure_client_id": {
+                  "description": "The Azure client ID",
+                  "$ref": "#/$defs/string"
+                },
+                "azure_environment": {
+                  "description": "The Azure environment",
+                  "$ref": "#/$defs/string"
+                },
+                "azure_login_app_id": {
+                  "description": "The Azure login app ID",
+                  "$ref": "#/$defs/string"
+                },
+                "azure_tenant_id": {
+                  "description": "The Azure tenant ID",
+                  "$ref": "#/$defs/string"
+                },
+                "azure_use_msi": {
+                  "description": "Whether to use MSI for Azure",
+                  "$ref": "#/$defs/bool"
+                },
+                "azure_workspace_resource_id": {
+                  "description": "The Azure workspace resource ID",
+                  "$ref": "#/$defs/string"
+                },
+                "client_id": {
+                  "description": "The client ID for the workspace",
+                  "$ref": "#/$defs/string"
+                },
+                "file_path": {
+                  "description": "The file path to use within the workspace for both deployments and workflow runs",
+                  "$ref": "#/$defs/string"
+                },
+                "google_service_account": {
+                  "description": "The Google service account name",
+                  "$ref": "#/$defs/string"
+                },
+                "host": {
+                  "description": "The Databricks workspace host URL",
+                  "$ref": "#/$defs/string"
+                },
+                "profile": {
+                  "description": "The Databricks workspace profile name",
+                  "$ref": "#/$defs/string"
+                },
+                "resource_path": {
+                  "description": "The workspace resource path",
+                  "$ref": "#/$defs/string"
+                },
+                "root_path": {
+                  "description": "The Databricks workspace root path",
+                  "$ref": "#/$defs/string"
+                },
+                "state_path": {
+                  "description": "The workspace state path",
+                  "$ref": "#/$defs/string"
                 }
-              ]
+              },
+              "additionalProperties": false
             }
           },
           "libs": {
