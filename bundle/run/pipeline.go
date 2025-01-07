@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 
 func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
 	result := []pipelines.PipelineEvent{}
-	for i := 0; i < len(events); i++ {
+	for i := range events {
 		if events[i].Origin.UpdateId == updateId {
 			result = append(result, events[i])
 		}
@@ -32,8 +33,8 @@ func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineE
 	}
 	if event.Error != nil && len(event.Error.Exceptions) > 0 {
 		logString += "trace for most recent exception: \n"
-		for i := 0; i < len(event.Error.Exceptions); i++ {
-			logString += fmt.Sprintf("%s\n", event.Error.Exceptions[i].Message)
+		for i := range len(event.Error.Exceptions) {
+			logString += event.Error.Exceptions[i].Message + "\n"
 		}
 	}
 	if logString != "" {
@@ -107,7 +108,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	updateTracker := progress.NewUpdateTracker(pipelineID, updateID, w)
 	progressLogger, ok := cmdio.FromContext(ctx)
 	if !ok {
-		return nil, fmt.Errorf("no progress logger found")
+		return nil, errors.New("no progress logger found")
 	}
 
 	// Log the pipeline update URL as soon as it is available.
@@ -144,7 +145,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 		if state == pipelines.UpdateInfoStateCanceled {
 			log.Infof(ctx, "Update was cancelled!")
-			return nil, fmt.Errorf("update cancelled")
+			return nil, errors.New("update cancelled")
 		}
 		if state == pipelines.UpdateInfoStateFailed {
 			log.Infof(ctx, "Update has failed!")
@@ -152,7 +153,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			if err != nil {
 				return nil, err
 			}
-			return nil, fmt.Errorf("update failed")
+			return nil, errors.New("update failed")
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
 			log.Infof(ctx, "Update has completed successfully!")

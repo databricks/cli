@@ -1,9 +1,9 @@
 package bundle_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
@@ -35,7 +35,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId), "--auto-approve")
+	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", strconv.FormatInt(jobId, 10), "--auto-approve")
 	_, _, err := c.Run()
 	require.NoError(t, err)
 
@@ -53,7 +53,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 		JobId: jobId,
 	})
 	require.NoError(t, err)
-	require.Equal(t, job.Settings.Name, fmt.Sprintf("test-job-basic-%s", uniqueId))
+	require.Equal(t, job.Settings.Name, "test-job-basic-"+uniqueId)
 	require.Contains(t, job.Settings.Tasks[0].SparkPythonTask.PythonFile, "hello_world.py")
 
 	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "unbind", "foo")
@@ -71,7 +71,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 		JobId: jobId,
 	})
 	require.NoError(t, err)
-	require.Equal(t, job.Settings.Name, fmt.Sprintf("test-job-basic-%s", uniqueId))
+	require.Equal(t, job.Settings.Name, "test-job-basic-"+uniqueId)
 	require.Contains(t, job.Settings.Tasks[0].SparkPythonTask.PythonFile, "hello_world.py")
 }
 
@@ -96,7 +96,7 @@ func TestAbortBind(t *testing.T) {
 	// Bind should fail because prompting is not possible.
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	ctx = env.Set(ctx, "TERM", "dumb")
-	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
+	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", strconv.FormatInt(jobId, 10))
 
 	// Expect error suggesting to use --auto-approve
 	_, _, err := c.Run()
@@ -114,7 +114,7 @@ func TestAbortBind(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NotEqual(t, job.Settings.Name, fmt.Sprintf("test-job-basic-%s", uniqueId))
+	require.NotEqual(t, job.Settings.Name, "test-job-basic-"+uniqueId)
 	require.Contains(t, job.Settings.Tasks[0].NotebookTask.NotebookPath, "test")
 }
 
@@ -143,7 +143,7 @@ func TestGenerateAndBind(t *testing.T) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	c := testcli.NewRunner(t, ctx, "bundle", "generate", "job",
 		"--key", "test_job_key",
-		"--existing-job-id", fmt.Sprint(jobId),
+		"--existing-job-id", strconv.FormatInt(jobId, 10),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))
 	_, _, err = c.Run()
@@ -157,7 +157,7 @@ func TestGenerateAndBind(t *testing.T) {
 
 	require.Len(t, matches, 1)
 
-	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "test_job_key", fmt.Sprint(jobId), "--auto-approve")
+	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "test_job_key", strconv.FormatInt(jobId, 10), "--auto-approve")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 

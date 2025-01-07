@@ -39,8 +39,6 @@ func TestBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestBundleInitOnMlopsStacks(t *testing.T) {
-	testutil.SkipUntil(t, "2025-01-09")
-
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
@@ -68,7 +66,7 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 
 	// Assert that the README.md file was created
 	contents := testutil.ReadFile(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
-	assert.Contains(t, contents, fmt.Sprintf("# %s", projectName))
+	assert.Contains(t, contents, "# "+projectName)
 
 	// Validate the stack
 	testutil.Chdir(t, filepath.Join(tmpDir2, "repo_name", projectName))

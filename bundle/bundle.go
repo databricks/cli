@@ -8,6 +8,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -234,7 +235,7 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 // we call into from this bundle context.
 func (b *Bundle) AuthEnv() (map[string]string, error) {
 	if b.client == nil {
-		return nil, fmt.Errorf("workspace client not initialized yet")
+		return nil, errors.New("workspace client not initialized yet")
 	}
 
 	cfg := b.client.Config

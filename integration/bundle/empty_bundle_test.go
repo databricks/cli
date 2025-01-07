@@ -1,7 +1,6 @@
 package bundle_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,8 +18,7 @@ func TestEmptyBundleDeploy(t *testing.T) {
 	f, err := os.Create(filepath.Join(tmpDir, "databricks.yml"))
 	require.NoError(t, err)
 
-	bundleRoot := fmt.Sprintf(`bundle:
-  name: %s`, uuid.New().String())
+	bundleRoot := "bundle:\n  name: " + uuid.New().String()
 	_, err = f.WriteString(bundleRoot)
 	require.NoError(t, err)
 	f.Close()

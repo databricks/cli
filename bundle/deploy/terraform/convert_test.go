@@ -1261,7 +1261,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 
 func AssertFullResourceCoverage(t *testing.T, config *config.Root) {
 	resources := reflect.ValueOf(config.Resources)
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 		if field.Kind() == reflect.Map {
 			assert.True(

@@ -2,7 +2,6 @@ package template
 
 import (
 	"context"
-	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -545,7 +544,7 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 	out, err := filer.NewLocalClient(tmpDir)
 	require.NoError(t, err)
 	err = r.persistToDisk(ctx, out)
-	assert.EqualError(t, err, fmt.Sprintf("failed to initialize template, one or more files already exist: %s", "a"))
+	assert.EqualError(t, err, "failed to initialize template, one or more files already exist: "+"a")
 }
 
 func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {

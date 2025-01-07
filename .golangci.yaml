@@ -12,6 +12,9 @@ linters:
     - gofumpt
     - goimports
     - testifylint
+    - intrange
+    - mirror
+    - perfsprint
 linters-settings:
   govet:
     enable-all: true

@@ -2,7 +2,7 @@ package trampoline
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +30,7 @@ func (f *functions) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 
 func (f *functions) GetTemplateData(task *jobs.Task) (map[string]any, error) {
 	if task.PythonWheelTask == nil {
-		return nil, fmt.Errorf("PythonWheelTask cannot be nil")
+		return nil, errors.New("PythonWheelTask cannot be nil")
 	}
 
 	data := make(map[string]any)

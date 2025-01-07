@@ -2,7 +2,6 @@ package validate
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -152,7 +151,7 @@ func TestExtractVolumeFromPath(t *testing.T) {
 
 	for _, p := range invalidVolumePaths() {
 		_, _, _, err := extractVolumeFromPath(p)
-		assert.EqualError(t, err, fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p))
+		assert.EqualError(t, err, "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got "+p)
 	}
 }
 
@@ -171,7 +170,7 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 		diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), ValidateArtifactPath())
 		require.Equal(t, diag.Diagnostics{{
 			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p),
+			Summary:   "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got " + p,
 			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
 		}}, diags)
