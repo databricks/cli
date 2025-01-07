@@ -51,33 +51,43 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 	v.SchemaName = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
 }
 
-func resolvePipeline(p *resources.Pipeline, b *bundle.Bundle) {
+func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
 	if p.PipelineSpec == nil {
 		return
 	}
-	// schema and target have the same semantics in the DLT API but are mutually
-	// exclusive. If schema is set, the pipeline is in direct publishing mode
-	// and can write tables to multiple schemas (vs target which is limited to a single schema).
-	schemaName := p.Schema
-	if schemaName == "" {
-		schemaName = p.Target
+	if p.Schema == "" {
+		return
 	}
-
-	schemaK, schema := findSchema(b, p.Catalog, schemaName)
+	schemaK, schema := findSchema(b, p.Catalog, p.Schema)
 	if schema == nil {
 		return
 	}
 
-	if p.Schema != "" {
-		p.Schema = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
-	} else if p.Target != "" {
-		p.Target = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
+	p.Schema = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
+}
+
+func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
+	if p.PipelineSpec == nil {
+		return
 	}
+	if p.Target == "" {
+		return
+	}
+	schemaK, schema := findSchema(b, p.Catalog, p.Target)
+	if schema == nil {
+		return
+	}
+	p.Target = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
 }
 
 func (m *captureSchemaDependency) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, p := range b.Config.Resources.Pipelines {
-		resolvePipeline(p, b)
+		// "schema" and "target" have the same semantics in the DLT API but are mutually
+		// exclusive i.e. only one can be set at a time. If schema is set, the pipeline
+		// is in direct publishing mode and can write tables to multiple schemas
+		// (vs target which is limited to a single schema).
+		resolvePipelineTarget(p, b)
+		resolvePipelineSchema(p, b)
 	}
 	for _, v := range b.Config.Resources.Volumes {
 		resolveVolume(v, b)
