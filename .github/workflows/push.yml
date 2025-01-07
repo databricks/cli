@@ -21,10 +21,12 @@ env:
 
 jobs:
   cleanups:
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
     steps:
       - name: Clean up cache if running on schedule
-        if: ${{ github.event_name == 'schedule' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh cache delete --all
