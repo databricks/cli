@@ -74,6 +74,9 @@ jobs:
           make vendor
           pip3 install wheel
 
+      - name: check mtime
+        run: ls -lT bundle/deploy/*.go
+
       - name: Run tests
         run: make test
 
