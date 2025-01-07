@@ -94,9 +94,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		if errors.Is(err, &oauth.InvalidRefreshTokenError{}) {
-			msg := "a new access token could not be retrieved because the refresh token is invalid."
-			msg += fmt.Sprintf(" To reauthenticate, run `%s`", auth.BuildLoginCommand(ctx, args.profileName, oauthArgument))
-			return nil, errors.New(msg)
+			return nil, auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountId, args.profileName, err)
 		}
 		return nil, fmt.Errorf("unexpected error loading token: %w. %s", err, helpMsg)
 	}
