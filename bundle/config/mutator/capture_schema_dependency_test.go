@@ -72,6 +72,10 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 							SchemaName:  "schemaX",
 						},
 					},
+					"nilVolume": {},
+					"emptyVolume": {
+						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{},
+					},
 				},
 			},
 		},
@@ -79,11 +83,15 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 
 	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
-	assert.Equal(t, b.Config.Resources.Volumes["volume1"].CreateVolumeRequestContent.SchemaName, "${resources.schemas.schema1.name}")
-	assert.Equal(t, b.Config.Resources.Volumes["volume2"].CreateVolumeRequestContent.SchemaName, "${resources.schemas.schema2.name}")
-	assert.Equal(t, b.Config.Resources.Volumes["volume3"].CreateVolumeRequestContent.SchemaName, "${resources.schemas.schema3.name}")
-	assert.Equal(t, b.Config.Resources.Volumes["volume4"].CreateVolumeRequestContent.SchemaName, "foobar")
-	assert.Equal(t, b.Config.Resources.Volumes["volume5"].CreateVolumeRequestContent.SchemaName, "schemaX")
+
+	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Volumes["volume1"].CreateVolumeRequestContent.SchemaName)
+	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Volumes["volume2"].CreateVolumeRequestContent.SchemaName)
+	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.Volumes["volume3"].CreateVolumeRequestContent.SchemaName)
+	assert.Equal(t, "foobar", b.Config.Resources.Volumes["volume4"].CreateVolumeRequestContent.SchemaName)
+	assert.Equal(t, "schemaX", b.Config.Resources.Volumes["volume5"].CreateVolumeRequestContent.SchemaName)
+
+	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"].CreateVolumeRequestContent)
+	assert.Empty(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
 }
 
 func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
@@ -108,6 +116,10 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 							CatalogName: "catalog1",
 							Name:        "barfoo",
 						},
+					},
+					"nilschema": {},
+					"emptyschema": {
+						CreateSchema: &catalog.CreateSchema{},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
@@ -154,6 +166,10 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 							Name:    "whatever",
 						},
 					},
+					"nilPipeline": {},
+					"emptyPipeline": {
+						PipelineSpec: &pipelines.PipelineSpec{},
+					},
 				},
 			},
 		},
@@ -161,13 +177,17 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 
 	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline1"].Schema, "${resources.schemas.schema1.name}")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline2"].Schema, "${resources.schemas.schema2.name}")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline3"].Schema, "${resources.schemas.schema3.name}")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline4"].Schema, "foobar")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline5"].Schema, "schemaX")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline6"].Schema, "foobar")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline7"].Schema, "")
+
+	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Pipelines["pipeline1"].Schema)
+	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Pipelines["pipeline2"].Schema)
+	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.Pipelines["pipeline3"].Schema)
+	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline4"].Schema)
+	assert.Equal(t, "schemaX", b.Config.Resources.Pipelines["pipeline5"].Schema)
+	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline6"].Schema)
+	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline7"].Schema)
+
+	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"].PipelineSpec)
+	assert.Empty(t, b.Config.Resources.Pipelines["emptyPipeline"].PipelineSpec)
 
 	for _, k := range []string{"pipeline1", "pipeline2", "pipeline3", "pipeline4", "pipeline5", "pipeline6", "pipeline7"} {
 		assert.Empty(t, b.Config.Resources.Pipelines[k].Target)
@@ -196,6 +216,10 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 							CatalogName: "catalog1",
 							Name:        "barfoo",
 						},
+					},
+					"nilschema": {},
+					"emptyschema": {
+						CreateSchema: &catalog.CreateSchema{},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
@@ -249,13 +273,13 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 
 	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline1"].Target, "${resources.schemas.schema1.name}")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline2"].Target, "${resources.schemas.schema2.name}")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline3"].Target, "${resources.schemas.schema3.name}")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline4"].Target, "foobar")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline5"].Target, "schemaX")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline6"].Target, "foobar")
-	assert.Equal(t, b.Config.Resources.Pipelines["pipeline7"].Target, "")
+	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Pipelines["pipeline1"].Target)
+	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Pipelines["pipeline2"].Target)
+	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.Pipelines["pipeline3"].Target)
+	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline4"].Target)
+	assert.Equal(t, "schemaX", b.Config.Resources.Pipelines["pipeline5"].Target)
+	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline6"].Target)
+	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline7"].Target)
 
 	for _, k := range []string{"pipeline1", "pipeline2", "pipeline3", "pipeline4", "pipeline5", "pipeline6", "pipeline7"} {
 		assert.Empty(t, b.Config.Resources.Pipelines[k].Schema)

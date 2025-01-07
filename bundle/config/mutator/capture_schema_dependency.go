@@ -40,6 +40,9 @@ func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *reso
 }
 
 func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
+	if v.CreateVolumeRequestContent == nil {
+		return
+	}
 	schemaK, schema := findSchema(b, v.CatalogName, v.SchemaName)
 	if schema == nil {
 		return
@@ -49,6 +52,9 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 }
 
 func resolvePipeline(p *resources.Pipeline, b *bundle.Bundle) {
+	if p.PipelineSpec == nil {
+		return
+	}
 	// schema and target have the same semantics in the DLT API but are mutually
 	// exclusive. If schema is set, the pipeline is in direct publishing mode
 	// and can write tables to multiple schemas (vs target which is limited to a single schema).
