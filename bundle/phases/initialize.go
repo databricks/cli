@@ -63,7 +63,7 @@ func Initialize() bundle.Mutator {
 				"workspace",
 				"variables",
 			),
-			mutator.ResolveSchemaDependency(),
+			mutator.CaptureSchemaDependency(),
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),

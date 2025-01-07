@@ -18,7 +18,7 @@ type captureSchemaDependency struct{}
 //
 // This mutator translates any implicit schema references in DLT pipelines or UC Volumes
 // to the explicit syntax.
-func ResolveSchemaDependency() bundle.Mutator {
+func CaptureSchemaDependency() bundle.Mutator {
 	return &captureSchemaDependency{}
 }
 

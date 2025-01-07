@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveSchemaDependencyForVolume(t *testing.T) {
+func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -77,7 +77,7 @@ func TestResolveSchemaDependencyForVolume(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(context.Background(), b, ResolveSchemaDependency())
+	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
 	assert.Equal(t, b.Config.Resources.Volumes["volume1"].CreateVolumeRequestContent.SchemaName, "${resources.schemas.schema1.name}")
 	assert.Equal(t, b.Config.Resources.Volumes["volume2"].CreateVolumeRequestContent.SchemaName, "${resources.schemas.schema2.name}")
@@ -86,7 +86,7 @@ func TestResolveSchemaDependencyForVolume(t *testing.T) {
 	assert.Equal(t, b.Config.Resources.Volumes["volume5"].CreateVolumeRequestContent.SchemaName, "schemaX")
 }
 
-func TestResolveSchemaDependencyForPipelinesWithTarget(t *testing.T) {
+func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -159,7 +159,7 @@ func TestResolveSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(context.Background(), b, ResolveSchemaDependency())
+	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
 	assert.Equal(t, b.Config.Resources.Pipelines["pipeline1"].Schema, "${resources.schemas.schema1.name}")
 	assert.Equal(t, b.Config.Resources.Pipelines["pipeline2"].Schema, "${resources.schemas.schema2.name}")
@@ -174,7 +174,7 @@ func TestResolveSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 	}
 }
 
-func TestResolveSchemaDependencyForPipelinesWithSchema(t *testing.T) {
+func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -247,7 +247,7 @@ func TestResolveSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(context.Background(), b, ResolveSchemaDependency())
+	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
 	assert.Equal(t, b.Config.Resources.Pipelines["pipeline1"].Target, "${resources.schemas.schema1.name}")
 	assert.Equal(t, b.Config.Resources.Pipelines["pipeline2"].Target, "${resources.schemas.schema2.name}")
