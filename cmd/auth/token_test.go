@@ -2,13 +2,12 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go/credentials/cache"
 	"github.com/databricks/databricks-sdk-go/credentials/oauth"
-	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -48,6 +47,35 @@ var refreshSuccessTokenResponse = fixtures.HTTPFixture{
 	},
 }
 
+type MockApiClient struct {
+	RefreshTokenResponse http.RoundTripper
+}
+
+// GetAccountOAuthEndpoints implements oauth.OAuthClient.
+func (m *MockApiClient) GetAccountOAuthEndpoints(ctx context.Context, accountHost string, accountId string) (*oauth.OAuthAuthorizationServer, error) {
+	return &oauth.OAuthAuthorizationServer{
+		TokenEndpoint:         accountHost + "/token",
+		AuthorizationEndpoint: accountHost + "/authorize",
+	}, nil
+}
+
+// GetHttpClient implements oauth.OAuthClient.
+func (m *MockApiClient) GetHttpClient(context.Context) *http.Client {
+	return &http.Client{
+		Transport: m.RefreshTokenResponse,
+	}
+}
+
+// GetWorkspaceOAuthEndpoints implements oauth.OAuthClient.
+func (m *MockApiClient) GetWorkspaceOAuthEndpoints(ctx context.Context, workspaceHost string) (*oauth.OAuthAuthorizationServer, error) {
+	return &oauth.OAuthAuthorizationServer{
+		TokenEndpoint:         workspaceHost + "/token",
+		AuthorizationEndpoint: workspaceHost + "/authorize",
+	}, nil
+}
+
+var _ oauth.OAuthClient = (*MockApiClient)(nil)
+
 func TestToken_loadToken(t *testing.T) {
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
@@ -63,7 +91,7 @@ func TestToken_loadToken(t *testing.T) {
 			},
 		},
 	}
-	tokenCache := &cache.InMemoryTokenCache{
+	tokenCache := &InMemoryTokenCache{
 		Tokens: map[string]*oauth2.Token{
 			"https://accounts.cloud.databricks.com/oidc/accounts/expired": {
 				RefreshToken: "expired",
@@ -74,10 +102,10 @@ func TestToken_loadToken(t *testing.T) {
 			},
 		},
 	}
-	makeApiClient := func(f fixtures.HTTPFixture) *httpclient.ApiClient {
-		return httpclient.NewApiClient(httpclient.ClientConfig{
-			Transport: fixtures.SliceTransport{f},
-		})
+	makeApiClient := func(f fixtures.HTTPFixture) *MockApiClient {
+		return &MockApiClient{
+			RefreshTokenResponse: fixtures.SliceTransport{f},
+		}
 	}
 	wantErrors := func(substrings ...string) func(error) {
 		return func(err error) {
@@ -100,14 +128,14 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "prints helpful login message on refresh failure when profile is specified",
 			args: loadTokenArgs{
-				oauthArgument: oauth.BasicOAuthArgument{},
+				authArguments: &authArguments{},
 				profileName:   "expired",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 				persistentAuthOpts: []oauth.PersistentAuthOption{
 					oauth.WithTokenCache(tokenCache),
-					oauth.WithApiClient(makeApiClient(refreshFailureTokenResponse)),
+					oauth.WithOAuthClient(makeApiClient(refreshFailureTokenResponse)),
 				},
 			},
 			wantErr: wantErrors(
@@ -118,9 +146,9 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "prints helpful login message on refresh failure when host is specified",
 			args: loadTokenArgs{
-				oauthArgument: oauth.BasicOAuthArgument{
-					Host:      "https://accounts.cloud.databricks.com",
-					AccountID: "expired",
+				authArguments: &authArguments{
+					host:      "https://accounts.cloud.databricks.com",
+					accountId: "expired",
 				},
 				profileName:  "",
 				args:         []string{},
@@ -128,7 +156,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				persistentAuthOpts: []oauth.PersistentAuthOption{
 					oauth.WithTokenCache(tokenCache),
-					oauth.WithApiClient(makeApiClient(refreshFailureTokenResponse)),
+					oauth.WithOAuthClient(makeApiClient(refreshFailureTokenResponse)),
 				},
 			},
 			wantErr: wantErrors(
@@ -139,14 +167,14 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "prints helpful login message on invalid response",
 			args: loadTokenArgs{
-				oauthArgument: oauth.BasicOAuthArgument{},
+				authArguments: &authArguments{},
 				profileName:   "active",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 				persistentAuthOpts: []oauth.PersistentAuthOption{
 					oauth.WithTokenCache(tokenCache),
-					oauth.WithApiClient(makeApiClient(refreshFailureInvalidResponse)),
+					oauth.WithOAuthClient(makeApiClient(refreshFailureInvalidResponse)),
 				},
 			},
 			wantErr: wantErrors(
@@ -157,14 +185,14 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "prints helpful login message on other error response",
 			args: loadTokenArgs{
-				oauthArgument: oauth.BasicOAuthArgument{},
+				authArguments: &authArguments{},
 				profileName:   "active",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 				persistentAuthOpts: []oauth.PersistentAuthOption{
 					oauth.WithTokenCache(tokenCache),
-					oauth.WithApiClient(makeApiClient(refreshFailureOtherError)),
+					oauth.WithOAuthClient(makeApiClient(refreshFailureOtherError)),
 				},
 			},
 			wantErr: wantErrors(
@@ -175,14 +203,14 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "succeeds with profile",
 			args: loadTokenArgs{
-				oauthArgument: oauth.BasicOAuthArgument{},
+				authArguments: &authArguments{},
 				profileName:   "active",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 				persistentAuthOpts: []oauth.PersistentAuthOption{
 					oauth.WithTokenCache(tokenCache),
-					oauth.WithApiClient(makeApiClient(refreshSuccessTokenResponse)),
+					oauth.WithOAuthClient(makeApiClient(refreshSuccessTokenResponse)),
 				},
 			},
 			want: validateToken,
@@ -190,14 +218,14 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "succeeds with host",
 			args: loadTokenArgs{
-				oauthArgument: oauth.BasicOAuthArgument{Host: "https://accounts.cloud.databricks.com", AccountID: "active"},
+				authArguments: &authArguments{host: "https://accounts.cloud.databricks.com", accountId: "active"},
 				profileName:   "",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 				persistentAuthOpts: []oauth.PersistentAuthOption{
 					oauth.WithTokenCache(tokenCache),
-					oauth.WithApiClient(makeApiClient(refreshSuccessTokenResponse)),
+					oauth.WithOAuthClient(makeApiClient(refreshSuccessTokenResponse)),
 				},
 			},
 			want: validateToken,

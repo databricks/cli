@@ -5,9 +5,26 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/oauth"
 	"github.com/spf13/cobra"
 )
+
+type authArguments struct {
+	host      string
+	accountId string
+}
+
+func (a authArguments) toOAuthArgument() (oauth.OAuthArgument, error) {
+	cfg := &config.Config{
+		Host:      a.host,
+		AccountID: a.accountId,
+	}
+	if cfg.IsAccountClient() {
+		return oauth.NewBasicAccountOAuthArgument(cfg.Host, cfg.AccountID)
+	}
+	return oauth.NewBasicWorkspaceOAuthArgument(cfg.Host)
+}
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
@@ -22,14 +39,14 @@ Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
 GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	}
 
-	var oauthArgument oauth.BasicOAuthArgument
-	cmd.PersistentFlags().StringVar(&oauthArgument.Host, "host", oauthArgument.Host, "Databricks Host")
-	cmd.PersistentFlags().StringVar(&oauthArgument.AccountID, "account-id", oauthArgument.AccountID, "Databricks Account ID")
+	var authArguments authArguments
+	cmd.PersistentFlags().StringVar(&authArguments.host, "host", "", "Databricks Host")
+	cmd.PersistentFlags().StringVar(&authArguments.accountId, "account-id", "", "Databricks Account ID")
 
 	cmd.AddCommand(newEnvCommand())
-	cmd.AddCommand(newLoginCommand(&oauthArgument))
+	cmd.AddCommand(newLoginCommand(&authArguments))
 	cmd.AddCommand(newProfilesCommand())
-	cmd.AddCommand(newTokenCommand(&oauthArgument))
+	cmd.AddCommand(newTokenCommand(&authArguments))
 	cmd.AddCommand(newDescribeCommand())
 	return cmd
 }
