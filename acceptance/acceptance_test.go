@@ -27,14 +27,17 @@ const EntryPointScript = "script"
 
 func TestAccept(t *testing.T) {
 	execPath := BuildCLI(t)
+	// $CLI is what test scripts are using
 	t.Setenv("CLI", execPath)
 
 	server := StartServer(t)
 	AddHandlers(server)
+	// Redirect API access to local server:
 	t.Setenv("DATABRICKS_HOST", fmt.Sprintf("http://127.0.0.1:%d", server.Port))
 	t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 	homeDir := t.TempDir()
+	// Do not read user's ~/.databrickscfg
 	t.Setenv(env.HomeEnvVar(), homeDir)
 
 	testDirs := getTests(t)
