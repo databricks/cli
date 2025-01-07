@@ -2,7 +2,7 @@ package secrets
 
 import (
 	"encoding/base64"
-	"fmt"
+	"errors"
 	"io"
 	"os"
 
@@ -67,7 +67,7 @@ func newPutSecret() *cobra.Command {
 		bytesValueChanged := cmd.Flags().Changed("bytes-value")
 		stringValueChanged := cmd.Flags().Changed("string-value")
 		if bytesValueChanged && stringValueChanged {
-			return fmt.Errorf("cannot specify both --bytes-value and --string-value")
+			return errors.New("cannot specify both --bytes-value and --string-value")
 		}
 
 		if cmd.Flags().Changed("json") {

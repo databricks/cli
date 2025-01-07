@@ -17,7 +17,9 @@ jobs:
   #   * Avoid running integration tests twice, since it was already run at the tip of the branch before squashing.
   #
   trigger:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     steps:
       - name: Auto-approve squashed commit

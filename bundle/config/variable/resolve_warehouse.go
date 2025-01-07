@@ -2,7 +2,6 @@ package variable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -16,9 +15,9 @@ func (l resolveWarehouse) Resolve(ctx context.Context, w *databricks.WorkspaceCl
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(entity.Id), nil
+	return entity.Id, nil
 }
 
 func (l resolveWarehouse) String() string {
-	return fmt.Sprintf("warehouse: %s", l.name)
+	return "warehouse: " + l.name
 }

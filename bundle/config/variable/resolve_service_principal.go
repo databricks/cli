@@ -2,7 +2,6 @@ package variable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -16,9 +15,9 @@ func (l resolveServicePrincipal) Resolve(ctx context.Context, w *databricks.Work
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(entity.ApplicationId), nil
+	return entity.ApplicationId, nil
 }
 
 func (l resolveServicePrincipal) String() string {
-	return fmt.Sprintf("service-principal: %s", l.name)
+	return "service-principal: " + l.name
 }

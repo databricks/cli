@@ -186,7 +186,7 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
-		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
+		return errors.New("please only provide a host as an argument or a flag, not both")
 	}
 
 	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.

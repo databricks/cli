@@ -1,7 +1,7 @@
 package libraries
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
@@ -20,5 +20,5 @@ func libraryPath(library *compute.Library) (string, error) {
 		return library.Requirements, nil
 	}
 
-	return "", fmt.Errorf("not supported library type")
+	return "", errors.New("not supported library type")
 }

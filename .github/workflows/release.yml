@@ -9,9 +9,13 @@ on:
 
 jobs:
   goreleaser:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     outputs:
       artifacts: ${{ steps.releaser.outputs.artifacts }}
-    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4

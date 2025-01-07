@@ -1,6 +1,7 @@
 package variable
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
@@ -68,7 +69,7 @@ func (v *Variable) Set(val VariableValue) error {
 	switch rv.Kind() {
 	case reflect.Struct, reflect.Array, reflect.Slice, reflect.Map:
 		if v.Type != VariableTypeComplex {
-			return fmt.Errorf("variable type is not complex")
+			return errors.New("variable type is not complex")
 		}
 	}
 
