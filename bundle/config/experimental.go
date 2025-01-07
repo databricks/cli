@@ -27,6 +27,7 @@ type Experimental struct {
 	// PyDABs determines whether to load the 'databricks-pydabs' package.
 	//
 	// PyDABs allows to define bundle configuration using Python.
+	// PyDABs is deprecated use Python instead.
 	PyDABs PyDABs `json:"pydabs,omitempty"`
 
 	// Python configures loading of Python code defined with 'databricks-bundles' package.

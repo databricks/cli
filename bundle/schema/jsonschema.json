@@ -1243,12 +1243,15 @@
                   "type": "object",
                   "properties": {
                     "mutators": {
+                      "description": "Mutators contains a list of fully qualified function paths to mutator functions.\n\nExample: [\"my_project.mutators:add_default_cluster\"]",
                       "$ref": "#/$defs/slice/string"
                     },
                     "resources": {
+                      "description": "Resources contains a list of fully qualified function paths to load resources\ndefined in Python code.\n\nExample: [\"my_project.resources:load_resources\"]",
                       "$ref": "#/$defs/slice/string"
                     },
                     "venv_path": {
+                      "description": "VEnvPath is path to the virtual environment.\n\nIf enabled, Python code will execute within this environment. If disabled,\nit defaults to using the Python interpreter available in the current shell.",
                       "$ref": "#/$defs/string"
                     }
                   },

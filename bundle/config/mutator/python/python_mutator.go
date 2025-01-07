@@ -30,7 +30,6 @@ import (
 	"github.com/databricks/cli/libs/process"
 )
 
-// phase is a phase of the Python mutator.
 type phase string
 
 const (
@@ -135,6 +134,7 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 		return opts{}, nil
 	}
 
+	// using reflect.DeepEquals in case we add more fields
 	pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
 	pythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
 
