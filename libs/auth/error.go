@@ -11,7 +11,8 @@ import (
 )
 
 func RewriteAuthError(ctx context.Context, cfg *config.Config, err error) error {
-	if errors.Is(err, &oauth.InvalidRefreshTokenError{}) {
+	target := &oauth.InvalidRefreshTokenError{}
+	if errors.As(err, &target) {
 		oauthArgument, err := AuthArguments{cfg.Host, cfg.AccountID}.ToOAuthArgument()
 		if err != nil {
 			return err
