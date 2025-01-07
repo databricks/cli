@@ -36,6 +36,10 @@ func TestResolveSchemaDependencyForVolume(t *testing.T) {
 							Name:        "barfoo",
 						},
 					},
+					"nilschema": {},
+					"emptyschema": {
+						CreateSchema: &catalog.CreateSchema{},
+					},
 				},
 				Volumes: map[string]*resources.Volume{
 					"volume1": {

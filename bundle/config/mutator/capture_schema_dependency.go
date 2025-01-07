@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type resolveSchemeDependency struct{}
+type captureSchemaDependency struct{}
 
 // If a user defines a UC schema in the bundle, they can refer to it in DLT pipelines
 // or UC Volumes using the `${resources.schemas.<schema_key>.name}` syntax. Using this
@@ -19,20 +19,20 @@ type resolveSchemeDependency struct{}
 // This mutator translates any implicit schema references in DLT pipelines or UC Volumes
 // to the explicit syntax.
 func ResolveSchemaDependency() bundle.Mutator {
-	return &resolveSchemeDependency{}
+	return &captureSchemaDependency{}
 }
 
-func (m *resolveSchemeDependency) Name() string {
-	return "ResolveSchemaDependency"
+func (m *captureSchemaDependency) Name() string {
+	return "CaptureSchemaDependency"
 }
 
-func findSchema(b *bundle.Bundle, catalogName, name string) (string, *resources.Schema) {
-	if catalogName == "" || name == "" {
+func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *resources.Schema) {
+	if catalogName == "" || schemaName == "" {
 		return "", nil
 	}
 
 	for k, s := range b.Config.Resources.Schemas {
-		if s.CatalogName == catalogName && s.Name == name {
+		if s.CreateSchema != nil && s.CatalogName == catalogName && s.Name == schemaName {
 			return k, s
 		}
 	}
@@ -69,7 +69,7 @@ func resolvePipeline(p *resources.Pipeline, b *bundle.Bundle) {
 	}
 }
 
-func (m *resolveSchemeDependency) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *captureSchemaDependency) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, p := range b.Config.Resources.Pipelines {
 		resolvePipeline(p, b)
 	}
