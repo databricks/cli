@@ -5,40 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/credentials/oauth"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
 
-func buildLoginCommand(ctx context.Context, profile string, arg oauth.OAuthArgument) string {
-	cmd := []string{
-		"databricks",
-		"auth",
-		"login",
-	}
-	if profile != "" {
-		cmd = append(cmd, "--profile", profile)
-	} else {
-		switch arg := arg.(type) {
-		case oauth.AccountOAuthArgument:
-			cmd = append(cmd, "--host", arg.GetAccountHost(ctx), "--account-id", arg.GetAccountId(ctx))
-		case oauth.WorkspaceOAuthArgument:
-			cmd = append(cmd, "--host", arg.GetWorkspaceHost(ctx))
-		}
-	}
-	return strings.Join(cmd, " ")
-}
-
 func helpfulError(ctx context.Context, profile string, persistentAuth oauth.OAuthArgument) string {
-	loginMsg := buildLoginCommand(ctx, profile, persistentAuth)
+	loginMsg := auth.BuildLoginCommand(ctx, profile, persistentAuth)
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
 
-func newTokenCommand(authArguments *authArguments) *cobra.Command {
+func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [HOST]",
 		Short: "Get authentication token",
@@ -79,7 +60,7 @@ func newTokenCommand(authArguments *authArguments) *cobra.Command {
 }
 
 type loadTokenArgs struct {
-	authArguments      *authArguments
+	authArguments      *auth.AuthArguments
 	profileName        string
 	args               []string
 	tokenTimeout       time.Duration
@@ -100,7 +81,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, args.tokenTimeout)
 	defer cancel()
-	oauthArgument, err := args.authArguments.toOAuthArgument()
+	oauthArgument, err := args.authArguments.ToOAuthArgument()
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +94,9 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		if errors.Is(err, &oauth.InvalidRefreshTokenError{}) {
-			return nil, err
+			msg := "a new access token could not be retrieved because the refresh token is invalid."
+			msg += fmt.Sprintf(" To reauthenticate, run `%s`", auth.BuildLoginCommand(ctx, args.profileName, oauthArgument))
+			return nil, errors.New(msg)
 		}
 		return nil, fmt.Errorf("unexpected error loading token: %w. %s", err, helpMsg)
 	}

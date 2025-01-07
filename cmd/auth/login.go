@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
@@ -18,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func promptForProfile(ctx context.Context, authArguments *authArguments) (string, error) {
+func promptForProfile(ctx context.Context, authArguments *auth.AuthArguments) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
 		return "", nil
 	}
@@ -35,7 +36,7 @@ const (
 	defaultTimeout          = 1 * time.Hour
 )
 
-func newLoginCommand(authArguments *authArguments) *cobra.Command {
+func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
 	if runtime.GOOS == "windows" {
 		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
@@ -119,15 +120,15 @@ depends on the existing profiles you have set in your configuration file
 		// We need the config without the profile before it's used to initialise new workspace client below.
 		// Otherwise it will complain about non existing profile because it was not yet saved.
 		cfg := config.Config{
-			Host:      authArguments.host,
-			AccountID: authArguments.accountId,
+			Host:      authArguments.Host,
+			AccountID: authArguments.AccountId,
 			AuthType:  "databricks-cli",
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
-		oauthArgument, err := authArguments.toOAuthArgument()
+		oauthArgument, err := authArguments.ToOAuthArgument()
 		if err != nil {
 			return err
 		}
@@ -181,9 +182,9 @@ depends on the existing profiles you have set in your configuration file
 // 1. --account-id flag.
 // 2. account-id from the specified profile, if available.
 // 3. Prompt the user for the account-id.
-func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profileName string, authArguments *authArguments, args []string) error {
+func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profileName string, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
-	host := authArguments.host
+	host := authArguments.Host
 	if len(args) > 0 && host != "" {
 		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
 	}
@@ -198,10 +199,10 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 	if host == "" {
 		if len(args) > 0 {
 			// If [HOST] is provided, set the host to the provided positional argument.
-			authArguments.host = args[0]
+			authArguments.Host = args[0]
 		} else if len(profiles) > 0 && profiles[0].Host != "" {
 			// If neither [HOST] nor --host are provided, and the profile has a host, use it.
-			authArguments.host = profiles[0].Host
+			authArguments.Host = profiles[0].Host
 		} else {
 			// If neither [HOST] nor --host are provided, and the profile does not have a host,
 			// then prompt the user for a host.
@@ -209,17 +210,17 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 			if err != nil {
 				return err
 			}
-			authArguments.host = hostName
+			authArguments.Host = hostName
 		}
 	}
 
 	// If the account-id was not provided as a cmd line flag, try to read it from
 	// the specified profile.
-	isAccountClient := (&config.Config{Host: authArguments.host}).IsAccountClient()
-	accountID := authArguments.accountId
+	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
+	accountID := authArguments.AccountId
 	if isAccountClient && accountID == "" {
 		if len(profiles) > 0 && profiles[0].AccountID != "" {
-			authArguments.accountId = profiles[0].AccountID
+			authArguments.AccountId = profiles[0].AccountID
 		} else {
 			// Prompt user for the account-id if it we could not get it from a
 			// profile.
@@ -227,17 +228,17 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 			if err != nil {
 				return err
 			}
-			authArguments.accountId = accountId
+			authArguments.AccountId = accountId
 		}
 	}
 	return nil
 }
 
-func getProfileName(authArguments *authArguments) string {
-	if authArguments.accountId != "" {
-		return fmt.Sprintf("ACCOUNT-%s", authArguments.accountId)
+func getProfileName(authArguments *auth.AuthArguments) string {
+	if authArguments.AccountId != "" {
+		return fmt.Sprintf("ACCOUNT-%s", authArguments.AccountId)
 	}
-	host := strings.TrimPrefix(authArguments.host, "https://")
+	host := strings.TrimPrefix(authArguments.Host, "https://")
 	split := strings.Split(host, ".")
 	return split[0]
 }

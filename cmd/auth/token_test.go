@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/credentials/oauth"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
@@ -128,7 +129,7 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "prints helpful login message on refresh failure when profile is specified",
 			args: loadTokenArgs{
-				authArguments: &authArguments{},
+				authArguments: &auth.AuthArguments{},
 				profileName:   "expired",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
@@ -146,9 +147,9 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "prints helpful login message on refresh failure when host is specified",
 			args: loadTokenArgs{
-				authArguments: &authArguments{
-					host:      "https://accounts.cloud.databricks.com",
-					accountId: "expired",
+				authArguments: &auth.AuthArguments{
+					Host:      "https://accounts.cloud.databricks.com",
+					AccountId: "expired",
 				},
 				profileName:  "",
 				args:         []string{},
@@ -167,7 +168,7 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "prints helpful login message on invalid response",
 			args: loadTokenArgs{
-				authArguments: &authArguments{},
+				authArguments: &auth.AuthArguments{},
 				profileName:   "active",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
@@ -185,7 +186,7 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "prints helpful login message on other error response",
 			args: loadTokenArgs{
-				authArguments: &authArguments{},
+				authArguments: &auth.AuthArguments{},
 				profileName:   "active",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
@@ -203,7 +204,7 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "succeeds with profile",
 			args: loadTokenArgs{
-				authArguments: &authArguments{},
+				authArguments: &auth.AuthArguments{},
 				profileName:   "active",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
@@ -218,7 +219,7 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "succeeds with host",
 			args: loadTokenArgs{
-				authArguments: &authArguments{host: "https://accounts.cloud.databricks.com", accountId: "active"},
+				authArguments: &auth.AuthArguments{Host: "https://accounts.cloud.databricks.com", AccountId: "active"},
 				profileName:   "",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,

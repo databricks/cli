@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
@@ -143,7 +144,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
-		return err
+		return renderError(ctx, cfg, err)
 	}
 
 	ctx = context.WithValue(ctx, &accountClient, a)
@@ -220,7 +221,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	w, err := workspaceClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
-		return err
+		return renderError(ctx, cfg, err)
 	}
 
 	ctx = context.WithValue(ctx, &workspaceClient, w)
@@ -337,4 +338,8 @@ func ConfigUsed(ctx context.Context) *config.Config {
 		panic("cannot get *config.Config. Please report it as a bug")
 	}
 	return cfg
+}
+
+func renderError(ctx context.Context, cfg *config.Config, err error) error {
+	return auth.RewriteAuthError(ctx, cfg, err)
 }
