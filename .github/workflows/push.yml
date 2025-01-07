@@ -28,7 +28,7 @@ jobs:
       - name: Clean up cache if running on schedule
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh cache delete --all
+        run: gh cache delete --all --repo databricks/cli
 
   tests:
     needs: cleanups
