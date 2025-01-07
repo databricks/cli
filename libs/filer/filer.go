@@ -2,7 +2,6 @@ package filer
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/fs"
 )
@@ -36,7 +35,7 @@ type FileAlreadyExistsError struct {
 }
 
 func (err FileAlreadyExistsError) Error() string {
-	return fmt.Sprintf("file already exists: %s", err.path)
+	return "file already exists: " + err.path
 }
 
 func (err FileAlreadyExistsError) Is(other error) bool {
@@ -52,7 +51,7 @@ func (err FileDoesNotExistError) Is(other error) bool {
 }
 
 func (err FileDoesNotExistError) Error() string {
-	return fmt.Sprintf("file does not exist: %s", err.path)
+	return "file does not exist: " + err.path
 }
 
 type NoSuchDirectoryError struct {
@@ -60,7 +59,7 @@ type NoSuchDirectoryError struct {
 }
 
 func (err NoSuchDirectoryError) Error() string {
-	return fmt.Sprintf("no such directory: %s", err.path)
+	return "no such directory: " + err.path
 }
 
 func (err NoSuchDirectoryError) Is(other error) bool {
@@ -72,7 +71,7 @@ type NotADirectory struct {
 }
 
 func (err NotADirectory) Error() string {
-	return fmt.Sprintf("not a directory: %s", err.path)
+	return "not a directory: " + err.path
 }
 
 func (err NotADirectory) Is(other error) bool {
@@ -84,7 +83,7 @@ type NotAFile struct {
 }
 
 func (err NotAFile) Error() string {
-	return fmt.Sprintf("not a file: %s", err.path)
+	return "not a file: " + err.path
 }
 
 func (err NotAFile) Is(other error) bool {
@@ -96,7 +95,7 @@ type DirectoryNotEmptyError struct {
 }
 
 func (err DirectoryNotEmptyError) Error() string {
-	return fmt.Sprintf("directory not empty: %s", err.path)
+	return "directory not empty: " + err.path
 }
 
 func (err DirectoryNotEmptyError) Is(other error) bool {
@@ -118,7 +117,7 @@ type PermissionError struct {
 }
 
 func (err PermissionError) Error() string {
-	return fmt.Sprintf("access denied: %s", err.path)
+	return "access denied: " + err.path
 }
 
 func (err PermissionError) Is(other error) bool {

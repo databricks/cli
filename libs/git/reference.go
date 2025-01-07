@@ -13,8 +13,8 @@ import (
 type ReferenceType string
 
 var (
-	ErrNotAReferencePointer = fmt.Errorf("HEAD does not point to another reference")
-	ErrNotABranch           = fmt.Errorf("HEAD is not a reference to a git branch")
+	ErrNotAReferencePointer = errors.New("HEAD does not point to another reference")
+	ErrNotABranch           = errors.New("HEAD is not a reference to a git branch")
 )
 
 const (

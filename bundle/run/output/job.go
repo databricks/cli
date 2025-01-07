@@ -47,7 +47,7 @@ func (out *JobOutput) String() (string, error) {
 		}
 		result.WriteString("=======\n")
 		result.WriteString(fmt.Sprintf("Task %s:\n", v.TaskKey))
-		result.WriteString(fmt.Sprintf("%s\n", taskString))
+		result.WriteString(taskString + "\n")
 	}
 	return result.String(), nil
 }

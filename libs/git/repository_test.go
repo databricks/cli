@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,8 +95,7 @@ func (testRepo *testRepository) addOriginUrl(url string) {
 	defer f.Close()
 
 	_, err = f.WriteString(
-		fmt.Sprintf(`[remote "origin"]
-	url = %s`, url))
+		"[remote \"origin\"]\n\turl = " + url)
 	require.NoError(testRepo.t, err)
 
 	// reload config to reflect the remote url

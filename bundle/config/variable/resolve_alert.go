@@ -2,7 +2,6 @@ package variable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -16,9 +15,9 @@ func (l resolveAlert) Resolve(ctx context.Context, w *databricks.WorkspaceClient
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(entity.Id), nil
+	return entity.Id, nil
 }
 
 func (l resolveAlert) String() string {
-	return fmt.Sprintf("alert: %s", l.name)
+	return "alert: " + l.name
 }

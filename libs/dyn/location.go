@@ -1,6 +1,7 @@
 package dyn
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 )
@@ -17,7 +18,7 @@ func (l Location) String() string {
 
 func (l Location) Directory() (string, error) {
 	if l.File == "" {
-		return "", fmt.Errorf("no file in location")
+		return "", errors.New("no file in location")
 	}
 
 	return filepath.Dir(l.File), nil

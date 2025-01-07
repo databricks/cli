@@ -2,7 +2,7 @@ package variable
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -16,9 +16,9 @@ func (l resolveJob) Resolve(ctx context.Context, w *databricks.WorkspaceClient) 
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(entity.JobId), nil
+	return strconv.FormatInt(entity.JobId, 10), nil
 }
 
 func (l resolveJob) String() string {
-	return fmt.Sprintf("job: %s", l.name)
+	return "job: " + l.name
 }

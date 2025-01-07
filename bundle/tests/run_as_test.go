@@ -2,7 +2,6 @@ package config_tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -219,7 +218,7 @@ func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc.name, func(t *testing.T) {
-			bundlePath := fmt.Sprintf("./run_as/not_allowed/neither_sp_nor_user/%s", tc.name)
+			bundlePath := "./run_as/not_allowed/neither_sp_nor_user/" + tc.name
 			b := load(t, bundlePath)
 
 			ctx := context.Background()
