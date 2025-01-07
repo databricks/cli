@@ -236,7 +236,7 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 
 func getProfileName(authArguments *auth.AuthArguments) string {
 	if authArguments.AccountId != "" {
-		return fmt.Sprintf("ACCOUNT-%s", authArguments.AccountId)
+		return "ACCOUNT-" + authArguments.AccountId
 	}
 	host := strings.TrimPrefix(authArguments.Host, "https://")
 	split := strings.Split(host, ".")

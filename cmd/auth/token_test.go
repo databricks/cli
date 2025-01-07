@@ -53,7 +53,7 @@ type MockApiClient struct {
 }
 
 // GetAccountOAuthEndpoints implements oauth.OAuthClient.
-func (m *MockApiClient) GetAccountOAuthEndpoints(ctx context.Context, accountHost string, accountId string) (*oauth.OAuthAuthorizationServer, error) {
+func (m *MockApiClient) GetAccountOAuthEndpoints(ctx context.Context, accountHost, accountId string) (*oauth.OAuthAuthorizationServer, error) {
 	return &oauth.OAuthAuthorizationServer{
 		TokenEndpoint:         accountHost + "/token",
 		AuthorizationEndpoint: accountHost + "/authorize",
