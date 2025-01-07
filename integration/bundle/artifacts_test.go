@@ -85,13 +85,13 @@ func TestUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 
 	// The remote path attribute on the artifact file should have been set.
 	require.Regexp(t,
-		regexp.MustCompile(path.Join(regexp.QuoteMeta(wsDir), `.internal/test\.whl`)),
+		path.Join(regexp.QuoteMeta(wsDir), `.internal/test\.whl`),
 		b.Config.Artifacts["test"].Files[0].RemotePath,
 	)
 
 	// The task library path should have been updated to the remote path.
 	require.Regexp(t,
-		regexp.MustCompile(path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`)),
+		path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`),
 		b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0].Whl,
 	)
 }
@@ -149,13 +149,13 @@ func TestUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) {
 
 	// The remote path attribute on the artifact file should have been set.
 	require.Regexp(t,
-		regexp.MustCompile(path.Join(regexp.QuoteMeta(wsDir), `.internal/test\.whl`)),
+		path.Join(regexp.QuoteMeta(wsDir), `.internal/test\.whl`),
 		b.Config.Artifacts["test"].Files[0].RemotePath,
 	)
 
 	// The job environment deps path should have been updated to the remote path.
 	require.Regexp(t,
-		regexp.MustCompile(path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`)),
+		path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`),
 		b.Config.Resources.Jobs["test"].JobSettings.Environments[0].Spec.Dependencies[0],
 	)
 }
@@ -218,13 +218,13 @@ func TestUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 
 	// The remote path attribute on the artifact file should have been set.
 	require.Regexp(t,
-		regexp.MustCompile(path.Join(regexp.QuoteMeta(volumePath), `.internal/test\.whl`)),
+		path.Join(regexp.QuoteMeta(volumePath), `.internal/test\.whl`),
 		b.Config.Artifacts["test"].Files[0].RemotePath,
 	)
 
 	// The task library path should have been updated to the remote path.
 	require.Regexp(t,
-		regexp.MustCompile(path.Join(regexp.QuoteMeta(volumePath), `.internal/test\.whl`)),
+		path.Join(regexp.QuoteMeta(volumePath), `.internal/test\.whl`),
 		b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0].Whl,
 	)
 }
@@ -257,7 +257,7 @@ func TestUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "bundle", "deploy")
 
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/doesnotexist does not exist: Not Found
+	assert.Equal(t, fmt.Sprintf(`Error: volume main.%s.doesnotexist does not exist
   at workspace.artifact_path
   in databricks.yml:6:18
 
@@ -293,7 +293,7 @@ func TestUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
 	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "bundle", "deploy")
 
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/my_volume does not exist: Not Found
+	assert.Equal(t, fmt.Sprintf(`Error: volume main.%s.my_volume does not exist
   at workspace.artifact_path
      resources.volumes.foo
   in databricks.yml:6:18

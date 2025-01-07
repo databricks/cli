@@ -148,9 +148,9 @@ func TestEnvVarsConfigureNoInteractive(t *testing.T) {
 
 	// We should only save host and token for a profile, other env variables should not be saved
 	_, err = defaultSection.GetKey("auth_type")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	_, err = defaultSection.GetKey("metadata_service_url")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {

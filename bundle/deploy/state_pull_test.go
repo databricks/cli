@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -279,7 +278,7 @@ func TestStatePullNoState(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = os.Stat(statePath)
-	require.True(t, errors.Is(err, fs.ErrNotExist))
+	require.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestStatePullOlderState(t *testing.T) {

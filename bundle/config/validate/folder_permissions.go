@@ -36,7 +36,8 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 	}
 
 	if err := g.Wait(); err != nil {
-		return diag.FromErr(err)
+		// Note, only diag from first coroutine is captured, others are lost
+		diags = diags.Extend(diag.FromErr(err))
 	}
 
 	for _, r := range results {

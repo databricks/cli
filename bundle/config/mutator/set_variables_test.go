@@ -30,7 +30,7 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
-	assert.Equal(t, variable.Value, "process-env")
+	assert.Equal(t, "process-env", variable.Value)
 }
 
 func TestSetVariableUsingDefaultValue(t *testing.T) {
@@ -48,7 +48,7 @@ func TestSetVariableUsingDefaultValue(t *testing.T) {
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
-	assert.Equal(t, variable.Value, "default")
+	assert.Equal(t, "default", variable.Value)
 }
 
 func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
@@ -70,7 +70,7 @@ func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
-	assert.Equal(t, variable.Value, "assigned-value")
+	assert.Equal(t, "assigned-value", variable.Value)
 }
 
 func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
@@ -95,7 +95,7 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
-	assert.Equal(t, variable.Value, "assigned-value")
+	assert.Equal(t, "assigned-value", variable.Value)
 }
 
 func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {

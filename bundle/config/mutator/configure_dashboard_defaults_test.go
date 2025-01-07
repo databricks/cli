@@ -109,19 +109,19 @@ func TestConfigureDashboardDefaultsEmbedCredentials(t *testing.T) {
 	// Set to true; still true.
 	v, err = dyn.Get(b.Config.Value(), "resources.dashboards.d1.embed_credentials")
 	if assert.NoError(t, err) {
-		assert.Equal(t, true, v.MustBool())
+		assert.True(t, v.MustBool())
 	}
 
 	// Set to false; still false.
 	v, err = dyn.Get(b.Config.Value(), "resources.dashboards.d2.embed_credentials")
 	if assert.NoError(t, err) {
-		assert.Equal(t, false, v.MustBool())
+		assert.False(t, v.MustBool())
 	}
 
 	// Not set; now false.
 	v, err = dyn.Get(b.Config.Value(), "resources.dashboards.d3.embed_credentials")
 	if assert.NoError(t, err) {
-		assert.Equal(t, false, v.MustBool())
+		assert.False(t, v.MustBool())
 	}
 
 	// No valid dashboard; no change.

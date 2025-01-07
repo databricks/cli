@@ -33,15 +33,15 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 	r := Resources{}
 	rt := reflect.TypeOf(r)
 
-	for i := 0; i < rt.NumField(); i++ {
+	for i := range rt.NumField() {
 		field := rt.Field(i)
 
 		// Fields in Resources are expected be of the form map[string]*resourceStruct
-		assert.Equal(t, field.Type.Kind(), reflect.Map, "Resource %s is not a map", field.Name)
+		assert.Equal(t, reflect.Map, field.Type.Kind(), "Resource %s is not a map", field.Name)
 		kt := field.Type.Key()
-		assert.Equal(t, kt.Kind(), reflect.String, "Resource %s is not a map with string keys", field.Name)
+		assert.Equal(t, reflect.String, kt.Kind(), "Resource %s is not a map with string keys", field.Name)
 		vt := field.Type.Elem()
-		assert.Equal(t, vt.Kind(), reflect.Ptr, "Resource %s is not a map with pointer values", field.Name)
+		assert.Equal(t, reflect.Ptr, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
 
 		// Marshalling a resourceStruct will panic if resourceStruct does not have a custom marshaller
 		// This is because resourceStruct embeds a Go SDK struct that implements
@@ -75,7 +75,7 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 		types = append(types, group.Description.PluralName)
 	}
 
-	for i := 0; i < rt.NumField(); i++ {
+	for i := range rt.NumField() {
 		field := rt.Field(i)
 		jsonTag := field.Tag.Get("json")
 
@@ -92,7 +92,7 @@ func TestSupportedResources(t *testing.T) {
 	actual := SupportedResources()
 
 	typ := reflect.TypeOf(Resources{})
-	for i := 0; i < typ.NumField(); i++ {
+	for i := range typ.NumField() {
 		field := typ.Field(i)
 		jsonTags := strings.Split(field.Tag.Get("json"), ",")
 		pluralName := jsonTags[0]

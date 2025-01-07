@@ -55,7 +55,7 @@ func (d *dummyIterator) Next(ctx context.Context) (*provisioning.Workspace, erro
 func makeWorkspaces(count int) []*provisioning.Workspace {
 	res := make([]*provisioning.Workspace, 0, count)
 	next := []*provisioning.Workspace{&dummyWorkspace1, &dummyWorkspace2}
-	for i := 0; i < count; i++ {
+	for range count {
 		n := next[0]
 		next = append(next[1:], n)
 		res = append(res, n)
@@ -74,7 +74,7 @@ func makeIterator(count int) listing.Iterator[*provisioning.Workspace] {
 func makeBigOutput(count int) string {
 	res := bytes.Buffer{}
 	for _, ws := range makeWorkspaces(count) {
-		res.Write([]byte(fmt.Sprintf("%d  %s\n", ws.WorkspaceId, ws.WorkspaceName)))
+		res.WriteString(fmt.Sprintf("%d  %s\n", ws.WorkspaceId, ws.WorkspaceName))
 	}
 	return res.String()
 }

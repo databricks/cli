@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -71,6 +72,7 @@ func newDeployCommand() *cobra.Command {
 			diags = diags.Extend(
 				bundle.Apply(ctx, b, bundle.Seq(
 					phases.Initialize(),
+					validate.FastValidate(),
 					phases.Build(),
 					phases.Deploy(outputHandler),
 				)),

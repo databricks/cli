@@ -1,38 +1,35 @@
 default: build
 
-lint: vendor
-	@echo "✓ Linting source code with https://golangci-lint.run/ (with --fix)..."
-	@golangci-lint run --fix ./...
+PACKAGES=./libs/... ./internal/... ./cmd/... ./bundle/... .
 
-lintcheck: vendor
-	@echo "✓ Linting source code with https://golangci-lint.run/ ..."
-	@golangci-lint run ./...
+GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 
-test: lint testonly
+lint:
+	./lint.sh ./...
 
-testonly:
-	@echo "✓ Running tests ..."
-	@gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt ./...
+lintcheck:
+	golangci-lint run ./...
 
-coverage: test
-	@echo "✓ Opening coverage for unit tests ..."
-	@go tool cover -html=coverage.txt
+test:
+	gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped -- ${PACKAGES}
+
+cover:
+	gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped -- -coverprofile=coverage.txt ${PACKAGES}
+
+showcover:
+	go tool cover -html=coverage.txt
 
 build: vendor
-	@echo "✓ Building source code with go build ..."
-	@go build -mod vendor
+	go build -mod vendor
 
 snapshot:
-	@echo "✓ Building dev snapshot"
-	@go build -o .databricks/databricks
+	go build -o .databricks/databricks
 
 vendor:
-	@echo "✓ Filling vendor folder with library code ..."
-	@go mod vendor
+	go mod vendor
   
 schema:
-	@echo "✓ Generating json-schema ..."
-	@go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
+	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
 INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h
 
@@ -42,4 +39,4 @@ integration:
 integration-short:
 	$(INTEGRATION) -short
 
-.PHONY: lint lintcheck test testonly coverage build snapshot vendor schema integration integration-short
+.PHONY: lint lintcheck test cover showcover build snapshot vendor schema integration integration-short

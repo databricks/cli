@@ -17,7 +17,7 @@ import (
 
 func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
 	result := []pipelines.PipelineEvent{}
-	for i := 0; i < len(events); i++ {
+	for i := range events {
 		if events[i].Origin.UpdateId == updateId {
 			result = append(result, events[i])
 		}
@@ -32,7 +32,7 @@ func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineE
 	}
 	if event.Error != nil && len(event.Error.Exceptions) > 0 {
 		logString += "trace for most recent exception: \n"
-		for i := 0; i < len(event.Error.Exceptions); i++ {
+		for i := range len(event.Error.Exceptions) {
 			logString += fmt.Sprintf("%s\n", event.Error.Exceptions[i].Message)
 		}
 	}
@@ -90,11 +90,6 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient()
-	_, err := w.Pipelines.GetByPipelineId(ctx, pipelineID)
-	if err != nil {
-		log.Warnf(ctx, "Cannot get pipeline: %s", err)
-		return nil, err
-	}
 
 	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID)
 	if err != nil {

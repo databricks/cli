@@ -185,7 +185,7 @@ func TestMappingClone(t *testing.T) {
 
 func TestMappingMerge(t *testing.T) {
 	var m1 dyn.Mapping
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		err := m1.Set(dyn.V(fmt.Sprintf("%d", i)), dyn.V(i))
 		require.NoError(t, err)
 	}
