@@ -19,8 +19,21 @@ func interpolationPattern(s string) string {
 	return fmt.Sprintf(`\$\{(%s(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)+)\}`, s)
 }
 
+func getTypeName(val any) string {
+	return reflect.TypeOf(val).String()
+}
+
 func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	if typ == reflect.TypeOf(config.Root{}) || typ == reflect.TypeOf(variable.Variable{}) {
+	excludedTypes := map[string]bool{
+		getTypeName(config.Root{}):       true,
+		getTypeName(variable.Variable{}): true,
+		getTypeName(config.Bundle{}):     true,
+		getTypeName(config.Targets{}):    true,
+		getTypeName(config.Target{}):     true,
+		// TODO add config.Root.Include - its type is "slice/string" in the schema and currently it is tricky to exclude only this exact field without affecting other "slice/string" fields
+	}
+
+	if _, ok := excludedTypes[typ.String()]; ok {
 		return s
 	}
 

@@ -1019,50 +1019,42 @@
               "type": "string"
             },
             "config.Bundle": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "cluster_id": {
-                      "description": "The ID of a cluster to use to run the bundle.",
-                      "$ref": "#/$defs/string",
-                      "markdownDescription": "The ID of a cluster to use to run the bundle. See [cluster_id](https://docs.databricks.com/dev-tools/bundles/settings.html#cluster_id)."
-                    },
-                    "compute_id": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "databricks_cli_version": {
-                      "description": "The Databricks CLI version to use for the bundle.",
-                      "$ref": "#/$defs/string",
-                      "markdownDescription": "The Databricks CLI version to use for the bundle. See [databricks_cli_version](https://docs.databricks.com/dev-tools/bundles/settings.html#databricks_cli_version)."
-                    },
-                    "deployment": {
-                      "description": "The definition of the bundle deployment",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
-                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [deployment](https://docs.databricks.com/dev-tools/bundles/reference.html#deployment) and [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
-                    },
-                    "git": {
-                      "description": "The Git version control details that are associated with your bundle.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git) and [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
-                    },
-                    "name": {
-                      "description": "The name of the bundle.",
-                      "$ref": "#/$defs/string"
-                    },
-                    "uuid": {
-                      "$ref": "#/$defs/string"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "name"
-                  ]
+              "type": "object",
+              "properties": {
+                "cluster_id": {
+                  "description": "The ID of a cluster to use to run the bundle.",
+                  "$ref": "#/$defs/string",
+                  "markdownDescription": "The ID of a cluster to use to run the bundle. See [cluster_id](https://docs.databricks.com/dev-tools/bundles/settings.html#cluster_id)."
                 },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                "compute_id": {
+                  "$ref": "#/$defs/string"
+                },
+                "databricks_cli_version": {
+                  "description": "The Databricks CLI version to use for the bundle.",
+                  "$ref": "#/$defs/string",
+                  "markdownDescription": "The Databricks CLI version to use for the bundle. See [databricks_cli_version](https://docs.databricks.com/dev-tools/bundles/settings.html#databricks_cli_version)."
+                },
+                "deployment": {
+                  "description": "The definition of the bundle deployment",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
+                  "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [deployment](https://docs.databricks.com/dev-tools/bundles/reference.html#deployment) and [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
+                },
+                "git": {
+                  "description": "The Git version control details that are associated with your bundle.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
+                  "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git) and [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
+                },
+                "name": {
+                  "description": "The name of the bundle.",
+                  "$ref": "#/$defs/string"
+                },
+                "uuid": {
+                  "$ref": "#/$defs/string"
                 }
+              },
+              "additionalProperties": false,
+              "required": [
+                "name"
               ]
             },
             "config.Command": {
@@ -1328,84 +1320,76 @@
               ]
             },
             "config.Target": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "artifacts": {
-                      "description": "The artifacts to include in the target deployment.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
-                      "markdownDescription": "The artifacts to include in the target deployment. See [artifact](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact)"
-                    },
-                    "bundle": {
-                      "description": "The name of the bundle when deploying to this target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
-                    },
-                    "cluster_id": {
-                      "description": "The ID of the cluster to use for this target.",
-                      "$ref": "#/$defs/string"
-                    },
-                    "compute_id": {
-                      "description": "Deprecated. The ID of the compute to use for this target.",
-                      "$ref": "#/$defs/string"
-                    },
-                    "default": {
-                      "description": "Whether this target is the default target.",
-                      "$ref": "#/$defs/bool"
-                    },
-                    "git": {
-                      "description": "The Git version control settings for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "markdownDescription": "The Git version control settings for the target. See [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git)."
-                    },
-                    "mode": {
-                      "description": "The deployment mode for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode",
-                      "markdownDescription": "The deployment mode for the target. Valid values are `development` or `production`. See [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
-                    },
-                    "permissions": {
-                      "description": "The permissions for deploying and running the bundle in the target.",
-                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                      "markdownDescription": "The permissions for deploying and running the bundle in the target. See [permission](https://docs.databricks.com/dev-tools/bundles/reference.html#permission)."
-                    },
-                    "presets": {
-                      "description": "The deployment presets for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
-                      "markdownDescription": "The deployment presets for the target. See [preset](https://docs.databricks.com/dev-tools/bundles/reference.html#preset)."
-                    },
-                    "resources": {
-                      "description": "The resource definitions for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-                      "markdownDescription": "The resource definitions for the target. See [resources](https://docs.databricks.com/dev-tools/bundles/reference.html#resources)."
-                    },
-                    "run_as": {
-                      "description": "The identity to use to run the bundle.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
-                      "markdownDescription": "The identity to use to run the bundle. See [job_run_as](https://docs.databricks.com/dev-tools/bundles/reference.html#job_run_as) and [link](https://docs.databricks.com/dev-tools/bundles/run_as.html)."
-                    },
-                    "sync": {
-                      "description": "The local paths to sync to the target workspace when a bundle is run or deployed.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
-                      "markdownDescription": "The local paths to sync to the target workspace when a bundle is run or deployed. See [sync](https://docs.databricks.com/dev-tools/bundles/reference.html#sync)."
-                    },
-                    "variables": {
-                      "description": "The custom variable definitions for the target.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable",
-                      "markdownDescription": "The custom variable definitions for the target. See [variables](https://docs.databricks.com/dev-tools/bundles/settings.html#variables) and [link](https://docs.databricks.com/dev-tools/bundles/variables.html)."
-                    },
-                    "workspace": {
-                      "description": "The Databricks workspace for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
-                      "markdownDescription": "The Databricks workspace for the target. [workspace](https://docs.databricks.com/dev-tools/bundles/reference.html#workspace)"
-                    }
-                  },
-                  "additionalProperties": false
+              "type": "object",
+              "properties": {
+                "artifacts": {
+                  "description": "The artifacts to include in the target deployment.",
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
+                  "markdownDescription": "The artifacts to include in the target deployment. See [artifact](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact)"
                 },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                "bundle": {
+                  "description": "The name of the bundle when deploying to this target.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
+                },
+                "cluster_id": {
+                  "description": "The ID of the cluster to use for this target.",
+                  "$ref": "#/$defs/string"
+                },
+                "compute_id": {
+                  "description": "Deprecated. The ID of the compute to use for this target.",
+                  "$ref": "#/$defs/string"
+                },
+                "default": {
+                  "description": "Whether this target is the default target.",
+                  "$ref": "#/$defs/bool"
+                },
+                "git": {
+                  "description": "The Git version control settings for the target.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
+                  "markdownDescription": "The Git version control settings for the target. See [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git)."
+                },
+                "mode": {
+                  "description": "The deployment mode for the target.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode",
+                  "markdownDescription": "The deployment mode for the target. Valid values are `development` or `production`. See [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
+                },
+                "permissions": {
+                  "description": "The permissions for deploying and running the bundle in the target.",
+                  "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                  "markdownDescription": "The permissions for deploying and running the bundle in the target. See [permission](https://docs.databricks.com/dev-tools/bundles/reference.html#permission)."
+                },
+                "presets": {
+                  "description": "The deployment presets for the target.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
+                  "markdownDescription": "The deployment presets for the target. See [preset](https://docs.databricks.com/dev-tools/bundles/reference.html#preset)."
+                },
+                "resources": {
+                  "description": "The resource definitions for the target.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
+                  "markdownDescription": "The resource definitions for the target. See [resources](https://docs.databricks.com/dev-tools/bundles/reference.html#resources)."
+                },
+                "run_as": {
+                  "description": "The identity to use to run the bundle.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
+                  "markdownDescription": "The identity to use to run the bundle. See [job_run_as](https://docs.databricks.com/dev-tools/bundles/reference.html#job_run_as) and [link](https://docs.databricks.com/dev-tools/bundles/run_as.html)."
+                },
+                "sync": {
+                  "description": "The local paths to sync to the target workspace when a bundle is run or deployed.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
+                  "markdownDescription": "The local paths to sync to the target workspace when a bundle is run or deployed. See [sync](https://docs.databricks.com/dev-tools/bundles/reference.html#sync)."
+                },
+                "variables": {
+                  "description": "The custom variable definitions for the target.",
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable",
+                  "markdownDescription": "The custom variable definitions for the target. See [variables](https://docs.databricks.com/dev-tools/bundles/settings.html#variables) and [link](https://docs.databricks.com/dev-tools/bundles/variables.html)."
+                },
+                "workspace": {
+                  "description": "The Databricks workspace for the target.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
+                  "markdownDescription": "The Databricks workspace for the target. [workspace](https://docs.databricks.com/dev-tools/bundles/reference.html#workspace)"
                 }
-              ]
+              },
+              "additionalProperties": false
             },
             "config.Workspace": {
               "oneOf": [
@@ -5896,18 +5880,10 @@
                 ]
               },
               "config.Target": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Target"
-                    }
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                  }
-                ]
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Target"
+                }
               }
             }
           }

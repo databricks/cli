@@ -18,6 +18,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+type Targets map[string]*Target
+
 type Root struct {
 	value dyn.Value
 	depth int
@@ -49,10 +51,10 @@ type Root struct {
 	// bundle deployment targets (e.g. development, staging, production).
 	// If not specified, the code below initializes this field with a
 	// single default-initialized target called "default".
-	Targets map[string]*Target `json:"targets,omitempty"`
+	Targets Targets `json:"targets,omitempty"`
 
 	// DEPRECATED. Left for backward compatibility with Targets
-	Environments map[string]*Target `json:"environments,omitempty" bundle:"deprecated"`
+	Environments Targets `json:"environments,omitempty" bundle:"deprecated"`
 
 	// Sync section specifies options for files synchronization
 	Sync Sync `json:"sync,omitempty"`
