@@ -51,7 +51,6 @@ targets:
         spark_conf:
           spark.speculation: false
           spark.databricks.delta.retentionDurationCheck.enabled: false
-    libraries:
-      - jar: "/newpath/to/jar"
-      - whl: "/newpath/to/whl"
-      - egg: "/newpath/to/egg"
+      libraries:
+        - jar: "/newpath/to/jar"
+        - whl: "/newpath/to/whl"

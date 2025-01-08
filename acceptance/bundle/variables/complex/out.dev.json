@@ -32,16 +32,13 @@
             "job_cluster_key": "key",
             "libraries": [
               {
-                "jar": "/path/to/jar"
+                "jar": "/newpath/to/jar"
               },
               {
-                "egg": "/path/to/egg"
-              },
-              {
-                "whl": "/path/to/whl"
+                "whl": "/newpath/to/whl"
               }
             ],
-            "task_key": "task with spark version 14.2.x-scala2.11 and jar /path/to/jar"
+            "task_key": "task with spark version 14.2.x-scala2.11 and jar /newpath/to/jar"
           }
         ]
       }
@@ -73,26 +70,20 @@
     "libraries": {
       "default": [
         {
-          "jar": "/path/to/jar"
+          "jar": "/newpath/to/jar"
         },
         {
-          "egg": "/path/to/egg"
-        },
-        {
-          "whl": "/path/to/whl"
+          "whl": "/newpath/to/whl"
         }
       ],
       "description": "A libraries definition",
       "type": "complex",
       "value": [
         {
-          "jar": "/path/to/jar"
+          "jar": "/newpath/to/jar"
         },
         {
-          "egg": "/path/to/egg"
-        },
-        {
-          "whl": "/path/to/whl"
+          "whl": "/newpath/to/whl"
         }
       ]
     },
