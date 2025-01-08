@@ -730,7 +730,7 @@ func withProcessStub(t *testing.T, args []string, output, diagnostics, locations
 }
 
 func getArg(args []string, name string) string {
-	for i := range len(args) {
+	for i := range args {
 		if args[i] == name {
 			return args[i+1]
 		}

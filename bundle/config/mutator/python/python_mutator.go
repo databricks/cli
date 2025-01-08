@@ -15,8 +15,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
-	"github.com/databricks/cli/bundle/config/mutator/paths"
-
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
 
