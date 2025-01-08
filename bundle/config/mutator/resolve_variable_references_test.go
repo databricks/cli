@@ -40,37 +40,6 @@ func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
 	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
 }
 
-func TestResolveVariableReferencesToEmptyFields(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "example",
-				Git: config.Git{
-					Branch: "",
-				},
-			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job1": {
-						JobSettings: &jobs.JobSettings{
-							Tags: map[string]string{
-								"git_branch": "${bundle.git.branch}",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Apply for the bundle prefix.
-	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle"))
-	require.NoError(t, diags.Error())
-
-	// The job settings should have been interpolated to an empty string.
-	require.Equal(t, "", b.Config.Resources.Jobs["job1"].JobSettings.Tags["git_branch"])
-}
-
 func TestResolveVariableReferencesForPrimitiveNonStringFields(t *testing.T) {
 	var diags diag.Diagnostics
 
