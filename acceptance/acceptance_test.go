@@ -190,6 +190,7 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 		}
 
 		dir = filepath.Dir(dir)
+		require.True(t, filepath.IsLocal(dir))
 	}
 
 	slices.Reverse(prepares)
