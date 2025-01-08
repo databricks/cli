@@ -58,8 +58,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create-setup-cli-release-pr:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     needs: goreleaser
-    runs-on: ubuntu-latest
+
     steps:
       - name: Set VERSION variable from tag
         run: |
@@ -82,8 +86,12 @@ jobs:
             });
 
   create-homebrew-tap-release-pr:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     needs: goreleaser
-    runs-on: ubuntu-latest
+
     steps:
       - name: Set VERSION variable from tag
         run: |
@@ -119,8 +127,12 @@ jobs:
             });
 
   create-vscode-extension-update-pr:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     needs: goreleaser
-    runs-on: ubuntu-latest
+
     steps:
       - name: Set VERSION variable from tag
         run: |
