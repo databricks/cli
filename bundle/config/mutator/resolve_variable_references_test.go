@@ -17,32 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveVariableReferences(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "example",
-			},
-			Workspace: config.Workspace{
-				RootPath: "${bundle.name}/bar",
-				FilePath: "${workspace.root_path}/baz",
-			},
-		},
-	}
-
-	// Apply with an invalid prefix. This should not change the workspace root path.
-	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("doesntexist"))
-	require.NoError(t, diags.Error())
-	require.Equal(t, "${bundle.name}/bar", b.Config.Workspace.RootPath)
-	require.Equal(t, "${workspace.root_path}/baz", b.Config.Workspace.FilePath)
-
-	// Apply with a valid prefix. This should change the workspace root path.
-	diags = bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "workspace"))
-	require.NoError(t, diags.Error())
-	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
-	require.Equal(t, "example/bar/baz", b.Config.Workspace.FilePath)
-}
-
 func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -64,37 +38,6 @@ func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "variables"))
 	require.NoError(t, diags.Error())
 	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
-}
-
-func TestResolveVariableReferencesToEmptyFields(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "example",
-				Git: config.Git{
-					Branch: "",
-				},
-			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job1": {
-						JobSettings: &jobs.JobSettings{
-							Tags: map[string]string{
-								"git_branch": "${bundle.git.branch}",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Apply for the bundle prefix.
-	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle"))
-	require.NoError(t, diags.Error())
-
-	// The job settings should have been interpolated to an empty string.
-	require.Equal(t, "", b.Config.Resources.Jobs["job1"].JobSettings.Tags["git_branch"])
 }
 
 func TestResolveVariableReferencesForPrimitiveNonStringFields(t *testing.T) {
@@ -249,63 +192,6 @@ func TestResolveComplexVariable(t *testing.T) {
 	require.NoError(t, diags.Error())
 	require.Equal(t, "Standard_DS3_v2", b.Config.Resources.Jobs["job1"].JobSettings.JobClusters[0].NewCluster.NodeTypeId)
 	require.Equal(t, 2, b.Config.Resources.Jobs["job1"].JobSettings.JobClusters[0].NewCluster.NumWorkers)
-}
-
-func TestResolveComplexVariableReferencesToFields(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "example",
-			},
-			Variables: map[string]*variable.Variable{
-				"cluster": {
-					Value: map[string]any{
-						"node_type_id": "Standard_DS3_v2",
-						"num_workers":  2,
-					},
-					Type: variable.VariableTypeComplex,
-				},
-			},
-
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job1": {
-						JobSettings: &jobs.JobSettings{
-							JobClusters: []jobs.JobCluster{
-								{
-									NewCluster: compute.ClusterSpec{
-										NodeTypeId: "random",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	ctx := context.Background()
-
-	// Assign the variables to the dynamic configuration.
-	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-			var p dyn.Path
-			var err error
-
-			p = dyn.MustPathFromString("resources.jobs.job1.job_clusters[0].new_cluster")
-			v, err = dyn.SetByPath(v, p.Append(dyn.Key("node_type_id")), dyn.V("${var.cluster.node_type_id}"))
-			require.NoError(t, err)
-
-			return v, nil
-		})
-		return diag.FromErr(err)
-	})
-	require.NoError(t, diags.Error())
-
-	diags = bundle.Apply(ctx, b, ResolveVariableReferences("bundle", "workspace", "variables"))
-	require.NoError(t, diags.Error())
-	require.Equal(t, "Standard_DS3_v2", b.Config.Resources.Jobs["job1"].JobSettings.JobClusters[0].NewCluster.NodeTypeId)
 }
 
 func TestResolveComplexVariableReferencesWithComplexVariablesError(t *testing.T) {

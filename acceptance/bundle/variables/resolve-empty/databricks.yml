@@ -1,0 +1,10 @@
+bundle:
+  name: TestResolveVariableReferencesToEmptyFields
+  git:
+    branch: ""
+
+resources:
+  jobs:
+    job1:
+      tags:
+        git_branch: "${bundle.git.branch}"
