@@ -61,6 +61,12 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 		additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
 		if ok {
 			objectKeyType := resolveRefs(additionalProps, refs)
+			if node.Description == "" {
+				node.Description = getDescription(objectKeyType, true)
+			}
+			if len(node.Example) == 0 {
+				node.Example = getExample(objectKeyType)
+			}
 			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs)
 			rootProps = append(rootProps, extractNodes(k, objectKeyType.Properties, refs, customFields)...)
 		}

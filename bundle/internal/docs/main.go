@@ -88,11 +88,11 @@ func generateDocs(inputPaths []string, outputPath string, rootType reflect.Type,
 			if isCustomField {
 				customFields[jsonschema.TypePath(typ)] = true
 			}
-			schemas[jsonschema.TypePath(typ)] = s
 
 			refPath := getPath(typ)
 			shouldHandle := strings.HasPrefix(refPath, "github.com")
 			if !shouldHandle {
+				schemas[jsonschema.TypePath(typ)] = s
 				return s
 			}
 
@@ -110,6 +110,7 @@ func generateDocs(inputPaths []string, outputPath string, rootType reflect.Type,
 				assignAnnotation(v, a[k])
 			}
 
+			schemas[jsonschema.TypePath(typ)] = s
 			return s
 		},
 	})
