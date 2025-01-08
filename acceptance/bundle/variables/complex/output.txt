@@ -1,0 +1,51 @@
+
+>>> $CLI bundle validate -o json
+These fields exist in default target:
+
+>>> jq .resources.jobs.my_job.tasks[0].task_key out.default.json
+"task with spark version 13.2.x-scala2.11 and jar /path/to/jar"
+
+>>> jq .resources.jobs.my_job.job_clusters[0].new_cluster.policy_id out.default.json
+"some-policy-id"
+
+>>> jq .resources.jobs.my_job.job_clusters[0].new_cluster.spark_conf out.default.json
+{
+  "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+  "spark.random": "true",
+  "spark.speculation": "true"
+}
+
+>>> $CLI bundle validate -o json -t dev
+Both version and jar path changed in new target - adding grep would fail
+
+>>> jq .resources.jobs.my_job.tasks[0].task_key out.dev.json
+"task with spark version 14.2.x-scala2.11 and jar /path/to/jar"
+This fields do not exist in dev target:
+
+>>> jq .resources.jobs.my_job.job_clusters[0].new_cluster.policy_id out.dev.json
+null
+
+>>> jq .resources.jobs.my_job.job_clusters[0].new_cluster.spark_conf out.dev.json
+{
+  "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+  "spark.speculation": "false"
+}
+Regression: libraries variable is not updated in dev target
+
+>>> jq .variables.libraries.value[0] out.dev.json
+{
+  "jar": "/path/to/jar"
+}
+
+>>> jq .resources.jobs.my_job.tasks[0].libraries out.dev.json
+[
+  {
+    "jar": "/path/to/jar"
+  },
+  {
+    "egg": "/path/to/egg"
+  },
+  {
+    "whl": "/path/to/whl"
+  }
+]

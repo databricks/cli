@@ -70,20 +70,6 @@
         "spark_version": "14.2.x-scala2.11"
       }
     },
-    "complexvar": {
-      "default": {
-        "key1": "1",
-        "key2": "2",
-        "key3": "3"
-      },
-      "description": "A complex variable",
-      "type": "complex",
-      "value": {
-        "key1": "1",
-        "key2": "2",
-        "key3": "3"
-      }
-    },
     "libraries": {
       "default": [
         {

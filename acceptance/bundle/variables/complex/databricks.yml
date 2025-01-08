@@ -11,6 +11,7 @@ resources:
       - task_key: test
         job_cluster_key: key
         libraries: ${variables.libraries.value}
+        # specific fields of complex variable are referenced:
         task_key: "task with spark version ${var.cluster.spark_version} and jar ${var.libraries[0].jar}"
 
 variables:
@@ -35,14 +36,6 @@ variables:
       - jar: "/path/to/jar"
       - egg: "/path/to/egg"
       - whl: "/path/to/whl"
-  complexvar:
-    type: complex
-    description: "A complex variable"
-    default:
-      key1: "value1"
-      key2: "value2"
-      key3: "value3"
-
 
 targets:
   default:
@@ -51,15 +44,14 @@ targets:
     variables:
       node_type: "Standard_DS3_v3"
       cluster:
+        # complex variables are not merged, so missing variables (policy_id) are not inherited
         spark_version: "14.2.x-scala2.11"
         node_type_id: ${var.node_type}
         num_workers: 4
         spark_conf:
           spark.speculation: false
           spark.databricks.delta.retentionDurationCheck.enabled: false
-      complexvar:
-        type: complex
-        default:
-          key1: "1"
-          key2: "2"
-          key3: "3"
+    libraries:
+      - jar: "/newpath/to/jar"
+      - whl: "/newpath/to/whl"
+      - egg: "/newpath/to/egg"
