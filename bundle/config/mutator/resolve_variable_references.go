@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -15,7 +16,7 @@ import (
 type resolveVariableReferences struct {
 	prefixes []string
 	pattern  dyn.Pattern
-	lookupFn func(dyn.Value, dyn.Path) (dyn.Value, error)
+	lookupFn func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
 	skipFn   func(dyn.Value) bool
 }
 
@@ -44,16 +45,21 @@ func ResolveVariableReferencesInComplexVariables() bundle.Mutator {
 	}
 }
 
-func lookup(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
+	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+		if path.String() == "workspace.file_path" {
+			return dyn.V(b.SyncRootPath), nil
+		}
+	}
 	// Future opportunity: if we lookup this path in both the given root
 	// and the synthesized root, we know if it was explicitly set or implied to be empty.
 	// Then we can emit a warning if it was not explicitly set.
 	return dyn.GetByPath(v, path)
 }
 
-func lookupForComplexVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+func lookupForComplexVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	if path[0].Key() != "variables" {
-		return lookup(v, path)
+		return lookup(v, path, b)
 	}
 
 	varV, err := dyn.GetByPath(v, path[:len(path)-1])
@@ -71,7 +77,7 @@ func lookupForComplexVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 		return dyn.InvalidValue, errors.New("complex variables cannot contain references to another complex variables")
 	}
 
-	return lookup(v, path)
+	return lookup(v, path, b)
 }
 
 func skipResolvingInNonComplexVariables(v dyn.Value) bool {
@@ -83,9 +89,9 @@ func skipResolvingInNonComplexVariables(v dyn.Value) bool {
 	}
 }
 
-func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+func lookupForVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	if path[0].Key() != "variables" {
-		return lookup(v, path)
+		return lookup(v, path, b)
 	}
 
 	varV, err := dyn.GetByPath(v, path[:len(path)-1])
@@ -103,7 +109,7 @@ func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 		return dyn.InvalidValue, errors.New("lookup variables cannot contain references to another lookup variables")
 	}
 
-	return lookup(v, path)
+	return lookup(v, path, b)
 }
 
 func (*resolveVariableReferences) Name() string {
@@ -125,6 +131,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	varPath := dyn.NewPath(dyn.Key("var"))
 
 	var diags diag.Diagnostics
+
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
@@ -167,7 +174,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 						if m.skipFn != nil && m.skipFn(v) {
 							return dyn.InvalidValue, dynvar.ErrSkipResolution
 						}
-						return m.lookupFn(normalized, path)
+						return m.lookupFn(normalized, path, b)
 					}
 				}
 

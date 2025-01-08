@@ -97,3 +97,24 @@ func TestComputeMetadataMutator(t *testing.T) {
 
 	assert.Equal(t, expectedMetadata, b.Metadata)
 }
+
+func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
+	syncRootPath := "/Users/shreyas.goenka@databricks.com/source"
+	enabled := true
+	b := &bundle.Bundle{
+		SyncRootPath: syncRootPath,
+		Config: config.Root{
+			Presets: config.Presets{
+				SourceLinkedDeployment: &enabled,
+			},
+			Workspace: config.Workspace{
+				FilePath: "/Users/shreyas.goenka@databricks.com/files",
+			},
+		},
+	}
+
+	diags := bundle.Apply(context.Background(), b, Compute())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
+}
