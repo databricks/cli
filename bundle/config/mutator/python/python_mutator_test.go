@@ -681,7 +681,7 @@ or activate the environment before running CLI commands:
 	assert.Equal(t, expected, out)
 }
 
-func withProcessStub(t *testing.T, args []string, output string, diagnostics string, locations string) context.Context {
+func withProcessStub(t *testing.T, args []string, output, diagnostics, locations string) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 
@@ -730,7 +730,7 @@ func withProcessStub(t *testing.T, args []string, output string, diagnostics str
 }
 
 func getArg(args []string, name string) string {
-	for i := 0; i < len(args); i++ {
+	for i := range len(args) {
 		if args[i] == name {
 			return args[i+1]
 		}
@@ -738,7 +738,7 @@ func getArg(args []string, name string) string {
 	return ""
 }
 
-func loadYaml(name string, content string) *bundle.Bundle {
+func loadYaml(name, content string) *bundle.Bundle {
 	v, diag := config.LoadFromBytes(name, []byte(content))
 
 	if diag.Error() != nil {

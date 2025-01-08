@@ -6,13 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/databricks/cli/bundle/config/mutator/paths"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/databricks/cli/bundle/config/mutator/paths"
+
+	"github.com/databricks/cli/bundle/config/mutator/paths"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
@@ -393,7 +396,7 @@ func loadLocationsFile(locationsPath string) (*pythonLocations, error) {
 	return parsePythonLocations(locationsFile)
 }
 
-func loadOutputFile(rootPath string, outputPath string, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
+func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
 	outputFile, err := os.Open(outputPath)
 	if err != nil {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to open output file: %w", err))

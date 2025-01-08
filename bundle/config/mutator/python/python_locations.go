@@ -117,7 +117,7 @@ func parsePythonLocations(input io.Reader) (*pythonLocations, error) {
 
 // putPythonLocation puts the location to the trie for the given path
 func putPythonLocation(trie *pythonLocations, path dyn.Path, location dyn.Location) {
-	var currentNode = trie
+	currentNode := trie
 
 	for _, component := range path {
 		if key := component.Key(); key != "" {
@@ -151,9 +151,9 @@ func newPythonLocations() *pythonLocations {
 // findPythonLocation finds the location or closest ancestor location in the trie for the given path
 // if no ancestor or exact location is found, false is returned.
 func findPythonLocation(locations *pythonLocations, path dyn.Path) (dyn.Location, bool) {
-	var currentNode = locations
-	var lastLocation = locations.location
-	var exists = locations.exists
+	currentNode := locations
+	lastLocation := locations.location
+	exists := locations.exists
 
 	for _, component := range path {
 		if key := component.Key(); key != "" {
