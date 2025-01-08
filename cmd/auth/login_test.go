@@ -45,13 +45,13 @@ func TestSetHost(t *testing.T) {
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile.DefaultProfiler, "profile-1", &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.Host1.com", authArguments.Host)
+	assert.Equal(t, "https://www.host1.com", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile.DefaultProfiler, "profile-2", &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.Host2.com", authArguments.Host)
+	assert.Equal(t, "https://www.host2.com", authArguments.Host)
 
 	// Test host is not set. Should prompt.
 	authArguments.Host = ""

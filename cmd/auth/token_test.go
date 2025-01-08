@@ -25,7 +25,7 @@ var refreshFailureTokenResponse = fixtures.HTTPFixture{
 
 var refreshFailureInvalidResponse = fixtures.HTTPFixture{
 	MatchAny: true,
-	Status:   401,
+	Status:   200,
 	Response: "Not json",
 }
 
@@ -108,23 +108,16 @@ func TestToken_loadToken(t *testing.T) {
 			RefreshTokenResponse: fixtures.SliceTransport{f},
 		}
 	}
-	wantErrors := func(substrings ...string) func(error) {
-		return func(err error) {
-			for _, s := range substrings {
-				assert.ErrorContains(t, err, s)
-			}
-		}
-	}
 	validateToken := func(resp *oauth2.Token) {
 		assert.Equal(t, "new-access-token", resp.AccessToken)
 		assert.Equal(t, "Bearer", resp.TokenType)
 	}
 
 	cases := []struct {
-		name    string
-		args    loadTokenArgs
-		want    func(*oauth2.Token)
-		wantErr func(error)
+		name          string
+		args          loadTokenArgs
+		validateToken func(*oauth2.Token)
+		wantErr       string
 	}{
 		{
 			name: "prints helpful login message on refresh failure when profile is specified",
@@ -139,10 +132,8 @@ func TestToken_loadToken(t *testing.T) {
 					oauth.WithOAuthClient(makeApiClient(refreshFailureTokenResponse)),
 				},
 			},
-			wantErr: wantErrors(
-				"a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run ",
-				"auth login --host https://accounts.cloud.databricks.com --account-id expired",
-			),
+			wantErr: "a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run " +
+				"`databricks auth login --profile expired`",
 		},
 		{
 			name: "prints helpful login message on refresh failure when host is specified",
@@ -160,10 +151,8 @@ func TestToken_loadToken(t *testing.T) {
 					oauth.WithOAuthClient(makeApiClient(refreshFailureTokenResponse)),
 				},
 			},
-			wantErr: wantErrors(
-				"a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run ",
-				"auth login --host https://accounts.cloud.databricks.com --account-id expired",
-			),
+			wantErr: "a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run " +
+				"`databricks auth login --host https://accounts.cloud.databricks.com --account-id expired`",
 		},
 		{
 			name: "prints helpful login message on invalid response",
@@ -178,10 +167,8 @@ func TestToken_loadToken(t *testing.T) {
 					oauth.WithOAuthClient(makeApiClient(refreshFailureInvalidResponse)),
 				},
 			},
-			wantErr: wantErrors(
-				"unexpected parsing token response: invalid character 'N' looking for beginning of value. Try logging in again with ",
-				"auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
-			),
+			wantErr: "unexpected error loading token: token refresh: oauth2: cannot parse json: invalid character 'N' looking for beginning of value. Try logging in again with " +
+				"`databricks auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
 		},
 		{
 			name: "prints helpful login message on other error response",
@@ -196,10 +183,8 @@ func TestToken_loadToken(t *testing.T) {
 					oauth.WithOAuthClient(makeApiClient(refreshFailureOtherError)),
 				},
 			},
-			wantErr: wantErrors(
-				"unexpected error refreshing token: Databricks is down. Try logging in again with ",
-				"auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
-			),
+			wantErr: "unexpected error loading token: token refresh: Databricks is down (error code: other_error). Try logging in again with " +
+				"`databricks auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
 		},
 		{
 			name: "succeeds with profile",
@@ -214,7 +199,7 @@ func TestToken_loadToken(t *testing.T) {
 					oauth.WithOAuthClient(makeApiClient(refreshSuccessTokenResponse)),
 				},
 			},
-			want: validateToken,
+			validateToken: validateToken,
 		},
 		{
 			name: "succeeds with host",
@@ -229,17 +214,17 @@ func TestToken_loadToken(t *testing.T) {
 					oauth.WithOAuthClient(makeApiClient(refreshSuccessTokenResponse)),
 				},
 			},
-			want: validateToken,
+			validateToken: validateToken,
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			got, err := loadToken(context.Background(), c.args)
-			if c.wantErr != nil {
-				c.wantErr(err)
+			if c.wantErr != "" {
+				assert.Equal(t, c.wantErr, err.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, c.want, got)
+				c.validateToken(got)
 			}
 		})
 	}
