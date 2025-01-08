@@ -6,14 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/bundle/config/mutator/paths"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-
-	"github.com/databricks/cli/bundle/config/mutator/paths"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
@@ -127,6 +126,15 @@ type opts struct {
 	enabled bool
 
 	venvPath string
+
+	loadLocations bool
+}
+
+type runPythonMutatorOpts struct {
+	cacheDir       string
+	bundleRootPath string
+	pythonPath     string
+	loadLocations  bool
 }
 
 // getOpts adapts deprecated PyDABs and upcoming Python configuration
@@ -151,8 +159,9 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 		// don't execute for phases for 'python' section
 		if phase == PythonMutatorPhaseInit || phase == PythonMutatorPhaseLoad {
 			return opts{
-				enabled:  true,
-				venvPath: experimental.PyDABs.VEnvPath,
+				enabled:       true,
+				venvPath:      experimental.PyDABs.VEnvPath,
+				loadLocations: false, // not supported in PyDABs
 			}, nil
 		} else {
 			return opts{}, nil
@@ -161,8 +170,9 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 		// don't execute for phases for 'pydabs' section
 		if phase == PythonMutatorPhaseLoadResources || phase == PythonMutatorPhaseApplyMutators {
 			return opts{
-				enabled:  true,
-				venvPath: experimental.Python.VEnvPath,
+				enabled:       true,
+				venvPath:      experimental.Python.VEnvPath,
+				loadLocations: true,
 			}, nil
 		} else {
 			return opts{}, nil
@@ -201,7 +211,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			cacheDir:       cacheDir,
 			bundleRootPath: b.BundleRootPath,
 			pythonPath:     pythonPath,
-			loadLocations:  experimental.PyDABs.LoadLocations,
+			loadLocations:  opts.loadLocations,
 		})
 		mutateDiags = diags
 		if diags.HasError() {
@@ -244,13 +254,6 @@ func createCacheDir(ctx context.Context) (string, error) {
 	}
 
 	return os.MkdirTemp("", "-python")
-}
-
-type runPythonMutatorOpts struct {
-	cacheDir       string
-	bundleRootPath string
-	pythonPath     string
-	loadLocations  bool
 }
 
 func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, diag.Diagnostics) {

@@ -13,7 +13,7 @@ import (
 //
 // mergePythonLocations replaces dyn.Location with generatedFileName with locations loaded
 // from locations.json
-const generatedFileName = "__generated_by_pydabs__.yml"
+const generatedFileName = "__generated_by_python__.yml"
 
 // pythonLocations is data structure for efficient location lookup for a given path
 //

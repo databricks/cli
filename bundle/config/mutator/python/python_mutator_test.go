@@ -244,7 +244,7 @@ func TestPythonMutator_applyMutators(t *testing.T) {
 		description, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.description"))
 		require.NoError(t, err)
 
-		expectedVirtualPath, err := filepath.Abs("__generated_by_python__.yml")
+		expectedVirtualPath, err := filepath.Abs(generatedFileName)
 		require.NoError(t, err)
 		assert.Equal(t, expectedVirtualPath, description.Location().File)
 
@@ -332,7 +332,7 @@ func TestGetOps_Python(t *testing.T) {
 	}, PythonMutatorPhaseLoadResources)
 
 	assert.NoError(t, err)
-	assert.Equal(t, opts{venvPath: ".venv", enabled: true}, actual)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
 }
 
 func TestGetOps_PyDABs(t *testing.T) {
@@ -348,7 +348,7 @@ func TestGetOps_PyDABs(t *testing.T) {
 	}, PythonMutatorPhaseInit)
 
 	assert.NoError(t, err)
-	assert.Equal(t, opts{venvPath: ".venv", enabled: true}, actual)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: false}, actual)
 }
 
 func TestGetOps_empty(t *testing.T) {
