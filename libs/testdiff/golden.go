@@ -2,6 +2,7 @@ package testdiff
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
@@ -16,7 +17,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var OverwriteMode = os.Getenv("TESTS_OUTPUT") == "OVERWRITE"
+var OverwriteMode = false
+
+func init() {
+	flag.BoolVar(&OverwriteMode, "update", false, "Overwrite golden files")
+}
 
 func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string {
 	t.Helper()
