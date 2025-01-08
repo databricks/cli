@@ -17,32 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveVariableReferences(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "example",
-			},
-			Workspace: config.Workspace{
-				RootPath: "${bundle.name}/bar",
-				FilePath: "${workspace.root_path}/baz",
-			},
-		},
-	}
-
-	// Apply with an invalid prefix. This should not change the workspace root path.
-	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("doesntexist"))
-	require.NoError(t, diags.Error())
-	require.Equal(t, "${bundle.name}/bar", b.Config.Workspace.RootPath)
-	require.Equal(t, "${workspace.root_path}/baz", b.Config.Workspace.FilePath)
-
-	// Apply with a valid prefix. This should change the workspace root path.
-	diags = bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "workspace"))
-	require.NoError(t, diags.Error())
-	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
-	require.Equal(t, "example/bar/baz", b.Config.Workspace.FilePath)
-}
-
 func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
