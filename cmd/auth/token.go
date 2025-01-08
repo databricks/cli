@@ -88,16 +88,15 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	persistentAuth, err := oauth.NewPersistentAuth(ctx, args.persistentAuthOpts...)
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
-		return nil, fmt.Errorf("unexpected error creating persistent auth: %w. %s", err, helpMsg)
+		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
 	t, err := persistentAuth.Load(ctx, oauthArgument)
 	if err != nil {
-		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
-		target := &oauth.InvalidRefreshTokenError{}
-		if errors.As(err, &target) {
-			return nil, auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountId, args.profileName, err)
+		if err, ok := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountId, args.profileName, err); ok {
+			return nil, err
 		}
-		return nil, fmt.Errorf("unexpected error loading token: %w. %s", err, helpMsg)
+		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
+		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
 	return t, nil
 }

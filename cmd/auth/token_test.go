@@ -167,7 +167,7 @@ func TestToken_loadToken(t *testing.T) {
 					oauth.WithOAuthClient(makeApiClient(refreshFailureInvalidResponse)),
 				},
 			},
-			wantErr: "unexpected error loading token: token refresh: oauth2: cannot parse json: invalid character 'N' looking for beginning of value. Try logging in again with " +
+			wantErr: "token refresh: oauth2: cannot parse json: invalid character 'N' looking for beginning of value. Try logging in again with " +
 				"`databricks auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
 		},
 		{
@@ -183,7 +183,7 @@ func TestToken_loadToken(t *testing.T) {
 					oauth.WithOAuthClient(makeApiClient(refreshFailureOtherError)),
 				},
 			},
-			wantErr: "unexpected error loading token: token refresh: Databricks is down (error code: other_error). Try logging in again with " +
+			wantErr: "token refresh: Databricks is down (error code: other_error). Try logging in again with " +
 				"`databricks auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
 		},
 		{

@@ -341,5 +341,6 @@ func ConfigUsed(ctx context.Context) *config.Config {
 }
 
 func renderError(ctx context.Context, cfg *config.Config, err error) error {
-	return auth.RewriteAuthError(ctx, cfg.Host, cfg.AccountID, cfg.Profile, err)
+	err, _ = auth.RewriteAuthError(ctx, cfg.Host, cfg.AccountID, cfg.Profile, err)
+	return err
 }
