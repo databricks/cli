@@ -27,6 +27,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	defaultFilePermissions fs.FileMode
+	defaultDirPermissions  fs.FileMode
+)
+
+func init() {
+	if runtime.GOOS == "windows" {
+		defaultFilePermissions = fs.FileMode(0o666)
+		defaultDirPermissions = fs.FileMode(0o777)
+	} else {
+		defaultFilePermissions = fs.FileMode(0o644)
+		defaultDirPermissions = fs.FileMode(0o755)
+	}
+}
+
 func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
 	ctx := context.Background()
 
@@ -58,8 +73,8 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	require.NoError(t, err)
 
 	// Verify permissions on file and directory
-	testutil.AssertFilePermissions(t, filepath.Join(tempDir, "my_project/README.md"), fs.FileMode(0o644))
-	testutil.AssertDirPermissions(t, filepath.Join(tempDir, "my_project/resources"), fs.FileMode(0o755))
+	testutil.AssertFilePermissions(t, filepath.Join(tempDir, "my_project/README.md"), defaultFilePermissions)
+	testutil.AssertDirPermissions(t, filepath.Join(tempDir, "my_project/resources"), defaultDirPermissions)
 
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
 	require.NoError(t, err)
@@ -609,8 +624,8 @@ func TestRendererFileTreeRendering(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert files and directories are correctly materialized.
-	testutil.AssertDirPermissions(t, filepath.Join(tmpDir, "my_directory"), fs.FileMode(0o755))
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "my_directory", "my_file"), fs.FileMode(0o644))
+	testutil.AssertDirPermissions(t, filepath.Join(tmpDir, "my_directory"), defaultDirPermissions)
+	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "my_directory", "my_file"), defaultFilePermissions)
 }
 
 func TestRendererSubTemplateInPath(t *testing.T) {
