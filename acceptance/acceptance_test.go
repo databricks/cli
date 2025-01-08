@@ -203,7 +203,7 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 func BuildCLI(t *testing.T) string {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
-	execPath := filepath.Join(cwd, "build", "databricks-cli")
+	execPath := filepath.Join(cwd, "build", "databricks")
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
 	}
