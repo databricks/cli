@@ -1,0 +1,4 @@
+$CLI bundle validate -o json | jq '{resources,variables}' > out.default.json
+
+# spark.random and policy_id should be empty in this target:
+$CLI bundle validate -o json -t dev | jq '{resources,variables}' > out.dev.json

@@ -1,0 +1,11 @@
+Error: no value assigned to required variable a. Assignment can be done through the "--var" flag or by setting the BUNDLE_VAR_a environment variable
+
+Name: empty${var.a}
+Target: default
+Workspace:
+  User: tester@databricks.com
+  Path: /Workspace/Users/tester@databricks.com/.bundle/empty${var.a}/default
+
+Found 1 error
+
+Exit code: 1

@@ -1,0 +1,118 @@
+{
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/complex-variables/dev/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "job_clusters": [
+          {
+            "job_cluster_key": "key",
+            "new_cluster": {
+              "node_type_id": "Standard_DS3_v3",
+              "num_workers": 4,
+              "spark_conf": {
+                "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+                "spark.speculation": "false"
+              },
+              "spark_version": "14.2.x-scala2.11"
+            }
+          }
+        ],
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {},
+        "tasks": [
+          {
+            "job_cluster_key": "key",
+            "libraries": [
+              {
+                "jar": "/path/to/jar"
+              },
+              {
+                "egg": "/path/to/egg"
+              },
+              {
+                "whl": "/path/to/whl"
+              }
+            ],
+            "task_key": "task with spark version 14.2.x-scala2.11 and jar /path/to/jar"
+          }
+        ]
+      }
+    }
+  },
+  "variables": {
+    "cluster": {
+      "default": {
+        "node_type_id": "Standard_DS3_v3",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      },
+      "description": "A cluster definition",
+      "type": "complex",
+      "value": {
+        "node_type_id": "Standard_DS3_v3",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      }
+    },
+    "complexvar": {
+      "default": {
+        "key1": "1",
+        "key2": "2",
+        "key3": "3"
+      },
+      "description": "A complex variable",
+      "type": "complex",
+      "value": {
+        "key1": "1",
+        "key2": "2",
+        "key3": "3"
+      }
+    },
+    "libraries": {
+      "default": [
+        {
+          "jar": "/path/to/jar"
+        },
+        {
+          "egg": "/path/to/egg"
+        },
+        {
+          "whl": "/path/to/whl"
+        }
+      ],
+      "description": "A libraries definition",
+      "type": "complex",
+      "value": [
+        {
+          "jar": "/path/to/jar"
+        },
+        {
+          "egg": "/path/to/egg"
+        },
+        {
+          "whl": "/path/to/whl"
+        }
+      ]
+    },
+    "node_type": {
+      "default": "Standard_DS3_v3",
+      "value": "Standard_DS3_v3"
+    }
+  }
+}
