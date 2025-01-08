@@ -199,8 +199,6 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-// Note, because "go build" always touches the final binary, even if unchanged,
-// this acts as cache breaker for "go test".
 func BuildCLI(t *testing.T) string {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
