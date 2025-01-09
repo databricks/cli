@@ -52,10 +52,7 @@ func writeCache(t *testing.T, checksumFile string) {
 		return
 	}
 
-	currentTime := time.Now()
-	formattedTime := currentTime.Format(time.RFC3339)
-
-	err := os.WriteFile(checksumFile, []byte(formattedTime), 0o644)
+	err := os.WriteFile(checksumFile, []byte("x"), 0o644)
 	if err != nil {
 		t.Logf("Failed to write cache %s: %s", checksumFile, err)
 	}
