@@ -66,7 +66,7 @@ func newValidateCommand() *cobra.Command {
 			return nil
 		case flags.OutputJSON:
 			renderOpts := render.RenderOptions{RenderSummaryTable: false}
-			err1 := render.RenderDiagnostics(cmd.OutOrStderr(), b, diags, renderOpts)
+			err1 := render.RenderDiagnostics(cmd.ErrOrStderr(), b, diags, renderOpts)
 			err2 := renderJsonOutput(cmd, b)
 
 			if err2 != nil {
