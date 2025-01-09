@@ -23,27 +23,31 @@ func TestBuiltInReader(t *testing.T) {
 	}
 
 	for _, name := range exists {
-		r := &builtinReader{name: name}
-		fs, err := r.FS(context.Background())
-		assert.NoError(t, err)
-		assert.NotNil(t, fs)
+		t.Run(name, func(t *testing.T) {
+			r := &builtinReader{name: name}
+			fs, err := r.FS(context.Background())
+			assert.NoError(t, err)
+			assert.NotNil(t, fs)
 
-		// Assert file content returned is accurate and every template has a welcome
-		// message defined.
-		fd, err := fs.Open("databricks_template_schema.json")
-		require.NoError(t, err)
-		b, err := io.ReadAll(fd)
-		require.NoError(t, err)
-		assert.Contains(t, string(b), "welcome_message")
-		assert.NoError(t, fd.Close())
+			// Assert file content returned is accurate and every template has a welcome
+			// message defined.
+			fd, err := fs.Open("databricks_template_schema.json")
+			require.NoError(t, err)
+			b, err := io.ReadAll(fd)
+			require.NoError(t, err)
+			assert.Contains(t, string(b), "welcome_message")
+			assert.NoError(t, fd.Close())
+		})
 	}
 
-	r := &builtinReader{name: "doesnotexist"}
-	_, err := r.FS(context.Background())
-	assert.EqualError(t, err, "builtin template doesnotexist not found")
+	t.Run("doesnotexist", func(t *testing.T) {
+		r := &builtinReader{name: "doesnotexist"}
+		_, err := r.FS(context.Background())
+		assert.EqualError(t, err, "builtin template doesnotexist not found")
 
-	// Close should not error.
-	assert.NoError(t, r.Close())
+		// Close should not error.
+		assert.NoError(t, r.Close())
+	})
 }
 
 func TestGitUrlReader(t *testing.T) {
@@ -56,7 +60,7 @@ func TestGitUrlReader(t *testing.T) {
 	cloneFunc := func(ctx context.Context, url, reference, targetPath string) error {
 		numCalls++
 		args = []string{url, reference, targetPath}
-		err := os.MkdirAll(filepath.Join(targetPath, "a/b/c"), 0o755)
+		err := os.MkdirAll(filepath.Join(targetPath, "a", "b", "c"), 0o755)
 		require.NoError(t, err)
 		testutil.WriteFile(t, filepath.Join(targetPath, "a", "b", "c", "somefile"), "somecontent")
 		return nil

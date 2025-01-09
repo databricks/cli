@@ -42,28 +42,32 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 		"default-sql",
 		"dbt-sql",
 	} {
+		t.Run(name, func(t *testing.T) {
+			r := Resolver{
+				TemplatePathOrUrl: name,
+			}
+
+			tmpl, err := r.Resolve(context.Background())
+			require.NoError(t, err)
+
+			assert.Equal(t, &builtinReader{name: name}, tmpl.Reader)
+			assert.IsType(t, &writerWithFullTelemetry{}, tmpl.Writer)
+		})
+	}
+
+	t.Run("mlops-stacks", func(t *testing.T) {
 		r := Resolver{
-			TemplatePathOrUrl: name,
+			TemplatePathOrUrl: "mlops-stacks",
+			ConfigFile:        "/config/file",
 		}
 
 		tmpl, err := r.Resolve(context.Background())
 		require.NoError(t, err)
 
-		assert.Equal(t, &builtinReader{name: name}, tmpl.Reader)
-		assert.IsType(t, &writerWithFullTelemetry{}, tmpl.Writer)
-	}
-
-	r := Resolver{
-		TemplatePathOrUrl: "mlops-stacks",
-		ConfigFile:        "/config/file",
-	}
-
-	tmpl, err := r.Resolve(context.Background())
-	require.NoError(t, err)
-
-	// Assert reader and writer configuration
-	assert.Equal(t, "https://github.com/databricks/mlops-stacks", tmpl.Reader.(*gitReader).gitUrl)
-	assert.Equal(t, "/config/file", tmpl.Writer.(*writerWithFullTelemetry).configPath)
+		// Assert reader and writer configuration
+		assert.Equal(t, "https://github.com/databricks/mlops-stacks", tmpl.Reader.(*gitReader).gitUrl)
+		assert.Equal(t, "/config/file", tmpl.Writer.(*writerWithFullTelemetry).configPath)
+	})
 }
 
 func TestTemplateResolverForCustomUrl(t *testing.T) {
