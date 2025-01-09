@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -39,7 +40,7 @@ func newValidateCommand() *cobra.Command {
 			if err := diags.Error(); err != nil {
 				return diags.Error()
 			} else {
-				return fmt.Errorf("invariant failed: returned bundle is nil")
+				return errors.New("invariant failed: returned bundle is nil")
 			}
 		}
 

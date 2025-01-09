@@ -13,7 +13,10 @@ on:
 
 jobs:
   comment-on-pr:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     permissions:
       pull-requests: write
 

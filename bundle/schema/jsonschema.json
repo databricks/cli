@@ -1100,6 +1100,10 @@
                       "description": "The PyDABs configuration.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs"
                     },
+                    "python": {
+                      "description": "Configures loading of Python code defined with 'databricks-bundles' package.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python"
+                    },
                     "python_wheel_wrapper": {
                       "description": "Whether to use a Python wheel wrapper",
                       "$ref": "#/$defs/bool"
@@ -1227,6 +1231,36 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "config.Python": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mutators": {
+                      "description": "Mutators contains a list of fully qualified function paths to mutator functions.\n\nExample: [\"my_project.mutators:add_default_cluster\"]",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "resources": {
+                      "description": "Resources contains a list of fully qualified function paths to load resources\ndefined in Python code.\n\nExample: [\"my_project.resources:load_resources\"]",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "venv_path": {
+                      "description": "VEnvPath is path to the virtual environment.\n\nIf enabled, Python code will execute within this environment. If disabled,\nit defaults to using the Python interpreter available in the current shell.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "resources",
+                    "mutators"
+                  ]
                 },
                 {
                   "type": "string",

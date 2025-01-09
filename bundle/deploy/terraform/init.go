@@ -230,7 +230,7 @@ func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error 
 	// Add "cli" to the user agent in set by the Databricks Terraform provider.
 	// This will allow us to attribute downstream requests made by the Databricks
 	// Terraform provider to the CLI.
-	products := []string{fmt.Sprintf("cli/%s", build.GetInfo().Version)}
+	products := []string{"cli/" + build.GetInfo().Version}
 	if experimental := b.Config.Experimental; experimental != nil {
 		if experimental.PyDABs.Enabled {
 			products = append(products, "databricks-pydabs/0.0.0")

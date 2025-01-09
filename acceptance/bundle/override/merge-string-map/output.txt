@@ -1,0 +1,23 @@
+
+>>> $CLI bundle validate -o json -t dev
+{
+  "clusters": {
+    "my_cluster": {
+      "custom_tags": {},
+      "spark_version": "25"
+    }
+  }
+}
+
+>>> $CLI bundle validate -t dev
+Warning: expected map, found string
+  at resources.clusters.my_cluster
+  in databricks.yml:6:17
+
+Name: merge-string-map
+Target: dev
+Workspace:
+  User: tester@databricks.com
+  Path: /Workspace/Users/tester@databricks.com/.bundle/merge-string-map/dev
+
+Found 1 warning

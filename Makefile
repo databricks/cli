@@ -1,6 +1,6 @@
 default: build
 
-PACKAGES=./libs/... ./internal/... ./cmd/... ./bundle/... .
+PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 

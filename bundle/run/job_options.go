@@ -1,7 +1,7 @@
 package run
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -60,16 +60,16 @@ func (o *JobOptions) hasJobParametersConfigured() bool {
 // Validate returns if the combination of options is valid.
 func (o *JobOptions) Validate(job *resources.Job) error {
 	if job == nil {
-		return fmt.Errorf("job not defined")
+		return errors.New("job not defined")
 	}
 
 	// Ensure mutual exclusion on job parameters and task parameters.
 	hasJobParams := len(job.Parameters) > 0
 	if hasJobParams && o.hasTaskParametersConfigured() {
-		return fmt.Errorf("the job to run defines job parameters; specifying task parameters is not allowed")
+		return errors.New("the job to run defines job parameters; specifying task parameters is not allowed")
 	}
 	if !hasJobParams && o.hasJobParametersConfigured() {
-		return fmt.Errorf("the job to run does not define job parameters; specifying job parameters is not allowed")
+		return errors.New("the job to run does not define job parameters; specifying job parameters is not allowed")
 	}
 
 	return nil
@@ -80,7 +80,7 @@ func (o *JobOptions) validatePipelineParams() (*jobs.PipelineParams, error) {
 		return nil, nil
 	}
 
-	defaultErr := fmt.Errorf("job run argument --pipeline-params only supports `full_refresh=<bool>`")
+	defaultErr := errors.New("job run argument --pipeline-params only supports `full_refresh=<bool>`")
 	v, ok := o.pipelineParams["full_refresh"]
 	if !ok {
 		return nil, defaultErr
