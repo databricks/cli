@@ -12,9 +12,14 @@
       {
         "job_cluster_key": "key",
         "new_cluster": {
-          "node_type_id": "i3.xlarge",
-          "num_workers": 1,
           "spark_version": "13.3.x-scala2.12"
+        }
+      },
+      {
+        "job_cluster_key": "key",
+        "new_cluster": {
+          "node_type_id": "i3.xlarge",
+          "num_workers": 1
         }
       }
     ],
@@ -26,6 +31,15 @@
     "tags": {}
   }
 }
+
+>>> $CLI bundle validate -t development
+Name: override_job_cluster
+Target: development
+Workspace:
+  User: tester@databricks.com
+  Path: /Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/development
+
+Validation OK!
 
 >>> $CLI bundle validate -o json -t staging
 {
@@ -40,9 +54,14 @@
       {
         "job_cluster_key": "key",
         "new_cluster": {
-          "node_type_id": "i3.2xlarge",
-          "num_workers": 4,
           "spark_version": "13.3.x-scala2.12"
+        }
+      },
+      {
+        "job_cluster_key": "key",
+        "new_cluster": {
+          "node_type_id": "i3.2xlarge",
+          "num_workers": 4
         }
       }
     ],
@@ -54,3 +73,12 @@
     "tags": {}
   }
 }
+
+>>> $CLI bundle validate -t staging
+Name: override_job_cluster
+Target: staging
+Workspace:
+  User: tester@databricks.com
+  Path: /Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/staging
+
+Validation OK!
