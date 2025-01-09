@@ -1,0 +1,19 @@
+Error: experiment undefined-experiment is not defined
+  at resources.experiments.undefined-experiment
+  in databricks.yml:11:26
+
+Error: job undefined-job is not defined
+  at resources.jobs.undefined-job
+  in databricks.yml:6:19
+
+Error: pipeline undefined-pipeline is not defined
+  at resources.pipelines.undefined-pipeline
+  in databricks.yml:14:24
+
+Found 3 errors
+
+Name: undefined-job
+Target: default
+
+
+Exit code: 1
