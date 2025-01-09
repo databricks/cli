@@ -163,7 +163,7 @@ func (r *Runner) RunBackground() {
 	// once test has been executed. This is needed because flag values reside
 	// in a global singleton data-structure, and thus subsequent tests might
 	// otherwise interfere with each other
-	r.registerFlagCleanup(cli)
+	// r.registerFlagCleanup(cli)
 
 	errch := make(chan error)
 	ctx, cancel := context.WithCancel(ctx)
@@ -208,11 +208,11 @@ func (r *Runner) RunBackground() {
 			}
 		}
 
-		// Reset context on command for the next test.
-		// These commands are globals so we have to clean up to the best of our ability after each run.
-		// See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
-		//nolint:staticcheck  // cobra sets the context and doesn't clear it
-		cli.SetContext(nil)
+		// // Reset context on command for the next test.
+		// // These commands are globals so we have to clean up to the best of our ability after each run.
+		// // See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
+		// //nolint:staticcheck  // cobra sets the context and doesn't clear it
+		// cli.SetContext(nil)
 
 		// Make caller aware of error.
 		errch <- err
