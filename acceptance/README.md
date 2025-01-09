@@ -9,7 +9,7 @@ To author a test,
 
 The test runner will run script and capture output and compare it with `output.txt` file in the same directory.
 
-In order to write `output.txt` for the first time or overwrite it with the current output, set `TESTS_OUTPUT=OVERWRITE` env var.
+In order to write `output.txt` for the first time or overwrite it with the current output pass -update flag to go test.
 
 The scripts are run with `bash -e` so any errors will be propagated. They are captured in `output.txt` by appending `Exit code: N` line at the end.
 
