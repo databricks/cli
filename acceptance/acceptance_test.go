@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"io"
@@ -46,14 +47,18 @@ func TestAccept(t *testing.T) {
 	t.Setenv("CLI", execPath)
 
 	// Make helper scripts available
-	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
+	binDir := filepath.Join(cwd, "bin")
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", binDir, os.PathListSeparator, os.Getenv("PATH")))
 
-	execPathHash := MustCalculateMD5(t, execPath)
 	testExecPath, err := os.Executable()
 	require.NoError(t, err)
-	execPathHash += MustCalculateMD5(t, testExecPath)
+
+	hash := md5.New()
+	AddFile(t, hash, execPath)
+	AddFile(t, hash, testExecPath)
 	// TODO: include DATABRICKS_HOST if running against remote
 	// TODO: ensure expiration is enforced if running against remote, to capture remote issues.
+	AddDir(t, hash, binDir)
 
 	server := StartServer(t)
 	AddHandlers(server)
@@ -71,7 +76,7 @@ func TestAccept(t *testing.T) {
 	for _, dir := range testDirs {
 		t.Run(dir, func(t *testing.T) {
 			t.Parallel()
-			runTest(t, dir, execPathHash, cacheDir)
+			runTest(t, dir, GetChecksum(hash), cacheDir)
 		})
 	}
 }

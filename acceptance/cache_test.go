@@ -19,24 +19,13 @@ func isCached(t *testing.T, cacheDir, initialHash, scriptContents, dir string) (
 	}
 
 	hash := md5.New()
-	_, err := hash.Write([]byte(initialHash))
-	require.NoError(t, err)
-	_, err = hash.Write([]byte(scriptContents))
-	require.NoError(t, err)
-
-	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		require.NoError(t, err)
-		if !info.IsDir() {
-			AddFile(t, hash, path)
-		}
-		return nil
-	})
-	require.NoError(t, err)
+	AddString(t, hash, initialHash)
+	AddString(t, hash, scriptContents)
+	AddDir(t, hash, dir)
 	checksum := GetChecksum(hash)
-
 	checksumFile := filepath.Join(cacheDir, checksum)
 
-	_, err = os.Stat(checksumFile)
+	_, err := os.Stat(checksumFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			t.Logf("Failed to read cache: %s", err)
@@ -52,7 +41,7 @@ func writeCache(t *testing.T, checksumFile string) {
 		return
 	}
 
-	err := os.WriteFile(checksumFile, []byte("x"), 0o644)
+	err := os.WriteFile(checksumFile, []byte("x"), 0o666)
 	if err != nil {
 		t.Logf("Failed to write cache %s: %s", checksumFile, err)
 	}
@@ -88,22 +77,32 @@ func GetGoCache(t *testing.T) string {
 	return filepath.Join(dir, "go-build")
 }
 
-func MustCalculateMD5(t *testing.T, filePath string) string {
-	start := time.Now()
-	hash := md5.New()
-	AddFile(t, hash, filePath)
-	checksum := hash.Sum(nil)
-	elapsed := time.Since(start)
-	result := hex.EncodeToString(checksum)
-	t.Logf("Calculated md5 of %s in %s: %s", filePath, elapsed, result)
-	return result
+func AddString(t *testing.T, h hash.Hash, data string) {
+	_, err := h.Write([]byte(data))
+	require.NoError(t, err)
+}
+
+func AddDir(t *testing.T, h hash.Hash, dir string) {
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		require.NoError(t, err)
+		if !info.IsDir() {
+			AddFile(t, h, path)
+		}
+		return nil
+	})
+	require.NoError(t, err)
 }
 
 func AddFile(t *testing.T, h hash.Hash, filePath string) {
+	start := time.Now()
 	file, err := os.Open(filePath)
 	require.NoError(t, err)
 	defer file.Close()
 	_, err = io.Copy(h, file)
+	elapsed := time.Since(start)
+	if elapsed >= 100*time.Millisecond {
+		t.Logf("Hashed %s in %s", filePath, elapsed)
+	}
 	require.NoError(t, err)
 }
 
