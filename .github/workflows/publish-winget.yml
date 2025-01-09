@@ -5,8 +5,12 @@ on:
 
 jobs:
   publish-to-winget-pkgs:
-    runs-on: windows-latest
+    runs-on:
+      group: databricks-protected-runner-group
+      labels: windows-server-latest
+
     environment: release
+
     steps:
       - uses: vedantmgoyal2009/winget-releaser@93fd8b606a1672ec3e5c6c3bb19426be68d1a8b0 # https://github.com/vedantmgoyal2009/winget-releaser/releases/tag/v2
         with:
