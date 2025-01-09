@@ -2,6 +2,7 @@
 >>> errcode $CLI bundle validate -o json -t development
 Error: file ./test1.py not found
 
+
 Exit code: 1
 {
   "name": "job",
@@ -36,6 +37,7 @@ Exit code: 1
 >>> errcode $CLI bundle validate -o json -t staging
 Error: file ./test1.py not found
 
+
 Exit code: 1
 {
   "name": "job",
@@ -66,3 +68,16 @@ Exit code: 1
     }
   ]
 }
+
+>>> errcode $CLI bundle validate -t staging
+Error: file ./test1.py not found
+
+Name: override_job_tasks
+Target: staging
+Workspace:
+  User: tester@databricks.com
+  Path: /Workspace/Users/tester@databricks.com/.bundle/override_job_tasks/staging
+
+Found 1 error
+
+Exit code: 1
