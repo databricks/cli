@@ -35,9 +35,15 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	execPath := BuildCLI(t)
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	execPath := BuildCLI(t, cwd)
 	// $CLI is what test scripts are using
 	t.Setenv("CLI", execPath)
+
+	// Make helper scripts available
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
 	server := StartServer(t)
 	AddHandlers(server)
@@ -199,9 +205,7 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-func BuildCLI(t *testing.T) string {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
+func BuildCLI(t *testing.T, cwd string) string {
 	execPath := filepath.Join(cwd, "build", "databricks")
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
