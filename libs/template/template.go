@@ -71,8 +71,9 @@ var allTemplates = []Template{
 	{
 		name:        Custom,
 		description: "Bring your own template",
-		Reader:      &failReader{},
-		Writer:      &defaultWriter{},
+		// Reader is determined at runtime based on the user input.
+		Reader: nil,
+		Writer: &defaultWriter{},
 	},
 }
 

@@ -114,10 +114,3 @@ func TestLocalReader(t *testing.T) {
 	// Assert close does not error
 	assert.NoError(t, r.Close())
 }
-
-func TestFailReader(t *testing.T) {
-	r := &failReader{}
-	assert.Error(t, r.Close())
-	_, err := r.FS(context.Background())
-	assert.Error(t, err)
-}

@@ -153,13 +153,3 @@ func (r *localReader) FS(ctx context.Context) (fs.FS, error) {
 func (r *localReader) Close() error {
 	return nil
 }
-
-type failReader struct{}
-
-func (r *failReader) FS(ctx context.Context) (fs.FS, error) {
-	return nil, fmt.Errorf("this is a placeholder reader that always fails. Please configure a real reader.")
-}
-
-func (r *failReader) Close() error {
-	return fmt.Errorf("this is a placeholder reader that always fails. Please configure a real reader.")
-}
