@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,18 +47,32 @@ func TestAccept(t *testing.T) {
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
-	server := StartServer(t)
-	AddHandlers(server)
-	// Redirect API access to local server:
-	t.Setenv("DATABRICKS_HOST", fmt.Sprintf("http://127.0.0.1:%d", server.Port))
-	t.Setenv("DATABRICKS_TOKEN", "dapi1234")
-
-	homeDir := t.TempDir()
-	// Do not read user's ~/.databrickscfg
-	t.Setenv(env.HomeEnvVar(), homeDir)
-
 	repls := testdiff.ReplacementsContext{}
 	repls.Set(execPath, "$CLI")
+
+	ctx := context.Background()
+	cloudEnv := os.Getenv("CLOUD_ENV")
+
+	if cloudEnv == "" {
+		server := StartServer(t)
+		AddHandlers(server)
+		// Redirect API access to local server:
+		t.Setenv("DATABRICKS_HOST", fmt.Sprintf("http://127.0.0.1:%d", server.Port))
+		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
+
+		homeDir := t.TempDir()
+		// Do not read user's ~/.databrickscfg
+		t.Setenv(env.HomeEnvVar(), homeDir)
+	}
+
+	workspaceClient, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	user, err := workspaceClient.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	testdiff.PrepareReplacementsUser(t, &repls, *user)
+	testdiff.PrepareReplacements(t, &repls, workspaceClient)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
