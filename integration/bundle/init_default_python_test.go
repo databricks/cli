@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/python/pythontest"
+	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,14 +51,14 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	uniqueProjectId := testutil.RandomName("")
-	ctx, replacements := testcli.WithReplacementsMap(ctx)
+	ctx, replacements := testdiff.WithReplacementsMap(ctx)
 	replacements.Set(uniqueProjectId, "$UNIQUE_PRJ")
 
 	user, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, user)
-	testcli.PrepareReplacementsUser(t, replacements, *user)
-	testcli.PrepareReplacements(t, replacements, wt.W)
+	testdiff.PrepareReplacementsUser(t, replacements, *user)
+	testdiff.PrepareReplacements(t, replacements, wt.W)
 
 	tmpDir := t.TempDir()
 	testutil.Chdir(t, tmpDir)

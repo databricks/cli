@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	yaml3 "gopkg.in/yaml.v3"
@@ -83,7 +84,15 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error 
 	if err != nil {
 		return err
 	}
-	missingAnnotations, err := convert.FromTyped(&d.missingAnnotations, dyn.NilValue)
+
+	for k := range d.missingAnnotations {
+		if !isCliPath(k) {
+			delete(d.missingAnnotations, k)
+			fmt.Printf("Missing annotations for `%s` that are not in CLI package, try to fetch latest OpenAPI spec and regenerate annotations", k)
+		}
+	}
+
+	missingAnnotations, err := convert.FromTyped(d.missingAnnotations, dyn.NilValue)
 	if err != nil {
 		return err
 	}
@@ -93,7 +102,13 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error 
 		return err
 	}
 
-	err = saveYamlWithStyle(outputPath, output)
+	var outputTyped annotationFile
+	err = convert.ToTyped(&outputTyped, output)
+	if err != nil {
+		return err
+	}
+
+	err = saveYamlWithStyle(outputPath, outputTyped)
 	if err != nil {
 		return err
 	}
@@ -117,19 +132,48 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	s.Enum = a.Enum
 }
 
-func saveYamlWithStyle(outputPath string, input dyn.Value) error {
+func saveYamlWithStyle(outputPath string, annotations annotationFile) error {
+	annotationOrder := yamlsaver.NewOrder([]string{"description", "markdown_description", "title", "default", "enum"})
 	style := map[string]yaml3.Style{}
-	file, _ := input.AsMap()
-	for _, v := range file.Keys() {
-		style[v.MustString()] = yaml3.LiteralStyle
+
+	order := getAlphabeticalOrder(annotations)
+	dynMap := map[string]dyn.Value{}
+	for k, v := range annotations {
+		style[k] = yaml3.LiteralStyle
+
+		properties := map[string]dyn.Value{}
+		propertiesOrder := getAlphabeticalOrder(v)
+		for key, value := range v {
+			d, err := convert.FromTyped(value, dyn.NilValue)
+			if d.Kind() == dyn.KindNil || err != nil {
+				properties[key] = dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{{Line: propertiesOrder.Get(key)}})
+				continue
+			}
+			val, err := yamlsaver.ConvertToMapValue(value, annotationOrder, []string{}, map[string]dyn.Value{})
+			if err != nil {
+				return err
+			}
+			properties[key] = val.WithLocations([]dyn.Location{{Line: propertiesOrder.Get(key)}})
+		}
+
+		dynMap[k] = dyn.NewValue(properties, []dyn.Location{{Line: order.Get(k)}})
 	}
 
 	saver := yamlsaver.NewSaverWithStyle(style)
-	err := saver.SaveAsYAML(file, outputPath, true)
+	err := saver.SaveAsYAML(dynMap, outputPath, true)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func getAlphabeticalOrder[T any](mapping map[string]T) *yamlsaver.Order {
+	order := []string{}
+	for k := range mapping {
+		order = append(order, k)
+	}
+	slices.Sort(order)
+	return yamlsaver.NewOrder(order)
 }
 
 func convertLinksToAbsoluteUrl(s string) string {
@@ -170,4 +214,8 @@ func convertLinksToAbsoluteUrl(s string) string {
 	})
 
 	return result
+}
+
+func isCliPath(path string) bool {
+	return !strings.HasPrefix(path, "github.com/databricks/databricks-sdk-go")
 }

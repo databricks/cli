@@ -66,7 +66,7 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 
 	// Assert that the README.md file was created
 	contents := testutil.ReadFile(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
-	assert.Contains(t, contents, fmt.Sprintf("# %s", projectName))
+	assert.Contains(t, contents, "# "+projectName)
 
 	// Validate the stack
 	testutil.Chdir(t, filepath.Join(tmpDir2, "repo_name", projectName))

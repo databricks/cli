@@ -1100,6 +1100,10 @@
                       "description": "The PyDABs configuration.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs"
                     },
+                    "python": {
+                      "description": "Configures loading of Python code defined with 'databricks-bundles' package.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python"
+                    },
                     "python_wheel_wrapper": {
                       "description": "Whether to use a Python wheel wrapper",
                       "$ref": "#/$defs/bool"
@@ -1227,6 +1231,36 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "config.Python": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mutators": {
+                      "description": "Mutators contains a list of fully qualified function paths to mutator functions.\n\nExample: [\"my_project.mutators:add_default_cluster\"]",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "resources": {
+                      "description": "Resources contains a list of fully qualified function paths to load resources\ndefined in Python code.\n\nExample: [\"my_project.resources:load_resources\"]",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "venv_path": {
+                      "description": "VEnvPath is path to the virtual environment.\n\nIf enabled, Python code will execute within this environment. If disabled,\nit defaults to using the Python interpreter available in the current shell.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "resources",
+                    "mutators"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4772,9 +4806,11 @@
                   "type": "object",
                   "properties": {
                     "ai21labs_api_key": {
+                      "description": "The Databricks secret key reference for an AI21 Labs API key. If you prefer to paste your API key directly, see `ai21labs_api_key_plaintext`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "ai21labs_api_key_plaintext": {
+                      "description": "An AI21 Labs API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `ai21labs_api_key`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5287,15 +5323,19 @@
                   "type": "object",
                   "properties": {
                     "private_key": {
+                      "description": "The Databricks secret key reference for a private key for the service account which has access to the Google Cloud Vertex AI Service. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to paste your API key directly, see `private_key_plaintext`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`",
                       "$ref": "#/$defs/string"
                     },
                     "private_key_plaintext": {
+                      "description": "The private key for the service account which has access to the Google Cloud Vertex AI Service provided as a plaintext secret. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to reference your key using Databricks Secrets, see `private_key`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "project_id": {
+                      "description": "This is the Google Cloud project id that the service account is associated with.",
                       "$ref": "#/$defs/string"
                     },
                     "region": {
+                      "description": "This is the region for the Google Cloud Vertex AI Service. See [supported regions](https://cloud.google.com/vertex-ai/docs/general/locations) for more details. Some models are only available in specific regions.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5313,36 +5353,47 @@
                   "type": "object",
                   "properties": {
                     "microsoft_entra_client_id": {
+                      "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.\n",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_client_secret": {
+                      "description": "The Databricks secret key reference for a client secret used for Microsoft Entra ID authentication.\nIf you prefer to paste your client secret directly, see `microsoft_entra_client_secret_plaintext`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_client_secret_plaintext": {
+                      "description": "The client secret used for Microsoft Entra ID authentication provided as a plaintext string.\nIf you prefer to reference your key using Databricks Secrets, see `microsoft_entra_client_secret`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_tenant_id": {
+                      "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_base": {
+                      "description": "This is a field to provide a customized base URl for the OpenAI API.\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\nFor other OpenAI API types, this field is optional, and if left unspecified, the standard OpenAI base URL is used.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_key": {
+                      "description": "The Databricks secret key reference for an OpenAI API key using the OpenAI or Azure service. If you prefer to paste your API key directly, see `openai_api_key_plaintext`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_key_plaintext": {
+                      "description": "The OpenAI API key using the OpenAI or Azure service provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `openai_api_key`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_type": {
+                      "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_version": {
+                      "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_deployment_name": {
+                      "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_organization": {
+                      "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5360,9 +5411,11 @@
                   "type": "object",
                   "properties": {
                     "palm_api_key": {
+                      "description": "The Databricks secret key reference for a PaLM API key. If you prefer to paste your API key directly, see `palm_api_key_plaintext`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "palm_api_key_plaintext": {
+                      "description": "The PaLM API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `palm_api_key`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     }
                   },

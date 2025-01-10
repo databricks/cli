@@ -26,7 +26,7 @@ type ErrNoWorkspaceProfiles struct {
 }
 
 func (e ErrNoWorkspaceProfiles) Error() string {
-	return fmt.Sprintf("%s does not contain workspace profiles; please create one by running 'databricks configure'", e.path)
+	return e.path + " does not contain workspace profiles; please create one by running 'databricks configure'"
 }
 
 type ErrNoAccountProfiles struct {
@@ -34,7 +34,7 @@ type ErrNoAccountProfiles struct {
 }
 
 func (e ErrNoAccountProfiles) Error() string {
-	return fmt.Sprintf("%s does not contain account profiles", e.path)
+	return e.path + " does not contain account profiles"
 }
 
 func initProfileFlag(cmd *cobra.Command) {
@@ -253,7 +253,7 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 		return profiles[0].Name, nil
 	}
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Workspace profiles defined in %s", path),
+		Label:             "Workspace profiles defined in " + path,
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,
@@ -287,7 +287,7 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 		return profiles[0].Name, nil
 	}
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Account profiles defined in %s", path),
+		Label:             "Account profiles defined in " + path,
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,

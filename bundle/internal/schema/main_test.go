@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -43,7 +42,8 @@ func copyFile(src, dst string) error {
 
 // Checks whether descriptions are added for new config fields in the annotations.yml file
 // If this test fails either manually add descriptions to the `annotations.yml` or do the following:
-//  1. run `make schema` from the repository root to add placeholder descriptions
+//  1. for fields described outside of CLI package fetch latest schema from the OpenAPI spec and add path to file to DATABRICKS_OPENAPI_SPEC env variable
+//  2. run `make schema` from the repository root to add placeholder descriptions
 //  2. replace all "PLACEHOLDER" values with the actual descriptions if possible
 //  3. run `make schema` again to regenerate the schema with acutal descriptions
 func TestRequiredAnnotationsForNewFields(t *testing.T) {
@@ -80,7 +80,7 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Empty(t, updatedFieldPaths, fmt.Sprintf("Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n")))
+	assert.Empty(t, updatedFieldPaths, "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n"))
 }
 
 // Checks whether types in annotation files are still present in Config type

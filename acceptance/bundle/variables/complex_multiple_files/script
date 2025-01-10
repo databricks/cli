@@ -1,0 +1,1 @@
+$CLI bundle validate -t dev -o json | jq '{resources, variables}'

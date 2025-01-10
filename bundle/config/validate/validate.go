@@ -30,12 +30,13 @@ func (l location) Path() dyn.Path {
 // Apply implements bundle.Mutator.
 func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), bundle.Parallel(
-		JobClusterKeyDefined(),
+		FastValidateReadonly(),
+
+		// Slow mutators that require network or file i/o. These are only
+		// run in the `bundle validate` command.
 		FilesToSync(),
-		ValidateSyncPatterns(),
-		JobTaskClusterSpec(),
 		ValidateFolderPermissions(),
-		SingleNodeCluster(),
+		ValidateSyncPatterns(),
 	))
 }
 

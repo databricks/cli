@@ -54,5 +54,8 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	// Set file upload destination of the bundle in metadata
 	b.Metadata.Config.Workspace.FilePath = b.Config.Workspace.FilePath
+	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+		b.Metadata.Config.Workspace.FilePath = b.SyncRootPath
+	}
 	return nil
 }

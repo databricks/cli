@@ -168,7 +168,7 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 	}
 	var zeroStub reponseStub
 	if s.reponseStub == zeroStub {
-		return fmt.Errorf("no default process stub")
+		return errors.New("no default process stub")
 	}
 	err := s.reponseStub.err
 	if s.reponseStub.stdout != "" {

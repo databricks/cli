@@ -1,0 +1,3 @@
+trace errcode $CLI bundle validate -o json -t development 2> out.development.stderr.txt | jq .resources.jobs.foo
+trace errcode $CLI bundle validate -o json -t staging | jq .resources.jobs.foo
+trace errcode $CLI bundle validate -t staging

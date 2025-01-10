@@ -40,6 +40,7 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		})
 	}
 
+	// Note, diags are lost from all goroutines except the first one to return diag
 	return diag.FromErr(errs.Wait())
 }
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 	"gopkg.in/yaml.v3"
 )
@@ -57,7 +55,7 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 
 	// Check for embedded Databricks Go SDK types.
 	if typ.Kind() == reflect.Struct {
-		for i := 0; i < typ.NumField(); i++ {
+		for i := range typ.NumField() {
 			if !typ.Field(i).Anonymous {
 				continue
 			}
@@ -84,7 +82,11 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 		// Skip if the type is not in the openapi spec.
 		_, ok := p.ref[k]
 		if !ok {
-			continue
+			k = mapIncorrectTypNames(k)
+			_, ok = p.ref[k]
+			if !ok {
+				continue
+			}
 		}
 
 		// Return the first Go SDK type found in the openapi spec.
@@ -92,6 +94,23 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 	}
 
 	return jsonschema.Schema{}, false
+}
+
+// Fix inconsistent type names between the Go SDK and the OpenAPI spec.
+// E.g. "serving.PaLmConfig" in the Go SDK is "serving.PaLMConfig" in the OpenAPI spec.
+func mapIncorrectTypNames(ref string) string {
+	switch ref {
+	case "serving.PaLmConfig":
+		return "serving.PaLMConfig"
+	case "serving.OpenAiConfig":
+		return "serving.OpenAIConfig"
+	case "serving.GoogleCloudVertexAiConfig":
+		return "serving.GoogleCloudVertexAIConfig"
+	case "serving.Ai21LabsConfig":
+		return "serving.AI21LabsConfig"
+	default:
+		return ref
+	}
 }
 
 // Use the OpenAPI spec to load descriptions for the given type.
@@ -143,29 +162,38 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 		return err
 	}
 
-	b, err = yaml.Marshal(overrides)
+	err = saveYamlWithStyle(overridesPath, overrides)
 	if err != nil {
 		return err
 	}
-	o, err := yamlloader.LoadYAML("", bytes.NewBuffer(b))
+	err = saveYamlWithStyle(outputPath, annotations)
 	if err != nil {
 		return err
 	}
-	err = saveYamlWithStyle(overridesPath, o)
+	err = prependCommentToFile(outputPath, "# This file is auto-generated. DO NOT EDIT.\n")
 	if err != nil {
 		return err
 	}
-	b, err = yaml.Marshal(annotations)
-	if err != nil {
-		return err
-	}
-	b = bytes.Join([][]byte{[]byte("# This file is auto-generated. DO NOT EDIT."), b}, []byte("\n"))
-	err = os.WriteFile(outputPath, b, 0o644)
-	if err != nil {
-		return err
-	}
-
 	return nil
+}
+
+func prependCommentToFile(outputPath, comment string) error {
+	b, err := os.ReadFile(outputPath)
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(comment)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(b)
+	return err
 }
 
 func addEmptyOverride(key, pkg string, overridesFile annotation.File) {

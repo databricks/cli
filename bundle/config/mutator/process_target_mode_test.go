@@ -3,14 +3,12 @@ package mutator
 import (
 	"context"
 	"reflect"
-	"runtime"
 	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
@@ -163,18 +161,18 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["existing"], "tag")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
+	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["existing"])
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job1"].Tags["dev"])
+	assert.Equal(t, jobs.PauseStatusPaused, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus)
 
 	// Job 2
 	assert.Equal(t, "[dev lennart] job2", b.Config.Resources.Jobs["job2"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job2"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus, jobs.PauseStatusUnpaused)
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
+	assert.Equal(t, jobs.PauseStatusUnpaused, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus)
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.Equal(t, false, b.Config.Resources.Pipelines["pipeline1"].Continuous)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
 	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 
 	// Experiment 1
@@ -382,7 +380,7 @@ func TestAllResourcesMocked(t *testing.T) {
 	b := mockBundle(config.Development)
 	resources := reflect.ValueOf(b.Config.Resources)
 
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 		if field.Kind() == reflect.Map {
 			assert.True(
@@ -411,7 +409,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 
 		if field.Kind() == reflect.Map {
@@ -539,33 +537,4 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
-}
-
-func TestSourceLinkedDeploymentEnabled(t *testing.T) {
-	b, diags := processSourceLinkedBundle(t, true)
-	require.NoError(t, diags.Error())
-	assert.True(t, *b.Config.Presets.SourceLinkedDeployment)
-}
-
-func TestSourceLinkedDeploymentDisabled(t *testing.T) {
-	b, diags := processSourceLinkedBundle(t, false)
-	require.NoError(t, diags.Error())
-	assert.False(t, *b.Config.Presets.SourceLinkedDeployment)
-}
-
-func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
-	if runtime.GOOS == "windows" {
-		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
-	}
-
-	b := mockBundle(config.Development)
-
-	workspacePath := "/Workspace/lennart@company.com/"
-	b.SyncRootPath = workspacePath
-	b.Config.Presets.SourceLinkedDeployment = &presetEnabled
-
-	ctx := dbr.MockRuntime(context.Background(), true)
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(ctx, b, m)
-	return b, diags
 }

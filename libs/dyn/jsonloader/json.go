@@ -3,6 +3,7 @@ package jsonloader
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -20,7 +21,7 @@ func LoadJSON(data []byte, source string) (dyn.Value, error) {
 	value, err := decodeValue(decoder, &offset)
 	if err != nil {
 		if err == io.EOF {
-			err = fmt.Errorf("unexpected end of JSON input")
+			err = errors.New("unexpected end of JSON input")
 		}
 		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: %v", value.Location(), err)
 	}
@@ -57,7 +58,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 				}
 				key, ok := keyToken.(string)
 				if !ok {
-					return invalidValueWithLocation(decoder, o), fmt.Errorf("expected string for object key")
+					return invalidValueWithLocation(decoder, o), errors.New("expected string for object key")
 				}
 
 				// Get the offset of the key by subtracting the length of the key and the '"' character

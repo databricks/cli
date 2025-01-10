@@ -1,7 +1,7 @@
 package configure
 
 import (
-	"fmt"
+	"errors"
 	"net/url"
 )
 
@@ -11,10 +11,10 @@ func validateHost(s string) error {
 		return err
 	}
 	if u.Host == "" || u.Scheme != "https" {
-		return fmt.Errorf("must start with https://")
+		return errors.New("must start with https://")
 	}
 	if u.Path != "" && u.Path != "/" {
-		return fmt.Errorf("must use empty path")
+		return errors.New("must use empty path")
 	}
 	return nil
 }

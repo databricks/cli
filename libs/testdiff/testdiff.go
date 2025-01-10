@@ -18,17 +18,21 @@ func UnifiedDiff(filename1, filename2, s1, s2 string) string {
 }
 
 func AssertEqualTexts(t testutil.TestingT, filename1, filename2, expected, out string) {
+	t.Helper()
 	if len(out) < 1000 && len(expected) < 1000 {
 		// This shows full strings + diff which could be useful when debugging newlines
-		assert.Equal(t, expected, out)
+		assert.Equal(t, expected, out, "%s vs %s", filename1, filename2)
 	} else {
 		// only show diff for large texts
 		diff := UnifiedDiff(filename1, filename2, expected, out)
-		t.Errorf("Diff:\n" + diff)
+		if diff != "" {
+			t.Errorf("Diff:\n" + diff)
+		}
 	}
 }
 
 func AssertEqualJQ(t testutil.TestingT, expectedName, outName, expected, out string, ignorePaths []string) {
+	t.Helper()
 	patch, err := jsondiff.CompareJSON([]byte(expected), []byte(out))
 	if err != nil {
 		t.Logf("CompareJSON error for %s vs %s: %s (fallback to textual comparison)", outName, expectedName, err)
