@@ -1,0 +1,54 @@
+errcode trace $CLI bundle validate -t development -o json | jq '.resources' > output.development.json
+errcode trace $CLI bundle validate -t error
+
+# Job assertions
+
+trace jq -e '
+.jobs.my_job.tasks[0].task_key == "notebook_example" and
+(.jobs.my_job.tasks[0].notebook_task.notebook_path | endswith("/src/notebook"))
+' output.development.json
+
+trace jq -e '
+.jobs.my_job.tasks[1].task_key == "spark_python_example" and
+(.jobs.my_job.tasks[1].spark_python_task.python_file | endswith("/src/file.py"))
+' output.development.json
+
+trace jq -e '
+.jobs.my_job.tasks[2].task_key == "dbt_example" and
+(.jobs.my_job.tasks[2].dbt_task.project_directory | endswith("/src/dbt_project"))
+' output.development.json
+
+trace jq -e '
+.jobs.my_job.tasks[3].task_key == "sql_example" and
+(.jobs.my_job.tasks[3].sql_task.file.path | endswith("/src/sql.sql"))
+' output.development.json
+
+trace jq -e '
+.jobs.my_job.tasks[4].task_key == "python_wheel_example" and
+(.jobs.my_job.tasks[4].libraries[0].whl == "dist/wheel1.whl") and
+(.jobs.my_job.tasks[4].libraries[1].whl == "dist/wheel2.whl")
+' output.development.json
+
+trace jq -e '
+.jobs.my_job.tasks[5].task_key == "spark_jar_example" and
+(.jobs.my_job.tasks[5].libraries[0].jar == "target/jar1.jar") and
+(.jobs.my_job.tasks[5].libraries[1].jar == "target/jar2.jar")
+' output.development.json
+
+# Pipeline assertions
+
+trace jq -e '
+(.pipelines.my_pipeline.libraries[0].file.path | endswith("/src/file1.py"))
+' output.development.json
+
+trace jq -e '
+(.pipelines.my_pipeline.libraries[1].notebook.path | endswith("/src/notebook1"))
+' output.development.json
+
+trace jq -e '
+(.pipelines.my_pipeline.libraries[2].file.path | endswith("/src/file2.py"))
+' output.development.json
+
+trace jq -e '
+(.pipelines.my_pipeline.libraries[3].notebook.path | endswith("/src/notebook2"))
+' output.development.json

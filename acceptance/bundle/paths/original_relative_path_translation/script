@@ -1,0 +1,12 @@
+errcode trace $CLI bundle validate -t default -o json | jq '.resources.jobs.job' > output.default.json
+errcode trace $CLI bundle validate -t override -o json | jq '.resources.jobs.job' > output.override.json
+
+trace jq -e '
+(.tasks[0].spark_python_task.python_file | endswith("/src/file1.py")) and
+(.tasks[1].spark_python_task.python_file | endswith("/src/file1.py"))
+' output.default.json
+
+trace jq -e '
+(.tasks[0].spark_python_task.python_file | endswith("/src/file2.py")) and
+(.tasks[1].spark_python_task.python_file | endswith("/src/file2.py"))
+' output.override.json

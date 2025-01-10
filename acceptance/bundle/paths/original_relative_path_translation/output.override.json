@@ -1,0 +1,27 @@
+{
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/relative_path_translation/override/state/metadata.json"
+  },
+  "edit_mode": "UI_LOCKED",
+  "format": "MULTI_TASK",
+  "permissions": [],
+  "queue": {
+    "enabled": true
+  },
+  "tags": {},
+  "tasks": [
+    {
+      "spark_python_task": {
+        "python_file": "/Workspace/remote/src/file2.py"
+      },
+      "task_key": "local"
+    },
+    {
+      "spark_python_task": {
+        "python_file": "/Workspace/remote/src/file2.py"
+      },
+      "task_key": "variable_reference"
+    }
+  ]
+}
