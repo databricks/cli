@@ -13,30 +13,6 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
-const (
-	rootFileName = "reference.md"
-	rootHeader   = `---
-description: Configuration reference for databricks.yml
----
-
-# Configuration reference
-
-This article provides reference for keys supported by <DABS> configuration (YAML). See [\_](/dev-tools/bundles/index.md).
-`
-)
-
-const (
-	resourcesFileName = "resources-reference.md"
-	resourcesHeader   = `---
-description: Resources references for databricks.yml
----
-
-# Resources reference
-
-This article provides reference for keys supported by <DABS> configuration (YAML). See [\_](/dev-tools/bundles/index.md).
-`
-)
-
 func main() {
 	if len(os.Args) != 3 {
 		fmt.Println("Usage: go run main.go <annotation-file> <output-file>")
