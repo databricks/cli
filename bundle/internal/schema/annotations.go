@@ -184,15 +184,17 @@ func convertLinksToAbsoluteUrl(s string) string {
 	referencePage := "/dev-tools/bundles/reference.html"
 
 	// Regular expression to match Markdown-style links like [_](link)
-	re := regexp.MustCompile(`\[_\]\(([^)]+)\)`)
+	re := regexp.MustCompile(`\[(.*)\]\(([^)]+)\)`)
 	result := re.ReplaceAllStringFunc(s, func(match string) string {
 		matches := re.FindStringSubmatch(match)
 		if len(matches) < 2 {
 			return match
 		}
-		link := matches[1]
-		var text, absoluteURL string
 
+		originalText := matches[1]
+		link := matches[2]
+
+		var text, absoluteURL string
 		if strings.HasPrefix(link, "#") {
 			text = strings.TrimPrefix(link, "#")
 			absoluteURL = fmt.Sprintf("%s%s%s", base, referencePage, link)
@@ -208,6 +210,10 @@ func convertLinksToAbsoluteUrl(s string) string {
 			}
 		} else {
 			return match
+		}
+
+		if originalText != "_" {
+			text = originalText
 		}
 
 		return fmt.Sprintf("[%s](%s)", text, absoluteURL)

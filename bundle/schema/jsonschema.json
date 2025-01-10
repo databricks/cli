@@ -183,7 +183,8 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The cluster resource defines an [all-purpose cluster](https://docs.databricks.com/api/workspace/clusters/create)."
                   },
                   {
                     "type": "string",
@@ -246,7 +247,8 @@
                         "$ref": "#/$defs/string"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The dashboard resource allows you to manage [AI/BI dashboards](/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [_](https://docs.databricks.com/dashboards/index.html)."
                   },
                   {
                     "type": "string",
@@ -367,7 +369,8 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a \u003cDABS\u003e template to create a job, see [_](https://docs.databricks.com/dev-tools/bundles/jobs-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -412,7 +415,8 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The experiment resource allows you to define [MLflow experiments](/api/workspace/experiments/createexperiment) in a bundle. For information about MLflow experiments, see [_](https://docs.databricks.com/mlflow/experiments.html)."
                   },
                   {
                     "type": "string",
@@ -502,7 +506,8 @@
                     "required": [
                       "config",
                       "name"
-                    ]
+                    ],
+                    "markdownDescription": "The model_serving_endpoint resource allows you to define [model serving endpoints](/api/workspace/servingendpoints/create). See [_](https://docs.databricks.com/machine-learning/model-serving/manage-serving-endpoints.html)."
                   },
                   {
                     "type": "string",
@@ -644,7 +649,8 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The pipeline resource allows you to create \u003cDLT\u003e [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/delta-live-tables/index.md). For a tutorial that uses the \u003cDABS\u003e template to create a pipeline, see [_](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -718,7 +724,8 @@
                       "table_name",
                       "assets_dir",
                       "output_schema_name"
-                    ]
+                    ],
+                    "markdownDescription": "The quality_monitor resource allows you to define a \u003cUC\u003e [table monitor](/api/workspace/qualitymonitors/create). For information about monitors, see [_](https://docs.databricks.com/machine-learning/model-serving/monitor-diagnose-endpoints.html)."
                   },
                   {
                     "type": "string",
@@ -760,7 +767,8 @@
                       "catalog_name",
                       "name",
                       "schema_name"
-                    ]
+                    ],
+                    "markdownDescription": "The registered model resource allows you to define models in \u003cUC\u003e. For information about \u003cUC\u003e [registered models](/api/workspace/registeredmodels/create), see [_](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html)."
                   },
                   {
                     "type": "string",
@@ -800,7 +808,8 @@
                     "required": [
                       "catalog_name",
                       "name"
-                    ]
+                    ],
+                    "markdownDescription": "The schema resource type allows you to define \u003cUC\u003e [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
                   },
                   {
                     "type": "string",
@@ -846,7 +855,7 @@
                       "name",
                       "schema_name"
                     ],
-                    "markdownDescription": "The volume resource type allows you to define and create Unity Catalog [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n* A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path`` in subsequent deployments.\n\n* Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development`` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)"
+                    "markdownDescription": "The volume resource type allows you to define and create \u003cUC\u003e [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use \u003cDABS\u003e to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.\n\n- Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)."
                   },
                   {
                     "type": "string",
@@ -1039,12 +1048,12 @@
                     "deployment": {
                       "description": "The definition of the bundle deployment",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
-                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [deployment](https://docs.databricks.com/dev-tools/bundles/reference.html#deployment) and [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
+                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [_](#deployment) and [_](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "git": {
                       "description": "The Git version control details that are associated with your bundle.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git) and [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
+                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [_](#git) and [_](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
                     "name": {
                       "description": "The name of the bundle.",
@@ -6424,7 +6433,7 @@
     "permissions": {
       "description": "Defines a permission for a specific entity.",
       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-      "markdownDescription": "A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+      "markdownDescription": "A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.\n\nSee [_](/dev-tools/bundles/settings.md#permissions) and [_](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
     },
     "presets": {
       "description": "Defines bundle deployment presets.",
