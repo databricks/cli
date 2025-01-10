@@ -1,14 +1,12 @@
 bundle:
   name: git
+  git:
+    # This is currently not supported
+    branch: ${var.deployment_branch}
 
 variables:
   deployment_branch:
     default: ""  # read from git
-
-bundle:
-  git:
-    # This is currently not supported
-    branch: ${var.deployment_branch}
 
 targets:
   prod:

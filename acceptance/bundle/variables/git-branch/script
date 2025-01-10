@@ -1,4 +1,6 @@
 git-repo-init
-trace errcode $CLI bundle validate -o json
-trace errcode $CLI bundle validate
+trace $CLI bundle validate -o json | grep -v '"commit"'
+trace $CLI bundle validate
+trace $CLI bundle validate -o json -t dev | grep -v '"commit"'
+trace $CLI bundle validate -t dev | grep -v '"commit"'
 rm -fr .git
