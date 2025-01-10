@@ -57,8 +57,6 @@ github.com/databricks/cli/bundle/config.Deployment:
   "lock":
     "description": |-
       The deployment lock attributes.
-    "markdown_description": |-
-      The deployment lock attributes. See [_](#lock).
 github.com/databricks/cli/bundle/config.Experimental:
   "pydabs":
     "description": |-
@@ -296,8 +294,6 @@ github.com/databricks/cli/bundle/config.Target:
   "artifacts":
     "description": |-
       The artifacts to include in the target deployment.
-    "markdown_description": |-
-      The artifacts to include in the target deployment. See [_](#artifact)
   "bundle":
     "description": |-
       The bundle attributes when deploying to this target.
@@ -335,13 +331,9 @@ github.com/databricks/cli/bundle/config.Target:
   "sync":
     "description": |-
       The local paths to sync to the target workspace when a bundle is run or deployed.
-    "markdown_description": |-
-      The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#sync).
   "variables":
     "description": |-
       The custom variable definitions for the target.
-    "markdown_description": |-
-      The custom variable definitions for the target. See [_](/dev-tools/bundles/variables.md).
   "workspace":
     "description": |-
       The Databricks workspace for the target.
@@ -475,6 +467,11 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
     "description": |-
       The type of the variable.
 github.com/databricks/cli/bundle/config/variable.Variable:
+  "_":
+    "description": |-
+      Defines a custom variable for the bundle.
+    "markdown_description": |-
+      Defines a custom variable for the bundle. See [_](/dev-tools/bundles/settings.md#variables).
   "default":
     "description": |-
       PLACEHOLDER

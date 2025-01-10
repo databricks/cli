@@ -180,7 +180,6 @@ func buildAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdow
 
 func formatDescription(a attributeNode) string {
 	s := strings.ReplaceAll(a.Description, "\n", " ")
-	return s
 	if a.Reference != "" {
 		if strings.HasSuffix(s, ".") {
 			s += " "
