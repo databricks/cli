@@ -1,0 +1,4 @@
+git-repo-init
+trace errcode $CLI bundle validate -o json
+trace errcode $CLI bundle validate
+rm -fr .git

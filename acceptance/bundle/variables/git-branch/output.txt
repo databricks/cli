@@ -1,0 +1,42 @@
+
+>>> errcode $CLI bundle validate -o json
+Error: unable to define default workspace root: bundle name not defined
+
+{
+  "bundle": {
+    "environment": "prod",
+    "git": {
+      "actual_branch": "main",
+      "branch": "${var.deployment_branch}",
+      "bundle_root_path": ".",
+      "commit": "005c1c6e1941df870c41d0541859f49ada648679"
+    },
+    "target": "prod"
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "targets": null,
+  "variables": {
+    "deployment_branch": {
+      "default": ""
+    }
+  },
+  "workspace": {
+    "current_user": {
+      "short_name": "tester",
+      "userName": "tester@databricks.com"
+    }
+  }
+}
+Exit code: 1
+
+>>> errcode $CLI bundle validate
+Error: unable to define default workspace root: bundle name not defined
+
+
+Found 1 error
+
+Exit code: 1

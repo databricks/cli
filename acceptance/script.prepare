@@ -34,3 +34,11 @@ trace() {
 
     return $?
 }
+
+git-repo-init() {
+    git init -q
+    git config user.name "Tester"
+    git config user.email "tester@databricks.com"
+    git add databricks.yml
+    git commit -qm 'Add databricks.yml'
+}
