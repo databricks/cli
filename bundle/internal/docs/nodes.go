@@ -1,15 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
 	"sort"
 	"strings"
 
 	"github.com/databricks/cli/libs/jsonschema"
-
-	md "github.com/nao1215/markdown"
 )
 
 type rootNode struct {
@@ -84,7 +79,6 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 		if v.Items != nil {
 			arrayItemType := resolveRefs(v.Items, refs)
 			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, k)
-			// rootProps = append(rootProps, extractNodes(k, arrayItemType.Properties, refs, customFields)...)
 		}
 
 		isEmpty := len(node.Attributes) == 0 && len(node.ObjectKeyAttributes) == 0 && len(node.ArrayItemAttributes) == 0
@@ -100,116 +94,11 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 	return nodes
 }
 
-func buildMarkdown(nodes []rootNode, outputFile, header string) error {
-	f, err := os.Create(outputFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	m := md.NewMarkdown(f)
-	m = m.PlainText(header)
-	for _, node := range nodes {
-		m = m.LF()
-		if node.TopLevel {
-			m = m.H2(node.Title)
-		} else {
-			m = m.H3(node.Title)
-		}
-		m = m.LF()
-
-		if node.Type != "" {
-			m = m.PlainText(fmt.Sprintf("**`Type: %s`**", node.Type))
-			m = m.LF()
-		}
-		m = m.PlainText(node.Description)
-		m = m.LF()
-
-		if len(node.ObjectKeyAttributes) > 0 {
-			n := removePluralForm(node.Title)
-			m = m.CodeBlocks("yaml", fmt.Sprintf("%ss:\n  <%s-name>:\n    <%s-field-name>: <%s-field-value>", n, n, n, n))
-			m = m.LF()
-			m = buildAttributeTable(m, node.ObjectKeyAttributes)
-		} else if len(node.ArrayItemAttributes) > 0 {
-			m = m.LF()
-			m = buildAttributeTable(m, node.ArrayItemAttributes)
-		} else if len(node.Attributes) > 0 {
-			m = m.LF()
-			m = buildAttributeTable(m, node.Attributes)
-		}
-
-		if node.Example != "" {
-			m = m.LF()
-			m = m.PlainText("**Example**")
-			m = m.LF()
-			m = m.PlainText(node.Example)
-		}
-	}
-
-	err = m.Build()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return nil
-}
-
 func removePluralForm(s string) string {
 	if strings.HasSuffix(s, "s") {
 		return strings.TrimSuffix(s, "s")
 	}
 	return s
-}
-
-func buildAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdown {
-	return buildCustomAttributeTable(m, attributes)
-
-	// Rows below are useful for debugging since it renders the table in a regular markdown format
-
-	// rows := [][]string{}
-	// for _, n := range attributes {
-	// 	rows = append(rows, []string{fmt.Sprintf("`%s`", n.Title), n.Type, formatDescription(n.Description)})
-	// }
-	// m = m.CustomTable(md.TableSet{
-	// 	Header: []string{"Key", "Type", "Description"},
-	// 	Rows:   rows,
-	// }, md.TableOptions{AutoWrapText: false, AutoFormatHeaders: false})
-
-	// return m
-}
-
-func formatDescription(a attributeNode) string {
-	s := strings.ReplaceAll(a.Description, "\n", " ")
-	if a.Reference != "" {
-		if strings.HasSuffix(s, ".") {
-			s += " "
-		} else if s != "" {
-			s += ". "
-		}
-		s += fmt.Sprintf("See %s.", md.Link("_", "#"+a.Reference))
-	}
-	return s
-}
-
-// Build a custom table which we use in Databricks website
-func buildCustomAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdown {
-	m = m.LF()
-	m = m.PlainText(".. list-table::")
-	m = m.PlainText("   :header-rows: 1")
-	m = m.LF()
-
-	m = m.PlainText("   * - Key")
-	m = m.PlainText("     - Type")
-	m = m.PlainText("     - Description")
-	m = m.LF()
-
-	for _, a := range attributes {
-		m = m.PlainText("   * - " + fmt.Sprintf("`%s`", a.Title))
-		m = m.PlainText("     - " + a.Type)
-		m = m.PlainText("     - " + formatDescription(a))
-		m = m.LF()
-	}
-	return m
 }
 
 func getHumanReadableType(t jsonschema.Type) string {
@@ -248,74 +137,11 @@ func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonsche
 	return attributes
 }
 
-func isReferenceType(v *jsonschema.Schema, refs map[string]jsonschema.Schema) bool {
-	if len(v.Properties) > 0 {
-		return true
-	}
-	if v.Items != nil {
-		items := resolveRefs(v.Items, refs)
-		if items != nil && items.Type == "object" {
-			return true
-		}
-	}
-	props := resolveAdditionaProperties(v, refs)
-	if props != nil && props.Type == "object" {
-		return true
-	}
-
-	return false
-}
-
-func resolveAdditionaProperties(v *jsonschema.Schema, refs map[string]jsonschema.Schema) *jsonschema.Schema {
-	if v.AdditionalProperties == nil {
-		return nil
-	}
-	additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
-	if !ok {
-		return nil
-	}
-	return resolveRefs(additionalProps, refs)
-}
-
 func getDescription(s *jsonschema.Schema, allowMarkdown bool) string {
 	if allowMarkdown && s.MarkdownDescription != "" {
 		return s.MarkdownDescription
 	}
 	return s.Description
-}
-
-func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *jsonschema.Schema {
-	node := s
-
-	description := s.Description
-	markdownDescription := s.MarkdownDescription
-	examples := s.Examples
-
-	for node.Reference != nil {
-		ref := strings.TrimPrefix(*node.Reference, "#/$defs/")
-		newNode, ok := schemas[ref]
-		if !ok {
-			log.Printf("schema %s not found", ref)
-		}
-
-		if description == "" {
-			description = newNode.Description
-		}
-		if markdownDescription == "" {
-			markdownDescription = newNode.MarkdownDescription
-		}
-		if len(examples) == 0 {
-			examples = newNode.Examples
-		}
-
-		node = &newNode
-	}
-
-	node.Description = description
-	node.MarkdownDescription = markdownDescription
-	node.Examples = examples
-
-	return node
 }
 
 func shouldExtract(ref string, customFields map[string]bool) bool {
