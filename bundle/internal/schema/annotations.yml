@@ -1,31 +1,25 @@
 github.com/databricks/cli/bundle/config.Artifact:
   "build":
     "description": |-
-      An optional set of non-default build commands that you want to run locally before deployment.
-
-      For Python wheel builds, the Databricks CLI assumes that it can find a local install of the Python wheel package to run builds, and it runs the command python setup.py bdist_wheel by default during each bundle deployment.
-
-      To specify multiple build commands, separate each command with double-ampersand (&&) characters.
+      An optional set of non-default build commands to run locally before deployment.
   "executable":
     "description": |-
-      The executable type.
+      The executable type. Valid values are `bash`, `sh`, and `cmd`.
   "files":
     "description": |-
       The source files for the artifact.
-    "markdown_description": |-
-      The source files for the artifact, defined as an [_](#artifact_file).
   "path":
     "description": |-
       The location where the built artifact will be saved.
   "type":
     "description": |-
-      The type of the artifact.
+      Required. The type of the artifact.
     "markdown_description": |-
-      The type of the artifact. Valid values are `wheel` or `jar`
+      Required. The type of the artifact. Valid values are `whl`.
 github.com/databricks/cli/bundle/config.ArtifactFile:
   "source":
     "description": |-
-      The path of the files used to build the artifact.
+      Required. The path of the files used to build the artifact.
 github.com/databricks/cli/bundle/config.Bundle:
   "cluster_id":
     "description": |-
@@ -71,13 +65,13 @@ github.com/databricks/cli/bundle/config.Experimental:
       The PyDABs configuration.
   "python_wheel_wrapper":
     "description": |-
-      Whether to use a Python wheel wrapper
+      Whether to use a Python wheel wrapper.
   "scripts":
     "description": |-
-      The commands to run
+      The commands to run.
   "use_legacy_run_as":
     "description": |-
-      Whether to use the legacy run_as behavior
+      Whether to use the legacy run_as behavior.
 github.com/databricks/cli/bundle/config.Git:
   "branch":
     "description": |-
@@ -128,61 +122,66 @@ github.com/databricks/cli/bundle/config.PyDABs:
 github.com/databricks/cli/bundle/config.Resources:
   "clusters":
     "description": |-
-      The cluster definitions for the bundle.
+      The cluster definitions for the bundle, where each key is the name of a cluster.
     "markdown_description": |-
-      The cluster definitions for the bundle. See [_](/dev-tools/bundles/resources.md#cluster)
+      The cluster definitions for the bundle, where each key is the name of a cluster. See [_](/dev-tools/bundles/resources.md#cluster)
   "dashboards":
     "description": |-
-      The dashboard definitions for the bundle.
+      The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
-      The dashboard definitions for the bundle. See [_](/dev-tools/bundles/resources.md#dashboard)
+      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [_](/dev-tools/bundles/resources.md#dashboard)
   "experiments":
     "description": |-
-      The experiment definitions for the bundle.
+      The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
-      The experiment definitions for the bundle. See [_](/dev-tools/bundles/resources.md#experiment)
+      The experiment definitions for the bundle, where each key is the name of the experiment. See [_](/dev-tools/bundles/resources.md#experiment)
   "jobs":
     "description": |-
-      The job definitions for the bundle.
+      The job definitions for the bundle, where each key is the name of the job.
     "markdown_description": |-
-      The job definitions for the bundle. See [_](/dev-tools/bundles/resources.md#job)
+      The job definitions for the bundle, where each key is the name of the job. See [_](/dev-tools/bundles/resources.md#job)
   "model_serving_endpoints":
     "description": |-
-      The model serving endpoint definitions for the bundle.
+      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
     "markdown_description": |-
-      The model serving endpoint definitions for the bundle. See [_](/dev-tools/bundles/resources.md#model_serving_endpoint)
+      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [_](/dev-tools/bundles/resources.md#model_serving_endpoint)
   "models":
     "description": |-
-      The model definitions for the bundle.
+      The model definitions for the bundle, where each key is the name of the model.
     "markdown_description": |-
-      The model definitions for the bundle. See [_](/dev-tools/bundles/resources.md#model)
+      The model definitions for the bundle, where each key is the name of the model. See [_](/dev-tools/bundles/resources.md#model-legacy)
   "pipelines":
     "description": |-
-      The pipeline definitions for the bundle.
+      The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
-      The pipeline definitions for the bundle. See [_](/dev-tools/bundles/resources.md#pipeline)
+      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [_](/dev-tools/bundles/resources.md#pipeline)
   "quality_monitors":
     "description": |-
-      The quality monitor definitions for the bundle.
+      The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
     "markdown_description": |-
-      The quality monitor definitions for the bundle. See [_](/dev-tools/bundles/resources.md#quality_monitor)
+      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality-monitor)
   "registered_models":
     "description": |-
-      The registered model definitions for the bundle.
+      The registered model definitions for the bundle, where each key is the name of the <UC> registered model.
     "markdown_description": |-
-      The registered model definitions for the bundle. See [_](/dev-tools/bundles/resources.md#registered_model)
+      The registered model definitions for the bundle, where each key is the name of the <UC> registered model. See [_](/dev-tools/bundles/resources.md#registered-model)
   "schemas":
     "description": |-
-      The schema definitions for the bundle.
+      The schema definitions for the bundle, where each key is the name of the schema.
     "markdown_description": |-
-      The schema definitions for the bundle. See [_](/dev-tools/bundles/resources.md#schema)
+      The schema definitions for the bundle, where each key is the name of the schema. See [_](/dev-tools/bundles/resources.md#schema)
   "volumes":
     "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config.Root:
+      The volume definitions for the bundle, where each key is the name of the volume.
+    "markdown_description": |-
+      The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volume)
   "artifacts":
     "description": |-
       Defines the attributes to build an artifact
+    "markdown_description": |-
+      Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [_](/dev-tools/bundles/settings.md#artifacts).
+
+      Artifact settings defined in the top level of the bundle configuration can be overridden in the `targets` mapping. See [_](/dev-tools/bundles/artifact-overrides.md).
     "markdown_examples": |-
       ```yaml
       artifacts:
@@ -195,7 +194,7 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       The attributes of the bundle.
     "markdown_description": |-
-      The attributes of the bundle. See [_](/dev-tools/bundles/settings.md#bundle)
+      The attributes of the bundle. See [_](/dev-tools/bundles/settings.md#bundle).
   "experimental":
     "description": |-
       Defines attributes for experimental features.
@@ -206,9 +205,11 @@ github.com/databricks/cli/bundle/config.Root:
       Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
   "permissions":
     "description": |-
-      Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle
+      Defines a permission for a specific entity.
     "markdown_description": |-
-      Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
+      A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.
+
+      See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
     "markdown_examples": |-
       ```yaml
       permissions:
@@ -226,12 +227,21 @@ github.com/databricks/cli/bundle/config.Root:
       Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.md#presets).
   "resources":
     "description": |-
-      Specifies information about the Databricks resources used by the bundle
+      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
     "markdown_description": |-
-      Specifies information about the Databricks resources used by the bundle. See [_](/dev-tools/bundles/resources.md).
+      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about <DABS> supported resources, and resource definition reference, see [_](/dev-tools/bundles/resources.md).
+
+      ```yaml
+      resources:
+        <resource-type>s:
+          <resource-name>:
+            <resource-field-name>: <resource-field-value>
+      ```
   "run_as":
     "description": |-
-      The identity to use to run the bundle.
+      The identity to use when running <DABS> workflows.
+    "markdown_description": |-
+      The identity to use when running <DABS> workflows. See [_](/dev-tools/bundles/run-as.md).
   "sync":
     "description": |-
       The files and file paths to include or exclude in the bundle.
@@ -376,6 +386,11 @@ github.com/databricks/cli/bundle/config/resources.Grant:
     "description": |-
       The privileges to grant to the specified entity
 github.com/databricks/cli/bundle/config/resources.Permission:
+  "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
   "group_name":
     "description": |-
       The name of the group that has the permission set in level.
