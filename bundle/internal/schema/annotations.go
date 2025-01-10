@@ -102,7 +102,7 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error 
 		return err
 	}
 
-	var outputTyped annotationFile
+	var outputTyped annotation.File
 	err = convert.ToTyped(&outputTyped, output)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	s.Enum = a.Enum
 }
 
-func saveYamlWithStyle(outputPath string, annotations annotationFile) error {
+func saveYamlWithStyle(outputPath string, annotations annotation.File) error {
 	annotationOrder := yamlsaver.NewOrder([]string{"description", "markdown_description", "title", "default", "enum"})
 	style := map[string]yaml3.Style{}
 

@@ -196,6 +196,7 @@ github.com/databricks/cli/bundle/config.Resources:
       The volume definitions for the bundle, where each key is the name of the volume.
     "markdown_description": |-
       The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volume)
+github.com/databricks/cli/bundle/config.Root:
   "artifacts":
     "description": |-
       Defines the attributes to build an artifact
@@ -213,9 +214,9 @@ github.com/databricks/cli/bundle/config.Resources:
       ```
   "bundle":
     "description": |-
-      The attributes of the bundle.
+      The bundle attributes when deploying to this target.
     "markdown_description": |-
-      The attributes of the bundle. See [_](/dev-tools/bundles/settings.md#bundle).
+      The bundle attributes when deploying to this target,
   "experimental":
     "description": |-
       Defines attributes for experimental features.
@@ -267,16 +268,20 @@ github.com/databricks/cli/bundle/config.Resources:
     "description": |-
       The files and file paths to include or exclude in the bundle.
     "markdown_description": |-
-      The files and file paths to include or exclude in the bundle. See [_](/dev-tools/bundles/)
+      The files and file paths to include or exclude in the bundle. See [_](/dev-tools/bundles/settings.md#sync).
   "targets":
     "description": |-
       Defines deployment targets for the bundle.
+    "markdown_description": |-
+      Defines deployment targets for the bundle. See [_](/dev-tools/bundles/settings.md#targets)
   "variables":
     "description": |-
       A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.
   "workspace":
     "description": |-
       Defines the Databricks workspace for the bundle.
+    "markdown_description": |-
+      Defines the Databricks workspace for the bundle. See [_](/dev-tools/bundles/settings.md#workspace).
 github.com/databricks/cli/bundle/config.Sync:
   "exclude":
     "description": |-
@@ -295,7 +300,7 @@ github.com/databricks/cli/bundle/config.Target:
       The artifacts to include in the target deployment. See [_](#artifact)
   "bundle":
     "description": |-
-      The name of the bundle when deploying to this target.
+      The bundle attributes when deploying to this target.
   "cluster_id":
     "description": |-
       The ID of the cluster to use for this target.
@@ -308,8 +313,6 @@ github.com/databricks/cli/bundle/config.Target:
   "git":
     "description": |-
       The Git version control settings for the target.
-    "markdown_description": |-
-      The Git version control settings for the target. See [_](#git).
   "mode":
     "description": |-
       The deployment mode for the target.
@@ -318,23 +321,17 @@ github.com/databricks/cli/bundle/config.Target:
   "permissions":
     "description": |-
       The permissions for deploying and running the bundle in the target.
-    "markdown_description": |-
-      The permissions for deploying and running the bundle in the target. See [_](#permission).
   "presets":
     "description": |-
       The deployment presets for the target.
-    "markdown_description": |-
-      The deployment presets for the target. See [_](#preset).
   "resources":
     "description": |-
       The resource definitions for the target.
-    "markdown_description": |-
-      The resource definitions for the target. See [_](#resources).
   "run_as":
     "description": |-
       The identity to use to run the bundle.
     "markdown_description": |-
-      The identity to use to run the bundle. See [_](#job_run_as) and [_](/dev-tools/bundles/run_as.md).
+      The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md).
   "sync":
     "description": |-
       The local paths to sync to the target workspace when a bundle is run or deployed.
@@ -344,7 +341,7 @@ github.com/databricks/cli/bundle/config.Target:
     "description": |-
       The custom variable definitions for the target.
     "markdown_description": |-
-      The custom variable definitions for the target. See [_](/dev-tools/bundles/settings.md#variables) and [_](/dev-tools/bundles/variables.md).
+      The custom variable definitions for the target. See [_](/dev-tools/bundles/variables.md).
   "workspace":
     "description": |-
       The Databricks workspace for the target.
@@ -492,3 +489,10 @@ github.com/databricks/cli/bundle/config/variable.Variable:
   "type":
     "description": |-
       The type of the variable.
+github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
+  "service_principal_name":
+    "description": |-
+      The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+  "user_name":
+    "description": |-
+      The email of an active workspace user. Non-admin users can only set this field to their own email.
