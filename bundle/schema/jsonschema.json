@@ -1051,12 +1051,12 @@
                     "deployment": {
                       "description": "The definition of the bundle deployment",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
-                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [deployment](https://docs.databricks.com/dev-tools/bundles/reference.html#deployment) and [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
+                      "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "git": {
                       "description": "The Git version control details that are associated with your bundle.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git) and [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
+                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes see [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
                     "name": {
                       "description": "The name of the bundle.",
@@ -1435,8 +1435,7 @@
                     },
                     "workspace": {
                       "description": "The Databricks workspace for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
-                      "markdownDescription": "The Databricks workspace for the target. [workspace](https://docs.databricks.com/dev-tools/bundles/reference.html#workspace)"
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
                     }
                   },
                   "additionalProperties": false
