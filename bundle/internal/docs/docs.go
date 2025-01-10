@@ -27,6 +27,7 @@ type attributeNode struct {
 	Title       string
 	Type        string
 	Description string
+	Reference   string
 }
 
 type rootProp struct {
@@ -35,17 +36,25 @@ type rootProp struct {
 	topLevel bool
 }
 
+const MapType = "Map"
+
 func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool) []rootNode {
 	rootProps := []rootProp{}
 	for k, v := range s.Properties {
 		rootProps = append(rootProps, rootProp{k, v, true})
 	}
 	nodes := make([]rootNode, 0, len(rootProps))
+	visited := make(map[string]bool)
 
 	for i := 0; i < len(rootProps); i++ {
 		item := rootProps[i]
 		k := item.k
 		v := item.v
+
+		if visited[k] {
+			continue
+		}
+		visited[k] = true
 		v = resolveRefs(v, refs)
 		node := rootNode{
 			Title:       k,
@@ -55,25 +64,27 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 			Type:        getHumanReadableType(v.Type),
 		}
 
-		node.Attributes = getAttributes(v.Properties, refs)
+		node.Attributes = getAttributes(v.Properties, refs, k)
 		rootProps = append(rootProps, extractNodes(k, v.Properties, refs, customFields)...)
 
 		additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
 		if ok {
 			objectKeyType := resolveRefs(additionalProps, refs)
-			if node.Description == "" {
-				node.Description = getDescription(objectKeyType, true)
+			d := getDescription(objectKeyType, true)
+			if d != "" {
+				node.Description = d
 			}
 			if len(node.Example) == 0 {
 				node.Example = getExample(objectKeyType)
 			}
-			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs)
+			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, k)
 			rootProps = append(rootProps, extractNodes(k, objectKeyType.Properties, refs, customFields)...)
 		}
 
 		if v.Items != nil {
 			arrayItemType := resolveRefs(v.Items, refs)
-			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs)
+			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, k)
+			// rootProps = append(rootProps, extractNodes(k, arrayItemType.Properties, refs, customFields)...)
 		}
 
 		isEmpty := len(node.Attributes) == 0 && len(node.ObjectKeyAttributes) == 0 && len(node.ArrayItemAttributes) == 0
@@ -167,8 +178,18 @@ func buildAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdow
 	// return m
 }
 
-func formatDescription(s string) string {
-	return strings.ReplaceAll(s, "\n", " ")
+func formatDescription(a attributeNode) string {
+	s := strings.ReplaceAll(a.Description, "\n", " ")
+	return s
+	if a.Reference != "" {
+		if strings.HasSuffix(s, ".") {
+			s += " "
+		} else if s != "" {
+			s += ". "
+		}
+		s += fmt.Sprintf("See %s.", md.Link("_", "#"+a.Reference))
+	}
+	return s
 }
 
 // Build a custom table which we use in Databricks website
@@ -186,7 +207,7 @@ func buildCustomAttributeTable(m *md.Markdown, attributes []attributeNode) *md.M
 	for _, a := range attributes {
 		m = m.PlainText("   * - " + fmt.Sprintf("`%s`", a.Title))
 		m = m.PlainText("     - " + a.Type)
-		m = m.PlainText("     - " + formatDescription(a.Description))
+		m = m.PlainText("     - " + formatDescription(a))
 		m = m.LF()
 	}
 	return m
@@ -203,7 +224,7 @@ func getHumanReadableType(t jsonschema.Type) string {
 	return typesMapping[string(t)]
 }
 
-func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema) []attributeNode {
+func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, prefix string) []attributeNode {
 	attributes := []attributeNode{}
 	for k, v := range props {
 		v = resolveRefs(v, refs)
@@ -211,16 +232,50 @@ func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonsche
 		if typeString == "" {
 			typeString = "Any"
 		}
+		var reference string
+		if isReferenceType(v, refs) {
+			reference = prefix + "." + k
+		}
 		attributes = append(attributes, attributeNode{
 			Title:       k,
 			Type:        typeString,
 			Description: getDescription(v, true),
+			Reference:   reference,
 		})
 	}
 	sort.Slice(attributes, func(i, j int) bool {
 		return attributes[i].Title < attributes[j].Title
 	})
 	return attributes
+}
+
+func isReferenceType(v *jsonschema.Schema, refs map[string]jsonschema.Schema) bool {
+	if len(v.Properties) > 0 {
+		return true
+	}
+	if v.Items != nil {
+		items := resolveRefs(v.Items, refs)
+		if items != nil && items.Type == "object" {
+			return true
+		}
+	}
+	props := resolveAdditionaProperties(v, refs)
+	if props != nil && props.Type == "object" {
+		return true
+	}
+
+	return false
+}
+
+func resolveAdditionaProperties(v *jsonschema.Schema, refs map[string]jsonschema.Schema) *jsonschema.Schema {
+	if v.AdditionalProperties == nil {
+		return nil
+	}
+	additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
+	if !ok {
+		return nil
+	}
+	return resolveRefs(additionalProps, refs)
 }
 
 func getDescription(s *jsonschema.Schema, allowMarkdown bool) string {
@@ -265,8 +320,10 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *js
 }
 
 func shouldExtract(ref string, customFields map[string]bool) bool {
-	refKey := strings.TrimPrefix(ref, "#/$defs/")
-	_, isCustomField := customFields[refKey]
+	if i := strings.Index(ref, "github.com"); i >= 0 {
+		ref = ref[i:]
+	}
+	_, isCustomField := customFields[ref]
 	return isCustomField
 }
 
@@ -277,7 +334,7 @@ func extractNodes(prefix string, props map[string]*jsonschema.Schema, refs map[s
 			continue
 		}
 		v = resolveRefs(v, refs)
-		if v.Type == "object" {
+		if v.Type == "object" || v.Type == "array" {
 			nodes = append(nodes, rootProp{prefix + "." + k, v, false})
 		}
 	}

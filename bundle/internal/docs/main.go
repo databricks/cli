@@ -63,7 +63,7 @@ func main() {
 		log.Fatal(err)
 	}
 	err = generateDocs(
-		[]string{path.Join(annotationDir, "annotations_openapi.yml"), path.Join(annotationDir, "annotations_openapi_overrides.yml")},
+		[]string{path.Join(annotationDir, "annotations_openapi.yml"), path.Join(annotationDir, "annotations_openapi_overrides.yml"), path.Join(annotationDir, "annotations.yml")},
 		path.Join(outputDir, resourcesFileName),
 		reflect.TypeOf(config.Resources{}),
 		resourcesHeader,
