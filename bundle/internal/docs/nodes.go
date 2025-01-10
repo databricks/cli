@@ -81,7 +81,7 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, customFields, k)
 		}
 
-		isEmpty := len(node.Attributes) == 0 && len(node.ObjectKeyAttributes) == 0 && len(node.ArrayItemAttributes) == 0
+		isEmpty := node.Description == "" && len(node.Attributes) == 0 && len(node.ObjectKeyAttributes) == 0 && len(node.ArrayItemAttributes) == 0
 		shouldAddNode := !isEmpty || node.TopLevel
 		if shouldAddNode {
 			nodes = append(nodes, node)
