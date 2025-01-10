@@ -5,6 +5,14 @@
   },
   "edit_mode": "UI_LOCKED",
   "format": "MULTI_TASK",
+  "job_clusters": [
+    {
+      "job_cluster_key": "default",
+      "new_cluster": {
+        "spark_version": "15.4.x-scala2.12"
+      }
+    }
+  ],
   "permissions": [],
   "queue": {
     "enabled": true
@@ -12,12 +20,14 @@
   "tags": {},
   "tasks": [
     {
+      "job_cluster_key": "default",
       "spark_python_task": {
         "python_file": "/Workspace/remote/src/file2.py"
       },
       "task_key": "local"
     },
     {
+      "job_cluster_key": "default",
       "spark_python_task": {
         "python_file": "/Workspace/remote/src/file2.py"
       },

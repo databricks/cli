@@ -1,41 +1,11 @@
 
 >>> $CLI bundle validate -t default -o json
-Error: Missing required cluster or environment settings
-  at resources.jobs.job.tasks[0]
-  in resources/job.yml:5:11
 
-Task "local" requires a cluster or an environment to run.
-Specify one of the following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster.
-
-Error: Missing required cluster or environment settings
-  at resources.jobs.job.tasks[1]
-  in resources/job.yml:9:11
-
-Task "variable_reference" requires a cluster or an environment to run.
-Specify one of the following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster.
-
-
-Exit code: 1
+Exit code: 0
 
 >>> $CLI bundle validate -t override -o json
-Error: Missing required cluster or environment settings
-  at resources.jobs.job.tasks[0]
-  in resources/job.yml:5:11
-     databricks.yml:27:15
 
-Task "local" requires a cluster or an environment to run.
-Specify one of the following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster.
-
-Error: Missing required cluster or environment settings
-  at resources.jobs.job.tasks[1]
-  in resources/job.yml:9:11
-     databricks.yml:31:15
-
-Task "variable_reference" requires a cluster or an environment to run.
-Specify one of the following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster.
-
-
-Exit code: 1
+Exit code: 0
 
 >>> jq -e 
 (.tasks[0].spark_python_task.python_file | endswith("/src/file1.py")) and
