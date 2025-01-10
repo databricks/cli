@@ -10,11 +10,10 @@ lint:
 lintcheck:
 	golangci-lint run ./...
 
+# Note 'make lint' will do formatting as well. However, if there are compilation errors,
+# formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
+# If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 fmt:
-	# Note 'make lint' will do formatting as well. However, if there are compilation
-	# errors, formatting/goimports will not be applied by 'make lint'. However, it will be
-	# applied by 'make fmt'.
-	# If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
 
 test:
