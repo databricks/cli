@@ -38,12 +38,12 @@ github.com/databricks/cli/bundle/config.Bundle:
     "description": |-
       The definition of the bundle deployment
     "markdown_description": |-
-      The definition of the bundle deployment. For supported attributes, see [_](#deployment) and [_](/dev-tools/bundles/deployment-modes.md).
+      The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md).
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
     "markdown_description": |-
-      The Git version control details that are associated with your bundle. For supported attributes, see [_](#git) and [_](/dev-tools/bundles/settings.md#git).
+      The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git).
   "name":
     "description": |-
       The name of the bundle.
@@ -337,8 +337,6 @@ github.com/databricks/cli/bundle/config.Target:
   "workspace":
     "description": |-
       The Databricks workspace for the target.
-    "markdown_description": |-
-      The Databricks workspace for the target. [_](#workspace)
 github.com/databricks/cli/bundle/config.Workspace:
   "artifact_path":
     "description": |-
