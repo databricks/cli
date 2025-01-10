@@ -55,12 +55,15 @@ func TestAccept(t *testing.T) {
 	// Do not read user's ~/.databrickscfg
 	t.Setenv(env.HomeEnvVar(), homeDir)
 
+	repls := testdiff.ReplacementsContext{}
+	repls.Set(execPath, "$CLI")
+
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 	for _, dir := range testDirs {
 		t.Run(dir, func(t *testing.T) {
 			t.Parallel()
-			runTest(t, dir)
+			runTest(t, dir, repls)
 		})
 	}
 }
@@ -85,7 +88,7 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func runTest(t *testing.T, dir string) {
+func runTest(t *testing.T, dir string, repls testdiff.ReplacementsContext) {
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -112,7 +115,7 @@ func runTest(t *testing.T, dir string) {
 	outB, err := cmd.CombinedOutput()
 
 	out := formatOutput(string(outB), err)
-	out = strings.ReplaceAll(out, os.Getenv("CLI"), "$CLI")
+	out = repls.Replace(out)
 	doComparison(t, filepath.Join(dir, "output.txt"), "script output", out)
 
 	for key := range outputs {
@@ -131,7 +134,8 @@ func runTest(t *testing.T, dir string) {
 			continue
 		}
 		pathExpected := filepath.Join(dir, key)
-		doComparison(t, pathExpected, pathNew, string(newValBytes))
+		newVal := repls.Replace(string(newValBytes))
+		doComparison(t, pathExpected, pathNew, newVal)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -152,6 +156,7 @@ func runTest(t *testing.T, dir string) {
 			// Show the contents & support overwrite mode for it:
 			pathNew := filepath.Join(tmpDir, name)
 			newVal := testutil.ReadFile(t, pathNew)
+			newVal = repls.Replace(newVal)
 			doComparison(t, filepath.Join(dir, name), filepath.Join(tmpDir, name), newVal)
 		}
 	}
