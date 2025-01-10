@@ -7,11 +7,11 @@ Exit code: 0
 Error: notebook this value is overridden not found. Local notebook references are expected
 to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]
 
-Name: original_fallback
+Name: fallback
 Target: error
 Workspace:
   User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/original_fallback/error
+  Path: /Workspace/Users/tester@databricks.com/.bundle/fallback/error
 
 Found 1 error
 
