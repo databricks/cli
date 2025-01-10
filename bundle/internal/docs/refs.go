@@ -7,7 +7,10 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
-func isReferenceType(v *jsonschema.Schema, refs map[string]jsonschema.Schema) bool {
+func isReferenceType(v *jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool) bool {
+	if v.Type != "object" && v.Type != "array" {
+		return false
+	}
 	if len(v.Properties) > 0 {
 		return true
 	}
@@ -17,15 +20,26 @@ func isReferenceType(v *jsonschema.Schema, refs map[string]jsonschema.Schema) bo
 			return true
 		}
 	}
-	props := resolveAdditionaProperties(v, refs)
-	if props != nil && props.Type == "object" {
-		return true
+	props := resolveAdditionaProperties(v)
+	if !isInOwnFields(props, customFields) {
+		return false
+	}
+	if props != nil {
+		propsResolved := resolveRefs(props, refs)
+		return propsResolved.Type == "object"
 	}
 
 	return false
 }
 
-func resolveAdditionaProperties(v *jsonschema.Schema, refs map[string]jsonschema.Schema) *jsonschema.Schema {
+func isInOwnFields(node *jsonschema.Schema, customFields map[string]bool) bool {
+	if node != nil && node.Reference != nil {
+		return customFields[getRefType(node)]
+	}
+	return true
+}
+
+func resolveAdditionaProperties(v *jsonschema.Schema) *jsonschema.Schema {
 	if v.AdditionalProperties == nil {
 		return nil
 	}
@@ -33,7 +47,7 @@ func resolveAdditionaProperties(v *jsonschema.Schema, refs map[string]jsonschema
 	if !ok {
 		return nil
 	}
-	return resolveRefs(additionalProps, refs)
+	return additionalProps
 }
 
 func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *jsonschema.Schema {
@@ -44,7 +58,7 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *js
 	examples := s.Examples
 
 	for node.Reference != nil {
-		ref := strings.TrimPrefix(*node.Reference, "#/$defs/")
+		ref := getRefType(node)
 		newNode, ok := schemas[ref]
 		if !ok {
 			log.Printf("schema %s not found", ref)
@@ -68,4 +82,11 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *js
 	node.Examples = examples
 
 	return node
+}
+
+func getRefType(node *jsonschema.Schema) string {
+	if node.Reference == nil {
+		return ""
+	}
+	return strings.TrimPrefix(*node.Reference, "#/$defs/")
 }

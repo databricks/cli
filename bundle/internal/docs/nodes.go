@@ -59,7 +59,7 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 			Type:        getHumanReadableType(v.Type),
 		}
 
-		node.Attributes = getAttributes(v.Properties, refs, k)
+		node.Attributes = getAttributes(v.Properties, refs, customFields, k)
 		rootProps = append(rootProps, extractNodes(k, v.Properties, refs, customFields)...)
 
 		additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
@@ -72,13 +72,13 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 			if len(node.Example) == 0 {
 				node.Example = getExample(objectKeyType)
 			}
-			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, k)
+			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, customFields, k)
 			rootProps = append(rootProps, extractNodes(k, objectKeyType.Properties, refs, customFields)...)
 		}
 
 		if v.Items != nil {
 			arrayItemType := resolveRefs(v.Items, refs)
-			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, k)
+			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, customFields, k)
 		}
 
 		isEmpty := len(node.Attributes) == 0 && len(node.ObjectKeyAttributes) == 0 && len(node.ArrayItemAttributes) == 0
@@ -112,7 +112,7 @@ func getHumanReadableType(t jsonschema.Type) string {
 	return typesMapping[string(t)]
 }
 
-func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, prefix string) []attributeNode {
+func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool, prefix string) []attributeNode {
 	attributes := []attributeNode{}
 	for k, v := range props {
 		v = resolveRefs(v, refs)
@@ -121,7 +121,7 @@ func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonsche
 			typeString = "Any"
 		}
 		var reference string
-		if isReferenceType(v, refs) {
+		if isReferenceType(v, refs, customFields) {
 			reference = prefix + "." + k
 		}
 		attributes = append(attributes, attributeNode{

@@ -461,7 +461,8 @@
                         "$ref": "#/$defs/string"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The model resource allows you to define [legacy models](https://docs.databricks.com/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use \u003cUC\u003e [registered models](https://docs.databricks.com/dev-tools/bundles/reference.html#registered-model) instead."
                   },
                   {
                     "type": "string",
@@ -941,6 +942,7 @@
               },
               "variable.Variable": {
                 "type": "object",
+                "description": "Defines a custom variable for the bundle.",
                 "properties": {
                   "default": {
                     "$ref": "#/$defs/interface"
@@ -959,7 +961,8 @@
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
                   }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "markdownDescription": "Defines a custom variable for the bundle. See [variables](https://docs.databricks.com/dev-tools/bundles/settings.html#variables)."
               },
               "variable.VariableType": {
                 "type": "string"
@@ -1088,8 +1091,7 @@
                     },
                     "lock": {
                       "description": "The deployment lock attributes.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock",
-                      "markdownDescription": "The deployment lock attributes. See [lock](https://docs.databricks.com/dev-tools/bundles/reference.html#lock)."
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock"
                     }
                   },
                   "additionalProperties": false
@@ -1379,8 +1381,7 @@
                   "properties": {
                     "artifacts": {
                       "description": "The artifacts to include in the target deployment.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
-                      "markdownDescription": "The artifacts to include in the target deployment. See [artifact](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact)"
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
                     },
                     "bundle": {
                       "description": "The bundle attributes when deploying to this target.",
@@ -1426,13 +1427,11 @@
                     },
                     "sync": {
                       "description": "The local paths to sync to the target workspace when a bundle is run or deployed.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
-                      "markdownDescription": "The local paths to sync to the target workspace when a bundle is run or deployed. See [sync](https://docs.databricks.com/dev-tools/bundles/reference.html#sync)."
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync"
                     },
                     "variables": {
                       "description": "The custom variable definitions for the target.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable",
-                      "markdownDescription": "The custom variable definitions for the target. See [link](https://docs.databricks.com/dev-tools/bundles/variables.html)."
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable"
                     },
                     "workspace": {
                       "description": "The Databricks workspace for the target.",

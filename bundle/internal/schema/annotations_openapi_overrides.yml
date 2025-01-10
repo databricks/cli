@@ -124,6 +124,9 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.MlflowModel:
+  "_":
+    "markdown_description": |-
+      The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use <UC> [registered models](#registered-model) instead.
   "permissions":
     "description": |-
       PLACEHOLDER
