@@ -5,10 +5,16 @@ PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 
 lint:
-	./lint.sh ./...
+	golangci-lint run --fix
 
 lintcheck:
 	golangci-lint run ./...
+
+# Note 'make lint' will do formatting as well. However, if there are compilation errors,
+# formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
+# If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
+fmt:
+	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
 
 test:
 	gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped -- ${PACKAGES}
@@ -39,4 +45,4 @@ integration:
 integration-short:
 	$(INTEGRATION) -short
 
-.PHONY: lint lintcheck test cover showcover build snapshot vendor schema integration integration-short
+.PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short
