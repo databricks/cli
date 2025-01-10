@@ -6,7 +6,8 @@ bundle:
 
 variables:
   deployment_branch:
-    default: ""  # read from git
+    # read from git; inferred should be set to true; current it's not happening
+    default: ""
 
 targets:
   prod:
