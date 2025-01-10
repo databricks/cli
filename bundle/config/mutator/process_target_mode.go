@@ -168,7 +168,7 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 			// and neither is setting a principal.
 			// We only show a warning for these cases since we didn't historically
 			// report an error for them.
-			return diag.Warningf("target with 'mode: production' should " + advice)
+			return diag.Recommendation("target with 'mode: production' should " + advice)
 		}
 		return diag.Errorf("target with 'mode: production' must " + advice)
 	}
