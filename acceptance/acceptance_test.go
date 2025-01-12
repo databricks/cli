@@ -40,7 +40,16 @@ func TestAccept(t *testing.T) {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
-	execPath := BuildCLI(t, cwd)
+	coverDir := os.Getenv("CLI_GOCOVERDIR")
+
+	if coverDir != "" {
+		require.NoError(t, os.MkdirAll(coverDir, os.ModePerm))
+		coverDir, err = filepath.Abs(coverDir)
+		require.NoError(t, err)
+		t.Logf("Writing coverage to %s", coverDir)
+	}
+
+	execPath := BuildCLI(t, cwd, coverDir)
 	// $CLI is what test scripts are using
 	t.Setenv("CLI", execPath)
 
@@ -76,10 +85,11 @@ func TestAccept(t *testing.T) {
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
+
 	for _, dir := range testDirs {
 		t.Run(dir, func(t *testing.T) {
 			t.Parallel()
-			runTest(t, dir, repls)
+			runTest(t, dir, coverDir, repls)
 		})
 	}
 }
@@ -104,7 +114,7 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func runTest(t *testing.T, dir string, repls testdiff.ReplacementsContext) {
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -127,6 +137,15 @@ func runTest(t *testing.T, dir string, repls testdiff.ReplacementsContext) {
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
+	if coverDir != "" {
+		// Creating individual coverage directory for each test, because writing to the same one
+		// results in sporadic failures like this one (only if tests are running in parallel):
+		// +error: coverage meta-data emit failed: writing ... rename .../tmp.covmeta.b3f... .../covmeta.b3f2c...: no such file or directory
+		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
+		err := os.MkdirAll(coverDir, os.ModePerm)
+		require.NoError(t, err)
+		cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverDir)
+	}
 	cmd.Dir = tmpDir
 	outB, err := cmd.CombinedOutput()
 
@@ -226,7 +245,7 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-func BuildCLI(t *testing.T, cwd string) string {
+func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	execPath := filepath.Join(cwd, "build", "databricks")
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
@@ -234,6 +253,9 @@ func BuildCLI(t *testing.T, cwd string) string {
 
 	start := time.Now()
 	args := []string{"go", "build", "-mod", "vendor", "-o", execPath}
+	if coverDir != "" {
+		args = append(args, "-cover")
+	}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = ".."
 	out, err := cmd.CombinedOutput()
