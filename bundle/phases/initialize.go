@@ -33,10 +33,6 @@ func Initialize() bundle.Mutator {
 			// If it is an ancestor, this updates all paths to be relative to the sync root path.
 			mutator.SyncInferRoot(),
 
-			mutator.MergeJobClusters(),
-			mutator.MergeJobParameters(),
-			mutator.MergeJobTasks(),
-			mutator.MergePipelineClusters(),
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
 			mutator.LoadGitDetails(),
@@ -70,6 +66,12 @@ func Initialize() bundle.Mutator {
 				"workspace",
 				"variables",
 			),
+
+			mutator.MergeJobClusters(),
+			mutator.MergeJobParameters(),
+			mutator.MergeJobTasks(),
+			mutator.MergePipelineClusters(),
+
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),
