@@ -954,7 +954,7 @@
                   "lookup": {
                     "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup",
-                    "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.\""
+                    "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID."
                   },
                   "type": {
                     "description": "The type of the variable.",
@@ -1287,57 +1287,57 @@
                     "clusters": {
                       "description": "The cluster definitions for the bundle, where each key is the name of a cluster.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster",
-                      "markdownDescription": "The cluster definitions for the bundle, where each key is the name of a cluster. See [cluster](https://docs.databricks.com/dev-tools/bundles/resources.html#cluster)"
+                      "markdownDescription": "The cluster definitions for the bundle, where each key is the name of a cluster. See [clusters](https://docs.databricks.com/dev-tools/bundles/resources.html#clusters)"
                     },
                     "dashboards": {
                       "description": "The dashboard definitions for the bundle, where each key is the name of the dashboard.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
-                      "markdownDescription": "The dashboard definitions for the bundle, where each key is the name of the dashboard. See [dashboard](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboard)"
+                      "markdownDescription": "The dashboard definitions for the bundle, where each key is the name of the dashboard. See [dashboards](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboards)"
                     },
                     "experiments": {
                       "description": "The experiment definitions for the bundle, where each key is the name of the experiment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
-                      "markdownDescription": "The experiment definitions for the bundle, where each key is the name of the experiment. See [experiment](https://docs.databricks.com/dev-tools/bundles/resources.html#experiment)"
+                      "markdownDescription": "The experiment definitions for the bundle, where each key is the name of the experiment. See [experiments](https://docs.databricks.com/dev-tools/bundles/resources.html#experiments)"
                     },
                     "jobs": {
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
-                      "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [job](https://docs.databricks.com/dev-tools/bundles/resources.html#job)"
+                      "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs)"
                     },
                     "model_serving_endpoints": {
                       "description": "The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint",
-                      "markdownDescription": "The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [model_serving_endpoint](https://docs.databricks.com/dev-tools/bundles/resources.html#model_serving_endpoint)"
+                      "markdownDescription": "The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [model_serving_endpoints](https://docs.databricks.com/dev-tools/bundles/resources.html#model_serving_endpoints)"
                     },
                     "models": {
                       "description": "The model definitions for the bundle, where each key is the name of the model.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel",
-                      "markdownDescription": "The model definitions for the bundle, where each key is the name of the model. See [model-legacy](https://docs.databricks.com/dev-tools/bundles/resources.html#model-legacy)"
+                      "markdownDescription": "The model definitions for the bundle, where each key is the name of the model. See [models](https://docs.databricks.com/dev-tools/bundles/resources.html#models)"
                     },
                     "pipelines": {
                       "description": "The pipeline definitions for the bundle, where each key is the name of the pipeline.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline",
-                      "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipeline](https://docs.databricks.com/dev-tools/bundles/resources.html#pipeline)"
+                      "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines)"
                     },
                     "quality_monitors": {
                       "description": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor",
-                      "markdownDescription": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [quality-monitor](https://docs.databricks.com/dev-tools/bundles/resources.html#quality-monitor)"
+                      "markdownDescription": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [quality_monitors](https://docs.databricks.com/dev-tools/bundles/resources.html#quality_monitors)"
                     },
                     "registered_models": {
                       "description": "The registered model definitions for the bundle, where each key is the name of the \u003cUC\u003e registered model.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel",
-                      "markdownDescription": "The registered model definitions for the bundle, where each key is the name of the \u003cUC\u003e registered model. See [registered-model](https://docs.databricks.com/dev-tools/bundles/resources.html#registered-model)"
+                      "markdownDescription": "The registered model definitions for the bundle, where each key is the name of the \u003cUC\u003e registered model. See [registered_models](https://docs.databricks.com/dev-tools/bundles/resources.html#registered_models)"
                     },
                     "schemas": {
                       "description": "The schema definitions for the bundle, where each key is the name of the schema.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
-                      "markdownDescription": "The schema definitions for the bundle, where each key is the name of the schema. See [schema](https://docs.databricks.com/dev-tools/bundles/resources.html#schema)"
+                      "markdownDescription": "The schema definitions for the bundle, where each key is the name of the schema. See [schemas](https://docs.databricks.com/dev-tools/bundles/resources.html#schemas)"
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Volume",
-                      "markdownDescription": "The volume definitions for the bundle, where each key is the name of the volume. See [volume](https://docs.databricks.com/dev-tools/bundles/resources.html#volume)"
+                      "markdownDescription": "The volume definitions for the bundle, where each key is the name of the volume. See [volumes](https://docs.databricks.com/dev-tools/bundles/resources.html#volumes)"
                     }
                   },
                   "additionalProperties": false
@@ -6441,7 +6441,7 @@
     "resources": {
       "description": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-      "markdownDescription": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about \u003cDABS\u003e supported resources, and resource definition reference, see [link](https://docs.databricks.com/dev-tools/bundles/resources.html).\n\n```yaml\nresources:\n  \u003cresource-type\u003es:\n    \u003cresource-name\u003e:\n      \u003cresource-field-name\u003e: \u003cresource-field-value\u003e\n```"
+      "markdownDescription": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about \u003cDABS\u003e supported resources, and resource definition reference, see [link](https://docs.databricks.com/dev-tools/bundles/resources.html).\n\n```yaml\nresources:\n  \u003cresource-type\u003e:\n    \u003cresource-name\u003e:\n      \u003cresource-field-name\u003e: \u003cresource-field-value\u003e\n```"
     },
     "run_as": {
       "description": "The identity to use when running \u003cDABS\u003e workflows.",
