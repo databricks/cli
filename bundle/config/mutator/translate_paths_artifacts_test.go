@@ -45,7 +45,7 @@ func TestTranslatePathsArtifacts_InsideSyncRoot(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
-	// Assert that the artifact path has been converted to a path relative to the sync root.
+	// Assert that the artifact path has been converted to a local absolute path.
 	assert.Equal(t, lib, b.Config.Artifacts["my_artifact"].Path)
 }
 
@@ -78,6 +78,6 @@ func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
-	// Assert that the artifact path has been converted to a path relative to the sync root.
+	// Assert that the artifact path has been converted to a local absolute path.
 	assert.Equal(t, lib, b.Config.Artifacts["my_artifact"].Path)
 }
