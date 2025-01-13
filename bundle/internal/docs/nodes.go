@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -73,7 +72,7 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 			if len(node.Example) == 0 {
 				node.Example = getExample(objectKeyType)
 			}
-			prefix := fmt.Sprintf("%s.<%s-name>", k, removePluralForm(k))
+			prefix := k + ".<name>"
 			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, customFields, prefix)
 			rootProps = append(rootProps, extractNodes(prefix, objectKeyType.Properties, refs, customFields)...)
 		}

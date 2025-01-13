@@ -123,7 +123,8 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 		m = m.LF()
 
 		if len(node.ObjectKeyAttributes) > 0 {
-			n := removePluralForm(node.Title)
+			n := pickLastWord(node.Title)
+			n = removePluralForm(n)
 			m = m.CodeBlocks("yaml", fmt.Sprintf("%ss:\n  <%s-name>:\n    <%s-field-name>: <%s-field-value>", n, n, n, n))
 			m = m.LF()
 			m = buildAttributeTable(m, node.ObjectKeyAttributes)
@@ -149,6 +150,11 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 	}
 
 	return nil
+}
+
+func pickLastWord(s string) string {
+	words := strings.Split(s, ".")
+	return words[len(words)-1]
 }
 
 // Build a custom table which we use in Databricks website
