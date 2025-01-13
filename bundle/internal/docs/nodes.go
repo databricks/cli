@@ -29,6 +29,7 @@ type rootProp struct {
 	k        string
 	v        *jsonschema.Schema
 	topLevel bool
+	circular bool
 }
 
 const MapType = "Map"
@@ -36,7 +37,7 @@ const MapType = "Map"
 func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool) []rootNode {
 	rootProps := []rootProp{}
 	for k, v := range s.Properties {
-		rootProps = append(rootProps, rootProp{k, v, true})
+		rootProps = append(rootProps, rootProp{k, v, true, false})
 	}
 	nodes := make([]rootNode, 0, len(rootProps))
 	visited := make(map[string]bool)
@@ -59,8 +60,10 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 			Type:        getHumanReadableType(v.Type),
 		}
 
-		node.Attributes = getAttributes(v.Properties, refs, customFields, k)
-		rootProps = append(rootProps, extractNodes(k, v.Properties, refs, customFields)...)
+		node.Attributes = getAttributes(v.Properties, refs, customFields, k, item.circular)
+		if !item.circular {
+			rootProps = append(rootProps, extractNodes(k, v.Properties, refs, customFields)...)
+		}
 
 		additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
 		if ok {
@@ -73,13 +76,18 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFiel
 				node.Example = getExample(objectKeyType)
 			}
 			prefix := k + ".<name>"
-			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, customFields, prefix)
-			rootProps = append(rootProps, extractNodes(prefix, objectKeyType.Properties, refs, customFields)...)
+			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, customFields, prefix, item.circular)
+			if !item.circular {
+				rootProps = append(rootProps, extractNodes(prefix, objectKeyType.Properties, refs, customFields)...)
+			}
 		}
 
 		if v.Items != nil {
 			arrayItemType := resolveRefs(v.Items, refs)
-			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, customFields, k)
+			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, customFields, k, item.circular)
+			if !item.circular {
+				rootProps = append(rootProps, extractNodes(k, arrayItemType.Properties, refs, customFields)...)
+			}
 		}
 
 		nodes = append(nodes, node)
@@ -109,7 +117,7 @@ func getHumanReadableType(t jsonschema.Type) string {
 	return typesMapping[string(t)]
 }
 
-func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool, prefix string) []attributeNode {
+func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool, prefix string, circular bool) []attributeNode {
 	attributes := []attributeNode{}
 	for k, v := range props {
 		v = resolveRefs(v, refs)
@@ -118,7 +126,7 @@ func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonsche
 			typeString = "Any"
 		}
 		var reference string
-		if isReferenceType(v, refs, customFields) {
+		if isReferenceType(v, refs, customFields) && !circular {
 			reference = prefix + "." + k
 		}
 		attributes = append(attributes, attributeNode{
@@ -157,10 +165,14 @@ func extractNodes(prefix string, props map[string]*jsonschema.Schema, refs map[s
 		}
 		v = resolveRefs(v, refs)
 		if v.Type == "object" || v.Type == "array" {
-			nodes = append(nodes, rootProp{prefix + "." + k, v, false})
+			nodes = append(nodes, rootProp{prefix + "." + k, v, false, isCycleField(k)})
 		}
 	}
 	return nodes
+}
+
+func isCycleField(field string) bool {
+	return field == "for_each_task"
 }
 
 func getExample(v *jsonschema.Schema) string {
