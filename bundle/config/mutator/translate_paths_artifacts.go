@@ -23,7 +23,7 @@ func (t *translateContext) artifactRewritePatterns() []artifactRewritePattern {
 	return []artifactRewritePattern{
 		{
 			base.Append(dyn.Key("path")),
-			translateOptions{Mode: TranslateModeNoOp},
+			translateOptions{Mode: TranslateModeLocalRelative},
 		},
 	}
 }

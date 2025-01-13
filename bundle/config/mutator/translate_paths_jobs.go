@@ -71,7 +71,7 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 func getJobTranslateMode(kind paths.PathKind) (TranslateMode, error) {
 	switch kind {
 	case paths.PathKindLibrary:
-		return TranslateModeNoOp, nil
+		return TranslateModeLocalRelative, nil
 	case paths.PathKindNotebook:
 		return TranslateModeNotebook, nil
 	case paths.PathKindWorkspaceFile:
@@ -79,7 +79,7 @@ func getJobTranslateMode(kind paths.PathKind) (TranslateMode, error) {
 	case paths.PathKindDirectory:
 		return TranslateModeDirectory, nil
 	case paths.PathKindWithPrefix:
-		return TranslateModeNoOpWithPrefix, nil
+		return TranslateModeLocalRelativeWithPrefix, nil
 	}
 
 	return TranslateMode(0), fmt.Errorf("unsupported path kind: %d", kind)

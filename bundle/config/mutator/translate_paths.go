@@ -30,14 +30,18 @@ const (
 	// TranslateModeDirectory translates a path to a remote directory.
 	TranslateModeDirectory
 
-	// TranslateModeRetainLocalAbsoluteFilePath translates a path to the local absolute file path.
-	TranslateModeRetainLocalAbsoluteFilePath
+	// TranslateModeLocalAbsoluteFile translates a path to the local absolute file path.
+	// It returns an error if the path does not exist or is a directory.
+	TranslateModeLocalAbsoluteFile
 
-	// TranslateModeNoOp does not translate the path.
-	TranslateModeNoOp
+	// TranslateModeLocalRelative translates a path to be relative to the bundle sync root path.
+	// It does not check if the path exists, nor care if it is a file or directory.
+	TranslateModeLocalRelative
 
-	// TranslateModeNoOpWithPrefix does not translate the path, but adds a prefix to it.
-	TranslateModeNoOpWithPrefix
+	// TranslateModeLocalRelativeWithPrefix translates a path to be relative to the bundle sync root path.
+	// It a "./" prefix to the path if it does not already have one.
+	// This allows for disambiguating between paths and PyPI package names.
+	TranslateModeLocalRelativeWithPrefix
 )
 
 // translateOptions specifies how a path should be translated.
@@ -146,12 +150,12 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 	case TranslateModeDirectory:
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
-	case TranslateModeRetainLocalAbsoluteFilePath:
-		interp, err = t.retainLocalAbsoluteFilePath(ctx, input, localPath, localRelPath)
-	case TranslateModeNoOp:
-		interp, err = t.translateNoOp(ctx, input, localPath, localRelPath)
-	case TranslateModeNoOpWithPrefix:
-		interp, err = t.translateNoOpWithPrefix(ctx, input, localPath, localRelPath)
+	case TranslateModeLocalAbsoluteFile:
+		interp, err = t.translateLocalAbsoluteFilePath(ctx, input, localPath, localRelPath)
+	case TranslateModeLocalRelative:
+		interp, err = t.translateLocalRelativePath(ctx, input, localPath, localRelPath)
+	case TranslateModeLocalRelativeWithPrefix:
+		interp, err = t.translateLocalRelativeWithPrefixPath(ctx, input, localPath, localRelPath)
 	default:
 		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)
 	}
@@ -231,7 +235,7 @@ func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, 
 	return path.Join(t.remoteRoot, filepath.ToSlash(localRelPath)), nil
 }
 
-func (t *translateContext) retainLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+func (t *translateContext) translateLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -245,11 +249,11 @@ func (t *translateContext) retainLocalAbsoluteFilePath(ctx context.Context, lite
 	return localFullPath, nil
 }
 
-func (t *translateContext) translateNoOp(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+func (t *translateContext) translateLocalRelativePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	return localRelPath, nil
 }
 
-func (t *translateContext) translateNoOpWithPrefix(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+func (t *translateContext) translateLocalRelativeWithPrefixPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	if !strings.HasPrefix(localRelPath, ".") {
 		localRelPath = "." + string(filepath.Separator) + localRelPath
 	}

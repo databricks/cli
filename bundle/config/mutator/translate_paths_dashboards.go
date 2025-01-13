@@ -18,7 +18,7 @@ func (t *translateContext) applyDashboardTranslations(ctx context.Context, v dyn
 	)
 
 	opts := translateOptions{
-		Mode: TranslateModeRetainLocalAbsoluteFilePath,
+		Mode: TranslateModeLocalAbsoluteFile,
 	}
 
 	return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
