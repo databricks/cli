@@ -57,6 +57,9 @@ type Bundle struct {
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
 
+	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
+	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
+
 	// Metadata about the bundle deployment. This is the interface Databricks services
 	// rely on to integrate with bundles when they need additional information about
 	// a bundle deployment.

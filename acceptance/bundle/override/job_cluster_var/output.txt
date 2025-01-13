@@ -12,14 +12,9 @@
       {
         "job_cluster_key": "key",
         "new_cluster": {
-          "spark_version": "13.3.x-scala2.12"
-        }
-      },
-      {
-        "job_cluster_key": "key",
-        "new_cluster": {
           "node_type_id": "i3.xlarge",
-          "num_workers": 1
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
         }
       }
     ],
@@ -54,14 +49,9 @@ Validation OK!
       {
         "job_cluster_key": "key",
         "new_cluster": {
-          "spark_version": "13.3.x-scala2.12"
-        }
-      },
-      {
-        "job_cluster_key": "key",
-        "new_cluster": {
           "node_type_id": "i3.2xlarge",
-          "num_workers": 4
+          "num_workers": 4,
+          "spark_version": "13.3.x-scala2.12"
         }
       }
     ],
