@@ -47,8 +47,8 @@ type Root struct {
 
 	// Targets can be used to differentiate settings and resources between
 	// bundle deployment targets (e.g. development, staging, production).
-	// If not specified, the code below initializes this field with a
-	// single default-initialized target called "default".
+	// Note that this field is set to 'nil' by the SelectTarget mutator;
+	// use bundle.Bundle.Target to access the selected target configuration.
 	Targets map[string]*Target `json:"targets,omitempty"`
 
 	// DEPRECATED. Left for backward compatibility with Targets
@@ -102,7 +102,8 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// Convert normalized configuration tree to typed configuration.
 	err = r.updateWithDynamicValue(v)
 	if err != nil {
-		return nil, diag.Errorf("failed to load %s: %v", path, err)
+		diags = diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
+		return nil, diags
 	}
 	return &r, diags
 }

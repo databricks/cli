@@ -165,7 +165,7 @@ func overrideSequence(basePath dyn.Path, left, right []dyn.Value, visitor Overri
 	minLen := min(len(left), len(right))
 	var values []dyn.Value
 
-	for i := 0; i < minLen; i++ {
+	for i := range minLen {
 		path := basePath.Append(dyn.Index(i))
 		merged, err := override(path, left[i], right[i], visitor)
 		if err != nil {

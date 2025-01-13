@@ -150,6 +150,10 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	perm := info.Mode().Perm()
 
+	// Always include the write bit for the owner of the file.
+	// It does not make sense to have a file that is not writable by the owner.
+	perm |= 0o200
+
 	// Execute relative path template to get destination path for the file
 	relPath, err := r.executeTemplate(relPathTemplate)
 	if err != nil {

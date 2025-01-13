@@ -2,6 +2,7 @@ package repos
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -153,7 +154,7 @@ func repoArgumentToRepoID(ctx context.Context, w *databricks.WorkspaceClient, ar
 		args = append(args, id)
 	}
 	if len(args) != 1 {
-		return 0, fmt.Errorf("expected to have the id for the corresponding repo to access")
+		return 0, errors.New("expected to have the id for the corresponding repo to access")
 	}
 	// ---- End copy from cmd/workspace/repos/repos.go ----
 

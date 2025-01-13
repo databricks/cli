@@ -15,7 +15,8 @@
       "lock": {
         "enabled": false
       }
-    }
+    },
+    "uuid": "<UUID>"
   },
   "include": [
     "resources/project_name_$UNIQUE_PRJ.job.yml",

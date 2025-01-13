@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -95,7 +96,7 @@ func (e *entry) Type() fs.FileMode {
 
 func (e *entry) Info() (fs.FileInfo, error) {
 	if e.info == nil {
-		return nil, fmt.Errorf("no info available")
+		return nil, errors.New("no info available")
 	}
 	return e.info, nil
 }

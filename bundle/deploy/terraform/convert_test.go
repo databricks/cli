@@ -255,10 +255,10 @@ func TestBundleToTerraformPipeline(t *testing.T) {
 	assert.Equal(t, "my pipeline", resource.Name)
 	assert.Len(t, resource.Library, 2)
 	assert.Len(t, resource.Notification, 2)
-	assert.Equal(t, resource.Notification[0].Alerts, []string{"on-update-fatal-failure"})
-	assert.Equal(t, resource.Notification[0].EmailRecipients, []string{"jane@doe.com"})
-	assert.Equal(t, resource.Notification[1].Alerts, []string{"on-update-failure", "on-flow-failure"})
-	assert.Equal(t, resource.Notification[1].EmailRecipients, []string{"jane@doe.com", "john@doe.com"})
+	assert.Equal(t, []string{"on-update-fatal-failure"}, resource.Notification[0].Alerts)
+	assert.Equal(t, []string{"jane@doe.com"}, resource.Notification[0].EmailRecipients)
+	assert.Equal(t, []string{"on-update-failure", "on-flow-failure"}, resource.Notification[1].Alerts)
+	assert.Equal(t, []string{"jane@doe.com", "john@doe.com"}, resource.Notification[1].EmailRecipients)
 	assert.Nil(t, out.Data)
 }
 
@@ -455,7 +455,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 	assert.Equal(t, "name", resource.Name)
 	assert.Equal(t, "model_name", resource.Config.ServedModels[0].ModelName)
 	assert.Equal(t, "1", resource.Config.ServedModels[0].ModelVersion)
-	assert.Equal(t, true, resource.Config.ServedModels[0].ScaleToZeroEnabled)
+	assert.True(t, resource.Config.ServedModels[0].ScaleToZeroEnabled)
 	assert.Equal(t, "Small", resource.Config.ServedModels[0].WorkloadSize)
 	assert.Equal(t, "model_name-1", resource.Config.TrafficConfig.Routes[0].ServedModelName)
 	assert.Equal(t, 100, resource.Config.TrafficConfig.Routes[0].TrafficPercentage)
@@ -1318,7 +1318,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 
 func AssertFullResourceCoverage(t *testing.T, config *config.Root) {
 	resources := reflect.ValueOf(config.Resources)
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 		if field.Kind() == reflect.Map {
 			assert.True(

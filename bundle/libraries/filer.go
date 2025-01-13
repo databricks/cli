@@ -24,7 +24,7 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 
 	switch {
 	case IsVolumesPath(artifactPath):
-		return filerForVolume(ctx, b)
+		return filerForVolume(b)
 
 	default:
 		return filerForWorkspace(b)

@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 	"path"
 	"strings"
 
@@ -33,7 +32,7 @@ func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	}
 
 	if strings.HasPrefix(root, "~/") {
-		home := fmt.Sprintf("/Workspace/Users/%s", currentUser.UserName)
+		home := "/Workspace/Users/" + currentUser.UserName
 		b.Config.Workspace.RootPath = path.Join(home, root[2:])
 	}
 

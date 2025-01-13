@@ -33,7 +33,7 @@ func (event *ProgressEvent) String() string {
 	// construct error string if level=`Error`
 	if event.Level == pipelines.EventLevelError && event.Error != nil {
 		for _, exception := range event.Error.Exceptions {
-			result.WriteString(fmt.Sprintf("\n%s", exception.Message))
+			result.WriteString("\n" + exception.Message)
 		}
 	}
 	return result.String()

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -80,7 +79,7 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Empty(t, updatedFieldPaths, fmt.Sprintf("Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n")))
+	assert.Empty(t, updatedFieldPaths, "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n"))
 }
 
 // Checks whether types in annotation files are still present in Config type

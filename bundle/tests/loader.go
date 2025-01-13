@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -67,7 +68,7 @@ func initializeTarget(t *testing.T, path, env string) (*bundle.Bundle, diag.Diag
 	b := load(t, path)
 	configureMock(t, b)
 
-	ctx := context.Background()
+	ctx := dbr.MockRuntime(context.Background(), false)
 	diags := bundle.Apply(ctx, b, bundle.Seq(
 		mutator.SelectTarget(env),
 		phases.Initialize(),

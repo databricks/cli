@@ -141,7 +141,7 @@ func TestMultipleCommandsRunInParrallel(t *testing.T) {
 	const count = 5
 	var wg sync.WaitGroup
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		wg.Add(1)
 		cmd, err := executor.StartCommand(context.Background(), fmt.Sprintf("echo 'Hello %d'", i))
 		go func(cmd Command, i int) {

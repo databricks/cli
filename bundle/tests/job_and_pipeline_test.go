@@ -10,11 +10,11 @@ import (
 
 func TestJobAndPipelineDevelopment(t *testing.T) {
 	b := loadTarget(t, "./job_and_pipeline", "development")
-	assert.Len(t, b.Config.Resources.Jobs, 0)
+	assert.Empty(t, b.Config.Resources.Jobs)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
-	assert.Equal(t, b.Config.Bundle.Mode, config.Development)
+	assert.Equal(t, config.Development, b.Config.Bundle.Mode)
 	assert.True(t, p.Development)
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
@@ -23,7 +23,7 @@ func TestJobAndPipelineDevelopment(t *testing.T) {
 
 func TestJobAndPipelineStaging(t *testing.T) {
 	b := loadTarget(t, "./job_and_pipeline", "staging")
-	assert.Len(t, b.Config.Resources.Jobs, 0)
+	assert.Empty(t, b.Config.Resources.Jobs)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]

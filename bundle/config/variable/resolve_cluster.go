@@ -42,5 +42,5 @@ func (l resolveCluster) Resolve(ctx context.Context, w *databricks.WorkspaceClie
 }
 
 func (l resolveCluster) String() string {
-	return fmt.Sprintf("cluster: %s", l.name)
+	return "cluster: " + l.name
 }

@@ -1,0 +1,36 @@
+# Prevent CLI from downloading terraform in each test:
+export DATABRICKS_TF_EXEC_PATH=/tmp/
+
+errcode() {
+    # Temporarily disable 'set -e' to prevent the script from exiting on error
+    set +e
+    # Execute the provided command with all arguments
+    "$@"
+    local exit_code=$?
+    # Re-enable 'set -e' if it was previously set
+    set -e
+    >&2 printf "\nExit code: $exit_code\n"
+}
+
+trace() {
+    >&2 printf "\n>>> %s\n" "$*"
+
+    if [[ "$1" == *"="* ]]; then
+        # If the first argument contains '=', collect all env vars
+        local env_vars=()
+        while [[ "$1" == *"="* ]]; do
+            env_vars+=("$1")
+            shift
+        done
+        # Export environment variables in a subshell and execute the command
+        (
+            export "${env_vars[@]}"
+            "$@"
+        )
+    else
+        # Execute the command normally
+        "$@"
+    fi
+
+    return $?
+}

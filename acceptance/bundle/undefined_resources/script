@@ -1,0 +1,2 @@
+# We need sort_blocks.py because the order of diagnostics is currently randomized
+$CLI bundle validate 2>&1 | sort_blocks.py

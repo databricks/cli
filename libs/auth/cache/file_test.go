@@ -42,7 +42,7 @@ func TestStoreAndLookup(t *testing.T) {
 	tok, err := l.Lookup("x")
 	require.NoError(t, err)
 	assert.Equal(t, "abc", tok.AccessToken)
-	assert.Equal(t, 2, len(l.Tokens))
+	assert.Len(t, l.Tokens, 2)
 
 	_, err = l.Lookup("z")
 	assert.Equal(t, ErrNotConfigured, err)

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io/fs"
 	"path"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -65,11 +64,11 @@ func TestFsLs(t *testing.T) {
 
 			assert.Equal(t, "a", parsedStdout[0]["name"])
 			assert.Equal(t, true, parsedStdout[0]["is_directory"])
-			assert.Equal(t, float64(0), parsedStdout[0]["size"])
+			assert.InDelta(t, float64(0), parsedStdout[0]["size"], 0.0001)
 
 			assert.Equal(t, "bye.txt", parsedStdout[1]["name"])
 			assert.Equal(t, false, parsedStdout[1]["is_directory"])
-			assert.Equal(t, float64(3), parsedStdout[1]["size"])
+			assert.InDelta(t, float64(3), parsedStdout[1]["size"], 0.0001)
 		})
 	}
 }
@@ -99,11 +98,11 @@ func TestFsLsWithAbsolutePaths(t *testing.T) {
 
 			assert.Equal(t, path.Join(tmpDir, "a"), parsedStdout[0]["name"])
 			assert.Equal(t, true, parsedStdout[0]["is_directory"])
-			assert.Equal(t, float64(0), parsedStdout[0]["size"])
+			assert.InDelta(t, float64(0), parsedStdout[0]["size"], 0.0001)
 
 			assert.Equal(t, path.Join(tmpDir, "bye.txt"), parsedStdout[1]["name"])
 			assert.Equal(t, false, parsedStdout[1]["is_directory"])
-			assert.Equal(t, float64(3), parsedStdout[1]["size"])
+			assert.InDelta(t, float64(3), parsedStdout[1]["size"].(float64), 0.0001)
 		})
 	}
 }
@@ -122,7 +121,7 @@ func TestFsLsOnFile(t *testing.T) {
 			setupLsFiles(t, f)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", path.Join(tmpDir, "a", "hello.txt"), "--output=json")
-			assert.Regexp(t, regexp.MustCompile("not a directory: .*/a/hello.txt"), err.Error())
+			assert.Regexp(t, "not a directory: .*/a/hello.txt", err.Error())
 			assert.ErrorAs(t, err, &filer.NotADirectory{})
 		})
 	}
@@ -147,7 +146,7 @@ func TestFsLsOnEmptyDir(t *testing.T) {
 			require.NoError(t, err)
 
 			// assert on ls output
-			assert.Equal(t, 0, len(parsedStdout))
+			assert.Empty(t, parsedStdout)
 		})
 	}
 }
@@ -166,7 +165,7 @@ func TestFsLsForNonexistingDir(t *testing.T) {
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", path.Join(tmpDir, "nonexistent"), "--output=json")
 			assert.ErrorIs(t, err, fs.ErrNotExist)
-			assert.Regexp(t, regexp.MustCompile("no such directory: .*/nonexistent"), err.Error())
+			assert.Regexp(t, "no such directory: .*/nonexistent", err.Error())
 		})
 	}
 }

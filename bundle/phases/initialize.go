@@ -34,15 +34,13 @@ func Initialize() bundle.Mutator {
 			// If it is an ancestor, this updates all paths to be relative to the sync root path.
 			mutator.SyncInferRoot(),
 
-			mutator.MergeJobClusters(),
-			mutator.MergeJobParameters(),
-			mutator.MergeJobTasks(),
-			mutator.MergePipelineClusters(),
-			mutator.MergeApps(),
-
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
 			mutator.LoadGitDetails(),
+
+			// This mutator needs to be run before variable interpolation and defining default workspace paths
+			// because it affects how workspace variables are resolved.
+			mutator.ApplySourceLinkedDeploymentPreset(),
 
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
@@ -54,10 +52,13 @@ func Initialize() bundle.Mutator {
 			mutator.RewriteWorkspacePrefix(),
 
 			mutator.SetVariables(),
+
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
 			// See what is expected in PythonMutatorPhaseInit doc
 			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
+			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
+			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 			mutator.ResolveVariableReferencesInLookup(),
 			mutator.ResolveResourceReferences(),
 			mutator.ResolveVariableReferencesInComplexVariables(),
@@ -66,6 +67,13 @@ func Initialize() bundle.Mutator {
 				"workspace",
 				"variables",
 			),
+
+			mutator.MergeJobClusters(),
+			mutator.MergeJobParameters(),
+			mutator.MergeJobTasks(),
+			mutator.MergePipelineClusters(),
+      mutator.MergeApps(),
+
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),

@@ -11,10 +11,10 @@ import (
 )
 
 func TestProfileCloud(t *testing.T) {
-	assert.Equal(t, Profile{Host: "https://dbc-XXXXXXXX-YYYY.cloud.databricks.com"}.Cloud(), "AWS")
-	assert.Equal(t, Profile{Host: "https://adb-xxx.y.azuredatabricks.net/"}.Cloud(), "Azure")
-	assert.Equal(t, Profile{Host: "https://workspace.gcp.databricks.com/"}.Cloud(), "GCP")
-	assert.Equal(t, Profile{Host: "https://some.invalid.host.com/"}.Cloud(), "AWS")
+	assert.Equal(t, "AWS", Profile{Host: "https://dbc-XXXXXXXX-YYYY.cloud.databricks.com"}.Cloud())
+	assert.Equal(t, "Azure", Profile{Host: "https://adb-xxx.y.azuredatabricks.net/"}.Cloud())
+	assert.Equal(t, "GCP", Profile{Host: "https://workspace.gcp.databricks.com/"}.Cloud())
+	assert.Equal(t, "AWS", Profile{Host: "https://some.invalid.host.com/"}.Cloud())
 }
 
 func TestProfilesSearchCaseInsensitive(t *testing.T) {

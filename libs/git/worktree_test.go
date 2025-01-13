@@ -53,12 +53,12 @@ func TestWorktreeResolveGitDir(t *testing.T) {
 	writeGitCommonDir(t, dir, "../..")
 
 	t.Run("relative", func(t *testing.T) {
-		writeGitDir(t, dir, fmt.Sprintf("gitdir: %s", "../.git/worktrees/my_worktree"))
+		writeGitDir(t, dir, "gitdir: "+"../.git/worktrees/my_worktree")
 		verifyCorrectDirs(t, dir)
 	})
 
 	t.Run("absolute", func(t *testing.T) {
-		writeGitDir(t, dir, fmt.Sprintf("gitdir: %s", filepath.Join(dir, ".git/worktrees/my_worktree")))
+		writeGitDir(t, dir, "gitdir: "+filepath.Join(dir, ".git/worktrees/my_worktree"))
 		verifyCorrectDirs(t, dir)
 	})
 
@@ -77,7 +77,7 @@ func TestWorktreeResolveGitDir(t *testing.T) {
 
 func TestWorktreeResolveCommonDir(t *testing.T) {
 	dir := setupWorktree(t)
-	writeGitDir(t, dir, fmt.Sprintf("gitdir: %s", "../.git/worktrees/my_worktree"))
+	writeGitDir(t, dir, "gitdir: "+"../.git/worktrees/my_worktree")
 
 	t.Run("relative", func(t *testing.T) {
 		writeGitCommonDir(t, dir, "../..")

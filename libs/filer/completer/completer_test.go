@@ -37,7 +37,7 @@ func TestFilerCompleterSetsPrefix(t *testing.T) {
 
 	assert.Equal(t, []string{"dbfs:/dir/dirA/", "dbfs:/dir/dirB/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
@@ -46,7 +46,7 @@ func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
 
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
@@ -55,7 +55,7 @@ func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestFilerCompleterReturnsNestedDirsAndFiles(t *testing.T) {
@@ -64,7 +64,7 @@ func TestFilerCompleterReturnsNestedDirsAndFiles(t *testing.T) {
 
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/", "dir/fileA"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestFilerCompleterAddsDbfsPath(t *testing.T) {
@@ -78,7 +78,7 @@ func TestFilerCompleterAddsDbfsPath(t *testing.T) {
 
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestFilerCompleterWindowsSeparator(t *testing.T) {
@@ -92,7 +92,7 @@ func TestFilerCompleterWindowsSeparator(t *testing.T) {
 
 	assert.Equal(t, []string{"dir\\dirA\\", "dir\\dirB\\", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestFilerCompleterNoCompletions(t *testing.T) {

@@ -172,7 +172,7 @@ func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
 
 	for _, resource := range unsupportedResources {
 		_, ok := levelsMap[resource]
-		assert.False(t, ok, fmt.Sprintf("Resource %s is defined in both levelsMap and unsupportedResources", resource))
+		assert.False(t, ok, "Resource %s is defined in both levelsMap and unsupportedResources", resource)
 	}
 
 	for _, resource := range r.AllResources() {

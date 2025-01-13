@@ -2,7 +2,7 @@ package filer
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"io/fs"
 	"path"
@@ -17,7 +17,7 @@ type FakeFiler struct {
 }
 
 func (f *FakeFiler) Write(ctx context.Context, p string, reader io.Reader, mode ...WriteMode) error {
-	return fmt.Errorf("not implemented")
+	return errors.New("not implemented")
 }
 
 func (f *FakeFiler) Read(ctx context.Context, p string) (io.ReadCloser, error) {
@@ -30,7 +30,7 @@ func (f *FakeFiler) Read(ctx context.Context, p string) (io.ReadCloser, error) {
 }
 
 func (f *FakeFiler) Delete(ctx context.Context, p string, mode ...DeleteMode) error {
-	return fmt.Errorf("not implemented")
+	return errors.New("not implemented")
 }
 
 func (f *FakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error) {
@@ -59,7 +59,7 @@ func (f *FakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error
 }
 
 func (f *FakeFiler) Mkdir(ctx context.Context, path string) error {
-	return fmt.Errorf("not implemented")
+	return errors.New("not implemented")
 }
 
 func (f *FakeFiler) Stat(ctx context.Context, path string) (fs.FileInfo, error) {
