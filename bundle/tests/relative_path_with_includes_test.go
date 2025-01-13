@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRelativePathsWithIncludes(t *testing.T) {
@@ -17,8 +18,12 @@ func TestRelativePathsWithIncludes(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, m)
 	assert.NoError(t, diags.Error())
 
-	assert.Equal(t, "artifact_a", b.Config.Artifacts["test_a"].Path)
-	assert.Equal(t, filepath.Join("subfolder", "artifact_b"), b.Config.Artifacts["test_b"].Path)
+	relA, err := filepath.Rel(b.SyncRootPath, b.Config.Artifacts["test_a"].Path)
+	require.NoError(t, err)
+	assert.Equal(t, "artifact_a", relA)
+	relB, err := filepath.Rel(b.SyncRootPath, b.Config.Artifacts["test_b"].Path)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join("subfolder", "artifact_b"), relB)
 
 	assert.ElementsMatch(
 		t,
