@@ -1,0 +1,13 @@
+bundle:
+  name: merge-string-map
+
+resources:
+  clusters:
+    my_cluster: "hello"
+
+targets:
+  dev:
+    resources:
+      clusters:
+        my_cluster:
+          spark_version: "25"

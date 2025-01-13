@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -29,7 +30,7 @@ type syncFlags struct {
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	if len(args) > 0 {
-		return nil, fmt.Errorf("SRC and DST are not configurable in the context of a bundle")
+		return nil, errors.New("SRC and DST are not configurable in the context of a bundle")
 	}
 
 	opts, err := files.GetSyncOptions(cmd.Context(), bundle.ReadOnly(b))
@@ -68,7 +69,6 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 
 	localRoot := vfs.MustNew(args[0])
 	info, err := git.FetchRepositoryInfo(ctx, localRoot.Native(), client)
-
 	if err != nil {
 		log.Warnf(ctx, "Failed to read git info: %s", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strconv"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
@@ -15,8 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type folderPermissions struct {
-}
+type folderPermissions struct{}
 
 // Apply implements bundle.ReadOnlyMutator.
 func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) diag.Diagnostics {
@@ -37,7 +37,8 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 	}
 
 	if err := g.Wait(); err != nil {
-		return diag.FromErr(err)
+		// Note, only diag from first coroutine is captured, others are lost
+		diags = diags.Extend(diag.FromErr(err))
 	}
 
 	for _, r := range results {
@@ -60,7 +61,7 @@ func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderP
 	}
 
 	objPermissions, err := w.GetPermissions(ctx, workspace.GetWorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
+		WorkspaceObjectId:   strconv.FormatInt(obj.ObjectId, 10),
 		WorkspaceObjectType: "directories",
 	})
 	if err != nil {

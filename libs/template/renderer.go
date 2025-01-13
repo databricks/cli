@@ -150,6 +150,10 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	perm := info.Mode().Perm()
 
+	// Always include the write bit for the owner of the file.
+	// It does not make sense to have a file that is not writable by the owner.
+	perm |= 0o200
+
 	// Execute relative path template to get destination path for the file
 	relPath, err := r.executeTemplate(relPathTemplate)
 	if err != nil {
@@ -310,7 +314,7 @@ func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 		if err == nil {
 			return fmt.Errorf("failed to initialize template, one or more files already exist: %s", path)
 		}
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("error while verifying file %s does not already exist: %w", path, err)
 		}
 	}

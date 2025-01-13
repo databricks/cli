@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -143,7 +144,7 @@ func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func
 		progressLogger.Log(event)
 
 		// log progress events in using the default logger
-		log.Infof(ctx, event.String())
+		log.Info(ctx, event.String())
 	}
 }
 
@@ -181,13 +182,13 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	// callback to log progress events. Called on every poll request
 	progressLogger, ok := cmdio.FromContext(ctx)
 	if !ok {
-		return nil, fmt.Errorf("no progress logger found")
+		return nil, errors.New("no progress logger found")
 	}
 	logProgress := logProgressCallback(ctx, progressLogger)
 
 	waiter, err := w.Jobs.RunNow(ctx, *req)
 	if err != nil {
-		return nil, fmt.Errorf("cannot start job")
+		return nil, errors.New("cannot start job")
 	}
 
 	if opts.NoWait {
@@ -203,7 +204,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		logDebug(r)
 		logProgress(r)
 	}).GetWithTimeout(jobRunTimeout)
-	if err != nil && runId != nil {
+	if err != nil {
 		r.logFailedTasks(ctx, *runId)
 	}
 	if err != nil {
@@ -266,7 +267,7 @@ func (r *jobRunner) convertPythonParams(opts *Options) error {
 
 	if len(opts.Job.pythonParams) > 0 {
 		if _, ok := opts.Job.notebookParams["__python_params"]; ok {
-			return fmt.Errorf("can't use __python_params as notebook param, the name is reserved for internal use")
+			return errors.New("can't use __python_params as notebook param, the name is reserved for internal use")
 		}
 		p, err := json.Marshal(opts.Job.pythonParams)
 		if err != nil {
@@ -289,7 +290,6 @@ func (r *jobRunner) Cancel(ctx context.Context) error {
 		ActiveOnly: true,
 		JobId:      jobID,
 	})
-
 	if err != nil {
 		return err
 	}

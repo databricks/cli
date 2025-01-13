@@ -17,8 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type stateUpdate struct {
-}
+type stateUpdate struct{}
 
 func (s *stateUpdate) Name() string {
 	return "deploy:state-update"
@@ -57,7 +56,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		return diag.FromErr(err)
 	}
 	// Write the state back to the file.
-	f, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0o600)
 	if err != nil {
 		log.Infof(ctx, "Unable to open deployment state file: %s", err)
 		return diag.FromErr(err)

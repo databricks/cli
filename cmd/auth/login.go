@@ -29,8 +29,10 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 	return prompt.Run()
 }
 
-const minimalDbConnectVersion = "13.1"
-const defaultTimeout = 1 * time.Hour
+const (
+	minimalDbConnectVersion = "13.1"
+	defaultTimeout          = 1 * time.Hour
+)
 
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
@@ -174,7 +176,7 @@ depends on the existing profiles you have set in your configuration file
 func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	if len(args) > 0 && persistentAuth.Host != "" {
-		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
+		return errors.New("please only provide a host as an argument or a flag, not both")
 	}
 
 	profiler := profile.GetProfiler(ctx)

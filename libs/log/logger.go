@@ -3,10 +3,9 @@ package log
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"runtime"
 	"time"
-
-	"log/slog"
 )
 
 // GetLogger returns either the logger configured on the context,
@@ -29,6 +28,51 @@ func log(logger *slog.Logger, ctx context.Context, level slog.Level, msg string)
 		ctx = context.Background()
 	}
 	_ = logger.Handler().Handle(ctx, r)
+}
+
+// Trace logs a string using the context-local or global logger.
+func Trace(ctx context.Context, msg string) {
+	logger := GetLogger(ctx)
+	if !logger.Enabled(ctx, LevelTrace) {
+		return
+	}
+	log(logger, ctx, LevelTrace, msg)
+}
+
+// Debug logs a string using the context-local or global logger.
+func Debug(ctx context.Context, msg string) {
+	logger := GetLogger(ctx)
+	if !logger.Enabled(ctx, LevelDebug) {
+		return
+	}
+	log(logger, ctx, LevelDebug, msg)
+}
+
+// Info logs a string using the context-local or global logger.
+func Info(ctx context.Context, msg string) {
+	logger := GetLogger(ctx)
+	if !logger.Enabled(ctx, LevelInfo) {
+		return
+	}
+	log(logger, ctx, LevelInfo, msg)
+}
+
+// Warn logs a string using the context-local or global logger.
+func Warn(ctx context.Context, msg string) {
+	logger := GetLogger(ctx)
+	if !logger.Enabled(ctx, LevelWarn) {
+		return
+	}
+	log(logger, ctx, LevelWarn, msg)
+}
+
+// Error logs a string using the context-local or global logger.
+func Error(ctx context.Context, msg string) {
+	logger := GetLogger(ctx)
+	if !logger.Enabled(ctx, LevelError) {
+		return
+	}
+	log(logger, ctx, LevelError, msg)
 }
 
 // Tracef logs a formatted string using the context-local or global logger.

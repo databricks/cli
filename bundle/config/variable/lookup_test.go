@@ -13,7 +13,7 @@ func TestLookup_Coverage(t *testing.T) {
 	val := reflect.ValueOf(lookup)
 	typ := val.Type()
 
-	for i := 0; i < val.NumField(); i++ {
+	for i := range val.NumField() {
 		field := val.Field(i)
 		if field.Kind() != reflect.String {
 			t.Fatalf("Field %s is not a string", typ.Field(i).Name)
@@ -42,7 +42,6 @@ func TestLookup_Empty(t *testing.T) {
 
 	// No string representation for an invalid lookup
 	assert.Empty(t, lookup.String())
-
 }
 
 func TestLookup_Multiple(t *testing.T) {

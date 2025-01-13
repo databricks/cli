@@ -90,7 +90,6 @@ func testFixture(userName string) *bundle.Bundle {
 			},
 		},
 	}
-
 }
 
 func TestFilterCurrentUser(t *testing.T) {
@@ -100,32 +99,32 @@ func TestFilterCurrentUser(t *testing.T) {
 	assert.NoError(t, diags.Error())
 
 	// Assert current user is filtered out.
-	assert.Equal(t, 2, len(b.Config.Resources.Jobs["job1"].Permissions))
+	assert.Len(t, b.Config.Resources.Jobs["job1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, robot)
 	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.Jobs["job2"].Permissions))
+	assert.Len(t, b.Config.Resources.Jobs["job2"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, robot)
 	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.Pipelines["pipeline1"].Permissions))
+	assert.Len(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, robot)
 	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.Experiments["experiment1"].Permissions))
+	assert.Len(t, b.Config.Resources.Experiments["experiment1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, robot)
 	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.Models["model1"].Permissions))
+	assert.Len(t, b.Config.Resources.Models["model1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, robot)
 	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions))
+	assert.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, robot)
 	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, bob)
 
 	// Assert there's no change to the grant.
-	assert.Equal(t, 1, len(b.Config.Resources.RegisteredModels["registered_model1"].Grants))
+	assert.Len(t, b.Config.Resources.RegisteredModels["registered_model1"].Grants, 1)
 }
 
 func TestFilterCurrentServicePrincipal(t *testing.T) {
@@ -135,32 +134,32 @@ func TestFilterCurrentServicePrincipal(t *testing.T) {
 	assert.NoError(t, diags.Error())
 
 	// Assert current user is filtered out.
-	assert.Equal(t, 2, len(b.Config.Resources.Jobs["job1"].Permissions))
+	assert.Len(t, b.Config.Resources.Jobs["job1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, alice)
 	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.Jobs["job2"].Permissions))
+	assert.Len(t, b.Config.Resources.Jobs["job2"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, alice)
 	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.Pipelines["pipeline1"].Permissions))
+	assert.Len(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, alice)
 	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.Experiments["experiment1"].Permissions))
+	assert.Len(t, b.Config.Resources.Experiments["experiment1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, alice)
 	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.Models["model1"].Permissions))
+	assert.Len(t, b.Config.Resources.Models["model1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, alice)
 	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, bob)
 
-	assert.Equal(t, 2, len(b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions))
+	assert.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, alice)
 	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, bob)
 
 	// Assert there's no change to the grant.
-	assert.Equal(t, 1, len(b.Config.Resources.RegisteredModels["registered_model1"].Grants))
+	assert.Len(t, b.Config.Resources.RegisteredModels["registered_model1"].Grants, 1)
 }
 
 func TestFilterCurrentUserDoesNotErrorWhenNoResources(t *testing.T) {

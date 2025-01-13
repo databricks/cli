@@ -145,7 +145,7 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 // This function is used for env vars set by the Databricks VSCode extension. The variables are intended to be used by the CLI
 // bundled with the Databricks VSCode extension, but users can use different CLI versions in the VSCode terminals, in which case we want to ignore
 // the variables if that CLI uses different versions of the dependencies.
-func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versionVarName string, currentVersion string) (string, error) {
+func getEnvVarWithMatchingVersion(ctx context.Context, envVarName, versionVarName, currentVersion string) (string, error) {
 	envValue := env.Get(ctx, envVarName)
 	versionValue := env.Get(ctx, versionVarName)
 
@@ -230,9 +230,13 @@ func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error 
 	// Add "cli" to the user agent in set by the Databricks Terraform provider.
 	// This will allow us to attribute downstream requests made by the Databricks
 	// Terraform provider to the CLI.
-	products := []string{fmt.Sprintf("cli/%s", build.GetInfo().Version)}
+	products := []string{"cli/" + build.GetInfo().Version}
 	if experimental := b.Config.Experimental; experimental != nil {
-		if experimental.PyDABs.Enabled {
+		hasPython := experimental.Python.Resources != nil || experimental.Python.Mutators != nil
+
+		if hasPython {
+			products = append(products, "databricks-pydabs/0.7.0")
+		} else if experimental.PyDABs.Enabled {
 			products = append(products, "databricks-pydabs/0.0.0")
 		}
 	}

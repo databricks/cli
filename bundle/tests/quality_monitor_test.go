@@ -19,7 +19,7 @@ func assertExpectedMonitor(t *testing.T, p *resources.QualityMonitor) {
 func TestMonitorTableNames(t *testing.T) {
 	b := loadTarget(t, "./quality_monitor", "development")
 	assert.Len(t, b.Config.Resources.QualityMonitors, 1)
-	assert.Equal(t, b.Config.Bundle.Mode, config.Development)
+	assert.Equal(t, config.Development, b.Config.Bundle.Mode)
 
 	p := b.Config.Resources.QualityMonitors["my_monitor"]
 	assert.Equal(t, "main.test.dev", p.TableName)

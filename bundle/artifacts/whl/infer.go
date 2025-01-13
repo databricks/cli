@@ -16,12 +16,6 @@ type infer struct {
 func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	artifact := b.Config.Artifacts[m.name]
 
-	// TODO use python.DetectVEnvExecutable once bundle has a way to specify venv path
-	py, err := python.DetectExecutable(ctx)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	// Note: using --build-number (build tag) flag does not help with re-installing
 	// libraries on all-purpose clusters. The reason is that `pip` ignoring build tag
 	// when upgrading the library and only look at wheel version.
@@ -36,7 +30,9 @@ func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	//   version=datetime.datetime.utcnow().strftime("%Y%m%d.%H%M%S"),
 	// ...
 	//)
-	artifact.BuildCommand = fmt.Sprintf(`"%s" setup.py bdist_wheel`, py)
+
+	py := python.GetExecutable()
+	artifact.BuildCommand = py + " setup.py bdist_wheel"
 
 	return nil
 }

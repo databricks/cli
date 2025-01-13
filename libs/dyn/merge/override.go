@@ -23,7 +23,7 @@ import (
 type OverrideVisitor struct {
 	VisitDelete func(valuePath dyn.Path, left dyn.Value) error
 	VisitInsert func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error)
-	VisitUpdate func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error)
+	VisitUpdate func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error)
 }
 
 var ErrOverrideUndoDelete = errors.New("undo delete operation")
@@ -31,11 +31,11 @@ var ErrOverrideUndoDelete = errors.New("undo delete operation")
 // Override overrides value 'leftRoot' with 'rightRoot', keeping 'location' if values
 // haven't changed. Preserving 'location' is important to preserve the original source of the value
 // for error reporting.
-func Override(leftRoot dyn.Value, rightRoot dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
+func Override(leftRoot, rightRoot dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
 	return override(dyn.EmptyPath, leftRoot, rightRoot, visitor)
 }
 
-func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
+func override(basePath dyn.Path, left, right dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
 	if left.Kind() != right.Kind() {
 		return visitor.VisitUpdate(basePath, left, right)
 	}
@@ -46,7 +46,6 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 	switch left.Kind() {
 	case dyn.KindMap:
 		merged, err := overrideMapping(basePath, left.MustMap(), right.MustMap(), visitor)
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -57,7 +56,6 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 		// some sequences are keyed, and we can detect which elements are added/removed/updated,
 		// but we don't have this information
 		merged, err := overrideSequence(basePath, left.MustSequence(), right.MustSequence(), visitor)
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -107,7 +105,7 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 	return dyn.InvalidValue, fmt.Errorf("unexpected kind %s at %s", left.Kind(), basePath.String())
 }
 
-func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dyn.Mapping, visitor OverrideVisitor) (dyn.Mapping, error) {
+func overrideMapping(basePath dyn.Path, leftMapping, rightMapping dyn.Mapping, visitor OverrideVisitor) (dyn.Mapping, error) {
 	out := dyn.NewMapping()
 
 	for _, leftPair := range leftMapping.Pairs() {
@@ -136,14 +134,12 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 		if leftPair, ok := leftMapping.GetPair(rightPair.Key); ok {
 			path := basePath.Append(dyn.Key(rightPair.Key.MustString()))
 			newValue, err := override(path, leftPair.Value, rightPair.Value, visitor)
-
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
 
 			// key was there before, so keep its location
 			err = out.Set(leftPair.Key, newValue)
-
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
@@ -151,13 +147,11 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 			path := basePath.Append(dyn.Key(rightPair.Key.MustString()))
 
 			newValue, err := visitor.VisitInsert(path, rightPair.Value)
-
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
 
 			err = out.Set(rightPair.Key, newValue)
-
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
@@ -167,14 +161,13 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 	return out, nil
 }
 
-func overrideSequence(basePath dyn.Path, left []dyn.Value, right []dyn.Value, visitor OverrideVisitor) ([]dyn.Value, error) {
+func overrideSequence(basePath dyn.Path, left, right []dyn.Value, visitor OverrideVisitor) ([]dyn.Value, error) {
 	minLen := min(len(left), len(right))
 	var values []dyn.Value
 
-	for i := 0; i < minLen; i++ {
+	for i := range minLen {
 		path := basePath.Append(dyn.Index(i))
 		merged, err := override(path, left[i], right[i], visitor)
-
 		if err != nil {
 			return nil, err
 		}
@@ -186,7 +179,6 @@ func overrideSequence(basePath dyn.Path, left []dyn.Value, right []dyn.Value, vi
 		for i := minLen; i < len(right); i++ {
 			path := basePath.Append(dyn.Index(i))
 			newValue, err := visitor.VisitInsert(path, right[i])
-
 			if err != nil {
 				return nil, err
 			}

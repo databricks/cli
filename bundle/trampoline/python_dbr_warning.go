@@ -14,8 +14,7 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-type wrapperWarning struct {
-}
+type wrapperWarning struct{}
 
 func WrapperWarning() bundle.Mutator {
 	return &wrapperWarning{}
@@ -62,7 +61,6 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 
 		if task.ExistingClusterId != "" {
 			version, err := getSparkVersionForCluster(ctx, b.WorkspaceClient(), task.ExistingClusterId)
-
 			// If there's error getting spark version for cluster, do not mark it as incompatible
 			if err != nil {
 				log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())

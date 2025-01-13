@@ -1,0 +1,56 @@
+bundle:
+  name: complex-variables
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: key
+          new_cluster: ${var.cluster}
+      tasks:
+      - task_key: test
+        job_cluster_key: key
+        libraries: ${variables.libraries.value}
+        # specific fields of complex variable are referenced:
+        task_key: "task with spark version ${var.cluster.spark_version} and jar ${var.libraries[0].jar}"
+
+variables:
+  node_type:
+    default: "Standard_DS3_v2"
+  cluster:
+    type: complex
+    description: "A cluster definition"
+    default:
+      spark_version: "13.2.x-scala2.11"
+      node_type_id: ${var.node_type}
+      num_workers: 2
+      policy_id: "some-policy-id"
+      spark_conf:
+        spark.speculation: true
+        spark.databricks.delta.retentionDurationCheck.enabled: false
+        spark.random: true
+  libraries:
+    type: complex
+    description: "A libraries definition"
+    default:
+      - jar: "/path/to/jar"
+      - egg: "/path/to/egg"
+      - whl: "/path/to/whl"
+
+targets:
+  default:
+    default: true
+  dev:
+    variables:
+      node_type: "Standard_DS3_v3"
+      cluster:
+        # complex variables are not merged, so missing variables (policy_id) are not inherited
+        spark_version: "14.2.x-scala2.11"
+        node_type_id: ${var.node_type}
+        num_workers: 4
+        spark_conf:
+          spark.speculation: false
+          spark.databricks.delta.retentionDurationCheck.enabled: false
+      libraries:
+        - jar: "/newpath/to/jar"
+        - whl: "/newpath/to/whl"

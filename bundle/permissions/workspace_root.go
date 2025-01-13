@@ -3,6 +3,7 @@ package permissions
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
@@ -12,8 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type workspaceRootPermissions struct {
-}
+type workspaceRootPermissions struct{}
 
 func ApplyWorkspaceRootPermissions() bundle.Mutator {
 	return &workspaceRootPermissions{}
@@ -79,7 +79,7 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 	}
 
 	_, err = w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
+		WorkspaceObjectId:   strconv.FormatInt(obj.ObjectId, 10),
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
 	})

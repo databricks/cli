@@ -14,7 +14,7 @@ import (
 )
 
 func TestConvertModel(t *testing.T) {
-	var src = resources.MlflowModel{
+	src := resources.MlflowModel{
 		Model: &ml.Model{
 			Name:        "name",
 			Description: "description",

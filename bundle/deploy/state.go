@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -15,8 +16,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const DeploymentStateFileName = "deployment.json"
-const DeploymentStateVersion = 1
+const (
+	DeploymentStateFileName = "deployment.json"
+	DeploymentStateVersion  = 1
+)
 
 type File struct {
 	LocalPath string `json:"local_path"`
@@ -93,7 +96,7 @@ func (e *entry) Type() fs.FileMode {
 
 func (e *entry) Info() (fs.FileInfo, error) {
 	if e.info == nil {
-		return nil, fmt.Errorf("no info available")
+		return nil, errors.New("no info available")
 	}
 	return e.info, nil
 }
@@ -132,7 +135,7 @@ func (f Filelist) ToSlice(root vfs.Path) []fileset.File {
 	return files
 }
 
-func isLocalStateStale(local io.Reader, remote io.Reader) bool {
+func isLocalStateStale(local, remote io.Reader) bool {
 	localState, err := loadState(local)
 	if err != nil {
 		return true

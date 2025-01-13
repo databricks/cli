@@ -42,7 +42,8 @@ func TestConvertPythonParams(t *testing.T) {
 	opts := &Options{
 		Job: JobOptions{},
 	}
-	runner.convertPythonParams(opts)
+	err := runner.convertPythonParams(opts)
+	require.NoError(t, err)
 	require.NotContains(t, opts.Job.notebookParams, "__python_params")
 
 	opts = &Options{
@@ -50,9 +51,10 @@ func TestConvertPythonParams(t *testing.T) {
 			pythonParams: []string{"param1", "param2", "param3"},
 		},
 	}
-	runner.convertPythonParams(opts)
+	err = runner.convertPythonParams(opts)
+	require.NoError(t, err)
 	require.Contains(t, opts.Job.notebookParams, "__python_params")
-	require.Equal(t, opts.Job.notebookParams["__python_params"], `["param1","param2","param3"]`)
+	require.Equal(t, `["param1","param2","param3"]`, opts.Job.notebookParams["__python_params"])
 }
 
 func TestJobRunnerCancel(t *testing.T) {
@@ -158,7 +160,7 @@ func TestJobRunnerRestart(t *testing.T) {
 		m := mocks.NewMockWorkspaceClient(t)
 		b.SetWorkpaceClient(m.WorkspaceClient)
 		ctx := context.Background()
-		ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+		ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
 		ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 		jobApi := m.GetMockJobsAPI()
@@ -229,7 +231,7 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
 	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 	jobApi := m.GetMockJobsAPI()

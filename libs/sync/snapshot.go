@@ -2,6 +2,8 @@ package sync
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,9 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"crypto/md5"
-	"encoding/hex"
 
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
@@ -91,7 +90,7 @@ func GetFileName(host, remotePath string) string {
 func SnapshotPath(opts *SyncOptions) (string, error) {
 	snapshotDir := filepath.Join(opts.SnapshotBasePath, syncSnapshotDirName)
 	if _, err := os.Stat(snapshotDir); errors.Is(err, fs.ErrNotExist) {
-		err = os.MkdirAll(snapshotDir, 0755)
+		err = os.MkdirAll(snapshotDir, 0o755)
 		if err != nil {
 			return "", fmt.Errorf("failed to create config directory: %s", err)
 		}
@@ -122,7 +121,7 @@ func newSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 }
 
 func (s *Snapshot) Save(ctx context.Context) error {
-	f, err := os.OpenFile(s.snapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(s.snapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
 	}

@@ -63,7 +63,6 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 			return v, nil
 		})
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}

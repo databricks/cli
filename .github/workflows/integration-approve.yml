@@ -1,0 +1,34 @@
+name: integration-approve
+
+on:
+  merge_group:
+
+jobs:
+  # Trigger for merge groups.
+  #
+  # Statuses and checks apply to specific commits (by hash).
+  # Enforcement of required checks is done both at the PR level and the merge queue level.
+  # In case of multiple commits in a single PR, the hash of the squashed commit
+  # will not match the one for the latest (approved) commit in the PR.
+  #
+  # We auto approve the check for the merge queue for two reasons:
+  #
+  #   * Queue times out due to duration of tests.
+  #   * Avoid running integration tests twice, since it was already run at the tip of the branch before squashing.
+  #
+  trigger:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    steps:
+      - name: Auto-approve squashed commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh api -X POST -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -f 'state=success' \
+            -f 'context=Integration Tests Check'

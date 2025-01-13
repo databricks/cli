@@ -9,9 +9,13 @@ on:
 
 jobs:
   goreleaser:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     outputs:
       artifacts: ${{ steps.releaser.outputs.artifacts }}
-    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
@@ -22,7 +26,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.2
+          go-version: 1.23.4
 
           # The default cache key for this action considers only the `go.sum` file.
           # We include .goreleaser.yaml here to differentiate from the cache used by the push action
@@ -54,8 +58,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create-setup-cli-release-pr:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     needs: goreleaser
-    runs-on: ubuntu-latest
+
     steps:
       - name: Set VERSION variable from tag
         run: |
@@ -78,8 +86,12 @@ jobs:
             });
 
   create-homebrew-tap-release-pr:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     needs: goreleaser
-    runs-on: ubuntu-latest
+
     steps:
       - name: Set VERSION variable from tag
         run: |
@@ -115,8 +127,12 @@ jobs:
             });
 
   create-vscode-extension-update-pr:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     needs: goreleaser
-    runs-on: ubuntu-latest
+
     steps:
       - name: Set VERSION variable from tag
         run: |

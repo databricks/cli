@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,8 +28,8 @@ func testInMemoryFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
 	err = f.Write(ctx, out)
 	assert.NoError(t, err)
 
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), perm)
+	testutil.AssertFileContents(t, filepath.Join(tmpDir, "a/b/c"), "123")
+	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), perm)
 }
 
 func testCopyFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
@@ -48,8 +49,8 @@ func testCopyFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
 	err = f.Write(ctx, out)
 	assert.NoError(t, err)
 
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "qwerty")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), perm)
+	testutil.AssertFileContents(t, filepath.Join(tmpDir, "source"), "qwerty")
+	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "source"), perm)
 }
 
 func TestTemplateInMemoryFilePersistToDisk(t *testing.T) {
@@ -57,7 +58,7 @@ func TestTemplateInMemoryFilePersistToDisk(t *testing.T) {
 		t.SkipNow()
 	}
 	ctx := context.Background()
-	testInMemoryFile(t, ctx, 0755)
+	testInMemoryFile(t, ctx, 0o755)
 }
 
 func TestTemplateInMemoryFilePersistToDiskForWindows(t *testing.T) {
@@ -67,7 +68,7 @@ func TestTemplateInMemoryFilePersistToDiskForWindows(t *testing.T) {
 	// we have separate tests for windows because of differences in valid
 	// fs.FileMode values we can use for different operating systems.
 	ctx := context.Background()
-	testInMemoryFile(t, ctx, 0666)
+	testInMemoryFile(t, ctx, 0o666)
 }
 
 func TestTemplateCopyFilePersistToDisk(t *testing.T) {
@@ -75,7 +76,7 @@ func TestTemplateCopyFilePersistToDisk(t *testing.T) {
 		t.SkipNow()
 	}
 	ctx := context.Background()
-	testCopyFile(t, ctx, 0644)
+	testCopyFile(t, ctx, 0o644)
 }
 
 func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
@@ -85,5 +86,5 @@ func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
 	// we have separate tests for windows because of differences in valid
 	// fs.FileMode values we can use for different operating systems.
 	ctx := context.Background()
-	testCopyFile(t, ctx, 0666)
+	testCopyFile(t, ctx, 0o666)
 }

@@ -96,7 +96,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) (stri
 		return "", diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("expected a dashboard, found a %s", found),
+				Summary:  "expected a dashboard, found a " + found,
 			},
 		}
 	}
@@ -158,7 +158,7 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 	}
 
 	// Make sure the output directory exists.
-	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filename), 0o755); err != nil {
 		return err
 	}
 
@@ -183,12 +183,12 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 	}
 
 	fmt.Printf("Writing dashboard to %q\n", rel)
-	return os.WriteFile(filename, data, 0644)
+	return os.WriteFile(filename, data, 0o644)
 }
 
 func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, key string) error {
 	// Save serialized dashboard definition to the dashboard directory.
-	dashboardBasename := fmt.Sprintf("%s.lvdash.json", key)
+	dashboardBasename := key + ".lvdash.json"
 	dashboardPath := filepath.Join(d.dashboardDir, dashboardBasename)
 	err := d.saveSerializedDashboard(ctx, b, dashboard, dashboardPath)
 	if err != nil {
@@ -210,12 +210,12 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	}
 
 	// Make sure the output directory exists.
-	if err := os.MkdirAll(d.resourceDir, 0755); err != nil {
+	if err := os.MkdirAll(d.resourceDir, 0o755); err != nil {
 		return err
 	}
 
 	// Save the configuration to the resource directory.
-	resourcePath := filepath.Join(d.resourceDir, fmt.Sprintf("%s.dashboard.yml", key))
+	resourcePath := filepath.Join(d.resourceDir, key+".dashboard.yml")
 	saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
 		"display_name": yaml.DoubleQuotedStyle,
 	})

@@ -36,11 +36,11 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 				return fmt.Errorf("failed to resolve %s, err: %w", v.Lookup, err)
 			}
 
-			v.Set(id)
-			return nil
+			return v.Set(id)
 		})
 	}
 
+	// Note, diags are lost from all goroutines except the first one to return diag
 	return diag.FromErr(errs.Wait())
 }
 

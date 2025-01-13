@@ -15,7 +15,7 @@ func (d *DeferredMutator) Name() string {
 	return "deferred"
 }
 
-func Defer(mutator Mutator, finally Mutator) Mutator {
+func Defer(mutator, finally Mutator) Mutator {
 	return &DeferredMutator{
 		mutator: mutator,
 		finally: finally,

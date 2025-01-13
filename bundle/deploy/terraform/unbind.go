@@ -37,6 +37,6 @@ func (*unbind) Name() string {
 	return "terraform.Unbind"
 }
 
-func Unbind(resourceType string, resourceKey string) bundle.Mutator {
+func Unbind(resourceType, resourceKey string) bundle.Mutator {
 	return &unbind{resourceType: resourceType, resourceKey: resourceKey}
 }

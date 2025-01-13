@@ -43,7 +43,7 @@ func convertToResourceStruct[T any](t *testing.T, resource *T, data any) {
 }
 
 func TestBundleToTerraformJob(t *testing.T) {
-	var src = resources.Job{
+	src := resources.Job{
 		JobSettings: &jobs.JobSettings{
 			Name: "my job",
 			JobClusters: []jobs.JobCluster{
@@ -71,7 +71,7 @@ func TestBundleToTerraformJob(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"my_job": &src,
@@ -93,7 +93,7 @@ func TestBundleToTerraformJob(t *testing.T) {
 }
 
 func TestBundleToTerraformJobPermissions(t *testing.T) {
-	var src = resources.Job{
+	src := resources.Job{
 		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
@@ -102,7 +102,7 @@ func TestBundleToTerraformJobPermissions(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"my_job": &src,
@@ -121,7 +121,7 @@ func TestBundleToTerraformJobPermissions(t *testing.T) {
 }
 
 func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
-	var src = resources.Job{
+	src := resources.Job{
 		JobSettings: &jobs.JobSettings{
 			Name: "my job",
 			Tasks: []jobs.Task{
@@ -139,7 +139,7 @@ func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"my_job": &src,
@@ -158,7 +158,7 @@ func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 }
 
 func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
-	var src = resources.Job{
+	src := resources.Job{
 		JobSettings: &jobs.JobSettings{
 			Name: "my job",
 			Tasks: []jobs.Task{
@@ -182,7 +182,7 @@ func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"my_job": &src,
@@ -201,7 +201,7 @@ func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 }
 
 func TestBundleToTerraformPipeline(t *testing.T) {
-	var src = resources.Pipeline{
+	src := resources.Pipeline{
 		PipelineSpec: &pipelines.PipelineSpec{
 			Name: "my pipeline",
 			Libraries: []pipelines.PipelineLibrary{
@@ -239,7 +239,7 @@ func TestBundleToTerraformPipeline(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Pipelines: map[string]*resources.Pipeline{
 				"my_pipeline": &src,
@@ -254,15 +254,15 @@ func TestBundleToTerraformPipeline(t *testing.T) {
 	assert.Equal(t, "my pipeline", resource.Name)
 	assert.Len(t, resource.Library, 2)
 	assert.Len(t, resource.Notification, 2)
-	assert.Equal(t, resource.Notification[0].Alerts, []string{"on-update-fatal-failure"})
-	assert.Equal(t, resource.Notification[0].EmailRecipients, []string{"jane@doe.com"})
-	assert.Equal(t, resource.Notification[1].Alerts, []string{"on-update-failure", "on-flow-failure"})
-	assert.Equal(t, resource.Notification[1].EmailRecipients, []string{"jane@doe.com", "john@doe.com"})
+	assert.Equal(t, []string{"on-update-fatal-failure"}, resource.Notification[0].Alerts)
+	assert.Equal(t, []string{"jane@doe.com"}, resource.Notification[0].EmailRecipients)
+	assert.Equal(t, []string{"on-update-failure", "on-flow-failure"}, resource.Notification[1].Alerts)
+	assert.Equal(t, []string{"jane@doe.com", "john@doe.com"}, resource.Notification[1].EmailRecipients)
 	assert.Nil(t, out.Data)
 }
 
 func TestBundleToTerraformPipelinePermissions(t *testing.T) {
-	var src = resources.Pipeline{
+	src := resources.Pipeline{
 		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
@@ -271,7 +271,7 @@ func TestBundleToTerraformPipelinePermissions(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Pipelines: map[string]*resources.Pipeline{
 				"my_pipeline": &src,
@@ -290,7 +290,7 @@ func TestBundleToTerraformPipelinePermissions(t *testing.T) {
 }
 
 func TestBundleToTerraformModel(t *testing.T) {
-	var src = resources.MlflowModel{
+	src := resources.MlflowModel{
 		Model: &ml.Model{
 			Name:        "name",
 			Description: "description",
@@ -307,7 +307,7 @@ func TestBundleToTerraformModel(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Models: map[string]*resources.MlflowModel{
 				"my_model": &src,
@@ -330,7 +330,7 @@ func TestBundleToTerraformModel(t *testing.T) {
 }
 
 func TestBundleToTerraformModelPermissions(t *testing.T) {
-	var src = resources.MlflowModel{
+	src := resources.MlflowModel{
 		Model: &ml.Model{
 			Name: "name",
 		},
@@ -342,7 +342,7 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Models: map[string]*resources.MlflowModel{
 				"my_model": &src,
@@ -361,13 +361,13 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 }
 
 func TestBundleToTerraformExperiment(t *testing.T) {
-	var src = resources.MlflowExperiment{
+	src := resources.MlflowExperiment{
 		Experiment: &ml.Experiment{
 			Name: "name",
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Experiments: map[string]*resources.MlflowExperiment{
 				"my_experiment": &src,
@@ -384,7 +384,7 @@ func TestBundleToTerraformExperiment(t *testing.T) {
 }
 
 func TestBundleToTerraformExperimentPermissions(t *testing.T) {
-	var src = resources.MlflowExperiment{
+	src := resources.MlflowExperiment{
 		Experiment: &ml.Experiment{
 			Name: "name",
 		},
@@ -396,7 +396,7 @@ func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Experiments: map[string]*resources.MlflowExperiment{
 				"my_experiment": &src,
@@ -415,7 +415,7 @@ func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 }
 
 func TestBundleToTerraformModelServing(t *testing.T) {
-	var src = resources.ModelServingEndpoint{
+	src := resources.ModelServingEndpoint{
 		CreateServingEndpoint: &serving.CreateServingEndpoint{
 			Name: "name",
 			Config: serving.EndpointCoreConfigInput{
@@ -439,7 +439,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"my_model_serving_endpoint": &src,
@@ -454,7 +454,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 	assert.Equal(t, "name", resource.Name)
 	assert.Equal(t, "model_name", resource.Config.ServedModels[0].ModelName)
 	assert.Equal(t, "1", resource.Config.ServedModels[0].ModelVersion)
-	assert.Equal(t, true, resource.Config.ServedModels[0].ScaleToZeroEnabled)
+	assert.True(t, resource.Config.ServedModels[0].ScaleToZeroEnabled)
 	assert.Equal(t, "Small", resource.Config.ServedModels[0].WorkloadSize)
 	assert.Equal(t, "model_name-1", resource.Config.TrafficConfig.Routes[0].ServedModelName)
 	assert.Equal(t, 100, resource.Config.TrafficConfig.Routes[0].TrafficPercentage)
@@ -462,7 +462,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 }
 
 func TestBundleToTerraformModelServingPermissions(t *testing.T) {
-	var src = resources.ModelServingEndpoint{
+	src := resources.ModelServingEndpoint{
 		CreateServingEndpoint: &serving.CreateServingEndpoint{
 			Name: "name",
 
@@ -492,7 +492,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"my_model_serving_endpoint": &src,
@@ -511,7 +511,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 }
 
 func TestBundleToTerraformRegisteredModel(t *testing.T) {
-	var src = resources.RegisteredModel{
+	src := resources.RegisteredModel{
 		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
 			Name:        "name",
 			CatalogName: "catalog",
@@ -520,7 +520,7 @@ func TestBundleToTerraformRegisteredModel(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			RegisteredModels: map[string]*resources.RegisteredModel{
 				"my_registered_model": &src,
@@ -540,7 +540,7 @@ func TestBundleToTerraformRegisteredModel(t *testing.T) {
 }
 
 func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
-	var src = resources.RegisteredModel{
+	src := resources.RegisteredModel{
 		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
 			Name:        "name",
 			CatalogName: "catalog",
@@ -554,7 +554,7 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 		},
 	}
 
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			RegisteredModels: map[string]*resources.RegisteredModel{
 				"my_registered_model": &src,
@@ -573,14 +573,14 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 }
 
 func TestBundleToTerraformDeletedResources(t *testing.T) {
-	var job1 = resources.Job{
+	job1 := resources.Job{
 		JobSettings: &jobs.JobSettings{},
 	}
-	var job2 = resources.Job{
+	job2 := resources.Job{
 		ModifiedStatus: resources.ModifiedStatusDeleted,
 		JobSettings:    &jobs.JobSettings{},
 	}
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"my_job1": &job1,
@@ -601,10 +601,10 @@ func TestBundleToTerraformDeletedResources(t *testing.T) {
 }
 
 func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{},
 	}
-	var tfState = resourcesState{
+	tfState := resourcesState{
 		Resources: []stateResource{
 			{
 				Type: "databricks_job",
@@ -736,7 +736,7 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 }
 
 func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"test_job": {
@@ -817,7 +817,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 		},
 	}
-	var tfState = resourcesState{
+	tfState := resourcesState{
 		Resources: nil,
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -860,7 +860,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 }
 
 func TestTerraformToBundleModifiedResources(t *testing.T) {
-	var config = config.Root{
+	config := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"test_job": {
@@ -996,7 +996,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 		},
 	}
-	var tfState = resourcesState{
+	tfState := resourcesState{
 		Resources: []stateResource{
 			{
 				Type: "databricks_job",
@@ -1261,7 +1261,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 
 func AssertFullResourceCoverage(t *testing.T, config *config.Root) {
 	resources := reflect.ValueOf(config.Resources)
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 		if field.Kind() == reflect.Map {
 			assert.True(

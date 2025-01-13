@@ -76,7 +76,7 @@ func TestPipelineRunnerRestart(t *testing.T) {
 	}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
 	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 	mockWait := &pipelines.WaitGetPipelineIdle[struct{}]{
@@ -89,8 +89,6 @@ func TestPipelineRunnerRestart(t *testing.T) {
 	pipelineApi.EXPECT().Stop(mock.Anything, pipelines.StopRequest{
 		PipelineId: "123",
 	}).Return(mockWait, nil)
-
-	pipelineApi.EXPECT().GetByPipelineId(mock.Anything, "123").Return(&pipelines.GetPipelineResponse{}, nil)
 
 	// Mock runner starting a new update
 	pipelineApi.EXPECT().StartUpdate(mock.Anything, pipelines.StartUpdate{

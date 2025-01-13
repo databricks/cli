@@ -8,6 +8,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -189,7 +190,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 
 	// Make directory if it doesn't exist yet.
 	dir := filepath.Join(parts...)
-	err := os.MkdirAll(dir, 0700)
+	err := os.MkdirAll(dir, 0o700)
 	if err != nil {
 		return "", err
 	}
@@ -206,7 +207,7 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 	}
 
 	dir := filepath.Join(cacheDir, internalFolder)
-	err = os.MkdirAll(dir, 0700)
+	err = os.MkdirAll(dir, 0o700)
 	if err != nil {
 		return dir, err
 	}
@@ -237,7 +238,7 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 // we call into from this bundle context.
 func (b *Bundle) AuthEnv() (map[string]string, error) {
 	if b.client == nil {
-		return nil, fmt.Errorf("workspace client not initialized yet")
+		return nil, errors.New("workspace client not initialized yet")
 	}
 
 	cfg := b.client.Config

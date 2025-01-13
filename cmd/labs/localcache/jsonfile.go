@@ -14,8 +14,10 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-const userRW = 0o600
-const ownerRWXworldRX = 0o755
+const (
+	userRW          = 0o600
+	ownerRWXworldRX = 0o755
+)
 
 func NewLocalCache[T any](dir, name string, validity time.Duration) LocalCache[T] {
 	return LocalCache[T]{
@@ -91,7 +93,7 @@ func (r *LocalCache[T]) writeCache(ctx context.Context, data T) (T, error) {
 }
 
 func (r *LocalCache[T]) FileName() string {
-	return filepath.Join(r.dir, fmt.Sprintf("%s.json", r.name))
+	return filepath.Join(r.dir, r.name+".json")
 }
 
 func (r *LocalCache[T]) loadCache() (*cached[T], error) {

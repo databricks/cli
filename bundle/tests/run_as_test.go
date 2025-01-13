@@ -2,7 +2,6 @@ package config_tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -93,7 +92,6 @@ func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
 	assert.Equal(t, ml.Model{Name: "skynet"}, *b.Config.Resources.Models["model_one"].Model)
 	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
 	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
-
 }
 
 func TestRunAsErrorForPipelines(t *testing.T) {
@@ -220,8 +218,7 @@ func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc.name, func(t *testing.T) {
-
-			bundlePath := fmt.Sprintf("./run_as/not_allowed/neither_sp_nor_user/%s", tc.name)
+			bundlePath := "./run_as/not_allowed/neither_sp_nor_user/" + tc.name
 			b := load(t, bundlePath)
 
 			ctx := context.Background()

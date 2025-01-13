@@ -97,7 +97,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				if !pv.IsAnchor() {
 					diags = diags.Append(diag.Diagnostic{
 						Severity: diag.Warning,
-						Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
+						Summary:  "unknown field: " + pk.MustString(),
 						// Show all locations the unknown field is defined at.
 						Locations: pk.Locations(),
 						Paths:     []dyn.Path{path},
@@ -116,7 +116,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				}
 			}
 
-			out.Set(pk, nv)
+			out.Set(pk, nv) //nolint:errcheck
 		}
 
 		// Return the normalized value if missing fields are not included.
@@ -162,7 +162,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				continue
 			}
 			if v.IsValid() {
-				out.Set(dyn.V(k), v)
+				out.Set(dyn.V(k), v) // nolint:errcheck
 			}
 		}
 
@@ -201,7 +201,7 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 				}
 			}
 
-			out.Set(pk, nv)
+			out.Set(pk, nv) //nolint:errcheck
 		}
 
 		return dyn.NewValue(out, src.Locations()), diags

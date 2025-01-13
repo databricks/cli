@@ -1,0 +1,161 @@
+github.com/databricks/cli/bundle/config/resources.Cluster:
+  "data_security_mode":
+    "description": |-
+      PLACEHOLDER
+  "docker_image":
+    "description": |-
+      PLACEHOLDER
+  "kind":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "runtime_engine":
+    "description": |-
+      PLACEHOLDER
+  "workload_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Dashboard:
+  "embed_credentials":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Job:
+  "health":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.MlflowModel:
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.QualityMonitor:
+  "table_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.RegisteredModel:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Schema:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "properties":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Volume:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "volume_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
+  "availability":
+    "description": |-
+      PLACEHOLDER
+  "ebs_volume_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes:
+  "availability":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
+  "data_security_mode":
+    "description": |-
+      PLACEHOLDER
+  "docker_image":
+    "description": |-
+      PLACEHOLDER
+  "kind":
+    "description": |-
+      PLACEHOLDER
+  "runtime_engine":
+    "description": |-
+      PLACEHOLDER
+  "workload_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.DockerImage:
+  "basic_auth":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
+  "availability":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
+  "git_snapshot":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
+  "spec":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule:
+  "metric":
+    "description": |-
+      PLACEHOLDER
+  "op":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
+  "rules":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
+  "python_named_params":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "health":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
+  "table_update":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
+  "id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
+  "quartz_cron_schedule":
+    "description": |-
+      PLACEHOLDER
+  "timezone_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
+  "cron":
+    "description": |-
+      PLACEHOLDER
+  "manual":
+    "description": |-
+      PLACEHOLDER

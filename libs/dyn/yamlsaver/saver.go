@@ -27,7 +27,7 @@ func NewSaverWithStyle(nodesWithStyle map[string]yaml.Style) *saver {
 }
 
 func (s *saver) SaveAsYAML(data any, filename string, force bool) error {
-	err := os.MkdirAll(filepath.Dir(filename), 0755)
+	err := os.MkdirAll(filepath.Dir(filename), 0o755)
 	if err != nil {
 		return err
 	}
@@ -123,9 +123,9 @@ func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, 
 		}
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustString(), Style: style}, nil
 	case dyn.KindBool:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustBool()), Style: style}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: strconv.FormatBool(v.MustBool()), Style: style}, nil
 	case dyn.KindInt:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustInt()), Style: style}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: strconv.FormatInt(v.MustInt(), 10), Style: style}, nil
 	case dyn.KindFloat:
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustFloat()), Style: style}, nil
 	case dyn.KindTime:

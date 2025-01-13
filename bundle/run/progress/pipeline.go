@@ -33,7 +33,7 @@ func (event *ProgressEvent) String() string {
 	// construct error string if level=`Error`
 	if event.Level == pipelines.EventLevelError && event.Error != nil {
 		for _, exception := range event.Error.Exceptions {
-			result.WriteString(fmt.Sprintf("\n%s", exception.Message))
+			result.WriteString("\n" + exception.Message)
 		}
 	}
 	return result.String()
@@ -51,7 +51,7 @@ type UpdateTracker struct {
 	w                    *databricks.WorkspaceClient
 }
 
-func NewUpdateTracker(pipelineId string, updateId string, w *databricks.WorkspaceClient) *UpdateTracker {
+func NewUpdateTracker(pipelineId, updateId string, w *databricks.WorkspaceClient) *UpdateTracker {
 	return &UpdateTracker{
 		w:                    w,
 		PipelineId:           pipelineId,

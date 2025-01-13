@@ -86,7 +86,7 @@ func TestTemplateRandIntFunction(t *testing.T) {
 	assert.Len(t, r.files, 1)
 	randInt, err := strconv.Atoi(strings.TrimSpace(string(r.files[0].(*inMemoryFile).content)))
 	assert.Less(t, randInt, 10)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 }
 
 func TestTemplateUuidFunction(t *testing.T) {
@@ -158,12 +158,11 @@ func TestWorkspaceHost(t *testing.T) {
 	assert.Len(t, r.files, 1)
 	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "https://myhost.com")
 	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "i3.xlarge")
-
 }
 
 func TestWorkspaceHostNotConfigured(t *testing.T) {
 	ctx := context.Background()
-	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "template")
+	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "template")
 	ctx = cmdio.InContext(ctx, cmd)
 
 	w := &databricks.WorkspaceClient{
@@ -178,5 +177,4 @@ func TestWorkspaceHostNotConfigured(t *testing.T) {
 
 	err = r.walk()
 	require.ErrorContains(t, err, "cannot determine target workspace")
-
 }

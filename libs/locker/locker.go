@@ -116,14 +116,14 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 // idempotent function since overwrite is set to true
 func (locker *Locker) Write(ctx context.Context, pathToFile string, content []byte) error {
 	if !locker.Active {
-		return fmt.Errorf("failed to put file. deploy lock not held")
+		return errors.New("failed to put file. deploy lock not held")
 	}
 	return locker.filer.Write(ctx, pathToFile, bytes.NewReader(content), filer.OverwriteIfExists, filer.CreateParentDirectories)
 }
 
 func (locker *Locker) Read(ctx context.Context, path string) (io.ReadCloser, error) {
 	if !locker.Active {
-		return nil, fmt.Errorf("failed to get file. deploy lock not held")
+		return nil, errors.New("failed to get file. deploy lock not held")
 	}
 	return locker.filer.Read(ctx, path)
 }
@@ -140,7 +140,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		return err
 	}
 
-	var modes = []filer.WriteMode{
+	modes := []filer.WriteMode{
 		// Always create parent directory if it doesn't yet exist.
 		filer.CreateParentDirectories,
 	}
@@ -173,7 +173,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 
 func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	if !locker.Active {
-		return fmt.Errorf("unlock called when lock is not held")
+		return errors.New("unlock called when lock is not held")
 	}
 
 	// if allowLockFileNotExist is set, do not throw an error if the lock file does
@@ -196,7 +196,7 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	return nil
 }
 
-func CreateLocker(user string, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
+func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
 	filer, err := filer.NewWorkspaceFilesClient(w, targetDir)
 	if err != nil {
 		return nil, err

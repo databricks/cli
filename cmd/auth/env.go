@@ -23,9 +23,9 @@ func canonicalHost(host string) (string, error) {
 	}
 	// If the host is empty, assume the scheme wasn't included.
 	if parsedHost.Host == "" {
-		return fmt.Sprintf("https://%s", host), nil
+		return "https://" + host, nil
 	}
-	return fmt.Sprintf("https://%s", parsedHost.Host), nil
+	return "https://" + parsedHost.Host, nil
 }
 
 var ErrNoMatchingProfiles = errors.New("no matching profiles found")
@@ -138,7 +138,7 @@ func newEnvCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		cmd.OutOrStdout().Write(raw)
+		_, _ = cmd.OutOrStdout().Write(raw)
 		return nil
 	}
 

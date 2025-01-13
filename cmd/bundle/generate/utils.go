@@ -87,7 +87,7 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 }
 
 func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
-	err := os.MkdirAll(n.sourceDir, 0755)
+	err := os.MkdirAll(n.sourceDir, 0o755)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 				return err
 			}
 
-			cmdio.LogString(errCtx, fmt.Sprintf("File successfully saved to %s", targetPath))
+			cmdio.LogString(errCtx, "File successfully saved to "+targetPath)
 			return reader.Close()
 		})
 	}
@@ -134,7 +134,7 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 	return errs.Wait()
 }
 
-func newDownloader(w *databricks.WorkspaceClient, sourceDir string, configDir string) *downloader {
+func newDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *downloader {
 	return &downloader{
 		files:     make(map[string]string),
 		w:         w,

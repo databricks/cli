@@ -1,0 +1,5 @@
+targets:
+  production:
+    variables:
+      myvar:
+        default: true

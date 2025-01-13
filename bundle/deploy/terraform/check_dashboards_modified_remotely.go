@@ -42,8 +42,7 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashbo
 	return dashboards, nil
 }
 
-type checkDashboardsModifiedRemotely struct {
-}
+type checkDashboardsModifiedRemotely struct{}
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
 	return "CheckDashboardsModifiedRemotely"
@@ -73,7 +72,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 			continue
 		}
 
-		path := dyn.MustPathFromString(fmt.Sprintf("resources.dashboards.%s", dashboard.Name))
+		path := dyn.MustPathFromString("resources.dashboards." + dashboard.Name)
 		loc := b.Config.GetLocation(path.String())
 		actual, err := b.WorkspaceClient().Lakeview.GetByDashboardId(ctx, dashboard.ID)
 		if err != nil {

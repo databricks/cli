@@ -8,6 +8,9 @@ import (
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
+	clean_room_assets "github.com/databricks/cli/cmd/workspace/clean-room-assets"
+	clean_room_task_runs "github.com/databricks/cli/cmd/workspace/clean-room-task-runs"
+	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
@@ -98,6 +101,9 @@ func All() []*cobra.Command {
 	out = append(out, apps.New())
 	out = append(out, artifact_allowlists.New())
 	out = append(out, catalogs.New())
+	out = append(out, clean_room_assets.New())
+	out = append(out, clean_room_task_runs.New())
+	out = append(out, clean_rooms.New())
 	out = append(out, cluster_policies.New())
 	out = append(out, clusters.New())
 	out = append(out, connections.New())

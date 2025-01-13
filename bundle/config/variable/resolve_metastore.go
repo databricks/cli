@@ -2,7 +2,6 @@ package variable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -16,9 +15,9 @@ func (l resolveMetastore) Resolve(ctx context.Context, w *databricks.WorkspaceCl
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(entity.MetastoreId), nil
+	return entity.MetastoreId, nil
 }
 
 func (l resolveMetastore) String() string {
-	return fmt.Sprintf("metastore: %s", l.name)
+	return "metastore: " + l.name
 }
