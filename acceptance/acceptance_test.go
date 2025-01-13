@@ -2,6 +2,7 @@ package acceptance_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -56,8 +57,10 @@ func TestAccept(t *testing.T) {
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
-	repls := testdiff.ReplacementsContext{}
-	repls.Set(execPath, "$CLI")
+	tempHomeDir := t.TempDir()
+
+	// Prevent CLI from downloading terraform in each test:
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
 
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -73,6 +76,11 @@ func TestAccept(t *testing.T) {
 		// Do not read user's ~/.databrickscfg
 		t.Setenv(env.HomeEnvVar(), homeDir)
 	}
+
+	repls := testdiff.ReplacementsContext{}
+	repls.Set(execPath, "$CLI")
+	repls.Set(toJson(t, tempHomeDir), "\"$TMPHOME\"")
+	repls.Set(tempHomeDir, "$TMPHOME")
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -258,10 +266,22 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	}
 
 	start := time.Now()
-	args := []string{"go", "build", "-mod", "vendor", "-o", execPath}
+	args := []string{
+		"go", "build",
+		"-mod", "vendor",
+		"-o", execPath,
+	}
 	if coverDir != "" {
 		args = append(args, "-cover")
 	}
+
+	if runtime.GOOS == "windows" {
+		// Get this error on my local Windows:
+		// error obtaining VCS status: exit status 128
+		// Use -buildvcs=false to disable VCS stamping.
+		args = append(args, "-buildvcs=false")
+	}
+
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = ".."
 	out, err := cmd.CombinedOutput()
@@ -276,6 +296,7 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	cmd = exec.Command(execPath, "--version")
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, "%s --version failed: %s\n%s", execPath, err, out)
+	t.Logf("%s --version: %s", execPath, out)
 	return execPath
 }
 
@@ -352,4 +373,10 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 
 		return copyFile(path, destPath)
 	})
+}
+
+func toJson(t *testing.T, value any) string {
+	encoded, err := json.Marshal(value)
+	require.NoError(t, err)
+	return string(encoded)
 }

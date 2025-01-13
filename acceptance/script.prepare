@@ -1,6 +1,3 @@
-# Prevent CLI from downloading terraform in each test:
-export DATABRICKS_TF_EXEC_PATH=/tmp/
-
 errcode() {
     # Temporarily disable 'set -e' to prevent the script from exiting on error
     set +e
@@ -37,6 +34,7 @@ trace() {
 
 git-repo-init() {
     git init -qb main
+    git config --global core.autocrlf false
     git config user.name "Tester"
     git config user.email "tester@databricks.com"
     git add databricks.yml
