@@ -1,6 +1,7 @@
 package mutator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -27,7 +28,7 @@ func (t *translateContext) artifactRewritePatterns() []artifactRewritePattern {
 	}
 }
 
-func (t *translateContext) applyArtifactTranslations(v dyn.Value) (dyn.Value, error) {
+func (t *translateContext) applyArtifactTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
 	var err error
 
 	for _, rewritePattern := range t.artifactRewritePatterns() {
@@ -38,7 +39,7 @@ func (t *translateContext) applyArtifactTranslations(v dyn.Value) (dyn.Value, er
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 			}
 
-			return t.rewriteRelativeTo(p, v, rewritePattern.fn, dir, "")
+			return t.rewriteRelativeTo(ctx, p, v, rewritePattern.fn, dir, "")
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

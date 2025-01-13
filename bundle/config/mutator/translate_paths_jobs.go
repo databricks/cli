@@ -1,6 +1,7 @@
 package mutator
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func (t *translateContext) applyJobTranslations(v dyn.Value) (dyn.Value, error) {
+func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
 	var err error
 
 	fallback, err := gatherFallbackPaths(v, "jobs")
@@ -43,7 +44,7 @@ func (t *translateContext) applyJobTranslations(v dyn.Value) (dyn.Value, error) 
 			return dyn.InvalidValue, err
 		}
 
-		return t.rewriteRelativeTo(p, v, rewritePatternFn, dir, fallback[key])
+		return t.rewriteRelativeTo(ctx, p, v, rewritePatternFn, dir, fallback[key])
 	})
 }
 

@@ -44,7 +44,7 @@ func (m *translatePaths) Name() string {
 	return "TranslatePaths"
 }
 
-type rewriteFunc func(literal, localFullPath, localRelPath, remotePath string) (string, error)
+type rewriteFunc func(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error)
 
 // translateContext is a context for rewriting paths in a config.
 // It is freshly instantiated on every mutator apply call.
@@ -68,6 +68,7 @@ type translateContext struct {
 //
 // The function returns an error if it is impossible to rewrite the given relative path.
 func (t *translateContext) rewritePath(
+	ctx context.Context,
 	dir string,
 	p *string,
 	fn rewriteFunc,
@@ -113,7 +114,7 @@ func (t *translateContext) rewritePath(
 	remotePath := path.Join(workspacePath, filepath.ToSlash(localRelPath))
 
 	// Convert local path into workspace path via specified function.
-	interp, err := fn(*p, localPath, localRelPath, remotePath)
+	interp, err := fn(ctx, *p, localPath, localRelPath, remotePath)
 	if err != nil {
 		return err
 	}
@@ -123,7 +124,7 @@ func (t *translateContext) rewritePath(
 	return nil
 }
 
-func (t *translateContext) translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		if filepath.Ext(localFullPath) != notebook.ExtensionNone {
@@ -165,7 +166,7 @@ to contain one of the following file extensions: [%s]`, literal, strings.Join(ex
 	return strings.TrimSuffix(remotePath, filepath.Ext(localFullPath)), nil
 }
 
-func (t *translateContext) translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -179,7 +180,7 @@ func (t *translateContext) translateFilePath(literal, localFullPath, localRelPat
 	return remotePath, nil
 }
 
-func (t *translateContext) translateDirectoryPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
 	if err != nil {
 		return "", err
@@ -190,11 +191,11 @@ func (t *translateContext) translateDirectoryPath(literal, localFullPath, localR
 	return remotePath, nil
 }
 
-func (t *translateContext) translateNoOp(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateNoOp(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	return localRelPath, nil
 }
 
-func (t *translateContext) retainLocalAbsoluteFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) retainLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -208,16 +209,16 @@ func (t *translateContext) retainLocalAbsoluteFilePath(literal, localFullPath, l
 	return localFullPath, nil
 }
 
-func (t *translateContext) translateNoOpWithPrefix(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateNoOpWithPrefix(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	if !strings.HasPrefix(localRelPath, ".") {
 		localRelPath = "." + string(filepath.Separator) + localRelPath
 	}
 	return localRelPath, nil
 }
 
-func (t *translateContext) rewriteValue(p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
+func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
 	out := v.MustString()
-	err := t.rewritePath(dir, &out, fn)
+	err := t.rewritePath(ctx, dir, &out, fn)
 	if err != nil {
 		if target := (&ErrIsNotebook{}); errors.As(err, target) {
 			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
@@ -231,15 +232,15 @@ func (t *translateContext) rewriteValue(p dyn.Path, v dyn.Value, fn rewriteFunc,
 	return dyn.NewValue(out, v.Locations()), nil
 }
 
-func (t *translateContext) rewriteRelativeTo(p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
-	nv, err := t.rewriteValue(p, v, fn, dir)
+func (t *translateContext) rewriteRelativeTo(ctx context.Context, p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
+	nv, err := t.rewriteValue(ctx, p, v, fn, dir)
 	if err == nil {
 		return nv, nil
 	}
 
 	// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
 	if fallback != "" {
-		nv, nerr := t.rewriteValue(p, v, fn, fallback)
+		nv, nerr := t.rewriteValue(ctx, p, v, fn, fallback)
 		if nerr == nil {
 			// TODO: Emit a warning that this path should be rewritten.
 			return nv, nil
@@ -249,7 +250,7 @@ func (t *translateContext) rewriteRelativeTo(p dyn.Path, v dyn.Value, fn rewrite
 	return dyn.InvalidValue, err
 }
 
-func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
 		b:    b,
 		seen: make(map[string]string),
@@ -257,13 +258,13 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
-		for _, fn := range []func(dyn.Value) (dyn.Value, error){
+		for _, fn := range []func(context.Context, dyn.Value) (dyn.Value, error){
 			t.applyJobTranslations,
 			t.applyPipelineTranslations,
 			t.applyArtifactTranslations,
 			t.applyDashboardTranslations,
 		} {
-			v, err = fn(v)
+			v, err = fn(ctx, v)
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
