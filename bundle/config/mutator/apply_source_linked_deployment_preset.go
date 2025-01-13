@@ -56,6 +56,7 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 		b.Config.Presets.SourceLinkedDeployment = &enabled
 	}
 
+	// This mutator runs before workspace paths are defaulted so it's safe to check for the user-defined value
 	if b.Config.Workspace.FilePath != "" && config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("workspace"), dyn.Key("file_path"))
 
@@ -63,6 +64,7 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 			diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  "workspace.file_path setting will be ignored in source-linked deployment mode",
+				Detail:   "In source-linked deployment files are not copied to the destination and resources use source files instead",
 				Paths: []dyn.Path{
 					path[2:],
 				},
