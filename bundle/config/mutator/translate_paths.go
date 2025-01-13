@@ -82,6 +82,11 @@ type translateContext struct {
 	// seen is a map of local paths to their corresponding remote paths.
 	// If a local path has already been successfully resolved, we do not need to resolve it again.
 	seen map[string]string
+
+	// remoteRoot is the root path of the remote workspace.
+	// It is equal to ${workspace.file_path} for regular deployments.
+	// It points to the source root path for source-linked deployments.
+	remoteRoot string
 }
 
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
@@ -132,29 +137,21 @@ func (t *translateContext) rewritePath(
 		return "", fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
-	var workspacePath string
-	if config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment) {
-		workspacePath = t.b.SyncRootPath
-	} else {
-		workspacePath = t.b.Config.Workspace.FilePath
-	}
-	remotePath := path.Join(workspacePath, filepath.ToSlash(localRelPath))
-
 	// Convert local path into workspace path via specified function.
 	var interp string
 	switch opts.Mode {
 	case TranslateModeNotebook:
-		interp, err = t.translateNotebookPath(ctx, input, localPath, localRelPath, remotePath)
+		interp, err = t.translateNotebookPath(ctx, input, localPath, localRelPath)
 	case TranslateModeFile:
-		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath, remotePath)
+		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 	case TranslateModeDirectory:
-		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath, remotePath)
+		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
 	case TranslateModeRetainLocalAbsoluteFilePath:
-		interp, err = t.retainLocalAbsoluteFilePath(ctx, input, localPath, localRelPath, remotePath)
+		interp, err = t.retainLocalAbsoluteFilePath(ctx, input, localPath, localRelPath)
 	case TranslateModeNoOp:
-		interp, err = t.translateNoOp(ctx, input, localPath, localRelPath, remotePath)
+		interp, err = t.translateNoOp(ctx, input, localPath, localRelPath)
 	case TranslateModeNoOpWithPrefix:
-		interp, err = t.translateNoOpWithPrefix(ctx, input, localPath, localRelPath, remotePath)
+		interp, err = t.translateNoOpWithPrefix(ctx, input, localPath, localRelPath)
 	default:
 		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)
 	}
@@ -166,7 +163,7 @@ func (t *translateContext) rewritePath(
 	return interp, nil
 }
 
-func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		if filepath.Ext(localFullPath) != notebook.ExtensionNone {
@@ -205,10 +202,11 @@ to contain one of the following file extensions: [%s]`, literal, strings.Join(ex
 	}
 
 	// Upon import, notebooks are stripped of their extension.
-	return strings.TrimSuffix(remotePath, filepath.Ext(localFullPath)), nil
+	localRelPathNoExt := strings.TrimSuffix(localRelPath, filepath.Ext(localRelPath))
+	return path.Join(t.remoteRoot, filepath.ToSlash(localRelPathNoExt)), nil
 }
 
-func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -219,10 +217,10 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 	if nb {
 		return "", ErrIsNotebook{localFullPath}
 	}
-	return remotePath, nil
+	return path.Join(t.remoteRoot, filepath.ToSlash(localRelPath)), nil
 }
 
-func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
 	if err != nil {
 		return "", err
@@ -230,10 +228,10 @@ func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, 
 	if !info.IsDir() {
 		return "", fmt.Errorf("%s is not a directory", localFullPath)
 	}
-	return remotePath, nil
+	return path.Join(t.remoteRoot, filepath.ToSlash(localRelPath)), nil
 }
 
-func (t *translateContext) retainLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) retainLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -247,11 +245,11 @@ func (t *translateContext) retainLocalAbsoluteFilePath(ctx context.Context, lite
 	return localFullPath, nil
 }
 
-func (t *translateContext) translateNoOp(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateNoOp(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	return localRelPath, nil
 }
 
-func (t *translateContext) translateNoOpWithPrefix(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (t *translateContext) translateNoOpWithPrefix(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	if !strings.HasPrefix(localRelPath, ".") {
 		localRelPath = "." + string(filepath.Separator) + localRelPath
 	}
@@ -282,6 +280,14 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	t := &translateContext{
 		b:    b,
 		seen: make(map[string]string),
+	}
+
+	// Set the remote root to the sync root if source-linked deployment is enabled.
+	// Otherwise, set it to the workspace file path.
+	if config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment) {
+		t.remoteRoot = t.b.SyncRootPath
+	} else {
+		t.remoteRoot = t.b.Config.Workspace.FilePath
 	}
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
