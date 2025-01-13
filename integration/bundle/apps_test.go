@@ -27,7 +27,7 @@ func TestDeployBundleWithApp(t *testing.T) {
 	}
 
 	uniqueId := uuid.New().String()
-	appId := fmt.Sprintf("app-%s", uuid.New().String()[0:8])
+	appId := "app-%s" + uuid.New().String()[0:8]
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 
@@ -67,7 +67,7 @@ func TestDeployBundleWithApp(t *testing.T) {
 	data, err := io.ReadAll(reader)
 	require.NoError(t, err)
 
-	job, err := wt.W.Jobs.GetBySettingsName(ctx, fmt.Sprintf("test-job-with-cluster-%s", uniqueId))
+	job, err := wt.W.Jobs.GetBySettingsName(ctx, "test-job-with-cluster-"+uniqueId)
 	require.NoError(t, err)
 
 	content := string(data)

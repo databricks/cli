@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ func logProgress(ctx context.Context, msg string) {
 	if msg == "" {
 		return
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("✓ %s", msg))
+	cmdio.LogString(ctx, "✓ "+msg)
 }
 
 type appRunner struct {
@@ -44,10 +45,10 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	app := a.app
 	b := a.bundle
 	if app == nil {
-		return nil, fmt.Errorf("app is not defined")
+		return nil, errors.New("app is not defined")
 	}
 
-	logProgress(ctx, fmt.Sprintf("Getting the status of the app %s", app.Name))
+	logProgress(ctx, "Getting the status of the app "+app.Name)
 	w := b.WorkspaceClient()
 
 	// Check the status of the app first.
@@ -81,7 +82,7 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		return nil, err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("You can access the app at %s", createdApp.Url))
+	cmdio.LogString(ctx, "You can access the app at "+createdApp.Url)
 	return nil, nil
 }
 
@@ -90,7 +91,7 @@ func (a *appRunner) start(ctx context.Context) error {
 	b := a.bundle
 	w := b.WorkspaceClient()
 
-	logProgress(ctx, fmt.Sprintf("Starting the app %s", app.Name))
+	logProgress(ctx, "Starting the app "+app.Name)
 	wait, err := w.Apps.Start(ctx, apps.StartAppRequest{Name: app.Name})
 	if err != nil {
 		return err
@@ -171,12 +172,12 @@ func (a *appRunner) Cancel(ctx context.Context) error {
 	app := a.app
 	b := a.bundle
 	if app == nil {
-		return fmt.Errorf("app is not defined")
+		return errors.New("app is not defined")
 	}
 
 	w := b.WorkspaceClient()
 
-	logProgress(ctx, fmt.Sprintf("Stopping app %s", app.Name))
+	logProgress(ctx, "Stopping app "+app.Name)
 	wait, err := w.Apps.Stop(ctx, apps.StopAppRequest{Name: app.Name})
 	if err != nil {
 		return err

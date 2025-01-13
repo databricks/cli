@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
@@ -54,7 +53,7 @@ func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("apps/%s", a.Name)
+	baseURL.Path = "apps/" + a.Name
 	a.URL = baseURL.String()
 }
 

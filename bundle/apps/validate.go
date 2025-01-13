@@ -34,7 +34,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			if _, err := b.SyncRoot.Stat(cf); err == nil {
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("%s detected", configFile),
+					Summary:  configFile + " detected",
 					Detail:   fmt.Sprintf("remove %s and use 'config' property for app resource '%s' instead", cf, app.Name),
 				})
 			}

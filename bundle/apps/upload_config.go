@@ -52,7 +52,7 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 						Severity:  diag.Error,
 						Summary:   "Failed to save config",
 						Detail:    fmt.Sprintf("Failed to write %s file: %s", path.Join(app.SourceCodePath, "app.yml"), err),
-						Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s", key)),
+						Locations: b.Config.GetLocations("resources.apps." + key),
 					})
 					mu.Unlock()
 				}

@@ -111,7 +111,7 @@ func NewGenerateAppCommand() *cobra.Command {
 			return err
 		}
 
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.app.yml", appKey))
+		filename := filepath.Join(configDir, appKey+".app.yml")
 
 		saver := yamlsaver.NewSaver()
 		err = saver.SaveAsYAML(result, filename, force)
@@ -119,7 +119,7 @@ func NewGenerateAppCommand() *cobra.Command {
 			return err
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("App configuration successfully saved to %s", filename))
+		cmdio.LogString(ctx, "App configuration successfully saved to "+filename)
 		return nil
 	}
 
@@ -146,7 +146,7 @@ func getAppConfig(ctx context.Context, app *apps.App, w *databricks.WorkspaceCli
 		}
 		defer r.Close()
 
-		cmdio.LogString(ctx, fmt.Sprintf("Reading app configuration from %s", configFile))
+		cmdio.LogString(ctx, "Reading app configuration from "+configFile)
 		content, err := io.ReadAll(r)
 		if err != nil {
 			return nil, err
