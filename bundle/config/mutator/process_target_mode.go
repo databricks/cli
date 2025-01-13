@@ -2,10 +2,12 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
@@ -146,8 +148,39 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		}
 	}
 
-	if !isPrincipalUsed && !isRunAsSet(r) {
-		return diag.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
+	// We need to verify that there is only a single deployment of the current target.
+	// The best way to enforce this is to explicitly set root_path.
+	advice := "set 'workspace.root_path' to make sure only one copy is deployed"
+	adviceDetail := fmt.Sprintf(
+		"A common practice is to use a username or principal name in this path, i.e. use\n"+
+			"\n"+
+			"  root_path: /Workspace/Users/%s/.bundle/${bundle.name}/${bundle.target}",
+		b.Config.Workspace.CurrentUser.UserName,
+	)
+	if !isExplicitRootSet(b) {
+		cmdio.LogString(ctx, fmt.Sprintf("root_path is not set: %s", b.Config.Bundle.Target))
+		if isRunAsSet(r) || isPrincipalUsed {
+			// Just setting run_as is not enough to guarantee a single deployment,
+			// and neither is setting a principal.
+			// We only show a warning for these cases since we didn't historically
+			// report an error for them.
+			return diag.Diagnostics{
+				{
+					Severity:  diag.Recommendation,
+					Summary:   "target with 'mode: production' should " + advice,
+					Detail:    adviceDetail,
+					Locations: b.Config.GetLocations("targets." + b.Config.Bundle.Target),
+				},
+			}
+		}
+		return diag.Diagnostics{
+			{
+				Severity:  diag.Error,
+				Summary:   "target with 'mode: production' must " + advice,
+				Detail:    adviceDetail,
+				Locations: b.Config.GetLocations("targets." + b.Config.Bundle.Target),
+			},
+		}
 	}
 	return nil
 }

@@ -321,7 +321,8 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	diags := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "run_as")
+	assert.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
+	assert.NotNil(t, diags[0].Locations)
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
@@ -329,7 +330,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
 
 	diags = validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "production")
+	assert.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
 	permissions := []resources.Permission{
 		{
