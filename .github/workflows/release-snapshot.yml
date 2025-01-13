@@ -48,7 +48,7 @@ jobs:
 
       - name: Run GoReleaser
         id: releaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@9ed2f89a662bf1735a48bc8557fd212fa902bebf # v6.1.0
         with:
           version: ~> v2
           args: release --snapshot --skip docker
@@ -88,7 +88,7 @@ jobs:
         # Snapshot release may only be updated for commits to the main branch.
         if: github.ref == 'refs/heads/main'
 
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           name: Snapshot
           prerelease: true
