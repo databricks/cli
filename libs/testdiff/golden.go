@@ -185,8 +185,6 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 		u.DisplayName,
 		u.UserName,
 		iamutil.GetShortUserName(&u),
-		u.Name.FamilyName,
-		u.Name.GivenName,
 	}
 	if u.Name != nil {
 		names = append(names, u.Name.FamilyName)
