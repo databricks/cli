@@ -13,6 +13,7 @@ import (
 
 func convertAppResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Check if the description is not set and if it's not, set it to an empty string.
+	// This is done to avoid TF drift because Apps API return empty string for description when if it's not set.
 	if _, err := dyn.Get(vin, "description"); err != nil {
 		vin, err = dyn.Set(vin, "description", dyn.V(""))
 		if err != nil {
