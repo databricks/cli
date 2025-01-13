@@ -11,7 +11,7 @@ require (
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.7.0 // MPL 2.0
-	github.com/hashicorp/hc-install v0.9.0 // MPL 2.0
+	github.com/hashicorp/hc-install v0.9.1 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.21.0 // MPL 2.0
 	github.com/hashicorp/terraform-json v0.23.0 // MPL 2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD 3-Clause "New" or "Revised" License
@@ -38,7 +38,7 @@ require (
 	cloud.google.com/go/auth v0.4.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	github.com/ProtonMail/go-crypto v1.1.0-alpha.2 // indirect
+	github.com/ProtonMail/go-crypto v1.1.3 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
