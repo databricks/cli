@@ -61,48 +61,49 @@ type translateContext struct {
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
 //
 // It takes these arguments:
-//   - The argument `dir` is the directory relative to which the given relative path is.
-//   - The given relative path is both passed and written back through `*p`.
+//   - The context in which the function is called.
+//   - The argument `dir` is the directory relative to which the relative path should be interpreted.
+//   - The argument `input` is the relative path to rewrite.
 //   - The argument `fn` is a function that performs the actual rewriting logic.
 //     This logic is different between regular files or notebooks.
 //
-// The function returns an error if it is impossible to rewrite the given relative path.
+// The function returns the rewritten path if successful, or an error if the path could not be rewritten.
+// The returned path is an empty string if the path was not rewritten.
 func (t *translateContext) rewritePath(
 	ctx context.Context,
 	dir string,
-	p *string,
+	input string,
 	fn rewriteFunc,
-) error {
+) (string, error) {
 	// We assume absolute paths point to a location in the workspace
-	if path.IsAbs(*p) {
-		return nil
+	if path.IsAbs(input) {
+		return "", nil
 	}
 
-	url, err := url.Parse(*p)
+	url, err := url.Parse(input)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// If the file path has scheme, it's a full path and we don't need to transform it
 	if url.Scheme != "" {
-		return nil
+		return "", nil
 	}
 
 	// Local path is relative to the directory the resource was defined in.
-	localPath := filepath.Join(dir, filepath.FromSlash(*p))
+	localPath := filepath.Join(dir, filepath.FromSlash(input))
 	if interp, ok := t.seen[localPath]; ok {
-		*p = interp
-		return nil
+		return interp, nil
 	}
 
 	// Local path must be contained in the sync root.
 	// If it isn't, it won't be synchronized into the workspace.
 	localRelPath, err := filepath.Rel(t.b.SyncRootPath, localPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if strings.HasPrefix(localRelPath, "..") {
-		return fmt.Errorf("path %s is not contained in sync root path", localPath)
+		return "", fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
 	var workspacePath string
@@ -114,14 +115,13 @@ func (t *translateContext) rewritePath(
 	remotePath := path.Join(workspacePath, filepath.ToSlash(localRelPath))
 
 	// Convert local path into workspace path via specified function.
-	interp, err := fn(ctx, *p, localPath, localRelPath, remotePath)
+	interp, err := fn(ctx, input, localPath, localRelPath, remotePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	*p = interp
 	t.seen[localPath] = interp
-	return nil
+	return interp, nil
 }
 
 func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
@@ -217,8 +217,7 @@ func (t *translateContext) translateNoOpWithPrefix(ctx context.Context, literal,
 }
 
 func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
-	out := v.MustString()
-	err := t.rewritePath(ctx, dir, &out, fn)
+	out, err := t.rewritePath(ctx, dir, v.MustString(), fn)
 	if err != nil {
 		if target := (&ErrIsNotebook{}); errors.As(err, target) {
 			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
@@ -227,6 +226,11 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 			return dyn.InvalidValue, fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
 		}
 		return dyn.InvalidValue, err
+	}
+
+	// If the path was not rewritten, return the original value.
+	if out == "" {
+		return v, nil
 	}
 
 	return dyn.NewValue(out, v.Locations()), nil
