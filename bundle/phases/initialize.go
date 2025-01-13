@@ -72,7 +72,7 @@ func Initialize() bundle.Mutator {
 			mutator.MergeJobParameters(),
 			mutator.MergeJobTasks(),
 			mutator.MergePipelineClusters(),
-      mutator.MergeApps(),
+			mutator.MergeApps(),
 
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),

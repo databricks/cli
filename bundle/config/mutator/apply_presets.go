@@ -220,7 +220,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}
-  
+
 	// Apps: No presets
 
 	return diags
