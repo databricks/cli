@@ -58,7 +58,7 @@ jobs:
           python-version: '3.9'
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
 
       - name: Set go env
         run: |
@@ -95,7 +95,7 @@ jobs:
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           version: v1.63.4
           args: --timeout=15m
