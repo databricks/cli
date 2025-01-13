@@ -24,6 +24,6 @@ func (t *translateContext) applyDashboardTranslations(ctx context.Context, v dyn
 			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for dashboard %s: %w", key, err)
 		}
 
-		return t.rewriteRelativeTo(ctx, p, v, t.retainLocalAbsoluteFilePath, dir, "")
+		return t.rewriteValue(ctx, p, v, t.retainLocalAbsoluteFilePath, dir)
 	})
 }

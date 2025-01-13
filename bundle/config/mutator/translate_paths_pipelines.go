@@ -51,7 +51,23 @@ func (t *translateContext) applyPipelineTranslations(ctx context.Context, v dyn.
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
 			}
 
-			return t.rewriteRelativeTo(ctx, p, v, rewritePattern.fn, dir, fallback[key])
+			// Try to rewrite the path relative to the directory of the configuration file where the value was defined.
+			nv, err := t.rewriteValue(ctx, p, v, rewritePattern.fn, dir)
+			if err == nil {
+				return nv, nil
+			}
+
+			// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
+			// We only do this for jobs and pipelines because of the comment in [gatherFallbackPaths].
+			if fallback[key] != "" {
+				nv, nerr := t.rewriteValue(ctx, p, v, rewritePattern.fn, fallback[key])
+				if nerr == nil {
+					// TODO: Emit a warning that this path should be rewritten.
+					return nv, nil
+				}
+			}
+
+			return dyn.InvalidValue, err
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

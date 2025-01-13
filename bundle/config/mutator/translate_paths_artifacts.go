@@ -39,7 +39,7 @@ func (t *translateContext) applyArtifactTranslations(ctx context.Context, v dyn.
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 			}
 
-			return t.rewriteRelativeTo(ctx, p, v, rewritePattern.fn, dir, "")
+			return t.rewriteValue(ctx, p, v, rewritePattern.fn, dir)
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

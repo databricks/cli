@@ -236,24 +236,6 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 	return dyn.NewValue(out, v.Locations()), nil
 }
 
-func (t *translateContext) rewriteRelativeTo(ctx context.Context, p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
-	nv, err := t.rewriteValue(ctx, p, v, fn, dir)
-	if err == nil {
-		return nv, nil
-	}
-
-	// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
-	if fallback != "" {
-		nv, nerr := t.rewriteValue(ctx, p, v, fn, fallback)
-		if nerr == nil {
-			// TODO: Emit a warning that this path should be rewritten.
-			return nv, nil
-		}
-	}
-
-	return dyn.InvalidValue, err
-}
-
 func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
 		b:    b,
@@ -279,6 +261,8 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	return diag.FromErr(err)
 }
 
+// gatherFallbackPaths collects the fallback paths for relative paths in the configuration.
+// Read more about the motivation for this functionality in the "fallback" path translation tests.
 func gatherFallbackPaths(v dyn.Value, typ string) (map[string]string, error) {
 	fallback := make(map[string]string)
 	pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key(typ), dyn.AnyKey())
