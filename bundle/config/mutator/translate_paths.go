@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -33,6 +34,10 @@ const (
 	// TranslateModeLocalAbsoluteFile translates a path to the local absolute file path.
 	// It returns an error if the path does not exist or is a directory.
 	TranslateModeLocalAbsoluteFile
+
+	// TranslateModeLocalAbsoluteDirectory translates a path to the local absolute directory path.
+	// It returns an error if the path does not exist or is not a directory.
+	TranslateModeLocalAbsoluteDirectory
 
 	// TranslateModeLocalRelative translates a path to be relative to the bundle sync root path.
 	// It does not check if the path exists, nor care if it is a file or directory.
@@ -157,6 +162,8 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
 	case TranslateModeLocalAbsoluteFile:
 		interp, err = t.translateLocalAbsoluteFilePath(ctx, input, localPath, localRelPath)
+	case TranslateModeLocalAbsoluteDirectory:
+		interp, err = t.translateLocalAbsoluteDirectoryPath(ctx, input, localPath, localRelPath)
 	case TranslateModeLocalRelative:
 		interp, err = t.translateLocalRelativePath(ctx, input, localPath, localRelPath)
 	case TranslateModeLocalRelativeWithPrefix:
@@ -250,6 +257,20 @@ func (t *translateContext) translateLocalAbsoluteFilePath(ctx context.Context, l
 	}
 	if info.IsDir() {
 		return "", fmt.Errorf("expected %s to be a file but found a directory", literal)
+	}
+	return localFullPath, nil
+}
+
+func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
+	info, err := os.Stat(localFullPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("directory %s not found", literal)
+	}
+	if err != nil {
+		return "", fmt.Errorf("unable to determine if %s is a directory: %w", localFullPath, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("expected %s to be a directory but found a file", literal)
 	}
 	return localFullPath, nil
 }

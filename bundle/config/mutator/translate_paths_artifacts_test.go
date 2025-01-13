@@ -19,6 +19,8 @@ import (
 func TestTranslatePathsArtifacts_InsideSyncRoot(t *testing.T) {
 	tmp := t.TempDir()
 	dir := filepath.Join(tmp, "bundle")
+	lib := filepath.Join(dir, "my_lib")
+	_ = os.MkdirAll(lib, 0o755)
 	_ = os.MkdirAll(dir, 0o755)
 
 	b := &bundle.Bundle{
@@ -44,12 +46,14 @@ func TestTranslatePathsArtifacts_InsideSyncRoot(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	// Assert that the artifact path has been converted to a path relative to the sync root.
-	assert.Equal(t, "my_lib", b.Config.Artifacts["my_artifact"].Path)
+	assert.Equal(t, lib, b.Config.Artifacts["my_artifact"].Path)
 }
 
 func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 	tmp := t.TempDir()
+	lib := filepath.Join(tmp, "my_lib")
 	dir := filepath.Join(tmp, "bundle")
+	_ = os.MkdirAll(lib, 0o755)
 	_ = os.MkdirAll(dir, 0o755)
 
 	b := &bundle.Bundle{
@@ -60,8 +64,8 @@ func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 				"my_artifact": {
 					Type: "wheel",
 
-					// Assume this is defined in a subdir to the sync root.
-					Path: "../../common/my_lib",
+					// Assume this is defined in a subdir of the bundle root.
+					Path: "../../my_lib",
 				},
 			},
 		},
@@ -75,5 +79,5 @@ func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	// Assert that the artifact path has been converted to a path relative to the sync root.
-	assert.Equal(t, "../common/my_lib", b.Config.Artifacts["my_artifact"].Path)
+	assert.Equal(t, lib, b.Config.Artifacts["my_artifact"].Path)
 }

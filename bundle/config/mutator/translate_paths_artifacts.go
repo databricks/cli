@@ -24,7 +24,7 @@ func (t *translateContext) artifactRewritePatterns() []artifactRewritePattern {
 		{
 			base.Append(dyn.Key("path")),
 			translateOptions{
-				Mode: TranslateModeLocalRelative,
+				Mode: TranslateModeLocalAbsoluteDirectory,
 
 				// Artifact paths may be outside the sync root.
 				// They are the working directory for artifact builds.
