@@ -70,7 +70,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 	cfg, server := qa.HTTPFixtures{
 		{
 			Method:   "GET",
-			Resource: "/api/2.1/clusters/list?",
+			Resource: "/api/2.1/clusters/list?filter_by.cluster_sources=API&filter_by.cluster_sources=UI&page_size=100",
 			Response: compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
@@ -125,7 +125,7 @@ func TestNoCompatibleClusters(t *testing.T) {
 	cfg, server := qa.HTTPFixtures{
 		{
 			Method:   "GET",
-			Resource: "/api/2.1/clusters/list?",
+			Resource: "/api/2.1/clusters/list?filter_by.cluster_sources=API&filter_by.cluster_sources=UI&page_size=100",
 			Response: compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
