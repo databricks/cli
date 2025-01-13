@@ -6,3 +6,4 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev
 
 Validation OK!
+Intentionally broken
