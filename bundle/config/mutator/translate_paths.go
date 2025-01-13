@@ -44,9 +44,14 @@ const (
 	TranslateModeLocalRelativeWithPrefix
 )
 
-// translateOptions specifies how a path should be translated.
+// translateOptions control path translation behavior.
 type translateOptions struct {
+	// Mode specifies how the path should be translated.
 	Mode TranslateMode
+
+	// AllowPathOutsideSyncRoot can be set for paths that are not tied to the sync root path.
+	// This is the case for artifact paths, for example.
+	AllowPathOutsideSyncRoot bool
 }
 
 type ErrIsNotebook struct {
@@ -137,7 +142,7 @@ func (t *translateContext) rewritePath(
 	if err != nil {
 		return "", err
 	}
-	if !filepath.IsLocal(localRelPath) {
+	if !opts.AllowPathOutsideSyncRoot && !filepath.IsLocal(localRelPath) {
 		return "", fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
