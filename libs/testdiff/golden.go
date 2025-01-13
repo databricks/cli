@@ -122,6 +122,17 @@ func (r *ReplacementsContext) Set(old, new string) {
 	r.Repls = append(r.Repls, Replacement{Old: old, New: new})
 }
 
+func (r *ReplacementsContext) SetUsername(old string) {
+	if old == "" {
+		return
+	}
+	if strings.Contains(old, "@") {
+		r.Set(old, "tester@databricks.com")
+	} else {
+		r.Set(old, "tester")
+	}
+}
+
 func WithReplacementsMap(ctx context.Context) (context.Context, *ReplacementsContext) {
 	value := ctx.Value(replacementsMapKey)
 	if value != nil {
@@ -165,7 +176,7 @@ func PrepareReplacements(t testutil.TestingT, r *ReplacementsContext, w *databri
 	r.Set(w.Config.AzureResourceID, "$DATABRICKS_AZURE_RESOURCE_ID")
 	r.Set(w.Config.AzureClientSecret, "$ARM_CLIENT_SECRET")
 	// r.Set(w.Config.AzureClientID, "$ARM_CLIENT_ID")
-	r.Set(w.Config.AzureClientID, "$USERNAME")
+	r.SetUsername(w.Config.AzureClientID)
 	r.Set(w.Config.AzureTenantID, "$ARM_TENANT_ID")
 	r.Set(w.Config.ActionsIDTokenRequestURL, "$ACTIONS_ID_TOKEN_REQUEST_URL")
 	r.Set(w.Config.ActionsIDTokenRequestToken, "$ACTIONS_ID_TOKEN_REQUEST_TOKEN")
@@ -196,7 +207,7 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	stableSortReverseLength(names)
 
 	for _, name := range names {
-		r.Set(name, "$USERNAME")
+		r.SetUsername(name)
 	}
 
 	for ind, val := range u.Groups {
