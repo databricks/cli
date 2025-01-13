@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
@@ -20,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/tags"
+	"github.com/databricks/cli/libs/telemetry/events"
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
@@ -87,6 +89,12 @@ type Bundle struct {
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud
+
+	// Time when the bundle CLI command was started.
+	start time.Time
+
+	// Telemetry event payloads.
+	DeployEvent events.BundleDeployEvent
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {

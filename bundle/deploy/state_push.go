@@ -37,6 +37,13 @@ func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 	defer local.Close()
 
+	// Get the size of the state file for telemetry
+	stat, err := local.Stat()
+	if err != nil {
+		log.Debugf(ctx, "Error getting TF state file size for telemetry: %s", err)
+	}
+	b.DeployEvent.Metrics.TfstateBytes = stat.Size()
+
 	if !b.Config.Bundle.Force {
 		state, err := local.Stat()
 		if err != nil {

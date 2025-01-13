@@ -82,6 +82,8 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 
 	// Swap out the original includes list with the expanded globs.
 	b.Config.Include = files
+	// TODO: Unit test.
+	b.DeployEvent.Metrics.ConfigurationFileCount = int64(len(files))
 
 	return bundle.Apply(ctx, b, bundle.Seq(out...))
 }

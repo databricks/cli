@@ -6,12 +6,18 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/events"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/spf13/cobra"
 )
 
@@ -97,7 +103,11 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(ctx context.Context, cmd *cobra.Command) error {
-	// TODO: deferred panic recovery
+	// TODO: Make the logger work here, with the start time, end time and the workspace
+	// authentication configuration.
+
+	start := time.Now()
+	ctx = telemetry.WithDefaultLogger(ctx)
 
 	// Run the command
 	cmd, err := cmd.ExecuteContextC(ctx)
@@ -106,6 +116,30 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 		// initialized cmdio logger, otherwise with the default cmdio logger
 		cmdio.LogError(cmd.Context(), err)
 	}
+
+	end := time.Now()
+	exitCode := 0
+	if err != nil {
+		exitCode = 1
+	}
+
+	executionContext := events.ExecutionContext{
+		OperatingSystem:    runtime.GOOS,
+		DbrVersion:         env.Get(ctx, dbr.EnvVarName),
+		FromWebTerminal:    isWebTerminal(ctx),
+		CommandExecutionId: cmdExecId,
+		ExecutionTimeMs:    end.Sub(start).Milliseconds(),
+		ExitCode:           int64(exitCode),
+	}
+
+	// TODO: Load the API client directly from the context since we expect
+	// it to be set for all CLI commands.
+	apiClient, err := client.New(ConfigUsed(ctx))
+	if err != nil {
+		// TODO remove.
+		// Do nothing
+	}
+	telemetry.Flush(ctx, &executionContext, apiClient)
 
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command

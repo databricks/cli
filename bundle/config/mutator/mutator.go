@@ -19,6 +19,10 @@ func DefaultMutators() []bundle.Mutator {
 		scripts.Execute(config.ScriptPreInit),
 		loader.ProcessRootIncludes(),
 
+		// Compute telemetry metrics on based on the raw bundle configuration provided
+		// by the user.
+		ComputeConfigMetrics(),
+
 		// Verify that the CLI version is within the specified range.
 		VerifyCliVersion(),
 

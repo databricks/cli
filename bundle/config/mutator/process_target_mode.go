@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/events"
 )
 
 type processTargetMode struct{}
@@ -176,6 +177,7 @@ func isRunAsSet(r config.Resources) bool {
 func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
+		b.DeployEvent.Configuration.BundleMode = events.BundleModeDevelopment
 		diags := validateDevelopmentMode(b)
 		if diags.HasError() {
 			return diags
@@ -183,6 +185,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		transformDevelopmentMode(ctx, b)
 		return diags
 	case config.Production:
+		b.DeployEvent.Configuration.BundleMode = events.BundleModeProduction
 		isPrincipal := iamutil.IsServicePrincipal(b.Config.Workspace.CurrentUser.User)
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
