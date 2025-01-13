@@ -102,7 +102,7 @@ func (t *translateContext) rewritePath(
 	if err != nil {
 		return "", err
 	}
-	if strings.HasPrefix(localRelPath, "..") {
+	if !filepath.IsLocal(localRelPath) {
 		return "", fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
