@@ -39,13 +39,17 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
 		}
 
-		rewritePatternFn, err := t.getRewritePatternFn(kind)
+		mode, err := getJobTranslateMode(kind)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 
+		opts := translateOptions{
+			Mode: mode,
+		}
+
 		// Try to rewrite the path relative to the directory of the configuration file where the value was defined.
-		nv, err := t.rewriteValue(ctx, p, v, rewritePatternFn, dir)
+		nv, err := t.rewriteValue(ctx, p, v, dir, opts)
 		if err == nil {
 			return nv, nil
 		}
@@ -53,7 +57,7 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 		// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
 		// We only do this for jobs and pipelines because of the comment in [gatherFallbackPaths].
 		if fallback[key] != "" {
-			nv, nerr := t.rewriteValue(ctx, p, v, rewritePatternFn, fallback[key])
+			nv, nerr := t.rewriteValue(ctx, p, v, fallback[key], opts)
 			if nerr == nil {
 				// TODO: Emit a warning that this path should be rewritten.
 				return nv, nil
@@ -64,19 +68,19 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 	})
 }
 
-func (t *translateContext) getRewritePatternFn(kind paths.PathKind) (rewriteFunc, error) {
+func getJobTranslateMode(kind paths.PathKind) (TranslateMode, error) {
 	switch kind {
 	case paths.PathKindLibrary:
-		return t.translateNoOp, nil
+		return TranslateModeNoOp, nil
 	case paths.PathKindNotebook:
-		return t.translateNotebookPath, nil
+		return TranslateModeNotebook, nil
 	case paths.PathKindWorkspaceFile:
-		return t.translateFilePath, nil
+		return TranslateModeFile, nil
 	case paths.PathKindDirectory:
-		return t.translateDirectoryPath, nil
+		return TranslateModeDirectory, nil
 	case paths.PathKindWithPrefix:
-		return t.translateNoOpWithPrefix, nil
+		return TranslateModeNoOpWithPrefix, nil
 	}
 
-	return nil, fmt.Errorf("unsupported path kind: %d", kind)
+	return TranslateMode(0), fmt.Errorf("unsupported path kind: %d", kind)
 }

@@ -9,7 +9,7 @@ import (
 
 type artifactRewritePattern struct {
 	pattern dyn.Pattern
-	fn      rewriteFunc
+	opts    translateOptions
 }
 
 func (t *translateContext) artifactRewritePatterns() []artifactRewritePattern {
@@ -23,7 +23,7 @@ func (t *translateContext) artifactRewritePatterns() []artifactRewritePattern {
 	return []artifactRewritePattern{
 		{
 			base.Append(dyn.Key("path")),
-			t.translateNoOp,
+			translateOptions{Mode: TranslateModeNoOp},
 		},
 	}
 }
@@ -39,7 +39,7 @@ func (t *translateContext) applyArtifactTranslations(ctx context.Context, v dyn.
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 			}
 
-			return t.rewriteValue(ctx, p, v, rewritePattern.fn, dir)
+			return t.rewriteValue(ctx, p, v, dir, rewritePattern.opts)
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

@@ -17,6 +17,34 @@ import (
 	"github.com/databricks/cli/libs/notebook"
 )
 
+// TranslateMode specifies how a path should be translated.
+type TranslateMode int
+
+const (
+	// TranslateModeNotebook translates a path to a remote notebook.
+	TranslateModeNotebook TranslateMode = iota
+
+	// TranslateModeFile translates a path to a remote regular file.
+	TranslateModeFile
+
+	// TranslateModeDirectory translates a path to a remote directory.
+	TranslateModeDirectory
+
+	// TranslateModeRetainLocalAbsoluteFilePath translates a path to the local absolute file path.
+	TranslateModeRetainLocalAbsoluteFilePath
+
+	// TranslateModeNoOp does not translate the path.
+	TranslateModeNoOp
+
+	// TranslateModeNoOpWithPrefix does not translate the path, but adds a prefix to it.
+	TranslateModeNoOpWithPrefix
+)
+
+// translateOptions specifies how a path should be translated.
+type translateOptions struct {
+	Mode TranslateMode
+}
+
 type ErrIsNotebook struct {
 	path string
 }
@@ -44,8 +72,6 @@ func (m *translatePaths) Name() string {
 	return "TranslatePaths"
 }
 
-type rewriteFunc func(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error)
-
 // translateContext is a context for rewriting paths in a config.
 // It is freshly instantiated on every mutator apply call.
 // It provides access to the underlying bundle object such that
@@ -64,8 +90,8 @@ type translateContext struct {
 //   - The context in which the function is called.
 //   - The argument `dir` is the directory relative to which the relative path should be interpreted.
 //   - The argument `input` is the relative path to rewrite.
-//   - The argument `fn` is a function that performs the actual rewriting logic.
-//     This logic is different between regular files or notebooks.
+//   - The argument `opts` is a struct that specifies how the path should be rewritten.
+//     It contains a `Mode` field that specifies how the path should be rewritten.
 //
 // The function returns the rewritten path if successful, or an error if the path could not be rewritten.
 // The returned path is an empty string if the path was not rewritten.
@@ -73,7 +99,7 @@ func (t *translateContext) rewritePath(
 	ctx context.Context,
 	dir string,
 	input string,
-	fn rewriteFunc,
+	opts translateOptions,
 ) (string, error) {
 	// We assume absolute paths point to a location in the workspace
 	if path.IsAbs(input) {
@@ -115,7 +141,23 @@ func (t *translateContext) rewritePath(
 	remotePath := path.Join(workspacePath, filepath.ToSlash(localRelPath))
 
 	// Convert local path into workspace path via specified function.
-	interp, err := fn(ctx, input, localPath, localRelPath, remotePath)
+	var interp string
+	switch opts.Mode {
+	case TranslateModeNotebook:
+		interp, err = t.translateNotebookPath(ctx, input, localPath, localRelPath, remotePath)
+	case TranslateModeFile:
+		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath, remotePath)
+	case TranslateModeDirectory:
+		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath, remotePath)
+	case TranslateModeRetainLocalAbsoluteFilePath:
+		interp, err = t.retainLocalAbsoluteFilePath(ctx, input, localPath, localRelPath, remotePath)
+	case TranslateModeNoOp:
+		interp, err = t.translateNoOp(ctx, input, localPath, localRelPath, remotePath)
+	case TranslateModeNoOpWithPrefix:
+		interp, err = t.translateNoOpWithPrefix(ctx, input, localPath, localRelPath, remotePath)
+	default:
+		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -191,10 +233,6 @@ func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, 
 	return remotePath, nil
 }
 
-func (t *translateContext) translateNoOp(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	return localRelPath, nil
-}
-
 func (t *translateContext) retainLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
@@ -209,6 +247,10 @@ func (t *translateContext) retainLocalAbsoluteFilePath(ctx context.Context, lite
 	return localFullPath, nil
 }
 
+func (t *translateContext) translateNoOp(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	return localRelPath, nil
+}
+
 func (t *translateContext) translateNoOpWithPrefix(ctx context.Context, literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	if !strings.HasPrefix(localRelPath, ".") {
 		localRelPath = "." + string(filepath.Separator) + localRelPath
@@ -216,8 +258,8 @@ func (t *translateContext) translateNoOpWithPrefix(ctx context.Context, literal,
 	return localRelPath, nil
 }
 
-func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
-	out, err := t.rewritePath(ctx, dir, v.MustString(), fn)
+func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, dir string, opts translateOptions) (dyn.Value, error) {
+	out, err := t.rewritePath(ctx, dir, v.MustString(), opts)
 	if err != nil {
 		if target := (&ErrIsNotebook{}); errors.As(err, target) {
 			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)

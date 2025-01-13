@@ -9,7 +9,7 @@ import (
 
 type pipelineRewritePattern struct {
 	pattern dyn.Pattern
-	fn      rewriteFunc
+	opts    translateOptions
 }
 
 func (t *translateContext) pipelineRewritePatterns() []pipelineRewritePattern {
@@ -26,11 +26,11 @@ func (t *translateContext) pipelineRewritePatterns() []pipelineRewritePattern {
 	return []pipelineRewritePattern{
 		{
 			base.Append(dyn.Key("notebook"), dyn.Key("path")),
-			t.translateNotebookPath,
+			translateOptions{Mode: TranslateModeNotebook},
 		},
 		{
 			base.Append(dyn.Key("file"), dyn.Key("path")),
-			t.translateFilePath,
+			translateOptions{Mode: TranslateModeFile},
 		},
 	}
 }
@@ -52,7 +52,7 @@ func (t *translateContext) applyPipelineTranslations(ctx context.Context, v dyn.
 			}
 
 			// Try to rewrite the path relative to the directory of the configuration file where the value was defined.
-			nv, err := t.rewriteValue(ctx, p, v, rewritePattern.fn, dir)
+			nv, err := t.rewriteValue(ctx, p, v, dir, rewritePattern.opts)
 			if err == nil {
 				return nv, nil
 			}
@@ -60,7 +60,7 @@ func (t *translateContext) applyPipelineTranslations(ctx context.Context, v dyn.
 			// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
 			// We only do this for jobs and pipelines because of the comment in [gatherFallbackPaths].
 			if fallback[key] != "" {
-				nv, nerr := t.rewriteValue(ctx, p, v, rewritePattern.fn, fallback[key])
+				nv, nerr := t.rewriteValue(ctx, p, v, fallback[key], rewritePattern.opts)
 				if nerr == nil {
 					// TODO: Emit a warning that this path should be rewritten.
 					return nv, nil
