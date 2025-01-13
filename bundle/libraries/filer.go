@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/telemetry/events"
 )
 
 // We upload artifacts to the workspace in a directory named ".internal" to have
@@ -24,9 +25,11 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 
 	switch {
 	case IsVolumesPath(artifactPath):
+		b.DeployEvent.Configuration.ArtifactPathType = events.ArtifactPathTypeUCVolume
 		return filerForVolume(b)
 
 	default:
+		b.DeployEvent.Configuration.ArtifactPathType = events.ArtifactPathTypeWorkspaceFilesystem
 		return filerForWorkspace(b)
 	}
 }

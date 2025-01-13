@@ -1,19 +1,23 @@
 package telemetry
 
-import "context"
+import (
+	"context"
+
+	"github.com/databricks/cli/libs/telemetry/events"
+)
 
 type mockLogger struct {
 	events []DatabricksCliLog
 }
 
-func (l *mockLogger) Log(event DatabricksCliLog) {
+func (l *mockLogger) Log(_ context.Context, event DatabricksCliLog) {
 	if l.events == nil {
 		l.events = make([]DatabricksCliLog, 0)
 	}
 	l.events = append(l.events, event)
 }
 
-func (l *mockLogger) Flush(ctx context.Context, apiClient DatabricksApiClient) {
+func (l *mockLogger) Flush(ctx context.Context, executionContext *events.ExecutionContext, apiClient DatabricksApiClient) {
 	// Do nothing
 }
 

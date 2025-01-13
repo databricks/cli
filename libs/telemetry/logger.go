@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/events"
 	"github.com/google/uuid"
 )
 
@@ -19,11 +20,11 @@ type DatabricksApiClient interface {
 
 type Logger interface {
 	// Record a telemetry event, to be flushed later.
-	Log(event DatabricksCliLog)
+	Log(ctx context.Context, event DatabricksCliLog)
 
 	// Flush all the telemetry events that have been logged so far. We expect
 	// this to be called once per CLI command for the default logger.
-	Flush(ctx context.Context, apiClient DatabricksApiClient)
+	Flush(ctx context.Context, executionContext *events.ExecutionContext, apiClient DatabricksApiClient)
 
 	// This function is meant to be only to be used in tests to introspect
 	// the telemetry logs that have been logged so far.
@@ -31,14 +32,14 @@ type Logger interface {
 }
 
 type defaultLogger struct {
-	logs []FrontendLog
+	logs []*FrontendLog
 }
 
-func (l *defaultLogger) Log(event DatabricksCliLog) {
+func (l *defaultLogger) Log(ctx context.Context, event DatabricksCliLog) {
 	if l.logs == nil {
-		l.logs = make([]FrontendLog, 0)
+		l.logs = make([]*FrontendLog, 0)
 	}
-	l.logs = append(l.logs, FrontendLog{
+	l.logs = append(l.logs, &FrontendLog{
 		// The telemetry endpoint deduplicates logs based on the FrontendLogEventID.
 		// This it's important to generate a unique ID for each log event.
 		FrontendLogEventID: uuid.New().String(),
@@ -57,10 +58,16 @@ var MaxAdditionalWaitTime = 3 * time.Second
 // right about as the CLI command is about to exit. The API endpoint can handle
 // payloads with ~1000 events easily. Thus we log all the events at once instead of
 // batching the logs across multiple API calls.
-func (l *defaultLogger) Flush(ctx context.Context, apiClient DatabricksApiClient) {
+func (l *defaultLogger) Flush(ctx context.Context, executionContext *events.ExecutionContext, apiClient DatabricksApiClient) {
 	// Set a maximum time to wait for the telemetry event to flush.
 	ctx, cancel := context.WithTimeout(ctx, MaxAdditionalWaitTime)
 	defer cancel()
+
+	if executionContext != nil {
+		for _, event := range l.logs {
+			event.Entry.DatabricksCliLog.ExecutionContext = *executionContext
+		}
+	}
 
 	if len(l.logs) == 0 {
 		log.Debugf(ctx, "No telemetry events to flush")
@@ -125,12 +132,12 @@ func (l *defaultLogger) Introspect() []DatabricksCliLog {
 
 func Log(ctx context.Context, event DatabricksCliLog) {
 	l := fromContext(ctx)
-	l.Log(event)
+	l.Log(ctx, event)
 }
 
-func Flush(ctx context.Context, apiClient DatabricksApiClient) {
+func Flush(ctx context.Context, executionContext *events.ExecutionContext, apiClient DatabricksApiClient) {
 	l := fromContext(ctx)
-	l.Flush(ctx, apiClient)
+	l.Flush(ctx, executionContext, apiClient)
 }
 
 func Introspect(ctx context.Context) []DatabricksCliLog {

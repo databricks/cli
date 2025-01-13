@@ -2,6 +2,8 @@ package telemetry
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"testing"
@@ -9,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry/events"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockDatabricksClient struct {
@@ -110,4 +113,10 @@ func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 
 	// Assert that the .Do method is never called since the timeout is set to 0.
 	assert.Equal(t, 0, mockClient.numCalls)
+}
+
+func prettyPrint(t *testing.T, v any) {
+	b, err := json.MarshalIndent(v, "", "  ")
+	require.NoError(t, err)
+	fmt.Println(string(b))
 }
