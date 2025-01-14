@@ -57,6 +57,7 @@ func TestAccept(t *testing.T) {
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
 	tempHomeDir := t.TempDir()
+	t.Logf("tempHomeDir=%v", tempHomeDir)
 
 	// Prevent CLI from downloading terraform in each test:
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
