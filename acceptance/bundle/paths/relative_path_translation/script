@@ -1,0 +1,4 @@
+trace $CLI bundle validate -t default -o json | \
+    jq '{ paths: [.resources.jobs.job.tasks[].spark_python_task.python_file] }' > output.default.json
+trace $CLI bundle validate -t override -o json | \
+    jq '{ paths: [.resources.jobs.job.tasks[].spark_python_task.python_file] }' > output.override.json
