@@ -265,22 +265,10 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	}
 
 	start := time.Now()
-	args := []string{
-		"go", "build",
-		"-mod", "vendor",
-		"-o", execPath,
-	}
+	args := []string{"go", "build", "-mod", "vendor", "-o", execPath}
 	if coverDir != "" {
 		args = append(args, "-cover")
 	}
-
-	if runtime.GOOS == "windows" {
-		// Get this error on my local Windows:
-		// error obtaining VCS status: exit status 128
-		// Use -buildvcs=false to disable VCS stamping.
-		args = append(args, "-buildvcs=false")
-	}
-
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = ".."
 	out, err := cmd.CombinedOutput()
@@ -295,7 +283,6 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	cmd = exec.Command(execPath, "--version")
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, "%s --version failed: %s\n%s", execPath, err, out)
-	t.Logf("%s --version: %s", execPath, out)
 	return execPath
 }
 
