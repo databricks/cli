@@ -136,13 +136,15 @@ func (t *translateContext) rewritePath(
 	}
 
 	// Local path is relative to the directory the resource was defined in.
-	localPath := filepath.Join(dir, filepath.FromSlash(input))
+	// Note: the initialized variable is a platform-native path.
+	localPath := filepath.Join(dir, input)
 	if interp, ok := t.seen[localPath]; ok {
 		return interp, nil
 	}
 
 	// Local path must be contained in the sync root.
 	// If it isn't, it won't be synchronized into the workspace.
+	// Note: the initialized variable is a platform-native path.
 	localRelPath, err := filepath.Rel(t.b.SyncRootPath, localPath)
 	if err != nil {
 		return "", err
@@ -150,6 +152,10 @@ func (t *translateContext) rewritePath(
 	if !opts.AllowPathOutsideSyncRoot && !filepath.IsLocal(localRelPath) {
 		return "", fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
+
+	// Normalize paths we pass to the translation functions to use forward slashes.
+	localPath = filepath.ToSlash(localPath)
+	localRelPath = filepath.ToSlash(localRelPath)
 
 	// Convert local path into workspace path via specified function.
 	var interp string
@@ -180,9 +186,9 @@ func (t *translateContext) rewritePath(
 }
 
 func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
-	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
+	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
-		if filepath.Ext(localFullPath) != notebook.ExtensionNone {
+		if path.Ext(localFullPath) != notebook.ExtensionNone {
 			return "", fmt.Errorf("notebook %s not found", literal)
 		}
 
@@ -198,7 +204,7 @@ func (t *translateContext) translateNotebookPath(ctx context.Context, literal, l
 		// way we can provide a more targeted error message.
 		for _, ext := range extensions {
 			literalWithExt := literal + ext
-			localRelPathWithExt := filepath.ToSlash(localRelPath + ext)
+			localRelPathWithExt := localRelPath + ext
 			if _, err := fs.Stat(t.b.SyncRoot, localRelPathWithExt); err == nil {
 				return "", fmt.Errorf(`notebook %s not found. Did you mean %s?
 Local notebook references are expected to contain one of the following
@@ -218,61 +224,65 @@ to contain one of the following file extensions: [%s]`, literal, strings.Join(ex
 	}
 
 	// Upon import, notebooks are stripped of their extension.
-	localRelPathNoExt := strings.TrimSuffix(localRelPath, filepath.Ext(localRelPath))
-	return path.Join(t.remoteRoot, filepath.ToSlash(localRelPathNoExt)), nil
+	localRelPathNoExt := strings.TrimSuffix(localRelPath, path.Ext(localRelPath))
+	return path.Join(t.remoteRoot, localRelPathNoExt), nil
 }
 
 func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
-	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
+	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
 	}
 	if err != nil {
-		return "", fmt.Errorf("unable to determine if %s is not a notebook: %w", localFullPath, err)
+		return "", fmt.Errorf("unable to determine if %s is not a notebook: %w", filepath.FromSlash(localFullPath), err)
 	}
 	if nb {
 		return "", ErrIsNotebook{localFullPath}
 	}
-	return path.Join(t.remoteRoot, filepath.ToSlash(localRelPath)), nil
+	return path.Join(t.remoteRoot, localRelPath), nil
 }
 
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
-	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
+	info, err := t.b.SyncRoot.Stat(localRelPath)
 	if err != nil {
 		return "", err
 	}
 	if !info.IsDir() {
-		return "", fmt.Errorf("%s is not a directory", localFullPath)
+		return "", fmt.Errorf("%s is not a directory", filepath.FromSlash(localFullPath))
 	}
-	return path.Join(t.remoteRoot, filepath.ToSlash(localRelPath)), nil
+	return path.Join(t.remoteRoot, localRelPath), nil
 }
 
 func (t *translateContext) translateLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
-	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
+	info, err := t.b.SyncRoot.Stat(localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
 	}
 	if err != nil {
-		return "", fmt.Errorf("unable to determine if %s is a file: %w", localFullPath, err)
+		return "", fmt.Errorf("unable to determine if %s is a file: %w", filepath.FromSlash(localFullPath), err)
 	}
 	if info.IsDir() {
 		return "", fmt.Errorf("expected %s to be a file but found a directory", literal)
 	}
-	return localFullPath, nil
+	// Absolute paths are never externalized and always intended to be used locally.
+	// Return a platform-native path.
+	return filepath.FromSlash(localFullPath), nil
 }
 
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
-	info, err := os.Stat(localFullPath)
+	info, err := os.Stat(filepath.FromSlash(localFullPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("directory %s not found", literal)
 	}
 	if err != nil {
-		return "", fmt.Errorf("unable to determine if %s is a directory: %w", localFullPath, err)
+		return "", fmt.Errorf("unable to determine if %s is a directory: %w", filepath.FromSlash(localFullPath), err)
 	}
 	if !info.IsDir() {
 		return "", fmt.Errorf("expected %s to be a directory but found a file", literal)
 	}
-	return localFullPath, nil
+	// Absolute paths are never externalized and always intended to be used locally.
+	// Return a platform-native path.
+	return filepath.FromSlash(localFullPath), nil
 }
 
 func (t *translateContext) translateLocalRelativePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
@@ -281,7 +291,7 @@ func (t *translateContext) translateLocalRelativePath(ctx context.Context, liter
 
 func (t *translateContext) translateLocalRelativeWithPrefixPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	if !strings.HasPrefix(localRelPath, ".") {
-		localRelPath = "." + string(filepath.Separator) + localRelPath
+		localRelPath = "./" + localRelPath
 	}
 	return localRelPath, nil
 }
