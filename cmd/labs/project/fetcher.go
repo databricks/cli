@@ -15,7 +15,7 @@ import (
 )
 
 type installable interface {
-	Install(ctx context.Context) error
+	Install(ctx context.Context, offlineInstall bool) error
 }
 
 type devInstallation struct {
@@ -23,7 +23,7 @@ type devInstallation struct {
 	*cobra.Command
 }
 
-func (d *devInstallation) Install(ctx context.Context) error {
+func (d *devInstallation) Install(ctx context.Context, offlineInstall bool) error {
 	if d.Installer == nil {
 		return nil
 	}
@@ -54,7 +54,7 @@ func (d *devInstallation) Install(ctx context.Context) error {
 	return d.Installer.runHook(d.Command)
 }
 
-func NewInstaller(cmd *cobra.Command, name string) (installable, error) {
+func NewInstaller(cmd *cobra.Command, name string, offlineInstall bool) (installable, error) {
 	if name == "." {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -75,14 +75,17 @@ func NewInstaller(cmd *cobra.Command, name string) (installable, error) {
 		version = "latest"
 	}
 	f := &fetcher{name}
-	version, err := f.checkReleasedVersions(cmd, version)
+
+	version, err := f.checkReleasedVersions(cmd, version, offlineInstall)
 	if err != nil {
 		return nil, fmt.Errorf("version: %w", err)
 	}
-	prj, err := f.loadRemoteProjectDefinition(cmd, version)
+
+	prj, err := f.loadRemoteProjectDefinition(cmd, version, offlineInstall)
 	if err != nil {
 		return nil, fmt.Errorf("remote: %w", err)
 	}
+
 	return &installer{
 		Project: prj,
 		version: version,
@@ -92,11 +95,11 @@ func NewInstaller(cmd *cobra.Command, name string) (installable, error) {
 
 func NewUpgrader(cmd *cobra.Command, name string) (*installer, error) {
 	f := &fetcher{name}
-	version, err := f.checkReleasedVersions(cmd, "latest")
+	version, err := f.checkReleasedVersions(cmd, "latest", false)
 	if err != nil {
 		return nil, fmt.Errorf("version: %w", err)
 	}
-	prj, err := f.loadRemoteProjectDefinition(cmd, version)
+	prj, err := f.loadRemoteProjectDefinition(cmd, version, false)
 	if err != nil {
 		return nil, fmt.Errorf("remote: %w", err)
 	}
@@ -115,7 +118,7 @@ type fetcher struct {
 	name string
 }
 
-func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string) (string, error) {
+func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string, offlineInstall bool) (string, error) {
 	ctx := cmd.Context()
 	cacheDir, err := PathInLabs(ctx, f.name, "cache")
 	if err != nil {
@@ -123,7 +126,13 @@ func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string) (str
 	}
 	// `databricks labs isntall X` doesn't know which exact version to fetch, so first
 	// we fetch all versions and then pick the latest one dynamically.
-	versions, err := github.NewReleaseCache("databrickslabs", f.name, cacheDir).Load(ctx)
+	var versions github.Versions
+	if offlineInstall {
+		versions, err = github.NewReleaseCache("databrickslabs", f.name, cacheDir).LoadCache(ctx)
+	} else {
+		versions, err = github.NewReleaseCache("databrickslabs", f.name, cacheDir).Load(ctx)
+	}
+
 	if err != nil {
 		return "", fmt.Errorf("versions: %w", err)
 	}
@@ -140,9 +149,21 @@ func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string) (str
 	return version, nil
 }
 
-func (i *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string) (*Project, error) {
+func (i *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string, offlineInstall bool) (*Project, error) {
 	ctx := cmd.Context()
-	raw, err := github.ReadFileFromRef(ctx, "databrickslabs", i.name, version, "labs.yml")
+	var raw []byte
+	var err error
+	if !offlineInstall {
+		raw, err = github.ReadFileFromRef(ctx, "databrickslabs", i.name, version, "labs.yml")
+	} else {
+		libDir, file_err := PathInLabs(ctx, i.name, "lib")
+		if file_err != nil {
+			return nil, file_err
+		}
+		fileName := filepath.Join(libDir, "labs.yml")
+		raw, err = os.ReadFile(fileName)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("read labs.yml from GitHub: %w", err)
 	}
