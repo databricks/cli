@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	testerName      = "tester"
-	testerWithEmail = testerName + "@databricks.com"
+	testerName      = "$USERNAME"
+	testerWithEmail = testerName
 )
 
 var OverwriteMode = false

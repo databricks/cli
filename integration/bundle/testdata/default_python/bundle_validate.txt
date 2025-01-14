@@ -2,7 +2,7 @@ Name: project_name_$UNIQUE_PRJ
 Target: dev
 Workspace:
   Host: https://$DATABRICKS_HOST
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev
 
 Validation OK!

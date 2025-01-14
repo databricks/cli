@@ -26,12 +26,12 @@
     "host": "https://$DATABRICKS_HOST",
     "current_user": {
       "active": true,
-      "displayName": "tester",
+      "displayName": "$USERNAME",
       "emails": [
         {
           "primary": true,
           "type": "work",
-          "value": "tester@databricks.com"
+          "value": "$USERNAME"
         }
       ],
       "groups": [
@@ -44,33 +44,33 @@
       ],
       "id": "$USER.Id",
       "name": {
-        "familyName": "tester",
-        "givenName": "tester"
+        "familyName": "$USERNAME",
+        "givenName": "$USERNAME"
       },
       "schemas": [
         "urn:ietf:params:scim:schemas:core:2.0:User",
         "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
       ],
-      "short_name": "tester",
-      "userName": "tester@databricks.com"
+      "short_name": "$USERNAME",
+      "userName": "$USERNAME"
     },
-    "root_path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev",
-    "file_path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/files",
-    "resource_path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/resources",
-    "artifact_path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/artifacts",
-    "state_path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/state"
+    "root_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev",
+    "file_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/files",
+    "resource_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/resources",
+    "artifact_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/artifacts",
+    "state_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/state"
   },
   "resources": {
     "jobs": {
       "project_name_$UNIQUE_PRJ_job": {
         "deployment": {
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {
           "on_failure": [
-            "tester@databricks.com"
+            "$USERNAME"
           ]
         },
         "format": "MULTI_TASK",
@@ -89,18 +89,18 @@
           }
         ],
         "max_concurrent_runs": 4,
-        "name": "[dev tester] project_name_$UNIQUE_PRJ_job",
+        "name": "[dev $USERNAME] project_name_$UNIQUE_PRJ_job",
         "queue": {
           "enabled": true
         },
         "tags": {
-          "dev": "tester"
+          "dev": "$USERNAME"
         },
         "tasks": [
           {
             "job_cluster_key": "job_cluster",
             "notebook_task": {
-              "notebook_path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/notebook"
+              "notebook_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/notebook"
             },
             "task_key": "notebook_task"
           },
@@ -148,22 +148,22 @@
       "project_name_$UNIQUE_PRJ_pipeline": {
         "catalog": "main",
         "configuration": {
-          "bundle.sourcePath": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/files/src"
+          "bundle.sourcePath": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/files/src"
         },
         "deployment": {
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
         },
         "development": true,
         "id": "<UUID>",
         "libraries": [
           {
             "notebook": {
-              "path": "/Workspace/Users/tester@databricks.com/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/dlt_pipeline"
+              "path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/dlt_pipeline"
             }
           }
         ],
-        "name": "[dev tester] project_name_$UNIQUE_PRJ_pipeline",
+        "name": "[dev $USERNAME] project_name_$UNIQUE_PRJ_pipeline",
         "target": "project_name_$UNIQUE_PRJ_dev",
         "url": "https://$DATABRICKS_HOST/pipelines/<UUID>?o=<NUMID>"
       }
@@ -175,12 +175,12 @@
     ]
   },
   "presets": {
-    "name_prefix": "[dev tester] ",
+    "name_prefix": "[dev $USERNAME] ",
     "pipelines_development": true,
     "trigger_pause_status": "PAUSED",
     "jobs_max_concurrent_runs": 4,
     "tags": {
-      "dev": "tester"
+      "dev": "$USERNAME"
     }
   }
 }
