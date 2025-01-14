@@ -1,11 +1,5 @@
 trace $CLI bundle init default-python --config-file ./input.json
 
-(
-    cd my_default_python
-    trace $CLI bundle validate -t dev
-)
-
-(
-    cd my_default_python
-    trace $CLI bundle validate -t prod
-)
+cd my_default_python
+trace $CLI bundle validate -t dev
+trace $CLI bundle validate -t prod

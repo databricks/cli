@@ -1,11 +1,5 @@
 trace $CLI bundle init dbt-sql --config-file ./input.json
 
-(
-    cd my_dbt_sql
-    trace $CLI bundle validate -t dev
-)
-
-(
-    cd my_dbt_sql
-    trace $CLI bundle validate -t prod
-)
+cd my_dbt_sql
+trace $CLI bundle validate -t dev
+trace $CLI bundle validate -t prod

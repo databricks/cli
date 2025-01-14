@@ -183,6 +183,11 @@ func doComparison(t *testing.T, pathExpected, pathNew, valueNew string) {
 // Note, cleanups are not executed if main script fails; that's not a huge issue, since it runs it temp dir.
 func readMergedScriptContents(t *testing.T, dir string) string {
 	scriptContents := testutil.ReadFile(t, filepath.Join(dir, EntryPointScript))
+
+	// Wrap script contents in a subshell such that changing the working
+	// directory only affects the main script and not cleanup.
+	scriptContents = "(\n" + scriptContents + ")\n"
+
 	prepares := []string{}
 	cleanups := []string{}
 
