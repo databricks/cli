@@ -1,20 +1,4 @@
 
 >>> $CLI bundle validate -t default -o json
 
-Exit code: 0
-
 >>> $CLI bundle validate -t override -o json
-
-Exit code: 0
-
->>> jq -e 
-(.tasks[0].spark_python_task.python_file | endswith("/src/file1.py")) and
-(.tasks[1].spark_python_task.python_file | endswith("/src/file1.py"))
- output.default.json
-true
-
->>> jq -e 
-(.tasks[0].spark_python_task.python_file | endswith("/src/file2.py")) and
-(.tasks[1].spark_python_task.python_file | endswith("/src/file2.py"))
- output.override.json
-true
