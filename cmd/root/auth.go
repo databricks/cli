@@ -207,6 +207,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
+			ctx = auth.SetWorkspaceClient(ctx, client)
 			cfg = client.Config
 		}
 	}

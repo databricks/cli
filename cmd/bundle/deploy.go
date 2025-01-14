@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
@@ -42,6 +43,10 @@ func newDeployCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
+
+		client, err := b.InitializeWorkspaceClient()
+		ctx = auth.SetWorkspaceClient(ctx, client)
+		ctx = auth.SetConfigUsed(ctx, client.Config)
 
 		if !diags.HasError() {
 			bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
