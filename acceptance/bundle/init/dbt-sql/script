@@ -1,5 +1,6 @@
 trace $CLI bundle init dbt-sql --config-file ./input.json --output-dir output
 
 cd output/my_dbt_sql
+ruff format --diff
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
