@@ -2,11 +2,11 @@ package testdiff
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"regexp"
-	"slices"
 	"strings"
 	"testing"
 
@@ -15,6 +15,10 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	testerName = "$USERNAME"
 )
 
 var OverwriteMode = false
@@ -119,6 +123,19 @@ func (r *ReplacementsContext) Set(old, new string) {
 	if old == "" || new == "" {
 		return
 	}
+
+	// Always include both verbatim and json version of replacement.
+	// This helps when the string in question contains \ or other chars that need to be quoted.
+	// In that case we cannot rely that json(old) == '"{old}"' and need to add it explicitly.
+
+	encodedNew, err := json.Marshal(new)
+	if err != nil {
+		encodedOld, err := json.Marshal(old)
+		if err != nil {
+			r.Repls = append(r.Repls, Replacement{Old: string(encodedOld), New: string(encodedNew)})
+		}
+	}
+
 	r.Repls = append(r.Repls, Replacement{Old: old, New: new})
 }
 
@@ -165,7 +182,7 @@ func PrepareReplacements(t testutil.TestingT, r *ReplacementsContext, w *databri
 	r.Set(w.Config.AzureResourceID, "$DATABRICKS_AZURE_RESOURCE_ID")
 	r.Set(w.Config.AzureClientSecret, "$ARM_CLIENT_SECRET")
 	// r.Set(w.Config.AzureClientID, "$ARM_CLIENT_ID")
-	r.Set(w.Config.AzureClientID, "$USERNAME")
+	r.Set(w.Config.AzureClientID, testerName)
 	r.Set(w.Config.AzureTenantID, "$ARM_TENANT_ID")
 	r.Set(w.Config.ActionsIDTokenRequestURL, "$ACTIONS_ID_TOKEN_REQUEST_URL")
 	r.Set(w.Config.ActionsIDTokenRequestToken, "$ACTIONS_ID_TOKEN_REQUEST_TOKEN")
@@ -181,23 +198,19 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	t.Helper()
 	// There could be exact matches or overlap between different name fields, so sort them by length
 	// to ensure we match the largest one first and map them all to the same token
-	names := []string{
-		u.DisplayName,
-		u.UserName,
-		iamutil.GetShortUserName(&u),
-	}
-	if u.Name != nil {
-		names = append(names, u.Name.FamilyName)
-		names = append(names, u.Name.GivenName)
-	}
-	for _, val := range u.Emails {
-		names = append(names, val.Value)
-	}
-	stableSortReverseLength(names)
 
-	for _, name := range names {
-		r.Set(name, "$USERNAME")
+	r.Set(u.UserName, testerName)
+	r.Set(u.DisplayName, testerName)
+	if u.Name != nil {
+		r.Set(u.Name.FamilyName, testerName)
+		r.Set(u.Name.GivenName, testerName)
 	}
+
+	for _, val := range u.Emails {
+		r.Set(val.Value, testerName)
+	}
+
+	r.Set(iamutil.GetShortUserName(&u), testerName)
 
 	for ind, val := range u.Groups {
 		r.Set(val.Value, fmt.Sprintf("$USER.Groups[%d]", ind))
@@ -208,12 +221,6 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	for ind, val := range u.Roles {
 		r.Set(val.Value, fmt.Sprintf("$USER.Roles[%d]", ind))
 	}
-}
-
-func stableSortReverseLength(strs []string) {
-	slices.SortStableFunc(strs, func(a, b string) int {
-		return len(b) - len(a)
-	})
 }
 
 func NormalizeNewlines(input string) string {

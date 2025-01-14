@@ -27,7 +27,7 @@ func TestDeployBundleWithApp(t *testing.T) {
 	}
 
 	uniqueId := uuid.New().String()
-	appId := "app-%s" + uuid.New().String()[0:8]
+	appId := "app-" + uuid.New().String()[0:8]
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 

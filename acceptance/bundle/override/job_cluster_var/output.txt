@@ -4,7 +4,7 @@
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/development/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/override_job_cluster/development/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -31,8 +31,8 @@
 Name: override_job_cluster
 Target: development
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/development
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/override_job_cluster/development
 
 Validation OK!
 
@@ -41,7 +41,7 @@ Validation OK!
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/staging/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/override_job_cluster/staging/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -68,7 +68,7 @@ Validation OK!
 Name: override_job_cluster
 Target: staging
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/staging
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/override_job_cluster/staging
 
 Validation OK!
