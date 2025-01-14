@@ -25,6 +25,17 @@ cover:
 showcover:
 	go tool cover -html=coverage.txt
 
+acc-cover:
+	rm -fr ./acceptance/build/cover/
+	CLI_GOCOVERDIR=build/cover go test ./acceptance
+	rm -fr ./acceptance/build/cover-merged/
+	mkdir -p acceptance/build/cover-merged/
+	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
+	go tool covdata textfmt -i acceptance/build/cover-merged -o coverage-acceptance.txt
+
+acc-showcover:
+	go tool cover -html=coverage-acceptance.txt
+
 build: vendor
 	go build -mod vendor
 
@@ -45,4 +56,4 @@ integration:
 integration-short:
 	$(INTEGRATION) -short
 
-.PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short
+.PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover
