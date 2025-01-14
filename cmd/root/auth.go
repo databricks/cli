@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
@@ -146,7 +147,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx = context.WithValue(ctx, &accountClient, a)
+	ctx = auth.SetAccountClient(ctx, a)
 	cmd.SetContext(ctx)
 	return nil
 }
@@ -321,14 +322,6 @@ func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
 		panic("cannot get *databricks.WorkspaceClient. Please report it as a bug")
 	}
 	return w
-}
-
-func AccountClient(ctx context.Context) *databricks.AccountClient {
-	a, ok := ctx.Value(&accountClient).(*databricks.AccountClient)
-	if !ok {
-		panic("cannot get *databricks.AccountClient. Please report it as a bug")
-	}
-	return a
 }
 
 func ConfigUsed(ctx context.Context) *config.Config {

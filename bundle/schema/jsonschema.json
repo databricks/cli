@@ -1662,10 +1662,20 @@
               ]
             },
             "apps.AppDeploymentMode": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "SNAPSHOT",
+                "AUTO_SYNC"
+              ]
             },
             "apps.AppDeploymentState": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "SUCCEEDED",
+                "FAILED",
+                "IN_PROGRESS",
+                "CANCELLED"
+              ]
             },
             "apps.AppDeploymentStatus": {
               "oneOf": [
@@ -1747,7 +1757,13 @@
               ]
             },
             "apps.AppResourceJobJobPermission": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "CAN_MANAGE",
+                "IS_OWNER",
+                "CAN_MANAGE_RUN",
+                "CAN_VIEW"
+              ]
             },
             "apps.AppResourceSecret": {
               "oneOf": [
@@ -1778,7 +1794,13 @@
               ]
             },
             "apps.AppResourceSecretSecretPermission": {
-              "type": "string"
+              "type": "string",
+              "description": "Permission to grant on the secret scope. Supported permissions are: \"READ\", \"WRITE\", \"MANAGE\".",
+              "enum": [
+                "READ",
+                "WRITE",
+                "MANAGE"
+              ]
             },
             "apps.AppResourceServingEndpoint": {
               "oneOf": [
@@ -1805,7 +1827,12 @@
               ]
             },
             "apps.AppResourceServingEndpointServingEndpointPermission": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_QUERY",
+                "CAN_VIEW"
+              ]
             },
             "apps.AppResourceSqlWarehouse": {
               "oneOf": [
@@ -1832,10 +1859,21 @@
               ]
             },
             "apps.AppResourceSqlWarehouseSqlWarehousePermission": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_USE",
+                "IS_OWNER"
+              ]
             },
             "apps.ApplicationState": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "DEPLOYING",
+                "RUNNING",
+                "CRASHED",
+                "UNAVAILABLE"
+              ]
             },
             "apps.ApplicationStatus": {
               "oneOf": [
@@ -1858,7 +1896,16 @@
               ]
             },
             "apps.ComputeState": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "ERROR",
+                "DELETING",
+                "STARTING",
+                "STOPPING",
+                "UPDATING",
+                "STOPPED",
+                "ACTIVE"
+              ]
             },
             "apps.ComputeStatus": {
               "oneOf": [

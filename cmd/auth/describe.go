@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -87,7 +88,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	}
 
 	if isAccount {
-		a := root.AccountClient(ctx)
+		a := auth.AccountClient(ctx)
 
 		// Doing a simple API call to check if the auth is valid
 		_, err := a.Workspaces.List(ctx)

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -292,7 +293,7 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, isAccount)
 
-	a := AccountClient(cmd.Context())
+	a := auth.AccountClient(cmd.Context())
 	require.NotNil(t, a)
 }
 

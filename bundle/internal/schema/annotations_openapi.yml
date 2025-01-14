@@ -1,4 +1,47 @@
 # This file is auto-generated. DO NOT EDIT.
+github.com/databricks/cli/bundle/config/resources.App:
+  "active_deployment":
+    "description": |-
+      The active deployment of the app. A deployment is considered active when it has been deployed
+      to the app compute.
+  "app_status": {}
+  "compute_status": {}
+  "create_time":
+    "description": |-
+      The creation time of the app. Formatted timestamp in ISO 6801.
+  "creator":
+    "description": |-
+      The email of the user that created the app.
+  "default_source_code_path":
+    "description": |-
+      The default workspace file system path of the source code from which app deployment are
+      created. This field tracks the workspace source code path of the last active deployment.
+  "description":
+    "description": |-
+      The description of the app.
+  "name":
+    "description": |-
+      The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.
+      It must be unique within the workspace.
+  "pending_deployment":
+    "description": |-
+      The pending deployment of the app. A deployment is considered pending when it is being prepared
+      for deployment to the app compute.
+  "resources":
+    "description": |-
+      Resources for the app.
+  "service_principal_client_id": {}
+  "service_principal_id": {}
+  "service_principal_name": {}
+  "update_time":
+    "description": |-
+      The update time of the app. Formatted timestamp in ISO 6801.
+  "updater":
+    "description": |-
+      The email of the user that last updated the app.
+  "url":
+    "description": |-
+      The URL of the app once it is deployed.
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "apply_policy_default_values":
     "description": |-
@@ -489,6 +532,187 @@ github.com/databricks/cli/bundle/config/resources.Volume:
     "description": |-
       The storage location on the cloud
   "volume_type": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
+  "create_time":
+    "description": |-
+      The creation time of the deployment. Formatted timestamp in ISO 6801.
+  "creator":
+    "description": |-
+      The email of the user creates the deployment.
+  "deployment_artifacts":
+    "description": |-
+      The deployment artifacts for an app.
+  "deployment_id":
+    "description": |-
+      The unique id of the deployment.
+  "mode":
+    "description": |-
+      The mode of which the deployment will manage the source code.
+  "source_code_path":
+    "description": |-
+      The workspace file system path of the source code used to create the app deployment. This is different from
+      `deployment_artifacts.source_code_path`, which is the path used by the deployed app. The former refers
+      to the original source code location of the app in the workspace during deployment creation, whereas
+      the latter provides a system generated stable snapshotted source code path used by the deployment.
+  "status":
+    "description": |-
+      Status and status message of the deployment
+  "update_time":
+    "description": |-
+      The update time of the deployment. Formatted timestamp in ISO 6801.
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts:
+  "source_code_path":
+    "description": |-
+      The snapshotted workspace file system path of the source code loaded by the deployed app.
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode:
+  "_":
+    "enum":
+      - |-
+        SNAPSHOT
+      - |-
+        AUTO_SYNC
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentState:
+  "_":
+    "enum":
+      - |-
+        SUCCEEDED
+      - |-
+        FAILED
+      - |-
+        IN_PROGRESS
+      - |-
+        CANCELLED
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
+  "message":
+    "description": |-
+      Message corresponding with the deployment state.
+  "state":
+    "description": |-
+      State of the deployment.
+github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "description":
+    "description": |-
+      Description of the App Resource.
+  "job": {}
+  "name":
+    "description": |-
+      Name of the App Resource.
+  "secret": {}
+  "serving_endpoint": {}
+  "sql_warehouse": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
+  "id":
+    "description": |-
+      Id of the job to grant permission on.
+  "permission":
+    "description": |-
+      Permissions to grant on the Job. Supported permissions are: "CAN_MANAGE", "IS_OWNER", "CAN_MANAGE_RUN", "CAN_VIEW".
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceJobJobPermission:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        IS_OWNER
+      - |-
+        CAN_MANAGE_RUN
+      - |-
+        CAN_VIEW
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret:
+  "key":
+    "description": |-
+      Key of the secret to grant permission on.
+  "permission":
+    "description": |-
+      Permission to grant on the secret scope. For secrets, only one permission is allowed. Permission must be one of: "READ", "WRITE", "MANAGE".
+  "scope":
+    "description": |-
+      Scope of the secret to grant permission on.
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecretSecretPermission:
+  "_":
+    "description": |-
+      Permission to grant on the secret scope. Supported permissions are: "READ", "WRITE", "MANAGE".
+    "enum":
+      - |-
+        READ
+      - |-
+        WRITE
+      - |-
+        MANAGE
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint:
+  "name":
+    "description": |-
+      Name of the serving endpoint to grant permission on.
+  "permission":
+    "description": |-
+      Permission to grant on the serving endpoint. Supported permissions are: "CAN_MANAGE", "CAN_QUERY", "CAN_VIEW".
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpointServingEndpointPermission:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_QUERY
+      - |-
+        CAN_VIEW
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse:
+  "id":
+    "description": |-
+      Id of the SQL warehouse to grant permission on.
+  "permission":
+    "description": |-
+      Permission to grant on the SQL warehouse. Supported permissions are: "CAN_MANAGE", "CAN_USE", "IS_OWNER".
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlWarehousePermission:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
+      - |-
+        IS_OWNER
+github.com/databricks/databricks-sdk-go/service/apps.ApplicationState:
+  "_":
+    "enum":
+      - |-
+        DEPLOYING
+      - |-
+        RUNNING
+      - |-
+        CRASHED
+      - |-
+        UNAVAILABLE
+github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
+  "message":
+    "description": |-
+      Application status message
+  "state":
+    "description": |-
+      State of the application.
+github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
+  "_":
+    "enum":
+      - |-
+        ERROR
+      - |-
+        DELETING
+      - |-
+        STARTING
+      - |-
+        STOPPING
+      - |-
+        UPDATING
+      - |-
+        STOPPED
+      - |-
+        ACTIVE
+github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
+  "message":
+    "description": |-
+      Compute status message
+  "state":
+    "description": |-
+      State of the app compute.
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule:
   "pause_status":
     "description": |-
