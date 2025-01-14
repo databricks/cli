@@ -48,7 +48,7 @@ func TestAccept(t *testing.T) {
 	server := StartServer(t)
 	AddHandlers(server)
 	// Redirect API access to local server:
-	t.Setenv("DATABRICKS_HOST", fmt.Sprintf("http://127.0.0.1:%d", server.Port))
+	t.Setenv("DATABRICKS_HOST", server.URL)
 	t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 	homeDir := t.TempDir()
@@ -57,6 +57,7 @@ func TestAccept(t *testing.T) {
 
 	repls := testdiff.ReplacementsContext{}
 	repls.Set(execPath, "$CLI")
+	repls.Set(server.URL, "$DATABRICKS_HOST")
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
