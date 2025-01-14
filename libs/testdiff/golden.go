@@ -169,7 +169,7 @@ func PrepareReplacements(t testutil.TestingT, r *ReplacementsContext, w *databri
 	r.Set(w.Config.AzureResourceID, "$DATABRICKS_AZURE_RESOURCE_ID")
 	r.Set(w.Config.AzureClientSecret, "$ARM_CLIENT_SECRET")
 	// r.Set(w.Config.AzureClientID, "$ARM_CLIENT_ID")
-	r.Set(w.Config.AzureClientID, testerWithEmail)
+	r.Set(w.Config.AzureClientID, testerName)
 	r.Set(w.Config.AzureTenantID, "$ARM_TENANT_ID")
 	r.Set(w.Config.ActionsIDTokenRequestURL, "$ACTIONS_ID_TOKEN_REQUEST_URL")
 	r.Set(w.Config.ActionsIDTokenRequestToken, "$ACTIONS_ID_TOKEN_REQUEST_TOKEN")
