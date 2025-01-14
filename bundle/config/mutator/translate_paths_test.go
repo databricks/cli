@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -226,7 +225,7 @@ func TestTranslatePaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		filepath.Join("dist", "task.whl"),
+		"dist/task.whl",
 		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
 	)
 	assert.Equal(
@@ -251,7 +250,7 @@ func TestTranslatePaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		filepath.Join("dist", "task.jar"),
+		"dist/task.jar",
 		b.Config.Resources.Jobs["job"].Tasks[5].Libraries[0].Jar,
 	)
 	assert.Equal(
@@ -362,7 +361,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		filepath.Join("job", "dist", "task.jar"),
+		"job/dist/task.jar",
 		b.Config.Resources.Jobs["job"].Tasks[1].Libraries[0].Jar,
 	)
 	assert.Equal(
@@ -774,8 +773,8 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, strings.Join([]string{".", "job", "dist", "env1.whl"}, string(os.PathSeparator)), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
-	assert.Equal(t, strings.Join([]string{".", "dist", "env2.whl"}, string(os.PathSeparator)), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
+	assert.Equal(t, "./job/dist/env1.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
+	assert.Equal(t, "./dist/env2.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
 	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[2])
 	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[3])
 	assert.Equal(t, "--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[4])
@@ -839,7 +838,7 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 
 	assert.Equal(
 		t,
-		filepath.Join("variables", "local", "whl.whl"),
+		"variables/local/whl.whl",
 		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
 	)
 }
@@ -952,34 +951,34 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 	// updated to source path
 	assert.Equal(
 		t,
-		filepath.Join(dir, "my_job_notebook"),
+		dir+"/my_job_notebook",
 		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath,
 	)
 	assert.Equal(
 		t,
-		filepath.Join(dir, "requirements.txt"),
+		dir+"/requirements.txt",
 		b.Config.Resources.Jobs["job"].Tasks[2].Libraries[0].Requirements,
 	)
 	assert.Equal(
 		t,
-		filepath.Join(dir, "my_python_file.py"),
+		dir+"/my_python_file.py",
 		b.Config.Resources.Jobs["job"].Tasks[3].SparkPythonTask.PythonFile,
 	)
 	assert.Equal(
 		t,
-		filepath.Join(dir, "my_pipeline_notebook"),
+		dir+"/my_pipeline_notebook",
 		b.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path,
 	)
 	assert.Equal(
 		t,
-		filepath.Join(dir, "my_python_file.py"),
+		dir+"/my_python_file.py",
 		b.Config.Resources.Pipelines["pipeline"].Libraries[2].File.Path,
 	)
 
 	// left as is
 	assert.Equal(
 		t,
-		filepath.Join("dist", "task.whl"),
+		"dist/task.whl",
 		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
 	)
 	assert.Equal(
@@ -989,7 +988,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		filepath.Join("dist", "task.jar"),
+		"dist/task.jar",
 		b.Config.Resources.Jobs["job"].Tasks[4].Libraries[0].Jar,
 	)
 	assert.Equal(

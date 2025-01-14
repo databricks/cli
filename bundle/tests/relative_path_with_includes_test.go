@@ -37,6 +37,6 @@ func TestRelativePathsWithIncludes(t *testing.T) {
 		b.Config.Sync.Exclude,
 	)
 
-	assert.Equal(t, filepath.Join("dist", "job_a.whl"), b.Config.Resources.Jobs["job_a"].Tasks[0].Libraries[0].Whl)
-	assert.Equal(t, filepath.Join("subfolder", "dist", "job_b.whl"), b.Config.Resources.Jobs["job_b"].Tasks[0].Libraries[0].Whl)
+	assert.Equal(t, "dist/job_a.whl", b.Config.Resources.Jobs["job_a"].Tasks[0].Libraries[0].Whl)
+	assert.Equal(t, "subfolder/dist/job_b.whl", b.Config.Resources.Jobs["job_b"].Tasks[0].Libraries[0].Whl)
 }
