@@ -12,7 +12,7 @@
       "continuous": true,
       "deployment": {
         "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/foobar/use-default-variable-values/state/metadata.json"
+        "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/foobar/use-default-variable-values/state/metadata.json"
       },
       "name": "a_string",
       "permissions": []
@@ -33,7 +33,7 @@
       "continuous": true,
       "deployment": {
         "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/foobar/override-string-variable/state/metadata.json"
+        "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/foobar/override-string-variable/state/metadata.json"
       },
       "name": "overridden_string",
       "permissions": []
@@ -54,7 +54,7 @@
       "continuous": true,
       "deployment": {
         "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/foobar/override-int-variable/state/metadata.json"
+        "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/foobar/override-int-variable/state/metadata.json"
       },
       "name": "a_string",
       "permissions": []
@@ -75,7 +75,7 @@
       "continuous": false,
       "deployment": {
         "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/foobar/override-both-bool-and-string-variables/state/metadata.json"
+        "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/foobar/override-both-bool-and-string-variables/state/metadata.json"
       },
       "name": "overridden_string",
       "permissions": []
