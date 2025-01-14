@@ -2,6 +2,7 @@ package testdiff
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -122,6 +123,19 @@ func (r *ReplacementsContext) Set(old, new string) {
 	if old == "" || new == "" {
 		return
 	}
+
+	// Always include both verbatim and json version of replacement.
+	// This helps when the string in question contains \ or other chars that need to be quoted.
+	// In that case we cannot rely that json(old) == '"{old}"' and need to add it explicitly.
+
+	encodedNew, err := json.Marshal(new)
+	if err != nil {
+		encodedOld, err := json.Marshal(old)
+		if err != nil {
+			r.Repls = append(r.Repls, Replacement{Old: string(encodedOld), New: string(encodedNew)})
+		}
+	}
+
 	r.Repls = append(r.Repls, Replacement{Old: old, New: new})
 }
 
