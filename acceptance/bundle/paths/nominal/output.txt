@@ -10,8 +10,8 @@ to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]
 Name: nominal
 Target: error
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/nominal/error
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/nominal/error
 
 Found 1 error
 

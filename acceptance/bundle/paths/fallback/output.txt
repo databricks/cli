@@ -10,8 +10,8 @@ to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]
 Name: fallback
 Target: error
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/fallback/error
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/fallback/error
 
 Found 1 error
 
