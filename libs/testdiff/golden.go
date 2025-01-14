@@ -2,6 +2,7 @@ package testdiff
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -122,6 +123,15 @@ func (r *ReplacementsContext) Set(old, new string) {
 	if old == "" || new == "" {
 		return
 	}
+
+	encodedNew, err := json.Marshal(new)
+	if err != nil {
+		encodedOld, err := json.Marshal(old)
+		if err != nil {
+			r.Repls = append(r.Repls, Replacement{Old: string(encodedOld), New: string(encodedNew)})
+		}
+	}
+
 	r.Repls = append(r.Repls, Replacement{Old: old, New: new})
 }
 
