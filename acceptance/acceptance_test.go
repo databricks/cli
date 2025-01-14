@@ -56,8 +56,12 @@ func TestAccept(t *testing.T) {
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
+	repls := testdiff.ReplacementsContext{}
+	repls.Set(execPath, "$CLI")
+
 	tempHomeDir := t.TempDir()
-	t.Logf("tempHomeDir=%v", tempHomeDir)
+	repls.Set(tempHomeDir, "$TMPHOME")
+	t.Logf("$TMPHOME=%v", tempHomeDir)
 
 	// Prevent CLI from downloading terraform in each test:
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
@@ -76,10 +80,6 @@ func TestAccept(t *testing.T) {
 		// Do not read user's ~/.databrickscfg
 		t.Setenv(env.HomeEnvVar(), homeDir)
 	}
-
-	repls := testdiff.ReplacementsContext{}
-	repls.Set(execPath, "$CLI")
-	repls.Set(tempHomeDir, "$TMPHOME")
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
