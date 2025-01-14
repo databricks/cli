@@ -124,6 +124,10 @@ func (r *ReplacementsContext) Set(old, new string) {
 		return
 	}
 
+	// Always include both verbatim and json version of replacement.
+	// This helps when the string in question contains \ or other chars that need to be quoted.
+	// In that case we cannot rely that json(old) == '"{old}"' and need to add it explicitly.
+
 	encodedNew, err := json.Marshal(new)
 	if err != nil {
 		encodedOld, err := json.Marshal(old)
