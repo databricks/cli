@@ -1,5 +1,5 @@
 
->>> $CLI bundle init default-sql --config-file ./input.json
+>>> $CLI bundle init default-sql --config-file ./input.json --output-dir output
 
 Welcome to the default SQL template for Databricks Asset Bundles!
 
