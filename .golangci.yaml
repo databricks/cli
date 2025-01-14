@@ -15,6 +15,7 @@ linters:
     - intrange
     - mirror
     - perfsprint
+    - unconvert
 linters-settings:
   govet:
     enable-all: true

@@ -44,6 +44,6 @@ func TestAppInterpolateVariables(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, InterpolateVariables())
 	require.Empty(t, diags)
-	require.Equal(t, []any([]any{map[string]any{"name": "JOB_ID", "value": "123"}}), b.Config.Resources.Apps["my_app_1"].Config["env"])
+	require.Equal(t, []any{map[string]any{"name": "JOB_ID", "value": "123"}}, b.Config.Resources.Apps["my_app_1"].Config["env"])
 	require.Nil(t, b.Config.Resources.Apps["my_app_2"].Config)
 }
