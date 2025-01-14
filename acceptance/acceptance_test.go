@@ -66,7 +66,7 @@ func TestAccept(t *testing.T) {
 		server := StartServer(t)
 		AddHandlers(server)
 		// Redirect API access to local server:
-		t.Setenv("DATABRICKS_HOST", fmt.Sprintf("http://127.0.0.1:%d", server.Port))
+		t.Setenv("DATABRICKS_HOST", server.URL)
 		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 		homeDir := t.TempDir()
@@ -217,6 +217,11 @@ func doComparison(t *testing.T, pathExpected, pathNew, valueNew string) {
 // Note, cleanups are not executed if main script fails; that's not a huge issue, since it runs it temp dir.
 func readMergedScriptContents(t *testing.T, dir string) string {
 	scriptContents := testutil.ReadFile(t, filepath.Join(dir, EntryPointScript))
+
+	// Wrap script contents in a subshell such that changing the working
+	// directory only affects the main script and not cleanup.
+	scriptContents = "(\n" + scriptContents + ")\n"
+
 	prepares := []string{}
 	cleanups := []string{}
 
