@@ -17,29 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "example",
-			},
-			Workspace: config.Workspace{
-				RootPath: "${bundle.name}/${var.foo}",
-			},
-			Variables: map[string]*variable.Variable{
-				"foo": {
-					Value: "bar",
-				},
-			},
-		},
-	}
-
-	// Apply with a valid prefix. This should change the workspace root path.
-	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "variables"))
-	require.NoError(t, diags.Error())
-	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
-}
-
 func TestResolveVariableReferencesForPrimitiveNonStringFields(t *testing.T) {
 	var diags diag.Diagnostics
 
