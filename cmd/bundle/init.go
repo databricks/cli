@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
@@ -164,7 +165,7 @@ func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, e
 	// when running the CLI on DBR and initializing a template to the workspace.
 	//
 	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		return filer.NewWorkspaceFilesExtensionsClient(root.WorkspaceClient(ctx), outputDir)
+		return filer.NewWorkspaceFilesExtensionsClient(auth.WorkspaceClient(ctx), outputDir)
 	}
 
 	return filer.NewLocalClient(outputDir)

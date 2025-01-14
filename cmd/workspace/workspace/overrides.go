@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -34,7 +34,7 @@ func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest
 
 	exportCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 		if len(args) != 1 {
 			return errors.New("expected to have the absolute path of the object or directory")
 		}

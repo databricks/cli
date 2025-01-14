@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
@@ -111,7 +112,7 @@ func newCreateIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createIndexJson.Unmarshal(&createIndexReq)
@@ -198,7 +199,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteDataVectorIndexJson.Unmarshal(&deleteDataVectorIndexReq)
@@ -270,7 +271,7 @@ func newDeleteIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		deleteIndexReq.IndexName = args[0]
 
@@ -328,7 +329,7 @@ func newGetIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		getIndexReq.IndexName = args[0]
 
@@ -388,7 +389,7 @@ func newListIndexes() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		listIndexesReq.EndpointName = args[0]
 
@@ -452,7 +453,7 @@ func newQueryIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := queryIndexJson.Unmarshal(&queryIndexReq)
@@ -530,7 +531,7 @@ func newQueryNextPage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := queryNextPageJson.Unmarshal(&queryNextPageReq)
@@ -606,7 +607,7 @@ func newScanIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := scanIndexJson.Unmarshal(&scanIndexReq)
@@ -676,7 +677,7 @@ func newSyncIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		syncIndexReq.IndexName = args[0]
 
@@ -745,7 +746,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := upsertDataVectorIndexJson.Unmarshal(&upsertDataVectorIndexReq)

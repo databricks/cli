@@ -238,7 +238,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.PreRunE = root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		{{if .Service.IsAccounts}}a := auth.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
+		{{if .Service.IsAccounts}}a := auth.AccountClient(ctx){{else}}w := auth.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
 			{{ if .CanUseJson }}
 			if cmd.Flags().Changed("json") {

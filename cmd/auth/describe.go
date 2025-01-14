@@ -58,7 +58,7 @@ func newDescribeCommand() *cobra.Command {
 		var err error
 		status, err = getAuthStatus(cmd, args, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 			isAccount, err := root.MustAnyClient(cmd, args)
-			return root.ConfigUsed(cmd.Context()), isAccount, err
+			return auth.ConfigUsed(cmd.Context()), isAccount, err
 		})
 		if err != nil {
 			return err
@@ -110,7 +110,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		return &status, nil
 	}
 
-	w := root.WorkspaceClient(ctx)
+	w := auth.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return &authStatus{
