@@ -2,7 +2,7 @@
 >>> $CLI bundle init default-python --config-file ./input.json
 
 Welcome to the default Python template for Databricks Asset Bundles!
-Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): $DATABRICKS_HOST
+Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): http://$DATABRICKS_HOST
 
 ✨ Your new project has been created in the 'my_default_python' directory!
 
@@ -13,9 +13,9 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
 Name: my_default_python
 Target: dev
 Workspace:
-  Host: $DATABRICKS_HOST
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev
+  Host: http://$DATABRICKS_HOST
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/my_default_python/dev
 
 Validation OK!
 
@@ -23,8 +23,8 @@ Validation OK!
 Name: my_default_python
 Target: prod
 Workspace:
-  Host: $DATABRICKS_HOST
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/my_default_python/prod
+  Host: http://$DATABRICKS_HOST
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/my_default_python/prod
 
 Validation OK!

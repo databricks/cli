@@ -4,7 +4,7 @@
 Welcome to the dbt template for Databricks Asset Bundles!
 
 A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
-workspace_host: $DATABRICKS_HOST
+workspace_host: http://$DATABRICKS_HOST
 
 📊 Your new project has been created in the 'my_dbt_sql' directory!
 If you already have dbt installed, just type 'cd my_dbt_sql; dbt init' to get started.
@@ -15,9 +15,9 @@ Refer to the README.md file for full "getting started" guide and production setu
 Name: my_dbt_sql
 Target: dev
 Workspace:
-  Host: $DATABRICKS_HOST
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/my_dbt_sql/dev
+  Host: http://$DATABRICKS_HOST
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/my_dbt_sql/dev
 
 Validation OK!
 
@@ -25,8 +25,8 @@ Validation OK!
 Name: my_dbt_sql
 Target: prod
 Workspace:
-  Host: $DATABRICKS_HOST
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/my_dbt_sql/prod
+  Host: http://$DATABRICKS_HOST
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/my_dbt_sql/prod
 
 Validation OK!
