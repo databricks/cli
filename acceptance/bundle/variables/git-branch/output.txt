@@ -11,7 +11,7 @@
     "name": "git",
     "target": "prod",
     "terraform": {
-      "exec_path": $TMPHOME
+      "exec_path": "$TMPHOME"
     }
   },
   "sync": {
@@ -27,15 +27,15 @@
     }
   },
   "workspace": {
-    "artifact_path": "/Workspace/Users/tester@databricks.com/.bundle/git/prod/artifacts",
+    "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/artifacts",
     "current_user": {
-      "short_name": "tester",
-      "userName": "tester@databricks.com"
+      "short_name": "$USERNAME",
+      "userName": "$USERNAME"
     },
-    "file_path": "/Workspace/Users/tester@databricks.com/.bundle/git/prod/files",
-    "resource_path": "/Workspace/Users/tester@databricks.com/.bundle/git/prod/resources",
-    "root_path": "/Workspace/Users/tester@databricks.com/.bundle/git/prod",
-    "state_path": "/Workspace/Users/tester@databricks.com/.bundle/git/prod/state"
+    "file_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/files",
+    "resource_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/resources",
+    "root_path": "/Workspace/Users/$USERNAME/.bundle/git/prod",
+    "state_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/state"
   }
 }
 
@@ -43,8 +43,8 @@
 Name: git
 Target: prod
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/git/prod
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/git/prod
 
 Validation OK!
 
@@ -60,7 +60,7 @@ Validation OK!
     "name": "git",
     "target": "dev",
     "terraform": {
-      "exec_path": $TMPHOME
+      "exec_path": "$TMPHOME"
     }
   },
   "sync": {
@@ -76,15 +76,15 @@ Validation OK!
     }
   },
   "workspace": {
-    "artifact_path": "/Workspace/Users/tester@databricks.com/.bundle/git/dev/artifacts",
+    "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/artifacts",
     "current_user": {
-      "short_name": "tester",
-      "userName": "tester@databricks.com"
+      "short_name": "$USERNAME",
+      "userName": "$USERNAME"
     },
-    "file_path": "/Workspace/Users/tester@databricks.com/.bundle/git/dev/files",
-    "resource_path": "/Workspace/Users/tester@databricks.com/.bundle/git/dev/resources",
-    "root_path": "/Workspace/Users/tester@databricks.com/.bundle/git/dev",
-    "state_path": "/Workspace/Users/tester@databricks.com/.bundle/git/dev/state"
+    "file_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/files",
+    "resource_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/resources",
+    "root_path": "/Workspace/Users/$USERNAME/.bundle/git/dev",
+    "state_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/state"
   }
 }
 
@@ -92,7 +92,7 @@ Validation OK!
 Name: git
 Target: dev
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/git/dev
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/git/dev
 
 Validation OK!
