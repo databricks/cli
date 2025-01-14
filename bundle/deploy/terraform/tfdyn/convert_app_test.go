@@ -63,6 +63,7 @@ func TestConvertApp(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		"description": "app description",
 		"name":        "app_id",
+		"no_compute":  true,
 		"resources": []any{
 			map[string]any{
 				"name": "job1",
