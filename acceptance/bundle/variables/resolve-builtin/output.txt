@@ -1,8 +1,8 @@
 {
   "artifact_path": "TestResolveVariableReferences/bar/artifacts",
   "current_user": {
-    "short_name": "tester",
-    "userName": "tester@databricks.com"
+    "short_name": "$USERNAME",
+    "userName": "$USERNAME"
   },
   "file_path": "TestResolveVariableReferences/bar/baz",
   "resource_path": "TestResolveVariableReferences/bar/resources",

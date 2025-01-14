@@ -69,8 +69,8 @@ Error: file ./test1.py not found
 Name: override_job_tasks
 Target: staging
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/override_job_tasks/staging
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/override_job_tasks/staging
 
 Found 1 error
 

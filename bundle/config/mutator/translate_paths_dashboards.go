@@ -1,12 +1,13 @@
 package mutator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func (t *translateContext) applyDashboardTranslations(v dyn.Value) (dyn.Value, error) {
+func (t *translateContext) applyDashboardTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
 	// Convert the `file_path` field to a local absolute path.
 	// We load the file at this path and use its contents for the dashboard contents.
 	pattern := dyn.NewPattern(
@@ -16,6 +17,10 @@ func (t *translateContext) applyDashboardTranslations(v dyn.Value) (dyn.Value, e
 		dyn.Key("file_path"),
 	)
 
+	opts := translateOptions{
+		Mode: TranslateModeLocalAbsoluteFile,
+	}
+
 	return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		key := p[2].Key()
 		dir, err := v.Location().Directory()
@@ -23,6 +28,6 @@ func (t *translateContext) applyDashboardTranslations(v dyn.Value) (dyn.Value, e
 			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for dashboard %s: %w", key, err)
 		}
 
-		return t.rewriteRelativeTo(p, v, t.retainLocalAbsoluteFilePath, dir, "")
+		return t.rewriteValue(ctx, p, v, dir, opts)
 	})
 }

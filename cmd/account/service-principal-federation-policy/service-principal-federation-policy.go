@@ -118,7 +118,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Policy.Description, "description", createReq.Policy.Description, `Description of the federation policy.`)
-	cmd.Flags().StringVar(&createReq.Policy.Name, "name", createReq.Policy.Name, `Name of the federation policy.`)
+	cmd.Flags().StringVar(&createReq.Policy.Name, "name", createReq.Policy.Name, `Resource name for the federation policy.`)
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "create SERVICE_PRINCIPAL_ID"
@@ -198,7 +198,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
-    POLICY_ID: `
+    POLICY_ID: The identifier for the federation policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -259,7 +259,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
-    POLICY_ID: `
+    POLICY_ID: The identifier for the federation policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -377,25 +377,21 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Policy.Description, "description", updateReq.Policy.Description, `Description of the federation policy.`)
-	cmd.Flags().StringVar(&updateReq.Policy.Name, "name", updateReq.Policy.Name, `Name of the federation policy.`)
+	cmd.Flags().StringVar(&updateReq.Policy.Name, "name", updateReq.Policy.Name, `Resource name for the federation policy.`)
 	// TODO: complex arg: oidc_policy
 
-	cmd.Use = "update SERVICE_PRINCIPAL_ID POLICY_ID UPDATE_MASK"
+	cmd.Use = "update SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Update service principal federation policy.`
 	cmd.Long = `Update service principal federation policy.
 
   Arguments:
     SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
-    POLICY_ID: 
-    UPDATE_MASK: Field mask is required to be passed into the PATCH request. Field mask
-      specifies which fields of the setting payload will be updated. The field
-      mask needs to be supplied as single string. To specify multiple fields in
-      the field mask, use comma as the separator (no space).`
+    POLICY_ID: The identifier for the federation policy.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(3)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -421,7 +417,6 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
 		updateReq.PolicyId = args[1]
-		updateReq.UpdateMask = args[2]
 
 		response, err := a.ServicePrincipalFederationPolicy.Update(ctx, updateReq)
 		if err != nil {

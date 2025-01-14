@@ -14,8 +14,8 @@ Error: no value assigned to required variable b. Assignment can be done through 
 Name: test bundle
 Target: env-missing-a-required-variable-assignment
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/test bundle/env-missing-a-required-variable-assignment
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/test bundle/env-missing-a-required-variable-assignment
 
 Found 1 error
 
