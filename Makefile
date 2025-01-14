@@ -33,9 +33,12 @@ snapshot:
 
 vendor:
 	go mod vendor
-  
+
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
+
+docs:
+	go run ./bundle/internal/docs ./bundle/internal/schema ./bundle/internal/docs
 
 INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h
 
@@ -45,4 +48,4 @@ integration:
 integration-short:
 	$(INTEGRATION) -short
 
-.PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short
+.PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short docs
