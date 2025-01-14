@@ -17,8 +17,7 @@ import (
 )
 
 const (
-	testerName      = "$USERNAME"
-	testerWithEmail = testerName
+	testerName = "$USERNAME"
 )
 
 var OverwriteMode = false
@@ -186,7 +185,7 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	// There could be exact matches or overlap between different name fields, so sort them by length
 	// to ensure we match the largest one first and map them all to the same token
 
-	r.Set(u.UserName, testerWithEmail)
+	r.Set(u.UserName, testerName)
 	r.Set(u.DisplayName, testerName)
 	if u.Name != nil {
 		r.Set(u.Name.FamilyName, testerName)
@@ -194,7 +193,7 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	}
 
 	for _, val := range u.Emails {
-		r.Set(val.Value, testerWithEmail)
+		r.Set(val.Value, testerName)
 	}
 
 	r.Set(iamutil.GetShortUserName(&u), testerName)
