@@ -77,8 +77,8 @@ jobs:
           make vendor
           pip3 install wheel
 
-      - name: Run tests
-        run: make test
+      - name: Run tests with coverage
+        run: make cover
 
   golangci:
     needs: cleanups
