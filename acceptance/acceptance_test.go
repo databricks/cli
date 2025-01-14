@@ -2,7 +2,6 @@ package acceptance_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -79,7 +78,6 @@ func TestAccept(t *testing.T) {
 
 	repls := testdiff.ReplacementsContext{}
 	repls.Set(execPath, "$CLI")
-	repls.Set(toJson(t, tempHomeDir), "\"$TMPHOME\"")
 	repls.Set(tempHomeDir, "$TMPHOME")
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
@@ -373,10 +371,4 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 
 		return copyFile(path, destPath)
 	})
-}
-
-func toJson(t *testing.T, value any) string {
-	encoded, err := json.Marshal(value)
-	require.NoError(t, err)
-	return string(encoded)
 }
