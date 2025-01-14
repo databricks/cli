@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -96,7 +97,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.Dashboard)
@@ -177,7 +178,7 @@ func newCreateSchedule() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createScheduleJson.Unmarshal(&createScheduleReq.Schedule)
@@ -256,7 +257,7 @@ func newCreateSubscription() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createSubscriptionJson.Unmarshal(&createSubscriptionReq.Subscription)
@@ -326,7 +327,7 @@ func newDeleteSchedule() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		deleteScheduleReq.DashboardId = args[0]
 		deleteScheduleReq.ScheduleId = args[1]
@@ -385,7 +386,7 @@ func newDeleteSubscription() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		deleteSubscriptionReq.DashboardId = args[0]
 		deleteSubscriptionReq.ScheduleId = args[1]
@@ -445,7 +446,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		getReq.DashboardId = args[0]
 
@@ -503,7 +504,7 @@ func newGetPublished() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		getPublishedReq.DashboardId = args[0]
 
@@ -560,7 +561,7 @@ func newGetSchedule() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		getScheduleReq.DashboardId = args[0]
 		getScheduleReq.ScheduleId = args[1]
@@ -619,7 +620,7 @@ func newGetSubscription() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		getSubscriptionReq.DashboardId = args[0]
 		getSubscriptionReq.ScheduleId = args[1]
@@ -678,7 +679,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		response := w.Lakeview.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -731,7 +732,7 @@ func newListSchedules() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		listSchedulesReq.DashboardId = args[0]
 
@@ -787,7 +788,7 @@ func newListSubscriptions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		listSubscriptionsReq.DashboardId = args[0]
 		listSubscriptionsReq.ScheduleId = args[1]
@@ -856,7 +857,7 @@ func newMigrate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := migrateJson.Unmarshal(&migrateReq)
@@ -933,7 +934,7 @@ func newPublish() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := publishJson.Unmarshal(&publishReq)
@@ -1003,7 +1004,7 @@ func newTrash() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		trashReq.DashboardId = args[0]
 
@@ -1061,7 +1062,7 @@ func newUnpublish() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		unpublishReq.DashboardId = args[0]
 
@@ -1126,7 +1127,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.Dashboard)
@@ -1209,7 +1210,7 @@ func newUpdateSchedule() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := auth.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateScheduleJson.Unmarshal(&updateScheduleReq.Schedule)

@@ -134,6 +134,7 @@ func TryLoad(ctx context.Context) (*Bundle, error) {
 	return Load(ctx, root)
 }
 
+// TODO: Remove references to this function and simplify?
 func (b *Bundle) InitializeWorkspaceClient() (*databricks.WorkspaceClient, error) {
 	client, err := b.Config.Workspace.Client()
 	if err != nil {

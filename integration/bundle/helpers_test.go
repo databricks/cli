@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
@@ -36,7 +36,7 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 
 	configFilePath := writeConfigFile(t, config)
 
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = auth.SetWorkspaceClient(ctx, nil)
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
