@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -135,6 +136,8 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 		bundle.Seq(
 			terraform.StatePush(),
 			terraform.Load(),
+			apps.InterpolateVariables(),
+			apps.UploadConfig(),
 			metadata.Compute(),
 			metadata.Upload(),
 			bundle.LogString("Deployment complete!"),

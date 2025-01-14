@@ -59,6 +59,81 @@
         "cli": {
           "bundle": {
             "config": {
+              "resources.App": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "active_deployment": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment"
+                      },
+                      "app_status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus"
+                      },
+                      "compute_status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus"
+                      },
+                      "config": {
+                        "$ref": "#/$defs/map/interface"
+                      },
+                      "create_time": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "creator": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "default_source_code_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "description": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "pending_deployment": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "resources": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
+                      },
+                      "service_principal_client_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "service_principal_id": {
+                        "$ref": "#/$defs/int64"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "source_code_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "update_time": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "updater": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "url": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "source_code_path",
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Cluster": {
                 "oneOf": [
                   {
@@ -1273,6 +1348,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "apps": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.App"
+                    },
                     "clusters": {
                       "description": "The cluster definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster",
@@ -1528,6 +1606,280 @@
         },
         "databricks-sdk-go": {
           "service": {
+            "apps.AppDeployment": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "create_time": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "creator": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "deployment_artifacts": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts"
+                    },
+                    "deployment_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "mode": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode"
+                    },
+                    "source_code_path": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "status": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus"
+                    },
+                    "update_time": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppDeploymentArtifacts": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "source_code_path": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppDeploymentMode": {
+              "type": "string"
+            },
+            "apps.AppDeploymentState": {
+              "type": "string"
+            },
+            "apps.AppDeploymentStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentState"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "description": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "job": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "secret": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret"
+                    },
+                    "serving_endpoint": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint"
+                    },
+                    "sql_warehouse": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceJob": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJobJobPermission"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "permission"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceJobJobPermission": {
+              "type": "string"
+            },
+            "apps.AppResourceSecret": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecretSecretPermission"
+                    },
+                    "scope": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "permission",
+                    "scope"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceSecretSecretPermission": {
+              "type": "string"
+            },
+            "apps.AppResourceServingEndpoint": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpointServingEndpointPermission"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "permission"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceServingEndpointServingEndpointPermission": {
+              "type": "string"
+            },
+            "apps.AppResourceSqlWarehouse": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlWarehousePermission"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "permission"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceSqlWarehouseSqlWarehousePermission": {
+              "type": "string"
+            },
+            "apps.ApplicationState": {
+              "type": "string"
+            },
+            "apps.ApplicationStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ApplicationState"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.ComputeState": {
+              "type": "string"
+            },
+            "apps.ComputeStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeState"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "catalog.MonitorCronSchedule": {
               "oneOf": [
                 {
@@ -5718,6 +6070,20 @@
           "cli": {
             "bundle": {
               "config": {
+                "resources.App": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.App"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Cluster": {
                   "oneOf": [
                     {
@@ -5947,6 +6313,20 @@
           }
         }
       },
+      "interface": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/interface"
+            }
+          },
+          {
+            "type": "string",
+            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+          }
+        ]
+      },
       "string": {
         "oneOf": [
           {
@@ -6015,6 +6395,20 @@
           },
           "databricks-sdk-go": {
             "service": {
+              "apps.AppResource": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "catalog.MonitorMetric": {
                 "oneOf": [
                   {
