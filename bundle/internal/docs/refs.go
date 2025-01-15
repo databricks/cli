@@ -20,7 +20,7 @@ func isReferenceType(v *jsonschema.Schema, refs map[string]jsonschema.Schema, cu
 			return true
 		}
 	}
-	props := resolveAdditionaProperties(v)
+	props := resolveAdditionalProperties(v)
 	if !isInOwnFields(props, customFields) {
 		return false
 	}
@@ -39,7 +39,7 @@ func isInOwnFields(node *jsonschema.Schema, customFields map[string]bool) bool {
 	return true
 }
 
-func resolveAdditionaProperties(v *jsonschema.Schema) *jsonschema.Schema {
+func resolveAdditionalProperties(v *jsonschema.Schema) *jsonschema.Schema {
 	if v.AdditionalProperties == nil {
 		return nil
 	}
