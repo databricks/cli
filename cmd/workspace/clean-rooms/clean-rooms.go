@@ -62,7 +62,6 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: clean_room
 	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, ``)
 	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room.`)
 	// TODO: complex arg: output_catalog
@@ -145,7 +144,6 @@ func newCreateOutputCatalog() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createOutputCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: output_catalog
 	cmd.Flags().StringVar(&createOutputCatalogReq.OutputCatalog.CatalogName, "catalog-name", createOutputCatalogReq.OutputCatalog.CatalogName, `The name of the output catalog in UC.`)
 
 	cmd.Use = "create-output-catalog CLEAN_ROOM_NAME"
