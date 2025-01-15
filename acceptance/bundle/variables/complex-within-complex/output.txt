@@ -1,0 +1,18 @@
+Warning: unknown field: node_type_id
+  at resources.jobs.job1.job_clusters[0]
+  in databricks.yml:25:11
+
+Error: complex variables cannot contain references to another complex variables
+
+[
+  {
+    "job_cluster_key": "my_cluster",
+    "new_cluster": null
+  },
+  {
+    "job_cluster_key": "my_cluster",
+    "new_cluster": "${var.cluster}"
+  }
+]
+
+Exit code: 1
