@@ -204,7 +204,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 		ComputeStatus: &apps.ComputeStatus{
 			State: apps.ComputeStateActive,
 		},
-	}, nil)
+	}, nil).Once()
 
 	wait := &apps.WaitGetDeploymentAppSucceeded[apps.AppDeployment]{
 		Poll: func(_ time.Duration, _ func(*apps.AppDeployment)) (*apps.AppDeployment, error) {
@@ -220,6 +220,21 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
 		},
 	}).Return(nil, errors.New("deployment in progress")).Once()
+
+	// After first deployment fails, we should get the app and wait for the deployment to complete
+	appApi.EXPECT().Get(mock.Anything, apps.GetAppRequest{
+		Name: "my_app",
+	}).Return(&apps.App{
+		Name: "my_app",
+		ActiveDeployment: &apps.AppDeployment{
+			DeploymentId: "active_deployment_id",
+			Status: &apps.AppDeploymentStatus{
+				State: apps.AppDeploymentStateInProgress,
+			},
+		},
+	}, nil).Once()
+
+	appApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
 
 	// Second one should succeeed
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
