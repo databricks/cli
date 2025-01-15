@@ -65,11 +65,6 @@ func AssertOutputJQ(t testutil.TestingT, ctx context.Context, out, outTitle, exp
 	}
 }
 
-func NormalizeNewlines(input string) string {
-	output := strings.ReplaceAll(input, "\r\n", "\n")
-	return strings.ReplaceAll(output, "\r", "\n")
-}
-
 func ReplaceOutput(t testutil.TestingT, ctx context.Context, out string) string {
 	t.Helper()
 	out = NormalizeNewlines(out)
@@ -83,4 +78,9 @@ func ReplaceOutput(t testutil.TestingT, ctx context.Context, out string) string 
 	out = privatePathRegex.ReplaceAllString(out, "/tmp/.../$3")
 
 	return out
+}
+
+func NormalizeNewlines(input string) string {
+	output := strings.ReplaceAll(input, "\r\n", "\n")
+	return strings.ReplaceAll(output, "\r", "\n")
 }
