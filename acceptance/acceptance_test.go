@@ -89,6 +89,7 @@ func TestAccept(t *testing.T) {
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
+	testdiff.PrepareReplacementsUUID(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
