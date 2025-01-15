@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
-func isReferenceType(v *jsonschema.Schema, refs map[string]*jsonschema.Schema, customFields map[string]bool) bool {
+func isReferenceType(v *jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFields map[string]bool) bool {
 	if v.Type != "object" && v.Type != "array" {
 		return false
 	}
@@ -21,7 +21,7 @@ func isReferenceType(v *jsonschema.Schema, refs map[string]*jsonschema.Schema, c
 		}
 	}
 	props := resolveAdditionalProperties(v)
-	if !isInOwnFields(props, customFields) {
+	if !isInOwnFields(props, ownFields) {
 		return false
 	}
 	if props != nil {
@@ -32,9 +32,9 @@ func isReferenceType(v *jsonschema.Schema, refs map[string]*jsonschema.Schema, c
 	return false
 }
 
-func isInOwnFields(node *jsonschema.Schema, customFields map[string]bool) bool {
+func isInOwnFields(node *jsonschema.Schema, ownFields map[string]bool) bool {
 	if node != nil && node.Reference != nil {
-		return customFields[getRefType(node)]
+		return ownFields[getRefType(node)]
 	}
 	return true
 }
@@ -51,8 +51,11 @@ func resolveAdditionalProperties(v *jsonschema.Schema) *jsonschema.Schema {
 }
 
 func resolveRefs(s *jsonschema.Schema, schemas map[string]*jsonschema.Schema) *jsonschema.Schema {
-	node := s
+	if s == nil {
+		return nil
+	}
 
+	node := s
 	description := s.Description
 	markdownDescription := s.MarkdownDescription
 	examples := s.Examples
@@ -62,6 +65,7 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]*jsonschema.Schema) *j
 		newNode, ok := schemas[ref]
 		if !ok {
 			log.Printf("schema %s not found", ref)
+			break
 		}
 
 		if description == "" {

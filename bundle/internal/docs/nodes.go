@@ -24,7 +24,7 @@ type attributeNode struct {
 	Title       string
 	Type        string
 	Description string
-	Reference   string
+	Link        string
 }
 
 type rootProp struct {
@@ -61,6 +61,7 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 			continue
 		}
 		visited[k] = true
+
 		v = resolveRefs(v, refs)
 		node := rootNode{
 			Title:       k,
@@ -70,43 +71,74 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 			Type:        getHumanReadableType(v.Type),
 		}
 
-		node.Attributes = getAttributes(v.Properties, refs, ownFields, k, item.circular)
-		if !item.circular {
-			rootProps = append(rootProps, extractNodes(k, v.Properties, refs, ownFields)...)
+		hasProperties := len(v.Properties) > 0
+		if hasProperties {
+			node.Attributes = getAttributes(v.Properties, refs, ownFields, k, item.circular)
 		}
 
-		additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
-		if ok {
-			objectKeyType := resolveRefs(additionalProps, refs)
-			d := getDescription(objectKeyType, true)
+		mapValueType := getMapValueType(v, refs)
+		if mapValueType != nil {
+			d := getDescription(mapValueType, true)
 			if d != "" {
 				node.Description = d
 			}
-			if len(node.Example) == 0 {
-				node.Example = getExample(objectKeyType)
+			if node.Example == "" {
+				node.Example = getExample(mapValueType)
 			}
-			prefix := k + ".<name>"
-			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, ownFields, prefix, item.circular)
-			if !item.circular {
-				rootProps = append(rootProps, extractNodes(prefix, objectKeyType.Properties, refs, ownFields)...)
-			}
+			node.ObjectKeyAttributes = getAttributes(mapValueType.Properties, refs, ownFields, getMapKeyPrefix(k), item.circular)
 		}
 
-		if v.Items != nil {
-			arrayItemType := resolveRefs(v.Items, refs)
+		arrayItemType := resolveRefs(v.Items, refs)
+		if arrayItemType != nil {
 			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, ownFields, k, item.circular)
-			if !item.circular {
-				rootProps = append(rootProps, extractNodes(k, arrayItemType.Properties, refs, ownFields)...)
-			}
 		}
 
 		nodes = append(nodes, node)
+
+		// Whether we should add new root props from the children of the current JSON-schema node to include their definitions to this document
+		shouldAddNewProps := !item.circular
+		if shouldAddNewProps {
+			newProps := []rootProp{}
+			// Adds node with definition for the properties. Example:
+			// bundle:
+			//  prop-name: <value>
+			if hasProperties {
+				newProps = append(newProps, extractNodes(k, v.Properties, refs, ownFields)...)
+			}
+
+			// Adds node with definition for the type of array item. Example:
+			// permissions:
+			//  - <item>
+			if arrayItemType != nil {
+				newProps = append(newProps, extractNodes(k, arrayItemType.Properties, refs, ownFields)...)
+			}
+			// Adds node with definition for the type of the Map value. Example:
+			// targets:
+			//   <key>: <value>
+			if mapValueType != nil {
+				newProps = append(newProps, extractNodes(getMapKeyPrefix(k), mapValueType.Properties, refs, ownFields)...)
+			}
+
+			rootProps = append(rootProps, newProps...)
+		}
 	}
 
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].Title < nodes[j].Title
 	})
 	return nodes
+}
+
+func getMapValueType(v *jsonschema.Schema, refs map[string]*jsonschema.Schema) *jsonschema.Schema {
+	additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
+	if ok {
+		return resolveRefs(additionalProps, refs)
+	}
+	return nil
+}
+
+func getMapKeyPrefix(s string) string {
+	return s + ".<name>"
 }
 
 func removePluralForm(s string) string {
@@ -143,7 +175,7 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[stri
 			Title:       k,
 			Type:        typeString,
 			Description: getDescription(v, true),
-			Reference:   reference,
+			Link:        reference,
 		})
 	}
 	sort.Slice(attributes, func(i, j int) bool {
@@ -172,7 +204,7 @@ func shouldExtract(ref string, ownFields map[string]bool) bool {
 func extractNodes(prefix string, props, refs map[string]*jsonschema.Schema, ownFields map[string]bool) []rootProp {
 	nodes := []rootProp{}
 	for k, v := range props {
-		if !shouldExtract(*v.Reference, ownFields) {
+		if v.Reference != nil && !shouldExtract(*v.Reference, ownFields) {
 			continue
 		}
 		v = resolveRefs(v, refs)

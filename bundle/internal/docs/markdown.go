@@ -87,13 +87,13 @@ func buildAttributeTable(m *markdownRenderer, attributes []attributeNode) *markd
 
 func formatDescription(a attributeNode) string {
 	s := strings.ReplaceAll(a.Description, "\n", " ")
-	if a.Reference != "" {
+	if a.Link != "" {
 		if strings.HasSuffix(s, ".") {
 			s += " "
 		} else if s != "" {
 			s += ". "
 		}
-		s += fmt.Sprintf("See [_](#%s).", a.Reference)
+		s += fmt.Sprintf("See [_](#%s).", a.Link)
 	}
 	return s
 }
