@@ -16,64 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveComplexVariable(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "example",
-			},
-			Variables: map[string]*variable.Variable{
-				"cluster": {
-					Value: map[string]any{
-						"node_type_id": "Standard_DS3_v2",
-						"num_workers":  2,
-					},
-					Type: variable.VariableTypeComplex,
-				},
-			},
-
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job1": {
-						JobSettings: &jobs.JobSettings{
-							JobClusters: []jobs.JobCluster{
-								{
-									NewCluster: compute.ClusterSpec{
-										NodeTypeId: "random",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	ctx := context.Background()
-
-	// Assign the variables to the dynamic configuration.
-	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-			var p dyn.Path
-			var err error
-
-			p = dyn.MustPathFromString("resources.jobs.job1.job_clusters[0]")
-			v, err = dyn.SetByPath(v, p.Append(dyn.Key("new_cluster")), dyn.V("${var.cluster}"))
-			require.NoError(t, err)
-
-			return v, nil
-		})
-		return diag.FromErr(err)
-	})
-	require.NoError(t, diags.Error())
-
-	diags = bundle.Apply(ctx, b, ResolveVariableReferences("bundle", "workspace", "variables"))
-	require.NoError(t, diags.Error())
-	require.Equal(t, "Standard_DS3_v2", b.Config.Resources.Jobs["job1"].JobSettings.JobClusters[0].NewCluster.NodeTypeId)
-	require.Equal(t, 2, b.Config.Resources.Jobs["job1"].JobSettings.JobClusters[0].NewCluster.NumWorkers)
-}
-
 func TestResolveComplexVariableReferencesWithComplexVariablesError(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

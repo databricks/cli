@@ -1,0 +1,14 @@
+Warning: expected map, found string
+  at variables.type
+  in databricks.yml:8:9
+
+[
+  {
+    "job_cluster_key": "",
+    "new_cluster": {
+      "node_type_id": "Standard_DS3_v2",
+      "num_workers": 2,
+      "spark_version": "13.3.x-scala2.12"
+    }
+  }
+]
