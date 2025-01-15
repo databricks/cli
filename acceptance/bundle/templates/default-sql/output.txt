@@ -30,3 +30,13 @@ Workspace:
   Path: /Workspace/Users/$USERNAME/.bundle/my_default_sql/prod
 
 Validation OK!
+
+>>> ruff format --diff
+error: Failed to parse scratch/exploration.ipynb:1:2:15: Simple statements must be separated by newlines or semicolons
+
+Exit code: 2
+
+>>> ruff clean
+Removing cache at: .ruff_cache
+
+Exit code: 0

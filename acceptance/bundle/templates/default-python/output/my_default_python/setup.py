@@ -15,7 +15,7 @@ import my_default_python
 
 setup(
     name="my_default_python",
-    # We use timestamp as Local version identifier (https://peps.python.org/pep-0440/#local-version-identifiers.)
+    # We use timestamp as Local version identifier (https://peps.python.org/pep-<NUMID>/#local-version-identifiers.)
     # to ensure that changes to wheel package are picked up when used on all-purpose clusters
     version=my_default_python.__version__ + "+" + datetime.datetime.utcnow().strftime("%Y%m%d.%H%M%S"),
     url="https://databricks.com",

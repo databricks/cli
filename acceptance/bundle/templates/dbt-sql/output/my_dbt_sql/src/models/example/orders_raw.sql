@@ -2,7 +2,7 @@
 --
 -- The streaming table below ingests all JSON files in /databricks-datasets/retail-org/sales_orders/
 -- Read more about streaming tables at https://docs.getdbt.com/reference/resource-configs/databricks-configs#materialized-views-and-streaming-tables
--- Current limitation: a "full refresh" is needed in case the definition below is changed; see https://github.com/databricks/dbt-databricks/issues/561.
+-- Current limitation: a "full refresh" is needed in case the definition below is changed; see https://github.com/databricks/dbt-databricks/issues/<NUMID>.
 {{ config(materialized = 'streaming_table') }}
 
 select

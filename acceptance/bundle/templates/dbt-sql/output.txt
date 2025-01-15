@@ -30,3 +30,12 @@ Workspace:
   Path: /Workspace/Users/$USERNAME/.bundle/my_dbt_sql/prod
 
 Validation OK!
+
+>>> ruff format --diff
+warning: No Python files found under the given path(s)
+
+Exit code: 0
+
+>>> ruff clean
+
+Exit code: 0

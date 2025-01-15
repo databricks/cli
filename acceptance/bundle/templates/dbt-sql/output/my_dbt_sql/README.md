@@ -47,7 +47,7 @@ and deployment to production (using Databricks Asset Bundles).
    (see https://docs.databricks.com/dev-tools/auth/pat.html).
    You can use OAuth as an alternative, but this currently requires manual configuration.
    See https://github.com/databricks/dbt-databricks/blob/main/docs/oauth.md
-   for general instructions, or https://community.databricks.com/t5/technical-blog/using-dbt-core-with-oauth-on-azure-databricks/ba-p/46605
+   for general instructions, or https://community.databricks.com/t5/technical-blog/using-dbt-core-with-oauth-on-azure-databricks/ba-p/<NUMID>
    for advice on setting up OAuth for Azure Databricks.
 
    To setup up additional profiles, such as a 'prod' profile,
