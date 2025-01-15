@@ -56,6 +56,9 @@ func TestAccept(t *testing.T) {
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
+	repls := testdiff.ReplacementsContext{}
+	repls.Set(execPath, "$CLI")
+
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
@@ -77,11 +80,8 @@ func TestAccept(t *testing.T) {
 	user, err := workspaceClient.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, user)
-
-	ctx, repls := testdiff.WithReplacementsMap(ctx)
-	repls.Set(execPath, "$CLI")
-	testdiff.PrepareReplacementsUser(t, repls, *user)
-	testdiff.PrepareReplacements(t, repls, workspaceClient)
+	testdiff.PrepareReplacementsUser(t, &repls, *user)
+	testdiff.PrepareReplacements(t, &repls, workspaceClient)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -89,7 +89,7 @@ func TestAccept(t *testing.T) {
 	for _, dir := range testDirs {
 		t.Run(dir, func(t *testing.T) {
 			t.Parallel()
-			runTest(t, ctx, dir, coverDir)
+			runTest(t, dir, coverDir, repls)
 		})
 	}
 }
@@ -114,7 +114,7 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func runTest(t *testing.T, ctx context.Context, dir, coverDir string) {
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -150,7 +150,7 @@ func runTest(t *testing.T, ctx context.Context, dir, coverDir string) {
 	outB, err := cmd.CombinedOutput()
 
 	out := formatOutput(string(outB), err)
-	out = testdiff.ReplaceOutput(t, ctx, out)
+	out = repls.Replace(out)
 	doComparison(t, filepath.Join(dir, "output.txt"), "script output", out)
 
 	for relPath := range outputs {
@@ -169,7 +169,7 @@ func runTest(t *testing.T, ctx context.Context, dir, coverDir string) {
 			continue
 		}
 		pathExpected := filepath.Join(dir, relPath)
-		newVal := testdiff.ReplaceOutput(t, ctx, string(newValBytes))
+		newVal := repls.Replace(string(newValBytes))
 		doComparison(t, pathExpected, pathNew, newVal)
 	}
 
@@ -190,7 +190,7 @@ func runTest(t *testing.T, ctx context.Context, dir, coverDir string) {
 			// Show the contents & support overwrite mode for it:
 			pathNew := filepath.Join(tmpDir, relPath)
 			newVal := testutil.ReadFile(t, pathNew)
-			newVal = testdiff.ReplaceOutput(t, ctx, newVal)
+			newVal = repls.Replace(newVal)
 			doComparison(t, filepath.Join(dir, relPath), filepath.Join(tmpDir, relPath), newVal)
 		}
 	}
