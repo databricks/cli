@@ -15,7 +15,7 @@ WHERE if(
   true,
 
   -- During development, only process a smaller range of data
-  order_date >= '<NUMID>-08-01' AND order_date < '<NUMID>-09-01'
+  order_date >= '2019-08-01' AND order_date < '2019-09-01'
 )
 
 GROUP BY order_date

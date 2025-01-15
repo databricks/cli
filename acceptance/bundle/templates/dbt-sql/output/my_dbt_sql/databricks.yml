@@ -3,7 +3,7 @@
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: my_dbt_sql
-  uuid: <UUID>
+  uuid: 77b4c5d0-0d0a-4e1a-a472-c08952b7f38e
 
 include:
   - resources/*.yml

@@ -2,7 +2,7 @@
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: my_default_python
-  uuid: <UUID>
+  uuid: f0d73e0a-8483-485c-a7f9-0c1588086268
 
 include:
   - resources/*.yml
