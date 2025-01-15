@@ -11,7 +11,7 @@ For simpler usage run it together with copy command to move resulting files to l
 make docs && cp bundle/internal/docs/output/*.md ../docs/source/dev-tools/bundles
 ```
 
-To change file names or file headers update them in `main.go` file in this directory
+To change intro sections for files update them in `templates/` directory
 
 ### Annotation file structure
 
@@ -29,6 +29,14 @@ To change file names or file headers update them in `main.go` file in this direc
 Descriptions with `PLACEHOLDER` value are not displayed in docs and JSON-schema
 
 All relative links like `[_](/dev-tools/bundles/settings.md#cluster_id)` are kept as is in docs but converted to absolute links in JSON schema
+
+To change description for type itself (not its fields) use `"_"`:
+```yaml
+github.com/databricks/cli/bundle/config/resources.Cluster:
+  "_":
+    "markdown_description": |-
+      The cluster resource defines an [all-purpose cluster](/api/workspace/clusters/create).
+```
 
 ### Example annotation
 

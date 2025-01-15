@@ -13,6 +13,11 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
+const (
+	rootFileName      = "reference.md"
+	resourcesFileName = "resources.md"
+)
+
 func main() {
 	if len(os.Args) != 3 {
 		fmt.Println("Usage: go run main.go <annotation-file> <output-file>")
@@ -22,6 +27,7 @@ func main() {
 	annotationDir := os.Args[1]
 	docsDir := os.Args[2]
 	outputDir := path.Join(docsDir, "output")
+	templatesDir := path.Join(docsDir, "templates")
 
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(outputDir, 0o755); err != nil {
@@ -29,12 +35,20 @@ func main() {
 		}
 	}
 
-	err := generateDocs(
+	rootHeader, err := os.ReadFile(path.Join(templatesDir, rootFileName))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = generateDocs(
 		[]string{path.Join(annotationDir, "annotations.yml")},
 		path.Join(outputDir, rootFileName),
 		reflect.TypeOf(config.Root{}),
-		rootHeader,
+		string(rootHeader),
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	resourcesHeader, err := os.ReadFile(path.Join(templatesDir, resourcesFileName))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,7 +56,7 @@ func main() {
 		[]string{path.Join(annotationDir, "annotations_openapi.yml"), path.Join(annotationDir, "annotations_openapi_overrides.yml"), path.Join(annotationDir, "annotations.yml")},
 		path.Join(outputDir, resourcesFileName),
 		reflect.TypeOf(config.Resources{}),
-		resourcesHeader,
+		string(resourcesHeader),
 	)
 	if err != nil {
 		log.Fatal(err)
