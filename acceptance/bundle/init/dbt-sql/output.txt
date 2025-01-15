@@ -1,5 +1,5 @@
 
->>> $CLI bundle init dbt-sql --config-file ./input.json
+>>> $CLI bundle init dbt-sql --config-file ./input.json --output-dir output
 
 Welcome to the dbt template for Databricks Asset Bundles!
 

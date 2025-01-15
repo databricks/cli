@@ -56,9 +56,6 @@ func TestAccept(t *testing.T) {
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
-	repls := testdiff.ReplacementsContext{}
-	repls.Set(execPath, "$CLI")
-
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
@@ -80,8 +77,11 @@ func TestAccept(t *testing.T) {
 	user, err := workspaceClient.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, user)
-	testdiff.PrepareReplacementsUser(t, &repls, *user)
-	testdiff.PrepareReplacements(t, &repls, workspaceClient)
+
+	ctx, repls := testdiff.WithReplacementsMap(ctx)
+	repls.Set(execPath, "$CLI")
+	testdiff.PrepareReplacementsUser(t, repls, *user)
+	testdiff.PrepareReplacements(t, repls, workspaceClient)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -90,7 +90,7 @@ func TestAccept(t *testing.T) {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runTest(t, dir, coverDir, repls)
+			runTest(t, ctx, dir, coverDir)
 		})
 	}
 }
@@ -115,7 +115,7 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
+func runTest(t *testing.T, ctx context.Context, dir, coverDir string) {
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -151,49 +151,48 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	outB, err := cmd.CombinedOutput()
 
 	out := formatOutput(string(outB), err)
-	out = repls.Replace(out)
+	out = testdiff.ReplaceOutput(t, ctx, out)
 	doComparison(t, filepath.Join(dir, "output.txt"), "script output", out)
 
-	for key := range outputs {
-		if key == "output.txt" {
+	for relPath := range outputs {
+		if relPath == "output.txt" {
 			// handled above
 			continue
 		}
-		pathNew := filepath.Join(tmpDir, key)
+		pathNew := filepath.Join(tmpDir, relPath)
 		newValBytes, err := os.ReadFile(pathNew)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
-				t.Errorf("%s: expected to find this file but could not (%s)", key, tmpDir)
+				t.Errorf("%s: expected to find this file but could not (%s)", relPath, tmpDir)
 			} else {
-				t.Errorf("%s: could not read: %s", key, err)
+				t.Errorf("%s: could not read: %s", relPath, err)
 			}
 			continue
 		}
-		pathExpected := filepath.Join(dir, key)
-		newVal := repls.Replace(string(newValBytes))
+		pathExpected := filepath.Join(dir, relPath)
+		newVal := testdiff.ReplaceOutput(t, ctx, string(newValBytes))
 		doComparison(t, pathExpected, pathNew, newVal)
 	}
 
 	// Make sure there are not unaccounted for new files
-	files, err := os.ReadDir(tmpDir)
+	files, err := ListDir(tmpDir)
 	require.NoError(t, err)
 
-	for _, f := range files {
-		name := f.Name()
-		if _, ok := inputs[name]; ok {
+	for _, relPath := range files {
+		if _, ok := inputs[relPath]; ok {
 			continue
 		}
-		if _, ok := outputs[name]; ok {
+		if _, ok := outputs[relPath]; ok {
 			continue
 		}
-		t.Errorf("Unexpected output: %s", f)
-		if strings.HasPrefix(name, "out") {
+		t.Errorf("Unexpected output: %s", relPath)
+		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			pathNew := filepath.Join(tmpDir, name)
+			pathNew := filepath.Join(tmpDir, relPath)
 			newVal := testutil.ReadFile(t, pathNew)
-			newVal = repls.Replace(newVal)
-			doComparison(t, filepath.Join(dir, name), filepath.Join(tmpDir, name), newVal)
+			newVal = testdiff.ReplaceOutput(t, ctx, newVal)
+			doComparison(t, filepath.Join(dir, relPath), filepath.Join(tmpDir, relPath), newVal)
 		}
 	}
 }
@@ -204,13 +203,8 @@ func doComparison(t *testing.T, pathExpected, pathNew, valueNew string) {
 	valueExpected = testdiff.NormalizeNewlines(valueExpected)
 	testdiff.AssertEqualTexts(t, pathExpected, pathNew, valueExpected, valueNew)
 	if testdiff.OverwriteMode {
-		if valueNew != "" {
-			t.Logf("Overwriting: %s", pathExpected)
-			testutil.WriteFile(t, pathExpected, valueNew)
-		} else {
-			t.Logf("Removing: %s", pathExpected)
-			_ = os.Remove(pathExpected)
-		}
+		t.Logf("Overwriting: %s", pathExpected)
+		testutil.WriteFile(t, pathExpected, valueNew)
 	}
 }
 
@@ -333,8 +327,10 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 			return err
 		}
 
-		if strings.HasPrefix(name, "out") {
-			outputs[relPath] = true
+		if strings.HasPrefix(relPath, "out") {
+			if !info.IsDir() {
+				outputs[relPath] = true
+			}
 			return nil
 		} else {
 			inputs[relPath] = true
@@ -352,4 +348,26 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 
 		return copyFile(path, destPath)
 	})
+}
+
+func ListDir(src string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		files = append(files, relPath)
+		return nil
+	})
+	return files, err
 }
