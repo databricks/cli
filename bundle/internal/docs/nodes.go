@@ -7,6 +7,8 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
+// rootNode is an intermediate representation of resolved JSON-schema item that is used to generate documentation
+// Every schema node goes follows this conversion `JSON-schema -> rootNode -> markdown text`
 type rootNode struct {
 	Title               string
 	Description         string
@@ -26,9 +28,15 @@ type attributeNode struct {
 }
 
 type rootProp struct {
-	k        string
-	v        *jsonschema.Schema
+	// k is the name of the property
+	k string
+	// v is the corresponding json-schema node
+	v *jsonschema.Schema
+	// topLevel is true only for direct properties of the schema of root type (e.g. config.Root or config.Resources)
+	// Example: config.Root has .
 	topLevel bool
+	// circular indicates if property was added by recursive type, e.g. task.for_each_task.task.for_each_task
+	// These entries don't expand further and don't add any new nodes from their properties
 	circular bool
 }
 
