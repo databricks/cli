@@ -1,4 +1,4 @@
-default: build
+default: vendor fmt lint
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
