@@ -5,18 +5,10 @@ import (
 	"log"
 	"os"
 	"strings"
-
-	md "github.com/nao1215/markdown"
 )
 
 func buildMarkdown(nodes []rootNode, outputFile, header string) error {
-	f, err := os.Create(outputFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	m := md.NewMarkdown(f)
+	m := newMardownRenderer()
 	m = m.PlainText(header)
 	for _, node := range nodes {
 		m = m.LF()
@@ -56,12 +48,15 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 		}
 	}
 
-	err = m.Build()
+	f, err := os.Create(outputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	return nil
+	_, err = f.WriteString(m.String())
+	if err != nil {
+		log.Fatal(err)
+	}
+	return f.Close()
 }
 
 func pickLastWord(s string) string {
@@ -70,7 +65,7 @@ func pickLastWord(s string) string {
 }
 
 // Build a custom table which we use in Databricks website
-func buildCustomAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdown {
+func buildAttributeTable(m *markdownRenderer, attributes []attributeNode) *markdownRenderer {
 	m = m.LF()
 	m = m.PlainText(".. list-table::")
 	m = m.PlainText("   :header-rows: 1")
@@ -90,23 +85,6 @@ func buildCustomAttributeTable(m *md.Markdown, attributes []attributeNode) *md.M
 	return m
 }
 
-func buildAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdown {
-	return buildCustomAttributeTable(m, attributes)
-
-	// Rows below are useful for debugging since it renders the table in a regular markdown format
-
-	// rows := [][]string{}
-	// for _, n := range attributes {
-	// 	rows = append(rows, []string{fmt.Sprintf("`%s`", n.Title), n.Type, formatDescription(n.Description)})
-	// }
-	// m = m.CustomTable(md.TableSet{
-	// 	Header: []string{"Key", "Type", "Description"},
-	// 	Rows:   rows,
-	// }, md.TableOptions{AutoWrapText: false, AutoFormatHeaders: false})
-
-	// return m
-}
-
 func formatDescription(a attributeNode) string {
 	s := strings.ReplaceAll(a.Description, "\n", " ")
 	if a.Reference != "" {
@@ -115,7 +93,7 @@ func formatDescription(a attributeNode) string {
 		} else if s != "" {
 			s += ". "
 		}
-		s += fmt.Sprintf("See %s.", md.Link("_", "#"+a.Reference))
+		s += fmt.Sprintf("See [_](#%s).", a.Reference)
 	}
 	return s
 }
