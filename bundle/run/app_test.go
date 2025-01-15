@@ -3,6 +3,7 @@ package run
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -186,6 +187,54 @@ func TestAppRunWithAnActiveDeploymentInProgress(t *testing.T) {
 
 	appsApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
 
+	r.run(t)
+}
+
+func TestAppDeployWithDeploymentInProgress(t *testing.T) {
+	ctx, b, mwc := setupBundle(t)
+
+	appApi := mwc.GetMockAppsAPI()
+	appApi.EXPECT().Get(mock.Anything, apps.GetAppRequest{
+		Name: "my_app",
+	}).Return(&apps.App{
+		Name: "my_app",
+		AppStatus: &apps.ApplicationStatus{
+			State: apps.ApplicationStateRunning,
+		},
+		ComputeStatus: &apps.ComputeStatus{
+			State: apps.ComputeStateActive,
+		},
+	}, nil)
+
+	wait := &apps.WaitGetDeploymentAppSucceeded[apps.AppDeployment]{
+		Poll: func(_ time.Duration, _ func(*apps.AppDeployment)) (*apps.AppDeployment, error) {
+			return nil, nil
+		},
+	}
+
+	// First deployment fails
+	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
+		AppName: "my_app",
+		AppDeployment: &apps.AppDeployment{
+			Mode:           apps.AppDeploymentModeSnapshot,
+			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+		},
+	}).Return(nil, errors.New("deployment in progress")).Once()
+
+	// Second one should succeeed
+	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
+		AppName: "my_app",
+		AppDeployment: &apps.AppDeployment{
+			Mode:           apps.AppDeploymentModeSnapshot,
+			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+		},
+	}).Return(wait, nil).Once()
+
+	r := &testAppRunner{
+		m:   mwc,
+		b:   b,
+		ctx: ctx,
+	}
 	r.run(t)
 }
 
