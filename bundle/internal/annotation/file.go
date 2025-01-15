@@ -10,21 +10,11 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 )
 
-type Descriptor struct {
-	Description         string `json:"description,omitempty"`
-	MarkdownDescription string `json:"markdown_description,omitempty"`
-	Title               string `json:"title,omitempty"`
-	Default             any    `json:"default,omitempty"`
-	Enum                []any  `json:"enum,omitempty"`
-	MarkdownExamples    string `json:"markdown_examples,omitempty"`
-}
-
-/**
- * Parsed file with annotations, expected format:
- * github.com/databricks/cli/bundle/config.Bundle:
- *  	cluster_id:
- *      description: "Description"
- */
+// Parsed file with annotations, expected format:
+// github.com/databricks/cli/bundle/config.Bundle:
+//
+//	cluster_id:
+//	   description: "Description"
 type File map[string]map[string]Descriptor
 
 func LoadAndMerge(sources []string) (File, error) {
@@ -52,5 +42,3 @@ func LoadAndMerge(sources []string) (File, error) {
 	}
 	return data, nil
 }
-
-const Placeholder = "PLACEHOLDER"
