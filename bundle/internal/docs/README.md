@@ -1,10 +1,9 @@
 ## docs-autogen
 
 1. Install [Golang](https://go.dev/doc/install)
-2. Run `go mod download` from the repo root
-3. Run `make docs` from the repo
-4. See generated documents in `./bundle/internal/docs/output` directory
-5. To change descriptions update content in `./bundle/internal/schema/annotations.yml` or `./bundle/internal/schema/annotations_openapi_overrides.yml` and re-run `make docs`
+2. Run `make docs` from the repo
+3. See generated documents in `./bundle/internal/docs/output` directory
+4. To change descriptions update content in `./bundle/internal/schema/annotations.yml` or `./bundle/internal/schema/annotations_openapi_overrides.yml` and re-run `make docs`
 
 For simpler usage run it together with copy command to move resulting files to local `docs` repo. Note that it will overwrite any local changes in affected files. Example:
 
