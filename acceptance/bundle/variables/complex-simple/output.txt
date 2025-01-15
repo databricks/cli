@@ -1,7 +1,3 @@
-Warning: expected map, found string
-  at variables.type
-  in databricks.yml:8:9
-
 [
   {
     "job_cluster_key": "",

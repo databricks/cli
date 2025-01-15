@@ -1,12 +1,11 @@
 # This example works and properly merges resources.jobs.job1.job_clusters.new_cluster and ${var.cluster}.
 # retaining num_workers, spark_version and overriding node_type_id.
-# However, it prints a warning "expected map, found string" which is unnecessary.
 bundle:
   name: TestResolveComplexVariable
 
 variables:
-  type: "complex"
   cluster:
+    type: "complex"
     value:
       node_type_id: "Standard_DS3_v2"
       num_workers: 2
