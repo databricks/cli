@@ -62,6 +62,10 @@ jobs:
 
       - name: Install ruff
         uses: astral-sh/ruff-action@31a518504640beb4897d0b9f9e50a2a9196e75ba # v3.0.1
+        with:
+          version: "0.9.1"
+          # Run it against an ~empty directory. We need ruff in $PATH, not run it.
+          src: ".github"
 
       - name: Set go env
         run: |
