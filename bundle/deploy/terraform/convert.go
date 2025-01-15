@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -196,6 +197,20 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.ID
 				config.Resources.Dashboards[resource.Name] = cur
+			case "databricks_app":
+				if config.Resources.Apps == nil {
+					config.Resources.Apps = make(map[string]*resources.App)
+				}
+				cur := config.Resources.Apps[resource.Name]
+				if cur == nil {
+					cur = &resources.App{ModifiedStatus: resources.ModifiedStatusDeleted, App: &apps.App{}}
+				} else {
+					// If the app exists in terraform and bundle, we always set modified status to updated
+					// because we don't really know if the app source code was updated or not.
+					cur.ModifiedStatus = resources.ModifiedStatusUpdated
+				}
+				cur.Name = instance.Attributes.Name
+				config.Resources.Apps[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
@@ -257,6 +272,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 	}
 	for _, src := range config.Resources.Dashboards {
 		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.Apps {
+		if src.ModifiedStatus == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}

@@ -136,7 +136,18 @@ func loadInteractiveClusters(ctx context.Context, w *databricks.WorkspaceClient,
 	promptSpinner := cmdio.Spinner(ctx)
 	promptSpinner <- "Loading list of clusters to select from"
 	defer close(promptSpinner)
-	all, err := w.Clusters.ListAll(ctx, compute.ListClustersRequest{})
+	all, err := w.Clusters.ListAll(ctx, compute.ListClustersRequest{
+		// Maximum page size to optimize for load time.
+		PageSize: 100,
+
+		// Filter out system clusters.
+		FilterBy: &compute.ListClustersFilterBy{
+			ClusterSources: []compute.ClusterSource{
+				compute.ClusterSourceApi,
+				compute.ClusterSourceUi,
+			},
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list clusters: %w", err)
 	}

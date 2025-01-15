@@ -20,7 +20,6 @@ targets:
       jobs:
         foo:
           job_clusters:
-            # This does not work because merging is done before resolution
             - job_cluster_key: "${var.mykey}"
               new_cluster:
                 node_type_id: i3.xlarge

@@ -20,6 +20,7 @@ dist/
 
 *.log
 coverage.txt
+coverage-acceptance.txt
 
 __pycache__
 *.pyc

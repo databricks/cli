@@ -81,7 +81,7 @@ func (v Value) AsInt() (int64, bool) {
 	case int32:
 		return int64(vv), true
 	case int64:
-		return int64(vv), true
+		return vv, true
 	default:
 		return 0, false
 	}

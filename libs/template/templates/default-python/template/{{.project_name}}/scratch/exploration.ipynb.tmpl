@@ -29,7 +29,8 @@
    "source": [
    {{- if (eq .include_python "yes") }}
     "import sys\n",
-    "sys.path.append('../src')\n",
+    "\n",
+    "sys.path.append(\"../src\")\n",
     "from {{.project_name}} import main\n",
     "\n",
     "main.get_taxis(spark).show(10)"

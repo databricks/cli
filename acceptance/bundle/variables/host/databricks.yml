@@ -1,0 +1,10 @@
+bundle:
+  name: host
+
+variables:
+  host:
+    default: https://nonexistent123.staging.cloud.databricks.com
+
+workspace:
+  # This is currently not supported
+  host: ${var.host}

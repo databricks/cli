@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
@@ -31,6 +32,7 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 		initialValue    *bool
 		expectedValue   *bool
 		expectedWarning string
+		expectedError   string
 	}{
 		{
 			name:          "preset enabled, bundle in Workspace, databricks runtime",
@@ -86,6 +88,18 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 			expectedValue:   &enabled,
 			expectedWarning: "workspace.file_path setting will be ignored in source-linked deployment mode",
 		},
+		{
+			name: "preset enabled, apps is defined by user",
+			ctx:  dbr.MockRuntime(testContext, true),
+			mutateBundle: func(b *bundle.Bundle) {
+				b.Config.Resources.Apps = map[string]*resources.App{
+					"app": {},
+				}
+			},
+			initialValue:  &enabled,
+			expectedValue: &enabled,
+			expectedError: "source-linked deployment is not supported for apps",
+		},
 	}
 
 	for _, tt := range tests {
@@ -107,12 +121,17 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 			bundletest.SetLocation(b, "workspace.file_path", []dyn.Location{{File: "databricks.yml"}})
 
 			diags := bundle.Apply(tt.ctx, b, mutator.ApplySourceLinkedDeploymentPreset())
-			if diags.HasError() {
+			if diags.HasError() && tt.expectedError == "" {
 				t.Fatalf("unexpected error: %v", diags)
 			}
 
 			if tt.expectedWarning != "" {
 				require.Equal(t, tt.expectedWarning, diags[0].Summary)
+				require.NotEmpty(t, diags[0].Locations)
+			}
+
+			if tt.expectedError != "" {
+				require.Equal(t, tt.expectedError, diags[0].Summary)
 				require.NotEmpty(t, diags[0].Locations)
 			}
 
