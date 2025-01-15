@@ -140,7 +140,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- end}}
     {{$method := .}}
 	{{ if not .IsJsonOnly }}
-	{{range $request.Fields -}}
+	{{range .AllFields -}}
 		{{- if not .Required -}}
 			{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
 			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
