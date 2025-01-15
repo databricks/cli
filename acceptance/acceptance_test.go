@@ -59,6 +59,13 @@ func TestAccept(t *testing.T) {
 	repls := testdiff.ReplacementsContext{}
 	repls.Set(execPath, "$CLI")
 
+	tempHomeDir := t.TempDir()
+	repls.Set(tempHomeDir, "$TMPHOME")
+	t.Logf("$TMPHOME=%v", tempHomeDir)
+
+	// Prevent CLI from downloading terraform in each test:
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
+
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
