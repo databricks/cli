@@ -2,7 +2,7 @@
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: my_default_sql
-  uuid: f99204e5-97fa-4ae2-b358-91d3669fcecc
+  uuid: 19bd03e9-03e7-462a-a918-a8bcd255e45a
 
 include:
   - resources/*.yml
