@@ -69,7 +69,7 @@ func generateDocs(inputPaths []string, outputPath string, rootType reflect.Type,
 		log.Fatal(err)
 	}
 
-	schemas := map[string]jsonschema.Schema{}
+	schemas := map[string]*jsonschema.Schema{}
 	customFields := map[string]bool{}
 
 	s, err := jsonschema.FromType(rootType, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
@@ -82,7 +82,7 @@ func generateDocs(inputPaths []string, outputPath string, rootType reflect.Type,
 			refPath := getPath(typ)
 			shouldHandle := strings.HasPrefix(refPath, "github.com")
 			if !shouldHandle {
-				schemas[jsonschema.TypePath(typ)] = s
+				schemas[jsonschema.TypePath(typ)] = &s
 				return s
 			}
 
@@ -100,7 +100,7 @@ func generateDocs(inputPaths []string, outputPath string, rootType reflect.Type,
 				assignAnnotation(v, a[k])
 			}
 
-			schemas[jsonschema.TypePath(typ)] = s
+			schemas[jsonschema.TypePath(typ)] = &s
 			return s
 		},
 	})

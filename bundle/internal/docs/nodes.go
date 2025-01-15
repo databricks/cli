@@ -42,7 +42,7 @@ type rootProp struct {
 
 const MapType = "Map"
 
-func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool) []rootNode {
+func getNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, customFields map[string]bool) []rootNode {
 	rootProps := []rootProp{}
 	for k, v := range s.Properties {
 		rootProps = append(rootProps, rootProp{k, v, true, false})
@@ -125,7 +125,7 @@ func getHumanReadableType(t jsonschema.Type) string {
 	return typesMapping[string(t)]
 }
 
-func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool, prefix string, circular bool) []attributeNode {
+func getAttributes(props, refs map[string]*jsonschema.Schema, customFields map[string]bool, prefix string, circular bool) []attributeNode {
 	attributes := []attributeNode{}
 	for k, v := range props {
 		v = resolveRefs(v, refs)
@@ -165,7 +165,7 @@ func shouldExtract(ref string, customFields map[string]bool) bool {
 	return isCustomField
 }
 
-func extractNodes(prefix string, props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool) []rootProp {
+func extractNodes(prefix string, props, refs map[string]*jsonschema.Schema, customFields map[string]bool) []rootProp {
 	nodes := []rootProp{}
 	for k, v := range props {
 		if !shouldExtract(*v.Reference, customFields) {

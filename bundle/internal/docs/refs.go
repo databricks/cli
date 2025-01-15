@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
-func isReferenceType(v *jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool) bool {
+func isReferenceType(v *jsonschema.Schema, refs map[string]*jsonschema.Schema, customFields map[string]bool) bool {
 	if v.Type != "object" && v.Type != "array" {
 		return false
 	}
@@ -50,7 +50,7 @@ func resolveAdditionalProperties(v *jsonschema.Schema) *jsonschema.Schema {
 	return additionalProps
 }
 
-func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *jsonschema.Schema {
+func resolveRefs(s *jsonschema.Schema, schemas map[string]*jsonschema.Schema) *jsonschema.Schema {
 	node := s
 
 	description := s.Description
@@ -74,14 +74,15 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *js
 			examples = newNode.Examples
 		}
 
-		node = &newNode
+		node = newNode
 	}
 
-	node.Description = description
-	node.MarkdownDescription = markdownDescription
-	node.Examples = examples
+	newNode := *node
+	newNode.Description = description
+	newNode.MarkdownDescription = markdownDescription
+	newNode.Examples = examples
 
-	return node
+	return &newNode
 }
 
 func getRefType(node *jsonschema.Schema) string {
