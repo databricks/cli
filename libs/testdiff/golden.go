@@ -72,12 +72,7 @@ func ReplaceOutput(t testutil.TestingT, ctx context.Context, out string) string 
 	if replacements == nil {
 		t.Fatal("WithReplacementsMap was not called")
 	}
-	out = replacements.Replace(out)
-	out = uuidRegex.ReplaceAllString(out, "<UUID>")
-	out = numIdRegex.ReplaceAllString(out, "<NUMID>")
-	out = privatePathRegex.ReplaceAllString(out, "/tmp/.../$3")
-
-	return out
+	return replacements.Replace(out)
 }
 
 func NormalizeNewlines(input string) string {
