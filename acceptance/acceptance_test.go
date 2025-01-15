@@ -288,7 +288,6 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	cmd = exec.Command(execPath, "--version")
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, "%s --version failed: %s\n%s", execPath, err, out)
-	t.Logf("%s --version: %s", execPath, out)
 	return execPath
 }
 
