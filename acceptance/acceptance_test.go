@@ -88,7 +88,7 @@ func TestAccept(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
-	testdiff.PrepareReplacements(t, &repls, workspaceClient)
+	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -259,10 +259,23 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	}
 
 	start := time.Now()
-	args := []string{"go", "build", "-mod", "vendor", "-o", execPath}
+	args := []string{
+		"go", "build",
+		"-mod", "vendor",
+		"-o", execPath,
+	}
+
 	if coverDir != "" {
 		args = append(args, "-cover")
 	}
+
+	if runtime.GOOS == "windows" {
+		// Get this error on my local Windows:
+		// error obtaining VCS status: exit status 128
+		// Use -buildvcs=false to disable VCS stamping.
+		args = append(args, "-buildvcs=false")
+	}
+
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = ".."
 	out, err := cmd.CombinedOutput()
