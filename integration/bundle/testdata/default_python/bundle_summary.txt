@@ -23,7 +23,7 @@
     "resources/project_name_$UNIQUE_PRJ.pipeline.yml"
   ],
   "workspace": {
-    "host": "https://$DATABRICKS_HOST",
+    "host": "$DATABRICKS_URL",
     "current_user": {
       "active": true,
       "displayName": "$USERNAME",
@@ -141,7 +141,7 @@
             "unit": "DAYS"
           }
         },
-        "url": "https://$DATABRICKS_HOST/jobs/<NUMID>?o=<NUMID>"
+        "url": "$DATABRICKS_URL/jobs/<NUMID>?o=<NUMID>"
       }
     },
     "pipelines": {
@@ -165,7 +165,7 @@
         ],
         "name": "[dev $USERNAME] project_name_$UNIQUE_PRJ_pipeline",
         "target": "project_name_$UNIQUE_PRJ_dev",
-        "url": "https://$DATABRICKS_HOST/pipelines/<UUID>?o=<NUMID>"
+        "url": "$DATABRICKS_URL/pipelines/<UUID>?o=<NUMID>"
       }
     }
   },
