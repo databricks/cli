@@ -1,6 +1,6 @@
 Warning: unknown field: node_type_id
   at resources.jobs.job1.job_clusters[0]
-  in databricks.yml:23:11
+  in databricks.yml:25:11
 
 Error: complex variables cannot contain references to another complex variables
 
