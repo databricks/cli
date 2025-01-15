@@ -1,0 +1,4 @@
+export BUNDLE_VAR_no_alert_for_skipped_runs=false
+export BUNDLE_VAR_max_workers=2
+export BUNDLE_VAR_min_workers=3  # shadowed by --var below
+$CLI bundle validate -o json --var no_alert_for_canceled_runs=true --var min_workers=1 --var spot_bid_max_price=0.5 | jq '{ variables, jobs: .resources.jobs }'
