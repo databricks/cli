@@ -69,14 +69,16 @@ func generateDocs(inputPaths []string, outputPath string, rootType reflect.Type,
 		log.Fatal(err)
 	}
 
+	// schemas is used to resolve references to schemas
 	schemas := map[string]*jsonschema.Schema{}
-	customFields := map[string]bool{}
+	// ownFields is used to track fields that are defined in the annotation file and should be included in the docs page
+	ownFields := map[string]bool{}
 
 	s, err := jsonschema.FromType(rootType, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-			_, isCustomField := annotations[jsonschema.TypePath(typ)]
-			if isCustomField {
-				customFields[jsonschema.TypePath(typ)] = true
+			_, isOwnField := annotations[jsonschema.TypePath(typ)]
+			if isOwnField {
+				ownFields[jsonschema.TypePath(typ)] = true
 			}
 
 			refPath := getPath(typ)
@@ -108,7 +110,7 @@ func generateDocs(inputPaths []string, outputPath string, rootType reflect.Type,
 		log.Fatal(err)
 	}
 
-	nodes := getNodes(s, schemas, customFields)
+	nodes := buildNodes(s, schemas, ownFields)
 	err = buildMarkdown(nodes, outputPath, header)
 	if err != nil {
 		log.Fatal(err)

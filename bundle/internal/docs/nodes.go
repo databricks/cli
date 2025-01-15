@@ -42,7 +42,9 @@ type rootProp struct {
 
 const MapType = "Map"
 
-func getNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, customFields map[string]bool) []rootNode {
+// buildNodes converts JSON-schema to a flat list of rootNode items that are then used to generate markdown documentation
+// It recursively traverses the schema expanding the resulting list with new items for every properties of nodes `object` and `array` type
+func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFields map[string]bool) []rootNode {
 	rootProps := []rootProp{}
 	for k, v := range s.Properties {
 		rootProps = append(rootProps, rootProp{k, v, true, false})
@@ -68,9 +70,9 @@ func getNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, customFie
 			Type:        getHumanReadableType(v.Type),
 		}
 
-		node.Attributes = getAttributes(v.Properties, refs, customFields, k, item.circular)
+		node.Attributes = getAttributes(v.Properties, refs, ownFields, k, item.circular)
 		if !item.circular {
-			rootProps = append(rootProps, extractNodes(k, v.Properties, refs, customFields)...)
+			rootProps = append(rootProps, extractNodes(k, v.Properties, refs, ownFields)...)
 		}
 
 		additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
@@ -84,17 +86,17 @@ func getNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, customFie
 				node.Example = getExample(objectKeyType)
 			}
 			prefix := k + ".<name>"
-			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, customFields, prefix, item.circular)
+			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs, ownFields, prefix, item.circular)
 			if !item.circular {
-				rootProps = append(rootProps, extractNodes(prefix, objectKeyType.Properties, refs, customFields)...)
+				rootProps = append(rootProps, extractNodes(prefix, objectKeyType.Properties, refs, ownFields)...)
 			}
 		}
 
 		if v.Items != nil {
 			arrayItemType := resolveRefs(v.Items, refs)
-			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, customFields, k, item.circular)
+			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs, ownFields, k, item.circular)
 			if !item.circular {
-				rootProps = append(rootProps, extractNodes(k, arrayItemType.Properties, refs, customFields)...)
+				rootProps = append(rootProps, extractNodes(k, arrayItemType.Properties, refs, ownFields)...)
 			}
 		}
 
@@ -125,7 +127,7 @@ func getHumanReadableType(t jsonschema.Type) string {
 	return typesMapping[string(t)]
 }
 
-func getAttributes(props, refs map[string]*jsonschema.Schema, customFields map[string]bool, prefix string, circular bool) []attributeNode {
+func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[string]bool, prefix string, circular bool) []attributeNode {
 	attributes := []attributeNode{}
 	for k, v := range props {
 		v = resolveRefs(v, refs)
@@ -134,7 +136,7 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, customFields map[s
 			typeString = "Any"
 		}
 		var reference string
-		if isReferenceType(v, refs, customFields) && !circular {
+		if isReferenceType(v, refs, ownFields) && !circular {
 			reference = prefix + "." + k
 		}
 		attributes = append(attributes, attributeNode{
@@ -157,18 +159,20 @@ func getDescription(s *jsonschema.Schema, allowMarkdown bool) string {
 	return s.Description
 }
 
-func shouldExtract(ref string, customFields map[string]bool) bool {
+func shouldExtract(ref string, ownFields map[string]bool) bool {
 	if i := strings.Index(ref, "github.com"); i >= 0 {
 		ref = ref[i:]
 	}
-	_, isCustomField := customFields[ref]
+	_, isCustomField := ownFields[ref]
 	return isCustomField
 }
 
-func extractNodes(prefix string, props, refs map[string]*jsonschema.Schema, customFields map[string]bool) []rootProp {
+// extractNodes returns a list of rootProp items for all properties of the json-schema node that should be extracted based on context
+// E.g. we extract all propert
+func extractNodes(prefix string, props, refs map[string]*jsonschema.Schema, ownFields map[string]bool) []rootProp {
 	nodes := []rootProp{}
 	for k, v := range props {
-		if !shouldExtract(*v.Reference, customFields) {
+		if !shouldExtract(*v.Reference, ownFields) {
 			continue
 		}
 		v = resolveRefs(v, refs)
