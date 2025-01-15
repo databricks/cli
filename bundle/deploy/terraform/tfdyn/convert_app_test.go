@@ -63,6 +63,7 @@ func TestConvertApp(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		"description": "app description",
 		"name":        "app_id",
+		"no_compute":  true,
 		"resources": []any{
 			map[string]any{
 				"name": "job1",
@@ -136,6 +137,7 @@ func TestConvertAppWithNoDescription(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		"name":        "app_id",
 		"description": "", // Due to Apps API always returning a description field, we set it in the output as well to avoid permanent TF drift
+		"no_compute":  true,
 		"resources": []any{
 			map[string]any{
 				"name": "job1",
