@@ -35,6 +35,7 @@
     "# Import DLT and src/{{.project_name}}\n",
     "import dlt\n",
     "import sys\n",
+    "\n",
     "sys.path.append(spark.conf.get(\"bundle.sourcePath\", \".\"))\n",
     "from pyspark.sql.functions import expr\n",
     "from {{.project_name}} import main"
@@ -63,17 +64,18 @@
     {{- if (eq .include_python "yes") }}
     "@dlt.view\n",
     "def taxi_raw():\n",
-    "  return main.get_taxis(spark)\n",
+    "    return main.get_taxis(spark)\n",
     {{else}}
     "\n",
     "@dlt.view\n",
     "def taxi_raw():\n",
-    "  return spark.read.format(\"json\").load(\"/databricks-datasets/nyctaxi/sample/json/\")\n",
+    "    return spark.read.format(\"json\").load(\"/databricks-datasets/nyctaxi/sample/json/\")\n",
     {{end -}}
+    "\n",
     "\n",
     "@dlt.table\n",
     "def filtered_taxis():\n",
-    "  return dlt.read(\"taxi_raw\").filter(expr(\"fare_amount < 30\"))"
+    "    return dlt.read(\"taxi_raw\").filter(expr(\"fare_amount < 30\"))"
    ]
   }
  ],
