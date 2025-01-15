@@ -76,7 +76,7 @@ func (r *ReplacementsContext) Set(old, new string) {
 	r.appendLiteral(old, new)
 }
 
-func PrepareReplacements(t testutil.TestingT, r *ReplacementsContext, w *databricks.WorkspaceClient) {
+func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsContext, w *databricks.WorkspaceClient) {
 	t.Helper()
 	// in some clouds (gcp) w.Config.Host includes "https://" prefix in others it's really just a host (azure)
 	host := strings.TrimPrefix(strings.TrimPrefix(w.Config.Host, "http://"), "https://")

@@ -58,7 +58,7 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, replacements, *user)
-	testdiff.PrepareReplacements(t, replacements, wt.W)
+	testdiff.PrepareReplacementsWorkspaceClient(t, replacements, wt.W)
 	testdiff.PrepareReplacementsUUID(t, replacements)
 	testdiff.PrepareReplacementsNumber(t, replacements)
 	testdiff.PrepareReplacementsTemporaryDirectory(t, replacements)
