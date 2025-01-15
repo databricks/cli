@@ -129,9 +129,9 @@ func (r *ReplacementsContext) Set(old, new string) {
 	// In that case we cannot rely that json(old) == '"{old}"' and need to add it explicitly.
 
 	encodedNew, err := json.Marshal(new)
-	if err != nil {
+	if err == nil {
 		encodedOld, err := json.Marshal(old)
-		if err != nil {
+		if err == nil {
 			r.Repls = append(r.Repls, Replacement{Old: string(encodedOld), New: string(encodedNew)})
 		}
 	}
