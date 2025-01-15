@@ -59,6 +59,13 @@ func TestAccept(t *testing.T) {
 	repls := testdiff.ReplacementsContext{}
 	repls.Set(execPath, "$CLI")
 
+	tempHomeDir := t.TempDir()
+	repls.Set(tempHomeDir, "$TMPHOME")
+	t.Logf("$TMPHOME=%v", tempHomeDir)
+
+	// Prevent CLI from downloading terraform in each test:
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
+
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
@@ -87,7 +94,8 @@ func TestAccept(t *testing.T) {
 	require.NotEmpty(t, testDirs)
 
 	for _, dir := range testDirs {
-		t.Run(dir, func(t *testing.T) {
+		testName := strings.ReplaceAll(dir, "\\", "/")
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			runTest(t, dir, coverDir, repls)
 		})
