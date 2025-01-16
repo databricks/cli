@@ -107,9 +107,7 @@ func TestFsLsOnFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
