@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -17,10 +16,6 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	var diags diag.Diagnostics
 	possibleConfigFiles := []string{"app.yml", "app.yaml"}
 	usedSourceCodePaths := make(map[string]string)
-
-	if len(b.Config.Resources.Apps) > 0 {
-		cmdio.LogString(ctx, "Databricks apps in your bundle can slow initial deployment as they wait for compute provisioning.")
-	}
 
 	for key, app := range b.Config.Resources.Apps {
 		if _, ok := usedSourceCodePaths[app.SourceCodePath]; ok {
