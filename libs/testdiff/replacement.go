@@ -80,6 +80,8 @@ func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsCont
 	t.Helper()
 	// in some clouds (gcp) w.Config.Host includes "https://" prefix in others it's really just a host (azure)
 	host := strings.TrimPrefix(strings.TrimPrefix(w.Config.Host, "http://"), "https://")
+	r.Set("https://"+host, "$DATABRICKS_URL")
+	r.Set("http://"+host, "$DATABRICKS_URL")
 	r.Set(host, "$DATABRICKS_HOST")
 	r.Set(w.Config.ClusterID, "$DATABRICKS_CLUSTER_ID")
 	r.Set(w.Config.WarehouseID, "$DATABRICKS_WAREHOUSE_ID")

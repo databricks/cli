@@ -1,0 +1,17 @@
+Warning: unknown field: node_type_id
+  at resources.jobs.job1.job_clusters[0]
+  in databricks.yml:25:11
+
+[
+  {
+    "job_cluster_key": "my_cluster",
+    "new_cluster": {
+      "node_type_id": "Standard_DS3_v2",
+      "num_workers": 2,
+      "spark_conf": {
+        "spark.executor.cores": "2",
+        "spark.executor.memory": "4g"
+      }
+    }
+  }
+]
