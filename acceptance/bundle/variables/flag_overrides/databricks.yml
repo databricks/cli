@@ -1,0 +1,21 @@
+bundle:
+  name: TestResolveVariablesFromFile
+
+variables:
+  cluster:
+    type: "complex"
+    default:
+      node_type_id: "unused"
+  cluster_key:
+    default: "unused"
+  cluster_workers:
+    default: 1
+
+resources:
+  jobs:
+    job1:
+      job_clusters:
+        - job_cluster_key: ${var.cluster_key}
+          new_cluster:
+            node_type_id: "${var.cluster.node_type_id}"
+            num_workers: ${var.cluster_workers}

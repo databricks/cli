@@ -1,0 +1,5 @@
+# variable file
+$CLI bundle validate -o json --vars-file-path=vars.json | jq .resources.jobs.job1.job_clusters[0]
+
+# variable flag
+$CLI bundle validate -o json --var="cluster_key=mlops_stacks-cluster" | jq .resources.jobs.job1.job_clusters[0].job_cluster_key
