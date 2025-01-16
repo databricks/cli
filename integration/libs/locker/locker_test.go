@@ -72,7 +72,7 @@ func TestLock(t *testing.T) {
 			defer wg.Done()
 			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
 			lockerErrs[i] = lockers[i].Lock(ctx, false)
-		}()
+		}(i)
 	}
 	wg.Wait()
 
