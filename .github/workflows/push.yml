@@ -64,6 +64,7 @@ jobs:
         uses: astral-sh/ruff-action@31a518504640beb4897d0b9f9e50a2a9196e75ba # v3.0.1
         with:
           version: "0.9.1"
+          args: "format --check"
 
       - name: Set go env
         run: |
