@@ -289,9 +289,7 @@ func TestFsCpFileToFileWithOverwriteFlag(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
@@ -313,9 +311,7 @@ func TestFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
@@ -337,9 +333,7 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
@@ -362,9 +356,7 @@ func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
