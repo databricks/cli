@@ -18,15 +18,15 @@ resources:
   volumes:
     volume1:
       catalog_name: catalog1
-      schema_name: ${resources.schemas.schema1.name}
+      schema_name: foobar
 
     volume2:
       catalog_name: catalog2
-      schema_name: ${resources.schemas.schema2.name}
+      schema_name: foobar
 
     volume3:
       catalog_name: catalog1
-      schema_name: ${resources.schemas.schema3.name}
+      schema_name: barfoo
 
     volume4:
       catalog_name: catalogX
