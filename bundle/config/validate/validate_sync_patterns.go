@@ -47,7 +47,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 	var errs errgroup.Group
 	var diags diag.Diagnostics
 
-	for i, pattern := range patterns {
+	for index, pattern := range patterns {
 		p := strings.TrimPrefix(pattern, "!")
 		errs.Go(func() error {
 			fs, err := fileset.NewGlobSet(rb.BundleRoot(), []string{p})
@@ -65,7 +65,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 				mu.Lock()
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("Pattern %s does not match any files", fullPattern),
+					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
 					Locations: []dyn.Location{loc.Location()},
 					Paths:     []dyn.Path{loc.Path()},
 				})
