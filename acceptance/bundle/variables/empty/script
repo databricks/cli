@@ -1,1 +1,2 @@
+sleep 12
 $CLI bundle validate
