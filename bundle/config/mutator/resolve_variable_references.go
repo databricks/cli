@@ -104,7 +104,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 			break
 		}
 
-		if hasUpdates == 0 {
+		if !hasUpdates {
 			break
 		}
 
@@ -119,9 +119,9 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	return diags
 }
 
-func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (int, diag.Diagnostics) {
+func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	hasUpdates := 0
+	hasUpdates := false
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
@@ -164,7 +164,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 						if m.skipFn != nil && m.skipFn(v) {
 							return dyn.InvalidValue, dynvar.ErrSkipResolution
 						}
-						hasUpdates += 1
+						hasUpdates = true
 						return m.lookupFn(normalized, path, b)
 					}
 				}
