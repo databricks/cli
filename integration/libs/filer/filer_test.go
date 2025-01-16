@@ -239,7 +239,7 @@ func TestFilerReadWrite(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			f, _ := tc.f(t)
+			f, _ := testCase.f(t)
 			ctx := context.Background()
 
 			// Common tests we run across all filers to ensure consistent behavior.
@@ -346,7 +346,7 @@ func TestFilerReadDir(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			f, _ := tc.f(t)
+			f, _ := testCase.f(t)
 			ctx := context.Background()
 
 			commonFilerReadDirTest(t, ctx, f)

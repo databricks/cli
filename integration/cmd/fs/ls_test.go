@@ -151,7 +151,7 @@ func TestFsLsForNonexistingDir(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			_, tmpDir := tc.setupFiler(t)
+			_, tmpDir := testCase.setupFiler(t)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", path.Join(tmpDir, "nonexistent"), "--output=json")
 			assert.ErrorIs(t, err, fs.ErrNotExist)
