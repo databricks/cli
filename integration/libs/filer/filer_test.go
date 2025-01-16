@@ -237,8 +237,6 @@ func TestFilerReadWrite(t *testing.T) {
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
-		tc := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			f, _ := tc.f(t)
@@ -346,8 +344,6 @@ func TestFilerReadDir(t *testing.T) {
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
-		tc := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			f, _ := tc.f(t)
