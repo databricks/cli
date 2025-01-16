@@ -1,0 +1,14 @@
+Error: cycle detected in field resolution: variables.a.default -> var.b -> var.a -> var.b
+
+{
+  "a": {
+    "default": "${var.b}",
+    "value": "${var.b}"
+  },
+  "b": {
+    "default": "${var.a}",
+    "value": "${var.a}"
+  }
+}
+
+Exit code: 1

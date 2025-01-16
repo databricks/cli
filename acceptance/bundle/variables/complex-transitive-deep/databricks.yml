@@ -1,0 +1,21 @@
+bundle:
+  name: complex-transitive
+
+variables:
+  catalog:
+    default: hive_metastore
+  spark_conf_1:
+    default:
+      "spark.databricks.sql.initial.catalog.name": ${var.catalog}
+  spark_conf:
+    default: ${var.spark_conf_1}
+  etl_cluster_config:
+    type: complex
+    default:
+      spark_version: 14.3.x-scala2.12
+      runtime_engine: PHOTON
+      spark_conf: ${var.spark_conf}
+
+resources:
+  clusters:
+    my_cluster: ${var.etl_cluster_config}

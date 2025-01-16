@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -13,15 +14,37 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
+/*
+For pathological cases, output and time grow exponentially.
+
+On my laptop, timings for acceptance/bundle/variables/complex-cycle:
+rounds           time
+
+	 9          0.10s
+	10          0.13s
+	11          0.27s
+	12          0.68s
+	13          1.98s
+	14          6.28s
+	15         21.70s
+	16         78.16s
+*/
+const maxResolutionRounds = 11
+
 type resolveVariableReferences struct {
-	prefixes []string
-	pattern  dyn.Pattern
-	lookupFn func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
-	skipFn   func(dyn.Value) bool
+	prefixes    []string
+	pattern     dyn.Pattern
+	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
+	skipFn      func(dyn.Value) bool
+	extraRounds int
 }
 
 func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
-	return &resolveVariableReferences{prefixes: prefixes, lookupFn: lookup}
+	return &resolveVariableReferences{
+		prefixes:    prefixes,
+		lookupFn:    lookup,
+		extraRounds: maxResolutionRounds - 1,
+	}
 }
 
 func ResolveVariableReferencesInLookup() bundle.Mutator {
@@ -86,7 +109,36 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	varPath := dyn.NewPath(dyn.Key("var"))
 
 	var diags diag.Diagnostics
+	maxRounds := 1 + m.extraRounds
 
+	for round := range maxRounds {
+		hasUpdates, newDiags := m.resolveOnce(b, prefixes, varPath)
+
+		diags = diags.Extend(newDiags)
+
+		if diags.HasError() {
+			break
+		}
+
+		if !hasUpdates {
+			break
+		}
+
+		if round >= maxRounds-1 {
+			diags = diags.Append(diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("Detected unresolved variables after %d resolution rounds", round+1),
+				// Would be nice to include names of the variables there, but that would complicate things more
+			})
+			break
+		}
+	}
+	return diags
+}
+
+func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	hasUpdates := false
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
@@ -129,6 +181,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 						if m.skipFn != nil && m.skipFn(v) {
 							return dyn.InvalidValue, dynvar.ErrSkipResolution
 						}
+						hasUpdates = true
 						return m.lookupFn(normalized, path, b)
 					}
 				}
@@ -149,5 +202,6 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))
 	}
-	return diags
+
+	return hasUpdates, diags
 }
