@@ -128,7 +128,6 @@ func TestFilerRecursiveDelete(t *testing.T) {
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			f, _ := testCase.f(t)
