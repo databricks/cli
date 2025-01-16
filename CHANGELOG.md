@@ -9,7 +9,7 @@ For more information see Databricks documentation https://docs.databricks.com/en
 
 CLI:
  * Filter out system clusters in cluster picker ([#2131](https://github.com/databricks/cli/pull/2131)).
- * Process all the fields in top level request object even if it contains request body ([#2155](https://github.com/databricks/cli/pull/2155)).
+ * Add command line flags for fields that are not in the API request body ([#2155](https://github.com/databricks/cli/pull/2155)).
 
 Bundles:
  * Added support for Databricks Apps in DABs ([#1928](https://github.com/databricks/cli/pull/1928)).
