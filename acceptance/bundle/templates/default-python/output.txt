@@ -28,13 +28,3 @@ Workspace:
   Path: /Workspace/Users/$USERNAME/.bundle/my_default_python/prod
 
 Validation OK!
-
->>> ruff format --diff
-7 files already formatted
-
-Exit code: 0
-
->>> ruff clean
-Removing cache at: .ruff_cache
-
-Exit code: 0

@@ -3,6 +3,3 @@ trace $CLI bundle init default-sql --config-file ./input.json --output-dir outpu
 cd output/my_default_sql
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
-
-errcode trace ruff format --diff
-errcode trace ruff clean

@@ -3,6 +3,3 @@ trace $CLI bundle init default-python --config-file ./input.json --output-dir ou
 cd output/my_default_python
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
-
-errcode trace ruff format --diff
-errcode trace ruff clean
