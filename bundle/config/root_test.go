@@ -51,6 +51,56 @@ func TestInitializeVariables(t *testing.T) {
 	assert.Equal(t, "456", (root.Variables["bar"].Value))
 }
 
+func TestInitializeAnyTypeVariables(t *testing.T) {
+	root := &Root{
+		Variables: map[string]*variable.Variable{
+			"string": {
+				Default:     "default",
+				Description: "string variable",
+			},
+			"int": {
+				Default:     0,
+				Description: "int variable",
+			},
+			"complex": {
+				Default:     []map[string]int{{"a": 1}, {"b": 2}},
+				Description: "complex variable",
+				Type:        variable.VariableTypeComplex,
+			},
+			"unused": {
+				Default:     "should remain default",
+				Description: "unused variable",
+			},
+		},
+	}
+
+	err := root.InitializeAnyTypeVariables(map[string]any{
+		"string":  "value",
+		"int":     1,
+		"complex": []map[string]int{{"c": 3}},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "value", (root.Variables["string"].Value))
+	assert.Equal(t, 1, (root.Variables["int"].Value))
+	assert.Equal(t, []map[string]int{{"c": 3}}, (root.Variables["complex"].Value))
+}
+
+func TestInitializeAnyTypeVariablesUndeclared(t *testing.T) {
+	root := &Root{
+		Variables: map[string]*variable.Variable{
+			"string": {
+				Default:     "default",
+				Description: "string variable",
+			},
+		},
+	}
+
+	err := root.InitializeAnyTypeVariables(map[string]any{
+		"not_declared": "value",
+	})
+	assert.ErrorContains(t, err, "variable not_declared has not been defined")
+}
+
 func TestInitializeVariablesWithAnEqualSignInValue(t *testing.T) {
 	root := &Root{
 		Variables: map[string]*variable.Variable{

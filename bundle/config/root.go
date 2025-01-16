@@ -260,6 +260,22 @@ func (r *Root) InitializeVariables(vars []string) error {
 	return nil
 }
 
+// Initializes variables parsed from variable file
+// Variables can have any type of value, including complex types
+func (r *Root) InitializeAnyTypeVariables(vars map[string]any) error {
+	for name, val := range vars {
+		if _, ok := r.Variables[name]; !ok {
+			return fmt.Errorf("variable %s has not been defined", name)
+		}
+
+		err := r.Variables[name].Set(val)
+		if err != nil {
+			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)
+		}
+	}
+	return nil
+}
+
 func (r *Root) Merge(other *Root) error {
 	// Merge dynamic configuration values.
 	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {

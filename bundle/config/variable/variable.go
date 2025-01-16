@@ -36,9 +36,11 @@ type Variable struct {
 	// This field stores the resolved value for the variable. The variable are
 	// resolved in the following priority order (from highest to lowest)
 	//
-	// 1. Command line flag. For example: `--var="foo=bar"`
-	// 2. Target variable. eg: BUNDLE_VAR_foo=bar
-	// 3. Default value as defined in the applicable environments block
+	// 1. Command line flag, one of these is used
+	//   a. Variable value obtained from arguments, example: `--var="foo=bar"`
+	//   b. Variable value obtained from the file, example: `--vars-file-path="/path/to/file"`
+	// 2. Environment variable. eg: BUNDLE_VAR_foo=bar
+	// 3. Default value as defined in the applicable targets block
 	// 4. Default value defined in variable definition
 	// 5. Throw error, since if no default value is defined, then the variable
 	//    is required
