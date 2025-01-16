@@ -81,7 +81,7 @@ func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 
 			// create directory "a"
 			err := f.Mkdir(context.Background(), "a")

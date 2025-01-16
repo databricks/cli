@@ -168,8 +168,8 @@ func TestFsCpFileToDir(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			sourceFiler, sourceDir := tc.setupSource(t)
-			targetFiler, targetDir := tc.setupTarget(t)
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceFile(t, context.Background(), sourceFiler)
 
 			testcli.RequireSuccessfulRun(t, ctx, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
@@ -347,7 +347,7 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			_, tmpDir := tc.setupFiler(t)
+			_, tmpDir := testCase.setupFiler(t)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cp", path.Join(tmpDir), path.Join(tmpDir, "foobar"))
 			r := regexp.MustCompile("source path .* is a directory. Please specify the --recursive flag")

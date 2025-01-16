@@ -61,7 +61,7 @@ func TestFsCatOnNonExistentFile(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			_, tmpDir := tc.setupFiler(t)
+			_, tmpDir := testCase.setupFiler(t)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cat", path.Join(tmpDir, "non-existent-file"))
 			assert.ErrorIs(t, err, fs.ErrNotExist)
