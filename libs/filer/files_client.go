@@ -303,8 +303,6 @@ func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
 	group.SetLimit(maxFilesRequestsInFlight)
 
 	for _, file := range filesToDelete {
-		file := file
-
 		// Skip the file if the context has already been cancelled.
 		select {
 		case <-groupCtx.Done():
