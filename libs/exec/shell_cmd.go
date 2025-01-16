@@ -2,7 +2,6 @@ package exec
 
 import (
 	"errors"
-	"fmt"
 	osexec "os/exec"
 )
 
@@ -18,7 +17,7 @@ func (s cmdShell) prepare(command string) (*execContext, error) {
 
 	return &execContext{
 		executable: s.executable,
-		args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", fmt.Sprintf(`CALL %s`, filename)},
+		args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", "CALL " + filename},
 		scriptFile: filename,
 	}, nil
 }

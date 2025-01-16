@@ -14,6 +14,8 @@ linters:
     - testifylint
     - intrange
     - mirror
+    - perfsprint
+    - unconvert
 linters-settings:
   govet:
     enable-all: true
@@ -40,6 +42,8 @@ linters-settings:
     disable:
       # good check, but we have too many assert.(No)?Errorf? so excluding for now
       - require-error
+  copyloopvar:
+    check-alias: true
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
   max-issues-per-linter: 1000

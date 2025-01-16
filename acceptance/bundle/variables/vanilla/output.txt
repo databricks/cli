@@ -1,0 +1,16 @@
+
+>>> BUNDLE_VAR_b=def $CLI bundle validate -o json
+"abc def"
+
+>>> errcode $CLI bundle validate
+Error: no value assigned to required variable b. Assignment can be done through the "--var" flag or by setting the BUNDLE_VAR_b environment variable
+
+Name: ${var.a} ${var.b}
+Target: default
+Workspace:
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/${var.a} ${var.b}/default
+
+Found 1 error
+
+Exit code: 1

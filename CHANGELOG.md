@@ -1,5 +1,14 @@
 # Version changelog
 
+## [Release] Release v0.238.0
+
+Bundles:
+ * Fix finding Python within virtualenv on Windows ([#2034](https://github.com/databricks/cli/pull/2034)).
+ * Include missing field descriptions in JSON schema ([#2045](https://github.com/databricks/cli/pull/2045)).
+ * Add validation for volume referenced from `artifact_path` ([#2050](https://github.com/databricks/cli/pull/2050)).
+ * Handle `${workspace.file_path}` references in source-linked deployments ([#2046](https://github.com/databricks/cli/pull/2046)).
+ * Set the write bit for files written during template initialization ([#2068](https://github.com/databricks/cli/pull/2068)).
+
 ## [Release] Release v0.237.0
 
 Bundles:

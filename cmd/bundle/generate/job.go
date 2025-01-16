@@ -85,8 +85,8 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		oldFilename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.job.yml", jobKey))
+		oldFilename := filepath.Join(configDir, jobKey+".yml")
+		filename := filepath.Join(configDir, jobKey+".job.yml")
 
 		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
 		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
@@ -107,7 +107,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Job configuration successfully saved to %s", filename))
+		cmdio.LogString(ctx, "Job configuration successfully saved to "+filename)
 		return nil
 	}
 

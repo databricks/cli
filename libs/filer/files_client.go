@@ -116,10 +116,7 @@ func (w *FilesClient) urlPath(name string) (string, string, error) {
 	}
 
 	// The user specified part of the path must be escaped.
-	urlPath := fmt.Sprintf(
-		"/api/2.0/fs/files/%s",
-		url.PathEscape(strings.TrimLeft(absPath, "/")),
-	)
+	urlPath := "/api/2.0/fs/files/" + url.PathEscape(strings.TrimLeft(absPath, "/"))
 
 	return absPath, urlPath, nil
 }
@@ -306,8 +303,6 @@ func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
 	group.SetLimit(maxFilesRequestsInFlight)
 
 	for _, file := range filesToDelete {
-		file := file
-
 		// Skip the file if the context has already been cancelled.
 		select {
 		case <-groupCtx.Done():
