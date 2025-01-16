@@ -1,5 +1,52 @@
 # Version changelog
 
+## [Release] Release v0.239.0
+
+New feature announcement.
+
+You can now manage Databricks Apps using DABs by defining an `app` resource in your bundle configuration.
+For more information see Databricks documentation https://docs.databricks.com/en/dev-tools/bundles/resources.html#app
+
+CLI:
+ * Filter out system clusters in cluster picker ([#2131](https://github.com/databricks/cli/pull/2131)).
+ * Process all the fields in top level request object even if it contains request body ([#2155](https://github.com/databricks/cli/pull/2155)).
+
+Bundles:
+ * Added support for Databricks Apps in DABs ([#1928](https://github.com/databricks/cli/pull/1928)).
+ * Allow artifact path to be located outside the sync root ([#2128](https://github.com/databricks/cli/pull/2128)).
+ * Retry app deployment if there is an active deployment in progress ([#2153](https://github.com/databricks/cli/pull/2153)).
+ * Resolve variables in a loop ([#2164](https://github.com/databricks/cli/pull/2164)).
+ * Improve resolution of complex variables within complex variables ([#2157](https://github.com/databricks/cli/pull/2157)).
+ * Added output message to warn about slower deployments with apps ([#2161](https://github.com/databricks/cli/pull/2161)).
+ * Patch references to UC schemas to capture dependencies automatically ([#1989](https://github.com/databricks/cli/pull/1989)).
+ * Format default-python template ([#2110](https://github.com/databricks/cli/pull/2110)).
+ * Encourage the use of root_path in production to ensure single deployment ([#1712](https://github.com/databricks/cli/pull/1712)).
+ * Log warnings to stderr for "bundle validate -o json" ([#2109](https://github.com/databricks/cli/pull/2109)).
+
+Internal:
+ * Move merge fix-ups after variable resolution ([#2125](https://github.com/databricks/cli/pull/2125)).
+ * Enable linter 'unconvert' and fix the issues found ([#2136](https://github.com/databricks/cli/pull/2136)).
+ * Coverage for acceptance tests ([#2123](https://github.com/databricks/cli/pull/2123)).
+ * Add acceptance tests for builtin templates ([#2135](https://github.com/databricks/cli/pull/2135)).
+ * Add a unique schema for recreate pipeline test ([#2159](https://github.com/databricks/cli/pull/2159)).
+ * Migrate resolution tests to acceptance tests ([#2143](https://github.com/databricks/cli/pull/2143)).
+ * Update runner for the publish-winget job ([#2105](https://github.com/databricks/cli/pull/2105)).
+ * Add a test for complex variable resolution with 3 levels ([#2163](https://github.com/databricks/cli/pull/2163)).
+
+API Changes:
+ * Changed `databricks account federation-policy update` command with new required argument order.
+ * Changed `databricks account service-principal-federation-policy update` command with new required argument order.
+
+OpenAPI commit 779817ed8d63031f5ea761fbd25ee84f38feec0d (2025-01-08)
+Dependency updates:
+ * Upgrade TF provider to 1.63.0 ([#2162](https://github.com/databricks/cli/pull/2162)).
+ * Bump golangci-lint version to v1.63.4 from v1.63.1 ([#2114](https://github.com/databricks/cli/pull/2114)).
+ * Bump astral-sh/setup-uv from 4 to 5 ([#2116](https://github.com/databricks/cli/pull/2116)).
+ * Bump golang.org/x/oauth2 from 0.24.0 to 0.25.0 ([#2080](https://github.com/databricks/cli/pull/2080)).
+ * Bump github.com/hashicorp/hc-install from 0.9.0 to 0.9.1 ([#2079](https://github.com/databricks/cli/pull/2079)).
+ * Bump golang.org/x/term from 0.27.0 to 0.28.0 ([#2078](https://github.com/databricks/cli/pull/2078)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.54.0 to 0.55.0 ([#2126](https://github.com/databricks/cli/pull/2126)).
+
 ## [Release] Release v0.238.0
 
 Bundles:
