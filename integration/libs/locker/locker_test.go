@@ -68,10 +68,10 @@ func TestLock(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := range numConcurrentLocks {
 		wg.Add(1)
-		go func() {
+		go func(i int) {
 			defer wg.Done()
 			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-			lockerErrs[currentIndex] = lockers[currentIndex].Lock(ctx, false)
+			lockerErrs[i] = lockers[i].Lock(ctx, false)
 		}()
 	}
 	wg.Wait()

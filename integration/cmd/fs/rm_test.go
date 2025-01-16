@@ -22,7 +22,7 @@ func TestFsRmFile(t *testing.T) {
 
 			// Create a file
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			err := f.Write(context.Background(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 

@@ -140,12 +140,12 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 	errs, errCtx := errgroup.WithContext(ctx)
 	for k, v := range n.files {
 		errs.Go(func() error {
-			reader, err := n.w.Workspace.Download(errCtx, filePath)
+			reader, err := n.w.Workspace.Download(errCtx, v)
 			if err != nil {
 				return err
 			}
 
-			file, err := os.Create(targetPath)
+			file, err := os.Create(k)
 			if err != nil {
 				return err
 			}
