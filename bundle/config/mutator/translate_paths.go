@@ -136,7 +136,6 @@ func (t *translateContext) rewritePath(
 	}
 
 	// Local path is relative to the directory the resource was defined in.
-	// Note: the initialized variable is a platform-native path.
 	localPath := filepath.Join(dir, input)
 	if interp, ok := t.seen[localPath]; ok {
 		return interp, nil
@@ -144,7 +143,6 @@ func (t *translateContext) rewritePath(
 
 	// Local path must be contained in the sync root.
 	// If it isn't, it won't be synchronized into the workspace.
-	// Note: the initialized variable is a platform-native path.
 	localRelPath, err := filepath.Rel(t.b.SyncRootPath, localPath)
 	if err != nil {
 		return "", err
@@ -153,7 +151,7 @@ func (t *translateContext) rewritePath(
 		return "", fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
-	// Normalize paths we pass to the translation functions to use forward slashes.
+	// Normalize paths to separated by forward slashes.
 	localPath = filepath.ToSlash(localPath)
 	localRelPath = filepath.ToSlash(localRelPath)
 
