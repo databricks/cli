@@ -36,10 +36,8 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 							Name:        "barfoo",
 						},
 					},
-					"nilschema": {},
-					"emptyschema": {
-						CreateSchema: &catalog.CreateSchema{},
-					},
+					"nilschema":   nil,
+					"emptyschema": {},
 				},
 				Volumes: map[string]*resources.Volume{
 					"volume1": {
@@ -72,10 +70,8 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 							SchemaName:  "schemaX",
 						},
 					},
-					"nilVolume": {},
-					"emptyVolume": {
-						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{},
-					},
+					"nilVolume":   nil,
+					"emptyVolume": {},
 				},
 			},
 		},
@@ -90,8 +86,8 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 	assert.Equal(t, "foobar", b.Config.Resources.Volumes["volume4"].CreateVolumeRequestContent.SchemaName)
 	assert.Equal(t, "schemaX", b.Config.Resources.Volumes["volume5"].CreateVolumeRequestContent.SchemaName)
 
-	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"].CreateVolumeRequestContent)
-	assert.Empty(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
+	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"])
+	assert.Nil(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
 }
 
 func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
@@ -117,10 +113,8 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 							Name:        "barfoo",
 						},
 					},
-					"nilschema": {},
-					"emptyschema": {
-						CreateSchema: &catalog.CreateSchema{},
-					},
+					"nilschema":   nil,
+					"emptyschema": {},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
@@ -166,10 +160,8 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 							Name:    "whatever",
 						},
 					},
-					"nilPipeline": {},
-					"emptyPipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{},
-					},
+					"nilPipeline":   nil,
+					"emptyPipeline": {},
 				},
 			},
 		},
@@ -186,8 +178,8 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline6"].Schema)
 	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline7"].Schema)
 
-	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"].PipelineSpec)
-	assert.Empty(t, b.Config.Resources.Pipelines["emptyPipeline"].PipelineSpec)
+	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"])
+	assert.Nil(t, b.Config.Resources.Pipelines["emptyPipeline"].PipelineSpec)
 
 	for _, k := range []string{"pipeline1", "pipeline2", "pipeline3", "pipeline4", "pipeline5", "pipeline6", "pipeline7"} {
 		assert.Empty(t, b.Config.Resources.Pipelines[k].Target)
@@ -217,10 +209,8 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 							Name:        "barfoo",
 						},
 					},
-					"nilschema": {},
-					"emptyschema": {
-						CreateSchema: &catalog.CreateSchema{},
-					},
+					"nilschema":   nil,
+					"emptyschema": {},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
