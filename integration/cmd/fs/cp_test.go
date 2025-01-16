@@ -267,9 +267,7 @@ func TestFsCpDirToDirWithOverwriteFlag(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
