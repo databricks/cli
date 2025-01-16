@@ -1,0 +1,37 @@
+bundle:
+  name: volume-deps-on-schema
+
+resources:
+  schemas:
+    schema1:
+      catalog_name: catalog1
+      name: foobar
+
+    schema2:
+      catalog_name: catalog2
+      name: foobar
+
+    schema3:
+      catalog_name: catalog1
+      name: barfoo
+
+  volumes:
+    volume1:
+      catalog_name: catalog1
+      schema_name: ${resources.schemas.schema1.name}
+
+    volume2:
+      catalog_name: catalog2
+      schema_name: ${resources.schemas.schema2.name}
+
+    volume3:
+      catalog_name: catalog1
+      schema_name: ${resources.schemas.schema3.name}
+
+    volume4:
+      catalog_name: catalogX
+      schema_name: foobar
+
+    volume5:
+      catalog_name: catalog1
+      schema_name: schemaX

@@ -1,0 +1,43 @@
+bundle:
+  name: dlt-schema-field-dep-on-uc-schema
+
+resources:
+  schemas:
+    schema1:
+      catalog_name: catalog1
+      name: foobar
+
+    schema2:
+      catalog_name: catalog2
+      name: foobar
+
+    schema3:
+      catalog_name: catalog1
+      name: barfoo
+
+  pipelines:
+    pipeline1:
+      catalog: catalog1
+      target: foobar
+
+    pipeline2:
+      catalog: catalog2
+      target: foobar
+
+    pipeline3:
+      catalog: catalog1
+      target: barfoo
+
+    pipeline4:
+      catalog: catalogX
+      target: foobar
+
+    pipeline5:
+      catalog: catalog1
+      target: schemaX
+
+    pipeline6:
+      target: foobar
+
+    pipeline7:
+      name: whatever

@@ -1,0 +1,63 @@
+{
+  "pipeline1": {
+    "catalog": "catalog1",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/dlt-schema-field-dep-on-uc-schema/default/state/metadata.json"
+    },
+    "permissions": [],
+    "target": "${resources.schemas.schema1.name}"
+  },
+  "pipeline2": {
+    "catalog": "catalog2",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/dlt-schema-field-dep-on-uc-schema/default/state/metadata.json"
+    },
+    "permissions": [],
+    "target": "${resources.schemas.schema2.name}"
+  },
+  "pipeline3": {
+    "catalog": "catalog1",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/dlt-schema-field-dep-on-uc-schema/default/state/metadata.json"
+    },
+    "permissions": [],
+    "target": "${resources.schemas.schema3.name}"
+  },
+  "pipeline4": {
+    "catalog": "catalogX",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/dlt-schema-field-dep-on-uc-schema/default/state/metadata.json"
+    },
+    "permissions": [],
+    "target": "foobar"
+  },
+  "pipeline5": {
+    "catalog": "catalog1",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/dlt-schema-field-dep-on-uc-schema/default/state/metadata.json"
+    },
+    "permissions": [],
+    "target": "schemaX"
+  },
+  "pipeline6": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/dlt-schema-field-dep-on-uc-schema/default/state/metadata.json"
+    },
+    "permissions": [],
+    "target": "foobar"
+  },
+  "pipeline7": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/dlt-schema-field-dep-on-uc-schema/default/state/metadata.json"
+    },
+    "name": "whatever",
+    "permissions": []
+  }
+}
