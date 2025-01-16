@@ -14,7 +14,7 @@ type slowDeployMessage struct{}
 // See https://github.com/databricks/cli/pull/2144
 func (v *slowDeployMessage) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Resources.Apps) > 0 {
-		cmdio.LogString(ctx, "Databricks apps in your bundle can slow initial deployment as they wait for compute provisioning.")
+		cmdio.LogString(ctx, "Note: Databricks apps included in this bundle may increase initial deployment time due to compute provisioning.")
 	}
 
 	return nil
