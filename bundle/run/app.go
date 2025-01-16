@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -111,11 +112,21 @@ func (a *appRunner) start(ctx context.Context) error {
 	// active and pending deployments fields (if any). If there are active or pending deployments,
 	// we need to wait for them to complete before we can do the new deployment.
 	// Otherwise, the new deployment will fail.
-	// Thus, we first wait for the active deployment to complete.
-	if startedApp.ActiveDeployment != nil &&
-		startedApp.ActiveDeployment.Status.State == apps.AppDeploymentStateInProgress {
+	err = waitForDeploymentToComplete(ctx, w, startedApp)
+	if err != nil {
+		return err
+	}
+
+	logProgress(ctx, "App is started!")
+	return nil
+}
+
+func waitForDeploymentToComplete(ctx context.Context, w *databricks.WorkspaceClient, app *apps.App) error {
+	// We first wait for the active deployment to complete.
+	if app.ActiveDeployment != nil &&
+		app.ActiveDeployment.Status.State == apps.AppDeploymentStateInProgress {
 		logProgress(ctx, "Waiting for the active deployment to complete...")
-		_, err = w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, startedApp.ActiveDeployment.DeploymentId, 20*time.Minute, nil)
+		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, app.ActiveDeployment.DeploymentId, 20*time.Minute, nil)
 		if err != nil {
 			return err
 		}
@@ -123,17 +134,16 @@ func (a *appRunner) start(ctx context.Context) error {
 	}
 
 	// Then, we wait for the pending deployment to complete.
-	if startedApp.PendingDeployment != nil &&
-		startedApp.PendingDeployment.Status.State == apps.AppDeploymentStateInProgress {
+	if app.PendingDeployment != nil &&
+		app.PendingDeployment.Status.State == apps.AppDeploymentStateInProgress {
 		logProgress(ctx, "Waiting for the pending deployment to complete...")
-		_, err = w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, startedApp.PendingDeployment.DeploymentId, 20*time.Minute, nil)
+		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, app.PendingDeployment.DeploymentId, 20*time.Minute, nil)
 		if err != nil {
 			return err
 		}
 		logProgress(ctx, "Pending deployment is completed!")
 	}
 
-	logProgress(ctx, "App is started!")
 	return nil
 }
 
@@ -142,16 +152,38 @@ func (a *appRunner) deploy(ctx context.Context) error {
 	b := a.bundle
 	w := b.WorkspaceClient()
 
+	sourceCodePath := app.SourceCodePath
 	wait, err := w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
 		AppName: app.Name,
 		AppDeployment: &apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: app.SourceCodePath,
+			SourceCodePath: sourceCodePath,
 		},
 	})
 	// If deploy returns an error, then there's an active deployment in progress, wait for it to complete.
+	// For this we first need to get an app and its acrive and pending deployments and then wait for them.
 	if err != nil {
-		return err
+		app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: app.Name})
+		if err != nil {
+			return fmt.Errorf("failed to get app %s: %w", app.Name, err)
+		}
+
+		err = waitForDeploymentToComplete(ctx, w, app)
+		if err != nil {
+			return err
+		}
+
+		// Now we can try to deploy the app again
+		wait, err = w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
+			AppName: app.Name,
+			AppDeployment: &apps.AppDeployment{
+				Mode:           apps.AppDeploymentModeSnapshot,
+				SourceCodePath: sourceCodePath,
+			},
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = wait.OnProgress(func(ad *apps.AppDeployment) {

@@ -32,19 +32,6 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 	}, pattern: dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")), lookupFn: lookupForVariables}
 }
 
-func ResolveVariableReferencesInComplexVariables() bundle.Mutator {
-	return &resolveVariableReferences{
-		prefixes: []string{
-			"bundle",
-			"workspace",
-			"variables",
-		},
-		pattern:  dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("value")),
-		lookupFn: lookupForComplexVariables,
-		skipFn:   skipResolvingInNonComplexVariables,
-	}
-}
-
 func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		if path.String() == "workspace.file_path" {
@@ -55,38 +42,6 @@ func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	// and the synthesized root, we know if it was explicitly set or implied to be empty.
 	// Then we can emit a warning if it was not explicitly set.
 	return dyn.GetByPath(v, path)
-}
-
-func lookupForComplexVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
-	if path[0].Key() != "variables" {
-		return lookup(v, path, b)
-	}
-
-	varV, err := dyn.GetByPath(v, path[:len(path)-1])
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-
-	var vv variable.Variable
-	err = convert.ToTyped(&vv, varV)
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-
-	if vv.Type == variable.VariableTypeComplex {
-		return dyn.InvalidValue, errors.New("complex variables cannot contain references to another complex variables")
-	}
-
-	return lookup(v, path, b)
-}
-
-func skipResolvingInNonComplexVariables(v dyn.Value) bool {
-	switch v.Kind() {
-	case dyn.KindMap, dyn.KindSequence:
-		return false
-	default:
-		return true
-	}
 }
 
 func lookupForVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {

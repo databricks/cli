@@ -61,7 +61,11 @@ func Initialize() bundle.Mutator {
 			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 			mutator.ResolveVariableReferencesInLookup(),
 			mutator.ResolveResourceReferences(),
-			mutator.ResolveVariableReferencesInComplexVariables(),
+			mutator.ResolveVariableReferences(
+				"bundle",
+				"workspace",
+				"variables",
+			),
 			mutator.ResolveVariableReferences(
 				"bundle",
 				"workspace",

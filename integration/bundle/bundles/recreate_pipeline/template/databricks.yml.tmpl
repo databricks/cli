@@ -9,7 +9,6 @@ variables:
     description: The catalog the DLT pipeline should use.
     default: main
 
-
 resources:
   pipelines:
     foo:
@@ -19,6 +18,13 @@ resources:
             path: ./nb.sql
       development: true
       catalog: ${var.catalog}
+      target: ${resources.schemas.bar.id}
+
+  schemas:
+    bar:
+      name: test-schema-{{.unique_id}}
+      catalog_name: ${var.catalog}
+      comment: This schema was created from DABs
 
 include:
   - "*.yml"
