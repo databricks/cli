@@ -1,1 +1,1 @@
-$CLI bundle validate -o json | jq .resources.pipelines > out.json
+$CLI bundle validate -o json | jq .resources.pipelines | jq 'map_values(del(.deployment, .permissions))' > out.json
