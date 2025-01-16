@@ -1,0 +1,23 @@
+bundle:
+  name: TestResolveVariableReferencesForPrimitiveNonStringFields
+
+variables:
+  no_alert_for_canceled_runs: {}
+  no_alert_for_skipped_runs: {}
+  min_workers: {}
+  max_workers: {}
+  spot_bid_max_price: {}
+
+resources:
+  jobs:
+    job1:
+      notification_settings:
+        no_alert_for_canceled_runs: ${var.no_alert_for_canceled_runs}
+        no_alert_for_skipped_runs: ${var.no_alert_for_skipped_runs}
+      tasks:
+        - new_cluster:
+            autoscale:
+              min_workers: ${var.min_workers}
+              max_workers: ${var.max_workers}
+            azure_attributes:
+              spot_bid_max_price: ${var.spot_bid_max_price}

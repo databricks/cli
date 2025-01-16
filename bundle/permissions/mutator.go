@@ -51,6 +51,10 @@ var (
 			CAN_MANAGE: "CAN_MANAGE",
 			CAN_VIEW:   "CAN_READ",
 		},
+		"apps": {
+			CAN_MANAGE: "CAN_MANAGE",
+			CAN_VIEW:   "CAN_USE",
+		},
 	}
 )
 

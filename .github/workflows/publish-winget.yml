@@ -2,15 +2,27 @@ name: publish-winget
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish'
+        default: ''
 
 jobs:
   publish-to-winget-pkgs:
-    runs-on: windows-latest
+    runs-on:
+      group: databricks-protected-runner-group
+      labels: windows-server-latest
+
     environment: release
+
     steps:
-      - uses: vedantmgoyal2009/winget-releaser@93fd8b606a1672ec3e5c6c3bb19426be68d1a8b0 # https://github.com/vedantmgoyal2009/winget-releaser/releases/tag/v2
+      - uses: vedantmgoyal2009/winget-releaser@93fd8b606a1672ec3e5c6c3bb19426be68d1a8b0 # v2
         with:
           identifier: Databricks.DatabricksCLI
           installers-regex: 'windows_.*-signed\.zip$' # Only signed Windows releases
           token: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}
           fork-user: eng-dev-ecosystem-bot
+
+          # Use the tag from the input, or the ref name if the input is not provided.
+          # The ref name is equal to the tag name when this workflow is triggered by the "sign-cli" command.
+          release-tag: ${{ inputs.tag || github.ref_name }}

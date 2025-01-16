@@ -1,0 +1,27 @@
+# This example works and properly merges resources.jobs.job1.job_clusters.new_cluster and ${var.cluster}.
+# retaining num_workers, spark_version and overriding node_type_id.
+bundle:
+  name: TestResolveComplexVariable
+
+variables:
+  cluster:
+    type: "complex"
+    value:
+      node_type_id: "Standard_DS3_v2"
+      num_workers: 2
+
+resources:
+  jobs:
+    job1:
+      job_clusters:
+        - new_cluster:
+            node_type_id: "random"
+            spark_version: 13.3.x-scala2.12
+
+targets:
+  dev:
+    resources:
+      jobs:
+        job1:
+          job_clusters:
+            - new_cluster: ${var.cluster}

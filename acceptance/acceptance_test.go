@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,26 +37,67 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	execPath := BuildCLI(t)
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	coverDir := os.Getenv("CLI_GOCOVERDIR")
+
+	if coverDir != "" {
+		require.NoError(t, os.MkdirAll(coverDir, os.ModePerm))
+		coverDir, err = filepath.Abs(coverDir)
+		require.NoError(t, err)
+		t.Logf("Writing coverage to %s", coverDir)
+	}
+
+	execPath := BuildCLI(t, cwd, coverDir)
 	// $CLI is what test scripts are using
 	t.Setenv("CLI", execPath)
 
-	server := StartServer(t)
-	AddHandlers(server)
-	// Redirect API access to local server:
-	t.Setenv("DATABRICKS_HOST", fmt.Sprintf("http://127.0.0.1:%d", server.Port))
-	t.Setenv("DATABRICKS_TOKEN", "dapi1234")
+	// Make helper scripts available
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
-	homeDir := t.TempDir()
-	// Do not read user's ~/.databrickscfg
-	t.Setenv(env.HomeEnvVar(), homeDir)
+	repls := testdiff.ReplacementsContext{}
+	repls.Set(execPath, "$CLI")
+
+	tempHomeDir := t.TempDir()
+	repls.Set(tempHomeDir, "$TMPHOME")
+	t.Logf("$TMPHOME=%v", tempHomeDir)
+
+	// Prevent CLI from downloading terraform in each test:
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
+
+	ctx := context.Background()
+	cloudEnv := os.Getenv("CLOUD_ENV")
+
+	if cloudEnv == "" {
+		server := StartServer(t)
+		AddHandlers(server)
+		// Redirect API access to local server:
+		t.Setenv("DATABRICKS_HOST", server.URL)
+		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
+
+		homeDir := t.TempDir()
+		// Do not read user's ~/.databrickscfg
+		t.Setenv(env.HomeEnvVar(), homeDir)
+	}
+
+	workspaceClient, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	user, err := workspaceClient.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	testdiff.PrepareReplacementsUser(t, &repls, *user)
+	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
+
 	for _, dir := range testDirs {
-		t.Run(dir, func(t *testing.T) {
+		testName := strings.ReplaceAll(dir, "\\", "/")
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runTest(t, dir)
+			runTest(t, dir, coverDir, repls)
 		})
 	}
 }
@@ -79,7 +122,7 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func runTest(t *testing.T, dir string) {
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -102,11 +145,20 @@ func runTest(t *testing.T, dir string) {
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
+	if coverDir != "" {
+		// Creating individual coverage directory for each test, because writing to the same one
+		// results in sporadic failures like this one (only if tests are running in parallel):
+		// +error: coverage meta-data emit failed: writing ... rename .../tmp.covmeta.b3f... .../covmeta.b3f2c...: no such file or directory
+		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
+		err := os.MkdirAll(coverDir, os.ModePerm)
+		require.NoError(t, err)
+		cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverDir)
+	}
 	cmd.Dir = tmpDir
 	outB, err := cmd.CombinedOutput()
 
 	out := formatOutput(string(outB), err)
-	out = strings.ReplaceAll(out, os.Getenv("CLI"), "$CLI")
+	out = repls.Replace(out)
 	doComparison(t, filepath.Join(dir, "output.txt"), "script output", out)
 
 	for key := range outputs {
@@ -125,7 +177,8 @@ func runTest(t *testing.T, dir string) {
 			continue
 		}
 		pathExpected := filepath.Join(dir, key)
-		doComparison(t, pathExpected, pathNew, string(newValBytes))
+		newVal := repls.Replace(string(newValBytes))
+		doComparison(t, pathExpected, pathNew, newVal)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -146,6 +199,7 @@ func runTest(t *testing.T, dir string) {
 			// Show the contents & support overwrite mode for it:
 			pathNew := filepath.Join(tmpDir, name)
 			newVal := testutil.ReadFile(t, pathNew)
+			newVal = repls.Replace(newVal)
 			doComparison(t, filepath.Join(dir, name), filepath.Join(tmpDir, name), newVal)
 		}
 	}
@@ -171,6 +225,11 @@ func doComparison(t *testing.T, pathExpected, pathNew, valueNew string) {
 // Note, cleanups are not executed if main script fails; that's not a huge issue, since it runs it temp dir.
 func readMergedScriptContents(t *testing.T, dir string) string {
 	scriptContents := testutil.ReadFile(t, filepath.Join(dir, EntryPointScript))
+
+	// Wrap script contents in a subshell such that changing the working
+	// directory only affects the main script and not cleanup.
+	scriptContents = "(\n" + scriptContents + ")\n"
+
 	prepares := []string{}
 	cleanups := []string{}
 
@@ -199,16 +258,30 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-func BuildCLI(t *testing.T) string {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
+func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	execPath := filepath.Join(cwd, "build", "databricks")
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
 	}
 
 	start := time.Now()
-	args := []string{"go", "build", "-mod", "vendor", "-o", execPath}
+	args := []string{
+		"go", "build",
+		"-mod", "vendor",
+		"-o", execPath,
+	}
+
+	if coverDir != "" {
+		args = append(args, "-cover")
+	}
+
+	if runtime.GOOS == "windows" {
+		// Get this error on my local Windows:
+		// error obtaining VCS status: exit status 128
+		// Use -buildvcs=false to disable VCS stamping.
+		args = append(args, "-buildvcs=false")
+	}
+
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = ".."
 	out, err := cmd.CombinedOutput()
