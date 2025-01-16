@@ -138,14 +138,14 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 	}
 
 	errs, errCtx := errgroup.WithContext(ctx)
-	for k, v := range n.files {
+	for targetPath, filePath := range n.files {
 		errs.Go(func() error {
-			reader, err := n.w.Workspace.Download(errCtx, v)
+			reader, err := n.w.Workspace.Download(errCtx, filePath)
 			if err != nil {
 				return err
 			}
 
-			file, err := os.Create(k)
+			file, err := os.Create(targetPath)
 			if err != nil {
 				return err
 			}
@@ -156,7 +156,7 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 				return err
 			}
 
-			cmdio.LogString(errCtx, "File successfully saved to "+k)
+			cmdio.LogString(errCtx, "File successfully saved to "+targetPath)
 			return reader.Close()
 		})
 	}

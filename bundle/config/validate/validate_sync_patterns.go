@@ -48,6 +48,11 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 	var diags diag.Diagnostics
 
 	for index, pattern := range patterns {
+		// If the pattern is negated, strip the negation prefix
+		// and check if the pattern matches any files.
+		// Negation in gitignore syntax means "don't look at this path'
+		// So if p matches nothing it's useless negation, but if there are matches,
+		// it means: do not include these files into result set
 		p := strings.TrimPrefix(pattern, "!")
 		errs.Go(func() error {
 			fs, err := fileset.NewGlobSet(rb.BundleRoot(), []string{p})
