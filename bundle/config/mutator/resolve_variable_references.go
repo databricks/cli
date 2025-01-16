@@ -94,8 +94,9 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	varPath := dyn.NewPath(dyn.Key("var"))
 
 	var diags diag.Diagnostics
+	maxRounds := 1 + m.extraRounds
 
-	for round := range 1 + m.extraRounds {
+	for round := range maxRounds {
 		hasUpdates, newDiags := m.resolveOnce(b, prefixes, varPath)
 
 		diags = diags.Extend(newDiags)
@@ -108,12 +109,13 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 			break
 		}
 
-		if round >= maxResolutionRounds-1 {
+		if round >= maxRounds-1 {
 			diags = diags.Append(diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  fmt.Sprintf("Detected unresolved variables after %d resolution rounds", round+1),
 				// Would be nice to include names of the variables there, but that would complicate things more
 			})
+			break
 		}
 	}
 	return diags
