@@ -26,6 +26,10 @@ func (m *captureSchemaDependency) Name() string {
 	return "CaptureSchemaDependency"
 }
 
+func schemaNameRef(key string) string {
+	return fmt.Sprintf("${resources.schemas.%s.name}", key)
+}
+
 func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *resources.Schema) {
 	if catalogName == "" || schemaName == "" {
 		return "", nil
@@ -40,10 +44,7 @@ func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *reso
 }
 
 func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
-	if v == nil {
-		return
-	}
-	if v.CreateVolumeRequestContent == nil {
+	if v == nil || v.CreateVolumeRequestContent == nil {
 		return
 	}
 	schemaK, schema := findSchema(b, v.CatalogName, v.SchemaName)
@@ -51,14 +52,11 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 		return
 	}
 
-	v.SchemaName = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
+	v.SchemaName = schemaNameRef(schemaK)
 }
 
 func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
-	if p == nil {
-		return
-	}
-	if p.PipelineSpec == nil {
+	if p == nil || p.PipelineSpec == nil {
 		return
 	}
 	if p.Schema == "" {
@@ -69,14 +67,11 @@ func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
 		return
 	}
 
-	p.Schema = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
+	p.Schema = schemaNameRef(schemaK)
 }
 
 func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
-	if p == nil {
-		return
-	}
-	if p.PipelineSpec == nil {
+	if p == nil || p.PipelineSpec == nil {
 		return
 	}
 	if p.Target == "" {
@@ -86,7 +81,7 @@ func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
 	if schema == nil {
 		return
 	}
-	p.Target = fmt.Sprintf("${resources.schemas.%s.name}", schemaK)
+	p.Target = schemaNameRef(schemaK)
 }
 
 func (m *captureSchemaDependency) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
