@@ -4,11 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
-	"golang.org/x/exp/maps"
 )
 
 // Resolve resolves variable references in the given input value using the provided lookup function.
@@ -47,72 +45,33 @@ type resolver struct {
 	in dyn.Value
 	fn Lookup
 
-	refs     map[string]ref
-	resolved map[string]dyn.Value
-
 	// Memoization for lookups.
 	lookups map[string]lookupResult
 }
 
 func (r resolver) run() (out dyn.Value, err error) {
-	err = r.collectVariableReferences()
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
+	r.lookups = make(map[string]lookupResult)
 
-	err = r.resolveVariableReferences()
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-
-	out, err = r.replaceVariableReferences()
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-
-	return out, nil
-}
-
-func (r *resolver) collectVariableReferences() (err error) {
-	r.refs = make(map[string]ref)
-
-	// First walk the input to gather all values with a variable reference.
-	_, err = dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+	out, err = dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		ref, ok := newRef(v)
 		if !ok {
 			// Skip values without variable references.
 			return v, nil
 		}
 
-		r.refs[p.String()] = ref
-		return v, nil
+		rVal, rErr := r.resolveRef(ref, []string{p.String()})
+		if rErr == nil {
+			// rVal could a be a complex variable. While it would be good to process it as well,
+			// doing so might result in continuously adding work in front and never finishing.
+			// acceptance/bundle/variables/complex-cycle catches this case.
+			// Note, this means we will keep parts of the graph unresolved and require multiple
+			// passes (as we do currently).
+			rErr = dyn.ErrSkip
+		}
+		return rVal, rErr
 	})
 
-	return err
-}
-
-func (r *resolver) resolveVariableReferences() (err error) {
-	// Initialize cache for lookups.
-	r.lookups = make(map[string]lookupResult)
-
-	// Initialize cache for resolved variable references.
-	r.resolved = make(map[string]dyn.Value)
-
-	// Resolve each variable reference (in order).
-	// We sort the keys here to ensure that we always resolve the same variable reference first.
-	// This is done such that the cycle detection error is deterministic. If we did not do this,
-	// we could enter the cycle at any point in the cycle and return varying errors.
-	keys := maps.Keys(r.refs)
-	sort.Strings(keys)
-	for _, key := range keys {
-		v, err := r.resolveRef(r.refs[key], []string{key})
-		if err != nil {
-			return err
-		}
-		r.resolved[key] = v
-	}
-
-	return nil
+	return out, err
 }
 
 func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
@@ -214,18 +173,4 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	// Cache the return value and return to the caller.
 	r.lookups[key] = lookupResult{v: v, err: err}
 	return v, err
-}
-
-func (r *resolver) replaceVariableReferences() (dyn.Value, error) {
-	// Walk the input and replace all variable references.
-	return dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		nv, ok := r.resolved[p.String()]
-		if !ok {
-			// No variable reference; return the original value.
-			return v, nil
-		}
-
-		// We have a variable reference; return the resolved value.
-		return nv, nil
-	})
 }
