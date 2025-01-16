@@ -14,7 +14,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
-const maxResolutionRounds = 100
+const maxResolutionRounds = 12
 
 type resolveVariableReferences struct {
 	prefixes    []string
