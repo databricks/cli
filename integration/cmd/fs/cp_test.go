@@ -203,8 +203,8 @@ func TestFsCpDirToDirFileNotOverwritten(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			sourceFiler, sourceDir := tc.setupSource(t)
-			targetFiler, targetDir := tc.setupTarget(t)
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, context.Background(), sourceFiler)
 
 			// Write a conflicting file to target
@@ -227,8 +227,8 @@ func TestFsCpFileToDirFileNotOverwritten(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			sourceFiler, sourceDir := tc.setupSource(t)
-			targetFiler, targetDir := tc.setupTarget(t)
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, context.Background(), sourceFiler)
 
 			// Write a conflicting file to target
@@ -251,8 +251,8 @@ func TestFsCpFileToFileFileNotOverwritten(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			sourceFiler, sourceDir := tc.setupSource(t)
-			targetFiler, targetDir := tc.setupTarget(t)
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, context.Background(), sourceFiler)
 
 			// Write a conflicting file to target
@@ -275,8 +275,8 @@ func TestFsCpDirToDirWithOverwriteFlag(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			sourceFiler, sourceDir := tc.setupSource(t)
-			targetFiler, targetDir := tc.setupTarget(t)
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, context.Background(), sourceFiler)
 
 			// Write a conflicting file to target
@@ -299,8 +299,8 @@ func TestFsCpFileToFileWithOverwriteFlag(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			sourceFiler, sourceDir := tc.setupSource(t)
-			targetFiler, targetDir := tc.setupTarget(t)
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, context.Background(), sourceFiler)
 
 			// Write a conflicting file to target
@@ -323,8 +323,8 @@ func TestFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			sourceFiler, sourceDir := tc.setupSource(t)
-			targetFiler, targetDir := tc.setupTarget(t)
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, context.Background(), sourceFiler)
 
 			// Write a conflicting file to target
