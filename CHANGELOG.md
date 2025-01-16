@@ -2,7 +2,7 @@
 
 ## [Release] Release v0.239.0
 
-New feature announcement.
+### New feature announcement
 
 You can now manage Databricks Apps using DABs by defining an `app` resource in your bundle configuration.
 For more information see Databricks documentation https://docs.databricks.com/en/dev-tools/bundles/resources.html#app
