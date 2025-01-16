@@ -264,9 +264,7 @@ func (t *translateContext) translateLocalAbsoluteFilePath(ctx context.Context, l
 	if info.IsDir() {
 		return "", fmt.Errorf("expected %s to be a file but found a directory", literal)
 	}
-	// Absolute paths are never externalized and always intended to be used locally.
-	// Return a platform-native path.
-	return filepath.FromSlash(localFullPath), nil
+	return localFullPath, nil
 }
 
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
@@ -280,9 +278,7 @@ func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Conte
 	if !info.IsDir() {
 		return "", fmt.Errorf("expected %s to be a directory but found a file", literal)
 	}
-	// Absolute paths are never externalized and always intended to be used locally.
-	// Return a platform-native path.
-	return filepath.FromSlash(localFullPath), nil
+	return localFullPath, nil
 }
 
 func (t *translateContext) translateLocalRelativePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
