@@ -136,6 +136,7 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 		bundle.Seq(
 			terraform.StatePush(),
 			terraform.Load(),
+			apps.SlowDeployMessage(),
 			apps.InterpolateVariables(),
 			apps.UploadConfig(),
 			metadata.Compute(),
