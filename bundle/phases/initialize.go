@@ -66,6 +66,11 @@ func Initialize() bundle.Mutator {
 				"workspace",
 				"variables",
 			),
+			mutator.ResolveVariableReferences(
+				"bundle",
+				"workspace",
+				"variables",
+			),
 
 			mutator.MergeJobClusters(),
 			mutator.MergeJobParameters(),
