@@ -14,7 +14,22 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
-const maxResolutionRounds = 12
+/*
+For pathological cases, output and time grow exponentially.
+
+On my laptop, timings for acceptance/bundle/variables/complex-cycle:
+rounds           time
+
+	 9          0.10s
+	10          0.13s
+	11          0.27s
+	12          0.68s
+	13          1.98s
+	14          6.28s
+	15         21.70s
+	16         78.16s
+*/
+const maxResolutionRounds = 11
 
 type resolveVariableReferences struct {
 	prefixes    []string
