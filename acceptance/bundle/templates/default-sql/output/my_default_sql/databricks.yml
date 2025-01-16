@@ -25,7 +25,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: http://$DATABRICKS_HOST
+      host: $DATABRICKS_URL
     variables:
       warehouse_id: f00dcafe
       catalog: main
@@ -34,7 +34,7 @@ targets:
   prod:
     mode: production
     workspace:
-      host: http://$DATABRICKS_HOST
+      host: $DATABRICKS_URL
       # We explicitly specify /Workspace/Users/$USERNAME to make sure we only have a single copy.
       root_path: /Workspace/Users/$USERNAME/.bundle/${bundle.name}/${bundle.target}
     variables:
