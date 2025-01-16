@@ -79,7 +79,7 @@ func TestFsLsWithAbsolutePaths(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			setupLsFiles(t, f)
 
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "ls", tmpDir, "--output=json", "--absolute")

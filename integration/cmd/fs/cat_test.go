@@ -42,7 +42,7 @@ func TestFsCatOnADir(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 
 			err := f.Mkdir(context.Background(), "dir1")
 			require.NoError(t, err)

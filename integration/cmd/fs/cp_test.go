@@ -149,8 +149,8 @@ func TestFsCpFileToFile(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			sourceFiler, sourceDir := tc.setupSource(t)
-			targetFiler, targetDir := tc.setupTarget(t)
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceFile(t, context.Background(), sourceFiler)
 
 			testcli.RequireSuccessfulRun(t, ctx, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))

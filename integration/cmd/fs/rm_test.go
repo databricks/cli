@@ -108,7 +108,7 @@ func TestFsRmForNonExistentFile(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			_, tmpDir := tc.setupFiler(t)
+			_, tmpDir := testCase.setupFiler(t)
 
 			// Expect error if file does not exist
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "rm", path.Join(tmpDir, "does-not-exist"))
@@ -125,7 +125,7 @@ func TestFsRmDirRecursively(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 
 			// Create a directory
 			err := f.Mkdir(context.Background(), "a")
