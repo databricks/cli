@@ -4,8 +4,15 @@
 
 ### New feature announcement
 
+#### Databricks Apps support
+
 You can now manage Databricks Apps using DABs by defining an `app` resource in your bundle configuration.
 For more information see Databricks documentation https://docs.databricks.com/en/dev-tools/bundles/resources.html#app
+
+#### Referencing complex variables in complex variables
+
+You can now reference complex variables within other complex variables.
+For more details see https://github.com/databricks/cli/pull/2157
 
 CLI:
  * Filter out system clusters in cluster picker ([#2131](https://github.com/databricks/cli/pull/2131)).
@@ -22,16 +29,6 @@ Bundles:
  * Format default-python template ([#2110](https://github.com/databricks/cli/pull/2110)).
  * Encourage the use of root_path in production to ensure single deployment ([#1712](https://github.com/databricks/cli/pull/1712)).
  * Log warnings to stderr for "bundle validate -o json" ([#2109](https://github.com/databricks/cli/pull/2109)).
-
-Internal:
- * Move merge fix-ups after variable resolution ([#2125](https://github.com/databricks/cli/pull/2125)).
- * Enable linter 'unconvert' and fix the issues found ([#2136](https://github.com/databricks/cli/pull/2136)).
- * Coverage for acceptance tests ([#2123](https://github.com/databricks/cli/pull/2123)).
- * Add acceptance tests for builtin templates ([#2135](https://github.com/databricks/cli/pull/2135)).
- * Add a unique schema for recreate pipeline test ([#2159](https://github.com/databricks/cli/pull/2159)).
- * Migrate resolution tests to acceptance tests ([#2143](https://github.com/databricks/cli/pull/2143)).
- * Update runner for the publish-winget job ([#2105](https://github.com/databricks/cli/pull/2105)).
- * Add a test for complex variable resolution with 3 levels ([#2163](https://github.com/databricks/cli/pull/2163)).
 
 API Changes:
  * Changed `databricks account federation-policy update` command with new required argument order.
