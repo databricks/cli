@@ -78,6 +78,8 @@ func Initialize() bundle.Mutator {
 			mutator.MergePipelineClusters(),
 			mutator.MergeApps(),
 
+			mutator.CaptureSchemaDependency(),
+
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),
