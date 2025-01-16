@@ -51,7 +51,7 @@ func TestFsRmEmptyDir(t *testing.T) {
 
 			// Create a directory
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			err := f.Mkdir(context.Background(), "a")
 			require.NoError(t, err)
 
@@ -75,9 +75,7 @@ func TestFsRmNonEmptyDirectory(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			// Create a directory
