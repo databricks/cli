@@ -16,7 +16,7 @@ func TestTemplateResolverBothTagAndBranch(t *testing.T) {
 	}
 
 	_, err := r.Resolve(context.Background())
-	assert.EqualError(t, err, "only one of --tag or --branch can be specified")
+	assert.EqualError(t, err, "only one of tag or branch can be specified")
 }
 
 func TestTemplateResolverErrorsWhenPromptingIsNotSupported(t *testing.T) {
@@ -108,4 +108,12 @@ func TestTemplateResolverForCustomPath(t *testing.T) {
 
 	// Assert writer configuration
 	assert.Equal(t, "/config/file", tmpl.Writer.(*defaultWriter).configPath)
+}
+
+func TestBundleInitIsRepoUrl(t *testing.T) {
+	assert.True(t, isRepoUrl("git@github.com:databricks/cli.git"))
+	assert.True(t, isRepoUrl("https://github.com/databricks/cli.git"))
+
+	assert.False(t, isRepoUrl("./local"))
+	assert.False(t, isRepoUrl("foo"))
 }

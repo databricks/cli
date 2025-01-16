@@ -23,7 +23,6 @@ const (
 type Writer interface {
 	Configure(ctx context.Context, configPath, outputDir string) error
 	Materialize(ctx context.Context, r Reader) error
-	LogTelemetry(ctx context.Context) error
 }
 
 type defaultWriter struct {

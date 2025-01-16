@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,9 +45,6 @@ func TestBuiltInReader(t *testing.T) {
 		r := &builtinReader{name: "doesnotexist"}
 		_, err := r.FS(context.Background())
 		assert.EqualError(t, err, "builtin template doesnotexist not found")
-
-		// Close should not error.
-		assert.NoError(t, r.Close())
 	})
 }
 
@@ -60,8 +58,6 @@ func TestGitUrlReader(t *testing.T) {
 	cloneFunc := func(ctx context.Context, url, reference, targetPath string) error {
 		numCalls++
 		args = []string{url, reference, targetPath}
-		err := os.MkdirAll(filepath.Join(targetPath, "a", "b", "c"), 0o755)
-		require.NoError(t, err)
 		testutil.WriteFile(t, filepath.Join(targetPath, "a", "b", "c", "somefile"), "somecontent")
 		return nil
 	}
@@ -73,27 +69,28 @@ func TestGitUrlReader(t *testing.T) {
 	}
 
 	// Assert cloneFunc is called with the correct args.
-	fs, err := r.FS(ctx)
+	fsys, err := r.FS(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, r.tmpRepoDir)
+	assert.Equal(t, 1, numCalls)
 	assert.DirExists(t, r.tmpRepoDir)
 	assert.Equal(t, []string{"someurl", "sometag", r.tmpRepoDir}, args)
 
 	// Assert the fs returned is rooted at the templateDir.
-	fd, err := fs.Open("somefile")
+	fd, err := fsys.Open("somefile")
 	require.NoError(t, err)
 	b, err := io.ReadAll(fd)
 	require.NoError(t, err)
 	assert.Equal(t, "somecontent", string(b))
 	assert.NoError(t, fd.Close())
 
-	// Assert the FS is cached. cloneFunc should not be called again.
-	_, err = r.FS(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, 1, numCalls)
+	// Assert the downloaded repository is cleaned up.
+	_, err = fsys.Open(".")
+	assert.NoError(t, err)
+	r.Cleanup()
+	_, err = fsys.Open(".")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	// Assert Close cleans up the tmpRepoDir.
-	err = r.Close()
 	require.NoError(t, err)
 	assert.NoDirExists(t, r.tmpRepoDir)
 }
@@ -114,7 +111,4 @@ func TestLocalReader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "somecontent", string(b))
 	assert.NoError(t, fd.Close())
-
-	// Assert close does not error
-	assert.NoError(t, r.Close())
 }

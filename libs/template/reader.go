@@ -16,22 +16,16 @@ type Reader interface {
 	// definition files. This function is NOT thread safe.
 	FS(ctx context.Context) (fs.FS, error)
 
-	// Close releases any resources associated with the reader
+	// Cleanup releases any resources associated with the reader
 	// like cleaning up temporary directories.
-	Close() error
+	Cleanup()
 }
 
 type builtinReader struct {
-	name     string
-	fsCached fs.FS
+	name string
 }
 
 func (r *builtinReader) FS(ctx context.Context) (fs.FS, error) {
-	// If the FS has already been loaded, return it.
-	if r.fsCached != nil {
-		return r.fsCached, nil
-	}
-
 	builtin, err := builtin()
 	if err != nil {
 		return nil, err
@@ -49,13 +43,10 @@ func (r *builtinReader) FS(ctx context.Context) (fs.FS, error) {
 		return nil, fmt.Errorf("builtin template %s not found", r.name)
 	}
 
-	r.fsCached = templateFS
-	return r.fsCached, nil
+	return templateFS, nil
 }
 
-func (r *builtinReader) Close() error {
-	return nil
-}
+func (r *builtinReader) Cleanup() {}
 
 type gitReader struct {
 	gitUrl string
@@ -69,8 +60,6 @@ type gitReader struct {
 	// Function to clone the repository. This is a function pointer to allow
 	// mocking in tests.
 	cloneFunc func(ctx context.Context, url, reference, targetPath string) error
-
-	fsCached fs.FS
 }
 
 // Computes the repo name from the repo URL. Treats the last non empty word
@@ -81,28 +70,7 @@ func repoName(url string) string {
 	return parts[len(parts)-1]
 }
 
-var gitUrlPrefixes = []string{
-	"https://",
-	"git@",
-}
-
-func isRepoUrl(url string) bool {
-	result := false
-	for _, prefix := range gitUrlPrefixes {
-		if strings.HasPrefix(url, prefix) {
-			result = true
-			break
-		}
-	}
-	return result
-}
-
 func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
-	// If the FS has already been loaded, return it.
-	if r.fsCached != nil {
-		return r.fsCached, nil
-	}
-
 	// Create a temporary directory with the name of the repository.  The '*'
 	// character is replaced by a random string in the generated temporary directory.
 	repoDir, err := os.MkdirTemp("", repoName(r.gitUrl)+"-*")
@@ -121,35 +89,25 @@ func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
 		return nil, err
 	}
 
-	r.fsCached = os.DirFS(filepath.Join(repoDir, r.templateDir))
-	return r.fsCached, nil
+	return os.DirFS(filepath.Join(repoDir, r.templateDir)), nil
 }
 
-func (r *gitReader) Close() error {
+func (r *gitReader) Cleanup() {
 	if r.tmpRepoDir == "" {
-		return nil
+		return
 	}
 
-	return os.RemoveAll(r.tmpRepoDir)
+	// Cleanup is best effort. Ignore errors.
+	os.RemoveAll(r.tmpRepoDir)
 }
 
 type localReader struct {
 	// Path on the local filesystem that contains the template
 	path string
-
-	fsCached fs.FS
 }
 
 func (r *localReader) FS(ctx context.Context) (fs.FS, error) {
-	// If the FS has already been loaded, return it.
-	if r.fsCached != nil {
-		return r.fsCached, nil
-	}
-
-	r.fsCached = os.DirFS(r.path)
-	return r.fsCached, nil
+	return os.DirFS(r.path), nil
 }
 
-func (r *localReader) Close() error {
-	return nil
-}
+func (r *localReader) Cleanup() {}

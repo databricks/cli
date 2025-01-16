@@ -38,6 +38,10 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if tag != "" && branch != "" {
+			return errors.New("only one of --tag or --branch can be specified")
+		}
+
 		var templatePathOrUrl string
 		if len(args) > 0 {
 			templatePathOrUrl = args[0]
@@ -61,7 +65,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		if err != nil {
 			return err
 		}
-		defer tmpl.Reader.Close()
+		defer tmpl.Reader.Cleanup()
 
 		return tmpl.Writer.Materialize(ctx, tmpl.Reader)
 	}
