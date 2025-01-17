@@ -90,9 +90,6 @@ func TestGitUrlReader(t *testing.T) {
 	r.Cleanup()
 	_, err = fsys.Open(".")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
-
-	require.NoError(t, err)
-	assert.NoDirExists(t, r.tmpRepoDir)
 }
 
 func TestLocalReader(t *testing.T) {

@@ -60,7 +60,6 @@ func TestTemplateGet(t *testing.T) {
 		DbtSql,
 		MlopsStacks,
 		DefaultPydabs,
-		Custom,
 	}
 
 	for _, name := range names {

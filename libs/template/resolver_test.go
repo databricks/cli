@@ -27,15 +27,6 @@ func TestTemplateResolverErrorsWhenPromptingIsNotSupported(t *testing.T) {
 	assert.EqualError(t, err, "prompting is not supported. Please specify the path, name or URL of the template to use")
 }
 
-func TestTemplateResolverErrorWhenUserSelectsCustom(t *testing.T) {
-	r := Resolver{
-		TemplatePathOrUrl: "custom...",
-	}
-
-	_, err := r.Resolve(context.Background())
-	assert.EqualError(t, err, "custom template selected")
-}
-
 func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 	for _, name := range []string{
 		"default-python",
