@@ -27,7 +27,13 @@ var KeepTmp = os.Getenv("KEEP_TMP") != ""
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
-var debugSubTest = "bundle/variables/empty"
+// example: var debugSubTest = "bundle/variables/empty"
+var debugSubTest = ""
+
+// If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
+// CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see tools/callserver.py).
+// Also disables parallelism in tests.
+var inprocessMode = debugSubTest != "" || os.Getenv("TESTS_INPROCESS") != ""
 
 const (
 	EntryPointScript = "script"
@@ -55,15 +61,18 @@ func TestAccept(t *testing.T) {
 		t.Logf("Writing coverage to %s", coverDir)
 	}
 
-	if debugSubTest != "" {
+	execPath := ""
+
+	if inprocessMode {
 		cmdServer := StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
-		t.Setenv("CLI", "callserver.py")
+		execPath = "callserver.py"
 	} else {
-		execPath := BuildCLI(t, cwd, coverDir)
-		t.Setenv("CLI", execPath)
-		repls.Set(execPath, "$CLI")
+		execPath = BuildCLI(t, cwd, coverDir)
 	}
+
+	t.Setenv("CLI", execPath)
+	repls.Set(execPath, "$CLI")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
@@ -106,13 +115,15 @@ func TestAccept(t *testing.T) {
 	for _, dir := range testDirs {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
-			if debugSubTest == "" {
+			if !inprocessMode {
 				t.Parallel()
-			} else {
-				if debugSubTest != testName {
-					return
-				}
 			}
+
+			if debugSubTest != "" && debugSubTest != testName {
+				t.Skip("Skipping due to debugSubTest")
+				return
+			}
+
 			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
