@@ -9,7 +9,7 @@ For more information about Databricks Apps, please refer to the [documentation](
 
 ## Prerequisites
 
-* Databricks CLI v0.238.0 or above
+* Databricks CLI v0.239.0 or above
 
 ## Usage
 
