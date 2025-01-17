@@ -1,0 +1,11 @@
+
+>>> $CLI bundle validate --var a=one -o json
+Error: variable a has not been defined
+
+{
+  "x": {
+    "default": "hello"
+  }
+}
+
+Exit code: 1
