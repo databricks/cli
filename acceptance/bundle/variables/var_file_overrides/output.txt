@@ -1,0 +1,126 @@
+
+>>> $CLI bundle validate -o json --var-file=var_files/normal.json
+{
+  "job_cluster_key": "mlops_stacks-cluster",
+  "new_cluster": {
+    "node_type_id": "Standard_DS3_v2",
+    "num_workers": 2
+  }
+}
+
+>>> $CLI bundle validate -o json --var=cluster_key=mlops_stacks-cluster
+{
+  "job_cluster_key": "mlops_stacks-cluster",
+  "new_cluster": {
+    "node_type_id": "default",
+    "num_workers": 1
+  }
+}
+
+>>> errcode $CLI bundle validate -o json --var-file=var_files/normal.json --var=cluster_key=mlops_stacks-cluster
+Error: cannot specify both --var and --var-file flags
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+>>> errcode $CLI bundle validate -o json --var-file=var_files/not_found.json
+Error: failed to read variables file: open var_files/not_found.json: no such file or directory
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+>>> errcode $CLI bundle validate -o json --var-file=var_files/invalid_json.json
+Error: failed to parse variables file: error decoding JSON at :0:0: invalid character 'o' in literal false (expecting 'a')
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+>>> errcode $CLI bundle validate -o json --var-file=var_files/wrong_file_structure.json
+Error: failed to parse variables file: var_files/wrong_file_structure.json:1:1: expected a map, found a sequence
+  in var_files/wrong_file_structure.json:1:1
+
+Variables file must be a JSON object with the following format:
+{"var1": "value1", "var2": "value2"}
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+>>> errcode $CLI bundle validate -o json --var-file=var_files/undeclared.json
+Error: variable undeclared_var has not been defined
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+>>> errcode $CLI bundle validate -o json --var-file=var_files/complex_to_string.json
+Error: expected a map to index "variables.cluster.value.node_type_id", found string
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+>>> errcode $CLI bundle validate -o json --var-file=var_files/string_to_complex.json
+Error: failed to assign map[node_type_id:Standard_DS3_v2] to cluster_key: variable type is not complex
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+>>> errcode $CLI bundle validate -o json --target without-defaults --var-file=var_files/empty.json
+Error: no value assigned to required variable cluster_workers. Assignment can be done through the "--var" or "--var-file" flag or by setting the BUNDLE_VAR_cluster_workers environment variable
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}

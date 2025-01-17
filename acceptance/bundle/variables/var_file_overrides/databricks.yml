@@ -4,12 +4,8 @@ bundle:
 variables:
   cluster:
     type: "complex"
-    default:
-      node_type_id: "unused"
   cluster_key:
-    default: "unused"
   cluster_workers:
-    default: 1
 
 resources:
   jobs:
@@ -19,3 +15,18 @@ resources:
           new_cluster:
             node_type_id: "${var.cluster.node_type_id}"
             num_workers: ${var.cluster_workers}
+
+targets:
+  with-defaults:
+    default: true
+    variables:
+      cluster_workers:
+        default: 1
+      cluster:
+        type: "complex"
+        default:
+          node_type_id: "default"
+      cluster_key:
+        default: "default"
+
+  without-defaults:

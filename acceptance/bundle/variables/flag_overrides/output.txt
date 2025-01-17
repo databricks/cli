@@ -1,8 +1,0 @@
-{
-  "job_cluster_key": "mlops_stacks-cluster",
-  "new_cluster": {
-    "node_type_id": "Standard_DS3_v2",
-    "num_workers": 2
-  }
-}
-"mlops_stacks-cluster"

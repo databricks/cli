@@ -64,7 +64,7 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 	}
 
 	// We should have had a value to set for the variable at this point.
-	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Assignment can be done through the "--var" flag or by setting the %s environment variable`, name, bundleVarPrefix+name)
+	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Assignment can be done through the "--var" or "--var-file" flag or by setting the %s environment variable`, name, bundleVarPrefix+name)
 }
 
 func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

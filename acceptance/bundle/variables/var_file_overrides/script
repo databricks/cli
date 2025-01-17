@@ -1,0 +1,31 @@
+cluster_expr=".resources.jobs.job1.job_clusters[0]"
+
+# variable file
+trace $CLI bundle validate -o json --var-file=var_files/normal.json | jq $cluster_expr
+
+# variable flag
+trace $CLI bundle validate -o json --var="cluster_key=mlops_stacks-cluster" | jq $cluster_expr
+
+# both variable file and flag
+trace errcode $CLI bundle validate -o json --var-file=var_files/normal.json --var="cluster_key=mlops_stacks-cluster" | jq $cluster_expr
+
+# file not found
+trace errcode $CLI bundle validate -o json --var-file=var_files/not_found.json | jq $cluster_expr
+
+# file cannot be parsed
+trace errcode $CLI bundle validate -o json --var-file=var_files/invalid_json.json | jq $cluster_expr
+
+# file has wrong structure
+trace errcode $CLI bundle validate -o json --var-file=var_files/wrong_file_structure.json | jq $cluster_expr
+
+# file has variable name that is not defined
+trace errcode $CLI bundle validate -o json --var-file=var_files/undeclared.json | jq $cluster_expr
+
+# file has variable name that is complex but default is string
+trace errcode $CLI bundle validate -o json --var-file=var_files/complex_to_string.json | jq $cluster_expr
+
+# file has variable name that is string but default is complex
+trace errcode $CLI bundle validate -o json --var-file=var_files/string_to_complex.json | jq $cluster_expr
+
+# variable is required but it's not provided in the file
+trace errcode $CLI bundle validate -o json --target without-defaults --var-file=var_files/empty.json | jq $cluster_expr
