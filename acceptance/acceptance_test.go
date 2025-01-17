@@ -141,7 +141,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
-	CopyDir(t, dir, tmpDir, inputs, outputs)
+	err = CopyDir(dir, tmpDir, inputs, outputs)
+	require.NoError(t, err)
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
@@ -155,7 +156,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverDir)
 	}
 
-	// Write combined output to "output.txt".
+	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
 	require.NoError(t, err)
 	cmd.Stdout = out
@@ -167,13 +168,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
-	// Compare known outputs.
+	// Compare expected outputs
 	for relPath := range outputs {
-		doComparison(t, repls, filepath.Join(dir, relPath), filepath.Join(tmpDir, relPath))
+		doComparison(t, repls, dir, tmpDir, relPath)
 	}
 
 	// Make sure there are not unaccounted for new files
-	for _, relPath := range ListDir(t, tmpDir) {
+	files, err := ListDir(t, tmpDir)
+	require.NoError(t, err)
+	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
 		}
@@ -183,12 +186,14 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, filepath.Join(dir, relPath), filepath.Join(tmpDir, relPath))
+			doComparison(t, repls, dir, tmpDir, relPath)
 		}
 	}
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, pathRef, pathNew string) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string) {
+	pathRef := filepath.Join(dirRef, relPath)
+	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := readIfExists(t, pathRef)
 	bufNew, okNew := readIfExists(t, pathNew)
 	if !okRef && !okNew {
@@ -203,20 +208,33 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, pathRef, pat
 	// The reference value is stored after applying replacements.
 	valueNew = repls.Replace(valueNew)
 
-	// Compare the reference and new values.
-	testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
-	if testdiff.OverwriteMode {
-		switch {
-		case okRef && okNew:
-			t.Logf("Overwriting existing output file: %s", pathRef)
-			testutil.WriteFile(t, pathRef, valueNew)
-		case !okRef && okNew:
-			t.Logf("Writing new output file: %s", pathRef)
-			testutil.WriteFile(t, pathRef, valueNew)
-		case okRef && !okNew:
-			t.Logf("Removing output file: %s", pathRef)
+	// The test did not produce an expected output file.
+	if okRef && !okNew {
+		t.Errorf("Missing output file: %s", relPath)
+		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		if testdiff.OverwriteMode {
+			t.Logf("Removing output file: %s", relPath)
 			require.NoError(t, os.Remove(pathRef))
 		}
+		return
+	}
+
+	// The test produced an unexpected output file.
+	if !okRef && okNew {
+		t.Errorf("Unexpected output file: %s", relPath)
+		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		if testdiff.OverwriteMode {
+			t.Logf("Writing output file: %s", relPath)
+			testutil.WriteFile(t, pathRef, valueNew)
+		}
+		return
+	}
+
+	// Compare the reference and new values.
+	equal := testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+	if !equal && testdiff.OverwriteMode {
+		t.Logf("Overwriting existing output file: %s", relPath)
+		testutil.WriteFile(t, pathRef, valueNew)
 	}
 }
 
@@ -339,8 +357,8 @@ func readIfExists(t *testing.T, path string) ([]byte, bool) {
 	return []byte{}, false
 }
 
-func CopyDir(t *testing.T, src, dst string, inputs, outputs map[string]bool) {
-	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -372,10 +390,9 @@ func CopyDir(t *testing.T, src, dst string, inputs, outputs map[string]bool) {
 
 		return copyFile(path, destPath)
 	})
-	require.NoError(t, err)
 }
 
-func ListDir(t *testing.T, src string) []string {
+func ListDir(t *testing.T, src string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -394,6 +411,5 @@ func ListDir(t *testing.T, src string) []string {
 		files = append(files, relPath)
 		return nil
 	})
-	require.NoError(t, err)
-	return files
+	return files, err
 }
