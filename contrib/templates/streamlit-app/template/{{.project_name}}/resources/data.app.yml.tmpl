@@ -1,0 +1,24 @@
+resources:
+  apps:
+    data_app:
+      name: "data-app"
+      source_code_path: ../app
+      description: "A Streamlit app that uses a SQL warehouse"
+      config:
+        command:
+          - "streamlit"
+          - "run"
+          - "app.py"
+        env:
+          - name: "DATABRICKS_WAREHOUSE_ID"
+            value: "{{.sql_warehouse_id}}"
+          - name: STREAMLIT_BROWSER_GATHER_USAGE_STATS
+            value: "false"
+    
+      resources:
+        - name: "sql-warehouse"
+          description: "A SQL warehouse for app to be able to work with"
+          sql_warehouse:
+            id: "{{.sql_warehouse_id}}"
+            permission: "CAN_USE"
+

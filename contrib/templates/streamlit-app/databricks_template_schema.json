@@ -1,0 +1,21 @@
+{
+    "welcome_message": "\nWelcome to the streamlit-app template for Databricks Asset Bundles!",
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "default": "my_data_app",
+            "description": "Please provide the following details to tailor the template to your preferences.\n\nUnique name for this project\nproject_name",
+            "order": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
+        },
+        "sql_warehouse_id": {
+            "type": "string",
+            "pattern": "^\\w*$",
+            "pattern_match_failure_message": "Invalid sql warehouse id.",
+            "description": "SQL Warehouse ID to be used with the app\nsql_warehouse_id",
+            "order": 2
+        }
+    },
+    "success_message": "\n\nYour new project has been created in the '{{.project_name}}' directory!"
+}
