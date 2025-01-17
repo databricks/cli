@@ -2,13 +2,14 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/jsonloader"
 	"github.com/spf13/cobra"
 )
 
@@ -20,16 +21,27 @@ func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string
 }
 
 func configureVariablesFromFile(cmd *cobra.Command, b *bundle.Bundle, filePath string) diag.Diagnostics {
+	var diags diag.Diagnostics
 	return bundle.ApplyFunc(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		f, err := os.ReadFile(filePath)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("failed to read variables file: %w", err))
 		}
 
-		vars := map[string]any{}
-		err = json.Unmarshal(f, &vars)
+		val, err := jsonloader.LoadJSON(f, filePath)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("failed to parse variables file: %w", err))
+		}
+
+		vars := map[string]any{}
+		err = convert.ToTyped(&vars, val)
+		if err != nil {
+			return diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "failed to parse variables file: " + err.Error(),
+				Detail:    "Variables file must be a JSON object with the following format:\n{\"var1\": \"value1\", \"var2\": \"value2\"}",
+				Locations: val.Locations(),
+			})
 		}
 
 		if len(vars) > 0 {
