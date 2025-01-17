@@ -1,0 +1,12 @@
+bundle:
+  name: complex-cross-ref
+
+variables:
+  a:
+    default:
+      a_1: 500
+      a_2: ${var.b.b_2}
+  b:
+    default:
+      b_1: ${var.a.a_1}
+      b_2: 2.5

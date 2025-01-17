@@ -2,11 +2,11 @@ package acceptance_test
 
 import (
 	"encoding/json"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -14,8 +14,7 @@ import (
 
 type TestServer struct {
 	*httptest.Server
-	Mux  *http.ServeMux
-	Port int
+	Mux *http.ServeMux
 }
 
 type HandlerFunc func(r *http.Request) (any, error)
@@ -23,12 +22,10 @@ type HandlerFunc func(r *http.Request) (any, error)
 func NewTestServer() *TestServer {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
-	port := server.Listener.Addr().(*net.TCPAddr).Port
 
 	return &TestServer{
 		Server: server,
 		Mux:    mux,
-		Port:   port,
 	}
 }
 
@@ -124,6 +121,29 @@ func AddHandlers(server *TestServer) {
 			ObjectType: "DIRECTORY",
 			Path:       "",
 			ResourceId: "1001",
+		}, nil
+	})
+
+	server.Handle("/api/2.1/unity-catalog/current-metastore-assignment", func(r *http.Request) (any, error) {
+		return catalog.MetastoreAssignment{
+			DefaultCatalogName: "main",
+		}, nil
+	})
+
+	server.Handle("/api/2.0/permissions/directories/1001", func(r *http.Request) (any, error) {
+		return workspace.WorkspaceObjectPermissions{
+			ObjectId:   "1001",
+			ObjectType: "DIRECTORY",
+			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
+				{
+					UserName: "tester@databricks.com",
+					AllPermissions: []workspace.WorkspaceObjectPermission{
+						{
+							PermissionLevel: "CAN_MANAGE",
+						},
+					},
+				},
+			},
 		}, nil
 	})
 }

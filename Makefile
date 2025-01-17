@@ -1,4 +1,4 @@
-default: build
+default: vendor fmt lint
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -14,6 +14,7 @@ lintcheck:
 # formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
 # If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 fmt:
+	ruff format
 	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
 
 test:
@@ -44,7 +45,7 @@ snapshot:
 
 vendor:
 	go mod vendor
-  
+
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 

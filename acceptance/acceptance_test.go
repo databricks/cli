@@ -59,6 +59,13 @@ func TestAccept(t *testing.T) {
 	repls := testdiff.ReplacementsContext{}
 	repls.Set(execPath, "$CLI")
 
+	tempHomeDir := t.TempDir()
+	repls.Set(tempHomeDir, "$TMPHOME")
+	t.Logf("$TMPHOME=%v", tempHomeDir)
+
+	// Prevent CLI from downloading terraform in each test:
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
+
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
@@ -66,7 +73,7 @@ func TestAccept(t *testing.T) {
 		server := StartServer(t)
 		AddHandlers(server)
 		// Redirect API access to local server:
-		t.Setenv("DATABRICKS_HOST", fmt.Sprintf("http://127.0.0.1:%d", server.Port))
+		t.Setenv("DATABRICKS_HOST", server.URL)
 		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 		homeDir := t.TempDir()
@@ -81,13 +88,14 @@ func TestAccept(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
-	testdiff.PrepareReplacements(t, &repls, workspaceClient)
+	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
 	for _, dir := range testDirs {
-		t.Run(dir, func(t *testing.T) {
+		testName := strings.ReplaceAll(dir, "\\", "/")
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			runTest(t, dir, coverDir, repls)
 		})
@@ -217,6 +225,11 @@ func doComparison(t *testing.T, pathExpected, pathNew, valueNew string) {
 // Note, cleanups are not executed if main script fails; that's not a huge issue, since it runs it temp dir.
 func readMergedScriptContents(t *testing.T, dir string) string {
 	scriptContents := testutil.ReadFile(t, filepath.Join(dir, EntryPointScript))
+
+	// Wrap script contents in a subshell such that changing the working
+	// directory only affects the main script and not cleanup.
+	scriptContents = "(\n" + scriptContents + ")\n"
+
 	prepares := []string{}
 	cleanups := []string{}
 
@@ -252,10 +265,23 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 	}
 
 	start := time.Now()
-	args := []string{"go", "build", "-mod", "vendor", "-o", execPath}
+	args := []string{
+		"go", "build",
+		"-mod", "vendor",
+		"-o", execPath,
+	}
+
 	if coverDir != "" {
 		args = append(args, "-cover")
 	}
+
+	if runtime.GOOS == "windows" {
+		// Get this error on my local Windows:
+		// error obtaining VCS status: exit status 128
+		// Use -buildvcs=false to disable VCS stamping.
+		args = append(args, "-buildvcs=false")
+	}
+
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = ".."
 	out, err := cmd.CombinedOutput()
