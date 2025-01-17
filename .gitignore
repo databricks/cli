@@ -32,3 +32,4 @@ __pycache__
 .vscode/tasks.json
 
 .databricks
+.ruff_cache

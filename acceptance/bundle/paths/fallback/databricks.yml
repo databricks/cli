@@ -1,5 +1,5 @@
 bundle:
-  name: path_translation_nominal
+  name: fallback
 
 include:
   - "resources/*.yml"

@@ -60,6 +60,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
 
+      - name: Run ruff
+        uses: astral-sh/ruff-action@31a518504640beb4897d0b9f9e50a2a9196e75ba # v3.0.1
+        with:
+          version: "0.9.1"
+          args: "format --check"
+
       - name: Set go env
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
