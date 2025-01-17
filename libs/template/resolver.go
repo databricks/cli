@@ -81,12 +81,6 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 		templateName = TemplateName(r.TemplatePathOrUrl)
 	}
 
-	// User should not directly select "custom..." and instead should provide the
-	// file path or the Git URL for the template directly.
-	if templateName == Custom {
-		return nil, ErrCustomSelected
-	}
-
 	tmpl := GetDatabricksTemplate(templateName)
 
 	// If we could not find a databricks template with the name provided by the user,
