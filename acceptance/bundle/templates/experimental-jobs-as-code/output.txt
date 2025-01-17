@@ -1,5 +1,5 @@
 
->>> $CLI bundle init experimental-jobs-as-code --config-file ./input.json
+>>> $CLI bundle init experimental-jobs-as-code --config-file ./input.json --output-dir output
 
 Welcome to (EXPERIMENTAL) "Jobs as code" template for Databricks Asset Bundles!
 Workspace to use (auto-detected, edit in 'my_jobs_as_code/databricks.yml'): $DATABRICKS_URL

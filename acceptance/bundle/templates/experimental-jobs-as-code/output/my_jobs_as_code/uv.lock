@@ -1,0 +1,28 @@
+version = 1
+requires-python = ">=3.10"
+
+[manifest]
+overrides = [{ name = "pyspark", marker = "sys_platform == 'never'" }]
+
+[[package]]
+name = "databricks-bundles"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/55/5ccd397771973d23044997ad2555523c107ce1346f5d16f4bffd4ab5a23d/databricks_bundles-0.7.0-py3-none-any.whl", hash = "sha256:9bc7de987c869380f17a1c8e4a684827105f57c1fb6cd01223818548010a33c4", size = 97620 },
+]
+
+[[package]]
+name = "my-jobs-as-code"
+version = "0.0.1"
+source = { editable = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "databricks-bundles" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [{ name = "databricks-bundles", specifier = "==0.7.0" }]

@@ -1,9 +1,8 @@
-# This is a Databricks asset bundle definition for {{.project_name}}.
+# This is a Databricks asset bundle definition for my_jobs_as_code.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
-  name: {{.project_name}}
-  uuid: {{bundle_uuid}}
-  databricks_cli_version: ">= 0.238.0"
+  name: my_jobs_as_code
+  uuid: <UUID>
 
 experimental:
   python:
@@ -14,7 +13,6 @@ experimental:
     resources:
       - "resources:load_resources"
 
-{{ if .include_python -}}
 artifacts:
   default:
     type: whl
@@ -23,7 +21,6 @@ artifacts:
     # to ensure that changes to wheel package are picked up when used on all-purpose clusters
     build: LOCAL_VERSION=$(date +%Y%m%d.%H%M%S) uv build
 
-{{ end -}}
 include:
   - resources/*.yml
 
@@ -36,16 +33,16 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{workspace_host}}
+      host: $DATABRICKS_URL
 
   prod:
     mode: production
     workspace:
-      host: {{workspace_host}}
-      # We explicitly specify /Workspace/Users/{{user_name}} to make sure we only have a single copy.
-      root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+      host: $DATABRICKS_URL
+      # We explicitly specify /Workspace/Users/$USERNAME to make sure we only have a single copy.
+      root_path: /Workspace/Users/$USERNAME/.bundle/${bundle.name}/${bundle.target}
     permissions:
-      - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
+      - user_name: $USERNAME
         level: CAN_MANAGE
     run_as:
-      {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
+      user_name: $USERNAME
