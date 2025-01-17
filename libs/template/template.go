@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -104,7 +105,7 @@ func options() []cmdio.Tuple {
 
 func SelectTemplate(ctx context.Context) (TemplateName, error) {
 	if !cmdio.IsPromptSupported(ctx) {
-		return "", fmt.Errorf("prompting is not supported. Please specify the path, name or URL of the template to use")
+		return "", errors.New("prompting is not supported. Please specify the path, name or URL of the template to use")
 	}
 	description, err := cmdio.SelectOrdered(ctx, options(), "Template to use")
 	if err != nil {
