@@ -1,7 +1,6 @@
 package acceptance_test
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,8 +8,8 @@ import (
 )
 
 type Response struct {
-	Message string         `json:"message"`
-	Args    url.Values     `json:"args"`
+	Message string     `json:"message"`
+	Args    url.Values `json:"args"`
 }
 
 type CmdServer struct {
