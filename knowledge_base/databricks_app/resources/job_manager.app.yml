@@ -1,0 +1,29 @@
+resources:
+  apps:
+    job_manager:
+      name: "job_manager"
+      description: "App which manages job created by this bundle"
+
+      # The location of the source code for the app.
+      source_code_path: ../src/app
+
+      # The configuration for the app. This allows to pass environment variables to the app and
+      # configure how to run the app.
+      config:
+        command:
+          - flask
+          - --app
+          - app
+          - run
+          - --debug
+        env:
+          - name: JOB_ID
+            value: ${resources.jobs.hello_world.id}
+
+      # The resources which this app have an access to.
+      resources:
+        - name: "app-job"
+          description: "A job for app to be able to work with"
+          job:
+            id: ${resources.jobs.hello_world.id}
+            permission: "CAN_MANAGE_RUN"

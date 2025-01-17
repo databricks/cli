@@ -1,0 +1,14 @@
+bundle:
+  name: databricks_app
+
+include:
+  - resources/*.yml
+
+
+#workspace:
+#  host: https://myworkspace.databricks.com
+
+targets:
+  dev:
+    default: true
+    mode: development

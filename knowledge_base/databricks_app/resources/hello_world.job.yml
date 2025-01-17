@@ -1,0 +1,16 @@
+resources:
+  jobs:
+    hello_world:
+      name: Serverless Hello World job
+      tasks:
+        - task_key: task
+          spark_python_task:
+            python_file: ../src/job/main.py
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+            dependencies:
+              - cowsay

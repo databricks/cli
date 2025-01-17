@@ -1,0 +1,15 @@
+<html>
+<head>
+    <title>Databricks App managed by DABs</title>
+</head>
+<body>
+    <h1>This app manages job "{{job_name}}"</h1>
+    <h2>Job runs</h2>
+    <ul>
+        {% for run in runs %}
+            <li>{{ run.job_run_id }}: {{ run.status.state }} (<a href="{{ run.run_page_url }}">Open this job run</a>)</li>
+        {% endfor %}
+    </ul>
+    <a href="/run">Run job</a>
+</body>
+</html>
