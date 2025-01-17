@@ -166,6 +166,6 @@ type writerWithFullTelemetry struct {
 }
 
 func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) error {
-	// TODO, log template name, uuid and enum args as well.``
+	// TODO, log template name, uuid and enum args as well.
 	return nil
 }

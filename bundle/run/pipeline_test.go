@@ -74,7 +74,7 @@ func TestPipelineRunnerRestart(t *testing.T) {
 		Host: "https://test.com",
 	}
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	
+
 	ctx := cmdio.MockDiscard(context.Background())
 	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 

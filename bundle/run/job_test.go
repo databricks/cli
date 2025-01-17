@@ -229,7 +229,7 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	
+
 	ctx := cmdio.MockDiscard(context.Background())
 	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 

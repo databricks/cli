@@ -42,18 +42,13 @@ func TestTemplateTelemetryIsCapturedForAllDefaultTemplates(t *testing.T) {
 	for _, tmpl := range databricksTemplates {
 		w := tmpl.Writer
 
-		if tmpl.name == Custom {
-			// Assert telemetry is not captured for user templates.
-			assert.IsType(t, &defaultWriter{}, w)
-		} else {
-			// Assert telemetry is captured for all other templates, i.e. templates
-			// owned by databricks.
-			assert.IsType(t, &writerWithFullTelemetry{}, w)
-		}
+		// Assert telemetry is captured for all databricks templates, i.e. templates
+		// owned by databricks.
+		assert.IsType(t, &writerWithFullTelemetry{}, w)
 	}
 }
 
-func TestTemplateGet(t *testing.T) {
+func TestTemplateGetDatabricksTemplate(t *testing.T) {
 	names := []TemplateName{
 		DefaultPython,
 		DefaultSql,
