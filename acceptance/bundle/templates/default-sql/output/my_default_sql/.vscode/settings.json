@@ -1,0 +1,27 @@
+{
+    "python.analysis.stubPath": ".vscode",
+    "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#\\s*%%|#\\s*\\<codecell\\>|#\\s*In\\[\\d*?\\]|#\\s*In\\[ \\])",
+    "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------",
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.extraPaths": ["src"],
+    "files.exclude": {
+        "**/*.egg-info": true,
+        "**/__pycache__": true,
+        ".pytest_cache": true,
+    },
+    "sqltools.connections": [
+        {
+            "connectionMethod": "VS Code Extension (beta)",
+            "catalog": "main",
+            "previewLimit": 50,
+            "driver": "Databricks",
+            "name": "databricks",
+            "path": "/sql/2.0/warehouses/f00dcafe"
+        }
+    ],
+    "sqltools.autoConnectTo": "",
+}
