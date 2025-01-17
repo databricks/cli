@@ -1,0 +1,20 @@
+targets:
+  dev:
+    resources:
+      jobs:
+        my_job:
+          name: dev name
+          tasks:
+            - task_key: default
+              notebook_task:
+                notebook_path: ./src/dev.py
+
+  prod:
+    resources:
+      jobs:
+        my_job:
+          name: prod name
+          tasks:
+            - task_key: default
+              notebook_task:
+                notebook_path: ./src/prod.py

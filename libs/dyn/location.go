@@ -7,9 +7,9 @@ import (
 )
 
 type Location struct {
-	File   string
-	Line   int
-	Column int
+	File   string `json:"file"`
+	Line   int    `json:"line"`
+	Column int    `json:"column"`
 }
 
 func (l Location) String() string {
