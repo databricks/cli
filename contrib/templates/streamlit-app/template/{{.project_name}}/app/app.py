@@ -5,9 +5,9 @@ import streamlit as st
 import pandas as pd
 
 # Ensure environment variable is set correctly
-assert os.getenv(
-    "DATABRICKS_WAREHOUSE_ID"
-), "DATABRICKS_WAREHOUSE_ID must be set in app.yaml."
+assert os.getenv("DATABRICKS_WAREHOUSE_ID"), (
+    "DATABRICKS_WAREHOUSE_ID must be set in app.yaml."
+)
 
 
 def sqlQuery(query: str) -> pd.DataFrame:

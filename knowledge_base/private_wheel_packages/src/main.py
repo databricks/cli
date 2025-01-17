@@ -2,5 +2,5 @@
 # include an arbitrary wheel file in your bundle directory, deploy it, and use it from within your code.
 import cowsay
 
-if __name__ == '__main__':
-    cowsay.cow('Hello, world!')
+if __name__ == "__main__":
+    cowsay.cow("Hello, world!")

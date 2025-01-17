@@ -11,7 +11,10 @@ AssetType = Literal["etl-pipeline", "job", "ingest-pipeline"]
 
 
 def init_bundle(asset_type: AssetType) -> None:
-    cmd = f"databricks bundle init https://github.com/databricks/bundle-examples --template-dir contrib/templates/data-engineering/assets/{asset_type} " + " ".join(sys.argv[2:])
+    cmd = (
+        f"databricks bundle init https://github.com/databricks/bundle-examples --template-dir contrib/templates/data-engineering/assets/{asset_type} "
+        + " ".join(sys.argv[2:])
+    )
     subprocess.run(cmd, shell=True)
 
 
