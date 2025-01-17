@@ -25,6 +25,10 @@ import (
 
 var KeepTmp = os.Getenv("KEEP_TMP") != ""
 
+// In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
+// Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
+var debugSubTest = "bundle/variables/empty"
+
 const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
@@ -38,6 +42,7 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -50,15 +55,18 @@ func TestAccept(t *testing.T) {
 		t.Logf("Writing coverage to %s", coverDir)
 	}
 
-	execPath := BuildCLI(t, cwd, coverDir)
-	// $CLI is what test scripts are using
-	t.Setenv("CLI", execPath)
+	if debugSubTest != "" {
+		cmdServer := StartCmdServer(t)
+		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
+		t.Setenv("CLI", "callserver.py")
+	} else {
+		execPath := BuildCLI(t, cwd, coverDir)
+		t.Setenv("CLI", execPath)
+		repls.Set(execPath, "$CLI")
+	}
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
-
-	repls := testdiff.ReplacementsContext{}
-	repls.Set(execPath, "$CLI")
 
 	tempHomeDir := t.TempDir()
 	repls.Set(tempHomeDir, "$TMPHOME")
@@ -98,7 +106,13 @@ func TestAccept(t *testing.T) {
 	for _, dir := range testDirs {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
+			if debugSubTest == "" {
+				t.Parallel()
+			} else {
+				if debugSubTest != testName {
+					return
+				}
+			}
 			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
