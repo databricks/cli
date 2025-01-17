@@ -1,0 +1,103 @@
+Jobs
+===============================
+
+.. currentmodule:: databricks.bundles.jobs
+
+**Package:** ``databricks.bundles.jobs``
+
+Decorators and data class "create" methods can accept dictionaries following data classes schemas,
+or instances of the data classes themselves. In addition, bundle variables are allowed, see
+:doc:`databricks.bundles.variables` for more information.
+
+Decorators
+-----------
+
+.. autosummary::
+    :nosignatures:
+
+    job
+    task
+
+    dbt_task
+    jar_task
+    notebook_task
+    pipeline_task
+    sql_alert_task
+    sql_dashboard_task
+    sql_file_task
+    sql_notebook_task
+    sql_query_task
+    job_mutator
+
+.. autodecorator:: job
+.. autodecorator:: task
+
+.. autodecorator:: dbt_task
+.. autodecorator:: jar_task
+.. autodecorator:: notebook_task
+.. autodecorator:: pipeline_task
+.. autodecorator:: sql_alert_task
+.. autodecorator:: sql_dashboard_task
+.. autodecorator:: sql_file_task
+.. autodecorator:: sql_notebook_task
+.. autodecorator:: sql_query_task
+.. autodecorator:: job_mutator
+
+.. class:: P
+
+    Type variable for decorated function parameters
+
+.. class:: R
+
+    Type variable for decorated function return value.
+
+Functions
+---------------
+
+.. autoclass:: databricks.bundles.jobs.functions.task.TaskWithOutput
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.task.TaskFunction
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.python_task.PythonTaskFunction
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.python_task.PythonTaskWithOutput
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.compute.ComputeTask
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.compute.ComputeTaskFunction
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.job.JobFunction
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.job.RunJobTaskWithOutput
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.sql_alert_task.SqlAlertTaskFunction
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.sql_alert_task.AlertState
+
+.. autoclass:: databricks.bundles.jobs.functions.sql_alert_task.SqlAlertTaskOutput
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.sql_query_task.SqlQueryTaskFunction
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.sql_query_task.SqlQueryTaskOutput
+
+.. autoclass:: databricks.bundles.jobs.functions.sql_file_task.SqlFileTaskFunction
+    :show-inheritance:
+
+.. autoclass:: databricks.bundles.jobs.functions.sql_file_task.SqlFileTaskOutput
+
+Models
+---------------
+
+.. include:: __generated__/databricks.bundles.jobs.models.rst
+.. include:: __generated__/databricks.bundles.jobs.models.tasks.rst

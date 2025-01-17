@@ -1,0 +1,70 @@
+Variables
+===============================
+
+.. currentmodule:: databricks.bundles.variables
+
+**Package:** ``databricks.bundles.variables``
+
+Decorators for declaring resources accept variables as parameters alongside with their values.
+It allows changing resources depending on which environment they are deployed to.
+
+Example:
+
+.. code-block:: python
+
+    from databricks.bundles.jobs import sql_file_task
+    from databricks.bundles.variables import variables, Variable
+
+    @variables
+    class MyVariables:
+      warehouse_id: Variable[str]
+
+    @sql_file_task(
+        file="files/my_query.sql",
+        warehouse_id=MyVariables.warehouse_id,
+    )
+    def my_query_task():
+        pass
+
+It also possible to access bundle variable values within :attr:`~databricks.bundles.jobs.job_mutator` and
+:attr:`~databricks.bundles.resource.resource_generator` decorators.
+
+Example:
+
+.. code-block:: python
+
+    @variables
+    class MyVariables:
+      deploy_qa_job: Variable[bool]
+
+    @resource_generator
+    def my_query_task_resource_generator(resource):
+        @job
+        def my_qa_job():
+            ... # add tasks here
+
+        if MyVariables.deploy_qa_job.get():
+            yield my_qa_job
+
+
+See: `Databricks Asset Bundles configuration <https://docs.databricks.com/en/dev-tools/bundles/settings.html>`_
+
+Decorators
+-----------
+
+.. autodecorator:: databricks.bundles.variables.variables
+
+Functions
+-----------
+.. automethod:: databricks.bundles.variables.resolve_variable
+
+Data types
+-----------
+
+.. autoclass:: databricks.bundles.variables.Variable
+
+.. class:: T
+
+    :class:`~typing.TypeVar` for variable value. See :attr:`Variable.get`.
+
+.. autoclass:: databricks.bundles.variables.Bundle

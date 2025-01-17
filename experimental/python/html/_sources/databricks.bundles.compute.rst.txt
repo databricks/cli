@@ -1,0 +1,7 @@
+Compute
+===============================
+
+Models
+---------------
+
+.. include:: __generated__/databricks.bundles.compute.models.rst

@@ -1,0 +1,6 @@
+﻿databricks.bundles.jobs.job
+===========================
+
+.. currentmodule:: databricks.bundles.jobs
+
+.. autofunction:: job

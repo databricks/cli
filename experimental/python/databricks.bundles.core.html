@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Core &#8212; databricks-bundles beta documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=c058f7c8" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=5fa5b382" />
+    <script src="_static/documentation_options.js?v=f0d2c090"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Jobs" href="databricks.bundles.jobs.html" />
+    <link rel="prev" title="databricks-bundles (Beta)" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/databricks-logo.svg" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">databricks-bundles: Python support for Databricks Asset Bundles</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=databricks&repo=databricks-bundles&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#classes">Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#methods">Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#decorators">Decorators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">databricks-bundles (Beta)</a></li>
+      <li>Next: <a href="databricks.bundles.jobs.html" title="next chapter">Jobs</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="core">
+<h1>Core<a class="headerlink" href="#core" title="Link to this heading">¶</a></h1>
+<p><strong>Package:</strong> <code class="docutils literal notranslate"><span class="pre">databricks.bundles.core</span></code></p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Resources</span></span><a class="headerlink" href="#databricks.bundles.core.Resources" title="Link to this definition">¶</a></dt>
+<dd><p>Resources is a collection of resources in a bundle.</p>
+<p>Resources class is returned by ‘load_resources’ function specified in databricks.yml. Each element in
+‘python/resources’ list is a fully qualified function name that returns an instance of Resources class.
+If there are multiple functions specified in ‘python/resources’ list, the resources from all functions
+are combined into a single Resources object.</p>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">experimental</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">python</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;resources:load_resources&quot;</span>
+</pre></div>
+</div>
+<p><cite>load_resources</cite> function can be implemented using built-in functions:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#databricks.bundles.core.load_resources_from_current_package_module" title="databricks.bundles.core.load_resources_from_current_package_module"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_resources_from_current_package_module()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#databricks.bundles.core.load_resources_from_package_module" title="databricks.bundles.core.load_resources_from_package_module"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_resources_from_package_module()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#databricks.bundles.core.load_resources_from_modules" title="databricks.bundles.core.load_resources_from_modules"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_resources_from_modules()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#databricks.bundles.core.load_resources_from_module" title="databricks.bundles.core.load_resources_from_module"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_resources_from_module()</span></code></a></p></li>
+</ul>
+<p>Programmatic construction of resources is supported using <a class="reference internal" href="#databricks.bundles.core.Resources.add_resource" title="databricks.bundles.core.Resources.add_resource"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_resource()</span></code></a> and <a class="reference internal" href="#databricks.bundles.core.Resources.add_job" title="databricks.bundles.core.Resources.add_job"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_job()</span></code></a> methods.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">load_resources</span><span class="p">(</span><span class="n">bundle</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Resources</span><span class="p">:</span>
+    <span class="n">resources</span> <span class="o">=</span> <span class="n">Resources</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">resource_name</span><span class="p">,</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">get_configs</span><span class="p">():</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="n">create_job</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+        <span class="n">resources</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span><span class="n">resource_name</span><span class="p">,</span> <span class="n">job</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">resources</span>
+</pre></div>
+</div>
+<dl class="py property">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.jobs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">jobs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job" title="databricks.bundles.jobs.Job"><span class="pre">Job</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Resources.jobs" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.diagnostics">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">diagnostics</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.core.Diagnostics" title="databricks.bundles.core._diagnostics.Diagnostics"><span class="pre">Diagnostics</span></a></em><a class="headerlink" href="#databricks.bundles.core.Resources.diagnostics" title="Link to this definition">¶</a></dt>
+<dd><p>Returns diagnostics. If there are any diagnostic errors, bundle validation fails.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_resource">
+<span class="sig-name descname"><span class="pre">add_resource</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">resource_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">resource</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Resource" title="databricks.bundles.core._resource.Resource"><span class="pre">Resource</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_resource" title="Link to this definition">¶</a></dt>
+<dd><p>Adds a resource to the collection of resources. Resource name must be unique across all
+resources of the same type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource_name</strong> – unique identifier for the resource</p></li>
+<li><p><strong>resource</strong> – the resource to add</p></li>
+<li><p><strong>location</strong> – optional location of the resource in the source code</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_job">
+<span class="sig-name descname"><span class="pre">add_job</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">resource_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job" title="databricks.bundles.jobs.Job"><span class="pre">JobParam</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_job" title="Link to this definition">¶</a></dt>
+<dd><p>Adds a job to the collection of resources. Resource name must be unique across all jobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource_name</strong> – unique identifier for the job</p></li>
+<li><p><strong>job</strong> – the job to add, can be Job or dict</p></li>
+<li><p><strong>location</strong> – optional location of the job in the source code</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_location">
+<span class="sig-name descname"><span class="pre">add_location</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_location" title="Link to this definition">¶</a></dt>
+<dd><p>Associate source code location with a path in the bundle configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_diagnostics">
+<span class="sig-name descname"><span class="pre">add_diagnostics</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Diagnostics" title="databricks.bundles.core._diagnostics.Diagnostics"><span class="pre">Diagnostics</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_diagnostics" title="Link to this definition">¶</a></dt>
+<dd><p>Add diagnostics from another Diagnostics object.
+:param other:
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_diagnostic_error">
+<span class="sig-name descname"><span class="pre">add_diagnostic_error</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_diagnostic_error" title="Link to this definition">¶</a></dt>
+<dd><p>Report a diagnostic error. If there are any diagnostic errors, bundle validation fails.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> – short summary of the error</p></li>
+<li><p><strong>detail</strong> – optional detailed description of the error</p></li>
+<li><p><strong>path</strong> – optional path in bundle configuration where the error occurred</p></li>
+<li><p><strong>location</strong> – optional location in the source code where the error occurred</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_diagnostic_warning">
+<span class="sig-name descname"><span class="pre">add_diagnostic_warning</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_diagnostic_warning" title="Link to this definition">¶</a></dt>
+<dd><p>Report a diagnostic warning. Warnings are informational and do not cause bundle validation to fail.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> – short summary of the warning</p></li>
+<li><p><strong>detail</strong> – optional detailed description of the warning</p></li>
+<li><p><strong>path</strong> – optional path in bundle configuration where the warning occurred</p></li>
+<li><p><strong>location</strong> – optional location in the source code where the warning occurred</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_resources">
+<span class="sig-name descname"><span class="pre">add_resources</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Resources" title="databricks.bundles.core._resources.Resources"><span class="pre">Resources</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_resources" title="Link to this definition">¶</a></dt>
+<dd><p>Add resources from another Resources object.</p>
+<p>Adds error to diagnostics if there are duplicate resource names.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resource">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Resource</span></span><a class="headerlink" href="#databricks.bundles.core.Resource" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for all resources.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.ResourceMutator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ResourceMutator</span></span><a class="headerlink" href="#databricks.bundles.core.ResourceMutator" title="Link to this definition">¶</a></dt>
+<dd><p>Mutators defined within a single Python module are applied in the order they are defined.
+The relative order of mutators defined in different modules is not guaranteed.</p>
+<p>See <a class="reference internal" href="#databricks.bundles.core.job_mutator" title="databricks.bundles.core.job_mutator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">databricks.bundles.core.job_mutator()</span></code></a>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.ResourceMutator.resource_type">
+<span class="sig-name descname"><span class="pre">resource_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Type" title="(in Python v3.10)"><span class="pre">Type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.ResourceMutator.resource_type" title="Link to this definition">¶</a></dt>
+<dd><p>Resource type that this mutator applies to.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.ResourceMutator.function">
+<span class="sig-name descname"><span class="pre">function</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a></em><a class="headerlink" href="#databricks.bundles.core.ResourceMutator.function" title="Link to this definition">¶</a></dt>
+<dd><p>Underling function that was decorated. Can be accessed for unit-testing.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.Bundle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Bundle</span></span><a class="headerlink" href="#databricks.bundles.core.Bundle" title="Link to this definition">¶</a></dt>
+<dd><p>Bundle contains information about a bundle accessible in functions
+loading and mutating resources.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Bundle.target">
+<span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.core.Bundle.target" title="Link to this definition">¶</a></dt>
+<dd><p>Selected target where the bundle is being loaded. E.g.: ‘development’, ‘staging’, or ‘production’.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Bundle.variables">
+<span class="sig-name descname"><span class="pre">variables</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Any" title="(in Python v3.10)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Bundle.variables" title="Link to this definition">¶</a></dt>
+<dd><p>Values of bundle variables resolved for selected target. Bundle variables are defined in databricks.yml.
+For accessing variables as structured data, use <a class="reference internal" href="#databricks.bundles.core.Bundle.resolve_variable" title="databricks.bundles.core.Bundle.resolve_variable"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolve_variable()</span></code></a>.</p>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">default_dbr_version</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Default version of Databricks Runtime</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;14.3.x-scala2.12&quot;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Bundle.resolve_variable">
+<span class="sig-name descname"><span class="pre">resolve_variable</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">variable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Variable" title="databricks.bundles.core._variable.Variable"><span class="pre">Variable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Bundle.resolve_variable" title="Link to this definition">¶</a></dt>
+<dd><p>Resolve a variable to its value.</p>
+<p>If the value is a variable, it will be resolved and returned.
+Otherwise, the value will be returned as is.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Bundle.resolve_variable_list">
+<span class="sig-name descname"><span class="pre">resolve_variable_list</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">variable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Variable" title="databricks.bundles.core._variable.Variable"><span class="pre">Variable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.Variable" title="databricks.bundles.core._variable.Variable"><span class="pre">Variable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.Variable" title="databricks.bundles.core._variable.Variable"><span class="pre">Variable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#databricks.bundles.core.Bundle.resolve_variable_list" title="Link to this definition">¶</a></dt>
+<dd><p>Resolve a list variable to its value.</p>
+<p>If the value is a variable, or the list item is a variable, it will be resolved and returned.
+Otherwise, the value will be returned as is.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.Variable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Variable</span></span><a class="headerlink" href="#databricks.bundles.core.Variable" title="Link to this definition">¶</a></dt>
+<dd><p>Reference to a bundle variable.</p>
+<p>See: <a class="reference external" href="https://docs.databricks.com/en/dev-tools/bundles/settings.html">Databricks Asset Bundles configuration</a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Variable.path">
+<span class="sig-name descname"><span class="pre">path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.core.Variable.path" title="Link to this definition">¶</a></dt>
+<dd><p>Path to the variable, e.g. “var.my_variable”.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Variable.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Type" title="(in Python v3.10)"><span class="pre">Type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Variable.type" title="Link to this definition">¶</a></dt>
+<dd><p>Type of the variable.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="databricks.bundles.core.Variable.value">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.core.Variable.value" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the variable path in the format of “${path}”</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Diagnostics</span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostics" title="Link to this definition">¶</a></dt>
+<dd><p>Diagnostics is a collection of errors and warnings we print to users.</p>
+<p>Each item can have source location or path associated, that is reported in output to
+indicate where the error or warning occurred.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.items">
+<span class="sig-name descname"><span class="pre">items</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.Diagnostic" title="databricks.bundles.core._diagnostics.Diagnostic"><span class="pre">Diagnostic</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Diagnostics.items" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.extend">
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostics.extend" title="Link to this definition">¶</a></dt>
+<dd><p>Extend items with another diagnostics. This pattern allows
+to accumulate errors and warnings.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Diagnostics</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">def</span> <span class="nf">bar</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Diagnostics</span><span class="p">:</span> <span class="o">...</span>
+
+<span class="n">diagnostics</span> <span class="o">=</span> <span class="n">Diagnostics</span><span class="p">()</span>
+<span class="n">diagnostics</span> <span class="o">=</span> <span class="n">diagnostics</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">foo</span><span class="p">())</span>
+<span class="n">diagnostics</span> <span class="o">=</span> <span class="n">diagnostics</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">bar</span><span class="p">())</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.extend_tuple">
+<span class="sig-name descname"><span class="pre">extend_tuple</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">pair</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Self</span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Self</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostics.extend_tuple" title="Link to this definition">¶</a></dt>
+<dd><p>Extend items with another diagnostics. This variant is useful when
+methods return a pair of value and diagnostics. This pattern allows
+to accumulate errors and warnings.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">Diagnostics</span><span class="p">):</span> <span class="o">...</span>
+
+<span class="n">diagnostics</span> <span class="o">=</span> <span class="n">Diagnostics</span><span class="p">()</span>
+<span class="n">value</span><span class="p">,</span> <span class="n">diagnostics</span> <span class="o">=</span> <span class="n">diagnostics</span><span class="o">.</span><span class="n">extend_tuple</span><span class="p">(</span><span class="n">foo</span><span class="p">())</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.has_error">
+<span class="sig-name descname"><span class="pre">has_error</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostics.has_error" title="Link to this definition">¶</a></dt>
+<dd><p>Returns True if there is at least one error in diagnostics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.create_error">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_error</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostics.create_error" title="Link to this definition">¶</a></dt>
+<dd><p>Create an error diagnostics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.create_warning">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_warning</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostics.create_warning" title="Link to this definition">¶</a></dt>
+<dd><p>Create a warning diagnostics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.from_exception">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_exception</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">exc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/exceptions.html#Exception" title="(in Python v3.10)"><span class="pre">Exception</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">summary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">explanation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostics.from_exception" title="Link to this definition">¶</a></dt>
+<dd><p>Create diagnostics from an exception.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exc</strong> – exception to create diagnostics from</p></li>
+<li><p><strong>summary</strong> – short summary of the error</p></li>
+<li><p><strong>location</strong> – optional location in the source code where the error occurred</p></li>
+<li><p><strong>path</strong> – optional path to relevant property in databricks.yml</p></li>
+<li><p><strong>explanation</strong> – optional explanation to add to the details</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostic">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Diagnostic</span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostic" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostic.severity">
+<span class="sig-name descname"><span class="pre">severity</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.core.Severity" title="databricks.bundles.core._diagnostics.Severity"><span class="pre">Severity</span></a></em><a class="headerlink" href="#databricks.bundles.core.Diagnostic.severity" title="Link to this definition">¶</a></dt>
+<dd><p>Severity of the diagnostics item.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostic.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.core.Diagnostic.summary" title="Link to this definition">¶</a></dt>
+<dd><p>Short summary of the error or warning.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostic.detail">
+<span class="sig-name descname"><span class="pre">detail</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.core.Diagnostic.detail" title="Link to this definition">¶</a></dt>
+<dd><p>Explanation of the error or warning.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostic.path">
+<span class="sig-name descname"><span class="pre">path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#tuple" title="(in Python v3.10)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.core.Diagnostic.path" title="Link to this definition">¶</a></dt>
+<dd><p>Path in databricks.yml where the error or warning occurred.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostic.location">
+<span class="sig-name descname"><span class="pre">location</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.core.Diagnostic.location" title="Link to this definition">¶</a></dt>
+<dd><p>Source code location where the error or warning occurred.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostic.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostic.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.Location">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Location</span></span><a class="headerlink" href="#databricks.bundles.core.Location" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Location.file">
+<span class="sig-name descname"><span class="pre">file</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.core.Location.file" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Location.line">
+<span class="sig-name descname"><span class="pre">line</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.core.Location.line" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Location.column">
+<span class="sig-name descname"><span class="pre">column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.core.Location.column" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Location.from_callable">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_callable</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Location.from_callable" title="Link to this definition">¶</a></dt>
+<dd><p>Capture location of callable. This is useful for creating
+diagnostics of decorated functions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Location.from_stack_frame">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_stack_frame</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">depth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Location.from_stack_frame" title="Link to this definition">¶</a></dt>
+<dd><p>Capture location of the caller</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Location.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Location.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.Severity">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Severity</span></span><a class="headerlink" href="#databricks.bundles.core.Severity" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Severity.WARNING">
+<span class="sig-name descname"><span class="pre">WARNING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'warning'</span></em><a class="headerlink" href="#databricks.bundles.core.Severity.WARNING" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.core.Severity.ERROR">
+<span class="sig-name descname"><span class="pre">ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'error'</span></em><a class="headerlink" href="#databricks.bundles.core.Severity.ERROR" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.core.T">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">T</span></span><a class="headerlink" href="#databricks.bundles.core.T" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.TypeVar" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a> for variable value</p>
+</dd></dl>
+
+</section>
+<section id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Link to this heading">¶</a></h2>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.load_resources_from_current_package_module">
+<span class="sig-prename descclassname"><span class="pre">core.</span></span><span class="sig-name descname"><span class="pre">load_resources_from_current_package_module</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.Resources" title="databricks.bundles.core._resources.Resources"><span class="pre">Resources</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.load_resources_from_current_package_module" title="Link to this definition">¶</a></dt>
+<dd><p>Load resources from all submodules of the current package module.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.load_resources_from_module">
+<span class="sig-prename descclassname"><span class="pre">core.</span></span><span class="sig-name descname"><span class="pre">load_resources_from_module</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/types.html#types.ModuleType" title="(in Python v3.10)"><span class="pre">ModuleType</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.Resources" title="databricks.bundles.core._resources.Resources"><span class="pre">Resources</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.load_resources_from_module" title="Link to this definition">¶</a></dt>
+<dd><p>Load resources from the given module.</p>
+<p>For recursive loading of resources from submodules, use <cite>load_resources_from_package_module</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>module</strong> – module to load resources from</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.load_resources_from_modules">
+<span class="sig-prename descclassname"><span class="pre">core.</span></span><span class="sig-name descname"><span class="pre">load_resources_from_modules</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">modules</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Iterable" title="(in Python v3.10)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/types.html#types.ModuleType" title="(in Python v3.10)"><span class="pre">ModuleType</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.Resources" title="databricks.bundles.core._resources.Resources"><span class="pre">Resources</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.load_resources_from_modules" title="Link to this definition">¶</a></dt>
+<dd><p>Load resources from the given modules.</p>
+<p>For recursive loading of resources from submodules, use <cite>load_resources_from_package_module</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>modules</strong> – list of modules to load resources from</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.load_resources_from_package_module">
+<span class="sig-prename descclassname"><span class="pre">core.</span></span><span class="sig-name descname"><span class="pre">load_resources_from_package_module</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">package_module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/types.html#types.ModuleType" title="(in Python v3.10)"><span class="pre">ModuleType</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.Resources" title="databricks.bundles.core._resources.Resources"><span class="pre">Resources</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.load_resources_from_package_module" title="Link to this definition">¶</a></dt>
+<dd><p>Load resources from all submodules of the given package module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>package_module</strong> – package module to load resources from</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="decorators">
+<h2>Decorators<a class="headerlink" href="#decorators" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="databricks.bundles.core.job_mutator">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-name descname"><span class="pre">job_mutator</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.ResourceMutator" title="databricks.bundles.core._resource_mutator.ResourceMutator"><span class="pre">ResourceMutator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job" title="databricks.bundles.jobs._models.job.Job"><span class="pre">Job</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#databricks.bundles.core.job_mutator" title="Link to this definition">¶</a></dt>
+<dd><p>Decorator for defining a job mutator. Function should return a new instance of the job with the desired changes,
+instead of mutating the input job.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@job_mutator</span>
+<span class="k">def</span> <span class="nf">my_job_mutator</span><span class="p">(</span><span class="n">bundle</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Job</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Job</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">job</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_job&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>function</strong> – Function that mutates a job.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="databricks.bundles.core.variables">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-name descname"><span class="pre">variables</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#type" title="(in Python v3.10)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#type" title="(in Python v3.10)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.T" title="databricks.bundles.core.T"><span class="pre">_T</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#databricks.bundles.core.variables" title="Link to this definition">¶</a></dt>
+<dd><p>A decorator that initializes each annotated attribute in a class
+with <a class="reference internal" href="#databricks.bundles.core.Variable" title="databricks.bundles.core.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a> type. Variables are initialized with a path
+that corresponds to the attribute name. Variables should specify their
+type, or else they will be treated as <code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>. Complex types
+like data classes, lists or dictionaries are supported.</p>
+<p>For example, if your databricks.yml file contains:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">warehouse_id</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Warehouse ID for SQL tasks</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+<p>You can define a class with a <cite>warehouse_id</cite> attribute:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@variables</span>
+<span class="k">class</span> <span class="nc">MyVariables</span><span class="p">:</span>
+  <span class="n">warehouse_id</span><span class="p">:</span> <span class="n">Variable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="c1"># ${var.warehouse_id}</span>
+</pre></div>
+</div>
+<p>And later use it in your code as <cite>MyVariables.warehouse_id</cite>.</p>
+<p>For accessing bundle variable values, see <a class="reference internal" href="#databricks.bundles.core.Bundle.resolve_variable" title="databricks.bundles.core.Bundle.resolve_variable"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Bundle.resolve_variable()</span></code></a>.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2024, Databricks.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.0.2</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/databricks.bundles.core.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

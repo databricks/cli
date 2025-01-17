@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Resources &#8212; Databricks PyDABs beta documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=c058f7c8" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=5fa5b382" />
+    <script src="_static/documentation_options.js?v=f0d2c090"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Compute" href="databricks.bundles.compute.html" />
+    <link rel="prev" title="Jobs" href="databricks.bundles.jobs.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/databricks-logo.svg" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">PyDABs: Python support for Databricks Asset Bundles</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=databricks&repo=databricks-pydabs&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#decorators">Decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-types">Data types</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.compute.html">Compute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.variables.html">Variables</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="databricks.bundles.jobs.html" title="previous chapter">Jobs</a></li>
+      <li>Next: <a href="databricks.bundles.compute.html" title="next chapter">Compute</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="resources">
+<h1>Resources<a class="headerlink" href="#resources" title="Link to this heading">¶</a></h1>
+<p><strong>Package:</strong> <code class="docutils literal notranslate"><span class="pre">databricks.bundles.resource</span></code></p>
+<section id="decorators">
+<h2>Decorators<a class="headerlink" href="#decorators" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="databricks.bundles.resource.resource_generator">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-name descname"><span class="pre">resource_generator</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Iterator" title="(in Python v3.10)"><span class="pre">Iterator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.resource.Resource" title="databricks.bundles.resource.Resource"><span class="pre">Resource</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.resource.ResourceGenerator" title="databricks.bundles.resource.ResourceGenerator"><span class="pre">ResourceGenerator</span></a></span></span><a class="headerlink" href="#databricks.bundles.resource.resource_generator" title="Link to this definition">¶</a></dt>
+<dd><p>Decorator that transform function into a resource generator.</p>
+<p>Resource generators can dynamically create resources during the bundle deployment.
+Resource generators can access bundle variables</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">databricks.bundles.jobs</span> <span class="kn">import</span> <span class="n">job</span>
+<span class="kn">from</span> <span class="nn">databricks.bundles.resource</span> <span class="kn">import</span> <span class="n">resource_generator</span>
+
+<span class="k">def</span> <span class="nf">create_job</span><span class="p">(</span><span class="n">country</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="c1"># each generated job must have unique resource name</span>
+    <span class="nd">@job</span><span class="p">(</span><span class="n">resource_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;send_report_</span><span class="si">{</span><span class="n">country</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">my_job</span><span class="p">():</span>
+        <span class="n">send_report</span><span class="p">(</span><span class="n">country</span><span class="o">=</span><span class="n">country</span><span class="p">)</span>
+
+<span class="nd">@resource_generator</span>
+<span class="k">def</span> <span class="nf">my_resource_generator</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">country</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;NL&quot;</span><span class="p">,</span> <span class="s2">&quot;US&quot;</span><span class="p">]:</span>
+        <span class="k">yield</span> <span class="n">create_job</span><span class="p">(</span><span class="n">country</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="https://docs.databricks.com/en/dev-tools/bundles/python/how-to/resource-generators.html">Generate jobs and tasks dynamically</a>.</p>
+<p>Resource generators can be completed with data classes for creating more complex resources, for example,
+jobs with dynamic number of tasks. See
+<a class="reference external" href="https://docs.databricks.com/en/dev-tools/bundles/python/how-to/job-dataclass.html">Create jobs using dataclasses</a>.</p>
+</dd></dl>
+
+</section>
+<section id="data-types">
+<h2>Data types<a class="headerlink" href="#data-types" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.resource.Resource">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Resource</span></span><a class="headerlink" href="#databricks.bundles.resource.Resource" title="Link to this definition">¶</a></dt>
+<dd><p>Common type for all resources that can be used in a bundle.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.resource.Resource.resource_name">
+<span class="sig-name descname"><span class="pre">resource_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><a class="headerlink" href="#databricks.bundles.resource.Resource.resource_name" title="Link to this definition">¶</a></dt>
+<dd><p>Unique identifier for the resource. If not provided, resources declared using decorators
+are assigned an unique identifier based on the function name.</p>
+<p>If a resource name is changed, the resource is going to be destroyed and recreated during the
+next deployment.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.resource.ResourceGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ResourceGenerator</span></span><a class="headerlink" href="#databricks.bundles.resource.ResourceGenerator" title="Link to this definition">¶</a></dt>
+<dd><p>See <a class="reference internal" href="#databricks.bundles.resource.resource_generator" title="databricks.bundles.resource.resource_generator"><code class="xref py py-attr docutils literal notranslate"><span class="pre">&#64;resource_generator</span></code></a> to create a new
+resource generator.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.resource.ResourceGenerator.function">
+<span class="sig-name descname"><span class="pre">function</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Iterator" title="(in Python v3.10)"><span class="pre">Iterator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.resource.Resource" title="databricks.bundles.resource.Resource"><span class="pre">Resource</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.resource.ResourceGenerator.function" title="Link to this definition">¶</a></dt>
+<dd><p>Underling function that was decorated. Can be accessed for unit-testing.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.resource.ResourceMutator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ResourceMutator</span></span><a class="headerlink" href="#databricks.bundles.resource.ResourceMutator" title="Link to this definition">¶</a></dt>
+<dd><p>Mutators defined within a single Python module are applied in the order they are defined.
+The relative order of mutators defined in different modules is not guaranteed.</p>
+<p>See <a class="reference internal" href="databricks.bundles.jobs.html#databricks.bundles.jobs.job_mutator" title="databricks.bundles.jobs.job_mutator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">databricks.bundles.jobs.job_mutator()</span></code></a>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.resource.ResourceMutator.resource_type">
+<span class="sig-name descname"><span class="pre">resource_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Type" title="(in Python v3.10)"><span class="pre">Type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.resource.T" title="databricks.bundles.resource.T"><span class="pre">T</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.resource.ResourceMutator.resource_type" title="Link to this definition">¶</a></dt>
+<dd><p>Resource type that this mutator applies to.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.resource.ResourceMutator.function">
+<span class="sig-name descname"><span class="pre">function</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/typing.html#typing.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.resource.T" title="databricks.bundles.resource.T"><span class="pre">T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.resource.T" title="databricks.bundles.resource.T"><span class="pre">T</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.resource.ResourceMutator.function" title="Link to this definition">¶</a></dt>
+<dd><p>Underling function that was decorated. Can be accessed for unit-testing.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.resource.T">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">T</span></span><a class="headerlink" href="#databricks.bundles.resource.T" title="Link to this definition">¶</a></dt>
+<dd><p>Type variable for resource type.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2024, Databricks.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.0.2</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/databricks.bundles.resource.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

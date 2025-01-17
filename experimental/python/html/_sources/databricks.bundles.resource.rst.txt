@@ -1,0 +1,22 @@
+Resources
+===============================
+
+.. currentmodule:: databricks.bundles.resource
+
+**Package:** ``databricks.bundles.resource``
+
+Decorators
+-----------
+
+.. autodecorator:: databricks.bundles.resource.resource_generator
+
+Data types
+-----------
+
+.. autoclass:: databricks.bundles.resource.Resource
+.. autoclass:: databricks.bundles.resource.ResourceGenerator
+.. autoclass:: databricks.bundles.resource.ResourceMutator
+
+.. class:: T
+
+    Type variable for resource type.
