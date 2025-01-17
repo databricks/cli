@@ -38,6 +38,7 @@ func (s *CmdServer) Handle(pattern string, handler StringHandlerFunc) {
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		if _, err := w.Write([]byte(resp)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
