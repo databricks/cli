@@ -53,15 +53,13 @@ func StartCmdServer(t *testing.T) *CmdServer {
 	})
 	server.Handle("/", func(r *http.Request) (string, error) {
 		args := r.URL.Query()
-		resp := Response{
-			Message: "hello, from server",
-			Args:    args,
+		resp := "hello, from server\n"
+		for key, values := range args {
+			for _, value := range values {
+				resp += key + ": " + value + "\n"
+			}
 		}
-		jsonResp, err := json.Marshal(resp)
-		if err != nil {
-			return "", err
-		}
-		return string(jsonResp), nil
+		return resp, nil
 	})
 	return server
 }
