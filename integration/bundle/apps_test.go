@@ -19,12 +19,10 @@ func TestDeployBundleWithApp(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	// TODO: should only skip app run when app can be created with no_compute option.
-	/*
-		if testing.Short() {
-			t.Log("Skip the app creation and run in short mode")
-			return
-		}
-	*/
+	if testing.Short() {
+		t.Log("Skip the app creation and run in short mode")
+		return
+	}
 
 	if testutil.GetCloud(t) == testutil.GCP {
 		t.Skip("Skipping test for GCP cloud because /api/2.0/apps is temporarily unavailable there.")
