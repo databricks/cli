@@ -12,6 +12,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -22,7 +23,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var KeepTmp = os.Getenv("KEEP_TMP") != ""
+var (
+	KeepTmp        = os.Getenv("KEEP_TMP") != ""
+	defaultTimeout = 10 * time.Second
+)
 
 const (
 	EntryPointScript = "script"
@@ -155,7 +159,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverDir)
 	}
 	cmd.Dir = tmpDir
+	if runtime.GOOS != "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	}
+
+	timer := KillTimer(cmd, defaultTimeout)
 	outB, err := cmd.CombinedOutput()
+	timer.Stop()
 
 	out := formatOutput(string(outB), err)
 	out = repls.Replace(out)
@@ -371,5 +381,22 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 		}
 
 		return copyFile(path, destPath)
+	})
+}
+
+func KillTimer(cmd *exec.Cmd, timeout time.Duration) *time.Timer {
+	return time.AfterFunc(timeout, func() {
+		if cmd.Process == nil {
+			return
+		}
+		if runtime.GOOS == "windows" {
+			// best effort, not killing the group like on mac/linux
+			_ = cmd.Process.Kill()
+		} else {
+			pgid, err := syscall.Getpgid(cmd.Process.Pid)
+			if err == nil {
+				_ = syscall.Kill(-pgid, syscall.SIGKILL)
+			}
+		}
 	})
 }
