@@ -18,11 +18,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	jobDefaultConfigDir = "resources"
-	jobDefaultSourceDir = "src"
-)
-
 func NewGenerateJobCommand() *cobra.Command {
 	var configDir string
 	var sourceDir string
@@ -37,8 +32,8 @@ func NewGenerateJobCommand() *cobra.Command {
 	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
 	cmd.MarkFlagRequired("existing-job-id")
 
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", jobDefaultConfigDir, `Dir path where the output config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", jobDefaultSourceDir, `Dir path where the downloaded files will be stored`)
+	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
+	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
