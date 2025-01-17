@@ -1,10 +1,17 @@
 package acceptance_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
+
+type Response struct {
+	Message string         `json:"message"`
+	Args    url.Values     `json:"args"`
+}
 
 type CmdServer struct {
 	*httptest.Server
@@ -44,7 +51,16 @@ func StartCmdServer(t *testing.T) *CmdServer {
 		server.Close()
 	})
 	server.Handle("/", func(r *http.Request) (string, error) {
-		return "hello, from server", nil
+		args := r.URL.Query()
+		resp := Response{
+			Message: "hello, from server",
+			Args:    args,
+		}
+		jsonResp, err := json.Marshal(resp)
+		if err != nil {
+			return "", err
+		}
+		return string(jsonResp), nil
 	})
 	return server
 }
