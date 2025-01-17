@@ -6,5 +6,5 @@ import (
 
 func initVariableFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringSlice("var", []string{}, `set values for variables defined in bundle config. Example: --var="foo=bar"`)
-	cmd.PersistentFlags().String("vars-file-path", "", `file path to a JSON file containing variables. Example: --vars-file-path="/path/to/vars.json"`)
+	cmd.PersistentFlags().String("var-file", "", `file path to a JSON file containing variables. Example: --var-file="/path/to/vars.json"`)
 }

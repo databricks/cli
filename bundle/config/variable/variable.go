@@ -38,7 +38,7 @@ type Variable struct {
 	//
 	// 1. Command line flag, one of these is used
 	//   a. Variable value obtained from arguments, example: `--var="foo=bar"`
-	//   b. Variable value obtained from the file, example: `--vars-file-path="/path/to/file"`
+	//   b. Variable value obtained from the file, example: `--var-file="/path/to/file"`
 	// 2. Environment variable. eg: BUNDLE_VAR_foo=bar
 	// 3. Default value as defined in the applicable targets block
 	// 4. Default value defined in variable definition

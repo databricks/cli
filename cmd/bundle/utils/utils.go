@@ -54,13 +54,13 @@ func ConfigureBundleWithVariables(cmd *cobra.Command) (*bundle.Bundle, diag.Diag
 	if err != nil {
 		return b, diag.FromErr(err)
 	}
-	variableFilePath, err := cmd.Flags().GetString("vars-file-path")
+	variableFilePath, err := cmd.Flags().GetString("var-file")
 	if err != nil {
 		return b, diag.FromErr(err)
 	}
 
 	if len(variables) > 0 && variableFilePath != "" {
-		return b, diag.Errorf("cannot specify both --var and --vars-file-path flags")
+		return b, diag.Errorf("cannot specify both --var and --var-file flags")
 	} else if len(variables) > 0 {
 		// Initialize variables by assigning them values passed as command line flags
 		diags = diags.Extend(configureVariables(cmd, b, variables))
