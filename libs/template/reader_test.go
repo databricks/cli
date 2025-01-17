@@ -85,8 +85,9 @@ func TestGitUrlReader(t *testing.T) {
 	assert.NoError(t, fd.Close())
 
 	// Assert the downloaded repository is cleaned up.
-	_, err = fsys.Open(".")
-	assert.NoError(t, err)
+	fd, err = fsys.Open(".")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
 	r.Cleanup()
 	_, err = fsys.Open(".")
 	assert.ErrorIs(t, err, fs.ErrNotExist)

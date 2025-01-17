@@ -13,7 +13,7 @@ import (
 
 type Reader interface {
 	// FS returns a file system that contains the template
-	// definition files. This function is NOT thread safe.
+	// definition files.
 	FS(ctx context.Context) (fs.FS, error)
 
 	// Cleanup releases any resources associated with the reader
