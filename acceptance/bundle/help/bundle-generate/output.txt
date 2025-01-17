@@ -1,11 +1,12 @@
 
->>> databricks bundle generate --help
+>>> $CLI bundle generate --help
 Generate bundle configuration
 
 Usage:
   databricks bundle generate [command]
 
 Available Commands:
+  app         Generate bundle configuration for a Databricks app
   dashboard   Generate configuration for a dashboard
   job         Generate bundle configuration for a job
   pipeline    Generate bundle configuration for a pipeline

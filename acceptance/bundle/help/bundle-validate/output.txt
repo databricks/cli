@@ -1,5 +1,5 @@
 
->>> databricks bundle validate --help
+>>> $CLI bundle validate --help
 Validate configuration
 
 Usage:

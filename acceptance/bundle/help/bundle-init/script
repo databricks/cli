@@ -1,1 +1,1 @@
-trace databricks bundle init --help
+trace $CLI bundle init --help

@@ -1,1 +1,1 @@
-trace databricks bundle generate job --help
+trace $CLI bundle generate job --help

@@ -1,5 +1,5 @@
 
->>> databricks bundle generate dashboard --help
+>>> $CLI bundle generate dashboard --help
 Generate configuration for a dashboard
 
 Usage:

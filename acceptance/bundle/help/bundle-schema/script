@@ -1,1 +1,1 @@
-trace databricks bundle schema --help
+trace $CLI bundle schema --help

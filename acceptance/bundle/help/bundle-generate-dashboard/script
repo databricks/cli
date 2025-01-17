@@ -1,1 +1,1 @@
-trace databricks bundle generate dashboard --help
+trace $CLI bundle generate dashboard --help
