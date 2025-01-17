@@ -286,7 +286,8 @@ func fromContext(ctx context.Context) *cmdIO {
 	return io
 }
 
-func MockContext(ctx context.Context) context.Context {
+// Mocks the context with a cmdio object that discards all output.
+func MockDiscard(ctx context.Context) context.Context {
 	return InContext(ctx, &cmdIO{
 		interactive:  false,
 		outputFormat: flags.OutputText,

@@ -4,14 +4,11 @@ import (
 	"context"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,9 +46,7 @@ func TestBuiltInReader(t *testing.T) {
 }
 
 func TestGitUrlReader(t *testing.T) {
-	ctx := context.Background()
-	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
-	ctx = cmdio.InContext(ctx, cmd)
+	ctx := cmdio.MockDiscard(context.Background())
 
 	var args []string
 	numCalls := 0

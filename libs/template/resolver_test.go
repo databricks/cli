@@ -21,7 +21,7 @@ func TestTemplateResolverBothTagAndBranch(t *testing.T) {
 
 func TestTemplateResolverErrorsWhenPromptingIsNotSupported(t *testing.T) {
 	r := Resolver{}
-	ctx := cmdio.MockContext(context.Background())
+	ctx := cmdio.MockDiscard(context.Background())
 
 	_, err := r.Resolve(ctx)
 	assert.EqualError(t, err, "prompting is not supported. Please specify the path, name or URL of the template to use")
