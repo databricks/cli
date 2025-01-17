@@ -1,0 +1,12 @@
+resources:
+  pipelines:
+    etl_pipeline:
+      name: etl_pipeline
+      serverless: true
+      catalog: ${var.catalog}
+      target: ${var.schema}
+      libraries:
+        - file:
+            path: sources/${bundle.target}/*.py
+        - file:
+            path: __init__.py

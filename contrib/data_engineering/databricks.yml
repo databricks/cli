@@ -1,0 +1,46 @@
+# This is a Databricks asset bundle definition for data_engineering.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: data_engineering
+
+include:
+  - assets/*.yml
+  - assets/*/*.yml
+
+variables:
+  catalog:
+    description: The catalog to use
+  schema:
+    description: The schema to use
+  notifications:
+    description: The email addresses to use for failure notifications
+
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+    workspace:
+      host: https://company.databricks.com
+    variables:
+      catalog: main
+      schema: ${workspace.current_user.short_name}
+      notifications: []
+  prod:
+    mode: production
+    workspace:
+      host: https://company.databricks.com
+      # We explicitly specify /Workspace/Users/user@databricks.com to make sure we only have a single copy.
+      root_path: /Workspace/Users/user@databricks.com/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: user@databricks.com
+        level: CAN_MANAGE
+    run_as:
+      user_name: user@databricks.com
+    variables:
+      catalog: main
+      schema: default
+      notifications: [user@databricks.com]
