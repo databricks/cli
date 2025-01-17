@@ -4,6 +4,7 @@ Helper to sort blocks in text file. A block is a set of lines separated from oth
 
 This is to workaround non-determinism in the output.
 """
+
 import sys
 
 blocks = []
@@ -11,10 +12,10 @@ blocks = []
 for line in sys.stdin:
     if not line.strip():
         if blocks and blocks[-1]:
-            blocks.append('')
+            blocks.append("")
         continue
     if not blocks:
-        blocks.append('')
+        blocks.append("")
     blocks[-1] += line
 
 blocks.sort()
