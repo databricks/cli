@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -17,10 +19,12 @@ func TestDeployBundleWithApp(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	// TODO: should only skip app run when app can be created with no_compute option.
-	if testing.Short() {
-		t.Log("Skip the app creation and run in short mode")
-		return
-	}
+	/*
+		if testing.Short() {
+			t.Log("Skip the app creation and run in short mode")
+			return
+		}
+	*/
 
 	if testutil.GetCloud(t) == testutil.GCP {
 		t.Skip("Skipping test for GCP cloud because /api/2.0/apps is temporarily unavailable there.")
@@ -49,7 +53,31 @@ func TestDeployBundleWithApp(t *testing.T) {
 		}
 	})
 
-	deployBundle(t, ctx, root)
+	ctx, replacements := testdiff.WithReplacementsMap(ctx)
+	replacements.Set(uniqueId, "$UNIQUE_PRJ")
+
+	user, err := wt.W.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	testdiff.PrepareReplacementsUser(t, replacements, *user)
+	testdiff.PrepareReplacementsWorkspaceClient(t, replacements, wt.W)
+	testdiff.PrepareReplacementsUUID(t, replacements)
+	testdiff.PrepareReplacementsNumber(t, replacements)
+	testdiff.PrepareReplacementsTemporaryDirectory(t, replacements)
+
+	testutil.Chdir(t, root)
+	testcli.AssertOutput(
+		t,
+		ctx,
+		[]string{"bundle", "validate"},
+		testutil.TestData("testdata/apps/bundle_validate.txt"),
+	)
+	testcli.AssertOutput(
+		t,
+		ctx,
+		[]string{"bundle", "deploy", "--force-lock", "--auto-approve"},
+		testutil.TestData("testdata/apps/bundle_deploy.txt"),
+	)
 
 	// App should exists after bundle deployment
 	app, err := wt.W.Apps.Get(ctx, apps.GetAppRequest{Name: appId})
