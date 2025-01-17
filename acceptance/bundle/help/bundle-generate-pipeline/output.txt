@@ -6,11 +6,11 @@ Usage:
   databricks bundle generate pipeline [flags]
 
 Flags:
-  -d, --config-dir string             Dir path where the output config will be stored (default "/var/folders/2g/pchp9w5x31ddddwv_9w6m9z00000gp/T/TestAcceptbundlehelpbundle-generate-pipeline2765444723/001/resources")
+  -d, --config-dir string             Dir path where the output config will be stored (default "resources")
       --existing-pipeline-id string   ID of the pipeline to generate config for
   -f, --force                         Force overwrite existing files in the output directory
   -h, --help                          help for pipeline
-  -s, --source-dir string             Dir path where the downloaded files will be stored (default "/var/folders/2g/pchp9w5x31ddddwv_9w6m9z00000gp/T/TestAcceptbundlehelpbundle-generate-pipeline2765444723/001/src")
+  -s, --source-dir string             Dir path where the downloaded files will be stored (default "src")
 
 Global Flags:
       --debug            enable debug logging

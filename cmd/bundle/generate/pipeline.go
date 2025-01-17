@@ -18,6 +18,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	pipelineDefaultConfigDir = "resources"
+	pipelineDefaultSourceDir = "src"
+)
+
 func NewGeneratePipelineCommand() *cobra.Command {
 	var configDir string
 	var sourceDir string
@@ -32,13 +37,8 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
 	cmd.MarkFlagRequired("existing-pipeline-id")
 
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = "."
-	}
-
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", filepath.Join(wd, "resources"), `Dir path where the output config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", filepath.Join(wd, "src"), `Dir path where the downloaded files will be stored`)
+	cmd.Flags().StringVarP(&configDir, "config-dir", "d", pipelineDefaultConfigDir, `Dir path where the output config will be stored`)
+	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", pipelineDefaultSourceDir, `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

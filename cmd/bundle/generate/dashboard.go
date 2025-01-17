@@ -32,6 +32,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	dashboardDefaultConfigDir = "resources"
+	dashboardDefaultSourceDir = "src"
+)
+
 type dashboard struct {
 	// Lookup flags for one-time generate.
 	existingPath string
@@ -441,8 +446,8 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("existing-dashboard-id")
 
 	// Output flags.
-	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", "./resources", `directory to write the configuration to`)
-	cmd.Flags().StringVarP(&d.dashboardDir, "dashboard-dir", "s", "./src", `directory to write the dashboard representation to`)
+	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", dashboardDefaultConfigDir, `directory to write the configuration to`)
+	cmd.Flags().StringVarP(&d.dashboardDir, "dashboard-dir", "s", dashboardDefaultSourceDir, `directory to write the dashboard representation to`)
 	cmd.Flags().BoolVarP(&d.force, "force", "f", false, `force overwrite existing files in the output directory`)
 
 	// Exactly one of the lookup flags must be provided.
