@@ -50,7 +50,7 @@ type resolver struct {
 }
 
 func (r resolver) run() (out dyn.Value, err error) {
-	r.lookups = make(map[string]lookupResult)
+	r.lookups = make(map[string]lookupResult, 8)
 
 	out, err = dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		ref, ok := newRef(v)
