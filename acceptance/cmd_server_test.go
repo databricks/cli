@@ -3,14 +3,8 @@ package acceptance_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 )
-
-type Response struct {
-	Message string     `json:"message"`
-	Args    url.Values `json:"args"`
-}
 
 type CmdServer struct {
 	*httptest.Server
@@ -37,7 +31,7 @@ func (s *CmdServer) Handle(pattern string, handler StringHandlerFunc) {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "text/plain")
 		if _, err := w.Write([]byte(resp)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
