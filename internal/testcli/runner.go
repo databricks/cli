@@ -39,6 +39,8 @@ type Runner struct {
 	StderrLines <-chan string
 
 	errch <-chan error
+
+	NoLog bool
 }
 
 func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan string {
@@ -196,18 +198,24 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 	cli.SetErr(&stderr)
 	cli.SetArgs(r.args)
 
-	r.Logf("  args: %s", strings.Join(r.args, ", "))
+	if !r.NoLog {
+		r.Logf("  args: %s", strings.Join(r.args, ", "))
+	}
 
 	err := root.Execute(ctx, cli)
 	if err != nil {
-		r.Logf(" error: %s", err)
+		if !r.NoLog {
+			r.Logf(" error: %s", err)
+		}
 	}
 
 	if stdout.Len() > 0 {
 		// Make a copy of the buffer such that it remains "unread".
 		scanner := bufio.NewScanner(bytes.NewBuffer(stdout.Bytes()))
 		for scanner.Scan() {
-			r.Logf("stdout: %s", scanner.Text())
+			if !r.NoLog {
+				r.Logf("stdout: %s", scanner.Text())
+			}
 		}
 	}
 
@@ -215,7 +223,9 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 		// Make a copy of the buffer such that it remains "unread".
 		scanner := bufio.NewScanner(bytes.NewBuffer(stderr.Bytes()))
 		for scanner.Scan() {
-			r.Logf("stderr: %s", scanner.Text())
+			if !r.NoLog {
+				r.Logf("stderr: %s", scanner.Text())
+			}
 		}
 	}
 
