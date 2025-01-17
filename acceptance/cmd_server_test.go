@@ -52,12 +52,10 @@ func StartCmdServer(t *testing.T) *CmdServer {
 		server.Close()
 	})
 	server.Handle("/", func(r *http.Request) (string, error) {
-		args := r.URL.Query()
-		resp := "hello, from server\n"
-		for key, values := range args {
-			for _, value := range values {
-				resp += key + ": " + value + "\n"
-			}
+		args := r.URL.Query().Get("args")
+		resp := "hello, from server"
+		if args != "" {
+			resp += "\nargs: " + args
 		}
 		return resp, nil
 	})
