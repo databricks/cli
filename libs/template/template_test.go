@@ -39,7 +39,7 @@ func TestBundleInitRepoName(t *testing.T) {
 }
 
 func TestTemplateTelemetryIsCapturedForAllDefaultTemplates(t *testing.T) {
-	for _, tmpl := range allTemplates {
+	for _, tmpl := range databricksTemplates {
 		w := tmpl.Writer
 
 		if tmpl.name == Custom {
@@ -64,7 +64,7 @@ func TestTemplateGet(t *testing.T) {
 	}
 
 	for _, name := range names {
-		tmpl := Get(name)
+		tmpl := GetDatabricksTemplate(name)
 		assert.Equal(t, tmpl.name, name)
 	}
 
@@ -75,10 +75,10 @@ func TestTemplateGet(t *testing.T) {
 	}
 
 	for _, name := range notExist {
-		tmpl := Get(TemplateName(name))
+		tmpl := GetDatabricksTemplate(TemplateName(name))
 		assert.Nil(t, tmpl)
 	}
 
 	// Assert the alias works.
-	assert.Equal(t, MlopsStacks, Get(TemplateName("mlops-stack")).name)
+	assert.Equal(t, MlopsStacks, GetDatabricksTemplate(TemplateName("mlops-stack")).name)
 }

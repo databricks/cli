@@ -21,7 +21,13 @@ const (
 )
 
 type Writer interface {
+	// Configure the writer with:
+	// 1. The path to the config file (if any) that contains input values for the
+	// template.
+	// 2. The output directory where the template will be materialized.
 	Configure(ctx context.Context, configPath, outputDir string) error
+
+	// Materialize the template to the local file system.
 	Materialize(ctx context.Context, r Reader) error
 }
 

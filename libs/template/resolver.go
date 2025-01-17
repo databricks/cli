@@ -47,6 +47,10 @@ type Resolver struct {
 	Branch string
 }
 
+// ErrCustomSelected is returned when the user selects the "custom..." option
+// in the prompt UI when they run `databricks bundle init`. This error signals
+// the upstream callsite to show documentation to the user on how to use a custom
+// template.
 var ErrCustomSelected = errors.New("custom template selected")
 
 // Configures the reader and the writer for template and returns
@@ -83,12 +87,25 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 		return nil, ErrCustomSelected
 	}
 
-	tmpl := Get(templateName)
+	tmpl := GetDatabricksTemplate(templateName)
 
-	// If the user directory provided a template path or URL that is not a built-in template,
-	// then configure a reader for the template.
+	// If we could not find a databricks template with the name provided by the user,
+	// then we assume that the user provided us with a reference to a custom template.
+	//
+	// This reference could be one of:
+	// 1. Path to a local template directory.
+	// 2. URL to a Git repository containing a template.
+	//
+	// We resolve the appropriate reader according to the reference provided by the user.
 	if tmpl == nil {
-		tmpl = Get(Custom)
+		tmpl = &Template{
+			name: Custom,
+			// We use a writer that does not log verbose telemetry for custom templates.
+			// This is important because template definitions can contain PII that we
+			// do not want to centralize.
+			Writer: &defaultWriter{},
+		}
+
 		if isRepoUrl(r.TemplatePathOrUrl) {
 			tmpl.Reader = &gitReader{
 				gitUrl:      r.TemplatePathOrUrl,
@@ -101,9 +118,7 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 				path: r.TemplatePathOrUrl,
 			}
 		}
-
 	}
-
 	err = tmpl.Writer.Configure(ctx, r.ConfigFile, r.OutputDir)
 	if err != nil {
 		return nil, err

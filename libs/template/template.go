@@ -29,14 +29,10 @@ const (
 	DbtSql        TemplateName = "dbt-sql"
 	MlopsStacks   TemplateName = "mlops-stacks"
 	DefaultPydabs TemplateName = "default-pydabs"
-
-	// Custom represents any template that is not one of the above default
-	// templates. It's a catch all for any custom templates that customers provide
-	// as a path or URL argument.
-	Custom TemplateName = "custom..."
+	Custom        TemplateName = "custom"
 )
 
-var allTemplates = []Template{
+var databricksTemplates = []Template{
 	{
 		name:        DefaultPython,
 		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
@@ -69,18 +65,11 @@ var allTemplates = []Template{
 		Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git", cloneFunc: git.Clone},
 		Writer:      &writerWithFullTelemetry{},
 	},
-	{
-		name:        Custom,
-		description: "Bring your own template",
-		// Reader is determined at runtime based on the user input.
-		Reader: nil,
-		Writer: &defaultWriter{},
-	},
 }
 
 func HelpDescriptions() string {
 	var lines []string
-	for _, template := range allTemplates {
+	for _, template := range databricksTemplates {
 		if template.name != Custom && !template.hidden {
 			lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
 		}
@@ -88,9 +77,11 @@ func HelpDescriptions() string {
 	return strings.Join(lines, "\n")
 }
 
+var customTemplateDescription = "Bring your own template"
+
 func options() []cmdio.Tuple {
-	names := make([]cmdio.Tuple, 0, len(allTemplates))
-	for _, template := range allTemplates {
+	names := make([]cmdio.Tuple, 0, len(databricksTemplates))
+	for _, template := range databricksTemplates {
 		if template.hidden {
 			continue
 		}
@@ -100,6 +91,11 @@ func options() []cmdio.Tuple {
 		}
 		names = append(names, tuple)
 	}
+
+	names = append(names, cmdio.Tuple{
+		Name: "custom...",
+		Id:   customTemplateDescription,
+	})
 	return names
 }
 
@@ -112,7 +108,11 @@ func SelectTemplate(ctx context.Context) (TemplateName, error) {
 		return "", err
 	}
 
-	for _, template := range allTemplates {
+	if description == customTemplateDescription {
+		return TemplateName(""), ErrCustomSelected
+	}
+
+	for _, template := range databricksTemplates {
 		if template.description == description {
 			return template.name, nil
 		}
@@ -121,8 +121,8 @@ func SelectTemplate(ctx context.Context) (TemplateName, error) {
 	panic("this should never happen - template not found")
 }
 
-func Get(name TemplateName) *Template {
-	for _, template := range allTemplates {
+func GetDatabricksTemplate(name TemplateName) *Template {
+	for _, template := range databricksTemplates {
 		if template.name == name || slices.Contains(template.aliases, string(name)) {
 			return &template
 		}
