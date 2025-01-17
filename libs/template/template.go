@@ -39,19 +39,19 @@ var allTemplates = []Template{
 	{
 		name:        DefaultPython,
 		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
-		Reader:      &builtinReader{name: "default-python"},
+		Reader:      &builtinReader{name: string(DefaultPython)},
 		Writer:      &writerWithFullTelemetry{},
 	},
 	{
 		name:        DefaultSql,
 		description: "The default SQL template for .sql files that run with Databricks SQL",
-		Reader:      &builtinReader{name: "default-sql"},
+		Reader:      &builtinReader{name: string(DefaultSql)},
 		Writer:      &writerWithFullTelemetry{},
 	},
 	{
 		name:        DbtSql,
 		description: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
-		Reader:      &builtinReader{name: "dbt-sql"},
+		Reader:      &builtinReader{name: string(DbtSql)},
 		Writer:      &writerWithFullTelemetry{},
 	},
 	{
