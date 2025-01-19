@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -23,17 +24,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var KeepTmp = os.Getenv("KEEP_TMP") != ""
+var KeepTmp bool
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
-// example: var debugSubTest = "bundle/variables/empty"
-var debugSubTest = ""
+// example: var singleTest = "bundle/variables/empty"
+var singleTest = ""
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see tools/callserver.py).
 // Also disables parallelism in tests.
-var inprocessMode = debugSubTest != "" || os.Getenv("TESTS_INPROCESS") != ""
+var InprocessMode bool
+
+func init() {
+	flag.BoolVar(&InprocessMode, "inprocess", singleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
+}
 
 const (
 	EntryPointScript = "script"
@@ -63,7 +69,7 @@ func TestAccept(t *testing.T) {
 
 	execPath := ""
 
-	if inprocessMode {
+	if InprocessMode {
 		cmdServer := StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = "callserver.py"
@@ -112,10 +118,17 @@ func TestAccept(t *testing.T) {
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	if singleTest != "" {
+		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
+			return n != singleTest
+		})
+		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+	}
+
 	for _, dir := range testDirs {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
-			if !inprocessMode {
+			if !InprocessMode {
 				t.Parallel()
 			}
 

@@ -67,17 +67,19 @@ func StartCmdServer(t *testing.T) *CmdServer {
 		server.Close()
 	})
 	server.Handle("/", func(r *http.Request) (any, error) {
-		args := r.URL.Query().Get("args")
-		argsSlice := strings.Split(args, " ")
-		cwd := r.URL.Query().Get("cwd")
+		q := r.URL.Query()
+		args := strings.Split(q.Get("args"), " ")
 
-		prevDir, err := os.Getwd()
-		require.NoError(t, err)
-		err = os.Chdir(cwd)
-		require.NoError(t, err)
-		defer os.Chdir(prevDir) // nolint:errcheck
+		var env map[string]string
+		require.NoError(t, json.Unmarshal([]byte(q.Get("env")), &env))
 
-		c := testcli.NewRunner(t, context.Background(), argsSlice...)
+		for key, val := range env {
+			defer Setenv(t, key, val)()
+		}
+
+		defer Chdir(t, q.Get("cwd"))()
+
+		c := testcli.NewRunner(t, context.Background(), args...)
 		c.NoLog = true
 		stdout, stderr, err := c.Run()
 		result := map[string]any{
@@ -92,4 +94,33 @@ func StartCmdServer(t *testing.T) *CmdServer {
 		return result, nil
 	})
 	return server
+}
+
+// Chdir variant that is intended to be used with defer so that it can switch back before function ends.
+// This is unlike testutil.Chdir which switches back only when tests end.
+func Chdir(t *testing.T, cwd string) func() {
+	require.NotEmpty(t, cwd)
+	prevDir, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(cwd)
+	require.NoError(t, err)
+	return func() {
+		_ = os.Chdir(prevDir)
+	}
+}
+
+// Setenv variant that is intended to be used with defer so that it can switch back before function ends.
+// This is unlike t.Setenv which switches back only when tests end.
+func Setenv(t *testing.T, key, value string) func() {
+	prevVal, exists := os.LookupEnv(key)
+
+	require.NoError(t, os.Setenv(key, value))
+
+	return func() {
+		if exists {
+			_ = os.Setenv(key, prevVal)
+		} else {
+			_ = os.Unsetenv(key)
+		}
+	}
 }

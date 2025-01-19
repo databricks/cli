@@ -3,14 +3,20 @@ import sys
 import os
 import json
 import subprocess
-import urllib.parse
+from urllib.parse import quote_plus
 
+env = {}
+for key, value in os.environ.items():
+    if "BUNDLE_VAR" in key or "DATABRICKS" in key:
+        env[key] = value
 
-args = " ".join(sys.argv[1:])
-args = urllib.parse.quote_plus(args)
-cwd = urllib.parse.quote_plus(os.getcwd())
+q = [
+    "args=" + quote_plus(" ".join(sys.argv[1:])),
+    "cwd=" + quote_plus(os.getcwd()),
+    "env=" + quote_plus(json.dumps(env)),
+]
 
-url = os.environ["CMD_SERVER_URL"] + "/?args=" + args + "&cwd=" + cwd
+url = os.environ["CMD_SERVER_URL"] + "/?" + "&".join(q)
 out = subprocess.run(["curl", "-s", url], stdout=subprocess.PIPE, check=True)
 result = json.loads(out.stdout)
 sys.stderr.write(result["stderr"])
