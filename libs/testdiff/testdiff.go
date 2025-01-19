@@ -26,7 +26,7 @@ func AssertEqualTexts(t testutil.TestingT, filename1, filename2, expected, out s
 		// only show diff for large texts
 		diff := UnifiedDiff(filename1, filename2, expected, out)
 		if diff != "" {
-			t.Errorf("Diff:\n" + diff)
+			t.Error("Diff:\n" + diff)
 			return false
 		}
 	}
