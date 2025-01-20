@@ -12,6 +12,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
 const (
@@ -29,11 +31,15 @@ type Writer interface {
 
 	// Materialize the template to the local file system.
 	Materialize(ctx context.Context, r Reader) error
+
+	// Log telemetry associated with the initialization of this template.
+	LogTelemetry(ctx context.Context)
 }
 
 type defaultWriter struct {
-	configPath  string
-	outputFiler filer.Filer
+	configPath   string
+	outputFiler  filer.Filer
+	templateName TemplateName
 
 	// Internal state
 	config   *config
@@ -60,19 +66,19 @@ func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, e
 	return filer.NewLocalClient(outputDir)
 }
 
-func (tmpl *defaultWriter) Configure(ctx context.Context, configPath, outputDir string) error {
-	tmpl.configPath = configPath
+func (writer *defaultWriter) Configure(ctx context.Context, configPath, outputDir string) error {
+	writer.configPath = configPath
 
 	outputFiler, err := constructOutputFiler(ctx, outputDir)
 	if err != nil {
 		return err
 	}
 
-	tmpl.outputFiler = outputFiler
+	writer.outputFiler = outputFiler
 	return nil
 }
 
-func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) error {
+func (writer *defaultWriter) promptForInput(ctx context.Context, reader Reader) error {
 	readerFs, err := reader.FS(ctx)
 	if err != nil {
 		return err
@@ -81,29 +87,29 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaFileName)
 	}
 
-	tmpl.config, err = newConfig(ctx, readerFs, schemaFileName)
+	writer.config, err = newConfig(ctx, readerFs, schemaFileName)
 	if err != nil {
 		return err
 	}
 
 	// Read and assign config values from file
-	if tmpl.configPath != "" {
-		err = tmpl.config.assignValuesFromFile(tmpl.configPath)
+	if writer.configPath != "" {
+		err = writer.config.assignValuesFromFile(writer.configPath)
 		if err != nil {
 			return err
 		}
 	}
 
 	helpers := loadHelpers(ctx)
-	tmpl.renderer, err = newRenderer(ctx, tmpl.config.values, helpers, readerFs, templateDirName, libraryDirName)
+	writer.renderer, err = newRenderer(ctx, writer.config.values, helpers, readerFs, templateDirName, libraryDirName)
 	if err != nil {
 		return err
 	}
 
 	// Print welcome message
-	welcome := tmpl.config.schema.WelcomeMessage
+	welcome := writer.config.schema.WelcomeMessage
 	if welcome != "" {
-		welcome, err = tmpl.renderer.executeTemplate(welcome)
+		welcome, err = writer.renderer.executeTemplate(welcome)
 		if err != nil {
 			return err
 		}
@@ -112,21 +118,21 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 
 	// Prompt user for any missing config values. Assign default values if
 	// terminal is not TTY
-	err = tmpl.config.promptOrAssignDefaultValues(tmpl.renderer)
+	err = writer.config.promptOrAssignDefaultValues(writer.renderer)
 	if err != nil {
 		return err
 	}
-	return tmpl.config.validate()
+	return writer.config.validate()
 }
 
-func (tmpl *defaultWriter) printSuccessMessage(ctx context.Context) error {
-	success := tmpl.config.schema.SuccessMessage
+func (writer *defaultWriter) printSuccessMessage(ctx context.Context) error {
+	success := writer.config.schema.SuccessMessage
 	if success == "" {
 		cmdio.LogString(ctx, "✨ Successfully initialized template")
 		return nil
 	}
 
-	success, err := tmpl.renderer.executeTemplate(success)
+	success, err := writer.renderer.executeTemplate(success)
 	if err != nil {
 		return err
 	}
@@ -134,38 +140,62 @@ func (tmpl *defaultWriter) printSuccessMessage(ctx context.Context) error {
 	return nil
 }
 
-func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error {
-	err := tmpl.promptForInput(ctx, reader)
+func (writer *defaultWriter) Materialize(ctx context.Context, reader Reader) error {
+	err := writer.promptForInput(ctx, reader)
 	if err != nil {
 		return err
 	}
 
 	// Walk the template file tree and compute in-memory representations of the
 	// output files.
-	err = tmpl.renderer.walk()
+	err = writer.renderer.walk()
 	if err != nil {
 		return err
 	}
 
 	// Flush the output files to disk.
-	err = tmpl.renderer.persistToDisk(ctx, tmpl.outputFiler)
+	err = writer.renderer.persistToDisk(ctx, writer.outputFiler)
 	if err != nil {
 		return err
 	}
 
-	return tmpl.printSuccessMessage(ctx)
+	return writer.printSuccessMessage(ctx)
 }
 
-func (tmpl *defaultWriter) LogTelemetry(ctx context.Context) error {
-	// TODO, only log the template name and uuid.
-	return nil
+func (writer *defaultWriter) LogTelemetry(ctx context.Context) {
+	// We don't log template enum args in the default template writer.
+	// This is because this writer can be used for customer templates, and we
+	// don't want to log PII.
+	event := telemetry.DatabricksCliLog{
+		BundleInitEvent: &protos.BundleInitEvent{
+			Uuid:         bundleUuid,
+			TemplateName: string(writer.templateName),
+		},
+	}
+
+	telemetry.Log(ctx, event)
 }
 
 type writerWithFullTelemetry struct {
 	defaultWriter
 }
 
-func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) error {
-	// TODO, log template name, uuid and enum args as well.
-	return nil
+func (writer *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
+	templateEnumArgs := []protos.BundleInitTemplateEnumArg{}
+	for k, v := range writer.config.enumValues() {
+		templateEnumArgs = append(templateEnumArgs, protos.BundleInitTemplateEnumArg{
+			Key:   k,
+			Value: v,
+		})
+	}
+
+	event := telemetry.DatabricksCliLog{
+		BundleInitEvent: &protos.BundleInitEvent{
+			Uuid:             bundleUuid,
+			TemplateName:     string(writer.templateName),
+			TemplateEnumArgs: templateEnumArgs,
+		},
+	}
+
+	telemetry.Log(ctx, event)
 }

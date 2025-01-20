@@ -6,7 +6,10 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/template"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/spf13/cobra"
 )
 
@@ -36,12 +39,28 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	cmd.Flags().StringVar(&branch, "tag", "", "Git tag to use for template initialization")
 	cmd.Flags().StringVar(&tag, "branch", "", "Git branch to use for template initialization")
 
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if tag != "" && branch != "" {
-			return errors.New("only one of --tag or --branch can be specified")
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		// Configure the logger to send telemetry to Databricks.
+		ctx := telemetry.WithDefaultLogger(cmd.Context())
+		cmd.SetContext(ctx)
+
+		return root.MustWorkspaceClient(cmd, args)
+	}
+
+	cmd.PostRun = func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		apiClient, err := client.New(w.Config)
+		if err != nil {
+			// Uploading telemetry is best effort. Do not error.
+			log.Debugf(ctx, "Could not create API client to send telemetry using: %v", err)
+			return
 		}
 
+		telemetry.Flush(cmd.Context(), apiClient)
+	}
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var templatePathOrUrl string
 		if len(args) > 0 {
 			templatePathOrUrl = args[0]
@@ -67,7 +86,14 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 		defer tmpl.Reader.Cleanup(ctx)
 
-		return tmpl.Writer.Materialize(ctx, tmpl.Reader)
+		err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
+		if err != nil {
+			return err
+		}
+		defer tmpl.Reader.Cleanup(ctx)
+
+		tmpl.Writer.LogTelemetry(ctx)
+		return nil
 	}
 	return cmd
 }

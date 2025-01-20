@@ -8,6 +8,9 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -55,4 +58,57 @@ func TestMaterializeForNonTemplateDirectory(t *testing.T) {
 	// Try to materialize a non-template directory.
 	err = w.Materialize(ctx, &localReader{path: tmpDir2})
 	assert.EqualError(t, err, "not a bundle template: expected to find a template schema file at databricks_template_schema.json")
+}
+
+func TestDefaultWriterLogTelemetry(t *testing.T) {
+	ctx := telemetry.WithMockLogger(context.Background())
+	w := &defaultWriter{templateName: Custom}
+	w.LogTelemetry(ctx)
+
+	logs := telemetry.Introspect(ctx)
+	assert.Len(t, logs, 1)
+	assert.Equal(t, &protos.BundleInitEvent{
+		TemplateName: string(Custom),
+		Uuid:         bundleUuid,
+	}, logs[0].BundleInitEvent)
+}
+
+func TestWriterWithFullTelemetry(t *testing.T) {
+	ctx := telemetry.WithMockLogger(context.Background())
+	w := &writerWithFullTelemetry{
+		defaultWriter: defaultWriter{
+			templateName: DefaultPython,
+			config: &config{
+				values: map[string]any{
+					"foo": "v1",
+					"bar": "v2",
+				},
+				schema: &jsonschema.Schema{
+					Properties: map[string]*jsonschema.Schema{
+						"foo": {
+							Type: jsonschema.StringType,
+							Enum: []any{"v1", "v2"},
+						},
+						"bar": {
+							Type: jsonschema.StringType,
+						},
+					},
+				},
+			},
+		},
+	}
+	w.LogTelemetry(ctx)
+
+	logs := telemetry.Introspect(ctx)
+	assert.Len(t, logs, 1)
+	assert.Equal(t, &protos.BundleInitEvent{
+		TemplateName: string(DefaultPython),
+		TemplateEnumArgs: []protos.BundleInitTemplateEnumArg{
+			{
+				Key:   "foo",
+				Value: "v1",
+			},
+		},
+		Uuid: bundleUuid,
+	}, logs[0].BundleInitEvent)
 }
