@@ -32,7 +32,7 @@ var KeepTmp bool
 var singleTest = ""
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
-// CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see tools/callserver.py).
+// CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
 // Also disables parallelism in tests.
 var InprocessMode bool
 
@@ -72,7 +72,7 @@ func TestAccept(t *testing.T) {
 	if InprocessMode {
 		cmdServer := StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
-		execPath = "callserver.py"
+		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
 		execPath = BuildCLI(t, cwd, coverDir)
 	}
