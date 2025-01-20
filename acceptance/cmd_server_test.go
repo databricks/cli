@@ -31,7 +31,7 @@ func StartCmdServer(t *testing.T) *TestServer {
 		defer Chdir(t, q.Get("cwd"))()
 
 		c := testcli.NewRunner(t, context.Background(), args...)
-		c.NoLog = true
+		c.Verbose = false
 		stdout, stderr, err := c.Run()
 		result := map[string]any{
 			"stdout": stdout.String(),
