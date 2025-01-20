@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/folders"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
@@ -38,6 +39,7 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
+	ctx = telemetry.WithMockLogger(ctx)
 
 	r := template.Resolver{
 		TemplatePathOrUrl: templateRoot,

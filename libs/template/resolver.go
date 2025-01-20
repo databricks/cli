@@ -10,7 +10,6 @@ import (
 
 var gitUrlPrefixes = []string{
 	"https://",
-	"git@",
 }
 
 func isRepoUrl(url string) bool {
@@ -27,7 +26,6 @@ func isRepoUrl(url string) bool {
 type Resolver struct {
 	// One of the following three:
 	// 1. Path to a local template directory.
-	// 2. URL to a Git repository containing a template.
 	// 3. Name of a built-in template.
 	TemplatePathOrUrl string
 
