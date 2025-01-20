@@ -80,6 +80,10 @@ jobs:
       - name: Run tests with coverage
         run: make cover
 
+      - name: Verify -inprocess feature of acceptance test by running one test
+        # QQQ this will succeed if test was not found, unfortunately
+        run: go test ./acceptance -v -inprocess -run TestAccept/bundle/variables/empty
+
   golangci:
     needs: cleanups
     name: lint
