@@ -112,8 +112,8 @@ Exit code: 1
   }
 }
 
->>> errcode $CLI bundle validate -o json --target without-defaults --var-file=var_files/empty.json
-Error: failed to read variables file: open var_files/empty.json: no such file or directory
+>>> errcode $CLI bundle validate -o json --target without-defaults --var-file=var_files/without_required.json
+Error: no value assigned to required variable cluster_workers. Assignment can be done through the "--var" or "--var-file" flag or by setting the BUNDLE_VAR_cluster_workers environment variable
 
 
 Exit code: 1

@@ -28,4 +28,4 @@ trace errcode $CLI bundle validate -o json --var-file=var_files/complex_to_strin
 trace errcode $CLI bundle validate -o json --var-file=var_files/string_to_complex.json | jq $cluster_expr
 
 # variable is required but it's not provided in the file
-trace errcode $CLI bundle validate -o json --target without-defaults --var-file=var_files/empty.json | jq $cluster_expr
+trace errcode $CLI bundle validate -o json --target without-defaults --var-file=var_files/without_required.json | jq $cluster_expr
