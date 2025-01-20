@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 env = {}
 for key, value in os.environ.items():
     if len(value) > 1000:
-        sys.stderr.write(f"Dropping key={key} value len={len(value)}")
+        sys.stderr.write(f"Dropping key={key} value len={len(value)}\n")
         continue
     env[key] = value
 
