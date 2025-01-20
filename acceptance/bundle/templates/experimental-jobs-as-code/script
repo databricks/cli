@@ -6,6 +6,7 @@ cd output/my_jobs_as_code
 uv sync 2> /dev/null
 
 # remove version constraint because it always creates a warning on dev builds
-sed -i '' -e "/^  databricks_cli_version: .*$/d" databricks.yml
+cat databricks.yml | grep -v databricks_cli_version > databricks.yml.new
+mv databricks.yml.new databricks.yml
 
 trace $CLI bundle validate -t dev --output json | jq ".resources"
