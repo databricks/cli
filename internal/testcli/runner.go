@@ -40,7 +40,7 @@ type Runner struct {
 
 	errch <-chan error
 
-	NoLog bool
+	Verbose bool
 }
 
 func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan string {
@@ -141,7 +141,7 @@ func (r *Runner) RunBackground() {
 	go func() {
 		err := root.Execute(ctx, cli)
 		if err != nil {
-			if !r.NoLog {
+			if r.Verbose {
 				r.Logf("Error running command: %s", err)
 			}
 		}
@@ -158,7 +158,7 @@ func (r *Runner) RunBackground() {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(r.stdout.Bytes()))
 			for scanner.Scan() {
-				if !r.NoLog {
+				if r.Verbose {
 					r.Logf("[databricks stdout]: %s", scanner.Text())
 				}
 			}
@@ -168,7 +168,7 @@ func (r *Runner) RunBackground() {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(r.stderr.Bytes()))
 			for scanner.Scan() {
-				if !r.NoLog {
+				if r.Verbose {
 					r.Logf("[databricks stderr]: %s", scanner.Text())
 				}
 			}
@@ -204,13 +204,13 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 	cli.SetErr(&stderr)
 	cli.SetArgs(r.args)
 
-	if !r.NoLog {
+	if r.Verbose {
 		r.Logf("  args: %s", strings.Join(r.args, ", "))
 	}
 
 	err := root.Execute(ctx, cli)
 	if err != nil {
-		if !r.NoLog {
+		if r.Verbose {
 			r.Logf(" error: %s", err)
 		}
 	}
@@ -219,7 +219,7 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 		// Make a copy of the buffer such that it remains "unread".
 		scanner := bufio.NewScanner(bytes.NewBuffer(stdout.Bytes()))
 		for scanner.Scan() {
-			if !r.NoLog {
+			if r.Verbose {
 				r.Logf("stdout: %s", scanner.Text())
 			}
 		}
@@ -229,7 +229,7 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 		// Make a copy of the buffer such that it remains "unread".
 		scanner := bufio.NewScanner(bytes.NewBuffer(stderr.Bytes()))
 		for scanner.Scan() {
-			if !r.NoLog {
+			if r.Verbose {
 				r.Logf("stderr: %s", scanner.Text())
 			}
 		}
@@ -291,8 +291,9 @@ func NewRunner(t testutil.TestingT, ctx context.Context, args ...string) *Runner
 	return &Runner{
 		TestingT: t,
 
-		ctx:  ctx,
-		args: args,
+		ctx:     ctx,
+		args:    args,
+		Verbose: true,
 	}
 }
 
