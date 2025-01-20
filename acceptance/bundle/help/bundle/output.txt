@@ -21,8 +21,9 @@ Available Commands:
   validate    Validate configuration
 
 Flags:
-  -h, --help          help for bundle
-      --var strings   set values for variables defined in bundle config. Example: --var="foo=bar"
+  -h, --help              help for bundle
+      --var strings       set values for variables defined in bundle config. Example: --var="foo=bar"
+      --var-file string   file path to a JSON file containing variables. Example: --var-file="/path/to/vars.json"
 
 Global Flags:
       --debug            enable debug logging
