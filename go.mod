@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1 // MIT
-	github.com/briandowns/spinner v1.23.1 // Apache 2.0
+	github.com/briandowns/spinner v1.23.2 // Apache 2.0
 	github.com/databricks/databricks-sdk-go v0.55.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
