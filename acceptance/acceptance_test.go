@@ -137,6 +137,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
+	repls.Set(tmpDir, "$TMPDIR")
+	repls.Set(filepath.Dir(tmpDir), "$TMPPARENT")
+	repls.Set(filepath.Dir(filepath.Dir(tmpDir)), "$TMPGPARENT")
+
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
