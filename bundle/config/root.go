@@ -405,14 +405,6 @@ func (r *Root) MergeTargetOverrides(name string) error {
 			return err
 		}
 
-		// If the branch was overridden, we need to clear the inferred flag.
-		if branch := v.Get("branch"); branch.Kind() != dyn.KindInvalid {
-			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.V(false))
-			if err != nil {
-				return err
-			}
-		}
-
 		// Set the merged value.
 		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")), out)
 		if err != nil {

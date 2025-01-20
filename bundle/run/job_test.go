@@ -1,7 +1,6 @@
 package run
 
 import (
-	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -159,8 +158,8 @@ func TestJobRunnerRestart(t *testing.T) {
 
 		m := mocks.NewMockWorkspaceClient(t)
 		b.SetWorkpaceClient(m.WorkspaceClient)
-		ctx := context.Background()
-		ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+
+		ctx := cmdio.MockDiscard(context.Background())
 		ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 		jobApi := m.GetMockJobsAPI()
@@ -230,8 +229,8 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
+
+	ctx := cmdio.MockDiscard(context.Background())
 	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 	jobApi := m.GetMockJobsAPI()

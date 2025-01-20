@@ -181,7 +181,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 				root:            NewWorkspaceRootPath("/dir"),
 			}
 
-			workspaceFilesExtensionsClient := workspaceFilesExtensionsClient{
+			workspaceFilesExtensionsClient := WorkspaceFilesExtensionsClient{
 				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
 				wsfs:            &workspaceFilesClient,
 			}
