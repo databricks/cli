@@ -13,10 +13,7 @@ import (
 )
 
 func StartCmdServer(t *testing.T) *TestServer {
-	server := NewTestServer()
-	t.Cleanup(func() {
-		server.Close()
-	})
+	server := StartServer(t)
 	server.Handle("/", func(r *http.Request) (any, error) {
 		q := r.URL.Query()
 		args := strings.Split(q.Get("args"), " ")
