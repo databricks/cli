@@ -137,6 +137,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
+	repls.Set("/private"+tmpDir, "$TMPDIR")
+	repls.Set("/private"+filepath.Dir(tmpDir), "$TMPPARENT")
+	repls.Set("/private"+filepath.Dir(filepath.Dir(tmpDir)), "$TMPGPARENT")
 	repls.Set(tmpDir, "$TMPDIR")
 	repls.Set(filepath.Dir(tmpDir), "$TMPPARENT")
 	repls.Set(filepath.Dir(filepath.Dir(tmpDir)), "$TMPGPARENT")
