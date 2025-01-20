@@ -61,7 +61,6 @@ func Initialize() bundle.Mutator {
 			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 			mutator.ResolveVariableReferencesInLookup(),
 			mutator.ResolveResourceReferences(),
-			mutator.ResolveVariableReferencesInComplexVariables(),
 			mutator.ResolveVariableReferences(
 				"bundle",
 				"workspace",
@@ -73,6 +72,8 @@ func Initialize() bundle.Mutator {
 			mutator.MergeJobTasks(),
 			mutator.MergePipelineClusters(),
 			mutator.MergeApps(),
+
+			mutator.CaptureSchemaDependency(),
 
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),

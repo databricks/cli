@@ -22,6 +22,13 @@ linters-settings:
     disable:
       - fieldalignment
       - shadow
+    settings:
+      printf:
+        funcs:
+          - (github.com/databricks/cli/internal/testutil.TestingT).Infof
+          - (github.com/databricks/cli/internal/testutil.TestingT).Errorf
+          - (github.com/databricks/cli/internal/testutil.TestingT).Fatalf
+          - (github.com/databricks/cli/internal/testutil.TestingT).Skipf
   gofmt:
     rewrite-rules:
       - pattern: 'a[b:len(a)]'
@@ -42,6 +49,8 @@ linters-settings:
     disable:
       # good check, but we have too many assert.(No)?Errorf? so excluding for now
       - require-error
+  copyloopvar:
+    check-alias: true
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
   max-issues-per-linter: 1000
