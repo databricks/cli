@@ -1,11 +1,7 @@
-Error: path "$TMPDIR_PARENT" is not within repository root "$TMPDIR"
-
 Name: test-bundle
 Target: default
 Workspace:
   User: $USERNAME
   Path: /Workspace/Users/$USERNAME/.bundle/test-bundle/default
 
-Found 1 error
-
-Exit code: 1
+Validation OK!
