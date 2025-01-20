@@ -118,7 +118,7 @@ func SelectTemplate(ctx context.Context) (TemplateName, error) {
 		}
 	}
 
-	panic("this should never happen - template not found")
+	return "", fmt.Errorf("template with description %s not found", description)
 }
 
 func GetDatabricksTemplate(name TemplateName) *Template {

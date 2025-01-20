@@ -65,7 +65,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		if err != nil {
 			return err
 		}
-		defer tmpl.Reader.Cleanup()
+		defer tmpl.Reader.Cleanup(ctx)
 
 		return tmpl.Writer.Materialize(ctx, tmpl.Reader)
 	}

@@ -47,7 +47,7 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 
 	tmpl, err := r.Resolve(ctx)
 	require.NoError(t, err)
-	defer tmpl.Reader.Cleanup()
+	defer tmpl.Reader.Cleanup(ctx)
 
 	err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
 	require.NoError(t, err)

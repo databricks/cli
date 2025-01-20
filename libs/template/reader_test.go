@@ -2,7 +2,6 @@ package template
 
 import (
 	"context"
-	"io"
 	"io/fs"
 	"path/filepath"
 	"testing"
@@ -23,18 +22,15 @@ func TestBuiltInReader(t *testing.T) {
 	for _, name := range exists {
 		t.Run(name, func(t *testing.T) {
 			r := &builtinReader{name: name}
-			fs, err := r.FS(context.Background())
+			fsys, err := r.FS(context.Background())
 			assert.NoError(t, err)
-			assert.NotNil(t, fs)
+			assert.NotNil(t, fsys)
 
 			// Assert file content returned is accurate and every template has a welcome
 			// message defined.
-			fd, err := fs.Open("databricks_template_schema.json")
-			require.NoError(t, err)
-			b, err := io.ReadAll(fd)
+			b, err := fs.ReadFile(fsys, "databricks_template_schema.json")
 			require.NoError(t, err)
 			assert.Contains(t, string(b), "welcome_message")
-			assert.NoError(t, fd.Close())
 		})
 	}
 
@@ -72,19 +68,19 @@ func TestGitUrlReader(t *testing.T) {
 	assert.Equal(t, []string{"someurl", "sometag", r.tmpRepoDir}, args)
 
 	// Assert the fs returned is rooted at the templateDir.
-	fd, err := fsys.Open("somefile")
-	require.NoError(t, err)
-	b, err := io.ReadAll(fd)
+	b, err := fs.ReadFile(fsys, "somefile")
 	require.NoError(t, err)
 	assert.Equal(t, "somecontent", string(b))
-	assert.NoError(t, fd.Close())
+
+	// Assert second call to FS returns an error.
+	_, err = r.FS(ctx)
+	assert.ErrorContains(t, err, "FS called twice on git reader")
 
 	// Assert the downloaded repository is cleaned up.
-	fd, err = fsys.Open(".")
+	_, err = fs.Stat(fsys, ".")
 	require.NoError(t, err)
-	require.NoError(t, fd.Close())
-	r.Cleanup()
-	_, err = fsys.Open(".")
+	r.Cleanup(ctx)
+	_, err = fs.Stat(fsys, ".")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
@@ -94,14 +90,11 @@ func TestLocalReader(t *testing.T) {
 	ctx := context.Background()
 
 	r := &localReader{path: tmpDir}
-	fs, err := r.FS(ctx)
+	fsys, err := r.FS(ctx)
 	require.NoError(t, err)
 
 	// Assert the fs returned is rooted at correct location.
-	fd, err := fs.Open("somefile")
-	require.NoError(t, err)
-	b, err := io.ReadAll(fd)
+	b, err := fs.ReadFile(fsys, "somefile")
 	require.NoError(t, err)
 	assert.Equal(t, "somecontent", string(b))
-	assert.NoError(t, fd.Close())
 }

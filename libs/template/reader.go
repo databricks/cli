@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 )
 
 type Reader interface {
@@ -18,7 +20,7 @@ type Reader interface {
 
 	// Cleanup releases any resources associated with the reader
 	// like cleaning up temporary directories.
-	Cleanup()
+	Cleanup(ctx context.Context)
 }
 
 type builtinReader struct {
@@ -31,22 +33,16 @@ func (r *builtinReader) FS(ctx context.Context) (fs.FS, error) {
 		return nil, err
 	}
 
-	var templateFS fs.FS
 	for _, entry := range builtin {
 		if entry.Name == r.name {
-			templateFS = entry.FS
-			break
+			return entry.FS, nil
 		}
 	}
 
-	if templateFS == nil {
-		return nil, fmt.Errorf("builtin template %s not found", r.name)
-	}
-
-	return templateFS, nil
+	return nil, fmt.Errorf("builtin template %s not found", r.name)
 }
 
-func (r *builtinReader) Cleanup() {}
+func (r *builtinReader) Cleanup(ctx context.Context) {}
 
 type gitReader struct {
 	gitUrl string
@@ -71,6 +67,13 @@ func repoName(url string) string {
 }
 
 func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
+	// Calling FS twice will lead to two downloaded copies of the git repo.
+	// In the future if you need to call FS twice, consider adding some caching
+	// logic here to avoid multiple downloads.
+	if r.tmpRepoDir != "" {
+		return nil, errors.New("FS called twice on git reader")
+	}
+
 	// Create a temporary directory with the name of the repository.  The '*'
 	// character is replaced by a random string in the generated temporary directory.
 	repoDir, err := os.MkdirTemp("", repoName(r.gitUrl)+"-*")
@@ -92,13 +95,16 @@ func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
 	return os.DirFS(filepath.Join(repoDir, r.templateDir)), nil
 }
 
-func (r *gitReader) Cleanup() {
+func (r *gitReader) Cleanup(ctx context.Context) {
 	if r.tmpRepoDir == "" {
 		return
 	}
 
-	// Cleanup is best effort. Ignore errors.
-	os.RemoveAll(r.tmpRepoDir)
+	// Cleanup is best effort. Only log errors.
+	err := os.RemoveAll(r.tmpRepoDir)
+	if err != nil {
+		log.Debugf(ctx, "Error cleaning up tmp directory %s for git template reader for URL %s: %s", r.tmpRepoDir, r.gitUrl, err)
+	}
 }
 
 type localReader struct {
@@ -110,4 +116,4 @@ func (r *localReader) FS(ctx context.Context) (fs.FS, error) {
 	return os.DirFS(r.path), nil
 }
 
-func (r *localReader) Cleanup() {}
+func (r *localReader) Cleanup(ctx context.Context) {}
