@@ -60,6 +60,11 @@ var nativeTemplates = []nativeTemplate{
 		description: "The default PyDABs template",
 	},
 	{
+		name:        "experimental-jobs-as-code",
+		hidden:      true,
+		description: "Jobs as code template (experimental)",
+	},
+	{
 		name:        customTemplate,
 		description: "Bring your own template",
 	},
