@@ -1708,12 +1708,14 @@
                   "type": "object",
                   "properties": {
                     "description": {
+                      "description": "Description of the App Resource.",
                       "$ref": "#/$defs/string"
                     },
                     "job": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob"
                     },
                     "name": {
+                      "description": "Name of the App Resource.",
                       "$ref": "#/$defs/string"
                     },
                     "secret": {

@@ -448,7 +448,7 @@ apps:
   
    * - `description`
      - String
-     - 
+     - Description of the App Resource.
   
    * - `job`
      - Map
@@ -456,7 +456,7 @@ apps:
   
    * - `name`
      - String
-     - 
+     - Name of the App Resource.
   
    * - `secret`
      - Map
@@ -516,7 +516,7 @@ apps:
   
    * - `permission`
      - String
-     - 
+     - Permission to grant on the secret scope. Supported permissions are: "READ", "WRITE", "MANAGE".
   
    * - `scope`
      - String
@@ -1668,7 +1668,7 @@ jobs:
   
    * - `job_clusters`
      - Sequence
-     - A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings. See [_](#jobs.<name>.job_clusters).
+     - A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings. If more than 100 job clusters are available, you can paginate through them using :method:jobs/get. See [_](#jobs.<name>.job_clusters).
   
    * - `max_concurrent_runs`
      - Integer
@@ -1708,7 +1708,7 @@ jobs:
   
    * - `tasks`
      - Sequence
-     - A list of task specifications to be executed by this job. See [_](#jobs.<name>.tasks).
+     - A list of task specifications to be executed by this job. If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available. See [_](#jobs.<name>.tasks).
   
    * - `timeout_seconds`
      - Integer
@@ -2025,6 +2025,7 @@ An optional set of health rules that can be defined for this job.
 **`Type: Sequence`**
   
 A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
+If more than 100 job clusters are available, you can paginate through them using :method:jobs/get.
   
   
   
@@ -2924,6 +2925,7 @@ An optional periodic schedule for this job. The default behavior is that the job
 **`Type: Sequence`**
   
 A list of task specifications to be executed by this job.
+If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
   
   
   
