@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -19,8 +18,8 @@ func RewriteAuthError(ctx context.Context, host, accountId, profile string, err 
 		if err != nil {
 			return err, false
 		}
-		msg := "a new access token could not be retrieved because the refresh token is invalid."
-		msg += fmt.Sprintf(" To reauthenticate, run `%s`", BuildLoginCommand(ctx, profile, oauthArgument))
+		msg := `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ ` + BuildLoginCommand(ctx, profile, oauthArgument)
 		return errors.New(msg), true
 	}
 	return err, false
