@@ -24,7 +24,7 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 
 	var authArguments auth.AuthArguments
 	cmd.PersistentFlags().StringVar(&authArguments.Host, "host", "", "Databricks Host")
-	cmd.PersistentFlags().StringVar(&authArguments.AccountId, "account-id", "", "Databricks Account ID")
+	cmd.PersistentFlags().StringVar(&authArguments.AccountID, "account-id", "", "Databricks Account ID")
 
 	cmd.AddCommand(newEnvCommand())
 	cmd.AddCommand(newLoginCommand(&authArguments))

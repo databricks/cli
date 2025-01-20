@@ -140,7 +140,7 @@ func TestToken_loadToken(t *testing.T) {
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{
 					Host:      "https://accounts.cloud.databricks.com",
-					AccountId: "expired",
+					AccountID: "expired",
 				},
 				profileName:  "",
 				args:         []string{},
@@ -204,7 +204,7 @@ func TestToken_loadToken(t *testing.T) {
 		{
 			name: "succeeds with host",
 			args: loadTokenArgs{
-				authArguments: &auth.AuthArguments{Host: "https://accounts.cloud.databricks.com", AccountId: "active"},
+				authArguments: &auth.AuthArguments{Host: "https://accounts.cloud.databricks.com", AccountID: "active"},
 				profileName:   "",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,

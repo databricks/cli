@@ -65,21 +65,21 @@ func TestSetAccountId(t *testing.T) {
 	ctx, _ := cmdio.SetupTest(context.Background())
 
 	// Test setting account-id from flag
-	authArguments.AccountId = "val from --account-id"
+	authArguments.AccountID = "val from --account-id"
 	err := setHostAndAccountId(ctx, profile.DefaultProfiler, "account-profile", &authArguments, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, "https://accounts.cloud.databricks.com", authArguments.Host)
-	assert.Equal(t, "val from --account-id", authArguments.AccountId)
+	assert.Equal(t, "val from --account-id", authArguments.AccountID)
 
 	// Test setting account_id from profile
-	authArguments.AccountId = ""
+	authArguments.AccountID = ""
 	err = setHostAndAccountId(ctx, profile.DefaultProfiler, "account-profile", &authArguments, []string{})
 	require.NoError(t, err)
 	assert.Equal(t, "https://accounts.cloud.databricks.com", authArguments.Host)
-	assert.Equal(t, "id-from-profile", authArguments.AccountId)
+	assert.Equal(t, "id-from-profile", authArguments.AccountID)
 
 	// Neither flag nor profile account-id is set, should prompt
-	authArguments.AccountId = ""
+	authArguments.AccountID = ""
 	authArguments.Host = "https://accounts.cloud.databricks.com"
 	err = setHostAndAccountId(ctx, profile.DefaultProfiler, "", &authArguments, []string{})
 	assert.EqualError(t, err, "the command is being run in a non-interactive environment, please specify an account ID using --account-id")

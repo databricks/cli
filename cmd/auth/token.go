@@ -60,14 +60,28 @@ func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 }
 
 type loadTokenArgs struct {
-	authArguments      *auth.AuthArguments
-	profileName        string
-	args               []string
-	tokenTimeout       time.Duration
-	profiler           profile.Profiler
+	// authArguments is the parsed auth arguments, including the host and optionally the account ID.
+	authArguments *auth.AuthArguments
+
+	// profileName is the name of the specified profile. If no profile is specified, this is an empty string.
+	profileName string
+
+	// args is the list of arguments passed to the command.
+	args []string
+
+	// tokenTimeout is the timeout for retrieving (and potentially refreshing) an OAuth token.
+	tokenTimeout time.Duration
+
+	// profiler is the profiler to use for reading the host and account ID from the .databrickscfg file.
+	profiler profile.Profiler
+
+	// persistentAuthOpts are the options to pass to the persistent auth client.
 	persistentAuthOpts []oauth.PersistentAuthOption
 }
 
+// loadToken loads an OAuth token from the persistent auth store. The host and account ID are read from
+// the provided profiler if not explicitly provided. If the token cannot be refreshed, a helpful error message
+// is printed to the user with steps to reauthenticate.
 func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	// If a profile is provided we read the host from the .databrickscfg file
 	if args.profileName != "" && len(args.args) > 0 {
@@ -92,7 +106,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	}
 	t, err := persistentAuth.Load(ctx, oauthArgument)
 	if err != nil {
-		if err, ok := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountId, args.profileName, err); ok {
+		if err, ok := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); ok {
 			return nil, err
 		}
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)

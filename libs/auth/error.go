@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/oauth"
 )
 
@@ -25,6 +24,7 @@ func RewriteAuthError(ctx context.Context, host, accountId, profile string, err 
 	return err, false
 }
 
+// BuildLoginCommand builds the login command for the given OAuth argument or profile.
 func BuildLoginCommand(ctx context.Context, profile string, arg oauth.OAuthArgument) string {
 	cmd := []string{
 		"databricks",
@@ -42,20 +42,4 @@ func BuildLoginCommand(ctx context.Context, profile string, arg oauth.OAuthArgum
 		}
 	}
 	return strings.Join(cmd, " ")
-}
-
-type AuthArguments struct {
-	Host      string
-	AccountId string
-}
-
-func (a AuthArguments) ToOAuthArgument() (oauth.OAuthArgument, error) {
-	cfg := &config.Config{
-		Host:      a.Host,
-		AccountID: a.AccountId,
-	}
-	if cfg.IsAccountClient() {
-		return oauth.NewBasicAccountOAuthArgument(cfg.Host, cfg.AccountID)
-	}
-	return oauth.NewBasicWorkspaceOAuthArgument(cfg.Host)
 }

@@ -19,14 +19,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func promptForProfile(ctx context.Context, authArguments *auth.AuthArguments) (string, error) {
+func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
 		return "", nil
 	}
 
 	prompt := cmdio.Prompt(ctx)
 	prompt.Label = "Databricks profile name"
-	prompt.Default = getProfileName(authArguments)
+	prompt.Default = defaultValue
 	prompt.AllowEdit = true
 	return prompt.Run()
 }
@@ -100,7 +100,7 @@ depends on the existing profiles you have set in your configuration file
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
-			profileName, err = promptForProfile(ctx, authArguments)
+			profileName, err = promptForProfile(ctx, getProfileName(authArguments))
 			if err != nil {
 				return err
 			}
@@ -121,7 +121,7 @@ depends on the existing profiles you have set in your configuration file
 		// Otherwise it will complain about non existing profile because it was not yet saved.
 		cfg := config.Config{
 			Host:      authArguments.Host,
-			AccountID: authArguments.AccountId,
+			AccountID: authArguments.AccountID,
 			AuthType:  "databricks-cli",
 		}
 
@@ -217,10 +217,10 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 	// If the account-id was not provided as a cmd line flag, try to read it from
 	// the specified profile.
 	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
-	accountID := authArguments.AccountId
+	accountID := authArguments.AccountID
 	if isAccountClient && accountID == "" {
 		if len(profiles) > 0 && profiles[0].AccountID != "" {
-			authArguments.AccountId = profiles[0].AccountID
+			authArguments.AccountID = profiles[0].AccountID
 		} else {
 			// Prompt user for the account-id if it we could not get it from a
 			// profile.
@@ -228,15 +228,18 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 			if err != nil {
 				return err
 			}
-			authArguments.AccountId = accountId
+			authArguments.AccountID = accountId
 		}
 	}
 	return nil
 }
 
+// getProfileName returns the default profile name for a given host/account ID.
+// If the account ID is provided, the profile name is "ACCOUNT-<account-id>".
+// Otherwise, the profile name is the first part of the host URL.
 func getProfileName(authArguments *auth.AuthArguments) string {
-	if authArguments.AccountId != "" {
-		return "ACCOUNT-" + authArguments.AccountId
+	if authArguments.AccountID != "" {
+		return "ACCOUNT-" + authArguments.AccountID
 	}
 	host := strings.TrimPrefix(authArguments.Host, "https://")
 	split := strings.Split(host, ".")
