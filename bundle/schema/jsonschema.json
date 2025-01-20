@@ -390,7 +390,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules"
                       },
                       "job_clusters": {
-                        "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
+                        "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.\nIf more than 100 job clusters are available, you can paginate through them using :method:jobs/get.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster"
                       },
                       "max_concurrent_runs": {
@@ -428,7 +428,7 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "tasks": {
-                        "description": "A list of task specifications to be executed by this job.",
+                        "description": "A list of task specifications to be executed by this job.\nIf more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Task"
                       },
                       "timeout_seconds": {
@@ -1667,10 +1667,20 @@
               ]
             },
             "apps.AppDeploymentMode": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "SNAPSHOT",
+                "AUTO_SYNC"
+              ]
             },
             "apps.AppDeploymentState": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "SUCCEEDED",
+                "FAILED",
+                "IN_PROGRESS",
+                "CANCELLED"
+              ]
             },
             "apps.AppDeploymentStatus": {
               "oneOf": [
@@ -1752,7 +1762,13 @@
               ]
             },
             "apps.AppResourceJobJobPermission": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "CAN_MANAGE",
+                "IS_OWNER",
+                "CAN_MANAGE_RUN",
+                "CAN_VIEW"
+              ]
             },
             "apps.AppResourceSecret": {
               "oneOf": [
@@ -1783,7 +1799,13 @@
               ]
             },
             "apps.AppResourceSecretSecretPermission": {
-              "type": "string"
+              "type": "string",
+              "description": "Permission to grant on the secret scope. Supported permissions are: \"READ\", \"WRITE\", \"MANAGE\".",
+              "enum": [
+                "READ",
+                "WRITE",
+                "MANAGE"
+              ]
             },
             "apps.AppResourceServingEndpoint": {
               "oneOf": [
@@ -1810,7 +1832,12 @@
               ]
             },
             "apps.AppResourceServingEndpointServingEndpointPermission": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_QUERY",
+                "CAN_VIEW"
+              ]
             },
             "apps.AppResourceSqlWarehouse": {
               "oneOf": [
@@ -1837,10 +1864,21 @@
               ]
             },
             "apps.AppResourceSqlWarehouseSqlWarehousePermission": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_USE",
+                "IS_OWNER"
+              ]
             },
             "apps.ApplicationState": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "DEPLOYING",
+                "RUNNING",
+                "CRASHED",
+                "UNAVAILABLE"
+              ]
             },
             "apps.ApplicationStatus": {
               "oneOf": [
@@ -1863,7 +1901,16 @@
               ]
             },
             "apps.ComputeState": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "ERROR",
+                "DELETING",
+                "STARTING",
+                "STOPPING",
+                "UPDATING",
+                "STOPPED",
+                "ACTIVE"
+              ]
             },
             "apps.ComputeStatus": {
               "oneOf": [
@@ -4574,6 +4621,19 @@
                 }
               ]
             },
+            "pipelines.DayOfWeek": {
+              "type": "string",
+              "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
+              "enum": [
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY",
+                "SUNDAY"
+              ]
+            },
             "pipelines.DeploymentKind": {
               "type": "string",
               "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
@@ -5008,7 +5068,7 @@
                   "properties": {
                     "days_of_week": {
                       "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek"
                     },
                     "start_hour": {
                       "description": "An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
@@ -5028,19 +5088,6 @@
                   "type": "string",
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
-              ]
-            },
-            "pipelines.RestartWindowDaysOfWeek": {
-              "type": "string",
-              "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
-              "enum": [
-                "MONDAY",
-                "TUESDAY",
-                "WEDNESDAY",
-                "THURSDAY",
-                "FRIDAY",
-                "SATURDAY",
-                "SUNDAY"
               ]
             },
             "pipelines.SchemaSpec": {
@@ -6624,6 +6671,20 @@
                   }
                 ]
               },
+              "pipelines.DayOfWeek": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "pipelines.IngestionConfig": {
                 "oneOf": [
                   {
@@ -6672,20 +6733,6 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
-                    }
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                  }
-                ]
-              },
-              "pipelines.RestartWindowDaysOfWeek": {
-                "oneOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
                     }
                   },
                   {

@@ -1,0 +1,6 @@
+bundle:
+  name: arg-repeat
+
+variables:
+  a:
+    default: hello

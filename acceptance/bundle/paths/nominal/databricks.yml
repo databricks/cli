@@ -1,0 +1,13 @@
+bundle:
+  name: nominal
+
+include:
+  - "resources/*.yml"
+  - "override_*.yml"
+
+targets:
+  development:
+    default: true
+
+  error:
+    default: false

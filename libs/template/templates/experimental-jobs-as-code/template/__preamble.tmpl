@@ -1,0 +1,30 @@
+# Preamble
+
+This file only template directives; it is skipped for the actual output.
+
+{{skip "__preamble"}}
+
+# TODO add DLT support, placeholder for now
+{{$notDLT := true }}
+{{$notNotebook := not (eq .include_notebook "yes")}}
+{{$notPython := not (eq .include_python "yes")}}
+
+{{if $notPython}}
+  {{skip "{{.project_name}}/src/{{.project_name}}"}}
+  {{skip "{{.project_name}}/tests/main_test.py"}}
+{{end}}
+
+{{if $notDLT}}
+  {{skip "{{.project_name}}/src/dlt_pipeline.ipynb"}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline.py"}}
+{{end}}
+
+{{if $notNotebook}}
+  {{skip "{{.project_name}}/src/notebook.ipynb"}}
+{{end}}
+
+{{if (and $notDLT $notNotebook $notPython)}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}_job.py"}}
+{{else}}
+  {{skip "{{.project_name}}/resources/.gitkeep"}}
+{{end}}

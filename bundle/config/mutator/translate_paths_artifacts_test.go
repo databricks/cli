@@ -46,7 +46,7 @@ func TestTranslatePathsArtifacts_InsideSyncRoot(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	// Assert that the artifact path has been converted to a local absolute path.
-	assert.Equal(t, lib, b.Config.Artifacts["my_artifact"].Path)
+	assert.Equal(t, filepath.ToSlash(lib), b.Config.Artifacts["my_artifact"].Path)
 }
 
 func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
@@ -79,5 +79,5 @@ func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	// Assert that the artifact path has been converted to a local absolute path.
-	assert.Equal(t, lib, b.Config.Artifacts["my_artifact"].Path)
+	assert.Equal(t, filepath.ToSlash(lib), b.Config.Artifacts["my_artifact"].Path)
 }

@@ -1,4 +1,4 @@
-default: build
+default: vendor fmt lint
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -14,6 +14,7 @@ lintcheck:
 # formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
 # If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 fmt:
+	ruff format -q
 	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
 
 test:
@@ -24,6 +25,17 @@ cover:
 
 showcover:
 	go tool cover -html=coverage.txt
+
+acc-cover:
+	rm -fr ./acceptance/build/cover/
+	CLI_GOCOVERDIR=build/cover go test ./acceptance
+	rm -fr ./acceptance/build/cover-merged/
+	mkdir -p acceptance/build/cover-merged/
+	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
+	go tool covdata textfmt -i acceptance/build/cover-merged -o coverage-acceptance.txt
+
+acc-showcover:
+	go tool cover -html=coverage-acceptance.txt
 
 build: vendor
 	go build -mod vendor
@@ -48,4 +60,4 @@ integration:
 integration-short:
 	$(INTEGRATION) -short
 
-.PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short docs
+.PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs

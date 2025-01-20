@@ -625,11 +625,19 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob to request the next page of the job's sub-resources.`)
+
 	cmd.Use = "get JOB_ID"
 	cmd.Short = `Get a single job.`
 	cmd.Long = `Get a single job.
   
   Retrieves the details for a single job.
+  
+  In Jobs API 2.2, requests for a single job support pagination of tasks and
+  job_clusters when either exceeds 100 elements. Use the next_page_token
+  field to check for more results and pass its value as the page_token in
+  subsequent requests. Arrays with fewer than 100 elements in a page will be
+  empty on later pages.
 
   Arguments:
     JOB_ID: The canonical identifier of the job to retrieve information about. This
@@ -847,13 +855,19 @@ func newGetRun() *cobra.Command {
 
 	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
 	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response.`)
-	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `To list the next page of job tasks, set this field to the value of the next_page_token returned in the GetJob response.`)
+	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `Use next_page_token returned from the previous GetRun to request the next page of the run's sub-resources.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a single job run.`
 	cmd.Long = `Get a single job run.
   
-  Retrieve the metadata of a run.
+  Retrieves the metadata of a run.
+  
+  In Jobs API 2.2, requests for a single job run support pagination of tasks
+  and job_clusters when either exceeds 100 elements. Use the next_page_token
+  field to check for more results and pass its value as the page_token in
+  subsequent requests. Arrays with fewer than 100 elements in a page will be
+  empty on later pages.
 
   Arguments:
     RUN_ID: The canonical identifier of the run for which to retrieve the metadata.

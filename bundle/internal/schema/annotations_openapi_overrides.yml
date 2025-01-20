@@ -376,6 +376,19 @@ github.com/databricks/cli/bundle/config/resources.Volume:
   "volume_type":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "job":
+    "description": |-
+      PLACEHOLDER
+  "secret":
+    "description": |-
+      PLACEHOLDER
+  "serving_endpoint":
+    "description": |-
+      PLACEHOLDER
+  "sql_warehouse":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
   "availability":
     "description": |-
@@ -494,25 +507,6 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "description": |-
       PLACEHOLDER
   "state":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.AppResource:
-  "description":
-    "description": |-
-      PLACEHOLDER
-  "job":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "secret":
-    "description": |-
-      PLACEHOLDER
-  "serving_endpoint":
-    "description": |-
-      PLACEHOLDER
-  "sql_warehouse":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:

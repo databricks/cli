@@ -43,13 +43,11 @@ func TestFsLs(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			setupLsFiles(t, f)
 
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "ls", tmpDir, "--output=json")
@@ -77,13 +75,11 @@ func TestFsLsWithAbsolutePaths(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			setupLsFiles(t, f)
 
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "ls", tmpDir, "--output=json", "--absolute")
@@ -111,13 +107,11 @@ func TestFsLsOnFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			setupLsFiles(t, f)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", path.Join(tmpDir, "a", "hello.txt"), "--output=json")
@@ -131,13 +125,11 @@ func TestFsLsOnEmptyDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			_, tmpDir := tc.setupFiler(t)
+			_, tmpDir := testCase.setupFiler(t)
 
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "ls", tmpDir, "--output=json")
 			assert.Equal(t, "", stderr.String())
@@ -155,13 +147,11 @@ func TestFsLsForNonexistingDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			_, tmpDir := tc.setupFiler(t)
+			_, tmpDir := testCase.setupFiler(t)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", path.Join(tmpDir, "nonexistent"), "--output=json")
 			assert.ErrorIs(t, err, fs.ErrNotExist)
