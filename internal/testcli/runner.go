@@ -141,7 +141,9 @@ func (r *Runner) RunBackground() {
 	go func() {
 		err := root.Execute(ctx, cli)
 		if err != nil {
-			r.Logf("Error running command: %s", err)
+			if !r.NoLog {
+				r.Logf("Error running command: %s", err)
+			}
 		}
 
 		// Close pipes to signal EOF.
@@ -156,7 +158,9 @@ func (r *Runner) RunBackground() {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(r.stdout.Bytes()))
 			for scanner.Scan() {
-				r.Logf("[databricks stdout]: %s", scanner.Text())
+				if !r.NoLog {
+					r.Logf("[databricks stdout]: %s", scanner.Text())
+				}
 			}
 		}
 
@@ -164,7 +168,9 @@ func (r *Runner) RunBackground() {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(r.stderr.Bytes()))
 			for scanner.Scan() {
-				r.Logf("[databricks stderr]: %s", scanner.Text())
+				if !r.NoLog {
+					r.Logf("[databricks stderr]: %s", scanner.Text())
+				}
 			}
 		}
 
