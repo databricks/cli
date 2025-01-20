@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +37,7 @@ func emptyCommand(t *testing.T) *cobra.Command {
 	return cmd
 }
 
-func setupWithHost(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
+func setupWithHost(t *testing.T, cmd *cobra.Command, host string) {
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
@@ -50,13 +49,9 @@ workspace:
 `, host)
 	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
 	require.NoError(t, err)
-
-	b, diags := MustConfigureBundle(cmd)
-	require.NoError(t, diags.Error())
-	return b
 }
 
-func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) *bundle.Bundle {
+func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) {
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
@@ -68,157 +63,164 @@ workspace:
 `, profile)
 	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
 	require.NoError(t, err)
-
-	b, diags := MustConfigureBundle(cmd)
-	require.NoError(t, diags.Error())
-	return b
 }
 
-func TestBundleConfigureDefault(t *testing.T) {
-	testutil.CleanupEnvironment(t)
+func TestBundleConfigureProfile(t *testing.T) {
+	tcases := []struct {
+		name         string
+		hostInConfig string
 
-	cmd := emptyCommand(t)
-	b := setupWithHost(t, cmd, "https://x.com")
+		// --profile flag
+		profileFlag string
+		// DATABRICKS_CONFIG_PROFILE environment variable
+		profileEnvVar string
+		// profile in config
+		profileInConfig string
 
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	assert.Equal(t, "https://x.com", client.Config.Host)
-}
+		expectedError   string
+		expectedHost    string
+		expectedProfile string
+		expectedToken   string
+	}{
+		{
+			name:         "no match, keep host",
+			hostInConfig: "https://x.com",
 
-func TestBundleConfigureWithMultipleMatches(t *testing.T) {
-	testutil.CleanupEnvironment(t)
+			expectedHost: "https://x.com",
+		},
+		{
+			name:         "multiple profile matches",
+			hostInConfig: "https://a.com",
 
-	cmd := emptyCommand(t)
-	b := setupWithHost(t, cmd, "https://a.com")
+			expectedError: "multiple profiles matched: PROFILE-1, PROFILE-2",
+		},
+		{
+			name:         "non-existent profile",
+			profileFlag:  "NOEXIST",
+			hostInConfig: "https://x.com",
 
-	_, err := b.InitializeWorkspaceClient()
-	assert.ErrorContains(t, err, "multiple profiles matched: PROFILE-1, PROFILE-2")
-}
+			expectedError: "has no NOEXIST profile configured",
+		},
+		{
+			name:         "mismatched profile",
+			hostInConfig: "https://x.com",
+			profileFlag:  "PROFILE-1",
 
-func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
-	testutil.CleanupEnvironment(t)
+			expectedError: "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com",
+		},
+		{
+			name:         "profile flag specified",
+			hostInConfig: "https://a.com",
+			profileFlag:  "PROFILE-1",
 
-	cmd := emptyCommand(t)
-	err := cmd.Flag("profile").Value.Set("NOEXIST")
-	require.NoError(t, err)
-	b := setupWithHost(t, cmd, "https://x.com")
+			expectedHost:    "https://a.com",
+			expectedProfile: "PROFILE-1",
+		},
+		{
+			name:          "mismatched profile env variable",
+			hostInConfig:  "https://x.com",
+			profileEnvVar: "PROFILE-1",
 
-	_, err = b.InitializeWorkspaceClient()
-	assert.ErrorContains(t, err, "has no NOEXIST profile configured")
-}
+			expectedError: "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com",
+		},
+		{
+			// The --profile flag takes precedence over the DATABRICKS_CONFIG_PROFILE environment variable
+			name:          "(host) profile flag takes precedence over env variable",
+			hostInConfig:  "https://a.com",
+			profileFlag:   "PROFILE-1",
+			profileEnvVar: "NOEXIST",
 
-func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
-	testutil.CleanupEnvironment(t)
+			expectedHost:    "https://a.com",
+			expectedProfile: "PROFILE-1",
+		},
+		{
+			name:            "profile from config",
+			profileInConfig: "PROFILE-1",
 
-	cmd := emptyCommand(t)
-	err := cmd.Flag("profile").Value.Set("PROFILE-1")
-	require.NoError(t, err)
-	b := setupWithHost(t, cmd, "https://x.com")
+			expectedHost:    "https://a.com",
+			expectedProfile: "PROFILE-1",
+			expectedToken:   "a",
+		},
+		{
+			// The --profile flag takes precedence over the profile in the databricks.yml file
+			name:            "profile flag takes precedence",
+			profileInConfig: "PROFILE-1",
+			profileFlag:     "PROFILE-2",
 
-	_, err = b.InitializeWorkspaceClient()
-	assert.ErrorContains(t, err, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com")
-}
+			expectedHost:    "https://a.com",
+			expectedProfile: "PROFILE-2",
+			expectedToken:   "b",
+		},
+		{
+			// The DATABRICKS_CONFIG_PROFILE environment variable takes precedence over the profile in the databricks.yml file
+			name:            "profile env variable takes precedence",
+			profileInConfig: "PROFILE-1",
+			profileEnvVar:   "PROFILE-2",
 
-func TestBundleConfigureWithCorrectProfile(t *testing.T) {
-	testutil.CleanupEnvironment(t)
+			expectedHost:    "https://a.com",
+			expectedProfile: "PROFILE-2",
+			expectedToken:   "b",
+		},
+		{
+			// The --profile flag takes precedence over the DATABRICKS_CONFIG_PROFILE environment variable
+			name:            "profile flag takes precedence over env variable",
+			profileInConfig: "PROFILE-1",
+			profileFlag:     "PROFILE-2",
+			profileEnvVar:   "NOEXIST",
 
-	cmd := emptyCommand(t)
-	err := cmd.Flag("profile").Value.Set("PROFILE-1")
-	require.NoError(t, err)
-	b := setupWithHost(t, cmd, "https://a.com")
+			expectedHost:    "https://a.com",
+			expectedProfile: "PROFILE-2",
+			expectedToken:   "b",
+		},
+	}
 
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "PROFILE-1", client.Config.Profile)
-}
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
 
-func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
-	testutil.CleanupEnvironment(t)
+			cmd := emptyCommand(t)
 
-	t.Setenv("DATABRICKS_CONFIG_PROFILE", "PROFILE-1")
-	cmd := emptyCommand(t)
-	b := setupWithHost(t, cmd, "https://x.com")
+			// Set up host in databricks.yml
+			if tc.hostInConfig != "" {
+				setupWithHost(t, cmd, tc.hostInConfig)
+			}
 
-	_, err := b.InitializeWorkspaceClient()
-	assert.ErrorContains(t, err, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com")
-}
+			// Set up profile in databricks.yml
+			if tc.profileInConfig != "" {
+				setupWithProfile(t, cmd, tc.profileInConfig)
+			}
 
-func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
-	testutil.CleanupEnvironment(t)
+			// Set --profile flag
+			if tc.profileFlag != "" {
+				err := cmd.Flag("profile").Value.Set(tc.profileFlag)
+				require.NoError(t, err)
+			}
 
-	t.Setenv("DATABRICKS_CONFIG_PROFILE", "NOEXIST")
-	cmd := emptyCommand(t)
-	err := cmd.Flag("profile").Value.Set("PROFILE-1")
-	require.NoError(t, err)
-	b := setupWithHost(t, cmd, "https://a.com")
+			// Set DATABRICKS_CONFIG_PROFILE environment variable
+			if tc.profileEnvVar != "" {
+				t.Setenv("DATABRICKS_CONFIG_PROFILE", tc.profileEnvVar)
+			}
 
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "PROFILE-1", client.Config.Profile)
-}
+			_, diags := MustConfigureBundle(cmd)
 
-func TestBundleConfigureProfileDefault(t *testing.T) {
-	testutil.CleanupEnvironment(t)
+			if tc.expectedError != "" {
+				assert.ErrorContains(t, diags.Error(), tc.expectedError)
+			} else {
+				assert.NoError(t, diags.Error())
+			}
 
-	// The profile in the databricks.yml file is used
-	cmd := emptyCommand(t)
-	b := setupWithProfile(t, cmd, "PROFILE-1")
-
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "a", client.Config.Token)
-	assert.Equal(t, "PROFILE-1", client.Config.Profile)
-}
-
-func TestBundleConfigureProfileFlag(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	// The --profile flag takes precedence over the profile in the databricks.yml file
-	cmd := emptyCommand(t)
-	err := cmd.Flag("profile").Value.Set("PROFILE-2")
-	require.NoError(t, err)
-	b := setupWithProfile(t, cmd, "PROFILE-1")
-
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "b", client.Config.Token)
-	assert.Equal(t, "PROFILE-2", client.Config.Profile)
-}
-
-func TestBundleConfigureProfileEnvVariable(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	// The DATABRICKS_CONFIG_PROFILE environment variable takes precedence over the profile in the databricks.yml file
-	t.Setenv("DATABRICKS_CONFIG_PROFILE", "PROFILE-2")
-	cmd := emptyCommand(t)
-	b := setupWithProfile(t, cmd, "PROFILE-1")
-
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "b", client.Config.Token)
-	assert.Equal(t, "PROFILE-2", client.Config.Profile)
-}
-
-func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	// The --profile flag takes precedence over the DATABRICKS_CONFIG_PROFILE environment variable
-	t.Setenv("DATABRICKS_CONFIG_PROFILE", "NOEXIST")
-	cmd := emptyCommand(t)
-	err := cmd.Flag("profile").Value.Set("PROFILE-2")
-	require.NoError(t, err)
-	b := setupWithProfile(t, cmd, "PROFILE-1")
-
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "b", client.Config.Token)
-	assert.Equal(t, "PROFILE-2", client.Config.Profile)
+			// Assert on the resolved configuration values
+			if tc.expectedHost != "" {
+				assert.Equal(t, tc.expectedHost, ConfigUsed(cmd.Context()).Host)
+			}
+			if tc.expectedProfile != "" {
+				assert.Equal(t, tc.expectedProfile, ConfigUsed(cmd.Context()).Profile)
+			}
+			if tc.expectedToken != "" {
+				assert.Equal(t, tc.expectedToken, ConfigUsed(cmd.Context()).Token)
+			}
+		})
+	}
 }
 
 func TestTargetFlagFull(t *testing.T) {
