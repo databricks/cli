@@ -17,6 +17,7 @@ func TestBuiltInReader(t *testing.T) {
 		"default-python",
 		"default-sql",
 		"dbt-sql",
+		"experimental-jobs-as-code",
 	}
 
 	for _, name := range exists {

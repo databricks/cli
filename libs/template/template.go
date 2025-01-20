@@ -24,12 +24,13 @@ type Template struct {
 type TemplateName string
 
 const (
-	DefaultPython TemplateName = "default-python"
-	DefaultSql    TemplateName = "default-sql"
-	DbtSql        TemplateName = "dbt-sql"
-	MlopsStacks   TemplateName = "mlops-stacks"
-	DefaultPydabs TemplateName = "default-pydabs"
-	Custom        TemplateName = "custom"
+	DefaultPython          TemplateName = "default-python"
+	DefaultSql             TemplateName = "default-sql"
+	DbtSql                 TemplateName = "dbt-sql"
+	MlopsStacks            TemplateName = "mlops-stacks"
+	DefaultPydabs          TemplateName = "default-pydabs"
+	Custom                 TemplateName = "custom"
+	ExperimentalJobsAsCode TemplateName = "experimental-jobs-as-code"
 )
 
 var databricksTemplates = []Template{
@@ -63,6 +64,13 @@ var databricksTemplates = []Template{
 		hidden:      true,
 		description: "The default PyDABs template",
 		Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git", cloneFunc: git.Clone},
+		Writer:      &writerWithFullTelemetry{},
+	},
+	{
+		name:        ExperimentalJobsAsCode,
+		hidden:      true,
+		description: "Jobs as code template (experimental)",
+		Reader:      &builtinReader{name: string(ExperimentalJobsAsCode)},
 		Writer:      &writerWithFullTelemetry{},
 	},
 }
