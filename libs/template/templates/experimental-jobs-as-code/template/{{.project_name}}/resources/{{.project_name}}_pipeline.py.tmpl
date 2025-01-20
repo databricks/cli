@@ -1,0 +1,24 @@
+from databricks.bundles.pipelines import Pipeline
+
+{{.project_name}}_pipeline = Pipeline.from_dict(
+    {
+        "name": "{{.project_name}}_pipeline",
+        "target": "{{.project_name}}_${bundle.target}",
+        {{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
+        ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+        "catalog": "catalog_name",
+        {{- else}}
+        "catalog": "{{default_catalog}}",
+        {{- end}}
+        "libraries": [
+            {
+                "notebook": {
+                    "path": "src/dlt_pipeline.ipynb",
+                },
+            },
+        ],
+        "configuration": {
+            "bundle.sourcePath": "${workspace.file_path}/src",
+        },
+    }
+)

@@ -66,17 +66,14 @@ func Initialize() bundle.Mutator {
 				"workspace",
 				"variables",
 			),
-			mutator.ResolveVariableReferences(
-				"bundle",
-				"workspace",
-				"variables",
-			),
 
 			mutator.MergeJobClusters(),
 			mutator.MergeJobParameters(),
 			mutator.MergeJobTasks(),
 			mutator.MergePipelineClusters(),
 			mutator.MergeApps(),
+
+			mutator.CaptureSchemaDependency(),
 
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),

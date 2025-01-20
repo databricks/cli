@@ -1,5 +1,0 @@
-trace $CLI bundle init default-sql --config-file ./input.json
-
-cd my_default_sql
-trace $CLI bundle validate -t dev
-trace $CLI bundle validate -t prod
