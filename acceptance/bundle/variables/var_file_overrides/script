@@ -1,35 +1,35 @@
 cluster_expr=".resources.jobs.job1.job_clusters[0]"
 
-# variable file
+title "variable file"
 trace $CLI bundle validate -o json --var-file=var_files/normal.json | jq $cluster_expr
 
-# default variable file (see .databricks/*)
+title "default variable file (see .databricks/*)"
 trace $CLI bundle validate -o json --target with-default-variable-file | jq $cluster_expr
 
-# variable file and variable flag
+title "variable file and variable flag"
 trace $CLI bundle validate -o json --var-file=var_files/normal.json --var="cluster_key=mlops_stacks-cluster-overriden" | jq $cluster_expr
 
-# variable file and environment variable
+title "variable file and environment variable"
 trace BUNDLE_VAR_cluster_key=incorrectly-overriden $CLI bundle validate -o json --var-file=var_files/normal.json | jq $cluster_expr
 
-# file not found
+title "file not found"
 trace errcode $CLI bundle validate -o json --var-file=var_files/not_found.json 2> >(sed 's/\(Error: failed to read variables file: open var_files\/not_found.json:\).*/\1<stripped>/' >&2) > tmp.txt
 jq "$cluster_expr" tmp.txt
 
-# file cannot be parsed
+title "file cannot be parsed"
 trace errcode $CLI bundle validate -o json --var-file=var_files/invalid_json.json | jq $cluster_expr
 
-# file has wrong structure
+title "file has wrong structure"
 trace errcode $CLI bundle validate -o json --var-file=var_files/wrong_file_structure.json | jq $cluster_expr
 
-# file has variable name that is not defined
+title "file has variable name that is not defined"
 trace errcode $CLI bundle validate -o json --var-file=var_files/undeclared.json | jq $cluster_expr
 
-# file has variable name that is complex but default is string
+title "file has variable name that is complex but default is string"
 trace errcode $CLI bundle validate -o json --var-file=var_files/complex_to_string.json | jq $cluster_expr
 
-# file has variable name that is string but default is complex
+title "file has variable name that is string but default is complex"
 trace errcode $CLI bundle validate -o json --var-file=var_files/string_to_complex.json | jq $cluster_expr
 
-# variable is required but it's not provided in the file
+title "variable is required but it's not provided in the file"
 trace errcode $CLI bundle validate -o json --target without-defaults --var-file=var_files/without_required.json | jq $cluster_expr
