@@ -93,6 +93,7 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 	}
 	ctx = context.WithValue(ctx, &configUsed, client.Config)
 	cmd.SetContext(ctx)
+	b.SetWorkpaceClient(client)
 
 	return b, diags
 }

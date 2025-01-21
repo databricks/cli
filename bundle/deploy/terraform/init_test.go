@@ -48,7 +48,10 @@ func TestInitEnvironmentVariables(t *testing.T) {
 	// TODO(pietern): create test fixture that initializes a mocked client.
 	t.Setenv("DATABRICKS_HOST", "https://x")
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
-	b.WorkspaceClient()
+
+	client, err := b.InitializeWorkspaceClient()
+	require.NoError(t, err)
+	b.SetWorkpaceClient(client)
 
 	diags := bundle.Apply(context.Background(), b, Initialize())
 	require.NoError(t, diags.Error())
