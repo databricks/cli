@@ -1,4 +1,4 @@
-Error: no value assigned to required variable a. Assignment can be done through the "--var" or "--var-file" flag or by setting the BUNDLE_VAR_a environment variable
+Error: no value assigned to required variable a. Assignment can be done using "--var" or "--var-file", by setting the BUNDLE_VAR_a environment variable, or in .databricks/bundle/<target>/vars.json file
 
 Name: empty${var.a}
 Target: default
