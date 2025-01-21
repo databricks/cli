@@ -269,6 +269,9 @@ func (r *Root) InitializeAnyTypeVariables(vars map[string]any) error {
 			return fmt.Errorf("variable %s has not been defined", name)
 		}
 
+		if variable.HasValue() {
+			continue
+		}
 		err := variable.Set(val)
 		if err != nil {
 			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)

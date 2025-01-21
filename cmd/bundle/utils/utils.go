@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/root"
@@ -12,6 +13,10 @@ import (
 	"github.com/databricks/cli/libs/dyn/jsonloader"
 	"github.com/spf13/cobra"
 )
+
+func GetDefaultVariableFilePath(target string) string {
+	return ".databricks/bundle/" + target + "/vars.json"
+}
 
 func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string) diag.Diagnostics {
 	return bundle.ApplyFunc(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -66,17 +71,27 @@ func ConfigureBundleWithVariables(cmd *cobra.Command) (*bundle.Bundle, diag.Diag
 	if err != nil {
 		return b, diag.FromErr(err)
 	}
+
+	if len(variables) > 0 {
+		// Initialize variables by assigning them values passed as command line flags
+		diags = diags.Extend(configureVariables(cmd, b, variables))
+	}
+
 	variableFilePath, err := cmd.Flags().GetString("var-file")
 	if err != nil {
 		return b, diag.FromErr(err)
 	}
 
-	if len(variables) > 0 && variableFilePath != "" {
-		return b, diag.Errorf("cannot specify both --var and --var-file flags")
-	} else if len(variables) > 0 {
-		// Initialize variables by assigning them values passed as command line flags
-		diags = diags.Extend(configureVariables(cmd, b, variables))
-	} else if variableFilePath != "" {
+	if variableFilePath == "" {
+		// Fallback to default variable file path
+		defaultPath := GetDefaultVariableFilePath(b.Config.Bundle.Target)
+		normalisedPath := filepath.Join(b.BundleRootPath, defaultPath)
+		if _, err := os.Stat(normalisedPath); err == nil {
+			variableFilePath = normalisedPath
+		}
+	}
+
+	if variableFilePath != "" {
 		// Initialize variables by loading them from a file
 		diags = diags.Extend(configureVariablesFromFile(cmd, b, variableFilePath))
 	}

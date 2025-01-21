@@ -30,3 +30,6 @@ targets:
         default: "default"
 
   without-defaults:
+
+  # see .databricks/bundle/default_target/ for variable values
+  with-default-variable-file:

@@ -3,11 +3,14 @@ cluster_expr=".resources.jobs.job1.job_clusters[0]"
 # variable file
 trace $CLI bundle validate -o json --var-file=var_files/normal.json | jq $cluster_expr
 
-# variable flag
-trace $CLI bundle validate -o json --var="cluster_key=mlops_stacks-cluster" | jq $cluster_expr
+# default variable file (see .databricks/*)
+trace $CLI bundle validate -o json --target with-default-variable-file | jq $cluster_expr
 
-# both variable file and flag
-trace errcode $CLI bundle validate -o json --var-file=var_files/normal.json --var="cluster_key=mlops_stacks-cluster" | jq $cluster_expr
+# variable file and variable flag
+trace $CLI bundle validate -o json --var-file=var_files/normal.json --var="cluster_key=mlops_stacks-cluster-overriden" | jq $cluster_expr
+
+# variable file and environment variable
+trace BUNDLE_VAR_cluster_key=incorrectly-overriden $CLI bundle validate -o json --var-file=var_files/normal.json | jq $cluster_expr
 
 # file not found
 trace errcode $CLI bundle validate -o json --var-file=var_files/not_found.json 2> >(sed 's/\(Error: failed to read variables file: open var_files\/not_found.json:\).*/\1<stripped>/' >&2) > tmp.txt
