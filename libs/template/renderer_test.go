@@ -91,10 +91,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)
-
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	b.SetWorkpaceClient(client)
+	b.WorkspaceClient()
 
 	diags = bundle.Apply(ctx, b, bundle.Seq(
 		phases.Initialize(),

@@ -30,10 +30,7 @@ func TestLoadWithNoState(t *testing.T) {
 
 	t.Setenv("DATABRICKS_HOST", "https://x")
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
-
-	client, err := b.InitializeWorkspaceClient()
-	require.NoError(t, err)
-	b.SetWorkpaceClient(client)
+	b.WorkspaceClient()
 
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(
 		Initialize(),

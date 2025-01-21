@@ -143,14 +143,20 @@ func (b *Bundle) InitializeWorkspaceClient() (*databricks.WorkspaceClient, error
 }
 
 func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
-	if b.client == nil {
-		panic("workspace client not initialized yet. This is a bug in the Databricks CLI.")
-	}
+	b.clientOnce.Do(func() {
+		var err error
+		b.client, err = b.InitializeWorkspaceClient()
+		if err != nil {
+			panic(err)
+		}
+	})
 	return b.client
 }
 
 // SetWorkpaceClient sets the workspace client for this bundle.
+// This is used to inject a mock client for testing.
 func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
+	b.clientOnce.Do(func() {})
 	b.client = w
 }
 
