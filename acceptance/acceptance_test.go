@@ -144,11 +144,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			if singleTest != "" && singleTest != testName {
-				t.Skip("Skipping due to singleTest")
-				return
-			}
-
 			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
