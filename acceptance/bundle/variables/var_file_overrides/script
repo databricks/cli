@@ -10,7 +10,8 @@ trace $CLI bundle validate -o json --var="cluster_key=mlops_stacks-cluster" | jq
 trace errcode $CLI bundle validate -o json --var-file=var_files/normal.json --var="cluster_key=mlops_stacks-cluster" | jq $cluster_expr
 
 # file not found
-trace errcode $CLI bundle validate -o json --var-file=var_files/not_found.json 2> >(sed 's/\(Error: failed to read variables file: open var_files\/not_found.json:\).*/\1<stripped>/' >&2) | jq -b $cluster_expr
+trace errcode $CLI bundle validate -o json --var-file=var_files/not_found.json 2> >(sed 's/\(Error: failed to read variables file: open var_files\/not_found.json:\).*/\1<stripped>/' >&2) > tmp.txt
+jq "$cluster_expr" tmp.txt
 
 # file cannot be parsed
 trace errcode $CLI bundle validate -o json --var-file=var_files/invalid_json.json | jq $cluster_expr
