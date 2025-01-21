@@ -42,10 +42,9 @@ func configureVariablesFromFile(cmd *cobra.Command, b *bundle.Bundle, filePath s
 		err = convert.ToTyped(&vars, val)
 		if err != nil {
 			return diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "failed to parse variables file: " + err.Error(),
-				Detail:    "Variables file must be a JSON object with the following format:\n{\"var1\": \"value1\", \"var2\": \"value2\"}",
-				Locations: val.Locations(),
+				Severity: diag.Error,
+				Summary:  "failed to parse variables file: " + err.Error(),
+				Detail:   "Variables file must be a JSON object with the following format:\n{\"var1\": \"value1\", \"var2\": \"value2\"}",
 			})
 		}
 

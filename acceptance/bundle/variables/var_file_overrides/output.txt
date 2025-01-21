@@ -70,7 +70,6 @@ Exit code: 1
 === file has wrong structure
 >>> errcode $CLI bundle validate -o json --var-file=var_files/wrong_file_structure.json
 Error: failed to parse variables file: var_files/wrong_file_structure.json:1:1: expected a map, found a sequence
-  in var_files/wrong_file_structure.json:1:1
 
 Variables file must be a JSON object with the following format:
 {"var1": "value1", "var2": "value2"}
