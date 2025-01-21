@@ -1,5 +1,5 @@
 Error: non-yaml file in 'include' section
-  in databricks.yml:5:2
+  in databricks.yml:5:4
 
 file test.py included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section
 

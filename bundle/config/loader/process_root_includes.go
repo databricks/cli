@@ -62,7 +62,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 
 		// Filter matches to ones we haven't seen yet.
 		var includes []string
-		for _, match := range matches {
+		for i, match := range matches {
 			rel, err := filepath.Rel(b.BundleRootPath, match)
 			if err != nil {
 				return diag.FromErr(err)
@@ -76,7 +76,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 					Severity:  diag.Error,
 					Summary:   "non-yaml file in 'include' section",
 					Detail:    fmt.Sprintf("file %s included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section", rel),
-					Locations: b.Config.GetLocations("include"),
+					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", i)),
 				})
 				continue
 			}
