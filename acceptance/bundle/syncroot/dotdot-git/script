@@ -1,0 +1,5 @@
+mkdir myrepo
+cd myrepo
+cp ../databricks.yml .
+git-repo-init
+$CLI bundle validate
