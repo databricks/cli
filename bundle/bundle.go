@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
@@ -68,7 +69,9 @@ type Bundle struct {
 	Metadata metadata.Metadata
 
 	// Store a pointer to the workspace client.
-	client *databricks.WorkspaceClient
+	// It can be initialized on demand after loading the configuration.
+	clientOnce sync.Once
+	client     *databricks.WorkspaceClient
 
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
