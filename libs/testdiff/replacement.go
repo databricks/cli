@@ -52,13 +52,26 @@ func (r *ReplacementsContext) append(pattern *regexp.Regexp, replacement string)
 }
 
 func (r *ReplacementsContext) appendLiteral(old, new string) {
+	// Transform the replacement string such that `$` is interpreted as a literal dollar sign.
+	// For more information about how the replacement string is used, see [regexp.Regexp.Expand].
+	new = strings.ReplaceAll(new, `$`, `$$`)
+
 	r.append(
 		// Transform the input strings such that they can be used as literal strings in regular expressions.
 		regexp.MustCompile(regexp.QuoteMeta(old)),
-		// Transform the replacement string such that `$` is interpreted as a literal dollar sign.
-		// For more information about how the replacement string is used, see [regexp.Regexp.Expand].
-		strings.ReplaceAll(new, `$`, `$$`),
+		new,
 	)
+
+	// Make sure we capture paths in messages like this one:
+	// Error: path "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\TestAcceptbundlesyncrootdotdot-git1631369685\\001" is not within repository root
+	old1 := strings.ReplaceAll(old, "\\", "\\\\")
+	if old1 != old {
+		r.append(
+			// Transform the input strings such that they can be used as literal strings in regular expressions.
+			regexp.MustCompile(regexp.QuoteMeta(old1)),
+			new,
+		)
+	}
 }
 
 func (r *ReplacementsContext) Set(old, new string) {
