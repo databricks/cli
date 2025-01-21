@@ -1,7 +1,6 @@
 package acceptance_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -27,7 +26,7 @@ func StartCmdServer(t *testing.T) *TestServer {
 
 		defer Chdir(t, q.Get("cwd"))()
 
-		c := testcli.NewRunner(t, context.Background(), args...)
+		c := testcli.NewRunner(t, r.Context(), args...)
 		c.Verbose = false
 		stdout, stderr, err := c.Run()
 		result := map[string]any{
