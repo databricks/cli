@@ -1,7 +1,7 @@
 ## docs-autogen
 
 1. Install [Golang](https://go.dev/doc/install)
-2. Run `make docs` from the repo
+2. Run `make vendor docs` from the repo
 3. See generated documents in `./bundle/internal/docs/output` directory
 4. To change descriptions update content in `./bundle/internal/schema/annotations.yml` or `./bundle/internal/schema/annotations_openapi_overrides.yml` and re-run `make docs`
 
@@ -31,6 +31,7 @@ Descriptions with `PLACEHOLDER` value are not displayed in docs and JSON-schema
 All relative links like `[_](/dev-tools/bundles/settings.md#cluster_id)` are kept as is in docs but converted to absolute links in JSON schema
 
 To change description for type itself (not its fields) use `"_"`:
+
 ```yaml
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":

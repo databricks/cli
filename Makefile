@@ -49,7 +49,7 @@ vendor:
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
-docs: vendor
+docs:
 	go run ./bundle/internal/docs ./bundle/internal/schema ./bundle/internal/docs
 
 INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h
