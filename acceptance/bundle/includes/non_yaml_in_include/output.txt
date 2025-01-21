@@ -1,0 +1,7 @@
+Error: file test.py included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section
+
+Name: non_yaml_in_includes
+
+Found 1 error
+
+Exit code: 1

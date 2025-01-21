@@ -69,6 +69,9 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 				continue
 			}
 			seen[rel] = true
+			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" {
+				return diag.Errorf("file %s included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section", rel)
+			}
 			includes = append(includes, rel)
 		}
 
