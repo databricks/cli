@@ -99,7 +99,7 @@ func TestAccept(t *testing.T) {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runTest(t, dir, coverDir, repls)
+			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
 }
@@ -136,6 +136,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	} else {
 		tmpDir = t.TempDir()
 	}
+
+	repls.Set("/private"+tmpDir, "$TMPDIR")
+	repls.Set("/private"+filepath.Dir(tmpDir), "$TMPPARENT")
+	repls.Set("/private"+filepath.Dir(filepath.Dir(tmpDir)), "$TMPGPARENT")
+	repls.Set(tmpDir, "$TMPDIR")
+	repls.Set(filepath.Dir(tmpDir), "$TMPPARENT")
+	repls.Set(filepath.Dir(filepath.Dir(tmpDir)), "$TMPGPARENT")
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)

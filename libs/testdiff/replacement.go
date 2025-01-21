@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -29,6 +30,10 @@ type Replacement struct {
 
 type ReplacementsContext struct {
 	Repls []Replacement
+}
+
+func (r *ReplacementsContext) Clone() ReplacementsContext {
+	return ReplacementsContext{Repls: slices.Clone(r.Repls)}
 }
 
 func (r *ReplacementsContext) Replace(s string) string {
