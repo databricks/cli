@@ -1,1 +1,2 @@
+# This not should error, syncroot can be outside bundle root
 $CLI bundle validate
