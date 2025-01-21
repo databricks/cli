@@ -87,7 +87,7 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 
 	// Set the auth configuration in the command context. This can be used
 	// downstream to initialize a API client.
-	client, err := b.InitializeWorkspaceClient()
+	client, err := b.WorkspaceClientE()
 	if err != nil {
 		return b, diags.Extend(diag.FromErr(err))
 	}
