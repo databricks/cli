@@ -108,7 +108,7 @@ func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = setVariable(context.Background(), v, &variable, "foo")
-	assert.ErrorContains(t, err, "no value assigned to required variable foo. Assignment can be done through the \"--var\" or \"--var-file\" flag or by setting the BUNDLE_VAR_foo environment variable")
+	assert.ErrorContains(t, err, "no value assigned to required variable foo. Assignment can be done using \"--var\" or \"--var-file\", by setting the BUNDLE_VAR_foo environment variable, or in .databricks/bundle/<target>/vars.json file")
 }
 
 func TestSetVariablesMutator(t *testing.T) {
