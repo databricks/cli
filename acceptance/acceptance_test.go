@@ -99,7 +99,7 @@ func TestAccept(t *testing.T) {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runTest(t, dir, coverDir, repls)
+			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
 }
