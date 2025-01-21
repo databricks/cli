@@ -2,6 +2,7 @@ package loader
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -36,6 +37,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// Maintain list of files in order of files being loaded.
 	// This is stored in the bundle configuration for observability.
 	var files []string
+	var diags diag.Diagnostics
 
 	// For each glob, find all files to load.
 	// Ordering of the list of globs is maintained in the output.
@@ -70,9 +72,19 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 			}
 			seen[rel] = true
 			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" {
-				return diag.Errorf("file %s included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section", rel)
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "non-yaml file in 'include' section",
+					Detail:    fmt.Sprintf("file %s included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section", rel),
+					Locations: b.Config.GetLocations("include"),
+				})
+				continue
 			}
 			includes = append(includes, rel)
+		}
+
+		if len(diags) > 0 {
+			return diags
 		}
 
 		// Add matches to list of mutators to return.
