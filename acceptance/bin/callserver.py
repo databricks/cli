@@ -2,7 +2,7 @@
 import sys
 import os
 import json
-import subprocess
+import urllib.request
 from urllib.parse import urlencode
 
 env = {}
@@ -22,8 +22,9 @@ url = os.environ["CMD_SERVER_URL"] + "/?" + urlencode(q)
 if len(url) > 100_000:
     sys.exit("url too large")
 
-out = subprocess.run(["curl", "-s", url], stdout=subprocess.PIPE, check=True)
-result = json.loads(out.stdout)
+resp = urllib.request.urlopen(url)
+assert resp.status == 200, (resp.status, resp.url, resp.headers)
+result = json.load(resp)
 sys.stderr.write(result["stderr"])
 sys.stdout.write(result["stdout"])
 exitcode = int(result["exitcode"])
