@@ -62,7 +62,7 @@ func TestInprocessMode(t *testing.T) {
 		t.Skip("Already tested by TestAccept")
 	}
 	t.Setenv("NO_COLOR", "1")
-	require.NotEmpty(t, testAccept(t, true, "help"))
+	require.NotZero(t, testAccept(t, true, "help"))
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
