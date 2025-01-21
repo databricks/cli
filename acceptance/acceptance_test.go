@@ -54,6 +54,17 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	testAccept(t, InprocessMode, "")
+}
+
+func TestInprocessMode(t *testing.T) {
+	if InprocessMode {
+		t.Skip("Already tested by TestAccept")
+	}
+	require.NotEmpty(t, testAccept(t, true, "help"))
+}
+
+func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -140,6 +151,8 @@ func TestAccept(t *testing.T) {
 			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
+
+	return len(testDirs)
 }
 
 func getTests(t *testing.T) []string {
