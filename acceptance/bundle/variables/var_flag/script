@@ -1,2 +1,0 @@
-# single flag
-trace $CLI bundle validate -o json --var="cluster_key=mlops_stacks-cluster" | jq .resources.jobs.job1.job_clusters[0].job_cluster_key
