@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -23,7 +24,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var KeepTmp = os.Getenv("KEEP_TMP") != ""
+var KeepTmp bool
+
+// In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
+// Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
+// example: var singleTest = "bundle/variables/empty"
+var singleTest = ""
+
+// If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
+// CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
+// Also disables parallelism in tests.
+var InprocessMode bool
+
+func init() {
+	flag.BoolVar(&InprocessMode, "inprocess", singleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
+}
 
 const (
 	EntryPointScript = "script"
@@ -38,6 +54,23 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	testAccept(t, InprocessMode, "")
+}
+
+func TestInprocessMode(t *testing.T) {
+	if InprocessMode {
+		t.Skip("Already tested by TestAccept")
+	}
+	if runtime.GOOS == "windows" {
+		// -  catalogs                               A catalog is the first layer of Unity Catalog’s three-level namespace.
+		// +  catalogs                               A catalog is the first layer of Unity Catalog�s three-level namespace.
+		t.Skip("Fails on CI on unicode characters")
+	}
+	require.NotZero(t, testAccept(t, true, "help"))
+}
+
+func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -50,15 +83,21 @@ func TestAccept(t *testing.T) {
 		t.Logf("Writing coverage to %s", coverDir)
 	}
 
-	execPath := BuildCLI(t, cwd, coverDir)
-	// $CLI is what test scripts are using
+	execPath := ""
+
+	if InprocessMode {
+		cmdServer := StartCmdServer(t)
+		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
+		execPath = filepath.Join(cwd, "bin", "callserver.py")
+	} else {
+		execPath = BuildCLI(t, cwd, coverDir)
+	}
+
 	t.Setenv("CLI", execPath)
+	repls.Set(execPath, "$CLI")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
-
-	repls := testdiff.ReplacementsContext{}
-	repls.Set(execPath, "$CLI")
 
 	tempHomeDir := t.TempDir()
 	repls.Set(tempHomeDir, "$TMPHOME")
@@ -95,13 +134,25 @@ func TestAccept(t *testing.T) {
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	if singleTest != "" {
+		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
+			return n != singleTest
+		})
+		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+	}
+
 	for _, dir := range testDirs {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
+			if !InprocessMode {
+				t.Parallel()
+			}
+
 			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
+
+	return len(testDirs)
 }
 
 func getTests(t *testing.T) []string {
