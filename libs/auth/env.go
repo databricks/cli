@@ -2,7 +2,7 @@ package auth
 
 import "github.com/databricks/databricks-sdk-go/config"
 
-// Env generated the authentication environment variables we need to set for
+// Env generates the authentication environment variables we need to set for
 // downstream applications from the CLI to work correctly.
 func Env(cfg *config.Config) map[string]string {
 	out := make(map[string]string)
