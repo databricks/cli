@@ -143,8 +143,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			if debugSubTest != "" && debugSubTest != testName {
-				t.Skip("Skipping due to debugSubTest")
+			if singleTest != "" && singleTest != testName {
+				t.Skip("Skipping due to singleTest")
 				return
 			}
 
