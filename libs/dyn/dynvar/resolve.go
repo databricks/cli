@@ -78,8 +78,12 @@ func (r *resolver) collectVariableReferences() (err error) {
 
 	// First walk the input to gather all values with a variable reference.
 	_, err = dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		ref, ok := newRef(v)
+		ref, potentialRef, ok := newRef(v)
 		if !ok {
+			if len(potentialRef.matches) > 0 {
+				// If the value contains a potential variable reference, we should skip it.
+				return dyn.InvalidValue, fmt.Errorf("incorrect variable name: %s", potentialRef.matches[0])
+			}
 			// Skip values without variable references.
 			return v, nil
 		}
@@ -206,7 +210,7 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	}
 
 	// If the returned value is a valid variable reference, resolve it.
-	ref, ok := newRef(v)
+	ref, _, ok := newRef(v)
 	if ok {
 		v, err = r.resolveRef(ref, seen)
 	}
