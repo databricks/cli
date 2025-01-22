@@ -1,34 +1,22 @@
 package testutil
 
 import (
-	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/folders"
 	"github.com/stretchr/testify/require"
 )
 
-func findRoot(t *testing.T) string {
-	curr, err := os.Getwd()
+func BuildCLI(t *testing.T, flags ...string) string {
+	repoRoot, err := folders.FindDirWithLeaf(".", ".git")
 	require.NoError(t, err)
 
-	for curr != filepath.Dir(curr) {
-		if _, err := os.Stat(filepath.Join(curr, "go.mod")); err == nil {
-			return curr
-		}
-		curr = filepath.Dir(curr)
-	}
-	require.Fail(t, "could not find root directory")
-	return ""
-}
-
-func BuildCLI(t *testing.T, flags ...string) string {
-	tmpDir := t.TempDir()
-
-	execPath := filepath.Join(tmpDir, "build", "databricks")
+	// Stable path for the CLI binary. This ensures fast builds and cache reuse.
+	execPath := filepath.Join(repoRoot, "internal", "testutil", "build", "databricks")
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
 	}
@@ -51,7 +39,7 @@ func BuildCLI(t *testing.T, flags ...string) string {
 	}
 
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Dir = findRoot(t)
+	cmd.Dir = repoRoot
 	out, err := cmd.CombinedOutput()
 	elapsed := time.Since(start)
 	t.Logf("%s took %s", args, elapsed)
