@@ -40,6 +40,19 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		}
 	}
 
+	// Allows using variables in enum fields
+	if s.Type == jsonschema.StringType && s.Enum != nil {
+		return jsonschema.Schema{
+			OneOf: []jsonschema.Schema{
+				s,
+				{
+					Type:    jsonschema.StringType,
+					Pattern: interpolationPattern("var"),
+				},
+			},
+		}
+	}
+
 	switch s.Type {
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		// arrays and objects can have complex variable values specified.
