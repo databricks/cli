@@ -88,41 +88,35 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	return tf.ExecPath, nil
 }
 
-// This function inherits some environment variables for Terraform CLI.
-func inheritEnvVars(ctx context.Context, environ map[string]string) error {
+var envCopy = []string{
 	// Include $HOME in set of environment variables to pass along.
-	home, ok := env.Lookup(ctx, "HOME")
-	if ok {
-		environ["HOME"] = home
-	}
+	"HOME",
 
 	// Include $USERPROFILE in set of environment variables to pass along.
 	// This variable is used by Azure CLI on Windows to find stored credentials and metadata
-	userProfile, ok := env.Lookup(ctx, "USERPROFILE")
-	if ok {
-		environ["USERPROFILE"] = userProfile
-	}
+	"USERPROFILE",
 
 	// Include $PATH in set of environment variables to pass along.
 	// This is necessary to ensure that our Terraform provider can use the
 	// same auxiliary programs (e.g. `az`, or `gcloud`) as the CLI.
-	path, ok := env.Lookup(ctx, "PATH")
-	if ok {
-		environ["PATH"] = path
-	}
+	"PATH",
 
 	// Include $AZURE_CONFIG_FILE in set of environment variables to pass along.
 	// This is set in Azure DevOps by the AzureCLI@2 task.
-	azureConfigFile, ok := env.Lookup(ctx, "AZURE_CONFIG_FILE")
-	if ok {
-		environ["AZURE_CONFIG_FILE"] = azureConfigFile
-	}
+	"AZURE_CONFIG_FILE",
 
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
 	// See: https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration
-	devConfigFile, ok := env.Lookup(ctx, "TF_CLI_CONFIG_FILE")
-	if ok {
-		environ["TF_CLI_CONFIG_FILE"] = devConfigFile
+	"TF_CLI_CONFIG_FILE",
+}
+
+// This function inherits some environment variables for Terraform CLI.
+func inheritEnvVars(ctx context.Context, environ map[string]string) error {
+	for _, key := range envCopy {
+		value, ok := env.Lookup(ctx, key)
+		if ok {
+			environ[key] = value
+		}
 	}
 
 	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
