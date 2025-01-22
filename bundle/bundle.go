@@ -138,7 +138,7 @@ func TryLoad(ctx context.Context) (*Bundle, error) {
 func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
 	b.clientOnce.Do(func() {
 		var err error
-		b.client, err = b.WorkspaceClientE()
+		b.client, err = b.Config.Workspace.Client()
 		if err != nil {
 			b.clientErr = fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
 		}
