@@ -89,8 +89,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		cmdServer := StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
+	} else if coverDir != "" {
+		execPath = testutil.BuildCLI(t, "-cover")
 	} else {
-		execPath = BuildCLI(t, cwd, coverDir)
+		execPath = testutil.BuildCLI(t)
 	}
 
 	t.Setenv("CLI", execPath)
