@@ -30,15 +30,6 @@ type ExecutionContext struct {
 	ExitCode int64 `json:"exit_code,omitempty"`
 }
 
-// Top level proto message for all structured telemetry logs that are generated client side by the Databricks CLI
-// type DatabricksCliLog struct {
-// 	ExecutionContext ExecutionContext `json:"execution_context,omitempty"`
-
-// 	CliLogEvent *CliTestEvent `json:"cli_test_event,omitempty"`
-
-// 	BundleInitEvent *BundleInitEvent `json:"bundle_init_event,omitempty"`
-// }
-
 type CliTestEvent struct {
 	Name DummyCliEnum `json:"name,omitempty"`
 }
