@@ -35,7 +35,7 @@ func configureVariablesFromFile(cmd *cobra.Command, b *bundle.Bundle, filePath s
 
 		val, err := jsonloader.LoadJSON(f, filePath)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to parse variables file: %w", err))
+			return diag.FromErr(fmt.Errorf("failed to parse variables file %s: %w", filePath, err))
 		}
 
 		vars := map[string]any{}

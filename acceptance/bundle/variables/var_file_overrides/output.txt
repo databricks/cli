@@ -55,7 +55,7 @@ Exit code: 1
 
 === file cannot be parsed
 >>> errcode $CLI bundle validate -o json --var-file=var_files/invalid_json.json
-Error: failed to parse variables file: error decoding JSON at :0:0: invalid character 'o' in literal false (expecting 'a')
+Error: failed to parse variables file var_files/invalid_json.json: error decoding JSON at :0:0: invalid character 'o' in literal false (expecting 'a')
 
 
 Exit code: 1
