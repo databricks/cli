@@ -54,7 +54,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return tf.ExecPath, nil
 	}
 
-	binDir, err := b.CacheDir(context.Background(), "bin")
+	binDir, err := b.CacheDir(ctx, "bin")
 	if err != nil {
 		return "", err
 	}
