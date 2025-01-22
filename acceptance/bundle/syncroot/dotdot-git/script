@@ -1,4 +1,4 @@
-# This should error, we do not allow syncroot outside of git repo
+# This should error, we do not allow syncroot outside of git repo.
 mkdir myrepo
 cd myrepo
 cp ../databricks.yml .
