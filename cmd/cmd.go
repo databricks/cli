@@ -13,6 +13,8 @@ import (
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/sync"
+	sendtestevent "github.com/databricks/cli/cmd/telemetry/send_test_event"
+	"github.com/databricks/cli/cmd/telemetry/worker"
 	"github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/cmd/workspace"
 	"github.com/spf13/cobra"
@@ -74,6 +76,10 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(labs.New(ctx))
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
+
+	// TODO: Move these under the telemetry subcommand?
+	cli.AddCommand(worker.New())
+	cli.AddCommand(sendtestevent.New())
 
 	return cli
 }

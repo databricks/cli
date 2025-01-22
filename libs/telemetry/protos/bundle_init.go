@@ -1,12 +1,10 @@
 package protos
 
-// Corresponds to the `DatabricksCliBundleInitEvent` proto message in `databricks_cli_log.proto`
-// as of 20 Dec 2024.
 type BundleInitEvent struct {
 	// UUID associated with the DAB itself. This is serialized into the DAB
 	// when a user runs `databricks bundle init` and all subsequent deployments of
 	// that DAB can then be associated with this init event.
-	Uuid string `json:"bundle_uuid,omitempty"`
+	BundleUuid string `json:"bundle_uuid,omitempty"`
 
 	// Name of the template initialized when the user ran `databricks bundle init`
 	// This is only populated when the template is a first party template like

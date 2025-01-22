@@ -230,6 +230,10 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 	return append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*"))), nil
 }
 
+// TODO: Add end to end tests that the Environment variables returned by the
+// AuthEnv function are correct + the config set in the context is fully resolved
+// (instead of just being the input).
+
 // AuthEnv returns a map with environment variables and their values
 // derived from the workspace client configuration that was resolved
 // in the context of this bundle.
