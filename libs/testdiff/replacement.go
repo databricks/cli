@@ -3,7 +3,9 @@ package testdiff
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -52,26 +54,13 @@ func (r *ReplacementsContext) append(pattern *regexp.Regexp, replacement string)
 }
 
 func (r *ReplacementsContext) appendLiteral(old, new string) {
-	// Transform the replacement string such that `$` is interpreted as a literal dollar sign.
-	// For more information about how the replacement string is used, see [regexp.Regexp.Expand].
-	new = strings.ReplaceAll(new, `$`, `$$`)
-
 	r.append(
 		// Transform the input strings such that they can be used as literal strings in regular expressions.
 		regexp.MustCompile(regexp.QuoteMeta(old)),
-		new,
+		// Transform the replacement string such that `$` is interpreted as a literal dollar sign.
+		// For more information about how the replacement string is used, see [regexp.Regexp.Expand].
+		strings.ReplaceAll(new, `$`, `$$`),
 	)
-
-	// Make sure we capture paths in messages like this one:
-	// Error: path "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\TestAcceptbundlesyncrootdotdot-git1631369685\\001" is not within repository root
-	old1 := strings.ReplaceAll(old, "\\", "\\\\")
-	if old1 != old {
-		r.append(
-			// Transform the input strings such that they can be used as literal strings in regular expressions.
-			regexp.MustCompile(regexp.QuoteMeta(old1)),
-			new,
-		)
-	}
 }
 
 func (r *ReplacementsContext) Set(old, new string) {
@@ -87,11 +76,46 @@ func (r *ReplacementsContext) Set(old, new string) {
 	if err == nil {
 		encodedOld, err := json.Marshal(old)
 		if err == nil {
-			r.appendLiteral(string(encodedOld), string(encodedNew))
+			r.appendLiteral(trimQuotes(string(encodedOld)), trimQuotes(string(encodedNew)))
 		}
 	}
 
 	r.appendLiteral(old, new)
+}
+
+func trimQuotes(s string) string {
+	if len(s) > 0 && s[0] == '"' {
+		s = s[1:]
+	}
+	if len(s) > 0 && s[len(s)-1] == '"' {
+		s = s[:len(s)-1]
+	}
+	return s
+}
+
+func (r *ReplacementsContext) SetPath(old, new string) {
+	r.Set(old, new)
+
+	if runtime.GOOS != "windows" {
+		return
+	}
+
+	// Support both forward and backward slashes
+	m1 := strings.ReplaceAll(old, "\\", "/")
+	if m1 != old {
+		r.Set(m1, new)
+	}
+
+	m2 := strings.ReplaceAll(old, "/", "\\")
+	if m2 != old && m2 != m1 {
+		r.Set(m2, new)
+	}
+}
+
+func (r *ReplacementsContext) SetPathWithParents(old, new string) {
+	r.SetPath(old, new)
+	r.SetPath(filepath.Dir(old), new+"_PARENT")
+	r.SetPath(filepath.Dir(filepath.Dir(old)), new+"_GPARENT")
 }
 
 func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsContext, w *databricks.WorkspaceClient) {

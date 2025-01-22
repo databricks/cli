@@ -188,12 +188,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	repls.Set("/private"+tmpDir, "$TMPDIR")
-	repls.Set("/private"+filepath.Dir(tmpDir), "$TMPPARENT")
-	repls.Set("/private"+filepath.Dir(filepath.Dir(tmpDir)), "$TMPGPARENT")
-	repls.Set(tmpDir, "$TMPDIR")
-	repls.Set(filepath.Dir(tmpDir), "$TMPPARENT")
-	repls.Set(filepath.Dir(filepath.Dir(tmpDir)), "$TMPGPARENT")
+	// Converts C:\Users\DENIS~1.BIL -> C:\Users\denis.bilenko
+	tmpDirEvalled, err1 := filepath.EvalSymlinks(tmpDir)
+	if err1 == nil && tmpDirEvalled != tmpDir {
+		repls.SetPathWithParents(tmpDirEvalled, "$TMPDIR")
+	}
+	repls.SetPathWithParents(tmpDir, "$TMPDIR")
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
