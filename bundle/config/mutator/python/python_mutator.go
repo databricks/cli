@@ -402,6 +402,10 @@ func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dy
 
 	defer outputFile.Close()
 
+	return loadOutput(rootPath, outputFile, locations)
+}
+
+func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
 	//
@@ -423,6 +427,10 @@ func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dy
 	// paths are resolved relative to locations of their values, if we change location
 	// we have to update each path, until we simplify that, we don't update locations
 	// for such values, so we don't change how paths are resolved
+	//
+	// we can remove this once we:
+	// - add variable interpolation before and after PythonMutator
+	// - implement path normalization (aka path normal form)
 	_, err = paths.VisitJobPaths(generated, func(p dyn.Path, kind paths.PathKind, v dyn.Value) (dyn.Value, error) {
 		putPythonLocation(locations, p, v.Location())
 		return v, nil

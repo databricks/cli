@@ -23,14 +23,16 @@ const generatedFileName = "__generated_by_python__.yml"
 //
 // For example, with locations.json:
 //
-//	{"path": "resources.jobs.job_0", "file": "resources/job_0.py", "line": 3, "column": 5}
-//	{"path": "resources.jobs.job_0.tasks[0].task_key", "file": "resources/job_0.py", "line": 10, "column": 5}
-//	{"path": "resources.jobs.job_1", "file": "resources/job_1.py", "line": 5, "column": 7}
+//		{"path": "resources.jobs.job_0", "file": "resources/job_0.py", "line": 3, "column": 5}
+//		{"path": "resources.jobs.job_0.tasks[0].task_key", "file": "resources/job_0.py", "line": 10, "column": 5}
+//		{"path": "resources.jobs.job_1", "file": "resources/job_1.py", "line": 5, "column": 7}
 //
-// - resources.jobs.job_0.tasks[0].task_key is located at job_0.py:10:5
+//	- resources.jobs.job_0.tasks[0].task_key is located at job_0.py:10:5
 //
-//   - resources.jobs.job_0.tasks[0].email_notifications is located at job_0.py:3:5,
-//     because we use the location of the job as the most precise approximation.
+//	- resources.jobs.job_0.tasks[0].email_notifications is located at job_0.py:3:5,
+//	  because we use the location of the job as the most precise approximation.
+//
+// See pythonLocationEntry for the structure of a single entry in locations.json
 type pythonLocations struct {
 	// descendants referenced by index, e.g. '.foo'
 	keys map[string]*pythonLocations
@@ -64,23 +66,34 @@ func mergePythonLocations(value dyn.Value, locations *pythonLocations) (dyn.Valu
 			return value, nil
 		}
 
-		var newLocations []dyn.Location
-
-		// the first item in the list is the "last" location used for error reporting
-		newLocations = append(newLocations, newLocation)
-
-		for _, location := range value.Locations() {
-			// When loaded, dyn.Value created by Python code uses the virtual file path as their location,
-			// we replace it with newLocation.
-			if filepath.Base(location.File) == generatedFileName {
-				continue
-			}
-
-			newLocations = append(newLocations, location)
-		}
+		// The first item in the list is the "last" location used for error reporting
+		//
+		// Loaded YAML uses virtual file path as location, we remove any of such references,
+		// because they should use 'newLocation' instead.
+		//
+		// We preserve any previous non-virtual locations in case when Python function modified
+		// resource defined in YAML.
+		newLocations := append(
+			[]dyn.Location{newLocation},
+			removeVirtualLocations(value.Locations())...,
+		)
 
 		return value.WithLocations(newLocations), nil
 	})
+}
+
+func removeVirtualLocations(locations []dyn.Location) []dyn.Location {
+	var newLocations []dyn.Location
+
+	for _, location := range locations {
+		if filepath.Base(location.File) == generatedFileName {
+			continue
+		}
+
+		newLocations = append(newLocations, location)
+	}
+
+	return newLocations
 }
 
 // parsePythonLocations parses locations.json from the Python mutator.

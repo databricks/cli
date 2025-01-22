@@ -2,7 +2,10 @@ package python
 
 import (
 	"bytes"
+	"path"
 	"testing"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
@@ -108,6 +111,57 @@ func TestFindLocation_unknownLocation(t *testing.T) {
 	_, exists := findPythonLocation(locations, dyn.MustPathFromString("bar"))
 
 	assert.False(t, exists)
+}
+
+func TestLoadOutput(t *testing.T) {
+	location := dyn.Location{File: "my_job.py", Line: 1, Column: 1}
+	bundleRoot := t.TempDir()
+	output := `{
+		"resources": {
+			"jobs": {
+				"my_job": {
+					"name": "my_job",
+					"tasks": [
+						{
+							"task_key": "my_task",
+							"notebook_task": {
+								"notebook_path": "my_notebook"
+							}
+						}
+					]
+				}
+			}
+		}
+	}`
+
+	locations := newPythonLocations()
+	putPythonLocation(
+		locations,
+		dyn.MustPathFromString("resources.jobs.my_job"),
+		location,
+	)
+
+	value, diags := loadOutput(
+		bundleRoot,
+		bytes.NewReader([]byte(output)),
+		locations,
+	)
+
+	assert.Equal(t, diag.Diagnostics{}, diags)
+
+	name, err := dyn.Get(value, "resources.jobs.my_job.name")
+	require.NoError(t, err)
+	require.Equal(t, []dyn.Location{location}, name.Locations())
+
+	// until we implement path normalization, we have to keep locations of values
+	// that change semantic depending on their location
+	//
+	// note: it's important to have absolute path including 'bundleRoot'
+	// because mutator pipeline already has expanded locations into absolute path
+	notebookPath, err := dyn.Get(value, "resources.jobs.my_job.tasks[0].notebook_task.notebook_path")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(notebookPath.Locations()))
+	require.Equal(t, path.Join(bundleRoot, generatedFileName), notebookPath.Locations()[0].File)
 }
 
 func TestParsePythonLocations(t *testing.T) {
