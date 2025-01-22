@@ -1,4 +1,4 @@
-Error: path "$TMPPARENT" is not within repository root "$TMPDIR"
+Error: path "$TMPDIR_PARENT" is not within repository root "$TMPDIR"
 
 Name: test-bundle
 Target: default
