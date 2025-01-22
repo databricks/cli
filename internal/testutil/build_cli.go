@@ -4,14 +4,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/folders"
 	"github.com/stretchr/testify/require"
 )
 
-func BuildCLI(t *testing.T, flags ...string) string {
+func BuildCLI(t TestingT, flags ...string) string {
 	repoRoot, err := folders.FindDirWithLeaf(".", ".git")
 	require.NoError(t, err)
 
