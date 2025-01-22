@@ -15,7 +15,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
@@ -334,47 +333,6 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	prepares = append(prepares, scriptContents)
 	prepares = append(prepares, cleanups...)
 	return strings.Join(prepares, "\n")
-}
-
-func BuildCLI(t *testing.T, cwd, coverDir string) string {
-	execPath := filepath.Join(cwd, "build", "databricks")
-	if runtime.GOOS == "windows" {
-		execPath += ".exe"
-	}
-
-	start := time.Now()
-	args := []string{
-		"go", "build",
-		"-mod", "vendor",
-		"-o", execPath,
-	}
-
-	if coverDir != "" {
-		args = append(args, "-cover")
-	}
-
-	if runtime.GOOS == "windows" {
-		// Get this error on my local Windows:
-		// error obtaining VCS status: exit status 128
-		// Use -buildvcs=false to disable VCS stamping.
-		args = append(args, "-buildvcs=false")
-	}
-
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Dir = ".."
-	out, err := cmd.CombinedOutput()
-	elapsed := time.Since(start)
-	t.Logf("%s took %s", args, elapsed)
-	require.NoError(t, err, "go build failed: %s: %s\n%s", args, err, out)
-	if len(out) > 0 {
-		t.Logf("go build output: %s: %s", args, out)
-	}
-
-	// Quick check + warm up cache:
-	cmd = exec.Command(execPath, "--version")
-	out, err = cmd.CombinedOutput()
-	require.NoError(t, err, "%s --version failed: %s\n%s", execPath, err, out)
-	return execPath
 }
 
 func copyFile(src, dst string) error {
