@@ -39,7 +39,7 @@ func TestBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
 }
 
 func TestBasicBundleDeployWithDoubleUnderscoreVariables(t *testing.T) {
-	ctx, _ := acc.WorkspaceTest(t)
+	ctx, wt := acc.WorkspaceTest(t)
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
@@ -49,8 +49,12 @@ func TestBasicBundleDeployWithDoubleUnderscoreVariables(t *testing.T) {
 		"spark_version": defaultSparkVersion,
 	})
 
+	currentUser, err := wt.W.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
 	ctx, replacements := testdiff.WithReplacementsMap(ctx)
 	replacements.Set(uniqueId, "$UNIQUE_PRJ")
+	replacements.Set(currentUser.UserName, "$USERNAME")
 
 	t.Cleanup(func() {
 		destroyBundle(t, ctx, root)
