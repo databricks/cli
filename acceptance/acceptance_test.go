@@ -28,8 +28,8 @@ var KeepTmp bool
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
-// example: var singleTest = "bundle/variables/empty"
-var singleTest = ""
+// example: var SingleTest = "bundle/variables/empty"
+var SingleTest = ""
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -37,7 +37,7 @@ var singleTest = ""
 var InprocessMode bool
 
 func init() {
-	flag.BoolVar(&InprocessMode, "inprocess", singleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 }
 
@@ -54,7 +54,7 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, InprocessMode, SingleTest)
 }
 
 func TestInprocessMode(t *testing.T) {
