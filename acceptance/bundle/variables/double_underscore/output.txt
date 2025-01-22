@@ -1,13 +1,9 @@
 
 >>> $CLI bundle validate
-Error: incorrect variable name: [${var.double__underscore}]
-
 Name: double_underscore
 Target: default
 Workspace:
   User: $USERNAME
   Path: /Workspace/Users/$USERNAME/.bundle/double_underscore/default
 
-Found 1 error
-
-Exit code: 1
+Validation OK!

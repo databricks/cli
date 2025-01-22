@@ -2,14 +2,12 @@ package dynvar
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
 )
 
-var (
-	re              = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`)
-	potentialVarRef = regexp.MustCompile(`\$\{[a-zA-Z0-9\.-_]+}`)
-)
+var re = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]*[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`)
 
 // ref represents a variable reference.
 // It is a string [dyn.Value] contained in a larger [dyn.Value].
@@ -25,6 +23,8 @@ type ref struct {
 	matches [][]string
 }
 
+var invalidSeq = []string{"-_", "_-"}
+
 // newRef returns a new ref if the given [dyn.Value] contains a string
 // with one or more variable references. It returns false if the given
 // [dyn.Value] does not contain variable references.
@@ -33,32 +33,33 @@ type ref struct {
 //   - "${a.b}"
 //   - "${a.b.c}"
 //   - "${a} ${b} ${c}"
-func newRef(v dyn.Value) (ref, ref, bool) {
+func newRef(v dyn.Value) (ref, bool) {
 	s, ok := v.AsString()
 	if !ok {
-		return ref{}, ref{}, false
+		return ref{}, false
 	}
 
 	// Check if the string contains any variable references.
 	m := re.FindAllStringSubmatch(s, -1)
 	if len(m) == 0 {
-		// Check if the string contains any potential variable references but they are not valid.
-		pm := potentialVarRef.FindAllStringSubmatch(s, -1)
-		if len(pm) > 0 {
-			return ref{}, ref{
-				value:   v,
-				str:     s,
-				matches: pm,
-			}, false
+		return ref{}, false
+	}
+
+	// Check that it does not have invalid sequences such as "-_" or "_-".
+
+	for _, match := range m {
+		for _, seq := range invalidSeq {
+			if strings.Contains(match[1], seq) {
+				return ref{}, false
+			}
 		}
-		return ref{}, ref{}, false
 	}
 
 	return ref{
 		value:   v,
 		str:     s,
 		matches: m,
-	}, ref{}, true
+	}, true
 }
 
 // isPure returns true if the variable reference contains a single
@@ -87,7 +88,7 @@ func IsPureVariableReference(s string) bool {
 // If s is a pure variable reference, this function returns the corresponding
 // dyn.Path. Otherwise, it returns false.
 func PureReferenceToPath(s string) (dyn.Path, bool) {
-	ref, _, ok := newRef(dyn.V(s))
+	ref, ok := newRef(dyn.V(s))
 	if !ok {
 		return nil, false
 	}
