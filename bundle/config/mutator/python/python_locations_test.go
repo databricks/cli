@@ -2,8 +2,9 @@ package python
 
 import (
 	"bytes"
-	"path"
+	"path/filepath"
 	"testing"
+
 	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/require"
 
@@ -160,8 +161,8 @@ func TestLoadOutput(t *testing.T) {
 	// because mutator pipeline already has expanded locations into absolute path
 	notebookPath, err := dyn.Get(value, "resources.jobs.my_job.tasks[0].notebook_task.notebook_path")
 	require.NoError(t, err)
-	require.Equal(t, 1, len(notebookPath.Locations()))
-	require.Equal(t, path.Join(bundleRoot, generatedFileName), notebookPath.Locations()[0].File)
+	require.Len(t, notebookPath.Locations(), 1)
+	require.Equal(t, filepath.Join(bundleRoot, generatedFileName), notebookPath.Locations()[0].File)
 }
 
 func TestParsePythonLocations(t *testing.T) {
