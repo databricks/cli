@@ -38,7 +38,7 @@ type Variable struct {
 	//
 	// 1. Command line flag `--var="foo=bar"`
 	// 2. Variable value from the file, example: `--var-file="/path/to/file"`.
-	//    If path is not specified the default path is used: ".databricks/bundle/<target>/vars.json"
+	//    If path is not specified the default path is used: ".databricks/bundle/<target>/variable-overrides.json"
 	// 3. Environment variable. eg: BUNDLE_VAR_foo=bar
 	// 4. Default value as defined in the applicable targets block
 	// 5. Default value defined in variable definition

@@ -15,4 +15,4 @@ Global Flags:
   -p, --profile string    ~/.databrickscfg profile
   -t, --target string     bundle target to use (if applicable)
       --var strings       set values for variables defined in bundle config. Example: --var="foo=bar"
-      --var-file string   path to a JSON file containing variables. Example: --var-file="/path/to/vars.json" (default ".databricks/bundle/<target>/vars.json")
+      --var-file string   path to a JSON file containing variables. Example: --var-file="/path/to/variable-overrides.json" (default ".databricks/bundle/<target>/variable-overrides.json")

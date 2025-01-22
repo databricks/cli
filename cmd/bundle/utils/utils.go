@@ -15,7 +15,7 @@ import (
 )
 
 func GetDefaultVariableFilePath(target string) string {
-	return ".databricks/bundle/" + target + "/vars.json"
+	return ".databricks/bundle/" + target + "/variable-overrides.json"
 }
 
 func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string) diag.Diagnostics {
