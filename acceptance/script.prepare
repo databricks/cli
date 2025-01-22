@@ -34,7 +34,7 @@ trace() {
 
 git-repo-init() {
     git init -qb main
-    git config --global core.autocrlf false
+    git config core.autocrlf false
     git config user.name "Tester"
     git config user.email "tester@databricks.com"
     git add databricks.yml

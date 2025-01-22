@@ -32,7 +32,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	if info.WorktreeRoot == "" {
-		b.WorktreeRoot = b.BundleRoot
+		b.WorktreeRoot = b.SyncRoot
 	} else {
 		b.WorktreeRoot = vfs.MustNew(info.WorktreeRoot)
 	}
