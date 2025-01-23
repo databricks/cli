@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	// From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	// source: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
 	semverRegex      = regexp.MustCompile(`(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`)
 	uuidRegex        = regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
 	numIdRegex       = regexp.MustCompile(`[0-9]{3,}`)
