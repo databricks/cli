@@ -599,10 +599,8 @@ func newHttpRequest() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var httpRequestReq serving.ExternalFunctionRequest
-	var httpRequestJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&httpRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&httpRequestReq.Headers, "headers", httpRequestReq.Headers, `Additional headers for the request.`)
 	cmd.Flags().StringVar(&httpRequestReq.Json, "json", httpRequestReq.Json, `The JSON payload to send in the request body.`)
@@ -624,13 +622,6 @@ func newHttpRequest() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'connection_name', 'method', 'path' in your JSON input")
-			}
-			return nil
-		}
 		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
@@ -640,30 +631,12 @@ func newHttpRequest() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			diags := httpRequestJson.Unmarshal(&httpRequestReq)
-			if diags.HasError() {
-				return diags.Error()
-			}
-			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
-				if err != nil {
-					return err
-				}
-			}
+		httpRequestReq.ConnectionName = args[0]
+		_, err = fmt.Sscan(args[1], &httpRequestReq.Method)
+		if err != nil {
+			return fmt.Errorf("invalid METHOD: %s", args[1])
 		}
-		if !cmd.Flags().Changed("json") {
-			httpRequestReq.ConnectionName = args[0]
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &httpRequestReq.Method)
-			if err != nil {
-				return fmt.Errorf("invalid METHOD: %s", args[1])
-			}
-		}
-		if !cmd.Flags().Changed("json") {
-			httpRequestReq.Path = args[2]
-		}
+		httpRequestReq.Path = args[2]
 
 		response, err := w.ServingEndpoints.HttpRequest(ctx, httpRequestReq)
 		if err != nil {
