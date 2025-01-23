@@ -453,6 +453,9 @@ func ListDir(t *testing.T, src string) []string {
 	var files []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			// Do not FailNow here.
+			// The output comparison is happening after this call which includes output.txt which
+			// includes errors printed by commands which include explanation why a given file cannot be read.
 			t.Errorf("Error when listing %s: path=%s: %s", src, path, err)
 			return nil
 		}
