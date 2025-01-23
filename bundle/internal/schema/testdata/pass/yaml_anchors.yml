@@ -1,0 +1,11 @@
+tags: &job-tags
+  environment: "some_environment"
+
+resources:
+  jobs:
+    db1:
+      tags:
+        <<: *job-tags
+    db2:
+      tags:
+        <<: *job-tags
