@@ -74,7 +74,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "non-yaml file in 'include' section",
+					Summary:   "Files in the 'include' configuration section must be YAML files.",
 					Detail:    fmt.Sprintf("file %s included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section", rel),
 					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", i)),
 				})
