@@ -197,14 +197,3 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "manual":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
-  "entity_version":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
-  "model_name":
-    "description": |-
-      PLACEHOLDER
-  "model_version":
-    "description": |-
-      PLACEHOLDER
