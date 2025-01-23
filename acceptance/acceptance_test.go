@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/testserver"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
@@ -109,11 +110,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		server := StartServer(t)
-		AddHandlers(server)
+		defaultServer := StartServer(t)
+		AddHandlers(defaultServer)
 		// Redirect API access to local server:
-		t.Setenv("DATABRICKS_HOST", server.URL)
-		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
+		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
+		t.Setenv("DATABRICKS_TOKEN", "acceptance-test-token")
 
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
@@ -143,7 +144,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	for _, dir := range testDirs {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
-			if !InprocessMode {
+			if !InprocessMode && !hasCustomServer(t, dir) {
 				t.Parallel()
 			}
 
@@ -152,6 +153,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 
 	return len(testDirs)
+}
+
+func hasCustomServer(t *testing.T, dir string) bool {
+	return testutil.DetectFile(t, filepath.Join(dir, "server.json"))
 }
 
 func getTests(t *testing.T) []string {
@@ -185,6 +190,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		t.Logf("Created directory: %s", tmpDir)
 	} else {
 		tmpDir = t.TempDir()
+	}
+
+	// If there is a server.json file in the test directory, start a custom server.
+	// Redirect all API calls to this server.
+	if hasCustomServer(t, dir) {
+		server := testserver.NewFromConfig(t, filepath.Join(dir, "server.json"))
+		t.Setenv("DATABRICKS_HOST", server.URL)
+		t.Cleanup(func() {
+			server.Close()
+		})
 	}
 
 	// Converts C:\Users\DENIS~1.BIL -> C:\Users\denis.bilenko

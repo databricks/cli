@@ -20,6 +20,8 @@ const (
 )
 
 var (
+	// From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	semverRegex      = regexp.MustCompile(`(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`)
 	uuidRegex        = regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
 	numIdRegex       = regexp.MustCompile(`[0-9]{3,}`)
 	privatePathRegex = regexp.MustCompile(`(/tmp|/private)(/.*)/([a-zA-Z0-9]+)`)
@@ -183,15 +185,25 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 
 func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(uuidRegex, "<UUID>")
+	r.append(uuidRegex, "[UUID]")
 }
 
 func PrepareReplacementsNumber(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(numIdRegex, "<NUMID>")
+	r.append(numIdRegex, "[NUMID]")
 }
 
 func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(privatePathRegex, "/tmp/.../$3")
+}
+
+func PrepareReplacementsSemver(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.append(semverRegex, "[SEMVER]")
+}
+
+func PrepareReplacementOS(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.Set(runtime.GOOS, "[OS]")
 }

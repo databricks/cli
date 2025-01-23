@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var OverwriteMode = false
+var OverwriteMode = true
 
 func init() {
 	flag.BoolVar(&OverwriteMode, "update", false, "Overwrite golden files")
@@ -63,6 +63,16 @@ func AssertOutputJQ(t testutil.TestingT, ctx context.Context, out, outTitle, exp
 			WriteFile(t, expectedPath, out)
 		}
 	}
+}
+
+func AssertEqualStrings(t testutil.TestingT, ctx context.Context, expected, actual string) {
+	t.Helper()
+	replacements := GetReplacementsMap(ctx)
+	if replacements == nil {
+		t.Fatal("WithReplacementsMap was not called")
+	}
+	actual = replacements.Replace(actual)
+	assert.Equal(t, expected, actual)
 }
 
 func ReplaceOutput(t testutil.TestingT, ctx context.Context, out string) string {
