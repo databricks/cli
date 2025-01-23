@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"slices"
 	"sort"
@@ -452,16 +451,6 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 }
 
 func ListDir(t *testing.T, src string) ([]string, error) {
-	// exclude folders in .gitignore from comparison
-	ignored := []string{
-		"\\.ruff_cache",
-		"\\.venv",
-		".*\\.egg-info",
-		"__pycache__",
-		// depends on uv version
-		"uv.lock",
-	}
-
 	var files []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -469,19 +458,7 @@ func ListDir(t *testing.T, src string) ([]string, error) {
 		}
 
 		if info.IsDir() {
-			for _, ignoredFolder := range ignored {
-				if matched, _ := regexp.MatchString(ignoredFolder, info.Name()); matched {
-					return filepath.SkipDir
-				}
-			}
-
 			return nil
-		} else {
-			for _, ignoredFolder := range ignored {
-				if matched, _ := regexp.MatchString(ignoredFolder, info.Name()); matched {
-					return nil
-				}
-			}
 		}
 
 		relPath, err := filepath.Rel(src, path)
