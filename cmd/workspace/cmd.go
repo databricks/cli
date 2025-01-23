@@ -3,6 +3,7 @@
 package workspace
 
 import (
+	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
 	apps "github.com/databricks/cli/cmd/workspace/apps"
@@ -96,6 +97,7 @@ import (
 func All() []*cobra.Command {
 	var out []*cobra.Command
 
+	out = append(out, access_control.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())
 	out = append(out, apps.New())
