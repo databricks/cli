@@ -17,7 +17,7 @@ resources:
             num_workers: ${var.cluster_workers}
 
 targets:
-  with-defaults:
+  default:
     default: true
     variables:
       cluster_workers:
@@ -29,7 +29,30 @@ targets:
       cluster_key:
         default: "default"
 
-  without-defaults:
+  without_defaults:
 
-  # see .databricks/bundle/default_target/ for variable values
-  with-default-variable-file:
+  complex_to_string:
+    variables:
+      cluster_workers:
+        default: 1
+      cluster:
+        type: "complex"
+        default:
+          node_type_id: "default"
+      cluster_key:
+        default: "default"
+
+  string_to_complex:
+    variables:
+      cluster_workers:
+        default: 1
+      cluster:
+        type: "complex"
+        default:
+          node_type_id: "default"
+      cluster_key:
+        default: "default"
+
+  wrong_file_structure:
+
+  invalid_json:

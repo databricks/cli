@@ -3,7 +3,7 @@
 "abc def"
 
 >>> errcode $CLI bundle validate
-Error: no value assigned to required variable b. Assignment can be done using "--var" or "--var-file", by setting the BUNDLE_VAR_b environment variable, or in .databricks/bundle/<target>/variable-overrides.json file
+Error: no value assigned to required variable b. Assignment can be done using "--var", by setting the BUNDLE_VAR_b environment variable, or in .databricks/bundle/<target>/variable-overrides.json file
 
 Name: ${var.a} ${var.b}
 Target: default

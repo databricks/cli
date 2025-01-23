@@ -21,9 +21,8 @@ Available Commands:
   validate    Validate configuration
 
 Flags:
-  -h, --help              help for bundle
-      --var strings       set values for variables defined in bundle config. Example: --var="foo=bar"
-      --var-file string   path to a JSON file containing variables. Example: --var-file="/path/to/variable-overrides.json" (default ".databricks/bundle/<target>/variable-overrides.json")
+  -h, --help          help for bundle
+      --var strings   set values for variables defined in bundle config. Example: --var="foo=bar"
 
 Global Flags:
       --debug            enable debug logging

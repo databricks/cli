@@ -1,7 +1,0 @@
-{
-  "cluster": {
-    "node_type_id": "Standard_DS3_v3"
-  },
-  "cluster_key": "mlops_stacks-cluster-2",
-  "cluster_workers": 9
-}
