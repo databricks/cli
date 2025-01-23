@@ -232,8 +232,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	// Make sure there are not unaccounted for new files
-	files, err := ListDir(t, tmpDir)
-	require.NoError(t, err)
+	files := ListDir(t, tmpDir)
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -450,11 +449,12 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 	})
 }
 
-func ListDir(t *testing.T, src string) ([]string, error) {
+func ListDir(t *testing.T, src string) []string {
 	var files []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			t.Errorf("Error when listing %s: path=%s: %s", src, path, err)
+			return nil
 		}
 
 		if info.IsDir() {
@@ -469,5 +469,8 @@ func ListDir(t *testing.T, src string) ([]string, error) {
 		files = append(files, relPath)
 		return nil
 	})
-	return files, err
+	if err != nil {
+		t.Errorf("Failed to list %s: %s", src, err)
+	}
+	return files
 }
