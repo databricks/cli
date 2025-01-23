@@ -40,3 +40,8 @@ git-repo-init() {
     git add databricks.yml
     git commit -qm 'Add databricks.yml'
 }
+
+title() {
+    local label="$1"
+    printf "\n=== %s" "$label"
+}
