@@ -75,7 +75,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "Files in the 'include' configuration section must be YAML files.",
-					Detail:    fmt.Sprintf("file %s included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section", rel),
+					Detail:    fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML file, and only YAML files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
 					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", i)),
 				})
 				continue
