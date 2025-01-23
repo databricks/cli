@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var OverwriteMode = true
+var OverwriteMode = false
 
 func init() {
 	flag.BoolVar(&OverwriteMode, "update", false, "Overwrite golden files")
