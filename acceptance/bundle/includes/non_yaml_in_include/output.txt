@@ -1,7 +1,7 @@
-Error: non-yaml file in 'include' section
+Error: Files in the 'include' configuration section must be YAML files.
   in databricks.yml:5:4
 
-file test.py included in 'include' section but only YAML files are supported. If you want to explicitly include files to sync, use 'sync.include' configuration section
+The file test.py in the 'include' configuration section is not a YAML file, and only YAML files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.
 
 Name: non_yaml_in_includes
 
