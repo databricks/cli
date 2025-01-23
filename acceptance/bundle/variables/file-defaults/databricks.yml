@@ -20,39 +20,34 @@ targets:
   default:
     default: true
     variables:
-      cluster_workers:
-        default: 1
+      cluster_workers: 1
       cluster:
-        type: "complex"
-        default:
-          node_type_id: "default"
-      cluster_key:
-        default: "default"
+        node_type_id: "default"
+      cluster_key: "default"
 
   without_defaults:
 
   complex_to_string:
     variables:
-      cluster_workers:
-        default: 1
+      cluster_workers: 1
       cluster:
-        type: "complex"
-        default:
-          node_type_id: "default"
-      cluster_key:
-        default: "default"
+        node_type_id: "default"
+      cluster_key: "default"
 
   string_to_complex:
     variables:
-      cluster_workers:
-        default: 1
+      cluster_workers: 1
       cluster:
-        type: "complex"
-        default:
-          node_type_id: "default"
-      cluster_key:
-        default: "default"
+        node_type_id: "default"
+      cluster_key: "default"
 
   wrong_file_structure:
 
   invalid_json:
+
+  with_value:
+    variables:
+      cluster_workers: 1
+      cluster:
+        node_type_id: "default"
+      cluster_key: cluster_key_value

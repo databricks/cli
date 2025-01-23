@@ -11,6 +11,9 @@ trace $CLI bundle validate -o json --var="cluster_key=mlops_stacks-cluster-overr
 title "variable file and environment variable"
 trace BUNDLE_VAR_cluster_key=mlops_stacks-cluster-overriden $CLI bundle validate -o json | jq $cluster_expr
 
+title "variable has value in config file"
+trace $CLI bundle validate -o json --target with_value | jq $cluster_expr
+
 # title "file cannot be parsed"
 # trace errcode $CLI bundle validate -o json --target invalid_json | jq $cluster_expr
 

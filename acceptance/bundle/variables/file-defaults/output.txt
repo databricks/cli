@@ -29,6 +29,16 @@
   }
 }
 
+=== variable has value in config file
+>>> $CLI bundle validate -o json --target with_value
+{
+  "job_cluster_key": "mlops_stacks-cluster-from-file",
+  "new_cluster": {
+    "node_type_id": "default",
+    "num_workers": 1
+  }
+}
+
 === file has variable that is complex but default is string
 >>> errcode $CLI bundle validate -o json --target complex_to_string
 Error: variable cluster_key is not of type complex, but the value in the variable file is a complex type
