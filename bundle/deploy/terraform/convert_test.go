@@ -419,7 +419,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 	src := resources.ModelServingEndpoint{
 		CreateServingEndpoint: &serving.CreateServingEndpoint{
 			Name: "name",
-			Config: &serving.EndpointCoreConfigInput{
+			Config: serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
 					{
 						ModelName:          "model_name",
@@ -474,7 +474,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 			// and as such observed the `omitempty` tag.
 			// The new method leverages [dyn.Value] where any field that is not
 			// explicitly set is not part of the value.
-			Config: &serving.EndpointCoreConfigInput{
+			Config: serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
 					{
 						ModelName:          "model_name",

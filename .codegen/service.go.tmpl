@@ -109,19 +109,16 @@ var {{.CamelName}}Overrides []func(
 	{{- end }}
 )
 
-{{- $excludeFromJson := list "http-request"}}
-
 func new{{.PascalName}}() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	{{- $canUseJson := and .CanUseJson (not (in $excludeFromJson .KebabName )) -}}
 	{{- if .Request}}
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
 	{{- if .RequestBodyField }}
 	{{.CamelName}}Req.{{.RequestBodyField.PascalName}} = &{{.Service.Package.Name}}.{{.RequestBodyField.Entity.PascalName}}{}
 	{{- end }}
-	{{- if $canUseJson}}
+	{{- if .CanUseJson}}
 	var {{.CamelName}}Json flags.JsonFlag
 	{{- end}}
 	{{- end}}
@@ -138,7 +135,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $request = .RequestBodyField.Entity -}}
 	{{- end -}}
     {{if $request }}// TODO: short flags
-	{{- if $canUseJson}}
+	{{- if .CanUseJson}}
 	cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
 	{{- end}}
     {{$method := .}}
@@ -180,7 +177,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
 	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt $request) (eq 1 (len $request.RequiredRequestBodyFields))  -}}
 	{{- $onlyPathArgsRequiredAsPositionalArguments := and $request (eq (len .RequiredPositionalArguments) (len $request.RequiredPathFields)) -}}
-	{{- $hasDifferentArgsWithJsonFlag := and (not $onlyPathArgsRequiredAsPositionalArguments) (and $canUseJson (or $request.HasRequiredRequestBodyFields )) -}}
+	{{- $hasDifferentArgsWithJsonFlag := and (not $onlyPathArgsRequiredAsPositionalArguments) (and .CanUseJson (or $request.HasRequiredRequestBodyFields )) -}}
 	{{- $hasCustomArgHandler := or $hasRequiredArgs $hasDifferentArgsWithJsonFlag -}}
 
 	{{- $atleastOneArgumentWithDescription := false -}}
@@ -242,7 +239,7 @@ func new{{.PascalName}}() *cobra.Command {
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
-			{{ if $canUseJson }}
+			{{ if .CanUseJson }}
 			if cmd.Flags().Changed("json") {
 					diags := {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req{{ if .RequestBodyField }}.{{.RequestBodyField.PascalName}}{{ end }})
 					if diags.HasError() {
@@ -258,7 +255,7 @@ func new{{.PascalName}}() *cobra.Command {
 				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 			}{{- end}}
 			{{- if $hasPosArgs }}
-			{{- if and $canUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }} else {
+			{{- if and .CanUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }} else {
 			{{- end}}
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {
@@ -282,9 +279,9 @@ func new{{.PascalName}}() *cobra.Command {
 
 			{{$method := .}}
 			{{- range $arg, $field := .RequiredPositionalArguments}}
-				{{- template "args-scan" (dict "Arg" $arg "Field" $field "Method" $method "HasIdPrompt" $hasIdPrompt "ExcludeFromJson" $excludeFromJson)}}
+				{{- template "args-scan" (dict "Arg" $arg "Field" $field "Method" $method "HasIdPrompt" $hasIdPrompt)}}
 			{{- end -}}
-			{{- if and $canUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }}
+			{{- if and .CanUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }}
 			}
 			{{- end}}
 
@@ -395,8 +392,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $method := .Method -}}
 	{{- $arg := .Arg -}}
 	{{- $hasIdPrompt := .HasIdPrompt -}}
-	{{ $canUseJson := and $method.CanUseJson (not (in .ExcludeFromJson $method.KebabName)) }}
-	{{- $optionalIfJsonIsUsed := and (not $hasIdPrompt) (and $field.IsRequestBodyField $canUseJson) }}
+	{{- $optionalIfJsonIsUsed := and (not $hasIdPrompt) (and $field.IsRequestBodyField $method.CanUseJson) }}
 	{{- if $optionalIfJsonIsUsed  }}
 	if !cmd.Flags().Changed("json") {
 	{{- end }}
