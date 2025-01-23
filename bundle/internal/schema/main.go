@@ -172,6 +172,15 @@ func generateSchema(workdir, outputFile string) {
 		a.addAnnotations,
 		addInterpolationPatterns,
 	})
+
+	// AdditionalProperties is set to an empty schema to allow non-typed keys used as yaml-anchors
+	// Example:
+	// some_anchor: &some_anchor
+	//   file_path: /some/path/
+	// workspace:
+	//   <<: *some_anchor
+	s.AdditionalProperties = jsonschema.Schema{}
+
 	if err != nil {
 		log.Fatal(err)
 	}

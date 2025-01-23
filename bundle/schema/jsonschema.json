@@ -7269,5 +7269,5 @@
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": {}
 }
