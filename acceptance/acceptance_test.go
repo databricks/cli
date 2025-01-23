@@ -3,12 +3,12 @@ package acceptance_test
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"slices"
 	"sort"
@@ -23,7 +23,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var KeepTmp = os.Getenv("KEEP_TMP") != ""
+var KeepTmp bool
+
+// In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
+// Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
+// example: var SingleTest = "bundle/variables/empty"
+var SingleTest = ""
+
+// If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
+// CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
+// Also disables parallelism in tests.
+var InprocessMode bool
+
+func init() {
+	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
+}
 
 const (
 	EntryPointScript = "script"
@@ -38,6 +53,23 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	testAccept(t, InprocessMode, SingleTest)
+}
+
+func TestInprocessMode(t *testing.T) {
+	if InprocessMode {
+		t.Skip("Already tested by TestAccept")
+	}
+	if runtime.GOOS == "windows" {
+		// -  catalogs                               A catalog is the first layer of Unity Catalog’s three-level namespace.
+		// +  catalogs                               A catalog is the first layer of Unity Catalog�s three-level namespace.
+		t.Skip("Fails on CI on unicode characters")
+	}
+	require.NotZero(t, testAccept(t, true, "help"))
+}
+
+func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -50,15 +82,21 @@ func TestAccept(t *testing.T) {
 		t.Logf("Writing coverage to %s", coverDir)
 	}
 
-	execPath := BuildCLI(t, cwd, coverDir)
-	// $CLI is what test scripts are using
+	execPath := ""
+
+	if InprocessMode {
+		cmdServer := StartCmdServer(t)
+		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
+		execPath = filepath.Join(cwd, "bin", "callserver.py")
+	} else {
+		execPath = BuildCLI(t, cwd, coverDir)
+	}
+
 	t.Setenv("CLI", execPath)
+	repls.Set(execPath, "$CLI")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
-
-	repls := testdiff.ReplacementsContext{}
-	repls.Set(execPath, "$CLI")
 
 	tempHomeDir := t.TempDir()
 	repls.Set(tempHomeDir, "$TMPHOME")
@@ -95,13 +133,25 @@ func TestAccept(t *testing.T) {
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	if singleTest != "" {
+		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
+			return n != singleTest
+		})
+		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+	}
+
 	for _, dir := range testDirs {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
-			runTest(t, dir, coverDir, repls)
+			if !InprocessMode {
+				t.Parallel()
+			}
+
+			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
+
+	return len(testDirs)
 }
 
 func getTests(t *testing.T) []string {
@@ -136,6 +186,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	} else {
 		tmpDir = t.TempDir()
 	}
+
+	// Converts C:\Users\DENIS~1.BIL -> C:\Users\denis.bilenko
+	tmpDirEvalled, err1 := filepath.EvalSymlinks(tmpDir)
+	if err1 == nil && tmpDirEvalled != tmpDir {
+		repls.SetPathWithParents(tmpDirEvalled, "$TMPDIR")
+	}
+	repls.SetPathWithParents(tmpDir, "$TMPDIR")
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -175,8 +232,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	// Make sure there are not unaccounted for new files
-	files, err := ListDir(t, tmpDir)
-	require.NoError(t, err)
+	files := ListDir(t, tmpDir)
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -393,37 +449,19 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 	})
 }
 
-func ListDir(t *testing.T, src string) ([]string, error) {
-	// exclude folders in .gitignore from comparison
-	ignored := []string{
-		"\\.ruff_cache",
-		"\\.venv",
-		".*\\.egg-info",
-		"__pycache__",
-		// depends on uv version
-		"uv.lock",
-	}
-
+func ListDir(t *testing.T, src string) []string {
 	var files []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			// Do not FailNow here.
+			// The output comparison is happening after this call which includes output.txt which
+			// includes errors printed by commands which include explanation why a given file cannot be read.
+			t.Errorf("Error when listing %s: path=%s: %s", src, path, err)
+			return nil
 		}
 
 		if info.IsDir() {
-			for _, ignoredFolder := range ignored {
-				if matched, _ := regexp.MatchString(ignoredFolder, info.Name()); matched {
-					return filepath.SkipDir
-				}
-			}
-
 			return nil
-		} else {
-			for _, ignoredFolder := range ignored {
-				if matched, _ := regexp.MatchString(ignoredFolder, info.Name()); matched {
-					return nil
-				}
-			}
 		}
 
 		relPath, err := filepath.Rel(src, path)
@@ -434,5 +472,8 @@ func ListDir(t *testing.T, src string) ([]string, error) {
 		files = append(files, relPath)
 		return nil
 	})
-	return files, err
+	if err != nil {
+		t.Errorf("Failed to list %s: %s", src, err)
+	}
+	return files
 }

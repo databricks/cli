@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -24,7 +25,6 @@ import (
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -246,21 +246,5 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 	}
 
 	cfg := b.client.Config
-	out := make(map[string]string)
-	for _, attr := range sdkconfig.ConfigAttributes {
-		// Ignore profile so that downstream tools don't try and reload
-		// the profile even though we know the current configuration is valid.
-		if attr.Name == "profile" {
-			continue
-		}
-		if len(attr.EnvVars) == 0 {
-			continue
-		}
-		if attr.IsZero(cfg) {
-			continue
-		}
-		out[attr.EnvVars[0]] = attr.GetString(cfg)
-	}
-
-	return out, nil
+	return auth.Env(cfg), nil
 }

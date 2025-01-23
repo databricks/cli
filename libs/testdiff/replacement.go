@@ -3,7 +3,10 @@ package testdiff
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -29,6 +32,10 @@ type Replacement struct {
 
 type ReplacementsContext struct {
 	Repls []Replacement
+}
+
+func (r *ReplacementsContext) Clone() ReplacementsContext {
+	return ReplacementsContext{Repls: slices.Clone(r.Repls)}
 }
 
 func (r *ReplacementsContext) Replace(s string) string {
@@ -69,11 +76,46 @@ func (r *ReplacementsContext) Set(old, new string) {
 	if err == nil {
 		encodedOld, err := json.Marshal(old)
 		if err == nil {
-			r.appendLiteral(string(encodedOld), string(encodedNew))
+			r.appendLiteral(trimQuotes(string(encodedOld)), trimQuotes(string(encodedNew)))
 		}
 	}
 
 	r.appendLiteral(old, new)
+}
+
+func trimQuotes(s string) string {
+	if len(s) > 0 && s[0] == '"' {
+		s = s[1:]
+	}
+	if len(s) > 0 && s[len(s)-1] == '"' {
+		s = s[:len(s)-1]
+	}
+	return s
+}
+
+func (r *ReplacementsContext) SetPath(old, new string) {
+	r.Set(old, new)
+
+	if runtime.GOOS != "windows" {
+		return
+	}
+
+	// Support both forward and backward slashes
+	m1 := strings.ReplaceAll(old, "\\", "/")
+	if m1 != old {
+		r.Set(m1, new)
+	}
+
+	m2 := strings.ReplaceAll(old, "/", "\\")
+	if m2 != old && m2 != m1 {
+		r.Set(m2, new)
+	}
+}
+
+func (r *ReplacementsContext) SetPathWithParents(old, new string) {
+	r.SetPath(old, new)
+	r.SetPath(filepath.Dir(old), new+"_PARENT")
+	r.SetPath(filepath.Dir(filepath.Dir(old)), new+"_GPARENT")
 }
 
 func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsContext, w *databricks.WorkspaceClient) {

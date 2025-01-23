@@ -546,7 +546,7 @@
                     "type": "object",
                     "properties": {
                       "ai_gateway": {
-                        "description": "The AI Gateway configuration for the serving endpoint. NOTE: only external model endpoints are supported as of now.",
+                        "description": "The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig"
                       },
                       "config": {
@@ -554,7 +554,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput"
                       },
                       "name": {
-                        "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.\n",
+                        "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
@@ -575,7 +575,6 @@
                     },
                     "additionalProperties": false,
                     "required": [
-                      "config",
                       "name"
                     ]
                   },
@@ -1663,19 +1662,35 @@
               ]
             },
             "apps.AppDeploymentMode": {
-              "type": "string",
-              "enum": [
-                "SNAPSHOT",
-                "AUTO_SYNC"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SNAPSHOT",
+                    "AUTO_SYNC"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "apps.AppDeploymentState": {
-              "type": "string",
-              "enum": [
-                "SUCCEEDED",
-                "FAILED",
-                "IN_PROGRESS",
-                "CANCELLED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SUCCEEDED",
+                    "FAILED",
+                    "IN_PROGRESS",
+                    "CANCELLED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "apps.AppDeploymentStatus": {
@@ -1758,12 +1773,20 @@
               ]
             },
             "apps.AppResourceJobJobPermission": {
-              "type": "string",
-              "enum": [
-                "CAN_MANAGE",
-                "IS_OWNER",
-                "CAN_MANAGE_RUN",
-                "CAN_VIEW"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "IS_OWNER",
+                    "CAN_MANAGE_RUN",
+                    "CAN_VIEW"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "apps.AppResourceSecret": {
@@ -1795,12 +1818,20 @@
               ]
             },
             "apps.AppResourceSecretSecretPermission": {
-              "type": "string",
-              "description": "Permission to grant on the secret scope. Supported permissions are: \"READ\", \"WRITE\", \"MANAGE\".",
-              "enum": [
-                "READ",
-                "WRITE",
-                "MANAGE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission to grant on the secret scope. Supported permissions are: \"READ\", \"WRITE\", \"MANAGE\".",
+                  "enum": [
+                    "READ",
+                    "WRITE",
+                    "MANAGE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "apps.AppResourceServingEndpoint": {
@@ -1828,11 +1859,19 @@
               ]
             },
             "apps.AppResourceServingEndpointServingEndpointPermission": {
-              "type": "string",
-              "enum": [
-                "CAN_MANAGE",
-                "CAN_QUERY",
-                "CAN_VIEW"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_QUERY",
+                    "CAN_VIEW"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "apps.AppResourceSqlWarehouse": {
@@ -1860,20 +1899,36 @@
               ]
             },
             "apps.AppResourceSqlWarehouseSqlWarehousePermission": {
-              "type": "string",
-              "enum": [
-                "CAN_MANAGE",
-                "CAN_USE",
-                "IS_OWNER"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_USE",
+                    "IS_OWNER"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "apps.ApplicationState": {
-              "type": "string",
-              "enum": [
-                "DEPLOYING",
-                "RUNNING",
-                "CRASHED",
-                "UNAVAILABLE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "DEPLOYING",
+                    "RUNNING",
+                    "CRASHED",
+                    "UNAVAILABLE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "apps.ApplicationStatus": {
@@ -1897,15 +1952,23 @@
               ]
             },
             "apps.ComputeState": {
-              "type": "string",
-              "enum": [
-                "ERROR",
-                "DELETING",
-                "STARTING",
-                "STOPPING",
-                "UPDATING",
-                "STOPPED",
-                "ACTIVE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "ERROR",
+                    "DELETING",
+                    "STARTING",
+                    "STOPPING",
+                    "UPDATING",
+                    "STOPPED",
+                    "ACTIVE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "apps.ComputeStatus": {
@@ -1959,11 +2022,19 @@
               ]
             },
             "catalog.MonitorCronSchedulePauseStatus": {
-              "type": "string",
-              "description": "Read only field that indicates whether a schedule is paused or not.",
-              "enum": [
-                "UNPAUSED",
-                "PAUSED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Read only field that indicates whether a schedule is paused or not.",
+                  "enum": [
+                    "UNPAUSED",
+                    "PAUSED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "catalog.MonitorDataClassificationConfig": {
@@ -2052,11 +2123,19 @@
               ]
             },
             "catalog.MonitorInferenceLogProblemType": {
-              "type": "string",
-              "description": "Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.",
-              "enum": [
-                "PROBLEM_TYPE_CLASSIFICATION",
-                "PROBLEM_TYPE_REGRESSION"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.",
+                  "enum": [
+                    "PROBLEM_TYPE_CLASSIFICATION",
+                    "PROBLEM_TYPE_REGRESSION"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "catalog.MonitorMetric": {
@@ -2101,12 +2180,20 @@
               ]
             },
             "catalog.MonitorMetricType": {
-              "type": "string",
-              "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics\n",
-              "enum": [
-                "CUSTOM_METRIC_TYPE_AGGREGATE",
-                "CUSTOM_METRIC_TYPE_DERIVED",
-                "CUSTOM_METRIC_TYPE_DRIFT"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics\n",
+                  "enum": [
+                    "CUSTOM_METRIC_TYPE_AGGREGATE",
+                    "CUSTOM_METRIC_TYPE_DERIVED",
+                    "CUSTOM_METRIC_TYPE_DRIFT"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "catalog.MonitorNotifications": {
@@ -2170,10 +2257,18 @@
               ]
             },
             "catalog.VolumeType": {
-              "type": "string",
-              "enum": [
-                "EXTERNAL",
-                "MANAGED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "EXTERNAL",
+                    "MANAGED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.Adlsgen2Info": {
@@ -2272,12 +2367,20 @@
               ]
             },
             "compute.AwsAvailability": {
-              "type": "string",
-              "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.\n",
-              "enum": [
-                "SPOT",
-                "ON_DEMAND",
-                "SPOT_WITH_FALLBACK"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.\n",
+                  "enum": [
+                    "SPOT",
+                    "ON_DEMAND",
+                    "SPOT_WITH_FALLBACK"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.AzureAttributes": {
@@ -2310,12 +2413,20 @@
               ]
             },
             "compute.AzureAvailability": {
-              "type": "string",
-              "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero (which only happens on pool clusters), this availability\ntype will be used for the entire cluster.",
-              "enum": [
-                "SPOT_AZURE",
-                "ON_DEMAND_AZURE",
-                "SPOT_WITH_FALLBACK_AZURE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero (which only happens on pool clusters), this availability\ntype will be used for the entire cluster.",
+                  "enum": [
+                    "SPOT_AZURE",
+                    "ON_DEMAND_AZURE",
+                    "SPOT_WITH_FALLBACK_AZURE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.ClientsTypes": {
@@ -2492,19 +2603,27 @@
               ]
             },
             "compute.DataSecurityMode": {
-              "type": "string",
-              "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\nThe following modes can only be used with `kind`.\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.\n* `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.\n\nThe following modes can be used regardless of `kind`.\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
-              "enum": [
-                "DATA_SECURITY_MODE_AUTO",
-                "DATA_SECURITY_MODE_STANDARD",
-                "DATA_SECURITY_MODE_DEDICATED",
-                "NONE",
-                "SINGLE_USER",
-                "USER_ISOLATION",
-                "LEGACY_TABLE_ACL",
-                "LEGACY_PASSTHROUGH",
-                "LEGACY_SINGLE_USER",
-                "LEGACY_SINGLE_USER_STANDARD"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\nThe following modes can only be used with `kind`.\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.\n* `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.\n\nThe following modes can be used regardless of `kind`.\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
+                  "enum": [
+                    "DATA_SECURITY_MODE_AUTO",
+                    "DATA_SECURITY_MODE_STANDARD",
+                    "DATA_SECURITY_MODE_DEDICATED",
+                    "NONE",
+                    "SINGLE_USER",
+                    "USER_ISOLATION",
+                    "LEGACY_TABLE_ACL",
+                    "LEGACY_PASSTHROUGH",
+                    "LEGACY_SINGLE_USER",
+                    "LEGACY_SINGLE_USER_STANDARD"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.DbfsStorageInfo": {
@@ -2572,11 +2691,19 @@
               ]
             },
             "compute.EbsVolumeType": {
-              "type": "string",
-              "description": "The type of EBS volumes that will be launched with this cluster.",
-              "enum": [
-                "GENERAL_PURPOSE_SSD",
-                "THROUGHPUT_OPTIMIZED_HDD"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The type of EBS volumes that will be launched with this cluster.",
+                  "enum": [
+                    "GENERAL_PURPOSE_SSD",
+                    "THROUGHPUT_OPTIMIZED_HDD"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.Environment": {
@@ -2643,12 +2770,20 @@
               ]
             },
             "compute.GcpAvailability": {
-              "type": "string",
-              "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
-              "enum": [
-                "PREEMPTIBLE_GCP",
-                "ON_DEMAND_GCP",
-                "PREEMPTIBLE_WITH_FALLBACK_GCP"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
+                  "enum": [
+                    "PREEMPTIBLE_GCP",
+                    "ON_DEMAND_GCP",
+                    "PREEMPTIBLE_WITH_FALLBACK_GCP"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.GcsStorageInfo": {
@@ -2882,12 +3017,20 @@
               ]
             },
             "compute.RuntimeEngine": {
-              "type": "string",
-              "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.\n",
-              "enum": [
-                "NULL",
-                "STANDARD",
-                "PHOTON"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.\n",
+                  "enum": [
+                    "NULL",
+                    "STANDARD",
+                    "PHOTON"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.S3StorageInfo": {
@@ -2999,10 +3142,18 @@
               ]
             },
             "dashboards.LifecycleState": {
-              "type": "string",
-              "enum": [
-                "ACTIVE",
-                "TRASHED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "TRASHED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.CleanRoomsNotebookTask": {
@@ -3040,10 +3191,18 @@
               ]
             },
             "jobs.Condition": {
-              "type": "string",
-              "enum": [
-                "ANY_UPDATED",
-                "ALL_UPDATED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "ANY_UPDATED",
+                    "ALL_UPDATED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.ConditionTask": {
@@ -3078,15 +3237,23 @@
               ]
             },
             "jobs.ConditionTaskOp": {
-              "type": "string",
-              "description": "* `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.\n* `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” \u003e= “12”` will evaluate to `true`, `“10.0” \u003e= “12”` will evaluate to `false`.\n\nThe boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.",
-              "enum": [
-                "EQUAL_TO",
-                "GREATER_THAN",
-                "GREATER_THAN_OR_EQUAL",
-                "LESS_THAN",
-                "LESS_THAN_OR_EQUAL",
-                "NOT_EQUAL"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "* `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.\n* `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” \u003e= “12”` will evaluate to `true`, `“10.0” \u003e= “12”` will evaluate to `false`.\n\nThe boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.",
+                  "enum": [
+                    "EQUAL_TO",
+                    "GREATER_THAN",
+                    "GREATER_THAN_OR_EQUAL",
+                    "LESS_THAN",
+                    "LESS_THAN_OR_EQUAL",
+                    "NOT_EQUAL"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.Continuous": {
@@ -3242,23 +3409,39 @@
               ]
             },
             "jobs.Format": {
-              "type": "string",
-              "enum": [
-                "SINGLE_TASK",
-                "MULTI_TASK"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SINGLE_TASK",
+                    "MULTI_TASK"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.GitProvider": {
-              "type": "string",
-              "enum": [
-                "gitHub",
-                "bitbucketCloud",
-                "azureDevOpsServices",
-                "gitHubEnterprise",
-                "bitbucketServer",
-                "gitLab",
-                "gitLabEnterpriseEdition",
-                "awsCodeCommit"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "gitHub",
+                    "bitbucketCloud",
+                    "azureDevOpsServices",
+                    "gitHubEnterprise",
+                    "bitbucketServer",
+                    "gitLab",
+                    "gitLabEnterpriseEdition",
+                    "awsCodeCommit"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.GitSnapshot": {
@@ -3371,18 +3554,34 @@
               ]
             },
             "jobs.JobDeploymentKind": {
-              "type": "string",
-              "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
-              "enum": [
-                "BUNDLE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
+                  "enum": [
+                    "BUNDLE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobEditMode": {
-              "type": "string",
-              "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
-              "enum": [
-                "UI_LOCKED",
-                "EDITABLE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
+                  "enum": [
+                    "UI_LOCKED",
+                    "EDITABLE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobEmailNotifications": {
@@ -3550,29 +3749,53 @@
               ]
             },
             "jobs.JobSourceDirtyState": {
-              "type": "string",
-              "description": "Dirty state indicates the job is not fully synced with the job specification\nin the remote repository.\n\nPossible values are:\n* `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.\n* `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.",
-              "enum": [
-                "NOT_SYNCED",
-                "DISCONNECTED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Dirty state indicates the job is not fully synced with the job specification\nin the remote repository.\n\nPossible values are:\n* `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.\n* `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.",
+                  "enum": [
+                    "NOT_SYNCED",
+                    "DISCONNECTED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobsHealthMetric": {
-              "type": "string",
-              "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.",
-              "enum": [
-                "RUN_DURATION_SECONDS",
-                "STREAMING_BACKLOG_BYTES",
-                "STREAMING_BACKLOG_RECORDS",
-                "STREAMING_BACKLOG_SECONDS",
-                "STREAMING_BACKLOG_FILES"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.",
+                  "enum": [
+                    "RUN_DURATION_SECONDS",
+                    "STREAMING_BACKLOG_BYTES",
+                    "STREAMING_BACKLOG_RECORDS",
+                    "STREAMING_BACKLOG_SECONDS",
+                    "STREAMING_BACKLOG_FILES"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobsHealthOperator": {
-              "type": "string",
-              "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
-              "enum": [
-                "GREATER_THAN"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
+                  "enum": [
+                    "GREATER_THAN"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobsHealthRule": {
@@ -3656,10 +3879,18 @@
               ]
             },
             "jobs.PauseStatus": {
-              "type": "string",
-              "enum": [
-                "UNPAUSED",
-                "PAUSED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "UNPAUSED",
+                    "PAUSED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.PeriodicTriggerConfiguration": {
@@ -3689,11 +3920,19 @@
               ]
             },
             "jobs.PeriodicTriggerConfigurationTimeUnit": {
-              "type": "string",
-              "enum": [
-                "HOURS",
-                "DAYS",
-                "WEEKS"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "HOURS",
+                    "DAYS",
+                    "WEEKS"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.PipelineParams": {
@@ -3795,15 +4034,23 @@
               ]
             },
             "jobs.RunIf": {
-              "type": "string",
-              "description": "An optional value indicating the condition that determines whether the task should be run once its dependencies have been completed. When omitted, defaults to `ALL_SUCCESS`.\n\nPossible values are:\n* `ALL_SUCCESS`: All dependencies have executed and succeeded\n* `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded\n* `NONE_FAILED`: None of the dependencies have failed and at least one was executed\n* `ALL_DONE`: All dependencies have been completed\n* `AT_LEAST_ONE_FAILED`: At least one dependency failed\n* `ALL_FAILED`: ALl dependencies have failed",
-              "enum": [
-                "ALL_SUCCESS",
-                "ALL_DONE",
-                "NONE_FAILED",
-                "AT_LEAST_ONE_SUCCESS",
-                "ALL_FAILED",
-                "AT_LEAST_ONE_FAILED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "An optional value indicating the condition that determines whether the task should be run once its dependencies have been completed. When omitted, defaults to `ALL_SUCCESS`.\n\nPossible values are:\n* `ALL_SUCCESS`: All dependencies have executed and succeeded\n* `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded\n* `NONE_FAILED`: None of the dependencies have failed and at least one was executed\n* `ALL_DONE`: All dependencies have been completed\n* `AT_LEAST_ONE_FAILED`: At least one dependency failed\n* `ALL_FAILED`: ALl dependencies have failed",
+                  "enum": [
+                    "ALL_SUCCESS",
+                    "ALL_DONE",
+                    "NONE_FAILED",
+                    "AT_LEAST_ONE_SUCCESS",
+                    "ALL_FAILED",
+                    "AT_LEAST_ONE_FAILED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.RunJobTask": {
@@ -3863,11 +4110,19 @@
               ]
             },
             "jobs.Source": {
-              "type": "string",
-              "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\\\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider.",
-              "enum": [
-                "WORKSPACE",
-                "GIT"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\\\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider.",
+                  "enum": [
+                    "WORKSPACE",
+                    "GIT"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.SparkJarTask": {
@@ -3886,6 +4141,10 @@
                     "parameters": {
                       "description": "Parameters passed to the main method.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.",
                       "$ref": "#/$defs/slice/string"
+                    },
+                    "run_as_repl": {
+                      "description": "Deprecated. A value of `false` is no longer supported.",
+                      "$ref": "#/$defs/bool"
                     }
                   },
                   "additionalProperties": false
@@ -4567,12 +4826,20 @@
               ]
             },
             "ml.ModelVersionStatus": {
-              "type": "string",
-              "description": "Current status of `model_version`",
-              "enum": [
-                "PENDING_REGISTRATION",
-                "FAILED_REGISTRATION",
-                "READY"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Current status of `model_version`",
+                  "enum": [
+                    "PENDING_REGISTRATION",
+                    "FAILED_REGISTRATION",
+                    "READY"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "ml.ModelVersionTag": {
@@ -4618,23 +4885,39 @@
               ]
             },
             "pipelines.DayOfWeek": {
-              "type": "string",
-              "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
-              "enum": [
-                "MONDAY",
-                "TUESDAY",
-                "WEDNESDAY",
-                "THURSDAY",
-                "FRIDAY",
-                "SATURDAY",
-                "SUNDAY"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
+                  "enum": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "pipelines.DeploymentKind": {
-              "type": "string",
-              "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
-              "enum": [
-                "BUNDLE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
+                  "enum": [
+                    "BUNDLE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "pipelines.FileLibrary": {
@@ -4940,11 +5223,19 @@
               ]
             },
             "pipelines.PipelineClusterAutoscaleMode": {
-              "type": "string",
-              "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n",
-              "enum": [
-                "ENHANCED",
-                "LEGACY"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n",
+                  "enum": [
+                    "ENHANCED",
+                    "LEGACY"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "pipelines.PipelineDeployment": {
@@ -5193,11 +5484,19 @@
               ]
             },
             "pipelines.TableSpecificConfigScdType": {
-              "type": "string",
-              "description": "The SCD type to use to ingest the table.",
-              "enum": [
-                "SCD_TYPE_1",
-                "SCD_TYPE_2"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The SCD type to use to ingest the table.",
+                  "enum": [
+                    "SCD_TYPE_1",
+                    "SCD_TYPE_2"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.Ai21LabsConfig": {
@@ -5206,11 +5505,11 @@
                   "type": "object",
                   "properties": {
                     "ai21labs_api_key": {
-                      "description": "The Databricks secret key reference for an AI21 Labs API key. If you prefer to paste your API key directly, see `ai21labs_api_key_plaintext`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
+                      "description": "The Databricks secret key reference for an AI21 Labs API key. If you\nprefer to paste your API key directly, see `ai21labs_api_key_plaintext`.\nYou must provide an API key using one of the following fields:\n`ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "ai21labs_api_key_plaintext": {
-                      "description": "An AI21 Labs API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `ai21labs_api_key`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
+                      "description": "An AI21 Labs API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `ai21labs_api_key`. You\nmust provide an API key using one of the following fields:\n`ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5232,7 +5531,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails"
                     },
                     "inference_table_config": {
-                      "description": "Configuration for payload logging using inference tables. Use these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.",
+                      "description": "Configuration for payload logging using inference tables.\nUse these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayInferenceTableConfig"
                     },
                     "rate_limits": {
@@ -5240,7 +5539,7 @@
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit"
                     },
                     "usage_tracking_config": {
-                      "description": "Configuration to enable usage tracking using system tables. These tables allow you to monitor operational usage on endpoints and their associated costs.",
+                      "description": "Configuration to enable usage tracking using system tables.\nThese tables allow you to monitor operational usage on endpoints and their associated costs.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayUsageTrackingConfig"
                     }
                   },
@@ -5258,7 +5557,7 @@
                   "type": "object",
                   "properties": {
                     "invalid_keywords": {
-                      "description": "List of invalid keywords. AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.",
+                      "description": "List of invalid keywords.\nAI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "pii": {
@@ -5270,7 +5569,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "valid_topics": {
-                      "description": "The list of allowed topics. Given a chat request, this guardrail flags the request if its topic is not in the allowed topics.",
+                      "description": "The list of allowed topics.\nGiven a chat request, this guardrail flags the request if its topic is not in the allowed topics.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -5288,14 +5587,11 @@
                   "type": "object",
                   "properties": {
                     "behavior": {
-                      "description": "Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.",
+                      "description": "Configuration for input guardrail filters.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehaviorBehavior"
                     }
                   },
-                  "additionalProperties": false,
-                  "required": [
-                    "behavior"
-                  ]
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -5304,11 +5600,18 @@
               ]
             },
             "serving.AiGatewayGuardrailPiiBehaviorBehavior": {
-              "type": "string",
-              "description": "Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.",
-              "enum": [
-                "NONE",
-                "BLOCK"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "NONE",
+                    "BLOCK"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.AiGatewayGuardrails": {
@@ -5339,7 +5642,7 @@
                   "type": "object",
                   "properties": {
                     "catalog_name": {
-                      "description": "The name of the catalog in Unity Catalog. Required when enabling inference tables. NOTE: On update, you have to disable inference table first in order to change the catalog name.",
+                      "description": "The name of the catalog in Unity Catalog. Required when enabling inference tables.\nNOTE: On update, you have to disable inference table first in order to change the catalog name.",
                       "$ref": "#/$defs/string"
                     },
                     "enabled": {
@@ -5347,11 +5650,11 @@
                       "$ref": "#/$defs/bool"
                     },
                     "schema_name": {
-                      "description": "The name of the schema in Unity Catalog. Required when enabling inference tables. NOTE: On update, you have to disable inference table first in order to change the schema name.",
+                      "description": "The name of the schema in Unity Catalog. Required when enabling inference tables.\nNOTE: On update, you have to disable inference table first in order to change the schema name.",
                       "$ref": "#/$defs/string"
                     },
                     "table_name_prefix": {
-                      "description": "The prefix of the table in Unity Catalog. NOTE: On update, you have to disable inference table first in order to change the prefix name.",
+                      "description": "The prefix of the table in Unity Catalog.\nNOTE: On update, you have to disable inference table first in order to change the prefix name.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5370,10 +5673,10 @@
                   "properties": {
                     "calls": {
                       "description": "Used to specify how many calls are allowed for a key within the renewal_period.",
-                      "$ref": "#/$defs/int"
+                      "$ref": "#/$defs/int64"
                     },
                     "key": {
-                      "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
+                      "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported,\nwith 'endpoint' being the default if not specified.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey"
                     },
                     "renewal_period": {
@@ -5394,18 +5697,32 @@
               ]
             },
             "serving.AiGatewayRateLimitKey": {
-              "type": "string",
-              "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
-              "enum": [
-                "user",
-                "endpoint"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "endpoint"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.AiGatewayRateLimitRenewalPeriod": {
-              "type": "string",
-              "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
-              "enum": [
-                "minute"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "minute"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.AiGatewayUsageTrackingConfig": {
@@ -5432,11 +5749,11 @@
                   "type": "object",
                   "properties": {
                     "aws_access_key_id": {
-                      "description": "The Databricks secret key reference for an AWS access key ID with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`.",
+                      "description": "The Databricks secret key reference for an AWS access key ID with\npermissions to interact with Bedrock services. If you prefer to paste\nyour API key directly, see `aws_access_key_id_plaintext`. You must provide an API\nkey using one of the following fields: `aws_access_key_id` or\n`aws_access_key_id_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "aws_access_key_id_plaintext": {
-                      "description": "An AWS access key ID with permissions to interact with Bedrock services provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`.",
+                      "description": "An AWS access key ID with permissions to interact with Bedrock services\nprovided as a plaintext string. If you prefer to reference your key using\nDatabricks Secrets, see `aws_access_key_id`. You must provide an API key\nusing one of the following fields: `aws_access_key_id` or\n`aws_access_key_id_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "aws_region": {
@@ -5444,15 +5761,15 @@
                       "$ref": "#/$defs/string"
                     },
                     "aws_secret_access_key": {
-                      "description": "The Databricks secret key reference for an AWS secret access key paired with the access key ID, with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_secret_access_key_plaintext`. You must provide an API key using one of the following fields: `aws_secret_access_key` or `aws_secret_access_key_plaintext`.",
+                      "description": "The Databricks secret key reference for an AWS secret access key paired\nwith the access key ID, with permissions to interact with Bedrock\nservices. If you prefer to paste your API key directly, see\n`aws_secret_access_key_plaintext`. You must provide an API key using one\nof the following fields: `aws_secret_access_key` or\n`aws_secret_access_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "aws_secret_access_key_plaintext": {
-                      "description": "An AWS secret access key paired with the access key ID, with permissions to interact with Bedrock services provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `aws_secret_access_key`. You must provide an API key using one of the following fields: `aws_secret_access_key` or `aws_secret_access_key_plaintext`.",
+                      "description": "An AWS secret access key paired with the access key ID, with permissions\nto interact with Bedrock services provided as a plaintext string. If you\nprefer to reference your key using Databricks Secrets, see\n`aws_secret_access_key`. You must provide an API key using one of the\nfollowing fields: `aws_secret_access_key` or\n`aws_secret_access_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "bedrock_provider": {
-                      "description": "The underlying provider in Amazon Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
+                      "description": "The underlying provider in Amazon Bedrock. Supported values (case\ninsensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfigBedrockProvider"
                     }
                   },
@@ -5469,13 +5786,20 @@
               ]
             },
             "serving.AmazonBedrockConfigBedrockProvider": {
-              "type": "string",
-              "description": "The underlying provider in Amazon Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
-              "enum": [
-                "anthropic",
-                "cohere",
-                "ai21labs",
-                "amazon"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "anthropic",
+                    "cohere",
+                    "ai21labs",
+                    "amazon"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.AnthropicConfig": {
@@ -5484,11 +5808,11 @@
                   "type": "object",
                   "properties": {
                     "anthropic_api_key": {
-                      "description": "The Databricks secret key reference for an Anthropic API key. If you prefer to paste your API key directly, see `anthropic_api_key_plaintext`. You must provide an API key using one of the following fields: `anthropic_api_key` or `anthropic_api_key_plaintext`.",
+                      "description": "The Databricks secret key reference for an Anthropic API key. If you\nprefer to paste your API key directly, see `anthropic_api_key_plaintext`.\nYou must provide an API key using one of the following fields:\n`anthropic_api_key` or `anthropic_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "anthropic_api_key_plaintext": {
-                      "description": "The Anthropic API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `anthropic_api_key`. You must provide an API key using one of the following fields: `anthropic_api_key` or `anthropic_api_key_plaintext`.",
+                      "description": "The Anthropic API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `anthropic_api_key`. You\nmust provide an API key using one of the following fields:\n`anthropic_api_key` or `anthropic_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5536,15 +5860,15 @@
                   "type": "object",
                   "properties": {
                     "cohere_api_base": {
-                      "description": "This is an optional field to provide a customized base URL for the Cohere API. \nIf left unspecified, the standard Cohere base URL is used.\n",
+                      "description": "This is an optional field to provide a customized base URL for the Cohere\nAPI. If left unspecified, the standard Cohere base URL is used.",
                       "$ref": "#/$defs/string"
                     },
                     "cohere_api_key": {
-                      "description": "The Databricks secret key reference for a Cohere API key. If you prefer to paste your API key directly, see `cohere_api_key_plaintext`. You must provide an API key using one of the following fields: `cohere_api_key` or `cohere_api_key_plaintext`.",
+                      "description": "The Databricks secret key reference for a Cohere API key. If you prefer\nto paste your API key directly, see `cohere_api_key_plaintext`. You must\nprovide an API key using one of the following fields: `cohere_api_key` or\n`cohere_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "cohere_api_key_plaintext": {
-                      "description": "The Cohere API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `cohere_api_key`. You must provide an API key using one of the following fields: `cohere_api_key` or `cohere_api_key_plaintext`.",
+                      "description": "The Cohere API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `cohere_api_key`. You\nmust provide an API key using one of the following fields:\n`cohere_api_key` or `cohere_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5562,15 +5886,15 @@
                   "type": "object",
                   "properties": {
                     "databricks_api_token": {
-                      "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\nIf you prefer to paste your API key directly, see `databricks_api_token_plaintext`.\nYou must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.\n",
+                      "description": "The Databricks secret key reference for a Databricks API token that\ncorresponds to a user or service principal with Can Query access to the\nmodel serving endpoint pointed to by this external model. If you prefer\nto paste your API key directly, see `databricks_api_token_plaintext`. You\nmust provide an API key using one of the following fields:\n`databricks_api_token` or `databricks_api_token_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "databricks_api_token_plaintext": {
-                      "description": "The Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model provided as a plaintext string.\nIf you prefer to reference your key using Databricks Secrets, see `databricks_api_token`.\nYou must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.\n",
+                      "description": "The Databricks API token that corresponds to a user or service principal\nwith Can Query access to the model serving endpoint pointed to by this\nexternal model provided as a plaintext string. If you prefer to reference\nyour key using Databricks Secrets, see `databricks_api_token`. You must\nprovide an API key using one of the following fields:\n`databricks_api_token` or `databricks_api_token_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "databricks_workspace_url": {
-                      "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n",
+                      "description": "The URL of the Databricks workspace containing the model serving endpoint\npointed to by this external model.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5591,19 +5915,19 @@
                   "type": "object",
                   "properties": {
                     "auto_capture_config": {
-                      "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.",
+                      "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.\nNote: this field is deprecated for creating new provisioned throughput endpoints,\nor updating existing provisioned throughput endpoints that never have inference table configured;\nin these cases please use AI Gateway to manage inference tables.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput"
                     },
                     "served_entities": {
-                      "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 15 served entities.",
+                      "description": "The list of served entities under the serving endpoint config.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput"
                     },
                     "served_models": {
-                      "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 15 served models.",
+                      "description": "(Deprecated, use served_entities instead) The list of served models under the serving endpoint config.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput"
                     },
                     "traffic_config": {
-                      "description": "The traffic config defining how invocations to the serving endpoint should be routed.",
+                      "description": "The traffic configuration associated with the serving endpoint config.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig"
                     }
                   },
@@ -5682,7 +6006,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.PaLmConfig"
                     },
                     "provider": {
-                      "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.\",\n",
+                      "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ExternalModelProvider"
                     },
                     "task": {
@@ -5704,17 +6028,24 @@
               ]
             },
             "serving.ExternalModelProvider": {
-              "type": "string",
-              "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.\",\n",
-              "enum": [
-                "ai21labs",
-                "anthropic",
-                "amazon-bedrock",
-                "cohere",
-                "databricks-model-serving",
-                "google-cloud-vertex-ai",
-                "openai",
-                "palm"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "ai21labs",
+                    "anthropic",
+                    "amazon-bedrock",
+                    "cohere",
+                    "databricks-model-serving",
+                    "google-cloud-vertex-ai",
+                    "openai",
+                    "palm"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.GoogleCloudVertexAiConfig": {
@@ -5723,23 +6054,27 @@
                   "type": "object",
                   "properties": {
                     "private_key": {
-                      "description": "The Databricks secret key reference for a private key for the service account which has access to the Google Cloud Vertex AI Service. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to paste your API key directly, see `private_key_plaintext`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`",
+                      "description": "The Databricks secret key reference for a private key for the service\naccount which has access to the Google Cloud Vertex AI Service. See [Best\npractices for managing service account keys]. If you prefer to paste your\nAPI key directly, see `private_key_plaintext`. You must provide an API\nkey using one of the following fields: `private_key` or\n`private_key_plaintext`\n\n[Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys",
                       "$ref": "#/$defs/string"
                     },
                     "private_key_plaintext": {
-                      "description": "The private key for the service account which has access to the Google Cloud Vertex AI Service provided as a plaintext secret. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to reference your key using Databricks Secrets, see `private_key`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`.",
+                      "description": "The private key for the service account which has access to the Google\nCloud Vertex AI Service provided as a plaintext secret. See [Best\npractices for managing service account keys]. If you prefer to reference\nyour key using Databricks Secrets, see `private_key`. You must provide an\nAPI key using one of the following fields: `private_key` or\n`private_key_plaintext`.\n\n[Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys",
                       "$ref": "#/$defs/string"
                     },
                     "project_id": {
-                      "description": "This is the Google Cloud project id that the service account is associated with.",
+                      "description": "This is the Google Cloud project id that the service account is\nassociated with.",
                       "$ref": "#/$defs/string"
                     },
                     "region": {
-                      "description": "This is the region for the Google Cloud Vertex AI Service. See [supported regions](https://cloud.google.com/vertex-ai/docs/general/locations) for more details. Some models are only available in specific regions.",
+                      "description": "This is the region for the Google Cloud Vertex AI Service. See [supported\nregions] for more details. Some models are only available in specific\nregions.\n\n[supported regions]: https://cloud.google.com/vertex-ai/docs/general/locations",
                       "$ref": "#/$defs/string"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "required": [
+                    "project_id",
+                    "region"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5751,49 +6086,50 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Configs needed to create an OpenAI model route.",
                   "properties": {
                     "microsoft_entra_client_id": {
-                      "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.\n",
+                      "description": "This field is only required for Azure AD OpenAI and is the Microsoft\nEntra Client ID.",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_client_secret": {
-                      "description": "The Databricks secret key reference for a client secret used for Microsoft Entra ID authentication.\nIf you prefer to paste your client secret directly, see `microsoft_entra_client_secret_plaintext`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n",
+                      "description": "The Databricks secret key reference for a client secret used for\nMicrosoft Entra ID authentication. If you prefer to paste your client\nsecret directly, see `microsoft_entra_client_secret_plaintext`. You must\nprovide an API key using one of the following fields:\n`microsoft_entra_client_secret` or\n`microsoft_entra_client_secret_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_client_secret_plaintext": {
-                      "description": "The client secret used for Microsoft Entra ID authentication provided as a plaintext string.\nIf you prefer to reference your key using Databricks Secrets, see `microsoft_entra_client_secret`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n",
+                      "description": "The client secret used for Microsoft Entra ID authentication provided as\na plaintext string. If you prefer to reference your key using Databricks\nSecrets, see `microsoft_entra_client_secret`. You must provide an API key\nusing one of the following fields: `microsoft_entra_client_secret` or\n`microsoft_entra_client_secret_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_tenant_id": {
-                      "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.\n",
+                      "description": "This field is only required for Azure AD OpenAI and is the Microsoft\nEntra Tenant ID.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_base": {
-                      "description": "This is a field to provide a customized base URl for the OpenAI API.\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\nFor other OpenAI API types, this field is optional, and if left unspecified, the standard OpenAI base URL is used.\n",
+                      "description": "This is a field to provide a customized base URl for the OpenAI API. For\nAzure OpenAI, this field is required, and is the base URL for the Azure\nOpenAI API service provided by Azure. For other OpenAI API types, this\nfield is optional, and if left unspecified, the standard OpenAI base URL\nis used.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_key": {
-                      "description": "The Databricks secret key reference for an OpenAI API key using the OpenAI or Azure service. If you prefer to paste your API key directly, see `openai_api_key_plaintext`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`.",
+                      "description": "The Databricks secret key reference for an OpenAI API key using the\nOpenAI or Azure service. If you prefer to paste your API key directly,\nsee `openai_api_key_plaintext`. You must provide an API key using one of\nthe following fields: `openai_api_key` or `openai_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_key_plaintext": {
-                      "description": "The OpenAI API key using the OpenAI or Azure service provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `openai_api_key`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`.",
+                      "description": "The OpenAI API key using the OpenAI or Azure service provided as a\nplaintext string. If you prefer to reference your key using Databricks\nSecrets, see `openai_api_key`. You must provide an API key using one of\nthe following fields: `openai_api_key` or `openai_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_type": {
-                      "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n",
+                      "description": "This is an optional field to specify the type of OpenAI API to use. For\nAzure OpenAI, this field is required, and adjust this parameter to\nrepresent the preferred security access validation protocol. For access\ntoken validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_version": {
-                      "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n",
+                      "description": "This is an optional field to specify the OpenAI API version. For Azure\nOpenAI, this field is required, and is the version of the Azure OpenAI\nservice to utilize, specified by a date.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_deployment_name": {
-                      "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n",
+                      "description": "This field is only required for Azure OpenAI and is the name of the\ndeployment resource for the Azure OpenAI service.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_organization": {
-                      "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n",
+                      "description": "This is an optional field to specify the organization in OpenAI or Azure\nOpenAI.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5811,11 +6147,11 @@
                   "type": "object",
                   "properties": {
                     "palm_api_key": {
-                      "description": "The Databricks secret key reference for a PaLM API key. If you prefer to paste your API key directly, see `palm_api_key_plaintext`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`.",
+                      "description": "The Databricks secret key reference for a PaLM API key. If you prefer to\npaste your API key directly, see `palm_api_key_plaintext`. You must\nprovide an API key using one of the following fields: `palm_api_key` or\n`palm_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "palm_api_key_plaintext": {
-                      "description": "The PaLM API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `palm_api_key`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`.",
+                      "description": "The PaLM API key provided as a plaintext string. If you prefer to\nreference your key using Databricks Secrets, see `palm_api_key`. You must\nprovide an API key using one of the following fields: `palm_api_key` or\n`palm_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5834,7 +6170,7 @@
                   "properties": {
                     "calls": {
                       "description": "Used to specify how many calls are allowed for a key within the renewal_period.",
-                      "$ref": "#/$defs/int"
+                      "$ref": "#/$defs/int64"
                     },
                     "key": {
                       "description": "Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
@@ -5858,18 +6194,32 @@
               ]
             },
             "serving.RateLimitKey": {
-              "type": "string",
-              "description": "Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
-              "enum": [
-                "user",
-                "endpoint"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "endpoint"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.RateLimitRenewalPeriod": {
-              "type": "string",
-              "description": "Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.",
-              "enum": [
-                "minute"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "minute"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.Route": {
@@ -5904,19 +6254,18 @@
                   "type": "object",
                   "properties": {
                     "entity_name": {
-                      "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC),\nor a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of\n__catalog_name__.__schema_name__.__model_name__.\n",
+                      "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.",
                       "$ref": "#/$defs/string"
                     },
                     "entity_version": {
-                      "description": "The version of the model in Databricks Model Registry to be served or empty if the entity is a FEATURE_SPEC.",
                       "$ref": "#/$defs/string"
                     },
                     "environment_vars": {
-                      "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity.\nNote: this is an experimental feature and subject to change. \nExample entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
+                      "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
                       "$ref": "#/$defs/map/string"
                     },
                     "external_model": {
-                      "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model,\nit cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later.\nThe task type of all external models within an endpoint must be the same.\n",
+                      "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled) can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model, it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later. The task type of all external models within an endpoint must be the same.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ExternalModel"
                     },
                     "instance_profile_arn": {
@@ -5932,7 +6281,7 @@
                       "$ref": "#/$defs/int"
                     },
                     "name": {
-                      "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores.\nIf not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other\nentities, it defaults to \u003centity-name\u003e-\u003centity-version\u003e.\n",
+                      "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
                       "$ref": "#/$defs/string"
                     },
                     "scale_to_zero_enabled": {
@@ -5940,12 +6289,12 @@
                       "$ref": "#/$defs/bool"
                     },
                     "workload_size": {
-                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.\n",
+                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.",
                       "$ref": "#/$defs/string"
                     },
                     "workload_type": {
-                      "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n",
-                      "$ref": "#/$defs/string"
+                      "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServingModelWorkloadType"
                     }
                   },
                   "additionalProperties": false
@@ -5962,11 +6311,11 @@
                   "type": "object",
                   "properties": {
                     "environment_vars": {
-                      "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this model.\nNote: this is an experimental feature and subject to change. \nExample model environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
+                      "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
                       "$ref": "#/$defs/map/string"
                     },
                     "instance_profile_arn": {
-                      "description": "ARN of the instance profile that the served model will use to access AWS resources.",
+                      "description": "ARN of the instance profile that the served entity uses to access AWS resources.",
                       "$ref": "#/$defs/string"
                     },
                     "max_provisioned_throughput": {
@@ -5978,27 +6327,25 @@
                       "$ref": "#/$defs/int"
                     },
                     "model_name": {
-                      "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model,\nin the form of __catalog_name__.__schema_name__.__model_name__.\n",
                       "$ref": "#/$defs/string"
                     },
                     "model_version": {
-                      "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served.",
                       "$ref": "#/$defs/string"
                     },
                     "name": {
-                      "description": "The name of a served model. It must be unique across an endpoint. If not specified, this field will default to \u003cmodel-name\u003e-\u003cmodel-version\u003e.\nA served model name can consist of alphanumeric characters, dashes, and underscores.\n",
+                      "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
                       "$ref": "#/$defs/string"
                     },
                     "scale_to_zero_enabled": {
-                      "description": "Whether the compute resources for the served model should scale down to zero.",
+                      "description": "Whether the compute resources for the served entity should scale down to zero.",
                       "$ref": "#/$defs/bool"
                     },
                     "workload_size": {
-                      "description": "The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0.\n",
+                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadSize"
                     },
                     "workload_type": {
-                      "description": "The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n",
+                      "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadType"
                     }
                   },
@@ -6016,23 +6363,55 @@
               ]
             },
             "serving.ServedModelInputWorkloadSize": {
-              "type": "string",
-              "description": "The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0.\n",
-              "enum": [
-                "Small",
-                "Medium",
-                "Large"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Small",
+                    "Medium",
+                    "Large"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.ServedModelInputWorkloadType": {
-              "type": "string",
-              "description": "The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n",
-              "enum": [
-                "CPU",
-                "GPU_SMALL",
-                "GPU_MEDIUM",
-                "GPU_LARGE",
-                "MULTIGPU_MEDIUM"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CPU",
+                    "GPU_MEDIUM",
+                    "GPU_SMALL",
+                    "GPU_LARGE",
+                    "MULTIGPU_MEDIUM"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.ServingModelWorkloadType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CPU",
+                    "GPU_MEDIUM",
+                    "GPU_SMALL",
+                    "GPU_LARGE",
+                    "MULTIGPU_MEDIUM"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.TrafficConfig": {
@@ -6901,5 +7280,5 @@
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": {}
 }
