@@ -1,7 +1,5 @@
 
 >>> errcode $CLI bundle validate --var a=one -o json
-
-Exit code: 0
 {
   "a": {
     "default": "hello",
