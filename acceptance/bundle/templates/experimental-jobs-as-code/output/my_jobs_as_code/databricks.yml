@@ -2,7 +2,7 @@
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: my_jobs_as_code
-  uuid: [UUID]
+  uuid: <UUID>
 
 experimental:
   python:
