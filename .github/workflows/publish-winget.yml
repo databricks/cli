@@ -60,9 +60,10 @@ jobs:
       - name: Publish to Winget
         run: |
           komac update Databricks.DatabricksCLI \
-            --version ${{ steps.strip_version.outputs.version }} \
-            --urls ${{ steps.get_windows_urls.outputs.urls }} \
             --dry-run
+            --version ${{ steps.strip_version.outputs.version }} \
+            --submit \
+            --urls ${{ steps.get_windows_urls.outputs.urls }} \
         env:
           KOMAC_FORK_OWNER: eng-dev-ecosystem-bot
           GITHUB_TOKEN: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}
