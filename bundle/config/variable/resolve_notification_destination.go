@@ -42,5 +42,5 @@ func (l resolveNotificationDestination) Resolve(ctx context.Context, w *databric
 }
 
 func (l resolveNotificationDestination) String() string {
-	return fmt.Sprintf("notification-destination: %s", l.name)
+	return "notification-destination: " + l.name
 }

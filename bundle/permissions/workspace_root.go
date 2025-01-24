@@ -3,6 +3,7 @@ package permissions
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
@@ -78,7 +79,7 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 	}
 
 	_, err = w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
+		WorkspaceObjectId:   strconv.FormatInt(obj.ObjectId, 10),
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
 	})

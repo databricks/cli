@@ -32,13 +32,8 @@ func NewGenerateJobCommand() *cobra.Command {
 	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
 	cmd.MarkFlagRequired("existing-job-id")
 
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = "."
-	}
-
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", filepath.Join(wd, "resources"), `Dir path where the output config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", filepath.Join(wd, "src"), `Dir path where the downloaded files will be stored`)
+	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
+	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -85,8 +80,8 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		oldFilename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.job.yml", jobKey))
+		oldFilename := filepath.Join(configDir, jobKey+".yml")
+		filename := filepath.Join(configDir, jobKey+".job.yml")
 
 		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
 		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
@@ -107,7 +102,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Job configuration successfully saved to %s", filename))
+		cmdio.LogString(ctx, "Job configuration successfully saved to "+filename)
 		return nil
 	}
 

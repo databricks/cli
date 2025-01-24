@@ -55,7 +55,7 @@ github.com/databricks/cli/bundle/config.Bundle:
       The name of the bundle.
   "uuid":
     "description": |-
-      PLACEHOLDER
+      Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
 github.com/databricks/cli/bundle/config.Deployment:
   "fail_on_active_runs":
     "description": |-
@@ -69,6 +69,9 @@ github.com/databricks/cli/bundle/config.Experimental:
   "pydabs":
     "description": |-
       The PyDABs configuration.
+  "python":
+    "description": |-
+      Configures loading of Python code defined with 'databricks-bundles' package.
   "python_wheel_wrapper":
     "description": |-
       Whether to use a Python wheel wrapper
@@ -125,7 +128,28 @@ github.com/databricks/cli/bundle/config.PyDABs:
   "venv_path":
     "description": |-
       The Python virtual environment path
+github.com/databricks/cli/bundle/config.Python:
+  "mutators":
+    "description": |-
+      Mutators contains a list of fully qualified function paths to mutator functions.
+
+      Example: ["my_project.mutators:add_default_cluster"]
+  "resources":
+    "description": |-
+      Resources contains a list of fully qualified function paths to load resources
+      defined in Python code.
+
+      Example: ["my_project.resources:load_resources"]
+  "venv_path":
+    "description": |-
+      VEnvPath is path to the virtual environment.
+
+      If enabled, Python code will execute within this environment. If disabled,
+      it defaults to using the Python interpreter available in the current shell.
 github.com/databricks/cli/bundle/config.Resources:
+  "apps":
+    "description": |-
+      PLACEHOLDER
   "clusters":
     "description": |-
       The cluster definitions for the bundle.
@@ -350,6 +374,64 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+github.com/databricks/cli/bundle/config/resources.App:
+  "active_deployment":
+    "description": |-
+      PLACEHOLDER
+  "app_status":
+    "description": |-
+      PLACEHOLDER
+  "compute_status":
+    "description": |-
+      PLACEHOLDER
+  "config":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "creator":
+    "description": |-
+      PLACEHOLDER
+  "default_source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "pending_deployment":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "resources":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_client_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "updater":
+    "description": |-
+      PLACEHOLDER
+  "url":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:
   "principal":
     "description": |-
@@ -417,10 +499,10 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
   "lookup":
     "description": |-
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-  "type":
+  "markdown_description":
     "description": |-
       The type of the variable.
-  "markdown_description":
+  "type":
     "description": |-
       The type of the variable.
 github.com/databricks/cli/bundle/config/variable.Variable:
@@ -438,64 +520,103 @@ github.com/databricks/cli/bundle/config/variable.Variable:
   "type":
     "description": |-
       The type of the variable.
-github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
-  "ai21labs_api_key":
+github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
+  "create_time":
     "description": |-
       PLACEHOLDER
-  "ai21labs_api_key_plaintext":
+  "creator":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
-  "private_key":
+  "deployment_artifacts":
     "description": |-
       PLACEHOLDER
-  "private_key_plaintext":
+  "deployment_id":
     "description": |-
       PLACEHOLDER
-  "project_id":
+  "mode":
     "description": |-
       PLACEHOLDER
-  "region":
+  "source_code_path":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.OpenAiConfig:
-  "microsoft_entra_client_id":
+  "status":
     "description": |-
       PLACEHOLDER
-  "microsoft_entra_client_secret":
+  "update_time":
     "description": |-
       PLACEHOLDER
-  "microsoft_entra_client_secret_plaintext":
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts:
+  "source_code_path":
     "description": |-
       PLACEHOLDER
-  "microsoft_entra_tenant_id":
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
+  "message":
     "description": |-
       PLACEHOLDER
-  "openai_api_base":
+  "state":
     "description": |-
       PLACEHOLDER
-  "openai_api_key":
+github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "description":
     "description": |-
       PLACEHOLDER
-  "openai_api_key_plaintext":
+  "job":
     "description": |-
       PLACEHOLDER
-  "openai_api_type":
+  "name":
     "description": |-
       PLACEHOLDER
-  "openai_api_version":
+  "secret":
     "description": |-
       PLACEHOLDER
-  "openai_deployment_name":
+  "serving_endpoint":
     "description": |-
       PLACEHOLDER
-  "openai_organization":
+  "sql_warehouse":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.PaLmConfig:
-  "palm_api_key":
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
+  "id":
     "description": |-
       PLACEHOLDER
-  "palm_api_key_plaintext":
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret:
+  "key":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+  "scope":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse:
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
+  "message":
+    "description": |-
+      PLACEHOLDER
+  "state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
+  "message":
+    "description": |-
+      PLACEHOLDER
+  "state":
     "description": |-
       PLACEHOLDER

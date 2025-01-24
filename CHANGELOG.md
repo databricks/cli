@@ -1,5 +1,78 @@
 # Version changelog
 
+## [Release] Release v0.239.1
+
+CLI:
+ * Added text output templates for apps list and list-deployments ([#2175](https://github.com/databricks/cli/pull/2175)).
+ * Fix duplicate "apps" entry in help output ([#2191](https://github.com/databricks/cli/pull/2191)).
+
+Bundles:
+ * Allow yaml-anchors in schema ([#2200](https://github.com/databricks/cli/pull/2200)).
+ * Show an error when non-yaml files used in include section ([#2201](https://github.com/databricks/cli/pull/2201)).
+ * Set WorktreeRoot to sync root outside git repo ([#2197](https://github.com/databricks/cli/pull/2197)).
+ * fix: Detailed message for using source-linked deployment with file_path specified ([#2119](https://github.com/databricks/cli/pull/2119)).
+ * Allow using variables in enum fields ([#2199](https://github.com/databricks/cli/pull/2199)).
+ * Add experimental-jobs-as-code template ([#2177](https://github.com/databricks/cli/pull/2177)).
+ * Reading variables from file ([#2171](https://github.com/databricks/cli/pull/2171)).
+ * Fixed an apps message order and added output test ([#2174](https://github.com/databricks/cli/pull/2174)).
+ * Default to forward slash-separated paths for path translation ([#2145](https://github.com/databricks/cli/pull/2145)).
+ * Include a materialized copy of built-in templates ([#2146](https://github.com/databricks/cli/pull/2146)).
+
+
+
+## [Release] Release v0.239.0
+
+### New feature announcement
+
+#### Databricks Apps support
+
+You can now manage Databricks Apps using DABs by defining an `app` resource in your bundle configuration.
+For more information see Databricks documentation https://docs.databricks.com/en/dev-tools/bundles/resources.html#app
+
+#### Referencing complex variables in complex variables
+
+You can now reference complex variables within other complex variables.
+For more details see https://github.com/databricks/cli/pull/2157
+
+CLI:
+ * Filter out system clusters in cluster picker ([#2131](https://github.com/databricks/cli/pull/2131)).
+ * Add command line flags for fields that are not in the API request body ([#2155](https://github.com/databricks/cli/pull/2155)).
+
+Bundles:
+ * Added support for Databricks Apps in DABs ([#1928](https://github.com/databricks/cli/pull/1928)).
+ * Allow artifact path to be located outside the sync root ([#2128](https://github.com/databricks/cli/pull/2128)).
+ * Retry app deployment if there is an active deployment in progress ([#2153](https://github.com/databricks/cli/pull/2153)).
+ * Resolve variables in a loop ([#2164](https://github.com/databricks/cli/pull/2164)).
+ * Improve resolution of complex variables within complex variables ([#2157](https://github.com/databricks/cli/pull/2157)).
+ * Added output message to warn about slower deployments with apps ([#2161](https://github.com/databricks/cli/pull/2161)).
+ * Patch references to UC schemas to capture dependencies automatically ([#1989](https://github.com/databricks/cli/pull/1989)).
+ * Format default-python template ([#2110](https://github.com/databricks/cli/pull/2110)).
+ * Encourage the use of root_path in production to ensure single deployment ([#1712](https://github.com/databricks/cli/pull/1712)).
+ * Log warnings to stderr for "bundle validate -o json" ([#2109](https://github.com/databricks/cli/pull/2109)).
+
+API Changes:
+ * Changed `databricks account federation-policy update` command with new required argument order.
+ * Changed `databricks account service-principal-federation-policy update` command with new required argument order.
+
+OpenAPI commit 779817ed8d63031f5ea761fbd25ee84f38feec0d (2025-01-08)
+Dependency updates:
+ * Upgrade TF provider to 1.63.0 ([#2162](https://github.com/databricks/cli/pull/2162)).
+ * Bump golangci-lint version to v1.63.4 from v1.63.1 ([#2114](https://github.com/databricks/cli/pull/2114)).
+ * Bump astral-sh/setup-uv from 4 to 5 ([#2116](https://github.com/databricks/cli/pull/2116)).
+ * Bump golang.org/x/oauth2 from 0.24.0 to 0.25.0 ([#2080](https://github.com/databricks/cli/pull/2080)).
+ * Bump github.com/hashicorp/hc-install from 0.9.0 to 0.9.1 ([#2079](https://github.com/databricks/cli/pull/2079)).
+ * Bump golang.org/x/term from 0.27.0 to 0.28.0 ([#2078](https://github.com/databricks/cli/pull/2078)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.54.0 to 0.55.0 ([#2126](https://github.com/databricks/cli/pull/2126)).
+
+## [Release] Release v0.238.0
+
+Bundles:
+ * Fix finding Python within virtualenv on Windows ([#2034](https://github.com/databricks/cli/pull/2034)).
+ * Include missing field descriptions in JSON schema ([#2045](https://github.com/databricks/cli/pull/2045)).
+ * Add validation for volume referenced from `artifact_path` ([#2050](https://github.com/databricks/cli/pull/2050)).
+ * Handle `${workspace.file_path}` references in source-linked deployments ([#2046](https://github.com/databricks/cli/pull/2046)).
+ * Set the write bit for files written during template initialization ([#2068](https://github.com/databricks/cli/pull/2068)).
+
 ## [Release] Release v0.237.0
 
 Bundles:

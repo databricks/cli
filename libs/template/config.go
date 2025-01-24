@@ -189,7 +189,7 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 	c.values[name], err = property.ParseString(userInput)
 	if err != nil {
 		// Show error and retry if validation fails
-		cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+		cmdio.LogString(c.ctx, "Validation failed: "+err.Error())
 		return retriableError{err: err}
 	}
 
@@ -197,7 +197,7 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 	err = c.schema.ValidateInstance(c.values)
 	if err != nil {
 		// Show error and retry if validation fails
-		cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+		cmdio.LogString(c.ctx, "Validation failed: "+err.Error())
 		return retriableError{err: err}
 	}
 	return nil

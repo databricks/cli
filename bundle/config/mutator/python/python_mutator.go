@@ -7,9 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
+
+	"github.com/databricks/cli/bundle/config/mutator/paths"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
@@ -40,6 +44,8 @@ const (
 	// We also open for possibility of appending other sections of bundle configuration,
 	// for example, adding new variables. However, this is not supported yet, and CLI rejects
 	// such changes.
+	//
+	// Deprecated, left for backward-compatibility with PyDABs.
 	PythonMutatorPhaseLoad phase = "load"
 
 	// PythonMutatorPhaseInit is the phase after bundle configuration was loaded, and
@@ -59,7 +65,46 @@ const (
 	// PyDABs can output YAML containing references to variables, and CLI should resolve them.
 	//
 	// Existing resources can't be removed, and CLI rejects such changes.
+	//
+	// Deprecated, left for backward-compatibility with PyDABs.
 	PythonMutatorPhaseInit phase = "init"
+
+	// PythonMutatorPhaseLoadResources is the phase in which YAML configuration was loaded.
+	//
+	// At this stage, we execute Python code to load resources defined in Python.
+	//
+	// During this process, Python code can access:
+	// - selected deployment target
+	// - bundle variable values
+	// - variables provided through CLI argument or environment variables
+	//
+	// The following is not available:
+	// - variables referencing other variables are in unresolved format
+	//
+	// Python code can output YAML referencing variables, and CLI should resolve them.
+	//
+	// Existing resources can't be removed or modified, and CLI rejects such changes.
+	// While it's called 'load_resources', this phase is executed in 'init' phase of mutator pipeline.
+	PythonMutatorPhaseLoadResources phase = "load_resources"
+
+	// PythonMutatorPhaseApplyMutators is the phase in which resources defined in YAML or Python
+	// are already loaded.
+	//
+	// At this stage, we execute Python code to mutate resources defined in YAML or Python.
+	//
+	// During this process, Python code can access:
+	// - selected deployment target
+	// - bundle variable values
+	// - variables provided through CLI argument or environment variables
+	//
+	// The following is not available:
+	// - variables referencing other variables are in unresolved format
+	//
+	// Python code can output YAML referencing variables, and CLI should resolve them.
+	//
+	// Resources can't be added or removed, and CLI rejects such changes. Python code is
+	// allowed to modify existing resources, but not other parts of bundle configuration.
+	PythonMutatorPhaseApplyMutators phase = "apply_mutators"
 )
 
 type pythonMutator struct {
@@ -76,18 +121,75 @@ func (m *pythonMutator) Name() string {
 	return fmt.Sprintf("PythonMutator(%s)", m.phase)
 }
 
-func getExperimental(b *bundle.Bundle) config.Experimental {
-	if b.Config.Experimental == nil {
-		return config.Experimental{}
+// opts is a common structure for deprecated PyDABs and upcoming Python
+// configuration sections
+type opts struct {
+	enabled bool
+
+	venvPath string
+
+	loadLocations bool
+}
+
+type runPythonMutatorOpts struct {
+	cacheDir       string
+	bundleRootPath string
+	pythonPath     string
+	loadLocations  bool
+}
+
+// getOpts adapts deprecated PyDABs and upcoming Python configuration
+// into a common structure.
+func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
+	experimental := b.Config.Experimental
+	if experimental == nil {
+		return opts{}, nil
 	}
 
-	return *b.Config.Experimental
+	// using reflect.DeepEquals in case we add more fields
+	pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
+	pythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
+
+	if pydabsEnabled && pythonEnabled {
+		return opts{}, errors.New("both experimental/pydabs and experimental/python are enabled, only one can be enabled")
+	} else if pydabsEnabled {
+		if !experimental.PyDABs.Enabled {
+			return opts{}, nil
+		}
+
+		// don't execute for phases for 'python' section
+		if phase == PythonMutatorPhaseInit || phase == PythonMutatorPhaseLoad {
+			return opts{
+				enabled:       true,
+				venvPath:      experimental.PyDABs.VEnvPath,
+				loadLocations: false, // not supported in PyDABs
+			}, nil
+		} else {
+			return opts{}, nil
+		}
+	} else if pythonEnabled {
+		// don't execute for phases for 'pydabs' section
+		if phase == PythonMutatorPhaseLoadResources || phase == PythonMutatorPhaseApplyMutators {
+			return opts{
+				enabled:       true,
+				venvPath:      experimental.Python.VEnvPath,
+				loadLocations: true,
+			}, nil
+		} else {
+			return opts{}, nil
+		}
+	} else {
+		return opts{}, nil
+	}
 }
 
 func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	experimental := getExperimental(b)
+	opts, err := getOpts(b, m.phase)
+	if err != nil {
+		return diag.Errorf("failed to apply python mutator: %s", err)
+	}
 
-	if !experimental.PyDABs.Enabled {
+	if !opts.enabled {
 		return nil
 	}
 
@@ -95,8 +197,8 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	var mutateDiags diag.Diagnostics
 	mutateDiagsHasError := errors.New("unexpected error")
 
-	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
-		pythonPath, err := detectExecutable(ctx, experimental.PyDABs.VEnvPath)
+	err = b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
+		pythonPath, err := detectExecutable(ctx, opts.venvPath)
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to get Python interpreter path: %w", err)
 		}
@@ -106,7 +208,12 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
 
-		rightRoot, diags := m.runPythonMutator(ctx, cacheDir, b.BundleRootPath, pythonPath, leftRoot)
+		rightRoot, diags := m.runPythonMutator(ctx, leftRoot, runPythonMutatorOpts{
+			cacheDir:       cacheDir,
+			bundleRootPath: b.BundleRootPath,
+			pythonPath:     pythonPath,
+			loadLocations:  opts.loadLocations,
+		})
 		mutateDiags = diags
 		if diags.HasError() {
 			return dyn.InvalidValue, mutateDiagsHasError
@@ -137,7 +244,7 @@ func createCacheDir(ctx context.Context) (string, error) {
 	// support the same env variable as in b.CacheDir
 	if tempDir, exists := env.TempDir(ctx); exists {
 		// use 'default' as target name
-		cacheDir := filepath.Join(tempDir, "default", "pydabs")
+		cacheDir := filepath.Join(tempDir, "default", "python")
 
 		err := os.MkdirAll(cacheDir, 0o700)
 		if err != nil {
@@ -147,16 +254,17 @@ func createCacheDir(ctx context.Context) (string, error) {
 		return cacheDir, nil
 	}
 
-	return os.MkdirTemp("", "-pydabs")
+	return os.MkdirTemp("", "-python")
 }
 
-func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath, pythonPath string, root dyn.Value) (dyn.Value, diag.Diagnostics) {
-	inputPath := filepath.Join(cacheDir, "input.json")
-	outputPath := filepath.Join(cacheDir, "output.json")
-	diagnosticsPath := filepath.Join(cacheDir, "diagnostics.json")
+func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, diag.Diagnostics) {
+	inputPath := filepath.Join(opts.cacheDir, "input.json")
+	outputPath := filepath.Join(opts.cacheDir, "output.json")
+	diagnosticsPath := filepath.Join(opts.cacheDir, "diagnostics.json")
+	locationsPath := filepath.Join(opts.cacheDir, "locations.json")
 
 	args := []string{
-		pythonPath,
+		opts.pythonPath,
 		"-m",
 		"databricks.bundles.build",
 		"--phase",
@@ -167,6 +275,10 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath
 		outputPath,
 		"--diagnostics",
 		diagnosticsPath,
+	}
+
+	if opts.loadLocations {
+		args = append(args, "--locations", locationsPath)
 	}
 
 	if err := writeInputFile(inputPath, root); err != nil {
@@ -183,7 +295,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath
 	_, processErr := process.Background(
 		ctx,
 		args,
-		process.WithDir(rootPath),
+		process.WithDir(opts.bundleRootPath),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
 	)
@@ -203,7 +315,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath
 	}
 
 	// process can fail without reporting errors in diagnostics file or creating it, for instance,
-	// venv doesn't have PyDABs library installed
+	// venv doesn't have 'databricks-bundles' library installed
 	if processErr != nil {
 		diagnostic := diag.Diagnostic{
 			Severity: diag.Error,
@@ -219,23 +331,27 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath
 		return dyn.InvalidValue, diag.Errorf("failed to load diagnostics: %s", pythonDiagnosticsErr)
 	}
 
-	output, outputDiags := loadOutputFile(rootPath, outputPath)
+	locations, err := loadLocationsFile(locationsPath)
+	if err != nil {
+		return dyn.InvalidValue, diag.Errorf("failed to load locations: %s", err)
+	}
+
+	output, outputDiags := loadOutputFile(opts.bundleRootPath, outputPath, locations)
 	pythonDiagnostics = pythonDiagnostics.Extend(outputDiags)
 
 	// we pass through pythonDiagnostic because it contains warnings
 	return output, pythonDiagnostics
 }
 
-const installExplanation = `If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies,
-and that the wheel is installed in the Python environment:
+const pythonInstallExplanation = `Ensure that 'databricks-bundles' is installed in Python environment:
 
-  $ .venv/bin/pip install -e .
+  $ .venv/bin/pip install databricks-bundles
 
 If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml,
 or activate the environment before running CLI commands:
 
   experimental:
-    pydabs:
+    python:
       venv_path: .venv
 `
 
@@ -245,9 +361,9 @@ or activate the environment before running CLI commands:
 func explainProcessErr(stderr string) string {
 	// implemented in cpython/Lib/runpy.py and portable across Python 3.x, including pypy
 	if strings.Contains(stderr, "Error while finding module specification for 'databricks.bundles.build'") {
-		summary := color.CyanString("Explanation: ") + "'databricks-pydabs' library is not installed in the Python environment.\n"
+		summary := color.CyanString("Explanation: ") + "'databricks-bundles' library is not installed in the Python environment.\n"
 
-		return stderr + "\n" + summary + "\n" + installExplanation
+		return stderr + "\n" + summary + "\n" + pythonInstallExplanation
 	}
 
 	return stderr
@@ -264,7 +380,21 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 	return os.WriteFile(inputPath, rootConfigJson, 0o600)
 }
 
-func loadOutputFile(rootPath, outputPath string) (dyn.Value, diag.Diagnostics) {
+// loadLocationsFile loads locations.json containing source locations for generated YAML.
+func loadLocationsFile(locationsPath string) (*pythonLocations, error) {
+	locationsFile, err := os.Open(locationsPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return newPythonLocations(), nil
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to open locations file: %w", err)
+	}
+
+	defer locationsFile.Close()
+
+	return parsePythonLocations(locationsFile)
+}
+
+func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
 	outputFile, err := os.Open(outputPath)
 	if err != nil {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to open output file: %w", err))
@@ -272,15 +402,19 @@ func loadOutputFile(rootPath, outputPath string) (dyn.Value, diag.Diagnostics) {
 
 	defer outputFile.Close()
 
+	return loadOutput(rootPath, outputFile, locations)
+}
+
+func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
 	//
-	// virtualPath has to stay in rootPath, because locations outside root path are not allowed:
+	// virtualPath has to stay in bundleRootPath, because locations outside root path are not allowed:
 	//
-	//   Error: path /var/folders/.../pydabs/dist/*.whl is not contained in bundle root path
+	//   Error: path /var/folders/.../python/dist/*.whl is not contained in bundle root path
 	//
 	// for that, we pass virtualPath instead of outputPath as file location
-	virtualPath, err := filepath.Abs(filepath.Join(rootPath, "__generated_by_pydabs__.yml"))
+	virtualPath, err := filepath.Abs(filepath.Join(rootPath, generatedFileName))
 	if err != nil {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to get absolute path: %w", err))
 	}
@@ -290,7 +424,29 @@ func loadOutputFile(rootPath, outputPath string) (dyn.Value, diag.Diagnostics) {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
 	}
 
-	return strictNormalize(config.Root{}, generated)
+	// paths are resolved relative to locations of their values, if we change location
+	// we have to update each path, until we simplify that, we don't update locations
+	// for such values, so we don't change how paths are resolved
+	//
+	// we can remove this once we:
+	// - add variable interpolation before and after PythonMutator
+	// - implement path normalization (aka path normal form)
+	_, err = paths.VisitJobPaths(generated, func(p dyn.Path, kind paths.PathKind, v dyn.Value) (dyn.Value, error) {
+		putPythonLocation(locations, p, v.Location())
+		return v, nil
+	})
+	if err != nil {
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to update locations: %w", err))
+	}
+
+	// generated has dyn.Location as if it comes from generated YAML file
+	// earlier we loaded locations.json with source locations in Python code
+	generatedWithLocations, err := mergePythonLocations(generated, locations)
+	if err != nil {
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to update locations: %w", err))
+	}
+
+	return strictNormalize(config.Root{}, generatedWithLocations)
 }
 
 func strictNormalize(dst any, generated dyn.Value) (dyn.Value, diag.Diagnostics) {
@@ -334,19 +490,23 @@ func loadDiagnosticsFile(path string) (diag.Diagnostics, error) {
 func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisitor, error) {
 	switch phase {
 	case PythonMutatorPhaseLoad:
-		return createLoadOverrideVisitor(ctx), nil
+		return createLoadResourcesOverrideVisitor(ctx), nil
 	case PythonMutatorPhaseInit:
-		return createInitOverrideVisitor(ctx), nil
+		return createInitOverrideVisitor(ctx, insertResourceModeAllow), nil
+	case PythonMutatorPhaseLoadResources:
+		return createLoadResourcesOverrideVisitor(ctx), nil
+	case PythonMutatorPhaseApplyMutators:
+		return createInitOverrideVisitor(ctx, insertResourceModeDisallow), nil
 	default:
 		return merge.OverrideVisitor{}, fmt.Errorf("unknown phase: %s", phase)
 	}
 }
 
-// createLoadOverrideVisitor creates an override visitor for the load phase.
+// createLoadResourcesOverrideVisitor creates an override visitor for the load_resources phase.
 //
-// During load, it's only possible to create new resources, and not modify or
+// During load_resources, it's only possible to create new resources, and not modify or
 // delete existing ones.
-func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+func createLoadResourcesOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
@@ -385,11 +545,21 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	}
 }
 
+// insertResourceMode controls whether createInitOverrideVisitor allows or disallows inserting new resources.
+type insertResourceMode int
+
+const (
+	insertResourceModeDisallow insertResourceMode = iota
+	insertResourceModeAllow    insertResourceMode = iota
+)
+
 // createInitOverrideVisitor creates an override visitor for the init phase.
 //
 // During the init phase it's possible to create new resources, modify existing
 // resources, but not delete existing resources.
-func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+//
+// If mode is insertResourceModeDisallow, it matching expected behaviour of apply_mutators
+func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) merge.OverrideVisitor {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
@@ -424,6 +594,11 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
 
+			insertResource := len(valuePath) == len(jobsPath)+1
+			if mode == insertResourceModeDisallow && insertResource {
+				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
+			}
+
 			log.Debugf(ctx, "Insert value at %q", valuePath.String())
 
 			return right, nil
@@ -441,9 +616,9 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 }
 
 func isOmitemptyDelete(left dyn.Value) bool {
-	// PyDABs can omit empty sequences/mappings in output, because we don't track them as optional,
+	// Python output can omit empty sequences/mappings, because we don't track them as optional,
 	// there is no semantic difference between empty and missing, so we keep them as they were before
-	// PyDABs deleted them.
+	// Python mutator deleted them.
 
 	switch left.Kind() {
 	case dyn.KindMap:

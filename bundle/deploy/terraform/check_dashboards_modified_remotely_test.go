@@ -2,7 +2,7 @@ package terraform
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -122,7 +122,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T)
 	dashboardsAPI := m.GetMockLakeviewAPI()
 	dashboardsAPI.EXPECT().
 		GetByDashboardId(mock.Anything, "id1").
-		Return(nil, fmt.Errorf("failure")).
+		Return(nil, errors.New("failure")).
 		Once()
 	b.SetWorkpaceClient(m.WorkspaceClient)
 

@@ -32,13 +32,8 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
 	cmd.MarkFlagRequired("existing-pipeline-id")
 
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = "."
-	}
-
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", filepath.Join(wd, "resources"), `Dir path where the output config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", filepath.Join(wd, "src"), `Dir path where the downloaded files will be stored`)
+	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
+	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -85,8 +80,8 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			return err
 		}
 
-		oldFilename := filepath.Join(configDir, fmt.Sprintf("%s.yml", pipelineKey))
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.pipeline.yml", pipelineKey))
+		oldFilename := filepath.Join(configDir, pipelineKey+".yml")
+		filename := filepath.Join(configDir, pipelineKey+".pipeline.yml")
 
 		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
 		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
@@ -109,7 +104,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			return err
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Pipeline configuration successfully saved to %s", filename))
+		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filename)
 		return nil
 	}
 

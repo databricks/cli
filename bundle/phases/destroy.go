@@ -3,7 +3,6 @@ package phases
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
@@ -34,7 +33,7 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	tf := b.Terraform
 	if tf == nil {
-		return false, fmt.Errorf("terraform not initialized")
+		return false, errors.New("terraform not initialized")
 	}
 
 	// read plan file
@@ -63,7 +62,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("All files and directories at the following location will be deleted: %s", b.Config.Workspace.RootPath))
+	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
 	cmdio.LogString(ctx, "")
 
 	if b.AutoApprove {

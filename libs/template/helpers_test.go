@@ -86,7 +86,7 @@ func TestTemplateRandIntFunction(t *testing.T) {
 	assert.Len(t, r.files, 1)
 	randInt, err := strconv.Atoi(strings.TrimSpace(string(r.files[0].(*inMemoryFile).content)))
 	assert.Less(t, randInt, 10)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 }
 
 func TestTemplateUuidFunction(t *testing.T) {

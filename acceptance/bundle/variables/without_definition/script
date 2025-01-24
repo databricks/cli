@@ -1,0 +1,1 @@
+BUNDLE_VAR_a=foo BUNDLE_VAR_b=bar $CLI bundle validate -o json | jq '.variables | map_values(.value)'

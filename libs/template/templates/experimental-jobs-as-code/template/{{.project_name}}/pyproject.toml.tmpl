@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{{.project_name}}"
+requires-python = ">=3.10"
+description = "wheel file based on {{.project_name}}"
+
+# Dependencies in case the output wheel file is used as a library dependency.
+# For defining dependencies, when this package is used in Databricks, see:
+# https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
+#
+# Example:
+# dependencies = [
+#     "requests==x.y.z",
+# ]
+dependencies = [
+]
+
+# see setup.py
+dynamic = ["version"]
+
+{{ if .include_python -}}
+[project.entry-points.packages]
+main = "{{.project_name}}.main:main"
+
+{{ end -}}
+
+[tool.setuptools]
+{{ if .include_python -}}
+py-modules = ["resources", "{{.project_name}}"]
+
+{{ else }}
+py-modules = ["resources"]
+
+{{ end -}}
+[tool.uv]
+## Dependencies for local development
+dev-dependencies = [
+    "databricks-bundles==0.7.0",
+
+    ## Add code completion support for DLT
+    # "databricks-dlt",
+
+    ## databricks-connect can be used to run parts of this project locally.
+    ## See https://docs.databricks.com/dev-tools/databricks-connect.html.
+    ##
+    ## Uncomment line below to install a version of db-connect that corresponds to
+    ## the Databricks Runtime version used for this project.
+    # "databricks-connect{{template "latest_lts_db_connect_version_spec"}}",
+]
+
+override-dependencies = [
+    # pyspark package conflicts with 'databricks-connect'
+    "pyspark; sys_platform == 'never'",
+]

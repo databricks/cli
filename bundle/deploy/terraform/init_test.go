@@ -225,7 +225,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	env := make(map[string]string, 0)
 	err := setProxyEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
-	assert.Len(t, env, 0)
+	assert.Empty(t, env)
 
 	// Lower case set.
 	clearEnv()
@@ -248,7 +248,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 }
 
-func TestSetUserAgentExtraEnvVar(t *testing.T) {
+func TestSetUserAgentExtraEnvVar_PyDABs(t *testing.T) {
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -265,6 +265,26 @@ func TestSetUserAgentExtraEnvVar(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
 		"DATABRICKS_USER_AGENT_EXTRA": "cli/0.0.0-dev databricks-pydabs/0.0.0",
+	}, env)
+}
+
+func TestSetUserAgentExtraEnvVar_Python(t *testing.T) {
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				Python: config.Python{
+					Resources: []string{"my_project.resources:load_resources"},
+				},
+			},
+		},
+	}
+
+	env := make(map[string]string, 0)
+	err := setUserAgentExtraEnvVar(env, b)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"DATABRICKS_USER_AGENT_EXTRA": "cli/0.0.0-dev databricks-pydabs/0.7.0",
 	}, env)
 }
 
@@ -293,7 +313,7 @@ func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, env, "USERPROFILE")
-	assert.Equal(t, env["USERPROFILE"], "c:\\foo\\c")
+	assert.Equal(t, "c:\\foo\\c", env["USERPROFILE"])
 }
 
 func TestInheritEnvVarsWithAbsentTFConfigFile(t *testing.T) {

@@ -2,7 +2,7 @@ package bundle
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 
 	"github.com/databricks/cli/bundle"
@@ -49,16 +49,16 @@ func newDestroyCommand() *cobra.Command {
 		// we require auto-approve for non tty terminals since interactive consent
 		// is not possible
 		if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
-			return fmt.Errorf("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
+			return errors.New("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
 		}
 
 		// Check auto-approve is selected for json logging
 		logger, ok := cmdio.FromContext(ctx)
 		if !ok {
-			return fmt.Errorf("progress logger not found")
+			return errors.New("progress logger not found")
 		}
 		if logger.Mode == flags.ModeJson && !autoApprove {
-			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
+			return errors.New("please specify --auto-approve since selected logging format is json")
 		}
 
 		diags = bundle.Apply(ctx, b, bundle.Seq(

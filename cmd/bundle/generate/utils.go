@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -63,6 +64,37 @@ func (n *downloader) markFileForDownload(ctx context.Context, filePath *string) 
 	return nil
 }
 
+func (n *downloader) markDirectoryForDownload(ctx context.Context, dirPath *string) error {
+	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath)
+	if err != nil {
+		return err
+	}
+
+	objects, err := n.w.Workspace.RecursiveList(ctx, *dirPath)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objects {
+		if obj.ObjectType == workspace.ObjectTypeDirectory {
+			continue
+		}
+
+		err := n.markFileForDownload(ctx, &obj.Path)
+		if err != nil {
+			return err
+		}
+	}
+
+	rel, err := filepath.Rel(n.configDir, n.sourceDir)
+	if err != nil {
+		return err
+	}
+
+	*dirPath = rel
+	return nil
+}
+
 func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *string) error {
 	info, err := n.w.Workspace.GetStatusByPath(ctx, *notebookPath)
 	if err != nil {
@@ -106,9 +138,7 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 	}
 
 	errs, errCtx := errgroup.WithContext(ctx)
-	for k, v := range n.files {
-		targetPath := k
-		filePath := v
+	for targetPath, filePath := range n.files {
 		errs.Go(func() error {
 			reader, err := n.w.Workspace.Download(errCtx, filePath)
 			if err != nil {
@@ -126,7 +156,7 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 				return err
 			}
 
-			cmdio.LogString(errCtx, fmt.Sprintf("File successfully saved to %s", targetPath))
+			cmdio.LogString(errCtx, "File successfully saved to "+targetPath)
 			return reader.Close()
 		})
 	}

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,4 +52,32 @@ func ReadFile(t TestingT, path string) string {
 	require.NoError(t, err)
 
 	return string(b)
+}
+
+// StatFile returns the file info for a file.
+func StatFile(t TestingT, path string) os.FileInfo {
+	fi, err := os.Stat(path)
+	require.NoError(t, err)
+
+	return fi
+}
+
+// AssertFileContents asserts that the file at path has the expected content.
+func AssertFileContents(t TestingT, path, expected string) bool {
+	actual := ReadFile(t, path)
+	return assert.Equal(t, expected, actual)
+}
+
+// AssertFilePermissions asserts that the file at path has the expected permissions.
+func AssertFilePermissions(t TestingT, path string, expected os.FileMode) bool {
+	fi := StatFile(t, path)
+	assert.False(t, fi.Mode().IsDir(), "expected a file, got a directory")
+	return assert.Equal(t, expected, fi.Mode().Perm(), "expected 0%o, got 0%o", expected, fi.Mode().Perm())
+}
+
+// AssertDirPermissions asserts that the file at path has the expected permissions.
+func AssertDirPermissions(t TestingT, path string, expected os.FileMode) bool {
+	fi := StatFile(t, path)
+	assert.True(t, fi.Mode().IsDir(), "expected a directory, got a file")
+	return assert.Equal(t, expected, fi.Mode().Perm(), "expected 0%o, got 0%o", expected, fi.Mode().Perm())
 }

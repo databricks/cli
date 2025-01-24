@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"fmt"
 	"path"
 	"strings"
 
@@ -52,8 +51,8 @@ func completeRemotePath(
 	}
 
 	prefixes := []string{
-		path.Clean(fmt.Sprintf("/Users/%s", me.UserName)) + "/",
-		path.Clean(fmt.Sprintf("/Repos/%s", me.UserName)) + "/",
+		path.Clean("/Users/"+me.UserName) + "/",
+		path.Clean("/Repos/"+me.UserName) + "/",
 	}
 
 	validPrefix := false

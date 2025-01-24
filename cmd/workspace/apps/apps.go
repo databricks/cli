@@ -78,6 +78,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation.`)
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	// TODO: complex arg: compute_status

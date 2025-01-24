@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -124,7 +125,7 @@ func splitAtLastNewLine(s string) (string, string) {
 
 func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 	if l.Mode == flags.ModeJson {
-		return "", fmt.Errorf("question prompts are not supported in json mode")
+		return "", errors.New("question prompts are not supported in json mode")
 	}
 
 	// Promptui does not support multiline prompts. So we split the question.
@@ -140,7 +141,7 @@ func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 		HideHelp: true,
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{.}}: ",
-			Selected: fmt.Sprintf("%s: {{.}}", last),
+			Selected: last + ": {{.}}",
 		},
 	}
 
@@ -153,7 +154,7 @@ func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 
 func (l *Logger) Ask(question, defaultVal string) (string, error) {
 	if l.Mode == flags.ModeJson {
-		return "", fmt.Errorf("question prompts are not supported in json mode")
+		return "", errors.New("question prompts are not supported in json mode")
 	}
 
 	// Add default value to question prompt.
@@ -188,7 +189,7 @@ func (l *Logger) writeJson(event Event) {
 		// we panic because there we cannot catch this in jobs.RunNowAndWait
 		panic(err)
 	}
-	_, _ = l.Writer.Write([]byte(b))
+	_, _ = l.Writer.Write(b)
 	_, _ = l.Writer.Write([]byte("\n"))
 }
 

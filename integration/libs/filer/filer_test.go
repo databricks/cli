@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"io/fs"
 	"path"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -106,7 +104,7 @@ func commonFilerRecursiveDeleteTest(t *testing.T, ctx context.Context, f filer.F
 	for _, e := range entriesBeforeDelete {
 		names = append(names, e.Name())
 	}
-	assert.Equal(t, names, []string{"file1", "file2", "subdir1", "subdir2"})
+	assert.Equal(t, []string{"file1", "file2", "subdir1", "subdir2"}, names)
 
 	err = f.Delete(ctx, "dir")
 	assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
@@ -130,11 +128,9 @@ func TestFilerRecursiveDelete(t *testing.T) {
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
-		tc := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			f, _ := tc.f(t)
+			f, _ := testCase.f(t)
 			ctx := context.Background()
 
 			// Common tests we run across all filers to ensure consistent behavior.
@@ -149,13 +145,13 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Write should fail because the intermediate directory doesn't exist.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
-	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorAs(t, err, &filer.NoSuchDirectoryError{})
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Read should fail because the intermediate directory doesn't yet exist.
 	_, err = f.Read(ctx, "/foo/bar")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorAs(t, err, &filer.FileDoesNotExistError{})
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Read should fail because the path points to a directory
 	err = f.Mkdir(ctx, "/dir")
@@ -170,8 +166,8 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Write should fail because there is an existing file at the specified path.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
-	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
-	assert.True(t, errors.Is(err, fs.ErrExist))
+	assert.ErrorAs(t, err, &filer.FileAlreadyExistsError{})
+	assert.ErrorIs(t, err, fs.ErrExist)
 
 	// Write with OverwriteIfExists should succeed.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
@@ -188,7 +184,7 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	require.NoError(t, err)
 	assert.Equal(t, "foo", info.Name())
 	assert.True(t, info.Mode().IsDir())
-	assert.Equal(t, true, info.IsDir())
+	assert.True(t, info.IsDir())
 
 	// Stat on a file should succeed.
 	// Note: size and modification time behave differently between backends.
@@ -196,17 +192,17 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", info.Name())
 	assert.True(t, info.Mode().IsRegular())
-	assert.Equal(t, false, info.IsDir())
+	assert.False(t, info.IsDir())
 
 	// Delete should fail if the file doesn't exist.
 	err = f.Delete(ctx, "/doesnt_exist")
 	assert.ErrorAs(t, err, &filer.FileDoesNotExistError{})
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Stat should fail if the file doesn't exist.
 	_, err = f.Stat(ctx, "/doesnt_exist")
 	assert.ErrorAs(t, err, &filer.FileDoesNotExistError{})
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Delete should succeed for file that does exist.
 	err = f.Delete(ctx, "/foo/bar")
@@ -215,7 +211,7 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	// Delete should fail for a non-empty directory.
 	err = f.Delete(ctx, "/foo")
 	assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
-	assert.True(t, errors.Is(err, fs.ErrInvalid))
+	assert.ErrorIs(t, err, fs.ErrInvalid)
 
 	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
 	err = f.Delete(ctx, "/foo", filer.DeleteRecursively)
@@ -224,8 +220,8 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	// Delete of the filer root should ALWAYS fail, otherwise subsequent writes would fail.
 	// It is not in the filer's purview to delete its root directory.
 	err = f.Delete(ctx, "/")
-	assert.True(t, errors.As(err, &filer.CannotDeleteRootError{}))
-	assert.True(t, errors.Is(err, fs.ErrInvalid))
+	assert.ErrorAs(t, err, &filer.CannotDeleteRootError{})
+	assert.ErrorIs(t, err, fs.ErrInvalid)
 }
 
 func TestFilerReadWrite(t *testing.T) {
@@ -241,11 +237,9 @@ func TestFilerReadWrite(t *testing.T) {
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
-		tc := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			f, _ := tc.f(t)
+			f, _ := testCase.f(t)
 			ctx := context.Background()
 
 			// Common tests we run across all filers to ensure consistent behavior.
@@ -262,7 +256,7 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	// We start with an empty directory.
 	entries, err := f.ReadDir(ctx, ".")
 	require.NoError(t, err)
-	assert.Len(t, entries, 0)
+	assert.Empty(t, entries)
 
 	// Write a file.
 	err = f.Write(ctx, "/hello.txt", strings.NewReader(`hello world`))
@@ -282,8 +276,8 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 
 	// Expect an error if the path doesn't exist.
 	_, err = f.ReadDir(ctx, "/dir/a/b/c/d/e")
-	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}), err)
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorAs(t, err, &filer.NoSuchDirectoryError{}, err)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Expect two entries in the root.
 	entries, err = f.ReadDir(ctx, ".")
@@ -295,7 +289,7 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.False(t, entries[1].IsDir())
 	info, err = entries[1].Info()
 	require.NoError(t, err)
-	assert.Greater(t, info.ModTime().Unix(), int64(0))
+	assert.Positive(t, info.ModTime().Unix())
 
 	// Expect two entries in the directory.
 	entries, err = f.ReadDir(ctx, "/dir")
@@ -307,7 +301,7 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.False(t, entries[1].IsDir())
 	info, err = entries[1].Info()
 	require.NoError(t, err)
-	assert.Greater(t, info.ModTime().Unix(), int64(0))
+	assert.Positive(t, info.ModTime().Unix())
 
 	// Expect a single entry in the nested path.
 	entries, err = f.ReadDir(ctx, "/dir/a/b")
@@ -325,7 +319,7 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	require.NoError(t, err)
 	entries, err = f.ReadDir(ctx, "empty-dir")
 	assert.NoError(t, err)
-	assert.Len(t, entries, 0)
+	assert.Empty(t, entries)
 
 	// Expect one entry for a directory with a file in it
 	err = f.Write(ctx, "dir-with-one-file/my-file.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
@@ -333,7 +327,7 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	entries, err = f.ReadDir(ctx, "dir-with-one-file")
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
-	assert.Equal(t, entries[0].Name(), "my-file.txt")
+	assert.Equal(t, "my-file.txt", entries[0].Name())
 	assert.False(t, entries[0].IsDir())
 }
 
@@ -350,11 +344,9 @@ func TestFilerReadDir(t *testing.T) {
 		{"files", setupUcVolumesFiler},
 		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
-		tc := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			f, _ := tc.f(t)
+			f, _ := testCase.f(t)
 			ctx := context.Background()
 
 			commonFilerReadDirTest(t, ctx, f)
@@ -459,7 +451,7 @@ func TestFilerWorkspaceNotebook(t *testing.T) {
 			// Assert uploading a second time fails due to overwrite mode missing
 			err = f.Write(ctx, tc.name, strings.NewReader(tc.content2))
 			require.ErrorIs(t, err, fs.ErrExist)
-			assert.Regexp(t, regexp.MustCompile(`file already exists: .*/`+tc.nameWithoutExt+`$`), err.Error())
+			assert.Regexp(t, `file already exists: .*/`+tc.nameWithoutExt+`$`, err.Error())
 
 			// Try uploading the notebook again with overwrite flag. This time it should succeed.
 			err = f.Write(ctx, tc.name, strings.NewReader(tc.content2), filer.OverwriteIfExists)

@@ -2,7 +2,6 @@ package bundle_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -99,7 +98,7 @@ func TestBundleDeployUcSchema(t *testing.T) {
 	// Assert the schema is deleted
 	_, err = w.Schemas.GetByFullName(ctx, strings.Join([]string{catalogName, schemaName}, "."))
 	apiErr := &apierr.APIError{}
-	assert.True(t, errors.As(err, &apiErr))
+	assert.ErrorAs(t, err, &apiErr)
 	assert.Equal(t, "SCHEMA_DOES_NOT_EXIST", apiErr.ErrorCode)
 }
 

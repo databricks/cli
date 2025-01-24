@@ -3,18 +3,17 @@ package mutator
 import (
 	"context"
 	"reflect"
-	"runtime"
 	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -144,6 +143,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				Apps: map[string]*resources.App{
+					"app1": {
+						App: &apps.App{
+							Name: "app1",
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -163,18 +169,18 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["existing"], "tag")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
+	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["existing"])
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job1"].Tags["dev"])
+	assert.Equal(t, jobs.PauseStatusPaused, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus)
 
 	// Job 2
 	assert.Equal(t, "[dev lennart] job2", b.Config.Resources.Jobs["job2"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job2"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus, jobs.PauseStatusUnpaused)
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
+	assert.Equal(t, jobs.PauseStatusUnpaused, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus)
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.Equal(t, false, b.Config.Resources.Pipelines["pipeline1"].Continuous)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
 	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 
 	// Experiment 1
@@ -323,7 +329,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	diags := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "run_as")
+	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
@@ -331,7 +337,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
 
 	diags = validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "production")
+	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
 	permissions := []resources.Permission{
 		{
@@ -377,12 +383,29 @@ func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	require.NoError(t, diags.Error())
 }
 
+func TestProcessTargetModeProductionOkWithRootPath(t *testing.T) {
+	b := mockBundle(config.Production)
+
+	// Our target has all kinds of problems when not using service principals ...
+	diags := validateProductionMode(context.Background(), b, false)
+	require.Error(t, diags.Error())
+
+	// ... but we're okay if we specify a root path
+	b.Target = &config.Target{
+		Workspace: &config.Workspace{
+			RootPath: "some-root-path",
+		},
+	}
+	diags = validateProductionMode(context.Background(), b, false)
+	require.NoError(t, diags.Error())
+}
+
 // Make sure that we have test coverage for all resource types
 func TestAllResourcesMocked(t *testing.T) {
 	b := mockBundle(config.Development)
 	resources := reflect.ValueOf(b.Config.Resources)
 
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 		if field.Kind() == reflect.Map {
 			assert.True(
@@ -411,13 +434,20 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 
 		if field.Kind() == reflect.Map {
 			for _, key := range field.MapKeys() {
 				resource := field.MapIndex(key)
 				nameField := resource.Elem().FieldByName("Name")
+				resourceType := resources.Type().Field(i).Name
+
+				// Skip apps, as they are not renamed
+				if resourceType == "Apps" {
+					continue
+				}
+
 				if !nameField.IsValid() || nameField.Kind() != reflect.String {
 					continue
 				}
@@ -539,33 +569,4 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
-}
-
-func TestSourceLinkedDeploymentEnabled(t *testing.T) {
-	b, diags := processSourceLinkedBundle(t, true)
-	require.NoError(t, diags.Error())
-	assert.True(t, *b.Config.Presets.SourceLinkedDeployment)
-}
-
-func TestSourceLinkedDeploymentDisabled(t *testing.T) {
-	b, diags := processSourceLinkedBundle(t, false)
-	require.NoError(t, diags.Error())
-	assert.False(t, *b.Config.Presets.SourceLinkedDeployment)
-}
-
-func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
-	if runtime.GOOS == "windows" {
-		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
-	}
-
-	b := mockBundle(config.Development)
-
-	workspacePath := "/Workspace/lennart@company.com/"
-	b.SyncRootPath = workspacePath
-	b.Config.Presets.SourceLinkedDeployment = &presetEnabled
-
-	ctx := dbr.MockRuntime(context.Background(), true)
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(ctx, b, m)
-	return b, diags
 }

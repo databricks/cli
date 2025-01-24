@@ -1,0 +1,10 @@
+bundle:
+  name: cycle
+
+variables:
+  a:
+    default:
+      hello: ${var.b}
+  b:
+    default:
+      hello: ${var.a}

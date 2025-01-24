@@ -3,7 +3,6 @@ package localcache
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"runtime"
 	"testing"
@@ -22,7 +21,7 @@ func TestCreatesDirectoryIfNeeded(t *testing.T) {
 	}
 	first, err := c.Load(ctx, tick)
 	assert.NoError(t, err)
-	assert.Equal(t, first, int64(1))
+	assert.Equal(t, int64(1), first)
 }
 
 func TestImpossibleToCreateDir(t *testing.T) {
@@ -115,7 +114,7 @@ func TestFolderDisappears(t *testing.T) {
 func TestRefreshFails(t *testing.T) {
 	c := NewLocalCache[int64](t.TempDir(), "time", 1*time.Minute)
 	tick := func() (int64, error) {
-		return 0, fmt.Errorf("nope")
+		return 0, errors.New("nope")
 	}
 	ctx := context.Background()
 	_, err := c.Load(ctx, tick)

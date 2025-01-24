@@ -9,20 +9,26 @@ import (
 )
 
 func TestBuiltin(t *testing.T) {
-	out, err := Builtin()
+	out, err := builtin()
 	require.NoError(t, err)
-	assert.Len(t, out, 3)
+	assert.GreaterOrEqual(t, len(out), 3)
 
-	// Confirm names.
-	assert.Equal(t, "dbt-sql", out[0].Name)
-	assert.Equal(t, "default-python", out[1].Name)
-	assert.Equal(t, "default-sql", out[2].Name)
+	// Create a map of templates by name for easier lookup
+	templates := make(map[string]*builtinTemplate)
+	for _, tmpl := range out {
+		templates[tmpl.Name] = &tmpl
+	}
 
-	// Confirm that the filesystems work.
-	_, err = fs.Stat(out[0].FS, `template/{{.project_name}}/dbt_project.yml.tmpl`)
+	// Verify all expected templates exist
+	assert.Contains(t, templates, "dbt-sql")
+	assert.Contains(t, templates, "default-python")
+	assert.Contains(t, templates, "default-sql")
+
+	// Verify the filesystems work for each template
+	_, err = fs.Stat(templates["dbt-sql"].FS, `template/{{.project_name}}/dbt_project.yml.tmpl`)
 	assert.NoError(t, err)
-	_, err = fs.Stat(out[1].FS, `template/{{.project_name}}/tests/main_test.py.tmpl`)
+	_, err = fs.Stat(templates["default-python"].FS, `template/{{.project_name}}/tests/main_test.py.tmpl`)
 	assert.NoError(t, err)
-	_, err = fs.Stat(out[2].FS, `template/{{.project_name}}/src/orders_daily.sql.tmpl`)
+	_, err = fs.Stat(templates["default-sql"].FS, `template/{{.project_name}}/src/orders_daily.sql.tmpl`)
 	assert.NoError(t, err)
 }
