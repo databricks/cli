@@ -26,7 +26,7 @@ type TestConfig struct {
 	GOOS map[string]bool
 }
 
-// Find config finds the closest config file.
+// FindConfig finds the closest config file.
 func FindConfig(t *testing.T, dir string) (string, bool) {
 	shared := false
 	for {
@@ -55,6 +55,7 @@ func FindConfig(t *testing.T, dir string) (string, bool) {
 	return "", shared
 }
 
+// LoadConfig loads the config file. Non-leaf configs are cached.
 func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	path, leafConfig := FindConfig(t, dir)
 
