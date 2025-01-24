@@ -47,3 +47,14 @@ title() {
     local label="$1"
     printf "\n=== %s" "$label"
 }
+
+withdir() {
+    local dir="$1"
+    shift
+    local orig_dir="$(pwd)"
+    cd "$dir" || return $?
+    "$@"
+    local exit_code=$?
+    cd "$orig_dir" || return $?
+    return $exit_code
+}
