@@ -58,7 +58,8 @@ func NewFromConfig(t testutil.TestingT, path string) *Server {
 	ctx, replacements := testdiff.WithReplacementsMap(context.Background())
 	testdiff.PrepareReplacementOS(t, replacements)
 	testdiff.PrepareReplacementsUUID(t, replacements)
-	testdiff.PrepareReplacementsSemver(t, replacements)
+	testdiff.PrepareReplacementVersions(t, replacements)
+	// testdiff.PrepareReplacementsSemver(t, replacements)
 
 	server := New(ctx, t)
 	for _, apiSpec := range apiSpecs {
