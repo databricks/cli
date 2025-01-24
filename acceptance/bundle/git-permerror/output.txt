@@ -36,9 +36,9 @@ Exit code: 1
 }
 
 
-=== No permissions to read .git/head. Badness: warning is not shown. inferred is incorrectly set to true. bundle_root_path is not correct in subdir case.
+=== No permissions to read .git/HEAD. Badness: warning is not shown. inferred is incorrectly set to true. bundle_root_path is not correct in subdir case.
 
->>> chmod 000 .git/head
+>>> chmod 000 .git/HEAD
 
 >>> $CLI bundle validate -o json
 {

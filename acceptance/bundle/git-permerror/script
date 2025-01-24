@@ -10,14 +10,14 @@ errcode trace $CLI bundle validate
 errcode trace $CLI bundle validate -o json | jq .bundle.git
 errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
 
-printf "\n\n=== No permissions to read .git/head. Badness: warning is not shown. inferred is incorrectly set to true. bundle_root_path is not correct in subdir case.\n"
+printf "\n\n=== No permissions to read .git/HEAD. Badness: warning is not shown. inferred is incorrectly set to true. bundle_root_path is not correct in subdir case.\n"
 chmod 700 .git
-trace chmod 000 .git/head
+trace chmod 000 .git/HEAD
 errcode trace $CLI bundle validate -o json | jq .bundle.git
 errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
 
 printf "\n\n=== No permissions to read .git/config. Badness: inferred is incorretly set to true. bundle_root_path is not correct is subdir case.\n"
-chmod 666 .git/head
+chmod 666 .git/HEAD
 trace chmod 000 .git/config
 errcode trace $CLI bundle validate -o json | jq .bundle.git
 errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
