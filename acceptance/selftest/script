@@ -11,11 +11,11 @@ printf "\n=== Capturing exit code (alt)"
 errcode trace python3 -c 'raise SystemExit(7)'
 
 printf "\n=== Capturing pwd"
-trace pwd
+trace python3 -c 'import os; print(os.getcwd())'
 
 printf "\n=== Capturing subdir"
 trace mkdir -p subdir/a/b/c
-trace withdir subdir/a/b/c pwd | sed 's/\\/\//g'
+trace withdir subdir/a/b/c python3 -c 'import os; print(os.getcwd())' | sed 's/\\/\//g'
 
 printf "\n=== Custom output files - everything starting with out is captured and compared"
 trace echo HELLO > out.hello.txt

@@ -17,13 +17,13 @@ Exit code: 5
 Exit code: 7
 
 === Capturing pwd
->>> pwd
+>>> python3 -c import os; print(os.getcwd())
 $TMPDIR
 
 === Capturing subdir
 >>> mkdir -p subdir/a/b/c
 
->>> withdir subdir/a/b/c pwd
+>>> withdir subdir/a/b/c python3 -c import os; print(os.getcwd())
 $TMPDIR/subdir/a/b/c
 
 === Custom output files - everything starting with out is captured and compared
