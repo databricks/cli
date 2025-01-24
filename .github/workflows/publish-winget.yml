@@ -53,6 +53,10 @@ jobs:
             grep -E '_windows_.*-signed\.zip$' | \
             tr '\n' ' '
           )
+          if [ -z "$urls" ]; then
+            echo "No signed Windows binaries found" >&2
+            exit 1
+          fi
           echo "urls=$urls" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
