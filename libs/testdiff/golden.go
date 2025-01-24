@@ -65,16 +65,6 @@ func AssertOutputJQ(t testutil.TestingT, ctx context.Context, out, outTitle, exp
 	}
 }
 
-func AssertEqualStrings(t testutil.TestingT, ctx context.Context, expected, actual string) {
-	t.Helper()
-	replacements := GetReplacementsMap(ctx)
-	if replacements == nil {
-		t.Fatal("WithReplacementsMap was not called")
-	}
-	actual = replacements.Replace(actual)
-	assert.Equal(t, expected, actual)
-}
-
 func ReplaceOutput(t testutil.TestingT, ctx context.Context, out string) string {
 	t.Helper()
 	out = NormalizeNewlines(out)
