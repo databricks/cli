@@ -25,9 +25,7 @@ Exit code: 1
   "inferred": true
 }
 
->>> withdir subdir/a/b trace $CLI bundle validate -o json
-
->>> $CLI bundle validate -o json
+>>> withdir subdir/a/b $CLI bundle validate -o json
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 

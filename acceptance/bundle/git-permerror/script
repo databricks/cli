@@ -8,7 +8,7 @@ printf "=== No permission to access .git. Badness: inferred flag is set to true 
 trace chmod 000 .git
 errcode trace $CLI bundle validate
 errcode trace $CLI bundle validate -o json | jq .bundle.git
-errcode trace withdir subdir/a/b trace $CLI bundle validate -o json | jq .bundle.git
+errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
 
 printf "\n\n=== No permissions to read .git/head. Badness: warning is not shown. inferred is incorrectly set to true. bundle_root_path is not correct in subdir case.\n"
 chmod 700 .git
