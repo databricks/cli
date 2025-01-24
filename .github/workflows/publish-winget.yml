@@ -23,7 +23,7 @@ jobs:
         # Find both at https://github.com/russellbanks/Komac/releases.
       - name: Download komac binary
         run: |
-          curl -L -o $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz https://github.com/russellbanks/Komac/releases/download/v2.9.0/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz
+          curl -s -L -o $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz https://github.com/russellbanks/Komac/releases/download/v2.9.0/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz
 
       - name: Verify komac binary
         run: |
@@ -37,6 +37,9 @@ jobs:
       - name: Add komac to PATH
         run: echo "$RUNNER_TEMP/komac" >> $GITHUB_PATH
 
+      - name: Confirm komac version
+        run: komac --version
+
       - name: Strip "v" prefix from version
         id: strip_version
         run: echo "version=${{ inputs.tag || github.ref_name }}" | sed 's/^v//' >> "$GITHUB_OUTPUT"
@@ -47,7 +50,8 @@ jobs:
           urls=$(
             gh api https://api.github.com/repos/databricks/cli/releases/tags/${{ inputs.tag || github.ref_name }} | \
             jq -r .assets[].browser_download_url | \
-            grep -E '_windows_.*-signed\.zip$'
+            grep -E '_windows_.*-signed\.zip$' | \
+            tr '\n' ' '
           )
           echo "urls=$urls" >> "$GITHUB_OUTPUT"
         env:
