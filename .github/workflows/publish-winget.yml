@@ -60,7 +60,6 @@ jobs:
       - name: Publish to Winget
         run: |
           komac update Databricks.DatabricksCLI \
-            --dry-run \
             --version ${{ steps.strip_version.outputs.version }} \
             --submit \
             --urls ${{ steps.get_windows_urls.outputs.urls }} \
