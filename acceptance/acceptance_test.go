@@ -94,13 +94,13 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 
 	t.Setenv("CLI", execPath)
-	repls.Set(execPath, "$CLI")
+	repls.SetPath(execPath, "$CLI")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
 	tempHomeDir := t.TempDir()
-	repls.Set(tempHomeDir, "$TMPHOME")
+	repls.SetPath(tempHomeDir, "$TMPHOME")
 	t.Logf("$TMPHOME=%v", tempHomeDir)
 
 	// Prevent CLI from downloading terraform in each test:
@@ -202,11 +202,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		})
 	}
 
-	// Converts C:\Users\DENIS~1.BIL -> C:\Users\denis.bilenko
-	tmpDirEvalled, err1 := filepath.EvalSymlinks(tmpDir)
-	if err1 == nil && tmpDirEvalled != tmpDir {
-		repls.SetPathWithParents(tmpDirEvalled, "$TMPDIR")
-	}
 	repls.SetPathWithParents(tmpDir, "$TMPDIR")
 
 	scriptContents := readMergedScriptContents(t, dir)
