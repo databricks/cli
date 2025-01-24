@@ -1,0 +1,8 @@
+[[Repls]]
+# The keys are unsorted and also vary per OS
+Old = 'Environment variables for Terraform: ([A-Z_ ,]+) '
+New = 'Environment variables for Terraform: ...redacted... '
+
+[[Repls]]
+Old = 'pid=[0-9]+'
+New = 'pid=00000'

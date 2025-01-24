@@ -1,0 +1,12 @@
+< } pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync sdk=true
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly)
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel mutator (read-only)=validate:SingleNodeCluster
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel mutator (read-only)=validate:artifact_paths
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel mutator (read-only)=validate:job_cluster_key_defined
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel mutator (read-only)=validate:job_task_cluster_spec
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:folder_permissions
+Debug: ApplyReadOnly pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:validate_sync_patterns
+Debug: Path  has type directory (ID: 1001) pid=00000 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync

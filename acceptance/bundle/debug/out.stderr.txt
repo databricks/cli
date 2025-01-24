@@ -1,0 +1,86 @@
+Info: start pid=00000 version=$DEV_VERSION args="$CLI, bundle, validate, --debug"
+Debug: Found bundle root at $TMPDIR (file $TMPDIR/databricks.yml) pid=00000
+Debug: Apply pid=00000 mutator=load
+Info: Phase: load pid=00000 mutator=load
+Debug: Apply pid=00000 mutator=load mutator=seq
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=EntryPoint
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=scripts.preinit
+Debug: No script defined for preinit, skipping pid=00000 mutator=load mutator=seq mutator=scripts.preinit
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=ProcessRootIncludes
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=ProcessRootIncludes mutator=seq
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=VerifyCliVersion
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=EnvironmentsToTargets
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=ComputeIdToClusterId
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=InitializeVariables
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=DefineDefaultTarget(default)
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=PythonMutator(load)
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=validate:unique_resource_keys
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=SelectDefaultTarget
+Debug: Apply pid=00000 mutator=load mutator=seq mutator=SelectDefaultTarget mutator=SelectTarget(default)
+Debug: Apply pid=00000 mutator=<func>
+Debug: Apply pid=00000 mutator=initialize
+Info: Phase: initialize pid=00000 mutator=initialize
+Debug: Apply pid=00000 mutator=initialize mutator=seq
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=validate:AllResourcesHaveValues
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=RewriteSyncPaths
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=SyncDefaultPath
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=SyncInferRoot
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=InitializeWorkspaceClient
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=PopulateCurrentUser
+Debug: GET /api/2.0/preview/scim/v2/Me
+< HTTP/1.1 200 OK
+< {
+<   "userName": "$USERNAME"
+< } pid=00000 mutator=initialize mutator=seq mutator=PopulateCurrentUser sdk=true
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=LoadGitDetails
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ApplySourceLinkedDeploymentPreset
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=DefineDefaultWorkspaceRoot
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ExpandWorkspaceRoot
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=DefaultWorkspacePaths
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=PrependWorkspacePrefix
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=RewriteWorkspacePrefix
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=SetVariables
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=PythonMutator(init)
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=PythonMutator(load_resources)
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=PythonMutator(apply_mutators)
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ResolveVariableReferences
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ResolveResourceReferences
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ResolveVariableReferences
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=MergeJobClusters
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=MergeJobParameters
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=MergeJobTasks
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=MergePipelineClusters
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=MergeApps
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=CaptureSchemaDependency
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=CheckPermissions
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=SetRunAs
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=OverrideCompute
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ConfigureDashboardDefaults
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ConfigureVolumeDefaults
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ProcessTargetMode
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ApplyPresets
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=DefaultQueueing
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ExpandPipelineGlobPaths
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ConfigureWSFS
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=TranslatePaths
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=PythonWrapperWarning
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=apps.Validate
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ValidateSharedRootPermissions
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=ApplyBundlePermissions
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=FilterCurrentUserFromPermissions
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=metadata.AnnotateJobs
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=metadata.AnnotatePipelines
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=terraform.Initialize
+Debug: Using Terraform from DATABRICKS_TF_EXEC_PATH at $TMPHOME pid=00000 mutator=initialize mutator=seq mutator=terraform.Initialize
+Debug: DATABRICKS_TF_CLI_CONFIG_FILE is not defined pid=00000 mutator=initialize mutator=seq mutator=terraform.Initialize
+Debug: Environment variables for Terraform: ...redacted... pid=00000 mutator=initialize mutator=seq mutator=terraform.Initialize
+Debug: Apply pid=00000 mutator=initialize mutator=seq mutator=scripts.postinit
+Debug: No script defined for postinit, skipping pid=00000 mutator=initialize mutator=seq mutator=scripts.postinit
+Debug: Apply pid=00000 mutator=validate
+Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/$USERNAME/.bundle/debug/default/files
+< HTTP/1.1 200 OK
+< {
+<   "object_id": 1001,
+<   "object_type": "DIRECTORY",
+<   "resource_id": "1001"
+Info: completed execution pid=00000 exit_code=0
