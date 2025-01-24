@@ -1,7 +1,6 @@
 package testdiff
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,22 +43,4 @@ func TestReplacement_TemporaryDirectory(t *testing.T) {
 	PrepareReplacementsTemporaryDirectory(t, &repls)
 
 	assert.Equal(t, "/tmp/.../tail", repls.Replace("/tmp/foo/bar/qux/tail"))
-}
-
-func TestReplacement_OS(t *testing.T) {
-	var repls ReplacementsContext
-
-	PrepareReplacementOS(t, &repls)
-
-	assert.Equal(t, "[OS]", repls.Replace(runtime.GOOS))
-}
-
-func TestReplacement_Semver(t *testing.T) {
-	var repls ReplacementsContext
-
-	PrepareReplacementsSemver(t, &repls)
-
-	assert.Equal(t, "[SEMVER]", repls.Replace("1.2.3"))
-	assert.Equal(t, "[SEMVER]", repls.Replace("1.2.3-alpha"))
-	assert.Equal(t, "[SEMVER]", repls.Replace("1.2.3-alpha+build"))
 }

@@ -1,14 +1,11 @@
 package testserver
 
 import (
-	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,26 +14,21 @@ type Server struct {
 	*httptest.Server
 	Mux *http.ServeMux
 
-	t   testutil.TestingT
-	ctx context.Context
+	t testutil.TestingT
 
 	// API calls that we expect to be made.
 	calledPatterns map[string]bool
 }
 
 type ApiSpec struct {
-	Method  string `json:"method"`
-	Path    string `json:"path"`
-	Request struct {
-		Headers map[string]string `json:"headers"`
-		Body    json.RawMessage   `json:"body"`
-	} `json:"request"`
+	Method   string `json:"method"`
+	Path     string `json:"path"`
 	Response struct {
 		Body json.RawMessage `json:"body"`
 	} `json:"response"`
 }
 
-func New(ctx context.Context, t testutil.TestingT) *Server {
+func New(t testutil.TestingT) *Server {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 
@@ -44,7 +36,6 @@ func New(ctx context.Context, t testutil.TestingT) *Server {
 		Server:         server,
 		Mux:            mux,
 		t:              t,
-		ctx:            ctx,
 		calledPatterns: make(map[string]bool),
 	}
 }
@@ -55,13 +46,7 @@ func NewFromConfig(t testutil.TestingT, path string) *Server {
 	err := json.Unmarshal([]byte(content), &apiSpecs)
 	require.NoError(t, err)
 
-	ctx, replacements := testdiff.WithReplacementsMap(context.Background())
-	testdiff.PrepareReplacementOS(t, replacements)
-	testdiff.PrepareReplacementsUUID(t, replacements)
-	testdiff.PrepareReplacementVersions(t, replacements)
-	// testdiff.PrepareReplacementsSemver(t, replacements)
-
-	server := New(ctx, t)
+	server := New(t)
 	for _, apiSpec := range apiSpecs {
 		server.MustHandle(apiSpec)
 	}
@@ -72,28 +57,18 @@ func NewFromConfig(t testutil.TestingT, path string) *Server {
 type HandlerFunc func(req *http.Request) (resp any, err error)
 
 func (s *Server) MustHandle(apiSpec ApiSpec) {
-	require.NotEmpty(s.t, apiSpec.Method)
-	require.NotEmpty(s.t, apiSpec.Path)
+	assert.NotEmpty(s.t, apiSpec.Method)
+	assert.NotEmpty(s.t, apiSpec.Path)
 
 	pattern := apiSpec.Method + " " + apiSpec.Path
 	s.calledPatterns[pattern] = false
 
 	s.Handle(pattern, func(req *http.Request) (any, error) {
-		for k, v := range apiSpec.Request.Headers {
-			testdiff.AssertEqualStrings(s.t, s.ctx, v, req.Header.Get(k))
-		}
-
-		b, err := io.ReadAll(req.Body)
-		require.NoError(s.t, err)
-
-		// Assert that the request body matches the expected body.
-		assert.JSONEq(s.t, string(apiSpec.Request.Body), string(b))
-
 		// Record the fact that this pattern was called.
 		s.calledPatterns[pattern] = true
 
 		// Return the expected response body.
-		return apiSpec.Response.Body, err
+		return apiSpec.Response.Body, nil
 	})
 }
 

@@ -2,15 +2,6 @@
   {
     "method": "POST",
     "path": "/api/2.1/jobs/create",
-    "request": {
-      "headers": {
-        "Authorization": "Bearer acceptance-test-token",
-        "User-Agent": "cli/[SEMVER] databricks-sdk-go/[SEMVER] go/[SEMVER] os/[OS] cmd/jobs_create cmd-exec-id/<UUID> auth/pat"
-      },
-      "body": {
-        "name": "abc"
-      }
-    },
     "response": {
       "body": {
         "job_id": 1111

@@ -1,7 +1,6 @@
 package acceptance_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 )
 
 func StartServer(t *testing.T) *testserver.Server {
-	server := testserver.New(context.Background(), t)
+	server := testserver.New(t)
 	t.Cleanup(func() {
 		server.Close()
 	})
