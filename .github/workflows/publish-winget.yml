@@ -42,7 +42,7 @@ jobs:
 
       - name: Strip "v" prefix from version
         id: strip_version
-        run: echo "version=${{ inputs.tag || github.ref_name }}" | sed 's/^v//' >> "$GITHUB_OUTPUT"
+        run: echo "version=$(echo ${{ inputs.tag || github.ref_name }} | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       - name: Get URLs of signed Windows binaries
         id: get_windows_urls
