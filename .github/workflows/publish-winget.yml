@@ -40,6 +40,8 @@ jobs:
       - name: Confirm komac version
         run: komac --version
 
+        # Use the tag from the input, or the ref name if the input is not provided.
+        # The ref name is equal to the tag name when this workflow is triggered by the "sign-cli" command.
       - name: Strip "v" prefix from version
         id: strip_version
         run: echo "version=$(echo ${{ inputs.tag || github.ref_name }} | sed 's/^v//')" >> "$GITHUB_OUTPUT"
