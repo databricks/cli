@@ -175,6 +175,13 @@ func getTests(t *testing.T) []string {
 }
 
 func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
+	config, configPath := LoadConfig(t, dir)
+
+	isEnabled, isPresent := config.GOOS[runtime.GOOS]
+	if isPresent && !isEnabled {
+		t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+	}
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
