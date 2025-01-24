@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/databricks/cli/internal/testserver"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"

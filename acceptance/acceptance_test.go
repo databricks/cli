@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/internal/testserver"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )

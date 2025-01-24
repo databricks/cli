@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/internal/testserver"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
