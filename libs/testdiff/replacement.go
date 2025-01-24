@@ -183,12 +183,12 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 
 func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(uuidRegex, "<UUID>")
+	r.append(uuidRegex, "[UUID]")
 }
 
 func PrepareReplacementsNumber(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(numIdRegex, "<NUMID>")
+	r.append(numIdRegex, "[NUMID]")
 }
 
 func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsContext) {
