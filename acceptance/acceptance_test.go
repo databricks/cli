@@ -114,7 +114,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		AddHandlers(defaultServer)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
-		t.Setenv("DATABRICKS_TOKEN", "acceptance-test-token")
+		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg

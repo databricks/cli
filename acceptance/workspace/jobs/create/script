@@ -1,3 +1,1 @@
-# Unset GITHUB_ACTIONS to avoid adding the github to the user-agent
-unset GITHUB_ACTIONS
 trace $CLI jobs create --json '{"name":"abc"}'
