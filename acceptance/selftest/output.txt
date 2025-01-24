@@ -28,3 +28,8 @@ $TMPDIR/subdir/a/b/c
 
 === Custom output files - everything starting with out is captured and compared
 >>> echo HELLO
+
+=== Custom regex can be specified in [[Repl]] section
+1234
+CUSTOM_NUMBER_REGEX
+123456

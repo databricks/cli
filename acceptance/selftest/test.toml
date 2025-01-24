@@ -9,3 +9,7 @@
 
 # Disable on Linux
 #linux = false
+
+[[Repls]]
+Old = '\b[0-9]{5}\b'
+New = "CUSTOM_NUMBER_REGEX"

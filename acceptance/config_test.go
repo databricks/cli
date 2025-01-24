@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,6 +25,10 @@ type TestConfig struct {
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
 	// If absent, default to true.
 	GOOS map[string]bool
+
+	// List of additional replacements to apply on this test.
+	// Old is a regexp, New is a replacement expression.
+	Repls []testdiff.Replacement
 }
 
 // FindConfig finds the closest config file.
