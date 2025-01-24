@@ -228,9 +228,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
+	printedRepls := false
+
 	// Compare expected outputs
 	for relPath := range outputs {
-		doComparison(t, repls, dir, tmpDir, relPath)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -245,12 +247,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := readIfExists(t, pathRef)
@@ -294,6 +296,15 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	if !equal && testdiff.OverwriteMode {
 		t.Logf("Overwriting existing output file: %s", relPath)
 		testutil.WriteFile(t, pathRef, valueNew)
+	}
+
+	if !equal && printedRepls != nil && !*printedRepls {
+		*printedRepls = true
+		var items []string
+		for _, item := range repls.Repls {
+			items = append(items, fmt.Sprintf("REPL %s => %s", item.Old, item.New))
+		}
+		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
 }
 
