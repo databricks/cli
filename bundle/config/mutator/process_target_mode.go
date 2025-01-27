@@ -158,7 +158,7 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		b.Config.Workspace.CurrentUser.UserName,
 	)
 	if !isExplicitRootSet(b) {
-		cmdio.LogString(ctx, fmt.Sprintf("root_path is not set: %s", b.Config.Bundle.Target))
+		cmdio.LogString(ctx, "root_path is not set: "+b.Config.Bundle.Target)
 		if isRunAsSet(r) || isPrincipalUsed {
 			// Just setting run_as is not enough to guarantee a single deployment,
 			// and neither is setting a principal.
