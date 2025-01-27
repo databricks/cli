@@ -22,4 +22,5 @@ trace chmod 000 .git/config
 errcode trace $CLI bundle validate -o json | jq .bundle.git
 errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
 
-rm -fr .git
+cd ..
+rm -fr myrepo
