@@ -66,12 +66,7 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode {
 		t.Skip("Already tested by TestAccept")
 	}
-	if runtime.GOOS == "windows" {
-		// -  catalogs                               A catalog is the first layer of Unity Catalog’s three-level namespace.
-		// +  catalogs                               A catalog is the first layer of Unity Catalog�s three-level namespace.
-		t.Skip("Fails on CI on unicode characters")
-	}
-	require.NotZero(t, testAccept(t, true, "help"))
+	require.Equal(t, 1, testAccept(t, true, "selftest"))
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
@@ -187,6 +182,13 @@ func getTests(t *testing.T) []string {
 }
 
 func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
+	config, configPath := LoadConfig(t, dir)
+
+	isEnabled, isPresent := config.GOOS[runtime.GOOS]
+	if isPresent && !isEnabled {
+		t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+	}
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -200,6 +202,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	repls.SetPathWithParents(tmpDir, "$TMPDIR")
+	repls.Repls = append(repls.Repls, config.Repls...)
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -250,9 +253,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		server.WriteRequestsToDisk(outRequestsPath)
 	}
 
+	printedRepls := false
+
 	// Compare expected outputs
 	for relPath := range outputs {
-		doComparison(t, repls, dir, tmpDir, relPath)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -267,12 +272,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := readIfExists(t, pathRef)
@@ -316,6 +321,15 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	if !equal && testdiff.OverwriteMode {
 		t.Logf("Overwriting existing output file: %s", relPath)
 		testutil.WriteFile(t, pathRef, valueNew)
+	}
+
+	if !equal && printedRepls != nil && !*printedRepls {
+		*printedRepls = true
+		var items []string
+		for _, item := range repls.Repls {
+			items = append(items, fmt.Sprintf("REPL %s => %s", item.Old, item.New))
+		}
+		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
 }
 

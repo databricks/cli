@@ -79,7 +79,11 @@ func (r *ReplacementsContext) Set(old, new string) {
 	if err == nil {
 		encodedOld, err := json.Marshal(old)
 		if err == nil {
-			r.appendLiteral(trimQuotes(string(encodedOld)), trimQuotes(string(encodedNew)))
+			encodedStrNew := trimQuotes(string(encodedNew))
+			encodedStrOld := trimQuotes(string(encodedOld))
+			if encodedStrNew != new || encodedStrOld != old {
+				r.appendLiteral(encodedStrOld, encodedStrNew)
+			}
 		}
 	}
 
