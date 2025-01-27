@@ -353,12 +353,12 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "ai_gateway":
     "description": |-
-      The AI Gateway configuration for the serving endpoint. NOTE: only external model endpoints are supported as of now.
+      The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported.
   "config":
     "description": |-
       The core config of the serving endpoint.
   "name":
-    "description": |
+    "description": |-
       The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.
       An endpoint name can consist of alphanumeric characters, dashes, and underscores.
   "rate_limits":
@@ -1974,6 +1974,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.SparkJarTask:
       Parameters passed to the main method.
 
       Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+  "run_as_repl":
+    "description": |-
+      Deprecated. A value of `false` is no longer supported.
 github.com/databricks/databricks-sdk-go/service/jobs.SparkPythonTask:
   "parameters":
     "description": |-
@@ -2684,27 +2687,36 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScd
 github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
   "ai21labs_api_key":
     "description": |-
-      The Databricks secret key reference for an AI21 Labs API key. If you prefer to paste your API key directly, see `ai21labs_api_key_plaintext`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`.
+      The Databricks secret key reference for an AI21 Labs API key. If you
+      prefer to paste your API key directly, see `ai21labs_api_key_plaintext`.
+      You must provide an API key using one of the following fields:
+      `ai21labs_api_key` or `ai21labs_api_key_plaintext`.
   "ai21labs_api_key_plaintext":
     "description": |-
-      An AI21 Labs API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `ai21labs_api_key`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`.
+      An AI21 Labs API key provided as a plaintext string. If you prefer to
+      reference your key using Databricks Secrets, see `ai21labs_api_key`. You
+      must provide an API key using one of the following fields:
+      `ai21labs_api_key` or `ai21labs_api_key_plaintext`.
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig:
   "guardrails":
     "description": |-
       Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.
   "inference_table_config":
     "description": |-
-      Configuration for payload logging using inference tables. Use these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.
+      Configuration for payload logging using inference tables.
+      Use these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.
   "rate_limits":
     "description": |-
       Configuration for rate limits which can be set to limit endpoint traffic.
   "usage_tracking_config":
     "description": |-
-      Configuration to enable usage tracking using system tables. These tables allow you to monitor operational usage on endpoints and their associated costs.
+      Configuration to enable usage tracking using system tables.
+      These tables allow you to monitor operational usage on endpoints and their associated costs.
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters:
   "invalid_keywords":
     "description": |-
-      List of invalid keywords. AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.
+      List of invalid keywords.
+      AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.
   "pii":
     "description": |-
       Configuration for guardrail PII filter.
@@ -2713,15 +2725,14 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParame
       Indicates whether the safety filter is enabled.
   "valid_topics":
     "description": |-
-      The list of allowed topics. Given a chat request, this guardrail flags the request if its topic is not in the allowed topics.
+      The list of allowed topics.
+      Given a chat request, this guardrail flags the request if its topic is not in the allowed topics.
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior:
   "behavior":
     "description": |-
-      Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.
+      Configuration for input guardrail filters.
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehaviorBehavior:
   "_":
-    "description": |-
-      Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.
     "enum":
       - |-
         NONE
@@ -2737,30 +2748,32 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails:
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayInferenceTableConfig:
   "catalog_name":
     "description": |-
-      The name of the catalog in Unity Catalog. Required when enabling inference tables. NOTE: On update, you have to disable inference table first in order to change the catalog name.
+      The name of the catalog in Unity Catalog. Required when enabling inference tables.
+      NOTE: On update, you have to disable inference table first in order to change the catalog name.
   "enabled":
     "description": |-
       Indicates whether the inference table is enabled.
   "schema_name":
     "description": |-
-      The name of the schema in Unity Catalog. Required when enabling inference tables. NOTE: On update, you have to disable inference table first in order to change the schema name.
+      The name of the schema in Unity Catalog. Required when enabling inference tables.
+      NOTE: On update, you have to disable inference table first in order to change the schema name.
   "table_name_prefix":
     "description": |-
-      The prefix of the table in Unity Catalog. NOTE: On update, you have to disable inference table first in order to change the prefix name.
+      The prefix of the table in Unity Catalog.
+      NOTE: On update, you have to disable inference table first in order to change the prefix name.
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
   "calls":
     "description": |-
       Used to specify how many calls are allowed for a key within the renewal_period.
   "key":
     "description": |-
-      Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.
+      Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported,
+      with 'endpoint' being the default if not specified.
   "renewal_period":
     "description": |-
       Renewal period field for a rate limit. Currently, only 'minute' is supported.
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey:
   "_":
-    "description": |-
-      Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.
     "enum":
       - |-
         user
@@ -2768,8 +2781,6 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey:
         endpoint
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod:
   "_":
-    "description": |-
-      Renewal period field for a rate limit. Currently, only 'minute' is supported.
     "enum":
       - |-
         minute
@@ -2780,26 +2791,43 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayUsageTrackingCo
 github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfig:
   "aws_access_key_id":
     "description": |-
-      The Databricks secret key reference for an AWS access key ID with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`.
+      The Databricks secret key reference for an AWS access key ID with
+      permissions to interact with Bedrock services. If you prefer to paste
+      your API key directly, see `aws_access_key_id_plaintext`. You must provide an API
+      key using one of the following fields: `aws_access_key_id` or
+      `aws_access_key_id_plaintext`.
   "aws_access_key_id_plaintext":
     "description": |-
-      An AWS access key ID with permissions to interact with Bedrock services provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`.
+      An AWS access key ID with permissions to interact with Bedrock services
+      provided as a plaintext string. If you prefer to reference your key using
+      Databricks Secrets, see `aws_access_key_id`. You must provide an API key
+      using one of the following fields: `aws_access_key_id` or
+      `aws_access_key_id_plaintext`.
   "aws_region":
     "description": |-
       The AWS region to use. Bedrock has to be enabled there.
   "aws_secret_access_key":
     "description": |-
-      The Databricks secret key reference for an AWS secret access key paired with the access key ID, with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_secret_access_key_plaintext`. You must provide an API key using one of the following fields: `aws_secret_access_key` or `aws_secret_access_key_plaintext`.
+      The Databricks secret key reference for an AWS secret access key paired
+      with the access key ID, with permissions to interact with Bedrock
+      services. If you prefer to paste your API key directly, see
+      `aws_secret_access_key_plaintext`. You must provide an API key using one
+      of the following fields: `aws_secret_access_key` or
+      `aws_secret_access_key_plaintext`.
   "aws_secret_access_key_plaintext":
     "description": |-
-      An AWS secret access key paired with the access key ID, with permissions to interact with Bedrock services provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `aws_secret_access_key`. You must provide an API key using one of the following fields: `aws_secret_access_key` or `aws_secret_access_key_plaintext`.
+      An AWS secret access key paired with the access key ID, with permissions
+      to interact with Bedrock services provided as a plaintext string. If you
+      prefer to reference your key using Databricks Secrets, see
+      `aws_secret_access_key`. You must provide an API key using one of the
+      following fields: `aws_secret_access_key` or
+      `aws_secret_access_key_plaintext`.
   "bedrock_provider":
     "description": |-
-      The underlying provider in Amazon Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.
+      The underlying provider in Amazon Bedrock. Supported values (case
+      insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.
 github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfigBedrockProvider:
   "_":
-    "description": |-
-      The underlying provider in Amazon Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.
     "enum":
       - |-
         anthropic
@@ -2812,10 +2840,16 @@ github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfigBedro
 github.com/databricks/databricks-sdk-go/service/serving.AnthropicConfig:
   "anthropic_api_key":
     "description": |-
-      The Databricks secret key reference for an Anthropic API key. If you prefer to paste your API key directly, see `anthropic_api_key_plaintext`. You must provide an API key using one of the following fields: `anthropic_api_key` or `anthropic_api_key_plaintext`.
+      The Databricks secret key reference for an Anthropic API key. If you
+      prefer to paste your API key directly, see `anthropic_api_key_plaintext`.
+      You must provide an API key using one of the following fields:
+      `anthropic_api_key` or `anthropic_api_key_plaintext`.
   "anthropic_api_key_plaintext":
     "description": |-
-      The Anthropic API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `anthropic_api_key`. You must provide an API key using one of the following fields: `anthropic_api_key` or `anthropic_api_key_plaintext`.
+      The Anthropic API key provided as a plaintext string. If you prefer to
+      reference your key using Databricks Secrets, see `anthropic_api_key`. You
+      must provide an API key using one of the following fields:
+      `anthropic_api_key` or `anthropic_api_key_plaintext`.
 github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput:
   "catalog_name":
     "description": |-
@@ -2831,42 +2865,58 @@ github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput:
       The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled.
 github.com/databricks/databricks-sdk-go/service/serving.CohereConfig:
   "cohere_api_base":
-    "description": "This is an optional field to provide a customized base URL for the Cohere API. \nIf left unspecified, the standard Cohere base URL is used.\n"
+    "description": |-
+      This is an optional field to provide a customized base URL for the Cohere
+      API. If left unspecified, the standard Cohere base URL is used.
   "cohere_api_key":
     "description": |-
-      The Databricks secret key reference for a Cohere API key. If you prefer to paste your API key directly, see `cohere_api_key_plaintext`. You must provide an API key using one of the following fields: `cohere_api_key` or `cohere_api_key_plaintext`.
+      The Databricks secret key reference for a Cohere API key. If you prefer
+      to paste your API key directly, see `cohere_api_key_plaintext`. You must
+      provide an API key using one of the following fields: `cohere_api_key` or
+      `cohere_api_key_plaintext`.
   "cohere_api_key_plaintext":
     "description": |-
-      The Cohere API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `cohere_api_key`. You must provide an API key using one of the following fields: `cohere_api_key` or `cohere_api_key_plaintext`.
+      The Cohere API key provided as a plaintext string. If you prefer to
+      reference your key using Databricks Secrets, see `cohere_api_key`. You
+      must provide an API key using one of the following fields:
+      `cohere_api_key` or `cohere_api_key_plaintext`.
 github.com/databricks/databricks-sdk-go/service/serving.DatabricksModelServingConfig:
   "databricks_api_token":
-    "description": |
-      The Databricks secret key reference for a Databricks API token that corresponds to a user or service
-      principal with Can Query access to the model serving endpoint pointed to by this external model.
-      If you prefer to paste your API key directly, see `databricks_api_token_plaintext`.
-      You must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.
+    "description": |-
+      The Databricks secret key reference for a Databricks API token that
+      corresponds to a user or service principal with Can Query access to the
+      model serving endpoint pointed to by this external model. If you prefer
+      to paste your API key directly, see `databricks_api_token_plaintext`. You
+      must provide an API key using one of the following fields:
+      `databricks_api_token` or `databricks_api_token_plaintext`.
   "databricks_api_token_plaintext":
-    "description": |
-      The Databricks API token that corresponds to a user or service
-      principal with Can Query access to the model serving endpoint pointed to by this external model provided as a plaintext string.
-      If you prefer to reference your key using Databricks Secrets, see `databricks_api_token`.
-      You must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.
+    "description": |-
+      The Databricks API token that corresponds to a user or service principal
+      with Can Query access to the model serving endpoint pointed to by this
+      external model provided as a plaintext string. If you prefer to reference
+      your key using Databricks Secrets, see `databricks_api_token`. You must
+      provide an API key using one of the following fields:
+      `databricks_api_token` or `databricks_api_token_plaintext`.
   "databricks_workspace_url":
-    "description": |
-      The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.
+    "description": |-
+      The URL of the Databricks workspace containing the model serving endpoint
+      pointed to by this external model.
 github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput:
   "auto_capture_config":
     "description": |-
       Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.
+      Note: this field is deprecated for creating new provisioned throughput endpoints,
+      or updating existing provisioned throughput endpoints that never have inference table configured;
+      in these cases please use AI Gateway to manage inference tables.
   "served_entities":
     "description": |-
-      A list of served entities for the endpoint to serve. A serving endpoint can have up to 15 served entities.
+      The list of served entities under the serving endpoint config.
   "served_models":
     "description": |-
-      (Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 15 served models.
+      (Deprecated, use served_entities instead) The list of served models under the serving endpoint config.
   "traffic_config":
     "description": |-
-      The traffic config defining how invocations to the serving endpoint should be routed.
+      The traffic configuration associated with the serving endpoint config.
 github.com/databricks/databricks-sdk-go/service/serving.EndpointTag:
   "key":
     "description": |-
@@ -2903,17 +2953,13 @@ github.com/databricks/databricks-sdk-go/service/serving.ExternalModel:
     "description": |-
       PaLM Config. Only required if the provider is 'palm'.
   "provider":
-    "description": |
-      The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',
-      'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.",
+    "description": |-
+      The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.
   "task":
     "description": |-
       The task type of the external model.
 github.com/databricks/databricks-sdk-go/service/serving.ExternalModelProvider:
   "_":
-    "description": |
-      The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',
-      'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.",
     "enum":
       - |-
         ai21labs
@@ -2934,70 +2980,114 @@ github.com/databricks/databricks-sdk-go/service/serving.ExternalModelProvider:
 github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
   "private_key":
     "description": |-
-      The Databricks secret key reference for a private key for the service account which has access to the Google Cloud Vertex AI Service. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to paste your API key directly, see `private_key_plaintext`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`
+      The Databricks secret key reference for a private key for the service
+      account which has access to the Google Cloud Vertex AI Service. See [Best
+      practices for managing service account keys]. If you prefer to paste your
+      API key directly, see `private_key_plaintext`. You must provide an API
+      key using one of the following fields: `private_key` or
+      `private_key_plaintext`
+
+      [Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
   "private_key_plaintext":
     "description": |-
-      The private key for the service account which has access to the Google Cloud Vertex AI Service provided as a plaintext secret. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to reference your key using Databricks Secrets, see `private_key`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`.
+      The private key for the service account which has access to the Google
+      Cloud Vertex AI Service provided as a plaintext secret. See [Best
+      practices for managing service account keys]. If you prefer to reference
+      your key using Databricks Secrets, see `private_key`. You must provide an
+      API key using one of the following fields: `private_key` or
+      `private_key_plaintext`.
+
+      [Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
   "project_id":
     "description": |-
-      This is the Google Cloud project id that the service account is associated with.
+      This is the Google Cloud project id that the service account is
+      associated with.
   "region":
     "description": |-
-      This is the region for the Google Cloud Vertex AI Service. See [supported regions](https://cloud.google.com/vertex-ai/docs/general/locations) for more details. Some models are only available in specific regions.
+      This is the region for the Google Cloud Vertex AI Service. See [supported
+      regions] for more details. Some models are only available in specific
+      regions.
+
+      [supported regions]: https://cloud.google.com/vertex-ai/docs/general/locations
 github.com/databricks/databricks-sdk-go/service/serving.OpenAiConfig:
+  "_":
+    "description": |-
+      Configs needed to create an OpenAI model route.
   "microsoft_entra_client_id":
-    "description": |
-      This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.
+    "description": |-
+      This field is only required for Azure AD OpenAI and is the Microsoft
+      Entra Client ID.
   "microsoft_entra_client_secret":
-    "description": |
-      The Databricks secret key reference for a client secret used for Microsoft Entra ID authentication.
-      If you prefer to paste your client secret directly, see `microsoft_entra_client_secret_plaintext`.
-      You must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.
+    "description": |-
+      The Databricks secret key reference for a client secret used for
+      Microsoft Entra ID authentication. If you prefer to paste your client
+      secret directly, see `microsoft_entra_client_secret_plaintext`. You must
+      provide an API key using one of the following fields:
+      `microsoft_entra_client_secret` or
+      `microsoft_entra_client_secret_plaintext`.
   "microsoft_entra_client_secret_plaintext":
-    "description": |
-      The client secret used for Microsoft Entra ID authentication provided as a plaintext string.
-      If you prefer to reference your key using Databricks Secrets, see `microsoft_entra_client_secret`.
-      You must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.
+    "description": |-
+      The client secret used for Microsoft Entra ID authentication provided as
+      a plaintext string. If you prefer to reference your key using Databricks
+      Secrets, see `microsoft_entra_client_secret`. You must provide an API key
+      using one of the following fields: `microsoft_entra_client_secret` or
+      `microsoft_entra_client_secret_plaintext`.
   "microsoft_entra_tenant_id":
-    "description": |
-      This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.
+    "description": |-
+      This field is only required for Azure AD OpenAI and is the Microsoft
+      Entra Tenant ID.
   "openai_api_base":
-    "description": |
-      This is a field to provide a customized base URl for the OpenAI API.
-      For Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service
-      provided by Azure.
-      For other OpenAI API types, this field is optional, and if left unspecified, the standard OpenAI base URL is used.
+    "description": |-
+      This is a field to provide a customized base URl for the OpenAI API. For
+      Azure OpenAI, this field is required, and is the base URL for the Azure
+      OpenAI API service provided by Azure. For other OpenAI API types, this
+      field is optional, and if left unspecified, the standard OpenAI base URL
+      is used.
   "openai_api_key":
     "description": |-
-      The Databricks secret key reference for an OpenAI API key using the OpenAI or Azure service. If you prefer to paste your API key directly, see `openai_api_key_plaintext`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`.
+      The Databricks secret key reference for an OpenAI API key using the
+      OpenAI or Azure service. If you prefer to paste your API key directly,
+      see `openai_api_key_plaintext`. You must provide an API key using one of
+      the following fields: `openai_api_key` or `openai_api_key_plaintext`.
   "openai_api_key_plaintext":
     "description": |-
-      The OpenAI API key using the OpenAI or Azure service provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `openai_api_key`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`.
+      The OpenAI API key using the OpenAI or Azure service provided as a
+      plaintext string. If you prefer to reference your key using Databricks
+      Secrets, see `openai_api_key`. You must provide an API key using one of
+      the following fields: `openai_api_key` or `openai_api_key_plaintext`.
   "openai_api_type":
-    "description": |
-      This is an optional field to specify the type of OpenAI API to use.
-      For Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security
-      access validation protocol. For access token validation, use azure. For authentication using Azure Active
+    "description": |-
+      This is an optional field to specify the type of OpenAI API to use. For
+      Azure OpenAI, this field is required, and adjust this parameter to
+      represent the preferred security access validation protocol. For access
+      token validation, use azure. For authentication using Azure Active
       Directory (Azure AD) use, azuread.
   "openai_api_version":
-    "description": |
-      This is an optional field to specify the OpenAI API version.
-      For Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to
-      utilize, specified by a date.
+    "description": |-
+      This is an optional field to specify the OpenAI API version. For Azure
+      OpenAI, this field is required, and is the version of the Azure OpenAI
+      service to utilize, specified by a date.
   "openai_deployment_name":
-    "description": |
-      This field is only required for Azure OpenAI and is the name of the deployment resource for the
-      Azure OpenAI service.
+    "description": |-
+      This field is only required for Azure OpenAI and is the name of the
+      deployment resource for the Azure OpenAI service.
   "openai_organization":
-    "description": |
-      This is an optional field to specify the organization in OpenAI or Azure OpenAI.
+    "description": |-
+      This is an optional field to specify the organization in OpenAI or Azure
+      OpenAI.
 github.com/databricks/databricks-sdk-go/service/serving.PaLmConfig:
   "palm_api_key":
     "description": |-
-      The Databricks secret key reference for a PaLM API key. If you prefer to paste your API key directly, see `palm_api_key_plaintext`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`.
+      The Databricks secret key reference for a PaLM API key. If you prefer to
+      paste your API key directly, see `palm_api_key_plaintext`. You must
+      provide an API key using one of the following fields: `palm_api_key` or
+      `palm_api_key_plaintext`.
   "palm_api_key_plaintext":
     "description": |-
-      The PaLM API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `palm_api_key`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`.
+      The PaLM API key provided as a plaintext string. If you prefer to
+      reference your key using Databricks Secrets, see `palm_api_key`. You must
+      provide an API key using one of the following fields: `palm_api_key` or
+      `palm_api_key_plaintext`.
 github.com/databricks/databricks-sdk-go/service/serving.RateLimit:
   "calls":
     "description": |-
@@ -3010,8 +3100,6 @@ github.com/databricks/databricks-sdk-go/service/serving.RateLimit:
       Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.
 github.com/databricks/databricks-sdk-go/service/serving.RateLimitKey:
   "_":
-    "description": |-
-      Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.
     "enum":
       - |-
         user
@@ -3019,8 +3107,6 @@ github.com/databricks/databricks-sdk-go/service/serving.RateLimitKey:
         endpoint
 github.com/databricks/databricks-sdk-go/service/serving.RateLimitRenewalPeriod:
   "_":
-    "description": |-
-      Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.
     "enum":
       - |-
         minute
@@ -3033,21 +3119,15 @@ github.com/databricks/databricks-sdk-go/service/serving.Route:
       The percentage of endpoint traffic to send to this route. It must be an integer between 0 and 100 inclusive.
 github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
   "entity_name":
-    "description": |
-      The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC),
-      or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of
-      __catalog_name__.__schema_name__.__model_name__.
-  "entity_version":
     "description": |-
-      The version of the model in Databricks Model Registry to be served or empty if the entity is a FEATURE_SPEC.
+      The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.
+  "entity_version": {}
   "environment_vars":
-    "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity.\nNote: this is an experimental feature and subject to change. \nExample entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`"
+    "description": |-
+      An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
   "external_model":
-    "description": |
-      The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)
-      can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model,
-      it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later.
-      The task type of all external models within an endpoint must be the same.
+    "description": |-
+      The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled) can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model, it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later. The task type of all external models within an endpoint must be the same.
   "instance_profile_arn":
     "description": |-
       ARN of the instance profile that the served entity uses to access AWS resources.
@@ -3058,68 +3138,46 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
     "description": |-
       The minimum tokens per second that the endpoint can scale down to.
   "name":
-    "description": |
-      The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores.
-      If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other
-      entities, it defaults to <entity-name>-<entity-version>.
+    "description": |-
+      The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.
   "scale_to_zero_enabled":
     "description": |-
       Whether the compute resources for the served entity should scale down to zero.
   "workload_size":
-    "description": |
-      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between.
-      A single unit of provisioned concurrency can process one request at a time.
-      Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency).
-      If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
+    "description": |-
+      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
   "workload_type":
-    "description": |
-      The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is
-      "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.
-      See the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
+    "description": |-
+      The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
 github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
   "environment_vars":
-    "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this model.\nNote: this is an experimental feature and subject to change. \nExample model environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`"
+    "description": |-
+      An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
   "instance_profile_arn":
     "description": |-
-      ARN of the instance profile that the served model will use to access AWS resources.
+      ARN of the instance profile that the served entity uses to access AWS resources.
   "max_provisioned_throughput":
     "description": |-
       The maximum tokens per second that the endpoint can scale up to.
   "min_provisioned_throughput":
     "description": |-
       The minimum tokens per second that the endpoint can scale down to.
-  "model_name":
-    "description": |
-      The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model,
-      in the form of __catalog_name__.__schema_name__.__model_name__.
-  "model_version":
-    "description": |-
-      The version of the model in Databricks Model Registry or Unity Catalog to be served.
+  "model_name": {}
+  "model_version": {}
   "name":
-    "description": |
-      The name of a served model. It must be unique across an endpoint. If not specified, this field will default to <model-name>-<model-version>.
-      A served model name can consist of alphanumeric characters, dashes, and underscores.
+    "description": |-
+      The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.
   "scale_to_zero_enabled":
     "description": |-
-      Whether the compute resources for the served model should scale down to zero.
+      Whether the compute resources for the served entity should scale down to zero.
   "workload_size":
-    "description": |
-      The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between.
-      A single unit of provisioned concurrency can process one request at a time.
-      Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency).
-      If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0.
+    "description": |-
+      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
   "workload_type":
-    "description": |
-      The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is
-      "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.
-      See the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
+    "description": |-
+      The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
 github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadSize:
   "_":
-    "description": |
-      The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between.
-      A single unit of provisioned concurrency can process one request at a time.
-      Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency).
-      If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0.
     "enum":
       - |-
         Small
@@ -3129,17 +3187,26 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkload
         Large
 github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadType:
   "_":
-    "description": |
-      The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is
-      "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.
-      See the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
     "enum":
       - |-
         CPU
       - |-
+        GPU_MEDIUM
+      - |-
         GPU_SMALL
       - |-
+        GPU_LARGE
+      - |-
+        MULTIGPU_MEDIUM
+github.com/databricks/databricks-sdk-go/service/serving.ServingModelWorkloadType:
+  "_":
+    "enum":
+      - |-
+        CPU
+      - |-
         GPU_MEDIUM
+      - |-
+        GPU_SMALL
       - |-
         GPU_LARGE
       - |-
