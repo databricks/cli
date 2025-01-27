@@ -24,3 +24,6 @@ printf "\n=== Custom regex can be specified in [[Repl]] section\n"
 echo 1234
 echo 12345
 echo 123456
+
+printf "\n=== Testing --version"
+trace $CLI --version

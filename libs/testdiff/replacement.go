@@ -23,6 +23,8 @@ var (
 	uuidRegex        = regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
 	numIdRegex       = regexp.MustCompile(`[0-9]{3,}`)
 	privatePathRegex = regexp.MustCompile(`(/tmp|/private)(/.*)/([a-zA-Z0-9]+)`)
+	// Version could v0.0.0-dev+21e1aacf518a or just v0.0.0-dev (the latter is currently the case on Windows)
+	devVersionRegex = regexp.MustCompile(`0\.0\.0-dev(\+[a-f0-9]{10,16})?`)
 )
 
 type Replacement struct {
@@ -210,4 +212,9 @@ func PrepareReplacementsNumber(t testutil.TestingT, r *ReplacementsContext) {
 func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(privatePathRegex, "/tmp/.../$3")
+}
+
+func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.append(devVersionRegex, "$$DEV_VERSION")
 }
