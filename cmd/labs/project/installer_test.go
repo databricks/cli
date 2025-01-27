@@ -270,7 +270,7 @@ func TestOfflineInstallerWorksForReleases(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CLUSTER_ID", "installer-cluster")
 	ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "installer-warehouse")
 
-	r := testcli.NewRunner(t, ctx, "labs", "install", "blueprint", "--offline-install=true", "--debug")
+	r := testcli.NewRunner(t, ctx, "labs", "install", "blueprint", "--offline=true", "--debug")
 	r.RunAndExpectOutput("setting up important infrastructure")
 }
 
