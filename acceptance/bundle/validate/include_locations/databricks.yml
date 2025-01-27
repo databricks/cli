@@ -2,7 +2,7 @@ bundle:
   name: include_locations
 
 include:
-  - job.yml
+  - resources/*.yml
   - override.yml
 
 targets:

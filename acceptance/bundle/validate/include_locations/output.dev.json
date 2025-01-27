@@ -1,8 +1,8 @@
 {
   "files": [
     "databricks.yml",
-    "job.yml",
-    "override.yml"
+    "override.yml",
+    "resources/job.yml"
   ],
   "locations": {
     "bundle": [
@@ -42,36 +42,36 @@
     ],
     "resources": [
       [
-        1,
+        2,
         2,
         3
       ],
       [
-        2,
+        1,
         4,
         7
       ]
     ],
     "resources.jobs": [
       [
-        1,
+        2,
         3,
         5
       ],
       [
-        2,
+        1,
         5,
         9
       ]
     ],
     "resources.jobs.my_job": [
       [
-        1,
+        2,
         4,
         7
       ],
       [
-        2,
+        1,
         6,
         11
       ]
@@ -83,7 +83,7 @@
         3
       ],
       [
-        2,
+        1,
         2,
         3
       ]
