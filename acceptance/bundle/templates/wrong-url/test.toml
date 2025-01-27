@@ -1,0 +1,7 @@
+[[Repls]]
+Old = '\\'
+New = '/'
+
+[[Repls]]
+Old = '/world-[0-9]+'
+New = '/world-123456'
