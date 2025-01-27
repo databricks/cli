@@ -304,7 +304,7 @@ apps:
   
    * - `state`
      - String
-     - 
+     - State of the app compute.
   
   
 ### apps.<name>.pending_deployment
@@ -4367,6 +4367,10 @@ The task runs a JAR when the `spark_jar_task` field is present.
      - Sequence
      - Parameters passed to the main method.  Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
   
+   * - `run_as_repl`
+     - Boolean
+     - Deprecated. A value of `false` is no longer supported.
+  
   
 ### jobs.<name>.tasks.spark_python_task
   
@@ -5068,7 +5072,7 @@ model_serving_endpoints:
   
    * - `ai_gateway`
      - Map
-     - The AI Gateway configuration for the serving endpoint. NOTE: only external model endpoints are supported as of now. See [_](#model_serving_endpoints.<name>.ai_gateway).
+     - The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported. See [_](#model_serving_endpoints.<name>.ai_gateway).
   
    * - `config`
      - Map
@@ -5076,7 +5080,7 @@ model_serving_endpoints:
   
    * - `name`
      - String
-     - The name of the serving endpoint. This field is required and must be unique across a Databricks workspace. An endpoint name can consist of alphanumeric characters, dashes, and underscores. 
+     - The name of the serving endpoint. This field is required and must be unique across a Databricks workspace. An endpoint name can consist of alphanumeric characters, dashes, and underscores.
   
    * - `permissions`
      - Sequence
@@ -5123,7 +5127,7 @@ resources:
   
 **`Type: Map`**
   
-The AI Gateway configuration for the serving endpoint. NOTE: only external model endpoints are supported as of now.
+The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported.
   
   
   
@@ -5224,7 +5228,7 @@ Configuration for guardrail PII filter.
   
    * - `behavior`
      - String
-     - Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.
+     - Configuration for input guardrail filters.
   
   
 ### model_serving_endpoints.<name>.ai_gateway.guardrails.output
@@ -5276,14 +5280,15 @@ Configuration for guardrail PII filter.
   
    * - `behavior`
      - String
-     - Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.
+     - Configuration for input guardrail filters.
   
   
 ### model_serving_endpoints.<name>.ai_gateway.inference_table_config
   
 **`Type: Map`**
   
-Configuration for payload logging using inference tables. Use these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.
+Configuration for payload logging using inference tables.
+Use these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.
   
   
   
@@ -5343,7 +5348,8 @@ Configuration for rate limits which can be set to limit endpoint traffic.
   
 **`Type: Map`**
   
-Configuration to enable usage tracking using system tables. These tables allow you to monitor operational usage on endpoints and their associated costs.
+Configuration to enable usage tracking using system tables.
+These tables allow you to monitor operational usage on endpoints and their associated costs.
   
   
   
@@ -5376,19 +5382,19 @@ The core config of the serving endpoint.
   
    * - `auto_capture_config`
      - Map
-     - Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog. See [_](#model_serving_endpoints.<name>.config.auto_capture_config).
+     - Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog. Note: this field is deprecated for creating new provisioned throughput endpoints, or updating existing provisioned throughput endpoints that never have inference table configured; in these cases please use AI Gateway to manage inference tables. See [_](#model_serving_endpoints.<name>.config.auto_capture_config).
   
    * - `served_entities`
      - Sequence
-     - A list of served entities for the endpoint to serve. A serving endpoint can have up to 15 served entities. See [_](#model_serving_endpoints.<name>.config.served_entities).
+     - The list of served entities under the serving endpoint config. See [_](#model_serving_endpoints.<name>.config.served_entities).
   
    * - `served_models`
      - Sequence
-     - (Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 15 served models. See [_](#model_serving_endpoints.<name>.config.served_models).
+     - (Deprecated, use served_entities instead) The list of served models under the serving endpoint config. See [_](#model_serving_endpoints.<name>.config.served_models).
   
    * - `traffic_config`
      - Map
-     - The traffic config defining how invocations to the serving endpoint should be routed. See [_](#model_serving_endpoints.<name>.config.traffic_config).
+     - The traffic configuration associated with the serving endpoint config. See [_](#model_serving_endpoints.<name>.config.traffic_config).
   
   
 ### model_serving_endpoints.<name>.config.auto_capture_config
@@ -5396,6 +5402,9 @@ The core config of the serving endpoint.
 **`Type: Map`**
   
 Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.
+Note: this field is deprecated for creating new provisioned throughput endpoints,
+or updating existing provisioned throughput endpoints that never have inference table configured;
+in these cases please use AI Gateway to manage inference tables.
   
   
   
@@ -5427,7 +5436,7 @@ Configuration for Inference Tables which automatically logs requests and respons
   
 **`Type: Sequence`**
   
-A list of served entities for the endpoint to serve. A serving endpoint can have up to 15 served entities.
+The list of served entities under the serving endpoint config.
   
   
   
@@ -5440,19 +5449,19 @@ A list of served entities for the endpoint to serve. A serving endpoint can have
   
    * - `entity_name`
      - String
-     - The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of __catalog_name__.__schema_name__.__model_name__. 
+     - The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.
   
    * - `entity_version`
      - String
-     - The version of the model in Databricks Model Registry to be served or empty if the entity is a FEATURE_SPEC.
+     - 
   
    * - `environment_vars`
      - Map
-     - An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change.  Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
+     - An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
   
    * - `external_model`
      - Map
-     - The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled) can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model, it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later. The task type of all external models within an endpoint must be the same. . See [_](#model_serving_endpoints.<name>.config.served_entities.external_model).
+     - The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled) can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model, it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later. The task type of all external models within an endpoint must be the same. See [_](#model_serving_endpoints.<name>.config.served_entities.external_model).
   
    * - `instance_profile_arn`
      - String
@@ -5468,7 +5477,7 @@ A list of served entities for the endpoint to serve. A serving endpoint can have
   
    * - `name`
      - String
-     - The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to <entity-name>-<entity-version>. 
+     - The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.
   
    * - `scale_to_zero_enabled`
      - Boolean
@@ -5476,22 +5485,18 @@ A list of served entities for the endpoint to serve. A serving endpoint can have
   
    * - `workload_size`
      - String
-     - The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. 
+     - The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
   
    * - `workload_type`
      - String
-     - The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types). 
+     - The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
   
   
 ### model_serving_endpoints.<name>.config.served_entities.external_model
   
 **`Type: Map`**
   
-The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)
-can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model,
-it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later.
-The task type of all external models within an endpoint must be the same.
-
+The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled) can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model, it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later. The task type of all external models within an endpoint must be the same.
   
   
   
@@ -5540,7 +5545,7 @@ The task type of all external models within an endpoint must be the same.
   
    * - `provider`
      - String
-     - The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.", 
+     - The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.
   
    * - `task`
      - String
@@ -5588,7 +5593,7 @@ Amazon Bedrock Config. Only required if the provider is 'amazon-bedrock'.
   
    * - `aws_access_key_id`
      - String
-     - The Databricks secret key reference for an AWS access key ID with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`.
+     - The Databricks secret key reference for an AWS access key ID with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_access_key_id_plaintext`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`.
   
    * - `aws_access_key_id_plaintext`
      - String
@@ -5652,7 +5657,7 @@ Cohere Config. Only required if the provider is 'cohere'.
   
    * - `cohere_api_base`
      - String
-     - This is an optional field to provide a customized base URL for the Cohere API.  If left unspecified, the standard Cohere base URL is used. 
+     - This is an optional field to provide a customized base URL for the Cohere API. If left unspecified, the standard Cohere base URL is used.
   
    * - `cohere_api_key`
      - String
@@ -5680,15 +5685,15 @@ Databricks Model Serving Config. Only required if the provider is 'databricks-mo
   
    * - `databricks_api_token`
      - String
-     - The Databricks secret key reference for a Databricks API token that corresponds to a user or service principal with Can Query access to the model serving endpoint pointed to by this external model. If you prefer to paste your API key directly, see `databricks_api_token_plaintext`. You must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`. 
+     - The Databricks secret key reference for a Databricks API token that corresponds to a user or service principal with Can Query access to the model serving endpoint pointed to by this external model. If you prefer to paste your API key directly, see `databricks_api_token_plaintext`. You must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.
   
    * - `databricks_api_token_plaintext`
      - String
-     - The Databricks API token that corresponds to a user or service principal with Can Query access to the model serving endpoint pointed to by this external model provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `databricks_api_token`. You must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`. 
+     - The Databricks API token that corresponds to a user or service principal with Can Query access to the model serving endpoint pointed to by this external model provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `databricks_api_token`. You must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.
   
    * - `databricks_workspace_url`
      - String
-     - The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model. 
+     - The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.
   
   
 ### model_serving_endpoints.<name>.config.served_entities.external_model.google_cloud_vertex_ai_config
@@ -5708,11 +5713,11 @@ Google Cloud Vertex AI Config. Only required if the provider is 'google-cloud-ve
   
    * - `private_key`
      - String
-     - The Databricks secret key reference for a private key for the service account which has access to the Google Cloud Vertex AI Service. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to paste your API key directly, see `private_key_plaintext`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`
+     - The Databricks secret key reference for a private key for the service account which has access to the Google Cloud Vertex AI Service. See [Best practices for managing service account keys]. If you prefer to paste your API key directly, see `private_key_plaintext`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`  [Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
   
    * - `private_key_plaintext`
      - String
-     - The private key for the service account which has access to the Google Cloud Vertex AI Service provided as a plaintext secret. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to reference your key using Databricks Secrets, see `private_key`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`.
+     - The private key for the service account which has access to the Google Cloud Vertex AI Service provided as a plaintext secret. See [Best practices for managing service account keys]. If you prefer to reference your key using Databricks Secrets, see `private_key`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`.  [Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
   
    * - `project_id`
      - String
@@ -5720,7 +5725,7 @@ Google Cloud Vertex AI Config. Only required if the provider is 'google-cloud-ve
   
    * - `region`
      - String
-     - This is the region for the Google Cloud Vertex AI Service. See [supported regions](https://cloud.google.com/vertex-ai/docs/general/locations) for more details. Some models are only available in specific regions.
+     - This is the region for the Google Cloud Vertex AI Service. See [supported regions] for more details. Some models are only available in specific regions.  [supported regions]: https://cloud.google.com/vertex-ai/docs/general/locations
   
   
 ### model_serving_endpoints.<name>.config.served_entities.external_model.openai_config
@@ -5740,23 +5745,23 @@ OpenAI Config. Only required if the provider is 'openai'.
   
    * - `microsoft_entra_client_id`
      - String
-     - This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID. 
+     - This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.
   
    * - `microsoft_entra_client_secret`
      - String
-     - The Databricks secret key reference for a client secret used for Microsoft Entra ID authentication. If you prefer to paste your client secret directly, see `microsoft_entra_client_secret_plaintext`. You must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`. 
+     - The Databricks secret key reference for a client secret used for Microsoft Entra ID authentication. If you prefer to paste your client secret directly, see `microsoft_entra_client_secret_plaintext`. You must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.
   
    * - `microsoft_entra_client_secret_plaintext`
      - String
-     - The client secret used for Microsoft Entra ID authentication provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `microsoft_entra_client_secret`. You must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`. 
+     - The client secret used for Microsoft Entra ID authentication provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `microsoft_entra_client_secret`. You must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.
   
    * - `microsoft_entra_tenant_id`
      - String
-     - This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID. 
+     - This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.
   
    * - `openai_api_base`
      - String
-     - This is a field to provide a customized base URl for the OpenAI API. For Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service provided by Azure. For other OpenAI API types, this field is optional, and if left unspecified, the standard OpenAI base URL is used. 
+     - This is a field to provide a customized base URl for the OpenAI API. For Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service provided by Azure. For other OpenAI API types, this field is optional, and if left unspecified, the standard OpenAI base URL is used.
   
    * - `openai_api_key`
      - String
@@ -5768,19 +5773,19 @@ OpenAI Config. Only required if the provider is 'openai'.
   
    * - `openai_api_type`
      - String
-     - This is an optional field to specify the type of OpenAI API to use. For Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security access validation protocol. For access token validation, use azure. For authentication using Azure Active Directory (Azure AD) use, azuread. 
+     - This is an optional field to specify the type of OpenAI API to use. For Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security access validation protocol. For access token validation, use azure. For authentication using Azure Active Directory (Azure AD) use, azuread.
   
    * - `openai_api_version`
      - String
-     - This is an optional field to specify the OpenAI API version. For Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to utilize, specified by a date. 
+     - This is an optional field to specify the OpenAI API version. For Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to utilize, specified by a date.
   
    * - `openai_deployment_name`
      - String
-     - This field is only required for Azure OpenAI and is the name of the deployment resource for the Azure OpenAI service. 
+     - This field is only required for Azure OpenAI and is the name of the deployment resource for the Azure OpenAI service.
   
    * - `openai_organization`
      - String
-     - This is an optional field to specify the organization in OpenAI or Azure OpenAI. 
+     - This is an optional field to specify the organization in OpenAI or Azure OpenAI.
   
   
 ### model_serving_endpoints.<name>.config.served_entities.external_model.palm_config
@@ -5811,7 +5816,7 @@ PaLM Config. Only required if the provider is 'palm'.
   
 **`Type: Sequence`**
   
-(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 15 served models.
+(Deprecated, use served_entities instead) The list of served models under the serving endpoint config.
   
   
   
@@ -5824,11 +5829,11 @@ PaLM Config. Only required if the provider is 'palm'.
   
    * - `environment_vars`
      - Map
-     - An object containing a set of optional, user-specified environment variable key-value pairs used for serving this model. Note: this is an experimental feature and subject to change.  Example model environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
+     - An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
   
    * - `instance_profile_arn`
      - String
-     - ARN of the instance profile that the served model will use to access AWS resources.
+     - ARN of the instance profile that the served entity uses to access AWS resources.
   
    * - `max_provisioned_throughput`
      - Integer
@@ -5840,34 +5845,34 @@ PaLM Config. Only required if the provider is 'palm'.
   
    * - `model_name`
      - String
-     - The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model, in the form of __catalog_name__.__schema_name__.__model_name__. 
+     - 
   
    * - `model_version`
      - String
-     - The version of the model in Databricks Model Registry or Unity Catalog to be served.
+     - 
   
    * - `name`
      - String
-     - The name of a served model. It must be unique across an endpoint. If not specified, this field will default to <model-name>-<model-version>. A served model name can consist of alphanumeric characters, dashes, and underscores. 
+     - The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.
   
    * - `scale_to_zero_enabled`
      - Boolean
-     - Whether the compute resources for the served model should scale down to zero.
+     - Whether the compute resources for the served entity should scale down to zero.
   
    * - `workload_size`
      - String
-     - The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0. 
+     - The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
   
    * - `workload_type`
      - String
-     - The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types). 
+     - The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
   
   
 ### model_serving_endpoints.<name>.config.traffic_config
   
 **`Type: Map`**
   
-The traffic config defining how invocations to the serving endpoint should be routed.
+The traffic configuration associated with the serving endpoint config.
   
   
   

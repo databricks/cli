@@ -124,7 +124,7 @@ The bundle attributes when deploying to this target,
   
    * - `uuid`
      - String
-     - 
+     - Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
   
   
 ### bundle.deployment
@@ -686,7 +686,7 @@ The bundle attributes when deploying to this target.
   
    * - `uuid`
      - String
-     - 
+     - Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
   
   
 ### targets.<name>.bundle.deployment
