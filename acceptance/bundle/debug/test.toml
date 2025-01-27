@@ -5,4 +5,8 @@ New = 'Environment variables for Terraform: ...redacted... '
 
 [[Repls]]
 Old = 'pid=[0-9]+'
-New = 'pid=00000'
+New = 'pid=12345'
+
+[[Repls]]
+Old = '\d\d:\d\d:\d\d'
+New = '10:07:59'
