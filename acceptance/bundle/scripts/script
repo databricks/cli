@@ -1,0 +1,3 @@
+trace EXITCODE=0 errcode $CLI bundle validate
+trace EXITCODE=1 errcode $CLI bundle validate
+trace EXITCODE=0 errcode $CLI bundle deploy
