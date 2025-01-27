@@ -18,4 +18,4 @@ For more complex tests one can also use:
 - `trace` helper: prints the arguments before executing the command.
 - custom output files: redirect output to custom file (it must start with `out`), e.g. `$CLI bundle validate > out.txt 2> out.error.txt`.
 
-See [./selftest](./selftest) for a toy test.
+See [selftest](./selftest) for a toy test.
