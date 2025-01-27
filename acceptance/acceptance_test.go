@@ -3,12 +3,12 @@ package acceptance_test
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"slices"
 	"sort"
@@ -23,7 +23,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var KeepTmp = os.Getenv("KEEP_TMP") != ""
+var KeepTmp bool
+
+// In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
+// Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
+// example: var SingleTest = "bundle/variables/empty"
+var SingleTest = ""
+
+// If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
+// CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
+// Also disables parallelism in tests.
+var InprocessMode bool
+
+func init() {
+	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
+}
 
 const (
 	EntryPointScript = "script"
@@ -38,6 +53,18 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	testAccept(t, InprocessMode, SingleTest)
+}
+
+func TestInprocessMode(t *testing.T) {
+	if InprocessMode {
+		t.Skip("Already tested by TestAccept")
+	}
+	require.Equal(t, 1, testAccept(t, true, "selftest"))
+}
+
+func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -50,22 +77,32 @@ func TestAccept(t *testing.T) {
 		t.Logf("Writing coverage to %s", coverDir)
 	}
 
-	execPath := BuildCLI(t, cwd, coverDir)
-	// $CLI is what test scripts are using
+	execPath := ""
+
+	if InprocessMode {
+		cmdServer := StartCmdServer(t)
+		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
+		execPath = filepath.Join(cwd, "bin", "callserver.py")
+	} else {
+		execPath = BuildCLI(t, cwd, coverDir)
+	}
+
 	t.Setenv("CLI", execPath)
+	repls.SetPath(execPath, "$CLI")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
-	repls := testdiff.ReplacementsContext{}
-	repls.Set(execPath, "$CLI")
-
 	tempHomeDir := t.TempDir()
-	repls.Set(tempHomeDir, "$TMPHOME")
+	repls.SetPath(tempHomeDir, "$TMPHOME")
 	t.Logf("$TMPHOME=%v", tempHomeDir)
 
 	// Prevent CLI from downloading terraform in each test:
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
+
+	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
+	uvCache := getUVDefaultCacheDir(t)
+	t.Setenv("UV_CACHE_DIR", uvCache)
 
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -91,17 +128,30 @@ func TestAccept(t *testing.T) {
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
+	testdiff.PrepareReplacementsDevVersion(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
+	if singleTest != "" {
+		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
+			return n != singleTest
+		})
+		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+	}
+
 	for _, dir := range testDirs {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
-			runTest(t, dir, coverDir, repls)
+			if !InprocessMode {
+				t.Parallel()
+			}
+
+			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
+
+	return len(testDirs)
 }
 
 func getTests(t *testing.T) []string {
@@ -125,6 +175,13 @@ func getTests(t *testing.T) []string {
 }
 
 func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
+	config, configPath := LoadConfig(t, dir)
+
+	isEnabled, isPresent := config.GOOS[runtime.GOOS]
+	if isPresent && !isEnabled {
+		t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+	}
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -136,6 +193,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	} else {
 		tmpDir = t.TempDir()
 	}
+
+	repls.SetPathWithParents(tmpDir, "$TMPDIR")
+	repls.Repls = append(repls.Repls, config.Repls...)
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -169,14 +229,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
+	printedRepls := false
+
 	// Compare expected outputs
 	for relPath := range outputs {
-		doComparison(t, repls, dir, tmpDir, relPath)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
-	files, err := ListDir(t, tmpDir)
-	require.NoError(t, err)
+	files := ListDir(t, tmpDir)
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -187,12 +248,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := readIfExists(t, pathRef)
@@ -236,6 +297,15 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	if !equal && testdiff.OverwriteMode {
 		t.Logf("Overwriting existing output file: %s", relPath)
 		testutil.WriteFile(t, pathRef, valueNew)
+	}
+
+	if !equal && printedRepls != nil && !*printedRepls {
+		*printedRepls = true
+		var items []string
+		for _, item := range repls.Repls {
+			items = append(items, fmt.Sprintf("REPL %s => %s", item.Old, item.New))
+		}
+		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
 }
 
@@ -393,37 +463,19 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 	})
 }
 
-func ListDir(t *testing.T, src string) ([]string, error) {
-	// exclude folders in .gitignore from comparison
-	ignored := []string{
-		"\\.ruff_cache",
-		"\\.venv",
-		".*\\.egg-info",
-		"__pycache__",
-		// depends on uv version
-		"uv.lock",
-	}
-
+func ListDir(t *testing.T, src string) []string {
 	var files []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			// Do not FailNow here.
+			// The output comparison is happening after this call which includes output.txt which
+			// includes errors printed by commands which include explanation why a given file cannot be read.
+			t.Errorf("Error when listing %s: path=%s: %s", src, path, err)
+			return nil
 		}
 
 		if info.IsDir() {
-			for _, ignoredFolder := range ignored {
-				if matched, _ := regexp.MatchString(ignoredFolder, info.Name()); matched {
-					return filepath.SkipDir
-				}
-			}
-
 			return nil
-		} else {
-			for _, ignoredFolder := range ignored {
-				if matched, _ := regexp.MatchString(ignoredFolder, info.Name()); matched {
-					return nil
-				}
-			}
 		}
 
 		relPath, err := filepath.Rel(src, path)
@@ -434,5 +486,21 @@ func ListDir(t *testing.T, src string) ([]string, error) {
 		files = append(files, relPath)
 		return nil
 	})
-	return files, err
+	if err != nil {
+		t.Errorf("Failed to list %s: %s", src, err)
+	}
+	return files
+}
+
+func getUVDefaultCacheDir(t *testing.T) string {
+	// According to uv docs https://docs.astral.sh/uv/concepts/cache/#caching-in-continuous-integration
+	// the default cache directory is
+	// "A system-appropriate cache directory, e.g., $XDG_CACHE_HOME/uv or $HOME/.cache/uv on Unix and %LOCALAPPDATA%\uv\cache on Windows"
+	cacheDir, err := os.UserCacheDir()
+	require.NoError(t, err)
+	if runtime.GOOS == "windows" {
+		return cacheDir + "\\uv\\cache"
+	} else {
+		return cacheDir + "/uv"
+	}
 }

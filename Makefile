@@ -3,6 +3,8 @@ default: vendor fmt lint
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
+GOTESTSUM_CMD ?= gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped
+
 
 lint:
 	golangci-lint run --fix
@@ -18,21 +20,18 @@ fmt:
 	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
 
 test:
-	gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped -- ${PACKAGES}
+	${GOTESTSUM_CMD} -- ${PACKAGES}
 
 cover:
-	gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped -- -coverprofile=coverage.txt ${PACKAGES}
-
-showcover:
-	go tool cover -html=coverage.txt
-
-acc-cover:
 	rm -fr ./acceptance/build/cover/
-	CLI_GOCOVERDIR=build/cover go test ./acceptance
+	CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
 	go tool covdata textfmt -i acceptance/build/cover-merged -o coverage-acceptance.txt
+
+showcover:
+	go tool cover -html=coverage.txt
 
 acc-showcover:
 	go tool cover -html=coverage-acceptance.txt

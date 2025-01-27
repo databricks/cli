@@ -6,7 +6,9 @@ errcode() {
     local exit_code=$?
     # Re-enable 'set -e' if it was previously set
     set -e
-    >&2 printf "\nExit code: $exit_code\n"
+    if [ $exit_code -ne 0 ]; then
+        >&2 printf "\nExit code: $exit_code\n"
+    fi
 }
 
 trace() {
@@ -34,9 +36,25 @@ trace() {
 
 git-repo-init() {
     git init -qb main
-    git config --global core.autocrlf false
+    git config core.autocrlf false
     git config user.name "Tester"
     git config user.email "tester@databricks.com"
     git add databricks.yml
     git commit -qm 'Add databricks.yml'
+}
+
+title() {
+    local label="$1"
+    printf "\n=== %s" "$label"
+}
+
+withdir() {
+    local dir="$1"
+    shift
+    local orig_dir="$(pwd)"
+    cd "$dir" || return $?
+    "$@"
+    local exit_code=$?
+    cd "$orig_dir" || return $?
+    return $exit_code
 }

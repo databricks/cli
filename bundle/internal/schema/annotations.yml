@@ -49,7 +49,7 @@ github.com/databricks/cli/bundle/config.Bundle:
       The name of the bundle.
   "uuid":
     "description": |-
-      PLACEHOLDER
+      Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
 github.com/databricks/cli/bundle/config.Deployment:
   "fail_on_active_runs":
     "description": |-

@@ -1,7 +1,6 @@
 package run
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"os"
@@ -16,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -76,9 +74,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 	b.SetWorkpaceClient(mwc.WorkspaceClient)
 	bundletest.SetLocation(b, "resources.apps.my_app", []dyn.Location{{File: "./databricks.yml"}})
 
-	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
-	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
+	ctx := cmdio.MockDiscard(context.Background())
 
 	diags := bundle.Apply(ctx, b, bundle.Seq(
 		mutator.DefineDefaultWorkspacePaths(),
