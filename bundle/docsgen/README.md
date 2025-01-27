@@ -2,13 +2,13 @@
 
 1. Install [Golang](https://go.dev/doc/install)
 2. Run `make vendor docs` from the repo
-3. See generated documents in `./bundle/internal/docs/output` directory
+3. See generated documents in `./bundle/docsgen/output` directory
 4. To change descriptions update content in `./bundle/internal/schema/annotations.yml` or `./bundle/internal/schema/annotations_openapi_overrides.yml` and re-run `make docs`
 
 For simpler usage run it together with copy command to move resulting files to local `docs` repo. Note that it will overwrite any local changes in affected files. Example:
 
 ```
-make docs && cp bundle/internal/docs/output/*.md ../docs/source/dev-tools/bundles
+make docs && cp bundle/docgen/output/*.md ../docs/source/dev-tools/bundles
 ```
 
 To change intro sections for files update them in `templates/` directory
