@@ -9,13 +9,13 @@
 "prod-a env-var-b"
 
 >>> errcode $CLI bundle validate -t env-missing-a-required-variable-assignment
-Error: no value assigned to required variable b. Assignment can be done through the "--var" flag or by setting the BUNDLE_VAR_b environment variable
+Error: no value assigned to required variable b. Assignment can be done using "--var", by setting the BUNDLE_VAR_b environment variable, or in .databricks/bundle/<target>/variable-overrides.json file
 
 Name: test bundle
 Target: env-missing-a-required-variable-assignment
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/test bundle/env-missing-a-required-variable-assignment
+  User: $USERNAME
+  Path: /Workspace/Users/$USERNAME/.bundle/test bundle/env-missing-a-required-variable-assignment
 
 Found 1 error
 

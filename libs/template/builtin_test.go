@@ -9,12 +9,12 @@ import (
 )
 
 func TestBuiltin(t *testing.T) {
-	out, err := Builtin()
+	out, err := builtin()
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(out), 3)
 
 	// Create a map of templates by name for easier lookup
-	templates := make(map[string]*BuiltinTemplate)
+	templates := make(map[string]*builtinTemplate)
 	for _, tmpl := range out {
 		templates[tmpl.Name] = &tmpl
 	}

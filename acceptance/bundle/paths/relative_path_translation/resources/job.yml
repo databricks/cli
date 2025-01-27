@@ -1,0 +1,22 @@
+resources:
+  jobs:
+    job:
+      tasks:
+        - task_key: local
+          job_cluster_key: default
+          spark_python_task:
+            python_file: ../src/file1.py
+
+        - task_key: variable_reference
+          job_cluster_key: default
+          spark_python_task:
+            # Note: this is a pure variable reference yet needs to persist the location
+            # of the reference, not the location of the variable value.
+            # Also see https://github.com/databricks/cli/issues/1330.
+            python_file: ${var.file_path}
+
+      # Include a job cluster for completeness
+      job_clusters:
+        - job_cluster_key: default
+          new_cluster:
+            spark_version: 15.4.x-scala2.12

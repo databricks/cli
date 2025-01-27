@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -139,6 +140,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"dashboard1": {
 						Dashboard: &dashboards.Dashboard{
 							DisplayName: "dashboard1",
+						},
+					},
+				},
+				Apps: map[string]*resources.App{
+					"app1": {
+						App: &apps.App{
+							Name: "app1",
 						},
 					},
 				},
@@ -376,6 +384,23 @@ func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	require.NoError(t, diags.Error())
 }
 
+func TestProcessTargetModeProductionOkWithRootPath(t *testing.T) {
+	b := mockBundle(config.Production)
+
+	// Our target has all kinds of problems when not using service principals ...
+	diags := validateProductionMode(context.Background(), b, false)
+	require.Error(t, diags.Error())
+
+	// ... but we're okay if we specify a root path
+	b.Target = &config.Target{
+		Workspace: &config.Workspace{
+			RootPath: "some-root-path",
+		},
+	}
+	diags = validateProductionMode(context.Background(), b, false)
+	require.NoError(t, diags.Error())
+}
+
 // Make sure that we have test coverage for all resource types
 func TestAllResourcesMocked(t *testing.T) {
 	b := mockBundle(config.Development)
@@ -417,6 +442,13 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 			for _, key := range field.MapKeys() {
 				resource := field.MapIndex(key)
 				nameField := resource.Elem().FieldByName("Name")
+				resourceType := resources.Type().Field(i).Name
+
+				// Skip apps, as they are not renamed
+				if resourceType == "Apps" {
+					continue
+				}
+
 				if !nameField.IsValid() || nameField.Kind() != reflect.String {
 					continue
 				}

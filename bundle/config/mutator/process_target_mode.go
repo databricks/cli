@@ -197,6 +197,10 @@ func isRunAsSet(r config.Resources) bool {
 	return true
 }
 
+func isExplicitRootSet(b *bundle.Bundle) bool {
+	return b.Target != nil && b.Target.Workspace != nil && b.Target.Workspace.RootPath != ""
+}
+
 func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	switch b.Config.Bundle.Mode {
 	case config.Development:

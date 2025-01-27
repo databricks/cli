@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -24,7 +25,6 @@ import (
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -56,6 +56,9 @@ type Bundle struct {
 	// Config contains the bundle configuration.
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
+
+	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
+	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
 	// Metadata about the bundle deployment. This is the interface Databricks services
 	// rely on to integrate with bundles when they need additional information about
@@ -239,21 +242,5 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 	}
 
 	cfg := b.client.Config
-	out := make(map[string]string)
-	for _, attr := range sdkconfig.ConfigAttributes {
-		// Ignore profile so that downstream tools don't try and reload
-		// the profile even though we know the current configuration is valid.
-		if attr.Name == "profile" {
-			continue
-		}
-		if len(attr.EnvVars) == 0 {
-			continue
-		}
-		if attr.IsZero(cfg) {
-			continue
-		}
-		out[attr.EnvVars[0]] = attr.GetString(cfg)
-	}
-
-	return out, nil
+	return auth.Env(cfg), nil
 }

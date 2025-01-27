@@ -1,0 +1,4 @@
+{
+  "cluster_key": "mlops_stacks-cluster",
+  "cluster_workers": 2
+}

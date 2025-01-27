@@ -13,6 +13,8 @@ variables:
   simplevar:
     default: true
     description: "simplevar description"
+  schedule_status:
+    default: "PAUSED"
 
   complexvar:
     default:
@@ -42,6 +44,8 @@ resources:
             dependencies:
               - python=3.7
             client: "myclient"
+      trigger:
+        pause_status: ${var.schedule_status}
       tags:
         foo: bar
         bar: baz

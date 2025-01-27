@@ -1,0 +1,34 @@
+# Does not work currently, explicitly disabled, even though it works if you remove 'type: "complex"' lines
+# Also fails to merge clusters.
+bundle:
+  name: TestResolveComplexVariableReferencesWithComplexVariablesError
+
+variables:
+  cluster:
+    type: "complex"
+    value:
+      node_type_id: "Standard_DS3_v2"
+      num_workers: 2
+      spark_conf: "${var.spark_conf}"
+  spark_conf:
+    type: "complex"
+    value:
+      spark.executor.memory: "4g"
+      spark.executor.cores: "2"
+
+resources:
+  jobs:
+    job1:
+      job_clusters:
+        - job_cluster_key: my_cluster
+          new_cluster:
+          node_type_id: "random"
+
+targets:
+  dev:
+    resources:
+      jobs:
+        job1:
+          job_clusters:
+            - job_cluster_key: my_cluster
+              new_cluster: ${var.cluster}

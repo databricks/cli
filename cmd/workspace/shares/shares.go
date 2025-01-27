@@ -391,6 +391,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
 	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share.`)
 	// TODO: array: updates
 

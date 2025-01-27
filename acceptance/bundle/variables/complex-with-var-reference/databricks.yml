@@ -1,0 +1,17 @@
+bundle:
+  name: TestResolveComplexVariableWithVarReference
+
+variables:
+  package_version:
+    default: "1.0.0"
+  cluster_libraries:
+    type: "complex"
+    default:
+      - pypi:
+          package: "cicd_template==${var.package_version}"
+
+resources:
+  jobs:
+    job1:
+      tasks:
+        - libraries: ${var.cluster_libraries}

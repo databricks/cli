@@ -59,6 +59,81 @@
         "cli": {
           "bundle": {
             "config": {
+              "resources.App": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "active_deployment": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment"
+                      },
+                      "app_status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus"
+                      },
+                      "compute_status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus"
+                      },
+                      "config": {
+                        "$ref": "#/$defs/map/interface"
+                      },
+                      "create_time": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "creator": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "default_source_code_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "description": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "pending_deployment": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "resources": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
+                      },
+                      "service_principal_client_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "service_principal_id": {
+                        "$ref": "#/$defs/int64"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "source_code_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "update_time": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "updater": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "url": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "source_code_path",
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Cluster": {
                 "oneOf": [
                   {
@@ -313,7 +388,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules"
                       },
                       "job_clusters": {
-                        "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
+                        "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.\nIf more than 100 job clusters are available, you can paginate through them using :method:jobs/get.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster"
                       },
                       "max_concurrent_runs": {
@@ -351,7 +426,7 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "tasks": {
-                        "description": "A list of task specifications to be executed by this job.",
+                        "description": "A list of task specifications to be executed by this job.\nIf more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Task"
                       },
                       "timeout_seconds": {
@@ -1051,6 +1126,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "uuid": {
+                      "description": "Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -1273,6 +1349,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "apps": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.App"
+                    },
                     "clusters": {
                       "description": "The cluster definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster",
@@ -1528,6 +1607,391 @@
         },
         "databricks-sdk-go": {
           "service": {
+            "apps.AppDeployment": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "create_time": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "creator": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "deployment_artifacts": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts"
+                    },
+                    "deployment_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "mode": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode"
+                    },
+                    "source_code_path": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "status": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus"
+                    },
+                    "update_time": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppDeploymentArtifacts": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "source_code_path": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppDeploymentMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SNAPSHOT",
+                    "AUTO_SYNC"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppDeploymentState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SUCCEEDED",
+                    "FAILED",
+                    "IN_PROGRESS",
+                    "CANCELLED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppDeploymentStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentState"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "description": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "job": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "secret": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret"
+                    },
+                    "serving_endpoint": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint"
+                    },
+                    "sql_warehouse": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceJob": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJobJobPermission"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "permission"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceJobJobPermission": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "IS_OWNER",
+                    "CAN_MANAGE_RUN",
+                    "CAN_VIEW"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceSecret": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecretSecretPermission"
+                    },
+                    "scope": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "permission",
+                    "scope"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceSecretSecretPermission": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission to grant on the secret scope. Supported permissions are: \"READ\", \"WRITE\", \"MANAGE\".",
+                  "enum": [
+                    "READ",
+                    "WRITE",
+                    "MANAGE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceServingEndpoint": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpointServingEndpointPermission"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "permission"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceServingEndpointServingEndpointPermission": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_QUERY",
+                    "CAN_VIEW"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceSqlWarehouse": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlWarehousePermission"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "permission"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceSqlWarehouseSqlWarehousePermission": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_USE",
+                    "IS_OWNER"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.ApplicationState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "DEPLOYING",
+                    "RUNNING",
+                    "CRASHED",
+                    "UNAVAILABLE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.ApplicationStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ApplicationState"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.ComputeState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "ERROR",
+                    "DELETING",
+                    "STARTING",
+                    "STOPPING",
+                    "UPDATING",
+                    "STOPPED",
+                    "ACTIVE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.ComputeStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeState"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "catalog.MonitorCronSchedule": {
               "oneOf": [
                 {
@@ -1559,11 +2023,19 @@
               ]
             },
             "catalog.MonitorCronSchedulePauseStatus": {
-              "type": "string",
-              "description": "Read only field that indicates whether a schedule is paused or not.",
-              "enum": [
-                "UNPAUSED",
-                "PAUSED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Read only field that indicates whether a schedule is paused or not.",
+                  "enum": [
+                    "UNPAUSED",
+                    "PAUSED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "catalog.MonitorDataClassificationConfig": {
@@ -1652,11 +2124,19 @@
               ]
             },
             "catalog.MonitorInferenceLogProblemType": {
-              "type": "string",
-              "description": "Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.",
-              "enum": [
-                "PROBLEM_TYPE_CLASSIFICATION",
-                "PROBLEM_TYPE_REGRESSION"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.",
+                  "enum": [
+                    "PROBLEM_TYPE_CLASSIFICATION",
+                    "PROBLEM_TYPE_REGRESSION"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "catalog.MonitorMetric": {
@@ -1701,12 +2181,20 @@
               ]
             },
             "catalog.MonitorMetricType": {
-              "type": "string",
-              "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics\n",
-              "enum": [
-                "CUSTOM_METRIC_TYPE_AGGREGATE",
-                "CUSTOM_METRIC_TYPE_DERIVED",
-                "CUSTOM_METRIC_TYPE_DRIFT"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics\n",
+                  "enum": [
+                    "CUSTOM_METRIC_TYPE_AGGREGATE",
+                    "CUSTOM_METRIC_TYPE_DERIVED",
+                    "CUSTOM_METRIC_TYPE_DRIFT"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "catalog.MonitorNotifications": {
@@ -1770,10 +2258,18 @@
               ]
             },
             "catalog.VolumeType": {
-              "type": "string",
-              "enum": [
-                "EXTERNAL",
-                "MANAGED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "EXTERNAL",
+                    "MANAGED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.Adlsgen2Info": {
@@ -1872,12 +2368,20 @@
               ]
             },
             "compute.AwsAvailability": {
-              "type": "string",
-              "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.\n",
-              "enum": [
-                "SPOT",
-                "ON_DEMAND",
-                "SPOT_WITH_FALLBACK"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.\n",
+                  "enum": [
+                    "SPOT",
+                    "ON_DEMAND",
+                    "SPOT_WITH_FALLBACK"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.AzureAttributes": {
@@ -1910,12 +2414,20 @@
               ]
             },
             "compute.AzureAvailability": {
-              "type": "string",
-              "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero (which only happens on pool clusters), this availability\ntype will be used for the entire cluster.",
-              "enum": [
-                "SPOT_AZURE",
-                "ON_DEMAND_AZURE",
-                "SPOT_WITH_FALLBACK_AZURE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero (which only happens on pool clusters), this availability\ntype will be used for the entire cluster.",
+                  "enum": [
+                    "SPOT_AZURE",
+                    "ON_DEMAND_AZURE",
+                    "SPOT_WITH_FALLBACK_AZURE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.ClientsTypes": {
@@ -2092,19 +2604,27 @@
               ]
             },
             "compute.DataSecurityMode": {
-              "type": "string",
-              "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\nThe following modes can only be used with `kind`.\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.\n* `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.\n\nThe following modes can be used regardless of `kind`.\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
-              "enum": [
-                "DATA_SECURITY_MODE_AUTO",
-                "DATA_SECURITY_MODE_STANDARD",
-                "DATA_SECURITY_MODE_DEDICATED",
-                "NONE",
-                "SINGLE_USER",
-                "USER_ISOLATION",
-                "LEGACY_TABLE_ACL",
-                "LEGACY_PASSTHROUGH",
-                "LEGACY_SINGLE_USER",
-                "LEGACY_SINGLE_USER_STANDARD"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\nThe following modes can only be used with `kind`.\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.\n* `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.\n\nThe following modes can be used regardless of `kind`.\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
+                  "enum": [
+                    "DATA_SECURITY_MODE_AUTO",
+                    "DATA_SECURITY_MODE_STANDARD",
+                    "DATA_SECURITY_MODE_DEDICATED",
+                    "NONE",
+                    "SINGLE_USER",
+                    "USER_ISOLATION",
+                    "LEGACY_TABLE_ACL",
+                    "LEGACY_PASSTHROUGH",
+                    "LEGACY_SINGLE_USER",
+                    "LEGACY_SINGLE_USER_STANDARD"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.DbfsStorageInfo": {
@@ -2172,11 +2692,19 @@
               ]
             },
             "compute.EbsVolumeType": {
-              "type": "string",
-              "description": "The type of EBS volumes that will be launched with this cluster.",
-              "enum": [
-                "GENERAL_PURPOSE_SSD",
-                "THROUGHPUT_OPTIMIZED_HDD"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The type of EBS volumes that will be launched with this cluster.",
+                  "enum": [
+                    "GENERAL_PURPOSE_SSD",
+                    "THROUGHPUT_OPTIMIZED_HDD"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.Environment": {
@@ -2243,12 +2771,20 @@
               ]
             },
             "compute.GcpAvailability": {
-              "type": "string",
-              "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
-              "enum": [
-                "PREEMPTIBLE_GCP",
-                "ON_DEMAND_GCP",
-                "PREEMPTIBLE_WITH_FALLBACK_GCP"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
+                  "enum": [
+                    "PREEMPTIBLE_GCP",
+                    "ON_DEMAND_GCP",
+                    "PREEMPTIBLE_WITH_FALLBACK_GCP"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.GcsStorageInfo": {
@@ -2482,12 +3018,20 @@
               ]
             },
             "compute.RuntimeEngine": {
-              "type": "string",
-              "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.\n",
-              "enum": [
-                "NULL",
-                "STANDARD",
-                "PHOTON"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.\n",
+                  "enum": [
+                    "NULL",
+                    "STANDARD",
+                    "PHOTON"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "compute.S3StorageInfo": {
@@ -2599,10 +3143,18 @@
               ]
             },
             "dashboards.LifecycleState": {
-              "type": "string",
-              "enum": [
-                "ACTIVE",
-                "TRASHED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "TRASHED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.CleanRoomsNotebookTask": {
@@ -2640,10 +3192,18 @@
               ]
             },
             "jobs.Condition": {
-              "type": "string",
-              "enum": [
-                "ANY_UPDATED",
-                "ALL_UPDATED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "ANY_UPDATED",
+                    "ALL_UPDATED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.ConditionTask": {
@@ -2678,15 +3238,23 @@
               ]
             },
             "jobs.ConditionTaskOp": {
-              "type": "string",
-              "description": "* `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.\n* `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” \u003e= “12”` will evaluate to `true`, `“10.0” \u003e= “12”` will evaluate to `false`.\n\nThe boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.",
-              "enum": [
-                "EQUAL_TO",
-                "GREATER_THAN",
-                "GREATER_THAN_OR_EQUAL",
-                "LESS_THAN",
-                "LESS_THAN_OR_EQUAL",
-                "NOT_EQUAL"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "* `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.\n* `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” \u003e= “12”` will evaluate to `true`, `“10.0” \u003e= “12”` will evaluate to `false`.\n\nThe boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.",
+                  "enum": [
+                    "EQUAL_TO",
+                    "GREATER_THAN",
+                    "GREATER_THAN_OR_EQUAL",
+                    "LESS_THAN",
+                    "LESS_THAN_OR_EQUAL",
+                    "NOT_EQUAL"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.Continuous": {
@@ -2842,23 +3410,39 @@
               ]
             },
             "jobs.Format": {
-              "type": "string",
-              "enum": [
-                "SINGLE_TASK",
-                "MULTI_TASK"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SINGLE_TASK",
+                    "MULTI_TASK"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.GitProvider": {
-              "type": "string",
-              "enum": [
-                "gitHub",
-                "bitbucketCloud",
-                "azureDevOpsServices",
-                "gitHubEnterprise",
-                "bitbucketServer",
-                "gitLab",
-                "gitLabEnterpriseEdition",
-                "awsCodeCommit"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "gitHub",
+                    "bitbucketCloud",
+                    "azureDevOpsServices",
+                    "gitHubEnterprise",
+                    "bitbucketServer",
+                    "gitLab",
+                    "gitLabEnterpriseEdition",
+                    "awsCodeCommit"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.GitSnapshot": {
@@ -2971,18 +3555,34 @@
               ]
             },
             "jobs.JobDeploymentKind": {
-              "type": "string",
-              "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
-              "enum": [
-                "BUNDLE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
+                  "enum": [
+                    "BUNDLE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobEditMode": {
-              "type": "string",
-              "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
-              "enum": [
-                "UI_LOCKED",
-                "EDITABLE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
+                  "enum": [
+                    "UI_LOCKED",
+                    "EDITABLE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobEmailNotifications": {
@@ -3150,29 +3750,53 @@
               ]
             },
             "jobs.JobSourceDirtyState": {
-              "type": "string",
-              "description": "Dirty state indicates the job is not fully synced with the job specification\nin the remote repository.\n\nPossible values are:\n* `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.\n* `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.",
-              "enum": [
-                "NOT_SYNCED",
-                "DISCONNECTED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Dirty state indicates the job is not fully synced with the job specification\nin the remote repository.\n\nPossible values are:\n* `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.\n* `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.",
+                  "enum": [
+                    "NOT_SYNCED",
+                    "DISCONNECTED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobsHealthMetric": {
-              "type": "string",
-              "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.",
-              "enum": [
-                "RUN_DURATION_SECONDS",
-                "STREAMING_BACKLOG_BYTES",
-                "STREAMING_BACKLOG_RECORDS",
-                "STREAMING_BACKLOG_SECONDS",
-                "STREAMING_BACKLOG_FILES"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.",
+                  "enum": [
+                    "RUN_DURATION_SECONDS",
+                    "STREAMING_BACKLOG_BYTES",
+                    "STREAMING_BACKLOG_RECORDS",
+                    "STREAMING_BACKLOG_SECONDS",
+                    "STREAMING_BACKLOG_FILES"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobsHealthOperator": {
-              "type": "string",
-              "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
-              "enum": [
-                "GREATER_THAN"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
+                  "enum": [
+                    "GREATER_THAN"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.JobsHealthRule": {
@@ -3256,10 +3880,18 @@
               ]
             },
             "jobs.PauseStatus": {
-              "type": "string",
-              "enum": [
-                "UNPAUSED",
-                "PAUSED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "UNPAUSED",
+                    "PAUSED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.PeriodicTriggerConfiguration": {
@@ -3289,11 +3921,19 @@
               ]
             },
             "jobs.PeriodicTriggerConfigurationTimeUnit": {
-              "type": "string",
-              "enum": [
-                "HOURS",
-                "DAYS",
-                "WEEKS"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "HOURS",
+                    "DAYS",
+                    "WEEKS"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.PipelineParams": {
@@ -3395,15 +4035,23 @@
               ]
             },
             "jobs.RunIf": {
-              "type": "string",
-              "description": "An optional value indicating the condition that determines whether the task should be run once its dependencies have been completed. When omitted, defaults to `ALL_SUCCESS`.\n\nPossible values are:\n* `ALL_SUCCESS`: All dependencies have executed and succeeded\n* `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded\n* `NONE_FAILED`: None of the dependencies have failed and at least one was executed\n* `ALL_DONE`: All dependencies have been completed\n* `AT_LEAST_ONE_FAILED`: At least one dependency failed\n* `ALL_FAILED`: ALl dependencies have failed",
-              "enum": [
-                "ALL_SUCCESS",
-                "ALL_DONE",
-                "NONE_FAILED",
-                "AT_LEAST_ONE_SUCCESS",
-                "ALL_FAILED",
-                "AT_LEAST_ONE_FAILED"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "An optional value indicating the condition that determines whether the task should be run once its dependencies have been completed. When omitted, defaults to `ALL_SUCCESS`.\n\nPossible values are:\n* `ALL_SUCCESS`: All dependencies have executed and succeeded\n* `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded\n* `NONE_FAILED`: None of the dependencies have failed and at least one was executed\n* `ALL_DONE`: All dependencies have been completed\n* `AT_LEAST_ONE_FAILED`: At least one dependency failed\n* `ALL_FAILED`: ALl dependencies have failed",
+                  "enum": [
+                    "ALL_SUCCESS",
+                    "ALL_DONE",
+                    "NONE_FAILED",
+                    "AT_LEAST_ONE_SUCCESS",
+                    "ALL_FAILED",
+                    "AT_LEAST_ONE_FAILED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.RunJobTask": {
@@ -3463,11 +4111,19 @@
               ]
             },
             "jobs.Source": {
-              "type": "string",
-              "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\\\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider.",
-              "enum": [
-                "WORKSPACE",
-                "GIT"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\\\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider.",
+                  "enum": [
+                    "WORKSPACE",
+                    "GIT"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.SparkJarTask": {
@@ -4167,12 +4823,20 @@
               ]
             },
             "ml.ModelVersionStatus": {
-              "type": "string",
-              "description": "Current status of `model_version`",
-              "enum": [
-                "PENDING_REGISTRATION",
-                "FAILED_REGISTRATION",
-                "READY"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Current status of `model_version`",
+                  "enum": [
+                    "PENDING_REGISTRATION",
+                    "FAILED_REGISTRATION",
+                    "READY"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "ml.ModelVersionTag": {
@@ -4217,11 +4881,40 @@
                 }
               ]
             },
+            "pipelines.DayOfWeek": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
+                  "enum": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.DeploymentKind": {
-              "type": "string",
-              "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
-              "enum": [
-                "BUNDLE"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
+                  "enum": [
+                    "BUNDLE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "pipelines.FileLibrary": {
@@ -4527,11 +5220,19 @@
               ]
             },
             "pipelines.PipelineClusterAutoscaleMode": {
-              "type": "string",
-              "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n",
-              "enum": [
-                "ENHANCED",
-                "LEGACY"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n",
+                  "enum": [
+                    "ENHANCED",
+                    "LEGACY"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "pipelines.PipelineDeployment": {
@@ -4651,7 +5352,7 @@
                   "properties": {
                     "days_of_week": {
                       "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek"
                     },
                     "start_hour": {
                       "description": "An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
@@ -4671,19 +5372,6 @@
                   "type": "string",
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
-              ]
-            },
-            "pipelines.RestartWindowDaysOfWeek": {
-              "type": "string",
-              "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
-              "enum": [
-                "MONDAY",
-                "TUESDAY",
-                "WEDNESDAY",
-                "THURSDAY",
-                "FRIDAY",
-                "SATURDAY",
-                "SUNDAY"
               ]
             },
             "pipelines.SchemaSpec": {
@@ -4793,11 +5481,19 @@
               ]
             },
             "pipelines.TableSpecificConfigScdType": {
-              "type": "string",
-              "description": "The SCD type to use to ingest the table.",
-              "enum": [
-                "SCD_TYPE_1",
-                "SCD_TYPE_2"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The SCD type to use to ingest the table.",
+                  "enum": [
+                    "SCD_TYPE_1",
+                    "SCD_TYPE_2"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.Ai21LabsConfig": {
@@ -4904,11 +5600,19 @@
               ]
             },
             "serving.AiGatewayGuardrailPiiBehaviorBehavior": {
-              "type": "string",
-              "description": "Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.",
-              "enum": [
-                "NONE",
-                "BLOCK"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.",
+                  "enum": [
+                    "NONE",
+                    "BLOCK"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.AiGatewayGuardrails": {
@@ -4994,18 +5698,34 @@
               ]
             },
             "serving.AiGatewayRateLimitKey": {
-              "type": "string",
-              "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
-              "enum": [
-                "user",
-                "endpoint"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
+                  "enum": [
+                    "user",
+                    "endpoint"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.AiGatewayRateLimitRenewalPeriod": {
-              "type": "string",
-              "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
-              "enum": [
-                "minute"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
+                  "enum": [
+                    "minute"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.AiGatewayUsageTrackingConfig": {
@@ -5069,13 +5789,21 @@
               ]
             },
             "serving.AmazonBedrockConfigBedrockProvider": {
-              "type": "string",
-              "description": "The underlying provider in Amazon Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
-              "enum": [
-                "anthropic",
-                "cohere",
-                "ai21labs",
-                "amazon"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The underlying provider in Amazon Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
+                  "enum": [
+                    "anthropic",
+                    "cohere",
+                    "ai21labs",
+                    "amazon"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.AnthropicConfig": {
@@ -5304,17 +6032,25 @@
               ]
             },
             "serving.ExternalModelProvider": {
-              "type": "string",
-              "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.\",\n",
-              "enum": [
-                "ai21labs",
-                "anthropic",
-                "amazon-bedrock",
-                "cohere",
-                "databricks-model-serving",
-                "google-cloud-vertex-ai",
-                "openai",
-                "palm"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.\",\n",
+                  "enum": [
+                    "ai21labs",
+                    "anthropic",
+                    "amazon-bedrock",
+                    "cohere",
+                    "databricks-model-serving",
+                    "google-cloud-vertex-ai",
+                    "openai",
+                    "palm"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.GoogleCloudVertexAiConfig": {
@@ -5458,18 +6194,34 @@
               ]
             },
             "serving.RateLimitKey": {
-              "type": "string",
-              "description": "Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
-              "enum": [
-                "user",
-                "endpoint"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
+                  "enum": [
+                    "user",
+                    "endpoint"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.RateLimitRenewalPeriod": {
-              "type": "string",
-              "description": "Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.",
-              "enum": [
-                "minute"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.",
+                  "enum": [
+                    "minute"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.Route": {
@@ -5616,23 +6368,39 @@
               ]
             },
             "serving.ServedModelInputWorkloadSize": {
-              "type": "string",
-              "description": "The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0.\n",
-              "enum": [
-                "Small",
-                "Medium",
-                "Large"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0.\n",
+                  "enum": [
+                    "Small",
+                    "Medium",
+                    "Large"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.ServedModelInputWorkloadType": {
-              "type": "string",
-              "description": "The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n",
-              "enum": [
-                "CPU",
-                "GPU_SMALL",
-                "GPU_MEDIUM",
-                "GPU_LARGE",
-                "MULTIGPU_MEDIUM"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n",
+                  "enum": [
+                    "CPU",
+                    "GPU_SMALL",
+                    "GPU_MEDIUM",
+                    "GPU_LARGE",
+                    "MULTIGPU_MEDIUM"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "serving.TrafficConfig": {
@@ -5718,6 +6486,20 @@
           "cli": {
             "bundle": {
               "config": {
+                "resources.App": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.App"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Cluster": {
                   "oneOf": [
                     {
@@ -5947,6 +6729,20 @@
           }
         }
       },
+      "interface": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/interface"
+            }
+          },
+          {
+            "type": "string",
+            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+          }
+        ]
+      },
       "string": {
         "oneOf": [
           {
@@ -6015,6 +6811,20 @@
           },
           "databricks-sdk-go": {
             "service": {
+              "apps.AppResource": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "catalog.MonitorMetric": {
                 "oneOf": [
                   {
@@ -6225,6 +7035,20 @@
                   }
                 ]
               },
+              "pipelines.DayOfWeek": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "pipelines.IngestionConfig": {
                 "oneOf": [
                   {
@@ -6273,20 +7097,6 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
-                    }
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                  }
-                ]
-              },
-              "pipelines.RestartWindowDaysOfWeek": {
-                "oneOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
                     }
                   },
                   {
@@ -6459,5 +7269,5 @@
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": {}
 }

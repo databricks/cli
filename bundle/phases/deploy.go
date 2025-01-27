@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -129,12 +130,15 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 	// mutators need informed consent if they are potentially destructive.
 	deployCore := bundle.Defer(
 		bundle.Seq(
+			apps.SlowDeployMessage(),
 			bundle.LogString("Deploying resources..."),
 			terraform.Apply(),
 		),
 		bundle.Seq(
 			terraform.StatePush(),
 			terraform.Load(),
+			apps.InterpolateVariables(),
+			apps.UploadConfig(),
 			metadata.Compute(),
 			metadata.Upload(),
 			bundle.LogString("Deployment complete!"),

@@ -1,0 +1,48 @@
+resources:
+  jobs:
+    my_job:
+      name: "placeholder"
+      tasks:
+        - task_key: notebook_example
+          job_cluster_key: default
+          notebook_task:
+            notebook_path: "this value is overridden"
+
+        - task_key: spark_python_example
+          job_cluster_key: default
+          spark_python_task:
+            python_file: "this value is overridden"
+
+        - task_key: dbt_example
+          job_cluster_key: default
+          dbt_task:
+            project_directory: "this value is overridden"
+            commands:
+              - "dbt run"
+
+        - task_key: sql_example
+          job_cluster_key: default
+          sql_task:
+            file:
+              path: "this value is overridden"
+            warehouse_id: cafef00d
+
+        - task_key: python_wheel_example
+          job_cluster_key: default
+          python_wheel_task:
+            package_name: my_package
+          libraries:
+            - whl: ../dist/wheel1.whl
+
+        - task_key: spark_jar_example
+          job_cluster_key: default
+          spark_jar_task:
+            main_class_name: com.example.Main
+          libraries:
+            - jar: ../target/jar1.jar
+
+      # Include a job cluster for completeness
+      job_clusters:
+        - job_cluster_key: default
+          new_cluster:
+            spark_version: 15.4.x-scala2.12

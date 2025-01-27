@@ -1,0 +1,12 @@
+[
+  {
+    "libraries": [
+      {
+        "pypi": {
+          "package": "cicd_template==1.0.0"
+        }
+      }
+    ],
+    "task_key": ""
+  }
+]

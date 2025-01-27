@@ -1,0 +1,7 @@
+Error: expected a map to index "variables.catalog.value.name", found string
+
+{
+  "my_cluster": "${var.etl_cluster_config}"
+}
+
+Exit code: 1
