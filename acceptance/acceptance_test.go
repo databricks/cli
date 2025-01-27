@@ -100,6 +100,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// Prevent CLI from downloading terraform in each test:
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
 
+	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
+	uvCache := getUVDefaultCacheDir(t)
+	t.Setenv("UV_CACHE_DIR", uvCache)
+
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
@@ -485,4 +489,17 @@ func ListDir(t *testing.T, src string) []string {
 		t.Errorf("Failed to list %s: %s", src, err)
 	}
 	return files
+}
+
+func getUVDefaultCacheDir(t *testing.T) string {
+	// According to uv docs https://docs.astral.sh/uv/concepts/cache/#caching-in-continuous-integration
+	// the default cache directory is
+	// "A system-appropriate cache directory, e.g., $XDG_CACHE_HOME/uv or $HOME/.cache/uv on Unix and %LOCALAPPDATA%\uv\cache on Windows"
+	cacheDir, err := os.UserCacheDir()
+	require.NoError(t, err)
+	if runtime.GOOS == "windows" {
+		return cacheDir + "\\uv\\cache"
+	} else {
+		return cacheDir + "/uv"
+	}
 }

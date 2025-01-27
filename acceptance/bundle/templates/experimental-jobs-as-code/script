@@ -3,7 +3,7 @@ trace $CLI bundle init experimental-jobs-as-code --config-file ./input.json --ou
 cd output/my_jobs_as_code
 
 # silence uv output because it's non-deterministic
-uv sync 2> /dev/null
+uv sync -q
 
 # remove version constraint because it always creates a warning on dev builds
 cat databricks.yml | grep -v databricks_cli_version > databricks.yml.new
