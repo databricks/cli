@@ -35,5 +35,5 @@ func TestDetectFailsNoMinimalVersion(t *testing.T) {
 	t.Setenv("PATH", "testdata/no-python3")
 	ctx := context.Background()
 	_, err := DetectExecutable(ctx)
-	assert.EqualError(t, err, "cannot find Python greater or equal to v3.8.0")
+	assert.EqualError(t, err, "exec: \"python3\": executable file not found in $PATH")
 }
