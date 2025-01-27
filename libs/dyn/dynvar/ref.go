@@ -1,13 +1,16 @@
 package dynvar
 
 import (
+	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
 )
 
-var re = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]*[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`)
+var (
+	baseVarDef = `[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`
+	re         = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, baseVarDef, baseVarDef))
+)
 
 // ref represents a variable reference.
 // It is a string [dyn.Value] contained in a larger [dyn.Value].
@@ -22,8 +25,6 @@ type ref struct {
 	// Matches of the variable reference in the string.
 	matches [][]string
 }
-
-var invalidSeq = []string{"-_", "_-"}
 
 // newRef returns a new ref if the given [dyn.Value] contains a string
 // with one or more variable references. It returns false if the given
@@ -43,16 +44,6 @@ func newRef(v dyn.Value) (ref, bool) {
 	m := re.FindAllStringSubmatch(s, -1)
 	if len(m) == 0 {
 		return ref{}, false
-	}
-
-	// Check that it does not have invalid sequences such as "-_" or "_-".
-
-	for _, match := range m {
-		for _, seq := range invalidSeq {
-			if strings.Contains(match[1], seq) {
-				return ref{}, false
-			}
-		}
 	}
 
 	return ref{

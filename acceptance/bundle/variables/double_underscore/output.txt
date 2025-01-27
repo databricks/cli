@@ -1,9 +1,7 @@
 
->>> $CLI bundle validate
-Name: double_underscore
-Target: default
-Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/double_underscore/default
-
-Validation OK!
+>>> $CLI bundle validate -o json
+[
+  {
+    "task_key": "test default"
+  }
+]
