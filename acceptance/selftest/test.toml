@@ -1,8 +1,5 @@
 # Badness = "Brief description of what's wrong with the test output, if anything"
 
-# Description of what is being tested, if not obvious from the name
-Description = "Demo and verify features acceptance test runner"
-
 #[GOOS]
 # Disable on Windows
 #windows = false
