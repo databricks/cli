@@ -1,0 +1,1 @@
+Badness = 'The error message should include full path: "expected to find a template schema file at databricks_template_schema.json"'
