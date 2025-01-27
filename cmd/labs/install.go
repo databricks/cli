@@ -10,7 +10,7 @@ func newInstallCommand() *cobra.Command {
 	cmd := &cobra.Command{}
 	var offlineInstall bool
 
-	cmd.Flags().BoolVar(&offlineInstall, "offline-install", offlineInstall, `If installing in offline mode, set this flag to true.`)
+	cmd.Flags().BoolVar(&offlineInstall, "offline", offlineInstall, `If installing in offline mode, set this flag to true.`)
 
 	cmd.Use = "install NAME"
 	cmd.Args = root.ExactArgs(1)

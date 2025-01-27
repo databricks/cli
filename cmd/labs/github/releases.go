@@ -23,9 +23,10 @@ func NewReleaseCache(org, repo, cacheDir string) *ReleaseCache {
 }
 
 type ReleaseCache struct {
-	Cache localcache.LocalCache[Versions]
-	Org   string
-	Repo  string
+	Cache   localcache.LocalCache[Versions]
+	Org     string
+	Repo    string
+	Offline bool
 }
 
 func (r *ReleaseCache) Load(ctx context.Context) (Versions, error) {

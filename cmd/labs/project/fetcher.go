@@ -127,12 +127,7 @@ func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string, offl
 	// `databricks labs isntall X` doesn't know which exact version to fetch, so first
 	// we fetch all versions and then pick the latest one dynamically.
 	var versions github.Versions
-	if offlineInstall {
-		versions, err = github.NewReleaseCache("databrickslabs", f.name, cacheDir).LoadCache(ctx)
-	} else {
-		versions, err = github.NewReleaseCache("databrickslabs", f.name, cacheDir).Load(ctx)
-	}
-
+	versions, err = github.NewReleaseCache("databrickslabs", f.name, cacheDir, offlineInstall).Load(ctx)
 	if err != nil {
 		return "", fmt.Errorf("versions: %w", err)
 	}
