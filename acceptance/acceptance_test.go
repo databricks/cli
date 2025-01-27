@@ -60,7 +60,7 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode {
 		t.Skip("Already tested by TestAccept")
 	}
-	require.Len(t, 1, testAccept(t, true, "selftest"))
+	require.Equal(t, 1, testAccept(t, true, "selftest"))
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
