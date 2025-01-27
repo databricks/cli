@@ -5,10 +5,6 @@ cd output/my_jobs_as_code
 # silence uv output because it's non-deterministic
 uv sync -q
 
-# remove version constraint because it always creates a warning on dev builds
-cat databricks.yml | grep -v databricks_cli_version > databricks.yml.new
-mv databricks.yml.new databricks.yml
-
 trace $CLI bundle validate -t dev --output json | jq ".resources"
 
 rm -fr .venv resources/__pycache__ uv.lock my_jobs_as_code.egg-info
