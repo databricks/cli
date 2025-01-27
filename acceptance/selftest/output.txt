@@ -33,3 +33,7 @@ $TMPDIR/subdir/a/b/c
 1234
 CUSTOM_NUMBER_REGEX
 123456
+
+=== Testing --version
+>>> $CLI --version
+Databricks CLI v$DEV_VERSION

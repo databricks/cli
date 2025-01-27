@@ -128,6 +128,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
+	testdiff.PrepareReplacementsDevVersion(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
