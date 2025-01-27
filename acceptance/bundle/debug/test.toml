@@ -10,3 +10,7 @@ New = 'pid=12345'
 [[Repls]]
 Old = '\d\d:\d\d:\d\d'
 New = '10:07:59'
+
+[[Repls]]
+Old = 'TMPDIR\\databricks.yml'
+New = 'TMPDIR/databricks.yml'
