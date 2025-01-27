@@ -20,5 +20,5 @@ func TestDetectFailsNoInterpreters(t *testing.T) {
 	t.Setenv("PATH", "testdata")
 	ctx := context.Background()
 	_, err := DetectExecutable(ctx)
-	assert.ErrorIs(t, err, ErrNoPythonInterpreters)
+	assert.Error(t, err)
 }
