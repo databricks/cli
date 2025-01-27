@@ -1,100 +1,93 @@
 {
-  "bundle": [
-    {
-      "column": 3,
-      "file": "databricks.yml",
-      "line": 2
-    }
+  "files": [
+    "databricks.yml",
+    "job.yml",
+    "override.yml"
   ],
-  "bundle.name": [
-    {
-      "column": 9,
-      "file": "databricks.yml",
-      "line": 2
-    }
-  ],
-  "include": [
-    {
-      "column": 3,
-      "file": "databricks.yml",
-      "line": 5
-    }
-  ],
-  "include[0]": [
-    {
-      "column": 5,
-      "file": "databricks.yml",
-      "line": 5
-    }
-  ],
-  "include[1]": [
-    {
-      "column": 5,
-      "file": "databricks.yml",
-      "line": 6
-    }
-  ],
-  "resources": [
-    {
-      "column": 3,
-      "file": "job.yml",
-      "line": 2
-    }
-  ],
-  "resources.jobs": [
-    {
-      "column": 5,
-      "file": "job.yml",
-      "line": 3
-    }
-  ],
-  "resources.jobs.my_job": [
-    {
-      "column": 7,
-      "file": "job.yml",
-      "line": 4
-    }
-  ],
-  "resources.jobs.my_job.name": [
-    {
-      "column": 17,
-      "file": "override.yml",
-      "line": 16
-    }
-  ],
-  "resources.jobs.my_job.tasks": [
-    {
-      "column": 9,
-      "file": "job.yml",
-      "line": 6
-    }
-  ],
-  "resources.jobs.my_job.tasks[0]": [
-    {
-      "column": 11,
-      "file": "job.yml",
-      "line": 6
-    }
-  ],
-  "resources.jobs.my_job.tasks[0].notebook_task": [
-    {
-      "column": 13,
-      "file": "job.yml",
-      "line": 8
-    }
-  ],
-  "resources.jobs.my_job.tasks[0].notebook_task.notebook_path": [
-    {
-      "column": 32,
-      "file": "override.yml",
-      "line": 20
-    }
-  ],
-  "targets": [
-    {
-      "column": 3,
-      "file": "databricks.yml",
-      "line": 9
-    }
-  ]
+  "locations": {
+    "bundle": [
+      [
+        0,
+        2,
+        3
+      ]
+    ],
+    "bundle.name": [
+      [
+        0,
+        2,
+        9
+      ]
+    ],
+    "include": [
+      [
+        0,
+        5,
+        3
+      ]
+    ],
+    "include[0]": [
+      [
+        0,
+        5,
+        5
+      ]
+    ],
+    "include[1]": [
+      [
+        0,
+        6,
+        5
+      ]
+    ],
+    "resources": [
+      [
+        1,
+        2,
+        3
+      ],
+      [
+        2,
+        14,
+        7
+      ]
+    ],
+    "resources.jobs": [
+      [
+        1,
+        3,
+        5
+      ],
+      [
+        2,
+        15,
+        9
+      ]
+    ],
+    "resources.jobs.my_job": [
+      [
+        1,
+        4,
+        7
+      ],
+      [
+        2,
+        16,
+        11
+      ]
+    ],
+    "targets": [
+      [
+        0,
+        9,
+        3
+      ],
+      [
+        2,
+        2,
+        3
+      ]
+    ]
+  },
+  "version": 1
 }
