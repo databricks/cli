@@ -107,6 +107,10 @@ func (i *installer) Install(ctx context.Context, offlineInstall bool) error {
 			return fmt.Errorf("lib: %w", err)
 		}
 	}
+
+	if _, err := os.Stat(i.LibDir()); os.IsNotExist(err) {
+		return fmt.Errorf("no local installation found: %w", err)
+	}
 	err = i.setupPythonVirtualEnvironment(ctx, w)
 	if err != nil {
 		return fmt.Errorf("python: %w", err)
