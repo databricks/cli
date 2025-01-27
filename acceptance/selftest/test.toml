@@ -9,3 +9,12 @@
 
 # Disable on Linux
 #linux = false
+
+[[Repls]]
+Old = '\b[0-9]{5}\b'
+New = "CUSTOM_NUMBER_REGEX"
+
+[[Repls]]
+# Fix path with reverse slashes in the output for Windows.
+Old = '\$TMPDIR\\subdir\\a\\b\\c'
+New = '$$TMPDIR/subdir/a/b/c'

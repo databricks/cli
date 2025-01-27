@@ -190,6 +190,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	repls.SetPathWithParents(tmpDir, "$TMPDIR")
+	repls.Repls = append(repls.Repls, config.Repls...)
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
