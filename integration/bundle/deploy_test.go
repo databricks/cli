@@ -226,6 +226,7 @@ func TestDeployBasicBundleLogs(t *testing.T) {
 
 	stdout, stderr := blackBoxRun(t, ctx, root, "bundle", "deploy")
 	assert.Equal(t, strings.Join([]string{
+		fmt.Sprintf("Error: failed to delete /Workspace/Users/%s/.bundle/%s/artifacts/.internal: unable to delete filer root", currentUser.UserName, uniqueId),
 		fmt.Sprintf("Uploading bundle files to /Workspace/Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
 		"Deploying resources...",
 		"Updating deployment state...",
