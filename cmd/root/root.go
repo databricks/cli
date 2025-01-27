@@ -119,7 +119,7 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 				slog.String("exit_code", "1"),
 			)
 		} else {
-			logger.Error("failed execution",
+			logger.Info("failed execution",
 				slog.String("exit_code", "1"),
 				slog.String("error", err.Error()),
 			)
