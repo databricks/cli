@@ -9,10 +9,13 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/version"
+	"golang.org/x/mod/semver"
 )
 
 const (
@@ -206,4 +209,43 @@ func PrepareReplacementsNumber(t testutil.TestingT, r *ReplacementsContext) {
 func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(privatePathRegex, "/tmp/.../$3")
+}
+
+// TODO: Record server io for all acceptance tests.
+
+func PrepareReplacementVersions(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.Set(version.Version, "$GO_SDK_VERSION")
+
+	// TODO: Fix build metadata here? Otherwise lets set the build version manually
+	// in the tests.
+	// (0|[1-9]\d*)
+	// \.
+	// (0|[1-9]\d*)
+	// \.
+	// (0|[1-9]\d*)
+	// (?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?
+	// (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
+
+	// buildInfo := build.GetInfo()
+	// test build versions can contain build metadata in their semver. Add a regex to match that.
+	// TODO: This does not work. Fix it.
+	// cliVersionRegex := regexp.MustCompile(build.DefaultSemver)
+	// r.append(cliVersionRegex, "$CLI_VERSION")
+
+	r.Set(build.DefaultSemver, "$CLI_VERSION")
+
+	r.Set(goVersion(), "$GO_VERSION")
+}
+
+func PrepareReplacementOperatingSystem(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.Set(runtime.GOOS, "$OPERATING_SYSTEM")
+}
+
+func goVersion() string {
+	gv := runtime.Version()
+	ssv := strings.ReplaceAll(gv, "go", "v")
+	sv := semver.Canonical(ssv)
+	return strings.TrimPrefix(sv, "v")
 }

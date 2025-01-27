@@ -31,10 +31,15 @@ var KeepTmp bool
 // example: var SingleTest = "bundle/variables/empty"
 var SingleTest = ""
 
+// TODO: Add a custom diff function based on the method and path.
+
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
 // Also disables parallelism in tests.
 var InprocessMode bool
+
+// TODO: Acceptance tests are taking long to run. Is it possible to shorten
+// that time?
 
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
@@ -109,8 +114,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
+	// TODO: do NOT pass this.
+	var defaultServer *testserver.Server
+
 	if cloudEnv == "" {
-		defaultServer := StartServer(t)
+		defaultServer = StartServer(t)
 		AddHandlers(defaultServer)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
@@ -130,6 +138,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
+	testdiff.PrepareReplacementVersions(t, &repls)
+	testdiff.PrepareReplacementOperatingSystem(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -148,7 +158,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			runTest(t, dir, coverDir, repls.Clone())
+			runTest(t, dir, coverDir, repls.Clone(), defaultServer)
 		})
 	}
 
@@ -156,7 +166,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 }
 
 func hasCustomServer(t *testing.T, dir string) bool {
-	return testutil.DetectFile(t, filepath.Join(dir, "server.json"))
+	return testutil.DetectFile(t, filepath.Join(dir, testserver.ConfigFileName))
 }
 
 func getTests(t *testing.T) []string {
@@ -192,16 +202,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	// If there is a server.json file in the test directory, start a custom server.
-	// Redirect all API calls to this server.
-	if hasCustomServer(t, dir) {
-		server := testserver.NewFromConfig(t, filepath.Join(dir, "server.json"))
-		t.Setenv("DATABRICKS_HOST", server.URL)
-		t.Cleanup(func() {
-			server.Close()
-		})
-	}
-
 	repls.SetPathWithParents(tmpDir, "$TMPDIR")
 
 	scriptContents := readMergedScriptContents(t, dir)
@@ -211,6 +211,17 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
+
+	// If there is a server.json file in the test directory, start a custom server.
+	// Redirect all API calls to this server.
+	var server *testserver.Server
+	if hasCustomServer(t, dir) {
+		server = testserver.NewFromConfig(t, dir)
+		t.Setenv("DATABRICKS_HOST", server.URL)
+		t.Cleanup(func() {
+			server.Close()
+		})
+	}
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
@@ -235,6 +246,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
+
+	// Write the requests made to the server to disk if a custom server is defined.
+	if server != nil {
+		outRequestsPath := filepath.Join(tmpDir, "out.requests.json")
+		server.WriteRequestsToDisk(outRequestsPath)
+	}
 
 	// Compare expected outputs
 	for relPath := range outputs {
