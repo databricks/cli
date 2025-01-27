@@ -1987,6 +1987,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "state": {
+                      "description": "State of the app compute.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeState"
                     }
                   },
