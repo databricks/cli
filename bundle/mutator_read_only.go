@@ -22,7 +22,7 @@ func ApplyReadOnly(ctx context.Context, rb ReadOnlyBundle, m ReadOnlyMutator) di
 	log.Debugf(ctx, "ApplyReadOnly")
 	diags := m.Apply(ctx, rb)
 	if err := diags.Error(); err != nil {
-		log.Errorf(ctx, "Error: %s", err)
+		log.Debugf(ctx, "Error: %s", err)
 	}
 
 	return diags
