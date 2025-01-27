@@ -166,19 +166,17 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 			// report an error for them.
 			return diag.Diagnostics{
 				{
-					Severity:  diag.Recommendation,
-					Summary:   "target with 'mode: production' should " + advice,
-					Detail:    adviceDetail,
-					Locations: b.Config.GetLocations("targets." + b.Config.Bundle.Target),
+					Severity: diag.Recommendation,
+					Summary:  "target with 'mode: production' should " + advice,
+					Detail:   adviceDetail,
 				},
 			}
 		}
 		return diag.Diagnostics{
 			{
-				Severity:  diag.Error,
-				Summary:   "target with 'mode: production' must " + advice,
-				Detail:    adviceDetail,
-				Locations: b.Config.GetLocations("targets." + b.Config.Bundle.Target),
+				Severity: diag.Error,
+				Summary:  "target with 'mode: production' must " + advice,
+				Detail:   adviceDetail,
 			},
 		}
 	}
