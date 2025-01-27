@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/dynloc"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
@@ -72,7 +73,7 @@ type Root struct {
 
 	// Locations is an output-only field that holds configuration location
 	// information for every path in the configuration tree.
-	Locations map[string][]dyn.Location `json:"__locations,omitempty" bundle:"internal"`
+	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
 }
 
 // Load loads the bundle configuration file at the specified path.
