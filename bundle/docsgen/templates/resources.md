@@ -3,9 +3,9 @@
 description: Learn about resources supported by Databricks Asset Bundles and how to configure them.
 ---
 
-# <DABS> resources
+# Databricks Asset Bundles resources
 
-<DABS> allows you to specify information about the <Databricks> resources used by the bundle in the `resources` mapping in the bundle configuration. See [resources mapping](/dev-tools/bundles/settings.md#resources) and [resources key reference](/dev-tools/bundles/reference.md#resources).
+Databricks Asset Bundles allows you to specify information about the <Databricks> resources used by the bundle in the `resources` mapping in the bundle configuration. See [resources mapping](/dev-tools/bundles/settings.md#resources) and [resources key reference](/dev-tools/bundles/reference.md#resources).
 
 This article outlines supported resource types for bundles and provides details and an example for each supported type. For additional examples, see [_](/dev-tools/bundles/resource-examples.md).
 

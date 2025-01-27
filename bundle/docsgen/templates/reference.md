@@ -5,6 +5,6 @@ description: Configuration reference for databricks.yml
 
 # Configuration reference
 
-This article provides reference for keys supported by <DABS> configuration (YAML). See [_](/dev-tools/bundles/index.md).
+This article provides reference for keys supported by Databricks Asset Bundles configuration (YAML). See [_](/dev-tools/bundles/index.md).
 
 For complete bundle examples, see [_](/dev-tools/bundles/resource-examples.md) and the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples).
