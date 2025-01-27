@@ -114,11 +114,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
-	// TODO: do NOT pass this.
-	var defaultServer *testserver.Server
-
 	if cloudEnv == "" {
-		defaultServer = StartServer(t)
+		defaultServer := StartServer(t)
 		AddHandlers(defaultServer)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
@@ -158,7 +155,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			runTest(t, dir, coverDir, repls.Clone(), defaultServer)
+			runTest(t, dir, coverDir, repls.Clone())
 		})
 	}
 
