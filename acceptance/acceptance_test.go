@@ -97,9 +97,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	repls.SetPath(tempHomeDir, "$TMPHOME")
 	t.Logf("$TMPHOME=%v", tempHomeDir)
 
-	// Prevent CLI from downloading terraform in each test:
-	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
-
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
@@ -117,6 +114,9 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
 		t.Setenv(env.HomeEnvVar(), homeDir)
+
+		// Prevent CLI from downloading terraform in each test:
+		t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
 	}
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
