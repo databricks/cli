@@ -100,7 +100,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// Prevent CLI from downloading terraform in each test:
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
 
-	// Make use of uv cache
+	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
