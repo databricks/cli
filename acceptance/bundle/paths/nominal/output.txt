@@ -1,8 +1,6 @@
 
 >>> $CLI bundle validate -t development -o json
 
-Exit code: 0
-
 >>> $CLI bundle validate -t error
 Error: notebook this value is overridden not found. Local notebook references are expected
 to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]

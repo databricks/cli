@@ -7,10 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/databricks/cli/bundle/config/mutator/paths"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
@@ -124,6 +127,15 @@ type opts struct {
 	enabled bool
 
 	venvPath string
+
+	loadLocations bool
+}
+
+type runPythonMutatorOpts struct {
+	cacheDir       string
+	bundleRootPath string
+	pythonPath     string
+	loadLocations  bool
 }
 
 // getOpts adapts deprecated PyDABs and upcoming Python configuration
@@ -148,8 +160,9 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 		// don't execute for phases for 'python' section
 		if phase == PythonMutatorPhaseInit || phase == PythonMutatorPhaseLoad {
 			return opts{
-				enabled:  true,
-				venvPath: experimental.PyDABs.VEnvPath,
+				enabled:       true,
+				venvPath:      experimental.PyDABs.VEnvPath,
+				loadLocations: false, // not supported in PyDABs
 			}, nil
 		} else {
 			return opts{}, nil
@@ -158,8 +171,9 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 		// don't execute for phases for 'pydabs' section
 		if phase == PythonMutatorPhaseLoadResources || phase == PythonMutatorPhaseApplyMutators {
 			return opts{
-				enabled:  true,
-				venvPath: experimental.Python.VEnvPath,
+				enabled:       true,
+				venvPath:      experimental.Python.VEnvPath,
+				loadLocations: true,
 			}, nil
 		} else {
 			return opts{}, nil
@@ -194,7 +208,12 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
 
-		rightRoot, diags := m.runPythonMutator(ctx, cacheDir, b.BundleRootPath, pythonPath, leftRoot)
+		rightRoot, diags := m.runPythonMutator(ctx, leftRoot, runPythonMutatorOpts{
+			cacheDir:       cacheDir,
+			bundleRootPath: b.BundleRootPath,
+			pythonPath:     pythonPath,
+			loadLocations:  opts.loadLocations,
+		})
 		mutateDiags = diags
 		if diags.HasError() {
 			return dyn.InvalidValue, mutateDiagsHasError
@@ -238,13 +257,14 @@ func createCacheDir(ctx context.Context) (string, error) {
 	return os.MkdirTemp("", "-python")
 }
 
-func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath, pythonPath string, root dyn.Value) (dyn.Value, diag.Diagnostics) {
-	inputPath := filepath.Join(cacheDir, "input.json")
-	outputPath := filepath.Join(cacheDir, "output.json")
-	diagnosticsPath := filepath.Join(cacheDir, "diagnostics.json")
+func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, diag.Diagnostics) {
+	inputPath := filepath.Join(opts.cacheDir, "input.json")
+	outputPath := filepath.Join(opts.cacheDir, "output.json")
+	diagnosticsPath := filepath.Join(opts.cacheDir, "diagnostics.json")
+	locationsPath := filepath.Join(opts.cacheDir, "locations.json")
 
 	args := []string{
-		pythonPath,
+		opts.pythonPath,
 		"-m",
 		"databricks.bundles.build",
 		"--phase",
@@ -255,6 +275,10 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath
 		outputPath,
 		"--diagnostics",
 		diagnosticsPath,
+	}
+
+	if opts.loadLocations {
+		args = append(args, "--locations", locationsPath)
 	}
 
 	if err := writeInputFile(inputPath, root); err != nil {
@@ -271,7 +295,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath
 	_, processErr := process.Background(
 		ctx,
 		args,
-		process.WithDir(rootPath),
+		process.WithDir(opts.bundleRootPath),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
 	)
@@ -307,7 +331,12 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir, rootPath
 		return dyn.InvalidValue, diag.Errorf("failed to load diagnostics: %s", pythonDiagnosticsErr)
 	}
 
-	output, outputDiags := loadOutputFile(rootPath, outputPath)
+	locations, err := loadLocationsFile(locationsPath)
+	if err != nil {
+		return dyn.InvalidValue, diag.Errorf("failed to load locations: %s", err)
+	}
+
+	output, outputDiags := loadOutputFile(opts.bundleRootPath, outputPath, locations)
 	pythonDiagnostics = pythonDiagnostics.Extend(outputDiags)
 
 	// we pass through pythonDiagnostic because it contains warnings
@@ -351,7 +380,21 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 	return os.WriteFile(inputPath, rootConfigJson, 0o600)
 }
 
-func loadOutputFile(rootPath, outputPath string) (dyn.Value, diag.Diagnostics) {
+// loadLocationsFile loads locations.json containing source locations for generated YAML.
+func loadLocationsFile(locationsPath string) (*pythonLocations, error) {
+	locationsFile, err := os.Open(locationsPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return newPythonLocations(), nil
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to open locations file: %w", err)
+	}
+
+	defer locationsFile.Close()
+
+	return parsePythonLocations(locationsFile)
+}
+
+func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
 	outputFile, err := os.Open(outputPath)
 	if err != nil {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to open output file: %w", err))
@@ -359,15 +402,19 @@ func loadOutputFile(rootPath, outputPath string) (dyn.Value, diag.Diagnostics) {
 
 	defer outputFile.Close()
 
+	return loadOutput(rootPath, outputFile, locations)
+}
+
+func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
 	//
-	// virtualPath has to stay in rootPath, because locations outside root path are not allowed:
+	// virtualPath has to stay in bundleRootPath, because locations outside root path are not allowed:
 	//
 	//   Error: path /var/folders/.../python/dist/*.whl is not contained in bundle root path
 	//
 	// for that, we pass virtualPath instead of outputPath as file location
-	virtualPath, err := filepath.Abs(filepath.Join(rootPath, "__generated_by_python__.yml"))
+	virtualPath, err := filepath.Abs(filepath.Join(rootPath, generatedFileName))
 	if err != nil {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to get absolute path: %w", err))
 	}
@@ -377,7 +424,29 @@ func loadOutputFile(rootPath, outputPath string) (dyn.Value, diag.Diagnostics) {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
 	}
 
-	return strictNormalize(config.Root{}, generated)
+	// paths are resolved relative to locations of their values, if we change location
+	// we have to update each path, until we simplify that, we don't update locations
+	// for such values, so we don't change how paths are resolved
+	//
+	// we can remove this once we:
+	// - add variable interpolation before and after PythonMutator
+	// - implement path normalization (aka path normal form)
+	_, err = paths.VisitJobPaths(generated, func(p dyn.Path, kind paths.PathKind, v dyn.Value) (dyn.Value, error) {
+		putPythonLocation(locations, p, v.Location())
+		return v, nil
+	})
+	if err != nil {
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to update locations: %w", err))
+	}
+
+	// generated has dyn.Location as if it comes from generated YAML file
+	// earlier we loaded locations.json with source locations in Python code
+	generatedWithLocations, err := mergePythonLocations(generated, locations)
+	if err != nil {
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to update locations: %w", err))
+	}
+
+	return strictNormalize(config.Root{}, generatedWithLocations)
 }
 
 func strictNormalize(dst any, generated dyn.Value) (dyn.Value, diag.Diagnostics) {

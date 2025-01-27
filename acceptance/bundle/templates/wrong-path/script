@@ -1,0 +1,2 @@
+export NO_COLOR=1
+$CLI bundle init /DOES/NOT/EXIST

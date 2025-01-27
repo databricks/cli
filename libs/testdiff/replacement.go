@@ -3,7 +3,10 @@ package testdiff
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -29,6 +32,10 @@ type Replacement struct {
 
 type ReplacementsContext struct {
 	Repls []Replacement
+}
+
+func (r *ReplacementsContext) Clone() ReplacementsContext {
+	return ReplacementsContext{Repls: slices.Clone(r.Repls)}
 }
 
 func (r *ReplacementsContext) Replace(s string) string {
@@ -69,11 +76,62 @@ func (r *ReplacementsContext) Set(old, new string) {
 	if err == nil {
 		encodedOld, err := json.Marshal(old)
 		if err == nil {
-			r.appendLiteral(string(encodedOld), string(encodedNew))
+			encodedStrNew := trimQuotes(string(encodedNew))
+			encodedStrOld := trimQuotes(string(encodedOld))
+			if encodedStrNew != new || encodedStrOld != old {
+				r.appendLiteral(encodedStrOld, encodedStrNew)
+			}
 		}
 	}
 
 	r.appendLiteral(old, new)
+}
+
+func trimQuotes(s string) string {
+	if len(s) > 0 && s[0] == '"' {
+		s = s[1:]
+	}
+	if len(s) > 0 && s[len(s)-1] == '"' {
+		s = s[:len(s)-1]
+	}
+	return s
+}
+
+func (r *ReplacementsContext) SetPath(old, new string) {
+	if old != "" && old != "." {
+		// Converts C:\Users\DENIS~1.BIL -> C:\Users\denis.bilenko
+		oldEvalled, err1 := filepath.EvalSymlinks(old)
+		if err1 == nil && oldEvalled != old {
+			r.SetPathNoEval(oldEvalled, new)
+		}
+	}
+
+	r.SetPathNoEval(old, new)
+}
+
+func (r *ReplacementsContext) SetPathNoEval(old, new string) {
+	r.Set(old, new)
+
+	if runtime.GOOS != "windows" {
+		return
+	}
+
+	// Support both forward and backward slashes
+	m1 := strings.ReplaceAll(old, "\\", "/")
+	if m1 != old {
+		r.Set(m1, new)
+	}
+
+	m2 := strings.ReplaceAll(old, "/", "\\")
+	if m2 != old && m2 != m1 {
+		r.Set(m2, new)
+	}
+}
+
+func (r *ReplacementsContext) SetPathWithParents(old, new string) {
+	r.SetPath(old, new)
+	r.SetPath(filepath.Dir(old), new+"_PARENT")
+	r.SetPath(filepath.Dir(filepath.Dir(old)), new+"_GPARENT")
 }
 
 func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsContext, w *databricks.WorkspaceClient) {
@@ -91,7 +149,7 @@ func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsCont
 	r.Set(w.Config.Token, "$DATABRICKS_TOKEN")
 	r.Set(w.Config.Username, "$DATABRICKS_USERNAME")
 	r.Set(w.Config.Password, "$DATABRICKS_PASSWORD")
-	r.Set(w.Config.Profile, "$DATABRICKS_CONFIG_PROFILE")
+	r.SetPath(w.Config.Profile, "$DATABRICKS_CONFIG_PROFILE")
 	r.Set(w.Config.ConfigFile, "$DATABRICKS_CONFIG_FILE")
 	r.Set(w.Config.GoogleServiceAccount, "$DATABRICKS_GOOGLE_SERVICE_ACCOUNT")
 	r.Set(w.Config.GoogleCredentials, "$GOOGLE_CREDENTIALS")
@@ -105,7 +163,7 @@ func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsCont
 	r.Set(w.Config.AzureEnvironment, "$ARM_ENVIRONMENT")
 	r.Set(w.Config.ClientID, "$DATABRICKS_CLIENT_ID")
 	r.Set(w.Config.ClientSecret, "$DATABRICKS_CLIENT_SECRET")
-	r.Set(w.Config.DatabricksCliPath, "$DATABRICKS_CLI_PATH")
+	r.SetPath(w.Config.DatabricksCliPath, "$DATABRICKS_CLI_PATH")
 	// This is set to words like "path" that happen too frequently
 	// r.Set(w.Config.AuthType, "$DATABRICKS_AUTH_TYPE")
 }

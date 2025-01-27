@@ -1,7 +1,6 @@
 package run
 
 import (
-	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -75,8 +74,8 @@ func TestPipelineRunnerRestart(t *testing.T) {
 		Host: "https://test.com",
 	}
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
+
+	ctx := cmdio.MockDiscard(context.Background())
 	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 	mockWait := &pipelines.WaitGetPipelineIdle[struct{}]{
