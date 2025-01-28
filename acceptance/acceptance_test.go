@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
@@ -44,6 +45,7 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
+	MaxFileSize      = 100_000
 )
 
 var Scripts = map[string]bool{
@@ -257,15 +259,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
-	bufRef, okRef := readIfExists(t, pathRef)
-	bufNew, okNew := readIfExists(t, pathNew)
+	bufRef, okRef := tryReading(t, pathRef)
+	bufNew, okNew := tryReading(t, pathNew)
 	if !okRef && !okNew {
-		t.Errorf("Both files are missing: %s, %s", pathRef, pathNew)
+		t.Errorf("Both files are missing or have errors: %s, %s", pathRef, pathNew)
 		return
 	}
 
-	valueRef := testdiff.NormalizeNewlines(string(bufRef))
-	valueNew := testdiff.NormalizeNewlines(string(bufNew))
+	valueRef := testdiff.NormalizeNewlines(bufRef)
+	valueNew := testdiff.NormalizeNewlines(bufNew)
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
@@ -323,14 +325,14 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	cleanups := []string{}
 
 	for {
-		x, ok := readIfExists(t, filepath.Join(dir, CleanupScript))
+		x, ok := tryReading(t, filepath.Join(dir, CleanupScript))
 		if ok {
-			cleanups = append(cleanups, string(x))
+			cleanups = append(cleanups, x)
 		}
 
-		x, ok = readIfExists(t, filepath.Join(dir, PrepareScript))
+		x, ok = tryReading(t, filepath.Join(dir, PrepareScript))
 		if ok {
-			prepares = append(prepares, string(x))
+			prepares = append(prepares, x)
 		}
 
 		if dir == "" || dir == "." {
@@ -417,16 +419,33 @@ func formatOutput(w io.Writer, err error) {
 	}
 }
 
-func readIfExists(t *testing.T, path string) ([]byte, bool) {
-	data, err := os.ReadFile(path)
-	if err == nil {
-		return data, true
+func tryReading(t *testing.T, path string) (string, bool) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("%s: %s", path, err)
+		}
+		return "", false
 	}
 
-	if !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("%s: %s", path, err)
+	if info.Size() > MaxFileSize {
+		t.Errorf("%s: ignoring, too large: %d", path, info.Size())
+		return "", false
 	}
-	return []byte{}, false
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		// already checked ErrNotExist above
+		t.Errorf("%s: %s", path, err)
+		return "", false
+	}
+
+	if !utf8.Valid(data) {
+		t.Errorf("%s: not valid utf-8", path)
+		return "", false
+	}
+
+	return string(data), true
 }
 
 func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
