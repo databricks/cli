@@ -573,11 +573,11 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
   "granularities":
-    "description": |
+    "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
   "granularities":
-    "description": |
+    "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":

@@ -2087,7 +2087,6 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
-                      "description": "PLACEHOLDER\n",
                       "$ref": "#/$defs/slice/string"
                     },
                     "label_col": {
@@ -2244,7 +2243,6 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
-                      "description": "PLACEHOLDER\n",
                       "$ref": "#/$defs/slice/string"
                     },
                     "timestamp_col": {

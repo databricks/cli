@@ -7968,7 +7968,7 @@ Configuration for monitoring inference logs.
   
 - - `granularities`
   - Sequence
-  - PLACEHOLDER 
+  - 
   
 - - `label_col`
   - String
@@ -8116,7 +8116,7 @@ Configuration for monitoring time series tables.
   
 - - `granularities`
   - Sequence
-  - PLACEHOLDER 
+  - 
   
 - - `timestamp_col`
   - String
