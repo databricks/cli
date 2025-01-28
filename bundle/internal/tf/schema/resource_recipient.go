@@ -29,6 +29,7 @@ type ResourceRecipient struct {
 	CreatedAt                      int                                 `json:"created_at,omitempty"`
 	CreatedBy                      string                              `json:"created_by,omitempty"`
 	DataRecipientGlobalMetastoreId string                              `json:"data_recipient_global_metastore_id,omitempty"`
+	ExpirationTime                 int                                 `json:"expiration_time,omitempty"`
 	Id                             string                              `json:"id,omitempty"`
 	MetastoreId                    string                              `json:"metastore_id,omitempty"`
 	Name                           string                              `json:"name"`
