@@ -1,8 +1,8 @@
 package run
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -75,9 +74,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 	b.SetWorkpaceClient(mwc.WorkspaceClient)
 	bundletest.SetLocation(b, "resources.apps.my_app", []dyn.Location{{File: "./databricks.yml"}})
 
-	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
-	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
+	ctx := cmdio.MockDiscard(context.Background())
 
 	diags := bundle.Apply(ctx, b, bundle.Seq(
 		mutator.DefineDefaultWorkspacePaths(),
@@ -186,6 +183,69 @@ func TestAppRunWithAnActiveDeploymentInProgress(t *testing.T) {
 
 	appsApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
 
+	r.run(t)
+}
+
+func TestAppDeployWithDeploymentInProgress(t *testing.T) {
+	ctx, b, mwc := setupBundle(t)
+
+	appApi := mwc.GetMockAppsAPI()
+	appApi.EXPECT().Get(mock.Anything, apps.GetAppRequest{
+		Name: "my_app",
+	}).Return(&apps.App{
+		Name: "my_app",
+		AppStatus: &apps.ApplicationStatus{
+			State: apps.ApplicationStateRunning,
+		},
+		ComputeStatus: &apps.ComputeStatus{
+			State: apps.ComputeStateActive,
+		},
+	}, nil).Once()
+
+	wait := &apps.WaitGetDeploymentAppSucceeded[apps.AppDeployment]{
+		Poll: func(_ time.Duration, _ func(*apps.AppDeployment)) (*apps.AppDeployment, error) {
+			return nil, nil
+		},
+	}
+
+	// First deployment fails
+	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
+		AppName: "my_app",
+		AppDeployment: &apps.AppDeployment{
+			Mode:           apps.AppDeploymentModeSnapshot,
+			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+		},
+	}).Return(nil, errors.New("deployment in progress")).Once()
+
+	// After first deployment fails, we should get the app and wait for the deployment to complete
+	appApi.EXPECT().Get(mock.Anything, apps.GetAppRequest{
+		Name: "my_app",
+	}).Return(&apps.App{
+		Name: "my_app",
+		ActiveDeployment: &apps.AppDeployment{
+			DeploymentId: "active_deployment_id",
+			Status: &apps.AppDeploymentStatus{
+				State: apps.AppDeploymentStateInProgress,
+			},
+		},
+	}, nil).Once()
+
+	appApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
+
+	// Second one should succeeed
+	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
+		AppName: "my_app",
+		AppDeployment: &apps.AppDeployment{
+			Mode:           apps.AppDeploymentModeSnapshot,
+			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+		},
+	}).Return(wait, nil).Once()
+
+	r := &testAppRunner{
+		m:   mwc,
+		b:   b,
+		ctx: ctx,
+	}
 	r.run(t)
 }
 

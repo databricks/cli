@@ -1,0 +1,5 @@
+Badness = "Warning logs not shown; inferred flag is set to true incorrect; bundle_root_path is not correct"
+
+[GOOS]
+# This test relies on chmod which does not work on Windows
+windows = false

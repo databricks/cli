@@ -1,0 +1,2 @@
+trace errcode $CLI bundle validate --var a=one -o json | jq .variables
+trace errcode $CLI bundle validate --var a=one --var a=two

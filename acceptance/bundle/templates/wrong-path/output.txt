@@ -1,0 +1,3 @@
+Error: not a bundle template: expected to find a template schema file at databricks_template_schema.json
+
+Exit code: 1

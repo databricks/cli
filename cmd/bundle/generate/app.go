@@ -36,8 +36,8 @@ func NewGenerateAppCommand() *cobra.Command {
 	cmd.Flags().StringVar(&appName, "existing-app-name", "", `App name to generate config for`)
 	cmd.MarkFlagRequired("existing-app-name")
 
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", filepath.Join("resources"), `Directory path where the output bundle config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", filepath.Join("src", "app"), `Directory path where the app files will be stored`)
+	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Directory path where the output bundle config will be stored`)
+	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src/app", `Directory path where the app files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
