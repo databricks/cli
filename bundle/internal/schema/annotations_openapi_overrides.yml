@@ -220,7 +220,7 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
 github.com/databricks/cli/bundle/config/resources.Pipeline:
   "_":
     "markdown_description": |-
-      The pipeline resource allows you to create <DLT> [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/delta-live-tables/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+      The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/delta-live-tables/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
     "markdown_examples": |-
       The following example defines a pipeline with the resource key `hello-pipeline`:
 
@@ -561,5 +561,28 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
     "description": |-
       PLACEHOLDER
   "model_version":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
+  "abfss":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.Environment:
+  "dependencies":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
+  "granularities":
+    "description": |
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
+  "granularities":
+    "description": |
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
+  "log_analytics_primary_key":
+    "description": |-
+      PLACEHOLDER
+  "log_analytics_workspace_id":
     "description": |-
       PLACEHOLDER
