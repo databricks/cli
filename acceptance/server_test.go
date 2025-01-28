@@ -98,4 +98,8 @@ func AddHandlers(server *testserver.Server) {
 			},
 		}, nil
 	})
+
+	server.Handle("POST /api/2.0/workspace/mkdirs", func(r *http.Request) (any, error) {
+		return "{}", nil
+	})
 }

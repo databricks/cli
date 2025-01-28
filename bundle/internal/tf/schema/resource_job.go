@@ -904,6 +904,7 @@ type ResourceJobTaskForEachTaskTaskSparkJarTask struct {
 	JarUri        string   `json:"jar_uri,omitempty"`
 	MainClassName string   `json:"main_class_name,omitempty"`
 	Parameters    []string `json:"parameters,omitempty"`
+	RunAsRepl     bool     `json:"run_as_repl,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskSparkPythonTask struct {
@@ -1299,6 +1300,7 @@ type ResourceJobTaskSparkJarTask struct {
 	JarUri        string   `json:"jar_uri,omitempty"`
 	MainClassName string   `json:"main_class_name,omitempty"`
 	Parameters    []string `json:"parameters,omitempty"`
+	RunAsRepl     bool     `json:"run_as_repl,omitempty"`
 }
 
 type ResourceJobTaskSparkPythonTask struct {

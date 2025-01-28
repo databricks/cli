@@ -36,5 +36,6 @@ Exit code: 1
   "b": "prod-b",
   "d": "4321",
   "e": "1234",
-  "f": "9876"
+  "f": "9876",
+  "result": "default-a prod-b"
 }

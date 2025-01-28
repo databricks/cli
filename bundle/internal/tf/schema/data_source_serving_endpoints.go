@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsInputPii struct {
-	Behavior string `json:"behavior"`
+	Behavior string `json:"behavior,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsInput struct {
@@ -14,7 +14,7 @@ type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsInput struct {
 }
 
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsOutputPii struct {
-	Behavior string `json:"behavior"`
+	Behavior string `json:"behavior,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsOutput struct {
@@ -87,8 +87,8 @@ type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelDatabri
 type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelGoogleCloudVertexAiConfig struct {
 	PrivateKey          string `json:"private_key,omitempty"`
 	PrivateKeyPlaintext string `json:"private_key_plaintext,omitempty"`
-	ProjectId           string `json:"project_id,omitempty"`
-	Region              string `json:"region,omitempty"`
+	ProjectId           string `json:"project_id"`
+	Region              string `json:"region"`
 }
 
 type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelOpenaiConfig struct {
