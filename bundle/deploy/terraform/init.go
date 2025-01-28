@@ -105,6 +105,13 @@ var envCopy = []string{
 	// This is set in Azure DevOps by the AzureCLI@2 task.
 	"AZURE_CONFIG_FILE",
 
+	// Include $AZURE_CONFIG_DIR in set of environment variables to pass along.
+	// This is set by Azure CLI as per https://learn.microsoft.com/en-us/cli/azure/azure-cli-configuration#cli-configuration-file
+	azureConfigDir, ok := env.Lookup(ctx, "AZURE_CONFIG_DIR")
+	if ok {
+		environ["AZURE_CONFIG_DIR"] = azureConfigDir
+	}
+
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
 	// See: https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration
 	"TF_CLI_CONFIG_FILE",
