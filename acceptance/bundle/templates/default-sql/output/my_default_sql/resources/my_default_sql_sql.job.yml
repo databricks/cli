@@ -10,10 +10,6 @@ resources:
           interval: 1
           unit: DAYS
 
-      email_notifications:
-        on_failure:
-          - $USERNAME
-
       parameters:
         - name: catalog
           default: ${var.catalog}
