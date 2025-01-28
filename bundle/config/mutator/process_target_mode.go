@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
@@ -158,7 +157,6 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		b.Config.Workspace.CurrentUser.UserName,
 	)
 	if !isExplicitRootSet(b) {
-		cmdio.LogString(ctx, "root_path is not set: "+b.Config.Bundle.Target)
 		if isRunAsSet(r) || isPrincipalUsed {
 			// Just setting run_as is not enough to guarantee a single deployment,
 			// and neither is setting a principal.
