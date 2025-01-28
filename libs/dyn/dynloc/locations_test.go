@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
