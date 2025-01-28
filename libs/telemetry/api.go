@@ -15,5 +15,5 @@ type ResponseBody struct {
 
 type LogError struct {
 	Message   string `json:"message"`
-	ErrorType string `json:"ErrorType"`
+	ErrorType string `json:"errorType"`
 }
