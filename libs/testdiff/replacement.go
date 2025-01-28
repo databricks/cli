@@ -23,6 +23,8 @@ var (
 	uuidRegex        = regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
 	numIdRegex       = regexp.MustCompile(`[0-9]{3,}`)
 	privatePathRegex = regexp.MustCompile(`(/tmp|/private)(/.*)/([a-zA-Z0-9]+)`)
+	// Version could v0.0.0-dev+21e1aacf518a or just v0.0.0-dev (the latter is currently the case on Windows)
+	devVersionRegex = regexp.MustCompile(`0\.0\.0-dev(\+[a-f0-9]{10,16})?`)
 )
 
 type Replacement struct {
@@ -76,7 +78,11 @@ func (r *ReplacementsContext) Set(old, new string) {
 	if err == nil {
 		encodedOld, err := json.Marshal(old)
 		if err == nil {
-			r.appendLiteral(trimQuotes(string(encodedOld)), trimQuotes(string(encodedNew)))
+			encodedStrNew := trimQuotes(string(encodedNew))
+			encodedStrOld := trimQuotes(string(encodedOld))
+			if encodedStrNew != new || encodedStrOld != old {
+				r.appendLiteral(encodedStrOld, encodedStrNew)
+			}
 		}
 	}
 
@@ -94,6 +100,18 @@ func trimQuotes(s string) string {
 }
 
 func (r *ReplacementsContext) SetPath(old, new string) {
+	if old != "" && old != "." {
+		// Converts C:\Users\DENIS~1.BIL -> C:\Users\denis.bilenko
+		oldEvalled, err1 := filepath.EvalSymlinks(old)
+		if err1 == nil && oldEvalled != old {
+			r.SetPathNoEval(oldEvalled, new)
+		}
+	}
+
+	r.SetPathNoEval(old, new)
+}
+
+func (r *ReplacementsContext) SetPathNoEval(old, new string) {
 	r.Set(old, new)
 
 	if runtime.GOOS != "windows" {
@@ -133,7 +151,7 @@ func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsCont
 	r.Set(w.Config.Token, "$DATABRICKS_TOKEN")
 	r.Set(w.Config.Username, "$DATABRICKS_USERNAME")
 	r.Set(w.Config.Password, "$DATABRICKS_PASSWORD")
-	r.Set(w.Config.Profile, "$DATABRICKS_CONFIG_PROFILE")
+	r.SetPath(w.Config.Profile, "$DATABRICKS_CONFIG_PROFILE")
 	r.Set(w.Config.ConfigFile, "$DATABRICKS_CONFIG_FILE")
 	r.Set(w.Config.GoogleServiceAccount, "$DATABRICKS_GOOGLE_SERVICE_ACCOUNT")
 	r.Set(w.Config.GoogleCredentials, "$GOOGLE_CREDENTIALS")
@@ -147,7 +165,7 @@ func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsCont
 	r.Set(w.Config.AzureEnvironment, "$ARM_ENVIRONMENT")
 	r.Set(w.Config.ClientID, "$DATABRICKS_CLIENT_ID")
 	r.Set(w.Config.ClientSecret, "$DATABRICKS_CLIENT_SECRET")
-	r.Set(w.Config.DatabricksCliPath, "$DATABRICKS_CLI_PATH")
+	r.SetPath(w.Config.DatabricksCliPath, "$DATABRICKS_CLI_PATH")
 	// This is set to words like "path" that happen too frequently
 	// r.Set(w.Config.AuthType, "$DATABRICKS_AUTH_TYPE")
 }
@@ -194,4 +212,9 @@ func PrepareReplacementsNumber(t testutil.TestingT, r *ReplacementsContext) {
 func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(privatePathRegex, "/tmp/.../$3")
+}
+
+func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.append(devVersionRegex, "$$DEV_VERSION")
 }

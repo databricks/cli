@@ -39,27 +39,7 @@ func DetectExecutable(ctx context.Context) (string, error) {
 	//
 	// See https://github.com/pyenv/pyenv#understanding-python-version-selection
 
-	out, err := exec.LookPath(GetExecutable())
-
-	// most of the OS'es have python3 in $PATH, but for those which don't,
-	// we perform the latest version lookup
-	if err != nil && !errors.Is(err, exec.ErrNotFound) {
-		return "", err
-	}
-	if out != "" {
-		return out, nil
-	}
-	// otherwise, detect all interpreters and pick the least that satisfies
-	// minimal version requirements
-	all, err := DetectInterpreters(ctx)
-	if err != nil {
-		return "", err
-	}
-	interpreter, err := all.AtLeast("3.8")
-	if err != nil {
-		return "", err
-	}
-	return interpreter.Path, nil
+	return exec.LookPath(GetExecutable())
 }
 
 // DetectVEnvExecutable returns the path to the python3 executable inside venvPath,
