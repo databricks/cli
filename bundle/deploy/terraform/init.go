@@ -101,9 +101,9 @@ var envCopy = []string{
 	// same auxiliary programs (e.g. `az`, or `gcloud`) as the CLI.
 	"PATH",
 
-	// Include $AZURE_CONFIG_FILE in set of environment variables to pass along.
+	// Include $AZURE_CONFIG_DIR in set of environment variables to pass along.
 	// This is set in Azure DevOps by the AzureCLI@2 task.
-	"AZURE_CONFIG_FILE",
+	"AZURE_CONFIG_DIR",
 
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
 	// See: https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration
