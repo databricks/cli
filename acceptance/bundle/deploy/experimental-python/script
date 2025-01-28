@@ -1,0 +1,7 @@
+cd my_project
+
+trace uv run --quiet --python 3.12 --with databricks-bundles==0.7.0 -- $CLI bundle deploy
+
+trace $CLI jobs list --output json
+
+rm -rf .databricks __pycache__ .gitignore
