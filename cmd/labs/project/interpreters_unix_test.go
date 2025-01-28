@@ -1,6 +1,6 @@
 //go:build unix
 
-package python
+package project
 
 import (
 	"context"

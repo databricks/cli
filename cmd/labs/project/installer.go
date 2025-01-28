@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
-	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -223,7 +222,7 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 	feedback := cmdio.Spinner(ctx)
 	defer close(feedback)
 	feedback <- "Detecting all installed Python interpreters on the system"
-	pythonInterpreters, err := python.DetectInterpreters(ctx)
+	pythonInterpreters, err := DetectInterpreters(ctx)
 	if err != nil {
 		return fmt.Errorf("detect: %w", err)
 	}
