@@ -1,0 +1,7 @@
+cd my_project
+
+trace $CLI bundle deploy
+
+trace $CLI jobs list --output json
+
+rm -rf .gitignore .databricks
