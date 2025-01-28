@@ -44,6 +44,10 @@ jobs:
           - windows-latest
 
     steps:
+      # See https://github.com/actions/checkout/issues/226
+      - name: Prepare git - disable autocrlf
+        run: git config --global core.autocrlf false
+
       - name: Checkout repository and submodules
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
