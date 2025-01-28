@@ -1,9 +1,13 @@
 package dynloc
 
 import (
+	"fmt"
 	"path/filepath"
+	"slices"
+	"sort"
 
 	"github.com/databricks/cli/libs/dyn"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -37,28 +41,84 @@ type Locations struct {
 	basePath string
 }
 
-func (l *Locations) addLocation(p dyn.Path, file string, line, col int) error {
+func (l *Locations) gatherLocations(v dyn.Value) (map[string][]dyn.Location, error) {
+	locs := map[string][]dyn.Location{}
+	_, err := dyn.Walk(v, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		// Skip the root value.
+		if len(p) == 0 {
+			return v, nil
+		}
+
+		// Skip if the path depth exceeds the maximum depth.
+		if l.maxDepth > 0 && len(p) > l.maxDepth {
+			return v, dyn.ErrSkip
+		}
+
+		locs[p.String()] = v.Locations()
+		return v, nil
+	})
+	return locs, err
+}
+
+func (l *Locations) normalizeFilePath(file string) (string, error) {
 	var err error
 
 	// Compute the relative path. The base path may be empty.
 	file, err = filepath.Rel(l.basePath, file)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Convert the path separator to forward slashes.
 	// This makes it possible to compare output across platforms.
-	file = filepath.ToSlash(file)
+	return filepath.ToSlash(file), nil
+}
 
-	// If the file is not yet in the list, add it.
+func (l *Locations) registerFileNames(locs []dyn.Location) error {
+	cache := map[string]string{}
+	for _, loc := range locs {
+		// Never process the same file path twice.
+		if _, ok := cache[loc.File]; ok {
+			continue
+		}
+
+		// Normalize the file path.
+		out, err := l.normalizeFilePath(loc.File)
+		if err != nil {
+			return err
+		}
+
+		// Cache the normalized path.
+		cache[loc.File] = out
+	}
+
+	l.Files = maps.Values(cache)
+	sort.Strings(l.Files)
+
+	// Build the file-to-index map.
+	for i, file := range l.Files {
+		l.fileToIndex[file] = i
+	}
+
+	// Add entries for the original file path.
+	// Doing this means we can perform the lookup with the verbatim file path.
+	for k, v := range cache {
+		l.fileToIndex[k] = l.fileToIndex[v]
+	}
+
+	return nil
+}
+
+func (l *Locations) addLocation(path, file string, line, col int) error {
+	// Expect the file to be present in the lookup map.
 	if _, ok := l.fileToIndex[file]; !ok {
-		l.fileToIndex[file] = len(l.Files)
-		l.Files = append(l.Files, file)
+		// This indicates a logic problem below, but we rather not panic.
+		return fmt.Errorf("dynloc: unknown file %q", file)
 	}
 
 	// Add the location to the map.
-	l.Locations[p.String()] = append(
-		l.Locations[p.String()],
+	l.Locations[path] = append(
+		l.Locations[path],
 		[]int{l.fileToIndex[file], line, col},
 	)
 
@@ -99,26 +159,27 @@ func Build(v dyn.Value, opts ...Option) (Locations, error) {
 	}
 
 	// Traverse the value and collect locations.
-	_, err := dyn.Walk(v, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		// Skip the root value.
-		if len(p) == 0 {
-			return v, nil
-		}
+	pathToLocations, err := l.gatherLocations(v)
+	if err != nil {
+		return l, err
+	}
 
-		// Skip if the path depth exceeds the maximum depth.
-		if l.maxDepth > 0 && len(p) > l.maxDepth {
-			return v, dyn.ErrSkip
-		}
+	// Normalize file paths and add locations.
+	// This step adds files to the [Files] array in alphabetical order.
+	err = l.registerFileNames(slices.Concat(maps.Values(pathToLocations)...))
+	if err != nil {
+		return l, err
+	}
 
-		for _, loc := range v.Locations() {
-			err := l.addLocation(p, loc.File, loc.Line, loc.Column)
+	// Add locations to the map.
+	for path, locs := range pathToLocations {
+		for _, loc := range locs {
+			err = l.addLocation(path, loc.File, loc.Line, loc.Column)
 			if err != nil {
-				return dyn.InvalidValue, err
+				return l, err
 			}
 		}
-
-		return v, nil
-	})
+	}
 
 	return l, err
 }
