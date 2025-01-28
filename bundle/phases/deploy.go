@@ -130,7 +130,6 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 	// mutators need informed consent if they are potentially destructive.
 	deployCore := bundle.Defer(
 		bundle.Seq(
-			apps.SlowDeployMessage(),
 			bundle.LogString("Deploying resources..."),
 			terraform.Apply(),
 		),
