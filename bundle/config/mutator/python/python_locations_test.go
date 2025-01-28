@@ -166,11 +166,11 @@ func TestLoadOutput(t *testing.T) {
 }
 
 func TestParsePythonLocations(t *testing.T) {
-	expected := dyn.Location{File: "foo.py", Line: 1, Column: 2}
+	expected := dyn.Location{File: "/tmp/my_project/foo.py", Line: 1, Column: 2}
 
 	input := `{"path": "foo", "file": "foo.py", "line": 1, "column": 2}`
 	reader := bytes.NewReader([]byte(input))
-	locations, err := parsePythonLocations(reader)
+	locations, err := parsePythonLocations("/tmp/my_project", reader)
 
 	assert.NoError(t, err)
 
