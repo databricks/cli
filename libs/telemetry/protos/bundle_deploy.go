@@ -33,7 +33,7 @@ type BundleDeployEvent struct {
 // are no guarantees for these metrics and they maybe removed in the future without
 // any notice.
 type BundleDeployExperimental struct {
-	// Number of YAML (or JSON) configuration files in the bundle.
+	// Number of configuration files in the bundle.
 	ConfigurationFileCount int64 `json:"configuration_file_count,omitempty"`
 
 	// Size in bytes of the Terraform state file
