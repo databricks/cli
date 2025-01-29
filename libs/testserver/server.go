@@ -17,7 +17,9 @@ type Server struct {
 
 func New(t testutil.TestingT) *Server {
 	mux := http.NewServeMux()
+
 	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
 
 	return &Server{
 		Server: server,
@@ -27,10 +29,6 @@ func New(t testutil.TestingT) *Server {
 }
 
 type HandlerFunc func(req *http.Request) (resp any, err error)
-
-func (s *Server) Close() {
-	s.Server.Close()
-}
 
 func (s *Server) Handle(pattern string, handler HandlerFunc) {
 	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {

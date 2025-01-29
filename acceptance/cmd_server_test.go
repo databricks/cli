@@ -14,7 +14,6 @@ import (
 
 func StartCmdServer(t *testing.T) *testserver.Server {
 	server := testserver.New(t)
-	t.Cleanup(server.Close)
 
 	server.Handle("/", func(r *http.Request) (any, error) {
 		q := r.URL.Query()
