@@ -177,13 +177,8 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
+// In case of duplicate keys in env, the last is applicable when spawning a process.
 func setEnv(env []string, key, value string) []string {
-	for i, pair := range env {
-		if strings.HasPrefix(pair, key+"=") {
-			env[i] = key + "=" + value
-			return env
-		}
-	}
 	return append(env, key+"="+value)
 }
 
