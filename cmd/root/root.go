@@ -153,7 +153,7 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 // TODO: Skip telemetry if the credentials are invalid.
 func logTelemetry(ctx context.Context, cmdStr string, start, end time.Time, exitCode int) {
 	telemetry.SetExecutionContext(ctx, protos.ExecutionContext{
-		CmdExecId:       cmdExecId,
+		CmdExecID:       cmdExecId,
 		Version:         build.GetInfo().Version,
 		Command:         cmdStr,
 		OperatingSystem: runtime.GOOS,

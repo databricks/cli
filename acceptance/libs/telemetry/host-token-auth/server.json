@@ -1,0 +1,18 @@
+[
+    {
+        "method": "POST",
+        "path": "/telemetry-ext",
+        "headers": {
+            "Authorization": "Bearer foobar"
+        },
+        "request_body": {
+            "uploadTime": "<current-unix-time>",
+            "protoLogs": [
+                "{\"frontend_log_event_id\":\"<UUID>\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
+                "{\"frontend_log_event_id\":\"<UUID>\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE2\"}}}}",
+                "{\"frontend_log_event_id\":\"<UUID>\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE3\"}}}}"
+            ],
+            "items": []
+        }
+    }
+]
