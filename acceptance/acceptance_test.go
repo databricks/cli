@@ -179,12 +179,6 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-// In case of duplicate keys in env, the last value is applicable when spawning
-// a process.
-func setEnv(env []string, key, value string) []string {
-	return append(env, key+"="+value)
-}
-
 func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
 	config, configPath := LoadConfig(t, dir)
 
@@ -220,7 +214,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 				return b, nil
 			})
 		}
-		cmdEnv = setEnv(cmdEnv, "DATABRICKS_HOST", server.URL)
+		cmdEnv = append(cmdEnv, "DATABRICKS_HOST="+server.URL)
 	}
 
 	repls.SetPathWithParents(tmpDir, "$TMPDIR")
@@ -243,7 +237,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
-		cmdEnv = setEnv(cmdEnv, "GOCOVERDIR", coverDir)
+		cmdEnv = append(cmdEnv, "GOCOVERDIR="+coverDir)
 	}
 
 	// Set environment variables for the process
