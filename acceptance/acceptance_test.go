@@ -199,7 +199,20 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	cmdEnv := os.Environ()
+	repls.SetPathWithParents(tmpDir, "$TMPDIR")
+	repls.Repls = append(repls.Repls, config.Repls...)
+
+	scriptContents := readMergedScriptContents(t, dir)
+	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
+
+	inputs := make(map[string]bool, 2)
+	outputs := make(map[string]bool, 2)
+	err = CopyDir(dir, tmpDir, inputs, outputs)
+	require.NoError(t, err)
+
+	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Env = os.Environ()
 
 	// Start a new server with a custom configuration if the acceptance test
 	// specifies a custom server stubs.
@@ -214,22 +227,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 				return b, nil
 			})
 		}
-		cmdEnv = append(cmdEnv, "DATABRICKS_HOST="+server.URL)
+		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
 	}
 
-	repls.SetPathWithParents(tmpDir, "$TMPDIR")
-	repls.Repls = append(repls.Repls, config.Repls...)
-
-	scriptContents := readMergedScriptContents(t, dir)
-	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
-
-	inputs := make(map[string]bool, 2)
-	outputs := make(map[string]bool, 2)
-	err = CopyDir(dir, tmpDir, inputs, outputs)
-	require.NoError(t, err)
-
-	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
-	cmd := exec.Command(args[0], args[1:]...)
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
@@ -237,11 +237,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
-		cmdEnv = append(cmdEnv, "GOCOVERDIR="+coverDir)
+		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
-
-	// Set environment variables for the process
-	cmd.Env = cmdEnv
 
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
