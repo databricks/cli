@@ -18,5 +18,5 @@ type DatabricksCliLog struct {
 
 	CliTestEvent     *CliTestEvent      `json:"cli_test_event,omitempty"`
 	BundleInitEvent  *BundleInitEvent   `json:"bundle_init_event,omitempty"`
-	BundleDeplyEvent *BundleDeployEvent `json:"bundle_deploy_event,omitempty"`
+	BundleDeployEvent *BundleDeployEvent `json:"bundle_deploy_event,omitempty"`
 }
