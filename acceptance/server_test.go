@@ -54,6 +54,7 @@ func AddHandlers(server *testserver.Server) {
 
 	server.Handle("GET /api/2.0/preview/scim/v2/Me", func(r *http.Request) (any, error) {
 		return iam.User{
+			Id:       "tester@databricks.com",
 			UserName: "tester@databricks.com",
 		}, nil
 	})
