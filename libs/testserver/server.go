@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type Server struct {
@@ -15,17 +13,18 @@ type Server struct {
 	Mux *http.ServeMux
 
 	t testutil.TestingT
-
-	// API calls that we expect to be made.
-	calledPatterns map[string]bool
 }
 
-type ApiSpec struct {
-	Method   string `json:"method"`
-	Path     string `json:"path"`
+type Stub struct {
+	// The HTTP method and path to match. Examples:
+	// 1. /api/2.0/clusters/list (matches all methods)
+	// 2. GET /api/2.0/clusters/list
+	Pattern string
+
+	// The response body to return.
 	Response struct {
-		Body json.RawMessage `json:"body"`
-	} `json:"response"`
+		Body string
+	}
 }
 
 func New(t testutil.TestingT) *Server {
@@ -33,50 +32,15 @@ func New(t testutil.TestingT) *Server {
 	server := httptest.NewServer(mux)
 
 	return &Server{
-		Server:         server,
-		Mux:            mux,
-		t:              t,
-		calledPatterns: make(map[string]bool),
+		Server: server,
+		Mux:    mux,
+		t:      t,
 	}
-}
-
-func NewFromConfig(t testutil.TestingT, path string) *Server {
-	content := testutil.ReadFile(t, path)
-	var apiSpecs []ApiSpec
-	err := json.Unmarshal([]byte(content), &apiSpecs)
-	require.NoError(t, err)
-
-	server := New(t)
-	for _, apiSpec := range apiSpecs {
-		server.MustHandle(apiSpec)
-	}
-
-	return server
 }
 
 type HandlerFunc func(req *http.Request) (resp any, err error)
 
-func (s *Server) MustHandle(apiSpec ApiSpec) {
-	assert.NotEmpty(s.t, apiSpec.Method)
-	assert.NotEmpty(s.t, apiSpec.Path)
-
-	pattern := apiSpec.Method + " " + apiSpec.Path
-	s.calledPatterns[pattern] = false
-
-	s.Handle(pattern, func(req *http.Request) (any, error) {
-		// Record the fact that this pattern was called.
-		s.calledPatterns[pattern] = true
-
-		// Return the expected response body.
-		return apiSpec.Response.Body, nil
-	})
-}
-
 func (s *Server) Close() {
-	for pattern, called := range s.calledPatterns {
-		assert.Truef(s.t, called, "expected pattern %s to be called", pattern)
-	}
-
 	s.Server.Close()
 }
 

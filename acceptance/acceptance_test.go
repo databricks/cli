@@ -2,10 +2,12 @@ package acceptance_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,7 +32,7 @@ var KeepTmp bool
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
 // example: var SingleTest = "bundle/variables/empty"
-var SingleTest = ""
+var SingleTest = "workspace/jobs/create"
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -205,10 +207,17 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	cmdEnv := os.Environ()
 
-	// If there is a server.json file in the test directory, start a custom server.
-	// Redirect all API calls to this server.
-	if testutil.DetectFile(t, filepath.Join(dir, "server.json")) {
-		server := testserver.NewFromConfig(t, filepath.Join(dir, "server.json"))
+	// Load custom server stubs configured for the integration test.
+	if len(config.Server) > 0 {
+		server := testserver.New(t)
+		for _, stub := range config.Server {
+			require.NotEmpty(t, stub.Pattern)
+			require.NotEmpty(t, stub.Response.Body)
+			server.Handle(stub.Pattern, func(req *http.Request) (resp any, err error) {
+				b := json.RawMessage(stub.Response.Body)
+				return b, nil
+			})
+		}
 		cmdEnv = setEnv(cmdEnv, "DATABRICKS_HOST", server.URL)
 		t.Cleanup(func() {
 			server.Close()

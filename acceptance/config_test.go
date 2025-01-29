@@ -8,6 +8,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,6 +30,9 @@ type TestConfig struct {
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
+
+	// List of server stubs to load.
+	Server []testserver.Stub
 }
 
 // FindConfig finds the closest config file.
