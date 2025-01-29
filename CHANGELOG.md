@@ -1,5 +1,25 @@
 # Version changelog
 
+## [Release] Release v0.240.0
+
+Bundles:
+ * Added support for double underscore variable references ([#2203](https://github.com/databricks/cli/pull/2203)).
+ * Do not wait for app compute to start on `bundle deploy` ([#2144](https://github.com/databricks/cli/pull/2144)).
+ * Remove bundle.git.inferred ([#2258](https://github.com/databricks/cli/pull/2258)).
+ * libs/python: Remove DetectInterpreters ([#2234](https://github.com/databricks/cli/pull/2234)).
+
+API Changes:
+ * Added `databricks access-control` command group.
+ * Added `databricks serving-endpoints http-request` command.
+ * Changed `databricks serving-endpoints create` command with new required argument order.
+ * Changed `databricks serving-endpoints get-open-api` command return type to become non-empty.
+ * Changed `databricks recipients update` command return type to become non-empty.
+
+OpenAPI commit 0be1b914249781b5e903b7676fd02255755bc851 (2025-01-22)
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.55.0 to 0.56.1 ([#2238](https://github.com/databricks/cli/pull/2238)).
+ * Upgrade TF provider to 1.64.1 ([#2247](https://github.com/databricks/cli/pull/2247)).
+
 ## [Release] Release v0.239.1
 
 CLI:
