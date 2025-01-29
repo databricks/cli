@@ -211,7 +211,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// specifies a custom server stubs.
 	if len(config.Server) > 0 {
 		server := testserver.New(t)
-		t.Cleanup(server.Close)
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
