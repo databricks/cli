@@ -70,7 +70,7 @@ func DetectFile(t TestingT, path string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	t.Fatalf("unexpected error: %v", err)
+	require.NoError(t, err)
 	return false
 }
 
