@@ -17,7 +17,6 @@ type Server struct {
 
 func New(t testutil.TestingT) *Server {
 	mux := http.NewServeMux()
-
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
