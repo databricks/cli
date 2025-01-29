@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
@@ -107,7 +108,9 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		server := StartServer(t)
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		
 		AddHandlers(server)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", server.URL)
