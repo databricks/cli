@@ -3,8 +3,7 @@
   "bundle": {
     "environment": "dev",
     "git": {
-      "bundle_root_path": ".",
-      "inferred": true
+      "bundle_root_path": "."
     },
     "target": "dev",
     "terraform": {
