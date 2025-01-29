@@ -15,18 +15,6 @@ type Server struct {
 	t testutil.TestingT
 }
 
-type Stub struct {
-	// The HTTP method and path to match. Examples:
-	// 1. /api/2.0/clusters/list (matches all methods)
-	// 2. GET /api/2.0/clusters/list
-	Pattern string
-
-	// The response body to return.
-	Response struct {
-		Body string
-	}
-}
-
 func New(t testutil.TestingT) *Server {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)

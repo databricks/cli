@@ -8,7 +8,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/testdiff"
-	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,7 +39,19 @@ type TestConfig struct {
 	// 	"job_id": 1111
 	// }
 	// '''
-	Server []testserver.Stub
+	Server []ServerStub
+}
+
+type ServerStub struct {
+	// The HTTP method and path to match. Examples:
+	// 1. /api/2.0/clusters/list (matches all methods)
+	// 2. GET /api/2.0/clusters/list
+	Pattern string
+
+	// The response body to return.
+	Response struct {
+		Body string
+	}
 }
 
 // FindConfig finds the closest config file.
