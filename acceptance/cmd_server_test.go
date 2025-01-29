@@ -8,10 +8,11 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
-func StartCmdServer(t *testing.T) *TestServer {
+func StartCmdServer(t *testing.T) *testserver.Server {
 	server := StartServer(t)
 	server.Handle("/", func(r *http.Request) (any, error) {
 		q := r.URL.Query()

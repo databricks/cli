@@ -1,73 +1,25 @@
 package acceptance_test
 
 import (
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-type TestServer struct {
-	*httptest.Server
-	Mux *http.ServeMux
-}
-
-type HandlerFunc func(r *http.Request) (any, error)
-
-func NewTestServer() *TestServer {
-	mux := http.NewServeMux()
-	server := httptest.NewServer(mux)
-
-	return &TestServer{
-		Server: server,
-		Mux:    mux,
-	}
-}
-
-func (s *TestServer) Handle(pattern string, handler HandlerFunc) {
-	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		resp, err := handler(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-
-		var respBytes []byte
-
-		respString, ok := resp.(string)
-		if ok {
-			respBytes = []byte(respString)
-		} else {
-			respBytes, err = json.MarshalIndent(resp, "", "    ")
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
-
-		if _, err := w.Write(respBytes); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
-}
-
-func StartServer(t *testing.T) *TestServer {
-	server := NewTestServer()
+func StartServer(t *testing.T) *testserver.Server {
+	server := testserver.New(t)
 	t.Cleanup(func() {
 		server.Close()
 	})
 	return server
 }
 
-func AddHandlers(server *TestServer) {
+func AddHandlers(server *testserver.Server) {
 	server.Handle("GET /api/2.0/policies/clusters/list", func(r *http.Request) (any, error) {
 		return compute.ListPoliciesResponse{
 			Policies: []compute.Policy{
