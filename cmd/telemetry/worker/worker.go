@@ -97,7 +97,7 @@ func New() *cobra.Command {
 			}
 
 			// Log the CLI telemetry events.
-			err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, telemetry.RequestBody{
+			err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, nil, telemetry.RequestBody{
 				UploadTime: time.Now().Unix(),
 				ProtoLogs:  protoLogs,
 
