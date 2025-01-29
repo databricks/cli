@@ -109,7 +109,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		defaultServer := StartServer(t)
+		defaultServer := testserver.New(t)
 		AddHandlers(defaultServer)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
