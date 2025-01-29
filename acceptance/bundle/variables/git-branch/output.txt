@@ -29,7 +29,7 @@
   "workspace": {
     "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/artifacts",
     "current_user": {
-      "id": "$USERNAME",
+      "id": "$USER.Id",
       "short_name": "$USERNAME",
       "userName": "$USERNAME"
     },
@@ -79,7 +79,7 @@ Validation OK!
   "workspace": {
     "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/artifacts",
     "current_user": {
-      "id": "$USERNAME",
+      "id": "$USER.Id",
       "short_name": "$USERNAME",
       "userName": "$USERNAME"
     },
