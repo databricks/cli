@@ -121,6 +121,8 @@ func parsePythonLocations(bundleRoot string, input io.Reader) (*pythonLocations,
 		// Mutator pipeline expects all path to be absolute at this point, so make all paths absolute.
 		if !pathlib.IsAbs(entry.File) {
 			entry.File = filepath.Join(bundleRoot, entry.File)
+		} else {
+			entry.File = filepath.Clean(entry.File)
 		}
 
 		location := dyn.Location{
