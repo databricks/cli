@@ -177,7 +177,8 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-// In case of duplicate keys in env, the last is applicable when spawning a process.
+// In case of duplicate keys in env, the last value is applicable when spawning
+// a process.
 func setEnv(env []string, key, value string) []string {
 	return append(env, key+"="+value)
 }
