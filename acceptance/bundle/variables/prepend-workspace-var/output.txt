@@ -7,7 +7,7 @@
     },
     "target": "dev",
     "terraform": {
-      "exec_path": "$TMPHOME"
+      "exec_path": "$TERRAFORM"
     }
   },
   "resources": {

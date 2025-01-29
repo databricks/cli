@@ -11,7 +11,7 @@
     "name": "git",
     "target": "prod",
     "terraform": {
-      "exec_path": "$TMPHOME"
+      "exec_path": "$TERRAFORM"
     }
   },
   "sync": {
@@ -61,7 +61,7 @@ Validation OK!
     "name": "git",
     "target": "dev",
     "terraform": {
-      "exec_path": "$TMPHOME"
+      "exec_path": "$TERRAFORM"
     }
   },
   "sync": {

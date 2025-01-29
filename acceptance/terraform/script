@@ -1,0 +1,5 @@
+export TF_LOG=DEBUG
+trace $TERRAFORM init -no-color
+export TF_LOG=WARN
+trace $TERRAFORM plan -no-color
+rm -fr .terraform.lock.hcl .terraform

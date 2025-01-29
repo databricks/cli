@@ -1,0 +1,3 @@
+[[Repls]]
+Old = '\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+\+\d+'
+New = 'Timestamp'
