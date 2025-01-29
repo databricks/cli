@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +37,7 @@ func emptyCommand(t *testing.T) *cobra.Command {
 	return cmd
 }
 
-func setupWithHost(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
+func setupWithHost(t *testing.T, cmd *cobra.Command, host string) error {
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
@@ -51,12 +50,11 @@ workspace:
 	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
 	require.NoError(t, err)
 
-	b, diags := MustConfigureBundle(cmd)
-	require.NoError(t, diags.Error())
-	return b
+	_, diags := MustConfigureBundle(cmd)
+	return diags.Error()
 }
 
-func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) *bundle.Bundle {
+func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) error {
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
@@ -69,29 +67,25 @@ workspace:
 	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
 	require.NoError(t, err)
 
-	b, diags := MustConfigureBundle(cmd)
-	require.NoError(t, diags.Error())
-	return b
+	_, diags := MustConfigureBundle(cmd)
+	return diags.Error()
 }
 
 func TestBundleConfigureDefault(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
 	cmd := emptyCommand(t)
-	b := setupWithHost(t, cmd, "https://x.com")
-
-	client, err := b.InitializeWorkspaceClient()
+	err := setupWithHost(t, cmd, "https://x.com")
 	require.NoError(t, err)
-	assert.Equal(t, "https://x.com", client.Config.Host)
+
+	assert.Equal(t, "https://x.com", ConfigUsed(cmd.Context()).Host)
 }
 
 func TestBundleConfigureWithMultipleMatches(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
 	cmd := emptyCommand(t)
-	b := setupWithHost(t, cmd, "https://a.com")
-
-	_, err := b.InitializeWorkspaceClient()
+	err := setupWithHost(t, cmd, "https://a.com")
 	assert.ErrorContains(t, err, "multiple profiles matched: PROFILE-1, PROFILE-2")
 }
 
@@ -101,9 +95,8 @@ func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
 	cmd := emptyCommand(t)
 	err := cmd.Flag("profile").Value.Set("NOEXIST")
 	require.NoError(t, err)
-	b := setupWithHost(t, cmd, "https://x.com")
 
-	_, err = b.InitializeWorkspaceClient()
+	err = setupWithHost(t, cmd, "https://x.com")
 	assert.ErrorContains(t, err, "has no NOEXIST profile configured")
 }
 
@@ -113,9 +106,8 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 	cmd := emptyCommand(t)
 	err := cmd.Flag("profile").Value.Set("PROFILE-1")
 	require.NoError(t, err)
-	b := setupWithHost(t, cmd, "https://x.com")
 
-	_, err = b.InitializeWorkspaceClient()
+	err = setupWithHost(t, cmd, "https://x.com")
 	assert.ErrorContains(t, err, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com")
 }
 
@@ -125,12 +117,11 @@ func TestBundleConfigureWithCorrectProfile(t *testing.T) {
 	cmd := emptyCommand(t)
 	err := cmd.Flag("profile").Value.Set("PROFILE-1")
 	require.NoError(t, err)
-	b := setupWithHost(t, cmd, "https://a.com")
+	err = setupWithHost(t, cmd, "https://a.com")
 
-	client, err := b.InitializeWorkspaceClient()
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "PROFILE-1", client.Config.Profile)
+	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "PROFILE-1", ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
@@ -138,9 +129,8 @@ func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
 
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "PROFILE-1")
 	cmd := emptyCommand(t)
-	b := setupWithHost(t, cmd, "https://x.com")
 
-	_, err := b.InitializeWorkspaceClient()
+	err := setupWithHost(t, cmd, "https://x.com")
 	assert.ErrorContains(t, err, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com")
 }
 
@@ -151,12 +141,11 @@ func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
 	cmd := emptyCommand(t)
 	err := cmd.Flag("profile").Value.Set("PROFILE-1")
 	require.NoError(t, err)
-	b := setupWithHost(t, cmd, "https://a.com")
 
-	client, err := b.InitializeWorkspaceClient()
+	err = setupWithHost(t, cmd, "https://a.com")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "PROFILE-1", client.Config.Profile)
+	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "PROFILE-1", ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureProfileDefault(t *testing.T) {
@@ -164,13 +153,12 @@ func TestBundleConfigureProfileDefault(t *testing.T) {
 
 	// The profile in the databricks.yml file is used
 	cmd := emptyCommand(t)
-	b := setupWithProfile(t, cmd, "PROFILE-1")
 
-	client, err := b.InitializeWorkspaceClient()
+	err := setupWithProfile(t, cmd, "PROFILE-1")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "a", client.Config.Token)
-	assert.Equal(t, "PROFILE-1", client.Config.Profile)
+	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "a", ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-1", ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureProfileFlag(t *testing.T) {
@@ -180,13 +168,12 @@ func TestBundleConfigureProfileFlag(t *testing.T) {
 	cmd := emptyCommand(t)
 	err := cmd.Flag("profile").Value.Set("PROFILE-2")
 	require.NoError(t, err)
-	b := setupWithProfile(t, cmd, "PROFILE-1")
 
-	client, err := b.InitializeWorkspaceClient()
+	err = setupWithProfile(t, cmd, "PROFILE-1")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "b", client.Config.Token)
-	assert.Equal(t, "PROFILE-2", client.Config.Profile)
+	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "b", ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-2", ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureProfileEnvVariable(t *testing.T) {
@@ -195,13 +182,12 @@ func TestBundleConfigureProfileEnvVariable(t *testing.T) {
 	// The DATABRICKS_CONFIG_PROFILE environment variable takes precedence over the profile in the databricks.yml file
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "PROFILE-2")
 	cmd := emptyCommand(t)
-	b := setupWithProfile(t, cmd, "PROFILE-1")
 
-	client, err := b.InitializeWorkspaceClient()
+	err := setupWithProfile(t, cmd, "PROFILE-1")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "b", client.Config.Token)
-	assert.Equal(t, "PROFILE-2", client.Config.Profile)
+	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "b", ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-2", ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
@@ -212,13 +198,12 @@ func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
 	cmd := emptyCommand(t)
 	err := cmd.Flag("profile").Value.Set("PROFILE-2")
 	require.NoError(t, err)
-	b := setupWithProfile(t, cmd, "PROFILE-1")
 
-	client, err := b.InitializeWorkspaceClient()
+	err = setupWithProfile(t, cmd, "PROFILE-1")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", client.Config.Host)
-	assert.Equal(t, "b", client.Config.Token)
-	assert.Equal(t, "PROFILE-2", client.Config.Profile)
+	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "b", ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-2", ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestTargetFlagFull(t *testing.T) {

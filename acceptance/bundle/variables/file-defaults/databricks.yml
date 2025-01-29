@@ -1,0 +1,53 @@
+bundle:
+  name: TestResolveVariablesFromFile
+
+variables:
+  cluster:
+    type: "complex"
+  cluster_key:
+  cluster_workers:
+
+resources:
+  jobs:
+    job1:
+      job_clusters:
+        - job_cluster_key: ${var.cluster_key}
+          new_cluster:
+            node_type_id: "${var.cluster.node_type_id}"
+            num_workers: ${var.cluster_workers}
+
+targets:
+  default:
+    default: true
+    variables:
+      cluster_workers: 1
+      cluster:
+        node_type_id: "default"
+      cluster_key: "default"
+
+  without_defaults:
+
+  complex_to_string:
+    variables:
+      cluster_workers: 1
+      cluster:
+        node_type_id: "default"
+      cluster_key: "default"
+
+  string_to_complex:
+    variables:
+      cluster_workers: 1
+      cluster:
+        node_type_id: "default"
+      cluster_key: "default"
+
+  wrong_file_structure:
+
+  invalid_json:
+
+  with_value:
+    variables:
+      cluster_workers: 1
+      cluster:
+        node_type_id: "default"
+      cluster_key: cluster_key_value

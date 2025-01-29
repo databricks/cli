@@ -106,7 +106,7 @@ func (info *wsfsFileInfo) MarshalJSON() ([]byte, error) {
 // as an interface to allow for mocking in tests.
 type apiClient interface {
 	Do(ctx context.Context, method, path string,
-		headers map[string]string, queryParams map[string]any, request, response any,
+		headers map[string]string, queryString map[string]any, request, response any,
 		visitors ...func(*http.Request) error) error
 }
 

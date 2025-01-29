@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
-func StartCmdServer(t *testing.T) *testutil.Server {
-	server := testutil.StartServer(t)
+func StartCmdServer(t *testing.T) *testserver.Server {
+	server := StartServer(t)
 	server.Handle("/", func(r *http.Request) (any, error) {
 		q := r.URL.Query()
 		args := strings.Split(q.Get("args"), " ")

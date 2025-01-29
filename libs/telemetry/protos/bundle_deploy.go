@@ -21,10 +21,17 @@ type BundleDeployEvent struct {
 	// IDs of resources managed by the bundle. Some resources like volumes or schemas
 	// do not expose a numerical or UUID identifier and are tracked by name. Those
 	// resources are not tracked here since the names are PII.
+<<<<<<< HEAD
 	ResourceJobIds       []string `json:"resource_job_ids,omitempty"`
 	ResourcePipelineIds  []string `json:"resource_pipeline_ids,omitempty"`
 	ResourceClusterIds   []string `json:"resource_cluster_ids,omitempty"`
 	ResourceDashboardIds []string `json:"resource_dashboard_ids,omitempty"`
+=======
+	ResourceJobIDs       []string `json:"resource_job_ids,omitempty"`
+	ResourcePipelineIDs  []string `json:"resource_pipeline_ids,omitempty"`
+	ResourceClusterIDs   []string `json:"resource_cluster_ids,omitempty"`
+	ResourceDashboardIDs []string `json:"resource_dashboard_ids,omitempty"`
+>>>>>>> origin
 
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
 }
@@ -33,7 +40,7 @@ type BundleDeployEvent struct {
 // are no guarantees for these metrics and they maybe removed in the future without
 // any notice.
 type BundleDeployExperimental struct {
-	// Number of YAML (or JSON) configuration files in the bundle.
+	// Number of configuration files in the bundle.
 	ConfigurationFileCount int64 `json:"configuration_file_count,omitempty"`
 
 	// Size in bytes of the Terraform state file

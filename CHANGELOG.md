@@ -1,5 +1,25 @@
 # Version changelog
 
+## [Release] Release v0.239.1
+
+CLI:
+ * Added text output templates for apps list and list-deployments ([#2175](https://github.com/databricks/cli/pull/2175)).
+ * Fix duplicate "apps" entry in help output ([#2191](https://github.com/databricks/cli/pull/2191)).
+
+Bundles:
+ * Allow yaml-anchors in schema ([#2200](https://github.com/databricks/cli/pull/2200)).
+ * Show an error when non-yaml files used in include section ([#2201](https://github.com/databricks/cli/pull/2201)).
+ * Set WorktreeRoot to sync root outside git repo ([#2197](https://github.com/databricks/cli/pull/2197)).
+ * fix: Detailed message for using source-linked deployment with file_path specified ([#2119](https://github.com/databricks/cli/pull/2119)).
+ * Allow using variables in enum fields ([#2199](https://github.com/databricks/cli/pull/2199)).
+ * Add experimental-jobs-as-code template ([#2177](https://github.com/databricks/cli/pull/2177)).
+ * Reading variables from file ([#2171](https://github.com/databricks/cli/pull/2171)).
+ * Fixed an apps message order and added output test ([#2174](https://github.com/databricks/cli/pull/2174)).
+ * Default to forward slash-separated paths for path translation ([#2145](https://github.com/databricks/cli/pull/2145)).
+ * Include a materialized copy of built-in templates ([#2146](https://github.com/databricks/cli/pull/2146)).
+
+
+
 ## [Release] Release v0.239.0
 
 ### New feature announcement

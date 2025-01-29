@@ -258,7 +258,8 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The cluster resource defines an [all-purpose cluster](https://docs.databricks.com/api/workspace/clusters/create)."
                   },
                   {
                     "type": "string",
@@ -321,7 +322,8 @@
                         "$ref": "#/$defs/string"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The dashboard resource allows you to manage [AI/BI dashboards](https://docs.databricks.com/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [link](https://docs.databricks.com/dashboards/index.html)."
                   },
                   {
                     "type": "string",
@@ -442,7 +444,8 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The job resource allows you to define [jobs and their corresponding tasks](https://docs.databricks.com/api/workspace/jobs/create) in your bundle. For information about jobs, see [link](https://docs.databricks.com/jobs/index.html). For a tutorial that uses a \u003cDABS\u003e template to create a job, see [link](https://docs.databricks.com/dev-tools/bundles/jobs-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -487,7 +490,8 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The experiment resource allows you to define [MLflow experiments](https://docs.databricks.com/api/workspace/experiments/createexperiment) in a bundle. For information about MLflow experiments, see [link](https://docs.databricks.com/mlflow/experiments.html)."
                   },
                   {
                     "type": "string",
@@ -532,7 +536,8 @@
                         "$ref": "#/$defs/string"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The model resource allows you to define [legacy models](https://docs.databricks.com/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use \u003cUC\u003e [registered models](https://docs.databricks.com/dev-tools/bundles/reference.html#registered-model) instead."
                   },
                   {
                     "type": "string",
@@ -576,7 +581,8 @@
                     "additionalProperties": false,
                     "required": [
                       "name"
-                    ]
+                    ],
+                    "markdownDescription": "The model_serving_endpoint resource allows you to define [model serving endpoints](https://docs.databricks.com/api/workspace/servingendpoints/create). See [link](https://docs.databricks.com/machine-learning/model-serving/manage-serving-endpoints.html)."
                   },
                   {
                     "type": "string",
@@ -718,7 +724,8 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The pipeline resource allows you to create \u003cDLT\u003e [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/delta-live-tables/index.html). For a tutorial that uses the \u003cDABS\u003e template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -792,7 +799,8 @@
                       "table_name",
                       "assets_dir",
                       "output_schema_name"
-                    ]
+                    ],
+                    "markdownDescription": "The quality_monitor resource allows you to define a \u003cUC\u003e [table monitor](https://docs.databricks.com/api/workspace/qualitymonitors/create). For information about monitors, see [link](https://docs.databricks.com/machine-learning/model-serving/monitor-diagnose-endpoints.html)."
                   },
                   {
                     "type": "string",
@@ -834,7 +842,8 @@
                       "catalog_name",
                       "name",
                       "schema_name"
-                    ]
+                    ],
+                    "markdownDescription": "The registered model resource allows you to define models in \u003cUC\u003e. For information about \u003cUC\u003e [registered models](https://docs.databricks.com/api/workspace/registeredmodels/create), see [link](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html)."
                   },
                   {
                     "type": "string",
@@ -874,7 +883,8 @@
                     "required": [
                       "catalog_name",
                       "name"
-                    ]
+                    ],
+                    "markdownDescription": "The schema resource type allows you to define \u003cUC\u003e [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
                   },
                   {
                     "type": "string",
@@ -919,7 +929,8 @@
                       "catalog_name",
                       "name",
                       "schema_name"
-                    ]
+                    ],
+                    "markdownDescription": "The volume resource type allows you to define and create \u003cUC\u003e [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use \u003cDABS\u003e to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.\n\n- Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)."
                   },
                   {
                     "type": "string",
@@ -1005,6 +1016,7 @@
               },
               "variable.Variable": {
                 "type": "object",
+                "description": "Defines a custom variable for the bundle.",
                 "properties": {
                   "default": {
                     "$ref": "#/$defs/interface"
@@ -1016,14 +1028,15 @@
                   "lookup": {
                     "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup",
-                    "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.\""
+                    "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID."
                   },
                   "type": {
                     "description": "The type of the variable.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
                   }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "markdownDescription": "Defines a custom variable for the bundle. See [variables](https://docs.databricks.com/dev-tools/bundles/settings.html#variables)."
               },
               "variable.VariableType": {
                 "type": "string"
@@ -1035,26 +1048,25 @@
                   "type": "object",
                   "properties": {
                     "build": {
-                      "description": "An optional set of non-default build commands that you want to run locally before deployment.\n\nFor Python wheel builds, the Databricks CLI assumes that it can find a local install of the Python wheel package to run builds, and it runs the command python setup.py bdist_wheel by default during each bundle deployment.\n\nTo specify multiple build commands, separate each command with double-ampersand (\u0026\u0026) characters.",
+                      "description": "An optional set of non-default build commands to run locally before deployment.",
                       "$ref": "#/$defs/string"
                     },
                     "executable": {
-                      "description": "The executable type.",
+                      "description": "The executable type. Valid values are `bash`, `sh`, and `cmd`.",
                       "$ref": "#/$defs/github.com/databricks/cli/libs/exec.ExecutableType"
                     },
                     "files": {
                       "description": "The source files for the artifact.",
-                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile",
-                      "markdownDescription": "The source files for the artifact, defined as an [artifact_file](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact_file)."
+                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile"
                     },
                     "path": {
                       "description": "The location where the built artifact will be saved.",
                       "$ref": "#/$defs/string"
                     },
                     "type": {
-                      "description": "The type of the artifact.",
+                      "description": "Required. The type of the artifact.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType",
-                      "markdownDescription": "The type of the artifact. Valid values are `wheel` or `jar`"
+                      "markdownDescription": "Required. The type of the artifact. Valid values are `whl`."
                     }
                   },
                   "additionalProperties": false,
@@ -1074,7 +1086,7 @@
                   "type": "object",
                   "properties": {
                     "source": {
-                      "description": "The path of the files used to build the artifact.",
+                      "description": "Required. The path of the files used to build the artifact.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -1113,12 +1125,12 @@
                     "deployment": {
                       "description": "The definition of the bundle deployment",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
-                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [deployment](https://docs.databricks.com/dev-tools/bundles/reference.html#deployment) and [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
+                      "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "git": {
                       "description": "The Git version control details that are associated with your bundle.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git) and [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
+                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes see [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
                     "name": {
                       "description": "The name of the bundle.",
@@ -1154,8 +1166,7 @@
                     },
                     "lock": {
                       "description": "The deployment lock attributes.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock",
-                      "markdownDescription": "The deployment lock attributes. See [lock](https://docs.databricks.com/dev-tools/bundles/reference.html#lock)."
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock"
                     }
                   },
                   "additionalProperties": false
@@ -1180,15 +1191,15 @@
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python"
                     },
                     "python_wheel_wrapper": {
-                      "description": "Whether to use a Python wheel wrapper",
+                      "description": "Whether to use a Python wheel wrapper.",
                       "$ref": "#/$defs/bool"
                     },
                     "scripts": {
-                      "description": "The commands to run",
+                      "description": "The commands to run.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Command"
                     },
                     "use_legacy_run_as": {
-                      "description": "Whether to use the legacy run_as behavior",
+                      "description": "Whether to use the legacy run_as behavior.",
                       "$ref": "#/$defs/bool"
                     }
                   },
@@ -1352,57 +1363,59 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.App"
                     },
                     "clusters": {
-                      "description": "The cluster definitions for the bundle.",
+                      "description": "The cluster definitions for the bundle, where each key is the name of a cluster.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster",
-                      "markdownDescription": "The cluster definitions for the bundle. See [cluster](https://docs.databricks.com/dev-tools/bundles/resources.html#cluster)"
+                      "markdownDescription": "The cluster definitions for the bundle, where each key is the name of a cluster. See [clusters](https://docs.databricks.com/dev-tools/bundles/resources.html#clusters)"
                     },
                     "dashboards": {
-                      "description": "The dashboard definitions for the bundle.",
+                      "description": "The dashboard definitions for the bundle, where each key is the name of the dashboard.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
-                      "markdownDescription": "The dashboard definitions for the bundle. See [dashboard](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboard)"
+                      "markdownDescription": "The dashboard definitions for the bundle, where each key is the name of the dashboard. See [dashboards](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboards)"
                     },
                     "experiments": {
-                      "description": "The experiment definitions for the bundle.",
+                      "description": "The experiment definitions for the bundle, where each key is the name of the experiment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
-                      "markdownDescription": "The experiment definitions for the bundle. See [experiment](https://docs.databricks.com/dev-tools/bundles/resources.html#experiment)"
+                      "markdownDescription": "The experiment definitions for the bundle, where each key is the name of the experiment. See [experiments](https://docs.databricks.com/dev-tools/bundles/resources.html#experiments)"
                     },
                     "jobs": {
-                      "description": "The job definitions for the bundle.",
+                      "description": "The job definitions for the bundle, where each key is the name of the job.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
-                      "markdownDescription": "The job definitions for the bundle. See [job](https://docs.databricks.com/dev-tools/bundles/resources.html#job)"
+                      "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs)"
                     },
                     "model_serving_endpoints": {
-                      "description": "The model serving endpoint definitions for the bundle.",
+                      "description": "The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint",
-                      "markdownDescription": "The model serving endpoint definitions for the bundle. See [model_serving_endpoint](https://docs.databricks.com/dev-tools/bundles/resources.html#model_serving_endpoint)"
+                      "markdownDescription": "The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [model_serving_endpoints](https://docs.databricks.com/dev-tools/bundles/resources.html#model_serving_endpoints)"
                     },
                     "models": {
-                      "description": "The model definitions for the bundle.",
+                      "description": "The model definitions for the bundle, where each key is the name of the model.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel",
-                      "markdownDescription": "The model definitions for the bundle. See [model](https://docs.databricks.com/dev-tools/bundles/resources.html#model)"
+                      "markdownDescription": "The model definitions for the bundle, where each key is the name of the model. See [models](https://docs.databricks.com/dev-tools/bundles/resources.html#models)"
                     },
                     "pipelines": {
-                      "description": "The pipeline definitions for the bundle.",
+                      "description": "The pipeline definitions for the bundle, where each key is the name of the pipeline.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline",
-                      "markdownDescription": "The pipeline definitions for the bundle. See [pipeline](https://docs.databricks.com/dev-tools/bundles/resources.html#pipeline)"
+                      "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines)"
                     },
                     "quality_monitors": {
-                      "description": "The quality monitor definitions for the bundle.",
+                      "description": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor",
-                      "markdownDescription": "The quality monitor definitions for the bundle. See [quality_monitor](https://docs.databricks.com/dev-tools/bundles/resources.html#quality_monitor)"
+                      "markdownDescription": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [quality_monitors](https://docs.databricks.com/dev-tools/bundles/resources.html#quality_monitors)"
                     },
                     "registered_models": {
-                      "description": "The registered model definitions for the bundle.",
+                      "description": "The registered model definitions for the bundle, where each key is the name of the \u003cUC\u003e registered model.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel",
-                      "markdownDescription": "The registered model definitions for the bundle. See [registered_model](https://docs.databricks.com/dev-tools/bundles/resources.html#registered_model)"
+                      "markdownDescription": "The registered model definitions for the bundle, where each key is the name of the \u003cUC\u003e registered model. See [registered_models](https://docs.databricks.com/dev-tools/bundles/resources.html#registered_models)"
                     },
                     "schemas": {
-                      "description": "The schema definitions for the bundle.",
+                      "description": "The schema definitions for the bundle, where each key is the name of the schema.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
-                      "markdownDescription": "The schema definitions for the bundle. See [schema](https://docs.databricks.com/dev-tools/bundles/resources.html#schema)"
+                      "markdownDescription": "The schema definitions for the bundle, where each key is the name of the schema. See [schemas](https://docs.databricks.com/dev-tools/bundles/resources.html#schemas)"
                     },
                     "volumes": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Volume"
+                      "description": "The volume definitions for the bundle, where each key is the name of the volume.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Volume",
+                      "markdownDescription": "The volume definitions for the bundle, where each key is the name of the volume. See [volumes](https://docs.databricks.com/dev-tools/bundles/resources.html#volumes)"
                     }
                   },
                   "additionalProperties": false
@@ -1446,11 +1459,10 @@
                   "properties": {
                     "artifacts": {
                       "description": "The artifacts to include in the target deployment.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
-                      "markdownDescription": "The artifacts to include in the target deployment. See [artifact](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact)"
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
                     },
                     "bundle": {
-                      "description": "The name of the bundle when deploying to this target.",
+                      "description": "The bundle attributes when deploying to this target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
                     },
                     "cluster_id": {
@@ -1467,8 +1479,7 @@
                     },
                     "git": {
                       "description": "The Git version control settings for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "markdownDescription": "The Git version control settings for the target. See [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git)."
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git"
                     },
                     "mode": {
                       "description": "The deployment mode for the target.",
@@ -1477,38 +1488,32 @@
                     },
                     "permissions": {
                       "description": "The permissions for deploying and running the bundle in the target.",
-                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                      "markdownDescription": "The permissions for deploying and running the bundle in the target. See [permission](https://docs.databricks.com/dev-tools/bundles/reference.html#permission)."
+                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
                     },
                     "presets": {
                       "description": "The deployment presets for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
-                      "markdownDescription": "The deployment presets for the target. See [preset](https://docs.databricks.com/dev-tools/bundles/reference.html#preset)."
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets"
                     },
                     "resources": {
                       "description": "The resource definitions for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-                      "markdownDescription": "The resource definitions for the target. See [resources](https://docs.databricks.com/dev-tools/bundles/reference.html#resources)."
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources"
                     },
                     "run_as": {
                       "description": "The identity to use to run the bundle.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
-                      "markdownDescription": "The identity to use to run the bundle. See [job_run_as](https://docs.databricks.com/dev-tools/bundles/reference.html#job_run_as) and [link](https://docs.databricks.com/dev-tools/bundles/run_as.html)."
+                      "markdownDescription": "The identity to use to run the bundle, see [link](https://docs.databricks.com/dev-tools/bundles/run-as.html)."
                     },
                     "sync": {
                       "description": "The local paths to sync to the target workspace when a bundle is run or deployed.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
-                      "markdownDescription": "The local paths to sync to the target workspace when a bundle is run or deployed. See [sync](https://docs.databricks.com/dev-tools/bundles/reference.html#sync)."
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync"
                     },
                     "variables": {
                       "description": "The custom variable definitions for the target.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable",
-                      "markdownDescription": "The custom variable definitions for the target. See [variables](https://docs.databricks.com/dev-tools/bundles/settings.html#variables) and [link](https://docs.databricks.com/dev-tools/bundles/variables.html)."
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable"
                     },
                     "workspace": {
                       "description": "The Databricks workspace for the target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
-                      "markdownDescription": "The Databricks workspace for the target. [workspace](https://docs.databricks.com/dev-tools/bundles/reference.html#workspace)"
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
                     }
                   },
                   "additionalProperties": false
@@ -1719,12 +1724,14 @@
                   "type": "object",
                   "properties": {
                     "description": {
+                      "description": "Description of the App Resource.",
                       "$ref": "#/$defs/string"
                     },
                     "job": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob"
                     },
                     "name": {
+                      "description": "Name of the App Resource.",
                       "$ref": "#/$defs/string"
                     },
                     "secret": {
@@ -1980,6 +1987,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "state": {
+                      "description": "State of the app compute.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeState"
                     }
                   },
@@ -3701,7 +3709,7 @@
                   "description": "Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.\n\nEither `user_name` or `service_principal_name` should be specified. If not, an error is thrown.",
                   "properties": {
                     "service_principal_name": {
-                      "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
+                      "description": "The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
                       "$ref": "#/$defs/string"
                     },
                     "user_name": {
@@ -7227,12 +7235,13 @@
   "properties": {
     "artifacts": {
       "description": "Defines the attributes to build an artifact",
-      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
+      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
+      "markdownDescription": "Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [artifacts](https://docs.databricks.com/dev-tools/bundles/settings.html#artifacts).\n\nArtifact settings defined in the top level of the bundle configuration can be overridden in the `targets` mapping. See [link](https://docs.databricks.com/dev-tools/bundles/artifact-overrides.html)."
     },
     "bundle": {
-      "description": "The attributes of the bundle.",
+      "description": "The bundle attributes when deploying to this target.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle",
-      "markdownDescription": "The attributes of the bundle. See [bundle](https://docs.databricks.com/dev-tools/bundles/settings.html#bundle)"
+      "markdownDescription": "The bundle attributes when deploying to this target,"
     },
     "experimental": {
       "description": "Defines attributes for experimental features.",
@@ -7244,9 +7253,9 @@
       "markdownDescription": "Specifies a list of path globs that contain configuration files to include within the bundle. See [include](https://docs.databricks.com/dev-tools/bundles/settings.html#include)"
     },
     "permissions": {
-      "description": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle",
+      "description": "Defines a permission for a specific entity.",
       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-      "markdownDescription": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+      "markdownDescription": "A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
     },
     "presets": {
       "description": "Defines bundle deployment presets.",
@@ -7254,22 +7263,24 @@
       "markdownDescription": "Defines bundle deployment presets. See [presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#presets)."
     },
     "resources": {
-      "description": "Specifies information about the Databricks resources used by the bundle",
+      "description": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-      "markdownDescription": "Specifies information about the Databricks resources used by the bundle. See [link](https://docs.databricks.com/dev-tools/bundles/resources.html)."
+      "markdownDescription": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about \u003cDABS\u003e supported resources, and resource definition reference, see [link](https://docs.databricks.com/dev-tools/bundles/resources.html).\n\n```yaml\nresources:\n  \u003cresource-type\u003e:\n    \u003cresource-name\u003e:\n      \u003cresource-field-name\u003e: \u003cresource-field-value\u003e\n```"
     },
     "run_as": {
-      "description": "The identity to use to run the bundle.",
-      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
+      "description": "The identity to use when running \u003cDABS\u003e workflows.",
+      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
+      "markdownDescription": "The identity to use when running \u003cDABS\u003e workflows. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html)."
     },
     "sync": {
       "description": "The files and file paths to include or exclude in the bundle.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
-      "markdownDescription": "The files and file paths to include or exclude in the bundle. See [link](https://docs.databricks.com/dev-tools/bundles/)"
+      "markdownDescription": "The files and file paths to include or exclude in the bundle. See [sync](https://docs.databricks.com/dev-tools/bundles/settings.html#sync)."
     },
     "targets": {
       "description": "Defines deployment targets for the bundle.",
-      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Target"
+      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Target",
+      "markdownDescription": "Defines deployment targets for the bundle. See [targets](https://docs.databricks.com/dev-tools/bundles/settings.html#targets)"
     },
     "variables": {
       "description": "A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.",
@@ -7277,7 +7288,8 @@
     },
     "workspace": {
       "description": "Defines the Databricks workspace for the bundle.",
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
+      "markdownDescription": "Defines the Databricks workspace for the bundle. See [workspace](https://docs.databricks.com/dev-tools/bundles/settings.html#workspace)."
     }
   },
   "additionalProperties": {}

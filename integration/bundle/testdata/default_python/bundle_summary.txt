@@ -7,8 +7,7 @@
       "exec_path": "/tmp/.../terraform"
     },
     "git": {
-      "bundle_root_path": ".",
-      "inferred": true
+      "bundle_root_path": "."
     },
     "mode": "development",
     "deployment": {
@@ -16,7 +15,7 @@
         "enabled": false
       }
     },
-    "uuid": "<UUID>"
+    "uuid": "[UUID]"
   },
   "include": [
     "resources/project_name_$UNIQUE_PRJ.job.yml",
@@ -74,7 +73,7 @@
           ]
         },
         "format": "MULTI_TASK",
-        "id": "<NUMID>",
+        "id": "[NUMID]",
         "job_clusters": [
           {
             "job_cluster_key": "job_cluster",
@@ -141,7 +140,7 @@
             "unit": "DAYS"
           }
         },
-        "url": "$DATABRICKS_URL/jobs/<NUMID>?o=<NUMID>"
+        "url": "$DATABRICKS_URL/jobs/[NUMID]?o=[NUMID]"
       }
     },
     "pipelines": {
@@ -155,7 +154,7 @@
           "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
         },
         "development": true,
-        "id": "<UUID>",
+        "id": "[UUID]",
         "libraries": [
           {
             "notebook": {
@@ -165,7 +164,7 @@
         ],
         "name": "[dev $USERNAME] project_name_$UNIQUE_PRJ_pipeline",
         "target": "project_name_$UNIQUE_PRJ_dev",
-        "url": "$DATABRICKS_URL/pipelines/<UUID>?o=<NUMID>"
+        "url": "$DATABRICKS_URL/pipelines/[UUID]?o=[NUMID]"
       }
     }
   },

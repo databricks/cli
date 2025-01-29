@@ -1,0 +1,2 @@
+# If test directory nor any of its parents do not have test.toml then this file serves as fallback configuration.
+# The configurations are not merged across parents; the closest one is used fully.
