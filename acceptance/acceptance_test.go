@@ -2,7 +2,6 @@ package acceptance_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -222,8 +221,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
 			server.Handle(stub.Pattern, func(req *http.Request) (resp any, err error) {
-				b := json.RawMessage(stub.Response.Body)
-				return b, nil
+				return stub.Response.Body, nil
 			})
 		}
 		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
