@@ -62,18 +62,6 @@ func StatFile(t TestingT, path string) os.FileInfo {
 	return fi
 }
 
-func DetectFile(t TestingT, path string) bool {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true
-	}
-	if os.IsNotExist(err) {
-		return false
-	}
-	require.NoError(t, err)
-	return false
-}
-
 // AssertFileContents asserts that the file at path has the expected content.
 func AssertFileContents(t TestingT, path, expected string) bool {
 	actual := ReadFile(t, path)

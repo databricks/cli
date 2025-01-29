@@ -31,7 +31,15 @@ type TestConfig struct {
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
 
-	// List of server stubs to load.
+	// List of server stubs to load. Example configuration:
+	//
+	// [[Server]]
+	// Pattern = "POST /api/2.1/jobs/create"
+	// Response.Body = '''
+	// {
+	// 	"job_id": 1111
+	// }
+	// '''
 	Server []testserver.Stub
 }
 
