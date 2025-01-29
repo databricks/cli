@@ -21,8 +21,7 @@ Error: unable to load repository specific gitconfig: open config: permission den
 
 Exit code: 1
 {
-  "bundle_root_path": ".",
-  "inferred": true
+  "bundle_root_path": "."
 }
 
 >>> withdir subdir/a/b $CLI bundle validate -o json
@@ -31,8 +30,7 @@ Error: unable to load repository specific gitconfig: open config: permission den
 
 Exit code: 1
 {
-  "bundle_root_path": ".",
-  "inferred": true
+  "bundle_root_path": "."
 }
 
 
@@ -42,14 +40,12 @@ Exit code: 1
 
 >>> $CLI bundle validate -o json
 {
-  "bundle_root_path": ".",
-  "inferred": true
+  "bundle_root_path": "."
 }
 
 >>> withdir subdir/a/b $CLI bundle validate -o json
 {
-  "bundle_root_path": ".",
-  "inferred": true
+  "bundle_root_path": "."
 }
 
 
@@ -63,8 +59,7 @@ Error: unable to load repository specific gitconfig: open config: permission den
 
 Exit code: 1
 {
-  "bundle_root_path": ".",
-  "inferred": true
+  "bundle_root_path": "."
 }
 
 >>> withdir subdir/a/b $CLI bundle validate -o json
@@ -73,6 +68,5 @@ Error: unable to load repository specific gitconfig: open config: permission den
 
 Exit code: 1
 {
-  "bundle_root_path": ".",
-  "inferred": true
+  "bundle_root_path": "."
 }
