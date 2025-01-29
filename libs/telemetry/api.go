@@ -2,6 +2,7 @@ package telemetry
 
 // RequestBody is the request body type bindings for the /telemetry-ext API endpoint.
 type RequestBody struct {
+	// Timestamp in millis for when the log was uploaded.
 	UploadTime int64 `json:"uploadTime"`
 
 	// DO NOT USE. This is the legacy field for logging in usage logs (not lumberjack).

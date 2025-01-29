@@ -3,7 +3,7 @@ package protos
 // This corresponds to the FrontendLog lumberjack proto in universe.
 // FrontendLog is the top-level struct for any client-side logs at Databricks.
 type FrontendLog struct {
-	// A unique identifier for the log event generated from the CLI.
+	// A UUID for the log event generated from the CLI.
 	FrontendLogEventID string `json:"frontend_log_event_id,omitempty"`
 
 	Entry FrontendLogEntry `json:"entry,omitempty"`
