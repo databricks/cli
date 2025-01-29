@@ -146,7 +146,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	for _, dir := range testDirs {
 		testName := strings.ReplaceAll(dir, "\\", "/")
 		t.Run(testName, func(t *testing.T) {
-			if !InprocessMode && !hasCustomServer(t, dir) {
+			if !InprocessMode {
 				t.Parallel()
 			}
 
@@ -155,10 +155,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 
 	return len(testDirs)
-}
-
-func hasCustomServer(t *testing.T, dir string) bool {
-	return testutil.DetectFile(t, filepath.Join(dir, "server.json"))
 }
 
 func getTests(t *testing.T) []string {
@@ -181,6 +177,16 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
+func setEnv(env []string, key, value string) []string {
+	for i, pair := range env {
+		if strings.HasPrefix(pair, key+"=") {
+			env[i] = key + "=" + value
+			return env
+		}
+	}
+	return append(env, key+"="+value)
+}
+
 func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
 	config, configPath := LoadConfig(t, dir)
 
@@ -201,11 +207,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
+	cmdEnv := os.Environ()
+
 	// If there is a server.json file in the test directory, start a custom server.
 	// Redirect all API calls to this server.
-	if hasCustomServer(t, dir) {
+	if testutil.DetectFile(t, filepath.Join(dir, "server.json")) {
 		server := testserver.NewFromConfig(t, filepath.Join(dir, "server.json"))
-		t.Setenv("DATABRICKS_HOST", server.URL)
+		cmdEnv = setEnv(cmdEnv, "DATABRICKS_HOST", server.URL)
 		t.Cleanup(func() {
 			server.Close()
 		})
@@ -231,8 +239,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
-		cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverDir)
+		cmdEnv = setEnv(cmdEnv, "GOCOVERDIR", coverDir)
 	}
+
+	// Set environment variables for the process
+	cmd.Env = cmdEnv
 
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
