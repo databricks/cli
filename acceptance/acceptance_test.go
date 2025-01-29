@@ -207,7 +207,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	cmdEnv := os.Environ()
 
-	// Load custom server stubs configured for the integration test.
+	// Start a new server with a custom configuration if the acceptance test
+	// specifies a custom server stubs.
 	if len(config.Server) > 0 {
 		server := testserver.New(t)
 		for _, stub := range config.Server {
