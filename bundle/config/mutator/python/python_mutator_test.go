@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	pathlib "path"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -55,7 +54,7 @@ func TestPythonMutator_Name_applyMutators(t *testing.T) {
 func TestPythonMutator_loadResources(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 
-	rootPath := pathlib.Join(t.TempDir(), "my_project")
+	rootPath := filepath.Join(t.TempDir(), "my_project")
 
 	b := loadYaml("databricks.yml", `
       experimental:
@@ -126,7 +125,7 @@ func TestPythonMutator_loadResources(t *testing.T) {
 
 		assert.Equal(t, []dyn.Location{
 			{
-				File:   pathlib.Join(rootPath, "src/examples/job1.py"),
+				File:   filepath.Join(rootPath, "src/examples/job1.py"),
 				Line:   5,
 				Column: 7,
 			},
