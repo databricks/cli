@@ -1,0 +1,230 @@
+
+>>> $CLI vector-search-indexes create-index --help
+Create an index.
+  
+  Create a new index.
+
+  Arguments:
+    NAME: Name of the index
+    ENDPOINT_NAME: Name of the endpoint to be used for serving the index
+    PRIMARY_KEY: Primary key of the index
+    INDEX_TYPE: There are 2 types of Vector Search indexes:
+      
+      - DELTA_SYNC: An index that automatically syncs with a source Delta
+      Table, automatically and incrementally updating the index as the
+      underlying data in the Delta Table changes. - DIRECT_ACCESS: An index
+      that supports direct read and write of vectors and metadata through our
+      REST and SDK APIs. With this model, the user manages index updates.
+
+Usage:
+  databricks vector-search-indexes create-index NAME ENDPOINT_NAME PRIMARY_KEY INDEX_TYPE [flags]
+
+Flags:
+  -h, --help        help for create-index
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes delete-data-vector-index --help
+Delete data from index.
+  
+  Handles the deletion of data from a specified vector index.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index where data is to be deleted. Must be a Direct
+      Vector Access Index.
+
+Usage:
+  databricks vector-search-indexes delete-data-vector-index INDEX_NAME [flags]
+
+Flags:
+  -h, --help        help for delete-data-vector-index
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes delete-index --help
+Delete an index.
+  
+  Delete an index.
+
+  Arguments:
+    INDEX_NAME: Name of the index
+
+Usage:
+  databricks vector-search-indexes delete-index INDEX_NAME [flags]
+
+Flags:
+  -h, --help   help for delete-index
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes get-index --help
+Get an index.
+  
+  Get an index.
+
+  Arguments:
+    INDEX_NAME: Name of the index
+
+Usage:
+  databricks vector-search-indexes get-index INDEX_NAME [flags]
+
+Flags:
+  -h, --help   help for get-index
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes list-indexes --help
+List indexes.
+  
+  List all indexes in the given endpoint.
+
+  Arguments:
+    ENDPOINT_NAME: Name of the endpoint
+
+Usage:
+  databricks vector-search-indexes list-indexes ENDPOINT_NAME [flags]
+
+Flags:
+  -h, --help                help for list-indexes
+      --page-token string   Token for pagination.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes query-index --help
+Query an index.
+  
+  Query the specified vector index.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index to query.
+
+Usage:
+  databricks vector-search-indexes query-index INDEX_NAME [flags]
+
+Flags:
+      --filters-json string     JSON string representing query filters.
+  -h, --help                    help for query-index
+      --json JSON               either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --num-results int         Number of results to return.
+      --query-text string       Query text.
+      --query-type string       The query type to use.
+      --score-threshold float   Threshold for the approximate nearest neighbor search.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes query-next-page --help
+Query next page.
+  
+  Use next_page_token returned from previous QueryVectorIndex or
+  QueryVectorIndexNextPage request to fetch next page of results.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index to query.
+
+Usage:
+  databricks vector-search-indexes query-next-page INDEX_NAME [flags]
+
+Flags:
+      --endpoint-name string   Name of the endpoint.
+  -h, --help                   help for query-next-page
+      --json JSON              either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --page-token string      Page token returned from previous QueryVectorIndex or QueryVectorIndexNextPage API.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes scan-index --help
+Scan an index.
+  
+  Scan the specified vector index and return the first num_results entries
+  after the exclusive primary_key.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index to scan.
+
+Usage:
+  databricks vector-search-indexes scan-index INDEX_NAME [flags]
+
+Flags:
+  -h, --help                      help for scan-index
+      --json JSON                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --last-primary-key string   Primary key of the last entry returned in the previous scan.
+      --num-results int           Number of results to return.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes sync-index --help
+Synchronize an index.
+  
+  Triggers a synchronization process for a specified vector index.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index to synchronize. Must be a Delta Sync Index.
+
+Usage:
+  databricks vector-search-indexes sync-index INDEX_NAME [flags]
+
+Flags:
+  -h, --help   help for sync-index
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-indexes upsert-data-vector-index --help
+Upsert data into an index.
+  
+  Handles the upserting of data into a specified vector index.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index where data is to be upserted. Must be a Direct
+      Vector Access Index.
+    INPUTS_JSON: JSON string representing the data to be upserted.
+
+Usage:
+  databricks vector-search-indexes upsert-data-vector-index INDEX_NAME INPUTS_JSON [flags]
+
+Flags:
+  -h, --help        help for upsert-data-vector-index
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

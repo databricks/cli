@@ -1,0 +1,89 @@
+
+>>> $CLI provider-providers create --help
+Create a provider.
+  
+  Create a provider
+
+Usage:
+  databricks provider-providers create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-providers delete --help
+Delete provider.
+  
+  Delete provider
+
+Usage:
+  databricks provider-providers delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-providers get --help
+Get provider.
+  
+  Get provider profile
+
+Usage:
+  databricks provider-providers get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-providers list --help
+List providers.
+  
+  List provider profiles for account.
+
+Usage:
+  databricks provider-providers list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-providers update --help
+Update provider.
+  
+  Update provider profile
+
+Usage:
+  databricks provider-providers update ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

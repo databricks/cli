@@ -1,0 +1,118 @@
+
+>>> $CLI account encryption-keys create --help
+Create encryption key configuration.
+  
+  Creates a customer-managed key configuration object for an account, specified
+  by ID. This operation uploads a reference to a customer-managed key to
+  Databricks. If the key is assigned as a workspace's customer-managed key for
+  managed services, Databricks uses the key to encrypt the workspaces notebooks
+  and secrets in the control plane, in addition to Databricks SQL queries and
+  query history. If it is specified as a workspace's customer-managed key for
+  workspace storage, the key encrypts the workspace's root S3 bucket (which
+  contains the workspace's root DBFS and system data) and, optionally, cluster
+  EBS volume data.
+  
+  **Important**: Customer-managed keys are supported only for some deployment
+  types, subscription types, and AWS regions that currently support creation of
+  Databricks workspaces.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform or on a select custom plan that allows multiple workspaces per
+  account.
+
+Usage:
+  databricks account encryption-keys create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account encryption-keys delete --help
+Delete encryption key configuration.
+  
+  Deletes a customer-managed key configuration object for an account. You cannot
+  delete a configuration that is associated with a running workspace.
+
+  Arguments:
+    CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.
+
+Usage:
+  databricks account encryption-keys delete CUSTOMER_MANAGED_KEY_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account encryption-keys get --help
+Get encryption key configuration.
+  
+  Gets a customer-managed key configuration object for an account, specified by
+  ID. This operation uploads a reference to a customer-managed key to
+  Databricks. If assigned as a workspace's customer-managed key for managed
+  services, Databricks uses the key to encrypt the workspaces notebooks and
+  secrets in the control plane, in addition to Databricks SQL queries and query
+  history. If it is specified as a workspace's customer-managed key for storage,
+  the key encrypts the workspace's root S3 bucket (which contains the
+  workspace's root DBFS and system data) and, optionally, cluster EBS volume
+  data.
+  
+  **Important**: Customer-managed keys are supported only for some deployment
+  types, subscription types, and AWS regions.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.",
+
+  Arguments:
+    CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.
+
+Usage:
+  databricks account encryption-keys get CUSTOMER_MANAGED_KEY_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account encryption-keys list --help
+Get all encryption key configurations.
+  
+  Gets all customer-managed key configuration objects for an account. If the key
+  is specified as a workspace's managed services customer-managed key,
+  Databricks uses the key to encrypt the workspace's notebooks and secrets in
+  the control plane, in addition to Databricks SQL queries and query history. If
+  the key is specified as a workspace's storage customer-managed key, the key is
+  used to encrypt the workspace's root S3 bucket and optionally can encrypt
+  cluster EBS volumes data in the data plane.
+  
+  **Important**: Customer-managed keys are supported only for some deployment
+  types, subscription types, and AWS regions.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.
+
+Usage:
+  databricks account encryption-keys list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

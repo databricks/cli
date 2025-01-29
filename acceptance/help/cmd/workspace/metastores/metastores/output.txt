@@ -1,0 +1,227 @@
+
+>>> $CLI metastores assign --help
+Create an assignment.
+  
+  Creates a new metastore assignment. If an assignment for the same
+  __workspace_id__ exists, it will be overwritten by the new __metastore_id__
+  and __default_catalog_name__. The caller must be an account admin.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.
+    METASTORE_ID: The unique ID of the metastore.
+    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore. This field is depracted.
+      Please use "Default Namespace API" to configure the default catalog for a
+      Databricks workspace.
+
+Usage:
+  databricks metastores assign WORKSPACE_ID METASTORE_ID DEFAULT_CATALOG_NAME [flags]
+
+Flags:
+  -h, --help        help for assign
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores create --help
+Create a metastore.
+  
+  Creates a new metastore based on a provided name and optional storage root
+  path. By default (if the __owner__ field is not set), the owner of the new
+  metastore is the user calling the __createMetastore__ API. If the __owner__
+  field is set to the empty string (**""**), the ownership is assigned to the
+  System User instead.
+
+  Arguments:
+    NAME: The user-specified name of the metastore.
+
+Usage:
+  databricks metastores create NAME [flags]
+
+Flags:
+  -h, --help                  help for create
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --region string         Cloud region which the metastore serves (e.g., us-west-2, westus).
+      --storage-root string   The storage root URL for metastore.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores current --help
+Get metastore assignment for workspace.
+  
+  Gets the metastore assignment for the workspace being accessed.
+
+Usage:
+  databricks metastores current [flags]
+
+Flags:
+  -h, --help   help for current
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores delete --help
+Delete a metastore.
+  
+  Deletes a metastore. The caller must be a metastore admin.
+
+  Arguments:
+    ID: Unique ID of the metastore.
+
+Usage:
+  databricks metastores delete ID [flags]
+
+Flags:
+      --force   Force deletion even if the metastore is not empty.
+  -h, --help    help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores get --help
+Get a metastore.
+  
+  Gets a metastore that matches the supplied ID. The caller must be a metastore
+  admin to retrieve this info.
+
+  Arguments:
+    ID: Unique ID of the metastore.
+
+Usage:
+  databricks metastores get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores list --help
+List metastores.
+  
+  Gets an array of the available metastores (as __MetastoreInfo__ objects). The
+  caller must be an admin to retrieve this info. There is no guarantee of a
+  specific ordering of the elements in the array.
+
+Usage:
+  databricks metastores list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores summary --help
+Get a metastore summary.
+  
+  Gets information about a metastore. This summary includes the storage
+  credential, the cloud vendor, the cloud region, and the global metastore ID.
+
+Usage:
+  databricks metastores summary [flags]
+
+Flags:
+  -h, --help   help for summary
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores unassign --help
+Delete an assignment.
+  
+  Deletes a metastore assignment. The caller must be an account administrator.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.
+    METASTORE_ID: Query for the ID of the metastore to delete.
+
+Usage:
+  databricks metastores unassign WORKSPACE_ID METASTORE_ID [flags]
+
+Flags:
+  -h, --help   help for unassign
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores update --help
+Update a metastore.
+  
+  Updates information for a specific metastore. The caller must be a metastore
+  admin. If the __owner__ field is set to the empty string (**""**), the
+  ownership is updated to the System User.
+
+  Arguments:
+    ID: Unique ID of the metastore.
+
+Usage:
+  databricks metastores update ID [flags]
+
+Flags:
+      --delta-sharing-organization-name string                  The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.
+      --delta-sharing-recipient-token-lifetime-in-seconds int   The lifetime of delta sharing recipient token in seconds.
+      --delta-sharing-scope UpdateMetastoreDeltaSharingScope    The scope of Delta Sharing enabled for the metastore. Supported values: [INTERNAL, INTERNAL_AND_EXTERNAL]
+  -h, --help                                                    help for update
+      --json JSON                                               either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string                                         New name for the metastore.
+      --owner string                                            The owner of the metastore.
+      --privilege-model-version string                          Privilege model version of the metastore, of the form major.minor (e.g., 1.0).
+      --storage-root-credential-id string                       UUID of storage credential to access the metastore storage_root.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI metastores update-assignment --help
+Update an assignment.
+  
+  Updates a metastore assignment. This operation can be used to update
+  __metastore_id__ or __default_catalog_name__ for a specified Workspace, if the
+  Workspace is already assigned a metastore. The caller must be an account admin
+  to update __metastore_id__; otherwise, the caller can be a Workspace admin.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.
+
+Usage:
+  databricks metastores update-assignment WORKSPACE_ID [flags]
+
+Flags:
+      --default-catalog-name string   The name of the default catalog in the metastore.
+  -h, --help                          help for update-assignment
+      --json JSON                     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --metastore-id string           The unique ID of the metastore.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,7 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI service-principals create --help
+trace $CLI service-principals delete --help
+trace $CLI service-principals get --help
+trace $CLI service-principals list --help
+trace $CLI service-principals patch --help
+trace $CLI service-principals update --help

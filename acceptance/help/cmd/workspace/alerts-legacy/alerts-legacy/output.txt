@@ -1,0 +1,119 @@
+
+>>> $CLI alerts-legacy create --help
+Create an alert.
+  
+  Creates an alert. An alert is a Databricks SQL object that periodically runs a
+  query, evaluates a condition of its result, and notifies users or notification
+  destinations if the condition was met.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/create instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks alerts-legacy create [flags]
+
+Flags:
+  -h, --help            help for create
+      --json JSON       either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --parent string   The identifier of the workspace folder containing the object.
+      --rearm int       Number of seconds after being triggered before the alert rearms itself and can be triggered again.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI alerts-legacy delete --help
+Delete an alert.
+  
+  Deletes an alert. Deleted alerts are no longer accessible and cannot be
+  restored. **Note**: Unlike queries and dashboards, alerts cannot be moved to
+  the trash.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/delete instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks alerts-legacy delete ALERT_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI alerts-legacy get --help
+Get an alert.
+  
+  Gets an alert.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/get instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks alerts-legacy get ALERT_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI alerts-legacy list --help
+Get alerts.
+  
+  Gets a list of alerts.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/list instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks alerts-legacy list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI alerts-legacy update --help
+Update an alert.
+  
+  Updates an alert.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/update instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks alerts-legacy update ALERT_ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --rearm int   Number of seconds after being triggered before the alert rearms itself and can be triggered again.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

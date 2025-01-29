@@ -1,0 +1,5 @@
+
+>>> $CLI statement-execution cancel-execution --help
+Error: unknown command "statement-execution" for "databricks"
+
+Exit code: 1

@@ -1,0 +1,101 @@
+
+>>> $CLI account custom-app-integration create --help
+Create Custom OAuth App Integration.
+  
+  Create Custom OAuth App Integration.
+  
+  You can retrieve the custom OAuth app integration via
+  :method:CustomAppIntegration/get.
+
+Usage:
+  databricks account custom-app-integration create [flags]
+
+Flags:
+      --confidential   This field indicates whether an OAuth client secret is required to authenticate this client.
+  -h, --help           help for create
+      --json JSON      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string    Name of the custom OAuth app.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account custom-app-integration delete --help
+Delete Custom OAuth App Integration.
+  
+  Delete an existing Custom OAuth App Integration. You can retrieve the custom
+  OAuth app integration via :method:CustomAppIntegration/get.
+
+Usage:
+  databricks account custom-app-integration delete INTEGRATION_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account custom-app-integration get --help
+Get OAuth Custom App Integration.
+  
+  Gets the Custom OAuth App Integration for the given integration id.
+
+  Arguments:
+    INTEGRATION_ID: The OAuth app integration ID.
+
+Usage:
+  databricks account custom-app-integration get INTEGRATION_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account custom-app-integration list --help
+Get custom oauth app integrations.
+  
+  Get the list of custom OAuth app integrations for the specified Databricks
+  account
+
+Usage:
+  databricks account custom-app-integration list [flags]
+
+Flags:
+  -h, --help                       help for list
+      --include-creator-username   
+      --page-size int              
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account custom-app-integration update --help
+Updates Custom OAuth App Integration.
+  
+  Updates an existing custom OAuth App Integration. You can retrieve the custom
+  OAuth app integration via :method:CustomAppIntegration/get.
+
+Usage:
+  databricks account custom-app-integration update INTEGRATION_ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

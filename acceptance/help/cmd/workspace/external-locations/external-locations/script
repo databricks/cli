@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI external-locations create --help
+trace $CLI external-locations delete --help
+trace $CLI external-locations get --help
+trace $CLI external-locations list --help
+trace $CLI external-locations update --help

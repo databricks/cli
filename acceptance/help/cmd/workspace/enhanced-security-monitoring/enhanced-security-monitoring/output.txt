@@ -1,0 +1,5 @@
+
+>>> $CLI enhanced-security-monitoring get --help
+Error: unknown command "enhanced-security-monitoring" for "databricks"
+
+Exit code: 1

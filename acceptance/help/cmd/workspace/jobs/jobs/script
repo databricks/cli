@@ -1,0 +1,21 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI jobs cancel-all-runs --help
+trace $CLI jobs cancel-run --help
+trace $CLI jobs create --help
+trace $CLI jobs delete --help
+trace $CLI jobs delete-run --help
+trace $CLI jobs export-run --help
+trace $CLI jobs get --help
+trace $CLI jobs get-permission-levels --help
+trace $CLI jobs get-permissions --help
+trace $CLI jobs get-run --help
+trace $CLI jobs get-run-output --help
+trace $CLI jobs list --help
+trace $CLI jobs list-runs --help
+trace $CLI jobs repair-run --help
+trace $CLI jobs reset --help
+trace $CLI jobs run-now --help
+trace $CLI jobs set-permissions --help
+trace $CLI jobs submit --help
+trace $CLI jobs update --help
+trace $CLI jobs update-permissions --help

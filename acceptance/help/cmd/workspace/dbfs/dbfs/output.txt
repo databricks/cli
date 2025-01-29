@@ -1,0 +1,9 @@
+
+>>> $CLI dbfs add-block --help
+Error: unknown command "dbfs" for "databricks"
+
+Did you mean this?
+	fs
+
+
+Exit code: 1

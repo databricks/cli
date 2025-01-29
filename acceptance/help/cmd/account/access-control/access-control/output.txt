@@ -1,0 +1,72 @@
+
+>>> $CLI account access-control get-assignable-roles-for-resource --help
+Get assignable roles for a resource.
+  
+  Gets all the roles that can be granted on an account level resource. A role is
+  grantable if the rule set on the resource can contain an access rule of the
+  role.
+
+  Arguments:
+    RESOURCE: The resource name for which assignable roles will be listed.
+
+Usage:
+  databricks account access-control get-assignable-roles-for-resource RESOURCE [flags]
+
+Flags:
+  -h, --help   help for get-assignable-roles-for-resource
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account access-control get-rule-set --help
+Get a rule set.
+  
+  Get a rule set by its name. A rule set is always attached to a resource and
+  contains a list of access rules on the said resource. Currently only a default
+  rule set for each resource is supported.
+
+  Arguments:
+    NAME: The ruleset name associated with the request.
+    ETAG: Etag used for versioning. The response is at least as fresh as the eTag
+      provided. Etag is used for optimistic concurrency control as a way to help
+      prevent simultaneous updates of a rule set from overwriting each other. It
+      is strongly suggested that systems make use of the etag in the read ->
+      modify -> write pattern to perform rule set updates in order to avoid race
+      conditions that is get an etag from a GET rule set request, and pass it
+      with the PUT update request to identify the rule set version you are
+      updating.
+
+Usage:
+  databricks account access-control get-rule-set NAME ETAG [flags]
+
+Flags:
+  -h, --help   help for get-rule-set
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account access-control update-rule-set --help
+Update a rule set.
+  
+  Replace the rules of a rule set. First, use get to read the current version of
+  the rule set before modifying it. This pattern helps prevent conflicts between
+  concurrent updates.
+
+Usage:
+  databricks account access-control update-rule-set [flags]
+
+Flags:
+  -h, --help        help for update-rule-set
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

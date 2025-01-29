@@ -1,0 +1,3 @@
+script: line 65: syntax error near unexpected token `)'
+
+Exit code: 2

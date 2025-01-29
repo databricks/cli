@@ -1,0 +1,131 @@
+
+>>> $CLI groups create --help
+Create a new group.
+  
+  Creates a group in the Databricks workspace with a unique name, using the
+  supplied group details.
+
+Usage:
+  databricks groups create [flags]
+
+Flags:
+      --display-name string   String that represents a human-readable group name.
+      --external-id string    
+  -h, --help                  help for create
+      --id string             Databricks group ID.
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI groups delete --help
+Delete a group.
+  
+  Deletes a group from the Databricks workspace.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks workspace.
+
+Usage:
+  databricks groups delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI groups get --help
+Get group details.
+  
+  Gets the information for a specific group in the Databricks workspace.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks workspace.
+
+Usage:
+  databricks groups get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI groups list --help
+List group details.
+  
+  Gets all details of the groups associated with the Databricks workspace.
+
+Usage:
+  databricks groups list [flags]
+
+Flags:
+      --attributes string            Comma-separated list of attributes to return in response.
+      --count int                    Desired number of results per page.
+      --excluded-attributes string   Comma-separated list of attributes to exclude in response.
+      --filter string                Query by which the results have to be filtered.
+  -h, --help                         help for list
+      --sort-by string               Attribute to sort the results.
+      --sort-order ListSortOrder     The order to sort the results. Supported values: [ascending, descending]
+      --start-index int              Specifies the index of the first result.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI groups patch --help
+Update group details.
+  
+  Partially updates the details of a group.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks workspace.
+
+Usage:
+  databricks groups patch ID [flags]
+
+Flags:
+  -h, --help        help for patch
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI groups update --help
+Replace a group.
+  
+  Updates the details of a group by replacing the entire group entity.
+
+  Arguments:
+    ID: Databricks group ID
+
+Usage:
+  databricks groups update ID [flags]
+
+Flags:
+      --display-name string   String that represents a human-readable group name.
+      --external-id string    
+  -h, --help                  help for update
+      --id string             Databricks group ID.
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account disable-legacy-features delete --help
+trace $CLI account disable-legacy-features get --help
+trace $CLI account disable-legacy-features update --help

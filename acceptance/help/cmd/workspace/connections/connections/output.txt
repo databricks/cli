@@ -1,0 +1,106 @@
+
+>>> $CLI connections create --help
+Create a connection.
+  
+  Creates a new connection
+  
+  Creates a new connection to an external data source. It allows users to
+  specify connection details and configurations for interaction with the
+  external server.
+
+Usage:
+  databricks connections create [flags]
+
+Flags:
+      --comment string   User-provided free-form text description.
+  -h, --help             help for create
+      --json JSON        either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --read-only        If the connection is read only.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI connections delete --help
+Delete a connection.
+  
+  Deletes the connection that matches the supplied name.
+
+  Arguments:
+    NAME: The name of the connection to be deleted.
+
+Usage:
+  databricks connections delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI connections get --help
+Get a connection.
+  
+  Gets a connection from it's name.
+
+  Arguments:
+    NAME: Name of the connection.
+
+Usage:
+  databricks connections get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI connections list --help
+List connections.
+  
+  List all connections.
+
+Usage:
+  databricks connections list [flags]
+
+Flags:
+  -h, --help                help for list
+      --max-results int     Maximum number of connections to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI connections update --help
+Update a connection.
+  
+  Updates the connection that matches the supplied name.
+
+  Arguments:
+    NAME: Name of the connection.
+
+Usage:
+  databricks connections update NAME [flags]
+
+Flags:
+  -h, --help              help for update
+      --json JSON         either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string   New name for the connection.
+      --owner string      Username of current owner of the connection.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

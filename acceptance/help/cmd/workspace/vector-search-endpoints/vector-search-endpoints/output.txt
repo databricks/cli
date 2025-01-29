@@ -1,0 +1,76 @@
+
+>>> $CLI vector-search-endpoints create-endpoint --help
+Create an endpoint.
+  
+  Create a new endpoint.
+
+  Arguments:
+    NAME: Name of endpoint
+    ENDPOINT_TYPE: Type of endpoint.
+
+Usage:
+  databricks vector-search-endpoints create-endpoint NAME ENDPOINT_TYPE [flags]
+
+Flags:
+  -h, --help               help for create-endpoint
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach ONLINE state
+      --timeout duration   maximum amount of time to reach ONLINE state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-endpoints delete-endpoint --help
+Delete an endpoint.
+
+  Arguments:
+    ENDPOINT_NAME: Name of the endpoint
+
+Usage:
+  databricks vector-search-endpoints delete-endpoint ENDPOINT_NAME [flags]
+
+Flags:
+  -h, --help   help for delete-endpoint
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-endpoints get-endpoint --help
+Get an endpoint.
+
+  Arguments:
+    ENDPOINT_NAME: Name of the endpoint
+
+Usage:
+  databricks vector-search-endpoints get-endpoint ENDPOINT_NAME [flags]
+
+Flags:
+  -h, --help   help for get-endpoint
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI vector-search-endpoints list-endpoints --help
+List all endpoints.
+
+Usage:
+  databricks vector-search-endpoints list-endpoints [flags]
+
+Flags:
+  -h, --help                help for list-endpoints
+      --page-token string   Token for pagination.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

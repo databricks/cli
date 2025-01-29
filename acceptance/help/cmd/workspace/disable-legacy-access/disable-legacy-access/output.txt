@@ -1,0 +1,5 @@
+
+>>> $CLI disable-legacy-access delete --help
+Error: unknown command "disable-legacy-access" for "databricks"
+
+Exit code: 1

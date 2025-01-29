@@ -1,0 +1,103 @@
+
+>>> $CLI account service-principal-federation-policy create --help
+Create service principal federation policy.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
+
+Usage:
+  databricks account service-principal-federation-policy create SERVICE_PRINCIPAL_ID [flags]
+
+Flags:
+      --description string   Description of the federation policy.
+  -h, --help                 help for create
+      --json JSON            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string          Resource name for the federation policy.
+      --policy-id string     The identifier for the federation policy.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account service-principal-federation-policy delete --help
+Delete service principal federation policy.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
+    POLICY_ID: The identifier for the federation policy.
+
+Usage:
+  databricks account service-principal-federation-policy delete SERVICE_PRINCIPAL_ID POLICY_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account service-principal-federation-policy get --help
+Get service principal federation policy.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
+    POLICY_ID: The identifier for the federation policy.
+
+Usage:
+  databricks account service-principal-federation-policy get SERVICE_PRINCIPAL_ID POLICY_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account service-principal-federation-policy list --help
+List service principal federation policies.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
+
+Usage:
+  databricks account service-principal-federation-policy list SERVICE_PRINCIPAL_ID [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account service-principal-federation-policy update --help
+Update service principal federation policy.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
+    POLICY_ID: The identifier for the federation policy.
+
+Usage:
+  databricks account service-principal-federation-policy update SERVICE_PRINCIPAL_ID POLICY_ID [flags]
+
+Flags:
+      --description string   Description of the federation policy.
+  -h, --help                 help for update
+      --json JSON            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string          Resource name for the federation policy.
+      --update-mask string   The field mask specifies which fields of the policy to update.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

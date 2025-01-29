@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account service-principal-federation-policy create --help
+trace $CLI account service-principal-federation-policy delete --help
+trace $CLI account service-principal-federation-policy get --help
+trace $CLI account service-principal-federation-policy list --help
+trace $CLI account service-principal-federation-policy update --help

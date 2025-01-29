@@ -1,0 +1,60 @@
+
+>>> $CLI query-visualizations create --help
+Add a visualization to a query.
+  
+  Adds a visualization to a query.
+
+Usage:
+  databricks query-visualizations create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI query-visualizations delete --help
+Remove a visualization.
+  
+  Removes a visualization.
+
+Usage:
+  databricks query-visualizations delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI query-visualizations update --help
+Update a visualization.
+  
+  Updates a visualization.
+
+  Arguments:
+    ID: 
+    UPDATE_MASK: Field mask is required to be passed into the PATCH request. Field mask
+      specifies which fields of the setting payload will be updated. The field
+      mask needs to be supplied as single string. To specify multiple fields in
+      the field mask, use comma as the separator (no space).
+
+Usage:
+  databricks query-visualizations update ID UPDATE_MASK [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,15 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI pipelines create --help
+trace $CLI pipelines delete --help
+trace $CLI pipelines get --help
+trace $CLI pipelines get-permission-levels --help
+trace $CLI pipelines get-permissions --help
+trace $CLI pipelines get-update --help
+trace $CLI pipelines list-pipeline-events --help
+trace $CLI pipelines list-pipelines --help
+trace $CLI pipelines list-updates --help
+trace $CLI pipelines set-permissions --help
+trace $CLI pipelines start-update --help
+trace $CLI pipelines stop --help
+trace $CLI pipelines update --help
+trace $CLI pipelines update-permissions --help

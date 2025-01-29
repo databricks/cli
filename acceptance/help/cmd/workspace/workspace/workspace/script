@@ -1,0 +1,11 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI workspace delete --help
+trace $CLI workspace export --help
+trace $CLI workspace get-permission-levels --help
+trace $CLI workspace get-permissions --help
+trace $CLI workspace get-status --help
+trace $CLI workspace import --help
+trace $CLI workspace list --help
+trace $CLI workspace mkdirs --help
+trace $CLI workspace set-permissions --help
+trace $CLI workspace update-permissions --help

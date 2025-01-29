@@ -1,0 +1,5 @@
+
+>>> $CLI compliance-security-profile get --help
+Error: unknown command "compliance-security-profile" for "databricks"
+
+Exit code: 1

@@ -1,0 +1,7 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account groups create --help
+trace $CLI account groups delete --help
+trace $CLI account groups get --help
+trace $CLI account groups list --help
+trace $CLI account groups patch --help
+trace $CLI account groups update --help

@@ -1,0 +1,2 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI access-control check-policy --help

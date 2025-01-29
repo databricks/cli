@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI query-visualizations-legacy create --help
+trace $CLI query-visualizations-legacy delete --help
+trace $CLI query-visualizations-legacy update --help

@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI provider-providers create --help
+trace $CLI provider-providers delete --help
+trace $CLI provider-providers get --help
+trace $CLI provider-providers list --help
+trace $CLI provider-providers update --help

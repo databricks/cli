@@ -1,0 +1,5 @@
+
+>>> $CLI disable-legacy-dbfs delete --help
+Error: unknown command "disable-legacy-dbfs" for "databricks"
+
+Exit code: 1

@@ -1,0 +1,120 @@
+
+>>> $CLI queries create --help
+Create a query.
+  
+  Creates a query.
+
+Usage:
+  databricks queries create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries delete --help
+Delete a query.
+  
+  Moves a query to the trash. Trashed queries immediately disappear from
+  searches and list views, and cannot be used for alerts. You can restore a
+  trashed query through the UI. A trashed query is permanently deleted after 30
+  days.
+
+Usage:
+  databricks queries delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries get --help
+Get a query.
+  
+  Gets a query.
+
+Usage:
+  databricks queries get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries list --help
+List queries.
+  
+  Gets a list of queries accessible to the user, ordered by creation time.
+  **Warning:** Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.
+
+Usage:
+  databricks queries list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries list-visualizations --help
+List visualizations on a query.
+  
+  Gets a list of visualizations on a query.
+
+Usage:
+  databricks queries list-visualizations ID [flags]
+
+Flags:
+  -h, --help                help for list-visualizations
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries update --help
+Update a query.
+  
+  Updates a query.
+
+  Arguments:
+    ID: 
+    UPDATE_MASK: Field mask is required to be passed into the PATCH request. Field mask
+      specifies which fields of the setting payload will be updated. The field
+      mask needs to be supplied as single string. To specify multiple fields in
+      the field mask, use comma as the separator (no space).
+
+Usage:
+  databricks queries update ID UPDATE_MASK [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

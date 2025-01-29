@@ -1,0 +1,19 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI serving-endpoints build-logs --help
+trace $CLI serving-endpoints create --help
+trace $CLI serving-endpoints delete --help
+trace $CLI serving-endpoints export-metrics --help
+trace $CLI serving-endpoints get --help
+trace $CLI serving-endpoints get-open-api --help
+trace $CLI serving-endpoints get-permission-levels --help
+trace $CLI serving-endpoints get-permissions --help
+trace $CLI serving-endpoints http-request --help
+trace $CLI serving-endpoints list --help
+trace $CLI serving-endpoints logs --help
+trace $CLI serving-endpoints patch --help
+trace $CLI serving-endpoints put --help
+trace $CLI serving-endpoints put-ai-gateway --help
+trace $CLI serving-endpoints query --help
+trace $CLI serving-endpoints set-permissions --help
+trace $CLI serving-endpoints update-config --help
+trace $CLI serving-endpoints update-permissions --help

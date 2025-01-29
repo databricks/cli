@@ -1,0 +1,308 @@
+
+>>> $CLI pipelines create --help
+Create a pipeline.
+  
+  Creates a new data processing pipeline based on the requested configuration.
+  If successful, this method returns the ID of the new pipeline.
+
+Usage:
+  databricks pipelines create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines delete --help
+Delete a pipeline.
+  
+  Deletes a pipeline.
+
+Usage:
+  databricks pipelines delete PIPELINE_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines get --help
+Get a pipeline.
+
+Usage:
+  databricks pipelines get PIPELINE_ID [flags]
+
+Flags:
+  -h, --help               help for get
+      --no-wait            do not wait to reach RUNNING state
+      --timeout duration   maximum amount of time to reach RUNNING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines get-permission-levels --help
+Get pipeline permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.
+
+Usage:
+  databricks pipelines get-permission-levels PIPELINE_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines get-permissions --help
+Get pipeline permissions.
+  
+  Gets the permissions of a pipeline. Pipelines can inherit permissions from
+  their root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.
+
+Usage:
+  databricks pipelines get-permissions PIPELINE_ID [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines get-update --help
+Get a pipeline update.
+  
+  Gets an update from an active pipeline.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline.
+    UPDATE_ID: The ID of the update.
+
+Usage:
+  databricks pipelines get-update PIPELINE_ID UPDATE_ID [flags]
+
+Flags:
+  -h, --help   help for get-update
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines list-pipeline-events --help
+List pipeline events.
+  
+  Retrieves events for a pipeline.
+
+Usage:
+  databricks pipelines list-pipeline-events PIPELINE_ID [flags]
+
+Flags:
+      --filter string       Criteria to select a subset of results, expressed using a SQL-like syntax.
+  -h, --help                help for list-pipeline-events
+      --max-results int     Max number of entries to return in a single page.
+      --page-token string   Page token returned by previous call.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines list-pipelines --help
+List pipelines.
+  
+  Lists pipelines defined in the Delta Live Tables system.
+
+Usage:
+  databricks pipelines list-pipelines [flags]
+
+Flags:
+      --filter string       Select a subset of results based on the specified criteria.
+  -h, --help                help for list-pipelines
+      --max-results int     The maximum number of entries to return in a single page.
+      --page-token string   Page token returned by previous call.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines list-updates --help
+List pipeline updates.
+  
+  List updates for an active pipeline.
+
+  Arguments:
+    PIPELINE_ID: The pipeline to return updates for.
+
+Usage:
+  databricks pipelines list-updates PIPELINE_ID [flags]
+
+Flags:
+  -h, --help                     help for list-updates
+      --max-results int          Max number of entries to return in a single page.
+      --page-token string        Page token returned by previous call.
+      --until-update-id string   If present, returns updates until and including this update_id.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines set-permissions --help
+Set pipeline permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.
+
+Usage:
+  databricks pipelines set-permissions PIPELINE_ID [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines start-update --help
+Start a pipeline.
+  
+  Starts a new update for the pipeline. If there is already an active update for
+  the pipeline, the request will fail and the active update will remain running.
+
+Usage:
+  databricks pipelines start-update PIPELINE_ID [flags]
+
+Flags:
+      --cause StartUpdateCause   . Supported values: [
+                                   API_CALL,
+                                   JOB_TASK,
+                                   RETRY_ON_FAILURE,
+                                   SCHEMA_CHANGE,
+                                   SERVICE_UPGRADE,
+                                   USER_ACTION,
+                                 ]
+      --full-refresh             If true, this update will reset all tables before running.
+  -h, --help                     help for start-update
+      --json JSON                either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --validate-only            If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines stop --help
+Stop a pipeline.
+  
+  Stops the pipeline by canceling the active update. If there is no active
+  update for the pipeline, this request is a no-op.
+
+Usage:
+  databricks pipelines stop PIPELINE_ID [flags]
+
+Flags:
+  -h, --help               help for stop
+      --no-wait            do not wait to reach IDLE state
+      --timeout duration   maximum amount of time to reach IDLE state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI pipelines update --help
+Edit a pipeline.
+  
+  Updates a pipeline with the supplied configuration.
+
+  Arguments:
+    PIPELINE_ID: Unique identifier for this pipeline.
+
+Usage:
+  databricks pipelines update PIPELINE_ID [flags]
+
+Flags:
+      --allow-duplicate-names        If false, deployment will fail if name has changed and conflicts the name of another pipeline.
+      --budget-policy-id string      Budget policy of this pipeline.
+      --catalog string               A catalog in Unity Catalog to publish data from this pipeline to.
+      --channel string               DLT Release Channel that specifies which version to use.
+      --continuous                   Whether the pipeline is continuous or triggered.
+      --development                  Whether the pipeline is in Development mode.
+      --edition string               Pipeline product edition.
+      --expected-last-modified int   If present, the last-modified time of the pipeline settings before the edit.
+  -h, --help                         help for update
+      --id string                    Unique identifier for this pipeline.
+      --json JSON                    either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string                  Friendly identifier for this pipeline.
+      --photon                       Whether Photon is enabled for this pipeline.
+      --pipeline-id string           Unique identifier for this pipeline.
+      --schema string                The default schema (database) where tables are read from or published to.
+      --serverless                   Whether serverless compute is enabled for this pipeline.
+      --storage string               DBFS root directory for storing checkpoints and tables.
+      --target string                Target schema (database) to add tables in this pipeline to.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+
+>>> $CLI pipelines update-permissions --help
+Update pipeline permissions.
+  
+  Updates the permissions on a pipeline. Pipelines can inherit permissions from
+  their root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.
+
+Usage:
+  databricks pipelines update-permissions PIPELINE_ID [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

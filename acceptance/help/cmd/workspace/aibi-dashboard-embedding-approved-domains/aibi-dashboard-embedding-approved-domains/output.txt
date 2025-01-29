@@ -1,0 +1,5 @@
+
+>>> $CLI aibi-dashboard-embedding-approved-domains delete --help
+Error: unknown command "aibi-dashboard-embedding-approved-domains" for "databricks"
+
+Exit code: 1

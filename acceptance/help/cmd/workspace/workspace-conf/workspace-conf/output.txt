@@ -1,0 +1,36 @@
+
+>>> $CLI workspace-conf get-status --help
+Check configuration status.
+  
+  Gets the configuration status for a workspace.
+
+Usage:
+  databricks workspace-conf get-status KEYS [flags]
+
+Flags:
+  -h, --help   help for get-status
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace-conf set-status --help
+Enable/disable features.
+  
+  Sets the configuration status for a workspace, including enabling or disabling
+  it.
+
+Usage:
+  databricks workspace-conf set-status [flags]
+
+Flags:
+  -h, --help        help for set-status
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

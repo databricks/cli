@@ -1,0 +1,5 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account vpc-endpoints create --help
+trace $CLI account vpc-endpoints delete --help
+trace $CLI account vpc-endpoints get --help
+trace $CLI account vpc-endpoints list --help

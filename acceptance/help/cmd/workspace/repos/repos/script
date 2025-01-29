@@ -1,0 +1,10 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI repos create --help
+trace $CLI repos delete --help
+trace $CLI repos get --help
+trace $CLI repos get-permission-levels --help
+trace $CLI repos get-permissions --help
+trace $CLI repos list --help
+trace $CLI repos set-permissions --help
+trace $CLI repos update --help
+trace $CLI repos update-permissions --help

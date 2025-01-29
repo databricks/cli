@@ -1,0 +1,19 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI lakeview create --help
+trace $CLI lakeview create-schedule --help
+trace $CLI lakeview create-subscription --help
+trace $CLI lakeview delete-schedule --help
+trace $CLI lakeview delete-subscription --help
+trace $CLI lakeview get --help
+trace $CLI lakeview get-published --help
+trace $CLI lakeview get-schedule --help
+trace $CLI lakeview get-subscription --help
+trace $CLI lakeview list --help
+trace $CLI lakeview list-schedules --help
+trace $CLI lakeview list-subscriptions --help
+trace $CLI lakeview migrate --help
+trace $CLI lakeview publish --help
+trace $CLI lakeview trash --help
+trace $CLI lakeview unpublish --help
+trace $CLI lakeview update --help
+trace $CLI lakeview update-schedule --help

@@ -1,0 +1,63 @@
+
+>>> $CLI online-tables create --help
+Create an Online Table.
+  
+  Create a new Online Table.
+
+Usage:
+  databricks online-tables create [flags]
+
+Flags:
+  -h, --help               help for create
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string        Full three-part (catalog, schema, table) name of the table.
+      --no-wait            do not wait to reach ACTIVE state
+      --timeout duration   maximum amount of time to reach ACTIVE state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI online-tables delete --help
+Delete an Online Table.
+  
+  Delete an online table. Warning: This will delete all the data in the online
+  table. If the source Delta table was deleted or modified since this Online
+  Table was created, this will lose the data forever!
+
+  Arguments:
+    NAME: Full three-part (catalog, schema, table) name of the table.
+
+Usage:
+  databricks online-tables delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI online-tables get --help
+Get an Online Table.
+  
+  Get information about an existing online table and its status.
+
+  Arguments:
+    NAME: Full three-part (catalog, schema, table) name of the table.
+
+Usage:
+  databricks online-tables get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

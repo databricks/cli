@@ -1,0 +1,17 @@
+
+>>> $CLI current-user me --help
+Get current user info.
+  
+  Get details about the current method caller's identity.
+
+Usage:
+  databricks current-user me [flags]
+
+Flags:
+  -h, --help   help for me
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

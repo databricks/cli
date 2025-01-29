@@ -1,0 +1,124 @@
+
+>>> $CLI clean-room-assets create --help
+Create an asset.
+  
+  Create a clean room asset —share an asset like a notebook or table into the
+  clean room. For each UC asset that is added through this method, the clean
+  room owner must also have enough privilege on the asset to consume it. The
+  privilege must be maintained indefinitely for the clean room to be able to
+  access the asset. Typically, you should use a group as the clean room owner.
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room.
+
+Usage:
+  databricks clean-room-assets create CLEAN_ROOM_NAME [flags]
+
+Flags:
+      --asset-type CleanRoomAssetAssetType   The type of the asset. Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+  -h, --help                                 help for create
+      --json JSON                            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string                          A fully qualified name that uniquely identifies the asset within the clean room.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-room-assets delete --help
+Delete an asset.
+  
+  Delete a clean room asset - unshare/remove the asset from the clean room
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room.
+    ASSET_TYPE: The type of the asset.
+    ASSET_FULL_NAME: The fully qualified name of the asset, it is same as the name field in
+      CleanRoomAsset.
+
+Usage:
+  databricks clean-room-assets delete CLEAN_ROOM_NAME ASSET_TYPE ASSET_FULL_NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-room-assets get --help
+Get an asset.
+  
+  Get the details of a clean room asset by its type and full name.
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room.
+    ASSET_TYPE: The type of the asset.
+    ASSET_FULL_NAME: The fully qualified name of the asset, it is same as the name field in
+      CleanRoomAsset.
+
+Usage:
+  databricks clean-room-assets get CLEAN_ROOM_NAME ASSET_TYPE ASSET_FULL_NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-room-assets list --help
+List assets.
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room.
+
+Usage:
+  databricks clean-room-assets list CLEAN_ROOM_NAME [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-room-assets update --help
+Update an asset.
+  
+  Update a clean room asset. For example, updating the content of a notebook;
+  changing the shared partitions of a table; etc.
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room.
+    ASSET_TYPE: The type of the asset.
+    NAME: A fully qualified name that uniquely identifies the asset within the clean
+      room. This is also the name displayed in the clean room UI.
+      
+      For UC securable assets (tables, volumes, etc.), the format is
+      *shared_catalog*.*shared_schema*.*asset_name*
+      
+      For notebooks, the name is the notebook file name.
+
+Usage:
+  databricks clean-room-assets update CLEAN_ROOM_NAME ASSET_TYPE NAME [flags]
+
+Flags:
+      --asset-type CleanRoomAssetAssetType   The type of the asset. Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+  -h, --help                                 help for update
+      --json JSON                            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string                          A fully qualified name that uniquely identifies the asset within the clean room.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

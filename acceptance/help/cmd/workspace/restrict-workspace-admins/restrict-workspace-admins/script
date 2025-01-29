@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI restrict-workspace-admins delete --help
+trace $CLI restrict-workspace-admins get --help
+trace $CLI restrict-workspace-admins update --help

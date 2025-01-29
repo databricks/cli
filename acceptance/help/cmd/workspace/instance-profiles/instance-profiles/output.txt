@@ -1,0 +1,107 @@
+
+>>> $CLI instance-profiles add --help
+Register an instance profile.
+  
+  In the UI, you can select the instance profile when launching clusters. This
+  API is only available to admin users.
+
+  Arguments:
+    INSTANCE_PROFILE_ARN: The AWS ARN of the instance profile to register with Databricks. This
+      field is required.
+
+Usage:
+  databricks instance-profiles add INSTANCE_PROFILE_ARN [flags]
+
+Flags:
+  -h, --help                       help for add
+      --iam-role-arn string        The AWS IAM role ARN of the role associated with the instance profile.
+      --is-meta-instance-profile   Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.
+      --json JSON                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --skip-validation            By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-profiles edit --help
+Edit an instance profile.
+  
+  The only supported field to change is the optional IAM role ARN associated
+  with the instance profile. It is required to specify the IAM role ARN if both
+  of the following are true:
+  
+  * Your role name and instance profile name do not match. The name is the part
+  after the last slash in each ARN. * You want to use the instance profile with
+  [Databricks SQL Serverless].
+  
+  To understand where these fields are in the AWS console, see [Enable
+  serverless SQL warehouses].
+  
+  This API is only available to admin users.
+  
+  [Databricks SQL Serverless]: https://docs.databricks.com/sql/admin/serverless.html
+  [Enable serverless SQL warehouses]: https://docs.databricks.com/sql/admin/serverless.html
+
+  Arguments:
+    INSTANCE_PROFILE_ARN: The AWS ARN of the instance profile to register with Databricks. This
+      field is required.
+
+Usage:
+  databricks instance-profiles edit INSTANCE_PROFILE_ARN [flags]
+
+Flags:
+  -h, --help                       help for edit
+      --iam-role-arn string        The AWS IAM role ARN of the role associated with the instance profile.
+      --is-meta-instance-profile   Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.
+      --json JSON                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-profiles list --help
+List available instance profiles.
+  
+  List the instance profiles that the calling user can use to launch a cluster.
+  
+  This API is available to all users.
+
+Usage:
+  databricks instance-profiles list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-profiles remove --help
+Remove the instance profile.
+  
+  Remove the instance profile with the provided ARN. Existing clusters with this
+  instance profile will continue to function.
+  
+  This API is only accessible to admin users.
+
+  Arguments:
+    INSTANCE_PROFILE_ARN: The ARN of the instance profile to remove. This field is required.
+
+Usage:
+  databricks instance-profiles remove INSTANCE_PROFILE_ARN [flags]
+
+Flags:
+  -h, --help        help for remove
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

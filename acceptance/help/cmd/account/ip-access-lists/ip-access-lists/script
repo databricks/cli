@@ -1,0 +1,7 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account ip-access-lists create --help
+trace $CLI account ip-access-lists delete --help
+trace $CLI account ip-access-lists get --help
+trace $CLI account ip-access-lists list --help
+trace $CLI account ip-access-lists replace --help
+trace $CLI account ip-access-lists update --help

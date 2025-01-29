@@ -1,0 +1,64 @@
+
+>>> $CLI account service-principal-secrets create --help
+Create service principal secret.
+  
+  Create a secret for the given service principal.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal ID.
+
+Usage:
+  databricks account service-principal-secrets create SERVICE_PRINCIPAL_ID [flags]
+
+Flags:
+  -h, --help   help for create
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account service-principal-secrets delete --help
+Delete service principal secret.
+  
+  Delete a secret from the given service principal.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal ID.
+    SECRET_ID: The secret ID.
+
+Usage:
+  databricks account service-principal-secrets delete SERVICE_PRINCIPAL_ID SECRET_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account service-principal-secrets list --help
+List service principal secrets.
+  
+  List all secrets associated with the given service principal. This operation
+  only returns information about the secrets themselves and does not include the
+  secret values.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal ID.
+
+Usage:
+  databricks account service-principal-secrets list SERVICE_PRINCIPAL_ID [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-token string   An opaque page token which was the next_page_token in the response of the previous request to list the secrets for this service principal.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

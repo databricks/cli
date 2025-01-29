@@ -1,0 +1,5 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account workspace-assignment delete --help
+trace $CLI account workspace-assignment get --help
+trace $CLI account workspace-assignment list --help
+trace $CLI account workspace-assignment update --help

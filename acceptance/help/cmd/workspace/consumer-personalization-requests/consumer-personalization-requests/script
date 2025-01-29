@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI consumer-personalization-requests create --help
+trace $CLI consumer-personalization-requests get --help
+trace $CLI consumer-personalization-requests list --help

@@ -1,0 +1,61 @@
+
+>>> $CLI consumer-personalization-requests create --help
+Create a personalization request.
+  
+  Create a personalization request for a listing.
+
+Usage:
+  databricks consumer-personalization-requests create LISTING_ID [flags]
+
+Flags:
+      --comment string                             
+      --company string                             
+      --first-name string                          
+  -h, --help                                       help for create
+      --is-from-lighthouse                         
+      --json JSON                                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --last-name string                           
+      --recipient-type DeltaSharingRecipientType   . Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-personalization-requests get --help
+Get the personalization request for a listing.
+  
+  Get the personalization request for a listing. Each consumer can make at
+  *most* one personalization request for a listing.
+
+Usage:
+  databricks consumer-personalization-requests get LISTING_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-personalization-requests list --help
+List all personalization requests.
+  
+  List personalization requests for a consumer across all listings.
+
+Usage:
+  databricks consumer-personalization-requests list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

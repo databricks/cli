@@ -1,0 +1,308 @@
+
+>>> $CLI apps create --help
+Create an app.
+  
+  Creates a new app.
+
+  Arguments:
+    NAME: The name of the app. The name must contain only lowercase alphanumeric
+      characters and hyphens. It must be unique within the workspace.
+
+Usage:
+  databricks apps create NAME [flags]
+
+Flags:
+      --description string   The description of the app.
+  -h, --help                 help for create
+      --json JSON            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-compute           If true, the app will not be started after creation.
+      --no-wait              do not wait to reach ACTIVE state
+      --timeout duration     maximum amount of time to reach ACTIVE state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps delete --help
+Delete an app.
+  
+  Deletes an app.
+
+  Arguments:
+    NAME: The name of the app.
+
+Usage:
+  databricks apps delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps deploy --help
+Create an app deployment.
+  
+  Creates an app deployment for the app with the supplied name.
+
+  Arguments:
+    APP_NAME: The name of the app.
+
+Usage:
+  databricks apps deploy APP_NAME [flags]
+
+Flags:
+      --deployment-id string      The unique id of the deployment.
+  -h, --help                      help for deploy
+      --json JSON                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --mode AppDeploymentMode    The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]
+      --no-wait                   do not wait to reach SUCCEEDED state
+      --source-code-path string   The workspace file system path of the source code used to create the app deployment.
+      --timeout duration          maximum amount of time to reach SUCCEEDED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps get --help
+Get an app.
+  
+  Retrieves information for the app with the supplied name.
+
+  Arguments:
+    NAME: The name of the app.
+
+Usage:
+  databricks apps get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps get-deployment --help
+Get an app deployment.
+  
+  Retrieves information for the app deployment with the supplied name and
+  deployment id.
+
+  Arguments:
+    APP_NAME: The name of the app.
+    DEPLOYMENT_ID: The unique id of the deployment.
+
+Usage:
+  databricks apps get-deployment APP_NAME DEPLOYMENT_ID [flags]
+
+Flags:
+  -h, --help   help for get-deployment
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps get-permission-levels --help
+Get app permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    APP_NAME: The app for which to get or manage permissions.
+
+Usage:
+  databricks apps get-permission-levels APP_NAME [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps get-permissions --help
+Get app permissions.
+  
+  Gets the permissions of an app. Apps can inherit permissions from their root
+  object.
+
+  Arguments:
+    APP_NAME: The app for which to get or manage permissions.
+
+Usage:
+  databricks apps get-permissions APP_NAME [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps list --help
+List apps.
+  
+  Lists all apps in the workspace.
+
+Usage:
+  databricks apps list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       Upper bound for items returned.
+      --page-token string   Pagination token to go to the next page of apps.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps list-deployments --help
+List app deployments.
+  
+  Lists all app deployments for the app with the supplied name.
+
+  Arguments:
+    APP_NAME: The name of the app.
+
+Usage:
+  databricks apps list-deployments APP_NAME [flags]
+
+Flags:
+  -h, --help                help for list-deployments
+      --page-size int       Upper bound for items returned.
+      --page-token string   Pagination token to go to the next page of apps.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps set-permissions --help
+Set app permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    APP_NAME: The app for which to get or manage permissions.
+
+Usage:
+  databricks apps set-permissions APP_NAME [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps start --help
+Start an app.
+  
+  Start the last active deployment of the app in the workspace.
+
+  Arguments:
+    NAME: The name of the app.
+
+Usage:
+  databricks apps start NAME [flags]
+
+Flags:
+  -h, --help               help for start
+      --no-wait            do not wait to reach ACTIVE state
+      --timeout duration   maximum amount of time to reach ACTIVE state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps stop --help
+Stop an app.
+  
+  Stops the active deployment of the app in the workspace.
+
+  Arguments:
+    NAME: The name of the app.
+
+Usage:
+  databricks apps stop NAME [flags]
+
+Flags:
+  -h, --help               help for stop
+      --no-wait            do not wait to reach STOPPED state
+      --timeout duration   maximum amount of time to reach STOPPED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps update --help
+Update an app.
+  
+  Updates the app with the supplied name.
+
+  Arguments:
+    NAME: The name of the app. The name must contain only lowercase alphanumeric
+      characters and hyphens. It must be unique within the workspace.
+
+Usage:
+  databricks apps update NAME [flags]
+
+Flags:
+      --description string   The description of the app.
+  -h, --help                 help for update
+      --json JSON            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI apps update-permissions --help
+Update app permissions.
+  
+  Updates the permissions on an app. Apps can inherit permissions from their
+  root object.
+
+  Arguments:
+    APP_NAME: The app for which to get or manage permissions.
+
+Usage:
+  databricks apps update-permissions APP_NAME [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

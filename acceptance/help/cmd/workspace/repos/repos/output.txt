@@ -1,0 +1,198 @@
+
+>>> $CLI repos create --help
+Create a repo.
+  
+  Creates a repo in the workspace and links it to the remote Git repo specified.
+  Note that repos created programmatically must be linked to a remote Git repo,
+  unlike repos created in the browser.
+
+  Arguments:
+    URL: URL of the Git repository to be linked.
+    PROVIDER: Git provider. This field is case-insensitive. The available Git providers
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
+      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
+      awsCodeCommit.
+
+Usage:
+  databricks repos create URL [PROVIDER] [flags]
+
+Flags:
+  -h, --help          help for create
+      --json JSON     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --path string   Desired path for the repo in the workspace.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI repos delete --help
+Delete a repo.
+  
+  Deletes the specified repo.
+
+  Arguments:
+    REPO_ID: The ID for the corresponding repo to delete.
+
+Usage:
+  databricks repos delete REPO_ID_OR_PATH [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI repos get --help
+Get a repo.
+  
+  Returns the repo with the given repo ID.
+
+  Arguments:
+    REPO_ID: ID of the Git folder (repo) object in the workspace.
+
+Usage:
+  databricks repos get REPO_ID_OR_PATH [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI repos get-permission-levels --help
+Get repo permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    REPO_ID: The repo for which to get or manage permissions.
+
+Usage:
+  databricks repos get-permission-levels REPO_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI repos get-permissions --help
+Get repo permissions.
+  
+  Gets the permissions of a repo. Repos can inherit permissions from their root
+  object.
+
+  Arguments:
+    REPO_ID: The repo for which to get or manage permissions.
+
+Usage:
+  databricks repos get-permissions REPO_ID [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI repos list --help
+Get repos.
+  
+  Returns repos that the calling user has Manage permissions on. Use
+  next_page_token to iterate through additional pages.
+
+Usage:
+  databricks repos list [flags]
+
+Flags:
+  -h, --help                     help for list
+      --next-page-token string   Token used to get the next page of results.
+      --path-prefix string       Filters repos that have paths starting with the given path prefix.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI repos set-permissions --help
+Set repo permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    REPO_ID: The repo for which to get or manage permissions.
+
+Usage:
+  databricks repos set-permissions REPO_ID [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI repos update --help
+Update a repo.
+  
+  Updates the repo to a different branch or tag, or updates the repo to the
+  latest commit on the same branch.
+
+  Arguments:
+    REPO_ID: ID of the Git folder (repo) object in the workspace.
+
+Usage:
+  databricks repos update REPO_ID_OR_PATH [flags]
+
+Flags:
+      --branch string   Branch that the local version of the repo is checked out to.
+  -h, --help            help for update
+      --json JSON       either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --tag string      Tag that the local version of the repo is checked out to.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI repos update-permissions --help
+Update repo permissions.
+  
+  Updates the permissions on a repo. Repos can inherit permissions from their
+  root object.
+
+  Arguments:
+    REPO_ID: The repo for which to get or manage permissions.
+
+Usage:
+  databricks repos update-permissions REPO_ID [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,118 @@
+
+>>> $CLI account storage-credentials create --help
+Create a storage credential.
+  
+  Creates a new storage credential. The request object is specific to the cloud:
+  
+  * **AwsIamRole** for AWS credentials * **AzureServicePrincipal** for Azure
+  credentials * **GcpServiceAcountKey** for GCP credentials.
+  
+  The caller must be a metastore admin and have the
+  **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+
+Usage:
+  databricks account storage-credentials create METASTORE_ID [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account storage-credentials delete --help
+Delete a storage credential.
+  
+  Deletes a storage credential from the metastore. The caller must be an owner
+  of the storage credential.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.
+
+Usage:
+  databricks account storage-credentials delete METASTORE_ID STORAGE_CREDENTIAL_NAME [flags]
+
+Flags:
+      --force   Force deletion even if the Storage Credential is not empty.
+  -h, --help    help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account storage-credentials get --help
+Gets the named storage credential.
+  
+  Gets a storage credential from the metastore. The caller must be a metastore
+  admin, the owner of the storage credential, or have a level of privilege on
+  the storage credential.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.
+
+Usage:
+  databricks account storage-credentials get METASTORE_ID STORAGE_CREDENTIAL_NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account storage-credentials list --help
+Get all storage credentials assigned to a metastore.
+  
+  Gets a list of all storage credentials that have been assigned to given
+  metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+
+Usage:
+  databricks account storage-credentials list METASTORE_ID [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account storage-credentials update --help
+Updates a storage credential.
+  
+  Updates a storage credential on the metastore. The caller must be the owner of
+  the storage credential. If the caller is a metastore admin, only the __owner__
+  credential can be changed.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.
+
+Usage:
+  databricks account storage-credentials update METASTORE_ID STORAGE_CREDENTIAL_NAME [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

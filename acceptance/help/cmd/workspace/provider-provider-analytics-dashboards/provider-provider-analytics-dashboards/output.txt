@@ -1,0 +1,74 @@
+
+>>> $CLI provider-provider-analytics-dashboards create --help
+Create provider analytics dashboard.
+  
+  Create provider analytics dashboard. Returns Marketplace specific id. Not to
+  be confused with the Lakeview dashboard id.
+
+Usage:
+  databricks provider-provider-analytics-dashboards create [flags]
+
+Flags:
+  -h, --help   help for create
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-provider-analytics-dashboards get --help
+Get provider analytics dashboard.
+  
+  Get provider analytics dashboard.
+
+Usage:
+  databricks provider-provider-analytics-dashboards get [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-provider-analytics-dashboards get-latest-version --help
+Get latest version of provider analytics dashboard.
+  
+  Get latest version of provider analytics dashboard.
+
+Usage:
+  databricks provider-provider-analytics-dashboards get-latest-version [flags]
+
+Flags:
+  -h, --help   help for get-latest-version
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-provider-analytics-dashboards update --help
+Update provider analytics dashboard.
+  
+  Update provider analytics dashboard.
+
+  Arguments:
+    ID: id is immutable property and can't be updated.
+
+Usage:
+  databricks provider-provider-analytics-dashboards update ID [flags]
+
+Flags:
+  -h, --help          help for update
+      --json JSON     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --version int   this is the version of the dashboard template we want to update our user to current expectation is that it should be equal to latest version of the dashboard template.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

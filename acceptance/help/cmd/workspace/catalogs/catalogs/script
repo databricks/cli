@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI catalogs create --help
+trace $CLI catalogs delete --help
+trace $CLI catalogs get --help
+trace $CLI catalogs list --help
+trace $CLI catalogs update --help

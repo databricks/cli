@@ -1,0 +1,3 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI workspace-conf get-status --help
+trace $CLI workspace-conf set-status --help

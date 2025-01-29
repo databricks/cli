@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI online-tables create --help
+trace $CLI online-tables delete --help
+trace $CLI online-tables get --help

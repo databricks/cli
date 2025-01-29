@@ -1,0 +1,23 @@
+
+>>> $CLI temporary-table-credentials generate-temporary-table-credentials --help
+Generate a temporary table credential.
+  
+  Get a short-lived credential for directly accessing the table data on cloud
+  storage. The metastore must have external_access_enabled flag set to true
+  (default false). The caller must have EXTERNAL_USE_SCHEMA privilege on the
+  parent schema and this privilege can only be granted by catalog owners.
+
+Usage:
+  databricks temporary-table-credentials generate-temporary-table-credentials [flags]
+
+Flags:
+  -h, --help                       help for generate-temporary-table-credentials
+      --json JSON                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --operation TableOperation   The operation performed against the table data, either READ or READ_WRITE. Supported values: [READ, READ_WRITE]
+      --table-id string            UUID of the table to read or write.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

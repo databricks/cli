@@ -1,0 +1,199 @@
+
+>>> $CLI cluster-policies create --help
+Create a new policy.
+  
+  Creates a new policy with prescribed settings.
+
+Usage:
+  databricks cluster-policies create [flags]
+
+Flags:
+      --definition string                           Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).
+      --description string                          Additional human-readable description of the cluster policy.
+  -h, --help                                        help for create
+      --json JSON                                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --max-clusters-per-user int                   Max number of clusters per user that can be active using this policy.
+      --name string                                 Cluster Policy name requested by the user.
+      --policy-family-definition-overrides string   Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).
+      --policy-family-id string                     ID of the policy family.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI cluster-policies delete --help
+Delete a cluster policy.
+  
+  Delete a policy for a cluster. Clusters governed by this policy can still run,
+  but cannot be edited.
+
+  Arguments:
+    POLICY_ID: The ID of the policy to delete.
+
+Usage:
+  databricks cluster-policies delete POLICY_ID [flags]
+
+Flags:
+  -h, --help        help for delete
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI cluster-policies edit --help
+Update a cluster policy.
+  
+  Update an existing policy for cluster. This operation may make some clusters
+  governed by the previous policy invalid.
+
+  Arguments:
+    POLICY_ID: The ID of the policy to update.
+
+Usage:
+  databricks cluster-policies edit POLICY_ID [flags]
+
+Flags:
+      --definition string                           Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).
+      --description string                          Additional human-readable description of the cluster policy.
+  -h, --help                                        help for edit
+      --json JSON                                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --max-clusters-per-user int                   Max number of clusters per user that can be active using this policy.
+      --name string                                 Cluster Policy name requested by the user.
+      --policy-family-definition-overrides string   Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).
+      --policy-family-id string                     ID of the policy family.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI cluster-policies get --help
+Get a cluster policy.
+  
+  Get a cluster policy entity. Creation and editing is available to admins only.
+
+  Arguments:
+    POLICY_ID: Canonical unique identifier for the Cluster Policy.
+
+Usage:
+  databricks cluster-policies get POLICY_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI cluster-policies get-permission-levels --help
+Get cluster policy permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.
+
+Usage:
+  databricks cluster-policies get-permission-levels CLUSTER_POLICY_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI cluster-policies get-permissions --help
+Get cluster policy permissions.
+  
+  Gets the permissions of a cluster policy. Cluster policies can inherit
+  permissions from their root object.
+
+  Arguments:
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.
+
+Usage:
+  databricks cluster-policies get-permissions CLUSTER_POLICY_ID [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI cluster-policies list --help
+List cluster policies.
+  
+  Returns a list of policies accessible by the requesting user.
+
+Usage:
+  databricks cluster-policies list [flags]
+
+Flags:
+  -h, --help                         help for list
+      --sort-column ListSortColumn   The cluster policy attribute to sort by. Supported values: [POLICY_CREATION_TIME, POLICY_NAME]
+      --sort-order ListSortOrder     The order in which the policies get listed. Supported values: [ASC, DESC]
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI cluster-policies set-permissions --help
+Set cluster policy permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.
+
+Usage:
+  databricks cluster-policies set-permissions CLUSTER_POLICY_ID [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI cluster-policies update-permissions --help
+Update cluster policy permissions.
+  
+  Updates the permissions on a cluster policy. Cluster policies can inherit
+  permissions from their root object.
+
+  Arguments:
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.
+
+Usage:
+  databricks cluster-policies update-permissions CLUSTER_POLICY_ID [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
