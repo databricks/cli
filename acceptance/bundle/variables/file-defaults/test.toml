@@ -1,7 +1,7 @@
 # Fix for windows
 [[Repls]]
 Old = '\$TMPDIR\\.databricks\\bundle\\wrong_file_structure\\variable-overrides.json'
-New = '$TMPDIR/.databricks/bundle/wrong_file_structure/variable-overrides.json'
+New = '$$TMPDIR/.databricks/bundle/wrong_file_structure/variable-overrides.json'
 
 [[Repls]]
 Old = '\$TMPDIR\\.databricks\\bundle\\invalid_json\\variable-overrides.json'
