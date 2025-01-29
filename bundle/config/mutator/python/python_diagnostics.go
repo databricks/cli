@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
+// pythonDiagnostic is a single entry in diagnostics.json
 type pythonDiagnostic struct {
 	Severity pythonSeverity           `json:"severity"`
 	Summary  string                   `json:"summary"`

@@ -18,11 +18,12 @@ variables:
     description: variable with lookup
     lookup:
       cluster_policy: wrong-cluster-policy
+
+  result:
+    default: ${var.a} ${var.b}
+
 bundle:
   name: test bundle
-
-workspace:
-  profile: ${var.a} ${var.b}
 
 targets:
   env-with-single-variable-override:

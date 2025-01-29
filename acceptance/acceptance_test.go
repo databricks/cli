@@ -9,17 +9,18 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"slices"
 	"sort"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
@@ -28,8 +29,8 @@ var KeepTmp bool
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
-// example: var singleTest = "bundle/variables/empty"
-var singleTest = ""
+// example: var SingleTest = "bundle/variables/empty"
+var SingleTest = ""
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -37,7 +38,7 @@ var singleTest = ""
 var InprocessMode bool
 
 func init() {
-	flag.BoolVar(&InprocessMode, "inprocess", singleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 }
 
@@ -45,6 +46,7 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
+	MaxFileSize      = 100_000
 )
 
 var Scripts = map[string]bool{
@@ -54,19 +56,14 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, InprocessMode, SingleTest)
 }
 
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode {
 		t.Skip("Already tested by TestAccept")
 	}
-	if runtime.GOOS == "windows" {
-		// -  catalogs                               A catalog is the first layer of Unity Catalog’s three-level namespace.
-		// +  catalogs                               A catalog is the first layer of Unity Catalog�s three-level namespace.
-		t.Skip("Fails on CI on unicode characters")
-	}
-	require.NotZero(t, testAccept(t, true, "help"))
+	require.Equal(t, 1, testAccept(t, true, "selftest"))
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
@@ -94,23 +91,24 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 
 	t.Setenv("CLI", execPath)
-	repls.Set(execPath, "$CLI")
+	repls.SetPath(execPath, "$CLI")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
 	tempHomeDir := t.TempDir()
-	repls.Set(tempHomeDir, "$TMPHOME")
+	repls.SetPath(tempHomeDir, "$TMPHOME")
 	t.Logf("$TMPHOME=%v", tempHomeDir)
 
-	// Prevent CLI from downloading terraform in each test:
-	t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
+	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
+	uvCache := getUVDefaultCacheDir(t)
+	t.Setenv("UV_CACHE_DIR", uvCache)
 
 	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		server := StartServer(t)
+		server := testserver.New(t)
 		AddHandlers(server)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", server.URL)
@@ -119,6 +117,9 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
 		t.Setenv(env.HomeEnvVar(), homeDir)
+
+		// Prevent CLI from downloading terraform in each test:
+		t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
 	}
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
@@ -130,6 +131,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
+	testdiff.PrepareReplacementsDevVersion(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -176,6 +178,13 @@ func getTests(t *testing.T) []string {
 }
 
 func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
+	config, configPath := LoadConfig(t, dir)
+
+	isEnabled, isPresent := config.GOOS[runtime.GOOS]
+	if isPresent && !isEnabled {
+		t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+	}
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -188,12 +197,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	// Converts C:\Users\DENIS~1.BIL -> C:\Users\denis.bilenko
-	tmpDirEvalled, err1 := filepath.EvalSymlinks(tmpDir)
-	if err1 == nil && tmpDirEvalled != tmpDir {
-		repls.SetPathWithParents(tmpDirEvalled, "$TMPDIR")
-	}
 	repls.SetPathWithParents(tmpDir, "$TMPDIR")
+	repls.Repls = append(repls.Repls, config.Repls...)
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -227,14 +232,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
+	printedRepls := false
+
 	// Compare expected outputs
 	for relPath := range outputs {
-		doComparison(t, repls, dir, tmpDir, relPath)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
-	files, err := ListDir(t, tmpDir)
-	require.NoError(t, err)
+	files := ListDir(t, tmpDir)
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -242,26 +248,27 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if _, ok := outputs[relPath]; ok {
 			continue
 		}
+		t.Errorf("Unexpected output: %s", relPath)
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
-	bufRef, okRef := readIfExists(t, pathRef)
-	bufNew, okNew := readIfExists(t, pathNew)
+	bufRef, okRef := tryReading(t, pathRef)
+	bufNew, okNew := tryReading(t, pathNew)
 	if !okRef && !okNew {
-		t.Errorf("Both files are missing: %s, %s", pathRef, pathNew)
+		t.Errorf("Both files are missing or have errors: %s, %s", pathRef, pathNew)
 		return
 	}
 
-	valueRef := testdiff.NormalizeNewlines(string(bufRef))
-	valueNew := testdiff.NormalizeNewlines(string(bufNew))
+	valueRef := testdiff.NormalizeNewlines(bufRef)
+	valueNew := testdiff.NormalizeNewlines(bufNew)
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
@@ -295,6 +302,15 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		t.Logf("Overwriting existing output file: %s", relPath)
 		testutil.WriteFile(t, pathRef, valueNew)
 	}
+
+	if !equal && printedRepls != nil && !*printedRepls {
+		*printedRepls = true
+		var items []string
+		for _, item := range repls.Repls {
+			items = append(items, fmt.Sprintf("REPL %s => %s", item.Old, item.New))
+		}
+		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
+	}
 }
 
 // Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
@@ -310,14 +326,14 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	cleanups := []string{}
 
 	for {
-		x, ok := readIfExists(t, filepath.Join(dir, CleanupScript))
+		x, ok := tryReading(t, filepath.Join(dir, CleanupScript))
 		if ok {
-			cleanups = append(cleanups, string(x))
+			cleanups = append(cleanups, x)
 		}
 
-		x, ok = readIfExists(t, filepath.Join(dir, PrepareScript))
+		x, ok = tryReading(t, filepath.Join(dir, PrepareScript))
 		if ok {
-			prepares = append(prepares, string(x))
+			prepares = append(prepares, x)
 		}
 
 		if dir == "" || dir == "." {
@@ -404,16 +420,33 @@ func formatOutput(w io.Writer, err error) {
 	}
 }
 
-func readIfExists(t *testing.T, path string) ([]byte, bool) {
-	data, err := os.ReadFile(path)
-	if err == nil {
-		return data, true
+func tryReading(t *testing.T, path string) (string, bool) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("%s: %s", path, err)
+		}
+		return "", false
 	}
 
-	if !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("%s: %s", path, err)
+	if info.Size() > MaxFileSize {
+		t.Errorf("%s: ignoring, too large: %d", path, info.Size())
+		return "", false
 	}
-	return []byte{}, false
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		// already checked ErrNotExist above
+		t.Errorf("%s: %s", path, err)
+		return "", false
+	}
+
+	if !utf8.Valid(data) {
+		t.Errorf("%s: not valid utf-8", path)
+		return "", false
+	}
+
+	return string(data), true
 }
 
 func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
@@ -451,37 +484,19 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 	})
 }
 
-func ListDir(t *testing.T, src string) ([]string, error) {
-	// exclude folders in .gitignore from comparison
-	ignored := []string{
-		"\\.ruff_cache",
-		"\\.venv",
-		".*\\.egg-info",
-		"__pycache__",
-		// depends on uv version
-		"uv.lock",
-	}
-
+func ListDir(t *testing.T, src string) []string {
 	var files []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			// Do not FailNow here.
+			// The output comparison is happening after this call which includes output.txt which
+			// includes errors printed by commands which include explanation why a given file cannot be read.
+			t.Errorf("Error when listing %s: path=%s: %s", src, path, err)
+			return nil
 		}
 
 		if info.IsDir() {
-			for _, ignoredFolder := range ignored {
-				if matched, _ := regexp.MatchString(ignoredFolder, info.Name()); matched {
-					return filepath.SkipDir
-				}
-			}
-
 			return nil
-		} else {
-			for _, ignoredFolder := range ignored {
-				if matched, _ := regexp.MatchString(ignoredFolder, info.Name()); matched {
-					return nil
-				}
-			}
 		}
 
 		relPath, err := filepath.Rel(src, path)
@@ -492,5 +507,21 @@ func ListDir(t *testing.T, src string) ([]string, error) {
 		files = append(files, relPath)
 		return nil
 	})
-	return files, err
+	if err != nil {
+		t.Errorf("Failed to list %s: %s", src, err)
+	}
+	return files
+}
+
+func getUVDefaultCacheDir(t *testing.T) string {
+	// According to uv docs https://docs.astral.sh/uv/concepts/cache/#caching-in-continuous-integration
+	// the default cache directory is
+	// "A system-appropriate cache directory, e.g., $XDG_CACHE_HOME/uv or $HOME/.cache/uv on Unix and %LOCALAPPDATA%\uv\cache on Windows"
+	cacheDir, err := os.UserCacheDir()
+	require.NoError(t, err)
+	if runtime.GOOS == "windows" {
+		return cacheDir + "\\uv\\cache"
+	} else {
+		return cacheDir + "/uv"
+	}
 }

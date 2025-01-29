@@ -1,6 +1,6 @@
 //go:build windows
 
-package python
+package project
 
 import (
 	"context"

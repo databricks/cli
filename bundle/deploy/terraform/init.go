@@ -54,7 +54,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return tf.ExecPath, nil
 	}
 
-	binDir, err := b.CacheDir(context.Background(), "bin")
+	binDir, err := b.CacheDir(ctx, "bin")
 	if err != nil {
 		return "", err
 	}
@@ -108,6 +108,14 @@ var envCopy = []string{
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
 	// See: https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration
 	"TF_CLI_CONFIG_FILE",
+
+	// Include $USE_SDK_V2_RESOURCES and $USE_SDK_V2_DATA_SOURCES, these are used to switch back from plugin framework to SDKv2.
+	// This is used for mitigation issues with resource migrated to plugin framework, as recommended here:
+	// https://registry.terraform.io/providers/databricks/databricks/latest/docs/guides/troubleshooting#plugin-framework-migration-problems
+	// It is currently a workaround for deploying quality_monitors
+	// https://github.com/databricks/terraform-provider-databricks/issues/4229#issuecomment-2520344690
+	"USE_SDK_V2_RESOURCES",
+	"USE_SDK_V2_DATA_SOURCES",
 }
 
 // This function inherits some environment variables for Terraform CLI.

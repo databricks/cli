@@ -25,7 +25,7 @@ func TestReplacement_UUID(t *testing.T) {
 
 	PrepareReplacementsUUID(t, &repls)
 
-	assert.Equal(t, "<UUID>", repls.Replace("123e4567-e89b-12d3-a456-426614174000"))
+	assert.Equal(t, "[UUID]", repls.Replace("123e4567-e89b-12d3-a456-426614174000"))
 }
 
 func TestReplacement_Number(t *testing.T) {
@@ -34,7 +34,7 @@ func TestReplacement_Number(t *testing.T) {
 	PrepareReplacementsNumber(t, &repls)
 
 	assert.Equal(t, "12", repls.Replace("12"))
-	assert.Equal(t, "<NUMID>", repls.Replace("123"))
+	assert.Equal(t, "[NUMID]", repls.Replace("123"))
 }
 
 func TestReplacement_TemporaryDirectory(t *testing.T) {
