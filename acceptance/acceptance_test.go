@@ -208,6 +208,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
+			require.NotEmpty(t, stub.Response.Body)
 			server.Handle(stub.Pattern, func(req *http.Request) (resp any, err error) {
 				b := json.RawMessage(stub.Response.Body)
 				return b, nil
