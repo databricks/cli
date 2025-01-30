@@ -1,6 +1,3 @@
-export TF_LOG=DEBUG
-
-
 # Want to filter out these message:
 # Mac:
 # The current .terraform.lock.hcl file only includes checksums for
@@ -13,6 +10,5 @@ export TF_LOG=DEBUG
 # providers.
 
 trace $TERRAFORM init -no-color -get=false | grep -v 'includes checksums for' | grep -v 'so Terraform running on another' | grep -v 'providers\.'
-export TF_LOG=WARN
 trace $TERRAFORM plan -no-color
 rm -fr .terraform.lock.hcl .terraform
