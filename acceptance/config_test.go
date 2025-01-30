@@ -29,6 +29,29 @@ type TestConfig struct {
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
+
+	// List of server stubs to load. Example configuration:
+	//
+	// [[Server]]
+	// Pattern = "POST /api/2.1/jobs/create"
+	// Response.Body = '''
+	// {
+	// 	"job_id": 1111
+	// }
+	// '''
+	Server []ServerStub
+}
+
+type ServerStub struct {
+	// The HTTP method and path to match. Examples:
+	// 1. /api/2.0/clusters/list (matches all methods)
+	// 2. GET /api/2.0/clusters/list
+	Pattern string
+
+	// The response body to return.
+	Response struct {
+		Body string
+	}
 }
 
 // FindConfig finds the closest config file.

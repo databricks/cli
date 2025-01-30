@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -112,10 +113,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		server := testserver.New(t)
-		AddHandlers(server)
+		defaultServer := testserver.New(t)
+		AddHandlers(defaultServer)
 		// Redirect API access to local server:
-		t.Setenv("DATABRICKS_HOST", server.URL)
+		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
 		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 		homeDir := t.TempDir()
@@ -214,6 +215,22 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Env = os.Environ()
+
+	// Start a new server with a custom configuration if the acceptance test
+	// specifies a custom server stubs.
+	if len(config.Server) > 0 {
+		server := testserver.New(t)
+
+		for _, stub := range config.Server {
+			require.NotEmpty(t, stub.Pattern)
+			server.Handle(stub.Pattern, func(req *http.Request) (resp any, err error) {
+				return stub.Response.Body, nil
+			})
+		}
+		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
+	}
+
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
@@ -221,7 +238,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
-		cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverDir)
+		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
 	// Write combined output to a file
