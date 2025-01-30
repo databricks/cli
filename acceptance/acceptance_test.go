@@ -135,15 +135,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
 	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
-	repls.Set(terraformrcPath, "$DATABRICKS_TF_CLI_CONFIG_FILE")
+	repls.SetPath(terraformrcPath, "$DATABRICKS_TF_CLI_CONFIG_FILE")
 
 	terraformExecPath := filepath.Join(buildDir, "terraform")
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
-	repls.Set(terraformExecPath, "$TERRAFORM")
+	repls.SetPath(terraformExecPath, "$TERRAFORM")
 
 	// do it last so that full paths match first:
-	repls.Set(buildDir, "$BUILD_DIR")
+	repls.SetPath(buildDir, "$BUILD_DIR")
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
