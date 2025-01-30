@@ -247,6 +247,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Stderr = out
 	cmd.Dir = tmpDir
 	err = cmd.Run()
+	
 
 	// If a custom server was defined, record all requests made to an output file.
 	if server != nil {
