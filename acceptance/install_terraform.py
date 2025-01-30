@@ -69,7 +69,7 @@ def main():
         f"https://github.com/databricks/terraform-provider-databricks/releases/download/v{terraform_provider_version}/{terraform_provider_file}"
     )
 
-    target.mkdir(exist_ok=True)
+    target.mkdir(exist_ok=True, parents=True)
 
     zip_path = target / terraform_file
     terraform_path = target / terraform_binary
