@@ -1,0 +1,32 @@
+
+=== Inside the bundle, no flags
+>>> errcode $CLI current-user me
+"$USERNAME"
+
+=== Inside the bundle, target flags
+>>> errcode $CLI current-user me -t dev
+"$USERNAME"
+
+=== Inside the bundle, target and matching profile
+>>> errcode $CLI current-user me -t dev -p DEFAULT
+"$USERNAME"
+
+=== Inside the bundle, profile flag not matching bundle host (TODO: this should pass with no error and use profile_name host)
+>>> errcode $CLI current-user me -p profile_name
+Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host https://bar.com, but CLI configured to use $DATABRICKS_URL
+
+Exit code: 1
+
+=== Inside the bundle, target and not matching profile
+>>> errcode $CLI current-user me -t dev -p profile_name
+Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host https://bar.com, but CLI configured to use $DATABRICKS_URL
+
+Exit code: 1
+
+=== Outside the bundle, no flags
+>>> errcode $CLI current-user me
+"$USERNAME"
+
+=== Outside the bundle, profile flag
+>>> errcode $CLI current-user me -p profile_name
+"$USERNAME"

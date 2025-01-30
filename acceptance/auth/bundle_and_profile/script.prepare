@@ -1,0 +1,19 @@
+DB_CFG="$HOME/.databrickscfg"
+if [[ "$OSTYPE" == "msys" ]]; then
+    DB_CFG="$HOME\\.databrickscfg"
+fi
+
+echo "[DEFAULT]
+host = $DATABRICKS_HOST
+token = default
+
+[profile_name]
+host = https://test@bar.com
+token = test" >> "$DB_CFG"
+
+# Replace placeholder with an actual host URL
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' -e 's|$DATABRICKS_HOST|'$DATABRICKS_HOST'|g' databricks.yml
+else
+    sed -i -e 's|$DATABRICKS_HOST|'$DATABRICKS_HOST'|g' databricks.yml
+fi
