@@ -1,22 +1,22 @@
 
->>> $TERRAFORM init -no-color
+>>> $TERRAFORM init -no-color -get=false
 Timestamp [INFO]  Terraform version: 1.5.5
 Timestamp [DEBUG] using github.com/hashicorp/go-tfe v1.26.0
 Timestamp [DEBUG] using github.com/hashicorp/hcl/v2 v2.16.2
 Timestamp [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.0
 Timestamp [DEBUG] using github.com/zclconf/go-cty v1.12.2
 Timestamp [INFO]  Go runtime version: go1.20.7
-Timestamp [INFO]  CLI args: []string{"$TERRAFORM", "init", "-no-color"}
+Timestamp [INFO]  CLI args: []string{"$TERRAFORM", "init", "-no-color", "-get=false"}
 Timestamp [DEBUG] Attempting to open CLI config file: DATABRICKS_TF_CLI_CONFIG_FILE
 Timestamp [INFO]  Loading CLI configuration from DATABRICKS_TF_CLI_CONFIG_FILE
 Timestamp [DEBUG] Not reading CLI config directory because config location is overridden by environment variable
 Timestamp [DEBUG] Explicit provider installation configuration is set
-Timestamp [INFO]  CLI command args: []string{"init", "-no-color"}
-
-Initializing the backend...
+Timestamp [INFO]  CLI command args: []string{"init", "-no-color", "-get=false"}
 Timestamp [DEBUG] New state was assigned lineage "[UUID]"
 Timestamp [DEBUG] checking for provisioner in "."
 Timestamp [DEBUG] checking for provisioner in "$BUILD_DIR"
+
+Initializing the backend...
 
 Initializing provider plugins...
 - Finding databricks/databricks versions matching "1.64.1"...
@@ -35,8 +35,6 @@ Due to your customized provider installation methods, Terraform was forced to
 calculate lock file checksums locally for the following providers:
   - databricks/databricks
 
-The current .terraform.lock.hcl file only includes checksums for
-darwin_arm64, so Terraform running on another platform will fail to install
 these providers.
 
 To calculate additional checksums for another platform, run:
