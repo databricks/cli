@@ -25,7 +25,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var KeepTmp bool
+var (
+	KeepTmp bool
+	NoRepl  bool
+)
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
@@ -40,6 +43,7 @@ var InprocessMode bool
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
+	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 }
 
 const (
@@ -272,7 +276,9 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	valueNew = repls.Replace(valueNew)
+	if !NoRepl {
+		valueNew = repls.Replace(valueNew)
+	}
 
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
