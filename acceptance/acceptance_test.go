@@ -76,14 +76,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
-	// Download terraform and provider and create config; this also creates build directory.
-	if runtime.GOOS == "windows" {
-		RunCommand(t, []string{"python", filepath.Join(cwd, "install_terraform.py")}, ".")
-	} else {
-		RunCommand(t, []string{filepath.Join(cwd, "install_terraform.py")}, ".")
-	}
+	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
 
-	buildDir := filepath.Join(cwd, "build")
+	// Download terraform and provider and create config; this also creates build directory.
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
+
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
 	if coverDir != "" {
