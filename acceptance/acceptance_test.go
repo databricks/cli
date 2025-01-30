@@ -135,6 +135,9 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	repls.SetPath(terraformrcPath, "$DATABRICKS_TF_CLI_CONFIG_FILE")
 
 	terraformExecPath := filepath.Join(buildDir, "terraform")
+	if runtime.GOOS == "windows" {
+		terraformExecPath += ".exe"
+	}
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
 	repls.SetPath(terraformExecPath, "$TERRAFORM")
