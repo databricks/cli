@@ -18,9 +18,9 @@ from urllib.request import urlretrieve
 os_name = platform.system().lower()
 
 arch = platform.machine().lower()
-if os_name == 'windows' and arch not in ('386', 'amd64'):
+if os_name == "windows" and arch not in ("386", "amd64"):
     # terraform 1.5.5 only has builds for these two.
-    arch = 'amd64'
+    arch = "amd64"
 
 terraform_version = "1.5.5"
 terraform_file = f"terraform_{terraform_version}_{os_name}_{arch}.zip"
