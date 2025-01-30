@@ -10,9 +10,9 @@ export TF_LOG=DEBUG
 # Linux:
 # The current .terraform.lock.hcl file only includes checksums for linux_amd64,
 # so Terraform running on another platform will fail to install these
-# providers
+# providers.
 
-trace $TERRAFORM init -no-color -get=false | grep -v 'includes checksums for' | grep -v 'so Terraform running on another'
+trace $TERRAFORM init -no-color -get=false | grep -v 'includes checksums for' | grep -v 'so Terraform running on another' | grep -v 'providers\.'
 export TF_LOG=WARN
 trace $TERRAFORM plan -no-color
 rm -fr .terraform.lock.hcl .terraform
