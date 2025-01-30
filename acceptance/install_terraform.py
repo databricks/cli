@@ -17,14 +17,10 @@ from urllib.request import urlretrieve
 
 os_name = platform.system().lower()
 
-current_arch = platform.machine().lower()
-arch_mapping = {
-    "x86_64": "amd64",
-    "amd64": "amd64",
-    "arm64": "arm64",
-    "aarch64": "arm64",
-}
-arch = arch_mapping.get(current_arch, current_arch)
+arch = platform.machine().lower()
+if os_name == 'windows' and arch not in ('386', 'amd64'):
+    # terraform 1.5.5 only has builds for these two.
+    arch = 'amd64'
 
 terraform_version = "1.5.5"
 terraform_file = f"terraform_{terraform_version}_{os_name}_{arch}.zip"
