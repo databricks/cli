@@ -12,6 +12,7 @@ import os
 import platform
 import zipfile
 import argparse
+import json
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -101,19 +102,20 @@ def main():
 
     terraformrc_path = target / ".terraformrc"
     if not terraformrc_path.exists():
-        print(f"Writing {terraformrc_path} (see it for instructions)")
-
-        terraformrc_path.write_text(f"""# Set these env variables before running databricks cli:
+        path = json.dumps(str(tfplugins_path.absolute()))
+        text = f"""# Set these env variables before running databricks cli:
 # export DATABRICKS_TF_CLI_CONFIG_FILE={terraformrc_path.absolute()}
 # export DATABRICKS_TF_EXEC_PATH={terraform_path.absolute()}
 
 provider_installation {{
     filesystem_mirror {{
-        path = "{tfplugins_path.absolute()}"
+        path = {path}
         include = ["registry.terraform.io/databricks/databricks"]
     }}
 }}
-""")
+"""
+        print(f"Writing {terraformrc_path}:\n{text}")
+        terraformrc_path.write_text(text)
 
 
 if __name__ == "__main__":
