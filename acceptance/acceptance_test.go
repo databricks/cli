@@ -266,7 +266,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// Write the requests made to the server to a output file if the test is
 	// configured to record requests.
 	if config.RecordRequests {
-		f, err := os.OpenFile(filepath.Join(tmpDir, "out.requests.txt"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+		f, err := os.OpenFile(filepath.Join(tmpDir, "out.requests.txt"), os.O_CREATE|os.O_WRONLY, 0o644)
 		require.NoError(t, err)
 
 		for _, req := range server.Requests {
