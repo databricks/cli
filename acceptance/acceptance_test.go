@@ -264,10 +264,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// Write the requests made to the server to a output file if the test is
 	// configured to record requests.
 	if config.RecordRequests {
-		requests := server.Requests()
-		requestsJSON, err := json.MarshalIndent(requests, "", "  ")
-		require.NoError(t, err)
-		testutil.WriteFile(t, filepath.Join(tmpDir, "out.requests.json"), string(requestsJSON))
+		for _, req := range server.Requests {
+			reqJson, err := json.Marshal(req)
+			require.NoError(t, err)
+			testutil.AppendFile(t, filepath.Join(tmpDir, "out.requests.txt"), fmt.Sprintf("%s\n", reqJson))
+		}
 	}
 
 	// Include exit code in output (if non-zero)

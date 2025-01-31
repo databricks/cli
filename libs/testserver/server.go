@@ -19,7 +19,7 @@ type Server struct {
 
 	RecordRequests bool
 
-	requests []Request
+	Requests []Request
 }
 
 type Request struct {
@@ -42,10 +42,6 @@ func New(t testutil.TestingT) *Server {
 
 type HandlerFunc func(req *http.Request) (resp any, err error)
 
-func (s *Server) Requests() []Request {
-	return s.requests
-}
-
 func (s *Server) Handle(pattern string, handler HandlerFunc) {
 	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
 		resp, err := handler(r)
@@ -58,7 +54,7 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 			body, err := io.ReadAll(r.Body)
 			assert.NoError(s.t, err)
 
-			s.requests = append(s.requests, Request{
+			s.Requests = append(s.Requests, Request{
 				Method: r.Method,
 				Path:   r.URL.Path,
 				Body:   json.RawMessage(body),
