@@ -2,6 +2,7 @@ package acceptance_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -219,8 +220,21 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Start a new server with a custom configuration if the acceptance test
 	// specifies a custom server stubs.
-	if len(config.Server) > 0 {
-		server := testserver.New(t)
+	var server *testserver.Server
+
+	// Start a new server for this test if either:
+	// 1. A custom server spec is defined in the test configuration.
+	// 2. The test is configured to record requests and assert on them. We need
+	//    a duplicate of the default server to record requests because the default
+	//    server otherwise is a shared resource.
+	if len(config.Server) > 0 || config.RecordRequests {
+		server = testserver.New(t)
+		server.RecordRequests = config.RecordRequests
+
+		// If no custom server stubs are defined, add the default handlers.
+		if len(config.Server) == 0 {
+			AddHandlers(server)
+		}
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
@@ -248,6 +262,25 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Stderr = out
 	cmd.Dir = tmpDir
 	err = cmd.Run()
+
+	// Write the requests made to the server to a output file if the test is
+	// configured to record requests.
+	if config.RecordRequests {
+		f, err := os.OpenFile(filepath.Join(tmpDir, "out.requests.txt"), os.O_CREATE|os.O_WRONLY, 0o644)
+		require.NoError(t, err)
+
+		for _, req := range server.Requests {
+			reqJson, err := json.Marshal(req)
+			require.NoError(t, err)
+
+			line := fmt.Sprintf("%s\n", reqJson)
+			_, err = f.WriteString(line)
+			require.NoError(t, err)
+		}
+
+		err = f.Close()
+		require.NoError(t, err)
+	}
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)

@@ -2,8 +2,11 @@ package testserver
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/internal/testutil"
 )
@@ -13,6 +16,16 @@ type Server struct {
 	Mux *http.ServeMux
 
 	t testutil.TestingT
+
+	RecordRequests bool
+
+	Requests []Request
+}
+
+type Request struct {
+	Method string `json:"method"`
+	Path   string `json:"path"`
+	Body   any    `json:"body"`
 }
 
 func New(t testutil.TestingT) *Server {
@@ -35,6 +48,18 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+
+		if s.RecordRequests {
+			body, err := io.ReadAll(r.Body)
+			assert.NoError(s.t, err)
+
+			s.Requests = append(s.Requests, Request{
+				Method: r.Method,
+				Path:   r.URL.Path,
+				Body:   json.RawMessage(body),
+			})
+
 		}
 
 		w.Header().Set("Content-Type", "application/json")
