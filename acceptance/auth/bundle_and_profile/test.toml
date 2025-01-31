@@ -1,3 +1,5 @@
+Badness = "When -p flag is used inside the bundle folder for any CLI commands, CLI use bundle host anyway instead of profile one"
+
 [GOOS]
 # Disable this test on Windows because it's more complicated to set up .databrickscfg there
 windows = false

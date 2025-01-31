@@ -7,7 +7,7 @@ trace errcode $CLI current-user me -t dev | jq .userName
 title "Inside the bundle, target and matching profile"
 trace errcode $CLI current-user me -t dev -p DEFAULT | jq .userName
 
-title "Inside the bundle, profile flag not matching bundle host (TODO: this should pass with no error and use profile_name host)"
+title "Inside the bundle, profile flag not matching bundle host"
 trace errcode $CLI current-user me -p profile_name | jq .userName
 
 title "Inside the bundle, target and not matching profile"

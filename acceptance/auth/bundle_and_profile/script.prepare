@@ -9,8 +9,4 @@ host = https://test@bar.com
 token = test" >> "$DB_CFG"
 
 # Replace placeholder with an actual host URL
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' -e 's|$DATABRICKS_HOST|'$DATABRICKS_HOST'|g' databricks.yml
-else
-    sed -i -e 's|$DATABRICKS_HOST|'$DATABRICKS_HOST'|g' databricks.yml
-fi
+envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
