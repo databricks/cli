@@ -224,7 +224,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Start a new server for this test if either:
 	// 1. A custom server spec is defined in the test configuration.
-	// 2. The test is configured to record requests and assert on them.
+	// 2. The test is configured to record requests and assert on them. We need
+	//    a duplicate of the default server to record requests because the default
+	//    server otherwise is a shared resource.
 	if len(config.Server) > 0 || config.RecordRequests {
 		server = testserver.New(t)
 		server.RecordRequests = config.RecordRequests
