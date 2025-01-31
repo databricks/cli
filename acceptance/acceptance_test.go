@@ -77,6 +77,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
+	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
+
+	// Download terraform and provider and create config; this also creates build directory.
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
+
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
 	if coverDir != "" {
@@ -93,7 +98,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
-		execPath = BuildCLI(t, cwd, coverDir)
+		execPath = BuildCLI(t, buildDir, coverDir)
 	}
 
 	t.Setenv("CLI", execPath)
@@ -123,10 +128,23 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
 		t.Setenv(env.HomeEnvVar(), homeDir)
-
-		// Prevent CLI from downloading terraform in each test:
-		t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
 	}
+
+	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
+	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
+	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
+	repls.SetPath(terraformrcPath, "$DATABRICKS_TF_CLI_CONFIG_FILE")
+
+	terraformExecPath := filepath.Join(buildDir, "terraform")
+	if runtime.GOOS == "windows" {
+		terraformExecPath += ".exe"
+	}
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
+	t.Setenv("TERRAFORM", terraformExecPath)
+	repls.SetPath(terraformExecPath, "$TERRAFORM")
+
+	// do it last so that full paths match first:
+	repls.SetPath(buildDir, "$BUILD_DIR")
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -406,13 +424,12 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-func BuildCLI(t *testing.T, cwd, coverDir string) string {
-	execPath := filepath.Join(cwd, "build", "databricks")
+func BuildCLI(t *testing.T, buildDir, coverDir string) string {
+	execPath := filepath.Join(buildDir, "databricks")
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
 	}
 
-	start := time.Now()
 	args := []string{
 		"go", "build",
 		"-mod", "vendor",
@@ -430,20 +447,8 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 		args = append(args, "-buildvcs=false")
 	}
 
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Dir = ".."
-	out, err := cmd.CombinedOutput()
-	elapsed := time.Since(start)
-	t.Logf("%s took %s", args, elapsed)
-	require.NoError(t, err, "go build failed: %s: %s\n%s", args, err, out)
-	if len(out) > 0 {
-		t.Logf("go build output: %s: %s", args, out)
-	}
-
-	// Quick check + warm up cache:
-	cmd = exec.Command(execPath, "--version")
-	out, err = cmd.CombinedOutput()
-	require.NoError(t, err, "%s --version failed: %s\n%s", execPath, err, out)
+	RunCommand(t, args, "..")
+	RunCommand(t, []string{execPath, "--version"}, ".")
 	return execPath
 }
 
@@ -579,5 +584,19 @@ func getUVDefaultCacheDir(t *testing.T) string {
 		return cacheDir + "\\uv\\cache"
 	} else {
 		return cacheDir + "/uv"
+	}
+}
+
+func RunCommand(t *testing.T, args []string, dir string) {
+	start := time.Now()
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	elapsed := time.Since(start)
+	t.Logf("%s took %s", args, elapsed)
+
+	require.NoError(t, err, "%s failed: %s\n%s", args, err, out)
+	if len(out) > 0 {
+		t.Logf("%s output: %s", args, out)
 	}
 }
