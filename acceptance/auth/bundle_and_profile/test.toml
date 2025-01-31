@@ -1,0 +1,3 @@
+[GOOS]
+# Disable this test on Windows because it's more complicated to set up .databrickscfg there
+windows = false

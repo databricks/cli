@@ -1,7 +1,4 @@
 DB_CFG="$HOME/.databrickscfg"
-if [[ "$OSTYPE" == "msys" ]]; then
-    DB_CFG="$HOME\\.databrickscfg"
-fi
 
 echo "[DEFAULT]
 host = $DATABRICKS_HOST
