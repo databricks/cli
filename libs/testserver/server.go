@@ -58,14 +58,10 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 			body, err := io.ReadAll(r.Body)
 			assert.NoError(s.t, err)
 
-			var reqBody map[string]any
-			err = json.Unmarshal(body, &reqBody)
-			assert.NoError(s.t, err)
-
 			s.requests = append(s.requests, Request{
 				Method: r.Method,
 				Path:   r.URL.Path,
-				Body:   reqBody,
+				Body:   json.RawMessage(body),
 			})
 
 		}
