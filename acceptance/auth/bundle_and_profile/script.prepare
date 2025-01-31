@@ -7,6 +7,3 @@ token = default
 [profile_name]
 host = https://test@bar.com
 token = test" >> "$DB_CFG"
-
-# Replace placeholder with an actual host URL
-envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
