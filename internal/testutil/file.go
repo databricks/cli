@@ -46,22 +46,6 @@ func WriteFile(t TestingT, path, content string) {
 	require.NoError(t, err)
 }
 
-// AppendFile appends content to a file.
-// If the file does not exist, it is created.
-func AppendFile(t TestingT, path, content string) {
-	err := os.MkdirAll(filepath.Dir(path), 0o755)
-	require.NoError(t, err)
-
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	require.NoError(t, err)
-
-	_, err = f.WriteString(content)
-	require.NoError(t, err)
-
-	err = f.Close()
-	require.NoError(t, err)
-}
-
 // ReadFile reads a file and returns its content as a string.
 func ReadFile(t TestingT, path string) string {
 	b, err := os.ReadFile(path)
