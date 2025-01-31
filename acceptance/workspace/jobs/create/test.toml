@@ -1,3 +1,5 @@
+RecordRequests = true
+
 [[Server]]
 Pattern = "POST /api/2.1/jobs/create"
 Response.Body = '''

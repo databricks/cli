@@ -221,9 +221,18 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// Start a new server with a custom configuration if the acceptance test
 	// specifies a custom server stubs.
 	var server *testserver.Server
-	if len(config.Server) > 0 {
+
+	// Start a new server for this test if either:
+	// 1. A custom server spec is defined in the test configuration.
+	// 2. The test is configured to record requests and assert on them.
+	if len(config.Server) > 0 || config.RecordRequests {
 		server = testserver.New(t)
 		server.RecordRequests = config.RecordRequests
+
+		// If no custom server stubs are defined, add the default handlers.
+		if len(config.Server) == 0 {
+			AddHandlers(server)
+		}
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
@@ -252,8 +261,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Dir = tmpDir
 	err = cmd.Run()
 
-	// If a custom server was defined, record all requests made to an output file.
-	if server != nil {
+	// Write the requests made to the server to a output file if the test is
+	// configured to record requests.
+	if config.RecordRequests {
 		requests := server.Requests()
 		requestsJSON, err := json.MarshalIndent(requests, "", "  ")
 		require.NoError(t, err)
