@@ -42,7 +42,7 @@ type TestConfig struct {
 	Server []ServerStub
 
 	// Record the requests made to the server and write them as output to
-	// out.requests.json
+	// out.requests.txt
 	RecordRequests bool
 }
 
