@@ -6,7 +6,7 @@
     "git": {
       "actual_branch": "main",
       "branch": "",
-      "bundle_root_path": ".",
+      "bundle_root_path": "."
     },
     "name": "git",
     "target": "prod",
@@ -28,11 +28,6 @@
   },
   "workspace": {
     "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/artifacts",
-    "current_user": {
-      "id": "$USER.Id",
-      "short_name": "$USERNAME",
-      "userName": "$USERNAME"
-    },
     "file_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/files",
     "resource_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/resources",
     "root_path": "/Workspace/Users/$USERNAME/.bundle/git/prod",
@@ -56,7 +51,7 @@ Validation OK!
     "git": {
       "actual_branch": "main",
       "branch": "dev-branch",
-      "bundle_root_path": ".",
+      "bundle_root_path": "."
     },
     "name": "git",
     "target": "dev",
@@ -78,11 +73,6 @@ Validation OK!
   },
   "workspace": {
     "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/artifacts",
-    "current_user": {
-      "id": "$USER.Id",
-      "short_name": "$USERNAME",
-      "userName": "$USERNAME"
-    },
     "file_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/files",
     "resource_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/resources",
     "root_path": "/Workspace/Users/$USERNAME/.bundle/git/dev",
