@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/bundle/segment"
 	"github.com/databricks/cli/bundle/trampoline"
 )
 
@@ -36,6 +37,8 @@ func Initialize() bundle.Mutator {
 
 			mutator.PopulateCurrentUser(),
 			mutator.LoadGitDetails(),
+
+			segment.ResolveAutoBuildNumber(),
 
 			// This mutator needs to be run before variable interpolation and defining default workspace paths
 			// because it affects how workspace variables are resolved.

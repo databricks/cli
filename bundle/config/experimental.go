@@ -32,6 +32,15 @@ type Experimental struct {
 
 	// Python configures loading of Python code defined with 'databricks-bundles' package.
 	Python Python `json:"python,omitempty"`
+
+	// Segment custom behavior for internal Segment use
+	Segment Segment `json:"segment,omitempty"`
+}
+
+type Segment struct {
+	SlackToken        string `json:"slack_token,omitempty"`
+	ConfirmAllChanges bool   `json:"confirm_all_changes,omitempty"`
+	DetailedPlanView  bool   `json:"detailed_plan_view,omitempty"`
 }
 
 type Python struct {
