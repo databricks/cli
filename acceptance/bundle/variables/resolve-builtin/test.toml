@@ -1,0 +1,2 @@
+# Cloud run fails with Error: Path (TestResolveVariableReferences/bar/baz) doesn't start with '/'
+LocalOnly = true
