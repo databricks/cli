@@ -2,10 +2,12 @@ package acceptance_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,7 +27,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var KeepTmp bool
+var (
+	KeepTmp bool
+	NoRepl  bool
+)
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
@@ -40,6 +45,7 @@ var InprocessMode bool
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
+	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 }
 
 const (
@@ -71,6 +77,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
+	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
+
+	// Download terraform and provider and create config; this also creates build directory.
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
+
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
 	if coverDir != "" {
@@ -87,7 +98,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
-		execPath = BuildCLI(t, cwd, coverDir)
+		execPath = BuildCLI(t, buildDir, coverDir)
 	}
 
 	t.Setenv("CLI", execPath)
@@ -108,19 +119,32 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		server := testserver.New(t)
-		AddHandlers(server)
+		defaultServer := testserver.New(t)
+		AddHandlers(defaultServer)
 		// Redirect API access to local server:
-		t.Setenv("DATABRICKS_HOST", server.URL)
+		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
 		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
 		t.Setenv(env.HomeEnvVar(), homeDir)
-
-		// Prevent CLI from downloading terraform in each test:
-		t.Setenv("DATABRICKS_TF_EXEC_PATH", tempHomeDir)
 	}
+
+	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
+	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
+	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
+	repls.SetPath(terraformrcPath, "$DATABRICKS_TF_CLI_CONFIG_FILE")
+
+	terraformExecPath := filepath.Join(buildDir, "terraform")
+	if runtime.GOOS == "windows" {
+		terraformExecPath += ".exe"
+	}
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
+	t.Setenv("TERRAFORM", terraformExecPath)
+	repls.SetPath(terraformExecPath, "$TERRAFORM")
+
+	// do it last so that full paths match first:
+	repls.SetPath(buildDir, "$BUILD_DIR")
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -210,6 +234,35 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Env = os.Environ()
+
+	// Start a new server with a custom configuration if the acceptance test
+	// specifies a custom server stubs.
+	var server *testserver.Server
+
+	// Start a new server for this test if either:
+	// 1. A custom server spec is defined in the test configuration.
+	// 2. The test is configured to record requests and assert on them. We need
+	//    a duplicate of the default server to record requests because the default
+	//    server otherwise is a shared resource.
+	if len(config.Server) > 0 || config.RecordRequests {
+		server = testserver.New(t)
+		server.RecordRequests = config.RecordRequests
+
+		// If no custom server stubs are defined, add the default handlers.
+		if len(config.Server) == 0 {
+			AddHandlers(server)
+		}
+
+		for _, stub := range config.Server {
+			require.NotEmpty(t, stub.Pattern)
+			server.Handle(stub.Pattern, func(req *http.Request) (resp any, err error) {
+				return stub.Response.Body, nil
+			})
+		}
+		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
+	}
+
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
@@ -217,7 +270,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
-		cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverDir)
+		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
 	// Write combined output to a file
@@ -227,6 +280,25 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Stderr = out
 	cmd.Dir = tmpDir
 	err = cmd.Run()
+
+	// Write the requests made to the server to a output file if the test is
+	// configured to record requests.
+	if config.RecordRequests {
+		f, err := os.OpenFile(filepath.Join(tmpDir, "out.requests.txt"), os.O_CREATE|os.O_WRONLY, 0o644)
+		require.NoError(t, err)
+
+		for _, req := range server.Requests {
+			reqJson, err := json.Marshal(req)
+			require.NoError(t, err)
+
+			line := fmt.Sprintf("%s\n", reqJson)
+			_, err = f.WriteString(line)
+			require.NoError(t, err)
+		}
+
+		err = f.Close()
+		require.NoError(t, err)
+	}
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -272,7 +344,9 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	valueNew = repls.Replace(valueNew)
+	if !NoRepl {
+		valueNew = repls.Replace(valueNew)
+	}
 
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
@@ -350,13 +424,12 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-func BuildCLI(t *testing.T, cwd, coverDir string) string {
-	execPath := filepath.Join(cwd, "build", "databricks")
+func BuildCLI(t *testing.T, buildDir, coverDir string) string {
+	execPath := filepath.Join(buildDir, "databricks")
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
 	}
 
-	start := time.Now()
 	args := []string{
 		"go", "build",
 		"-mod", "vendor",
@@ -374,20 +447,8 @@ func BuildCLI(t *testing.T, cwd, coverDir string) string {
 		args = append(args, "-buildvcs=false")
 	}
 
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Dir = ".."
-	out, err := cmd.CombinedOutput()
-	elapsed := time.Since(start)
-	t.Logf("%s took %s", args, elapsed)
-	require.NoError(t, err, "go build failed: %s: %s\n%s", args, err, out)
-	if len(out) > 0 {
-		t.Logf("go build output: %s: %s", args, out)
-	}
-
-	// Quick check + warm up cache:
-	cmd = exec.Command(execPath, "--version")
-	out, err = cmd.CombinedOutput()
-	require.NoError(t, err, "%s --version failed: %s\n%s", execPath, err, out)
+	RunCommand(t, args, "..")
+	RunCommand(t, []string{execPath, "--version"}, ".")
 	return execPath
 }
 
@@ -523,5 +584,19 @@ func getUVDefaultCacheDir(t *testing.T) string {
 		return cacheDir + "\\uv\\cache"
 	} else {
 		return cacheDir + "/uv"
+	}
+}
+
+func RunCommand(t *testing.T, args []string, dir string) {
+	start := time.Now()
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	elapsed := time.Since(start)
+	t.Logf("%s took %s", args, elapsed)
+
+	require.NoError(t, err, "%s failed: %s\n%s", args, err, out)
+	if len(out) > 0 {
+		t.Logf("%s output: %s", args, out)
 	}
 }

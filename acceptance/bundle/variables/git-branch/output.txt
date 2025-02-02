@@ -11,7 +11,7 @@
     "name": "git",
     "target": "prod",
     "terraform": {
-      "exec_path": "$TMPHOME"
+      "exec_path": "$TERRAFORM"
     }
   },
   "sync": {
@@ -29,6 +29,7 @@
   "workspace": {
     "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/artifacts",
     "current_user": {
+      "id": "$USER.Id",
       "short_name": "$USERNAME",
       "userName": "$USERNAME"
     },
@@ -60,7 +61,7 @@ Validation OK!
     "name": "git",
     "target": "dev",
     "terraform": {
-      "exec_path": "$TMPHOME"
+      "exec_path": "$TERRAFORM"
     }
   },
   "sync": {
@@ -78,6 +79,7 @@ Validation OK!
   "workspace": {
     "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/artifacts",
     "current_user": {
+      "id": "$USER.Id",
       "short_name": "$USERNAME",
       "userName": "$USERNAME"
     },

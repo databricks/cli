@@ -2,7 +2,6 @@ package acceptance_test
 
 import (
 	"net/http"
-	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -10,14 +9,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
-
-func StartServer(t *testing.T) *testserver.Server {
-	server := testserver.New(t)
-	t.Cleanup(func() {
-		server.Close()
-	})
-	return server
-}
 
 func AddHandlers(server *testserver.Server) {
 	server.Handle("GET /api/2.0/policies/clusters/list", func(r *http.Request) (any, error) {
@@ -63,6 +54,7 @@ func AddHandlers(server *testserver.Server) {
 
 	server.Handle("GET /api/2.0/preview/scim/v2/Me", func(r *http.Request) (any, error) {
 		return iam.User{
+			Id:       "1000012345",
 			UserName: "tester@databricks.com",
 		}, nil
 	})

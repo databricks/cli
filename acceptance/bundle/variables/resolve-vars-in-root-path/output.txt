@@ -1,6 +1,7 @@
 {
   "artifact_path": "TestResolveVariableReferencesToBundleVariables/bar/artifacts",
   "current_user": {
+    "id": "$USER.Id",
     "short_name": "$USERNAME",
     "userName": "$USERNAME"
   },
