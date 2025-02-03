@@ -14,7 +14,7 @@ import (
 var OverwriteMode = false
 
 func init() {
-	flag.BoolVar(&OverwriteMode, "update", true, "Overwrite golden files")
+	flag.BoolVar(&OverwriteMode, "update", false, "Overwrite golden files")
 }
 
 func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string {
