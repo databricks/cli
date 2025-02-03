@@ -53,11 +53,3 @@ func TestReplacement_OS(t *testing.T) {
 
 	assert.Equal(t, "[OS]", repls.Replace(runtime.GOOS))
 }
-
-func TestReplacement_UnixTimeMillis(t *testing.T) {
-	var repls ReplacementsContext
-
-	PrepareReplaceUnixTimeMillis(t, &repls)
-
-	assert.Equal(t, "\"[UNIX_TIME_MILLIS]\"", repls.Replace("abc 1738553834000"))
-}
