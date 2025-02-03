@@ -216,3 +216,8 @@ func PrepareReplaceUnixTimeMillis(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(unixTimeMillisRegex, "\"[UNIX_TIME_MILLIS]\"")
 }
+
+func PrepareReplaceOS(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.Set(runtime.GOOS, "$OS")
+}
