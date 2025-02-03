@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -112,6 +113,6 @@ func AddHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("POST /api/2.0/workspace-files/import-file/", func(r *http.Request) (any, error) {
-		return "{}", nil
+		return "{}", errors.New("not implemented")
 	})
 }

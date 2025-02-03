@@ -42,7 +42,28 @@ from myscript.py 0 postbuild: hello stderr!
 Executing 'predeploy' script
 from myscript.py 0 predeploy: hello stdout!
 from myscript.py 0 predeploy: hello stderr!
-Error: Post "[DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Fscripts%2Fdefault%2Fstate%2Fdeploy.lock?overwrite=false": EOF
+Error: unable to parse response. This is likely a bug in the Databricks SDK for Go or the underlying REST API. Please report this issue with the following debugging information to the SDK issue tracker at https://github.com/databricks/databricks-sdk-go/issues. Request log:
+```
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/scripts/default/state/deploy.lock?overwrite=false
+> * Host: 
+> * Accept: application/json
+> * Authorization: REDACTED
+> * Traceparent: 00-065d5ec735d5eae4dab651801abba98f-05acfeff8caffc7c-01
+> * User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat
+> {
+>   "AcquisitionTime": "2025-02-03T20:00:19.375383+01:00",
+>   "ID": "[UUID]",
+>   "IsForced": false,
+>   "User": "[USERNAME]"
+> }
+< HTTP/1.1 500 Internal Server Error
+< * Content-Length: 16
+< * Content-Type: text/plain; charset=utf-8
+< * Date: Mon, 03 Feb 2025 19:00:19 GMT
+< * X-Content-Type-Options: nosniff
+< not implemented
+< 
+```
 
 
 Exit code: 1
