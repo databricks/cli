@@ -51,7 +51,7 @@ schema:
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
-INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance/... ./integration/..." -- -parallel 4 -timeout=2h
+INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
 
 integration: vendor
 	$(INTEGRATION)
