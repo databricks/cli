@@ -42,7 +42,7 @@ artifacts:
   
    * - `files`
      - Sequence
-     - The source files for the artifact. See [_](#artifacts.<name>.files).
+     - The source files for the artifact. See [_](#files).
   
    * - `path`
      - String
@@ -62,26 +62,6 @@ artifacts:
     build: poetry build
     path: .
 ```
-  
-### artifacts.<name>.files
-  
-**`Type: Sequence`**
-  
-The source files for the artifact.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `source`
-     - String
-     - Required. The path of the files used to build the artifact.
-  
   
 ## bundle
   
@@ -112,11 +92,11 @@ The bundle attributes when deploying to this target,
   
    * - `deployment`
      - Map
-     - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#bundle.deployment).
+     - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#deployment).
   
    * - `git`
      - Map
-     - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#bundle.git).
+     - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#git).
   
    * - `name`
      - String
@@ -127,7 +107,7 @@ The bundle attributes when deploying to this target,
      - Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
   
   
-### bundle.deployment
+## deployment
   
 **`Type: Map`**
   
@@ -148,10 +128,97 @@ The definition of the bundle deployment
   
    * - `lock`
      - Map
-     - The deployment lock attributes. See [_](#bundle.deployment.lock).
+     - The deployment lock attributes. See [_](#lock).
   
   
-### bundle.deployment.lock
+## experimental
+  
+**`Type: Map`**
+  
+Defines attributes for experimental features.
+  
+  
+  
+.. list-table::
+   :header-rows: 1
+  
+   * - Key
+     - Type
+     - Description
+  
+   * - `pydabs`
+     - Map
+     - The PyDABs configuration. See [_](#pydabs).
+  
+   * - `python`
+     - Map
+     - Configures loading of Python code defined with 'databricks-bundles' package. See [_](#python).
+  
+   * - `python_wheel_wrapper`
+     - Boolean
+     - Whether to use a Python wheel wrapper.
+  
+   * - `scripts`
+     - Map
+     - The commands to run.
+  
+   * - `use_legacy_run_as`
+     - Boolean
+     - Whether to use the legacy run_as behavior.
+  
+  
+## files
+  
+**`Type: Sequence`**
+  
+The source files for the artifact.
+  
+  
+  
+.. list-table::
+   :header-rows: 1
+  
+   * - Key
+     - Type
+     - Description
+  
+   * - `source`
+     - String
+     - Required. The path of the files used to build the artifact.
+  
+  
+## git
+  
+**`Type: Map`**
+  
+The Git version control settings for the target.
+  
+  
+  
+.. list-table::
+   :header-rows: 1
+  
+   * - Key
+     - Type
+     - Description
+  
+   * - `branch`
+     - String
+     - The Git branch name. See [_](/dev-tools/bundles/settings.md#git).
+  
+   * - `origin_url`
+     - String
+     - The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git).
+  
+  
+## include
+  
+**`Type: Sequence`**
+  
+Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
+  
+  
+## lock
   
 **`Type: Map`**
   
@@ -175,11 +242,11 @@ The deployment lock attributes.
      - Whether to force this lock if it is enabled.
   
   
-### bundle.git
+## lookup
   
 **`Type: Map`**
   
-The Git version control details that are associated with your bundle.
+The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
   
   
   
@@ -190,112 +257,53 @@ The Git version control details that are associated with your bundle.
      - Type
      - Description
   
-   * - `branch`
+   * - `alert`
      - String
-     - The Git branch name. See [_](/dev-tools/bundles/settings.md#git).
+     - 
   
-   * - `origin_url`
+   * - `cluster`
      - String
-     - The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git).
+     - 
   
-  
-## experimental
-  
-**`Type: Map`**
-  
-Defines attributes for experimental features.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `pydabs`
-     - Map
-     - The PyDABs configuration. See [_](#experimental.pydabs).
-  
-   * - `python`
-     - Map
-     - Configures loading of Python code defined with 'databricks-bundles' package. See [_](#experimental.python).
-  
-   * - `python_wheel_wrapper`
-     - Boolean
-     - Whether to use a Python wheel wrapper.
-  
-   * - `scripts`
-     - Map
-     - The commands to run.
-  
-   * - `use_legacy_run_as`
-     - Boolean
-     - Whether to use the legacy run_as behavior.
-  
-  
-### experimental.pydabs
-  
-**`Type: Map`**
-  
-The PyDABs configuration.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `enabled`
-     - Boolean
-     - Whether or not PyDABs (Private Preview) is enabled
-  
-   * - `import`
-     - Sequence
-     - The PyDABs project to import to discover resources, resource generator and mutators
-  
-   * - `venv_path`
+   * - `cluster_policy`
      - String
-     - The Python virtual environment path
+     - 
   
-  
-### experimental.python
-  
-**`Type: Map`**
-  
-Configures loading of Python code defined with 'databricks-bundles' package.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `mutators`
-     - Sequence
-     - Mutators contains a list of fully qualified function paths to mutator functions.  Example: ["my_project.mutators:add_default_cluster"]
-  
-   * - `resources`
-     - Sequence
-     - Resources contains a list of fully qualified function paths to load resources defined in Python code.  Example: ["my_project.resources:load_resources"]
-  
-   * - `venv_path`
+   * - `dashboard`
      - String
-     - VEnvPath is path to the virtual environment.  If enabled, Python code will execute within this environment. If disabled, it defaults to using the Python interpreter available in the current shell.
+     - 
   
+   * - `instance_pool`
+     - String
+     - 
   
-## include
+   * - `job`
+     - String
+     - 
   
-**`Type: Sequence`**
+   * - `metastore`
+     - String
+     - 
   
-Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
+   * - `notification_destination`
+     - String
+     - 
+  
+   * - `pipeline`
+     - String
+     - 
+  
+   * - `query`
+     - String
+     - 
+  
+   * - `service_principal`
+     - String
+     - 
+  
+   * - `warehouse`
+     - String
+     - 
   
   
 ## permissions
@@ -382,6 +390,62 @@ Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.m
    * - `trigger_pause_status`
      - String
      - A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
+  
+  
+## pydabs
+  
+**`Type: Map`**
+  
+The PyDABs configuration.
+  
+  
+  
+.. list-table::
+   :header-rows: 1
+  
+   * - Key
+     - Type
+     - Description
+  
+   * - `enabled`
+     - Boolean
+     - Whether or not PyDABs (Private Preview) is enabled
+  
+   * - `import`
+     - Sequence
+     - The PyDABs project to import to discover resources, resource generator and mutators
+  
+   * - `venv_path`
+     - String
+     - The Python virtual environment path
+  
+  
+## python
+  
+**`Type: Map`**
+  
+Configures loading of Python code defined with 'databricks-bundles' package.
+  
+  
+  
+.. list-table::
+   :header-rows: 1
+  
+   * - Key
+     - Type
+     - Description
+  
+   * - `mutators`
+     - Sequence
+     - Mutators contains a list of fully qualified function paths to mutator functions.  Example: ["my_project.mutators:add_default_cluster"]
+  
+   * - `resources`
+     - Sequence
+     - Resources contains a list of fully qualified function paths to load resources defined in Python code.  Example: ["my_project.resources:load_resources"]
+  
+   * - `venv_path`
+     - String
+     - VEnvPath is path to the virtual environment.  If enabled, Python code will execute within this environment. If disabled, it defaults to using the Python interpreter available in the current shell.
   
   
 ## resources
@@ -529,11 +593,11 @@ targets:
   
    * - `artifacts`
      - Map
-     - The artifacts to include in the target deployment. See [_](#targets.<name>.artifacts).
+     - The artifacts to include in the target deployment. See [_](#artifacts).
   
    * - `bundle`
      - Map
-     - The bundle attributes when deploying to this target. See [_](#targets.<name>.bundle).
+     - The bundle attributes when deploying to this target. See [_](#bundle).
   
    * - `cluster_id`
      - String
@@ -549,7 +613,7 @@ targets:
   
    * - `git`
      - Map
-     - The Git version control settings for the target. See [_](#targets.<name>.git).
+     - The Git version control settings for the target. See [_](#git).
   
    * - `mode`
      - String
@@ -557,601 +621,31 @@ targets:
   
    * - `permissions`
      - Sequence
-     - The permissions for deploying and running the bundle in the target. See [_](#targets.<name>.permissions).
+     - The permissions for deploying and running the bundle in the target. See [_](#permissions).
   
    * - `presets`
      - Map
-     - The deployment presets for the target. See [_](#targets.<name>.presets).
+     - The deployment presets for the target. See [_](#presets).
   
    * - `resources`
      - Map
-     - The resource definitions for the target. See [_](#targets.<name>.resources).
+     - The resource definitions for the target. See [_](#resources).
   
    * - `run_as`
      - Map
-     - The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md). See [_](#targets.<name>.run_as).
+     - The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md). See [_](#run_as).
   
    * - `sync`
      - Map
-     - The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#targets.<name>.sync).
+     - The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#sync).
   
    * - `variables`
      - Map
-     - The custom variable definitions for the target. See [_](#targets.<name>.variables).
+     - The custom variable definitions for the target. See [_](#variables).
   
    * - `workspace`
      - Map
-     - The Databricks workspace for the target. See [_](#targets.<name>.workspace).
-  
-  
-### targets.<name>.artifacts
-  
-**`Type: Map`**
-  
-The artifacts to include in the target deployment.
-  
-```yaml
-artifacts:
-  <artifact-name>:
-    <artifact-field-name>: <artifact-field-value>
-```
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `build`
-     - String
-     - An optional set of non-default build commands to run locally before deployment.
-  
-   * - `executable`
-     - String
-     - The executable type. Valid values are `bash`, `sh`, and `cmd`.
-  
-   * - `files`
-     - Sequence
-     - The source files for the artifact. See [_](#targets.<name>.artifacts.<name>.files).
-  
-   * - `path`
-     - String
-     - The location where the built artifact will be saved.
-  
-   * - `type`
-     - String
-     - Required. The type of the artifact. Valid values are `whl`.
-  
-  
-### targets.<name>.artifacts.<name>.files
-  
-**`Type: Sequence`**
-  
-The source files for the artifact.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `source`
-     - String
-     - Required. The path of the files used to build the artifact.
-  
-  
-### targets.<name>.bundle
-  
-**`Type: Map`**
-  
-The bundle attributes when deploying to this target.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `cluster_id`
-     - String
-     - The ID of a cluster to use to run the bundle. See [_](/dev-tools/bundles/settings.md#cluster_id).
-  
-   * - `compute_id`
-     - String
-     - 
-  
-   * - `databricks_cli_version`
-     - String
-     - The Databricks CLI version to use for the bundle. See [_](/dev-tools/bundles/settings.md#databricks_cli_version).
-  
-   * - `deployment`
-     - Map
-     - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#targets.<name>.bundle.deployment).
-  
-   * - `git`
-     - Map
-     - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#targets.<name>.bundle.git).
-  
-   * - `name`
-     - String
-     - The name of the bundle.
-  
-   * - `uuid`
-     - String
-     - Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
-  
-  
-### targets.<name>.bundle.deployment
-  
-**`Type: Map`**
-  
-The definition of the bundle deployment
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `fail_on_active_runs`
-     - Boolean
-     - Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
-  
-   * - `lock`
-     - Map
-     - The deployment lock attributes. See [_](#targets.<name>.bundle.deployment.lock).
-  
-  
-### targets.<name>.bundle.deployment.lock
-  
-**`Type: Map`**
-  
-The deployment lock attributes.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `enabled`
-     - Boolean
-     - Whether this lock is enabled.
-  
-   * - `force`
-     - Boolean
-     - Whether to force this lock if it is enabled.
-  
-  
-### targets.<name>.bundle.git
-  
-**`Type: Map`**
-  
-The Git version control details that are associated with your bundle.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `branch`
-     - String
-     - The Git branch name. See [_](/dev-tools/bundles/settings.md#git).
-  
-   * - `origin_url`
-     - String
-     - The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git).
-  
-  
-### targets.<name>.git
-  
-**`Type: Map`**
-  
-The Git version control settings for the target.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `branch`
-     - String
-     - The Git branch name. See [_](/dev-tools/bundles/settings.md#git).
-  
-   * - `origin_url`
-     - String
-     - The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git).
-  
-  
-### targets.<name>.permissions
-  
-**`Type: Sequence`**
-  
-The permissions for deploying and running the bundle in the target.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `group_name`
-     - String
-     - The name of the group that has the permission set in level.
-  
-   * - `level`
-     - String
-     - The allowed permission for user, group, service principal defined for this permission.
-  
-   * - `service_principal_name`
-     - String
-     - The name of the service principal that has the permission set in level.
-  
-   * - `user_name`
-     - String
-     - The name of the user that has the permission set in level.
-  
-  
-### targets.<name>.presets
-  
-**`Type: Map`**
-  
-The deployment presets for the target.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `jobs_max_concurrent_runs`
-     - Integer
-     - The maximum concurrent runs for a job.
-  
-   * - `name_prefix`
-     - String
-     - The prefix for job runs of the bundle.
-  
-   * - `pipelines_development`
-     - Boolean
-     - Whether pipeline deployments should be locked in development mode.
-  
-   * - `source_linked_deployment`
-     - Boolean
-     - Whether to link the deployment to the bundle source.
-  
-   * - `tags`
-     - Map
-     - The tags for the bundle deployment.
-  
-   * - `trigger_pause_status`
-     - String
-     - A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
-  
-  
-### targets.<name>.resources
-  
-**`Type: Map`**
-  
-The resource definitions for the target.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `apps`
-     - Map
-     - 
-  
-   * - `clusters`
-     - Map
-     - The cluster definitions for the bundle, where each key is the name of a cluster. See [_](/dev-tools/bundles/resources.md#clusters)
-  
-   * - `dashboards`
-     - Map
-     - The dashboard definitions for the bundle, where each key is the name of the dashboard. See [_](/dev-tools/bundles/resources.md#dashboards)
-  
-   * - `experiments`
-     - Map
-     - The experiment definitions for the bundle, where each key is the name of the experiment. See [_](/dev-tools/bundles/resources.md#experiments)
-  
-   * - `jobs`
-     - Map
-     - The job definitions for the bundle, where each key is the name of the job. See [_](/dev-tools/bundles/resources.md#jobs)
-  
-   * - `model_serving_endpoints`
-     - Map
-     - The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [_](/dev-tools/bundles/resources.md#model_serving_endpoints)
-  
-   * - `models`
-     - Map
-     - The model definitions for the bundle, where each key is the name of the model. See [_](/dev-tools/bundles/resources.md#models)
-  
-   * - `pipelines`
-     - Map
-     - The pipeline definitions for the bundle, where each key is the name of the pipeline. See [_](/dev-tools/bundles/resources.md#pipelines)
-  
-   * - `quality_monitors`
-     - Map
-     - The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality_monitors)
-  
-   * - `registered_models`
-     - Map
-     - The registered model definitions for the bundle, where each key is the name of the <UC> registered model. See [_](/dev-tools/bundles/resources.md#registered_models)
-  
-   * - `schemas`
-     - Map
-     - The schema definitions for the bundle, where each key is the name of the schema. See [_](/dev-tools/bundles/resources.md#schemas)
-  
-   * - `volumes`
-     - Map
-     - The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volumes)
-  
-  
-### targets.<name>.run_as
-  
-**`Type: Map`**
-  
-The identity to use to run the bundle.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `service_principal_name`
-     - String
-     - The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
-  
-   * - `user_name`
-     - String
-     - The email of an active workspace user. Non-admin users can only set this field to their own email.
-  
-  
-### targets.<name>.sync
-  
-**`Type: Map`**
-  
-The local paths to sync to the target workspace when a bundle is run or deployed.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `exclude`
-     - Sequence
-     - A list of files or folders to exclude from the bundle.
-  
-   * - `include`
-     - Sequence
-     - A list of files or folders to include in the bundle.
-  
-   * - `paths`
-     - Sequence
-     - The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.
-  
-  
-### targets.<name>.variables
-  
-**`Type: Map`**
-  
-The custom variable definitions for the target.
-  
-```yaml
-variables:
-  <variable-name>:
-    <variable-field-name>: <variable-field-value>
-```
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `default`
-     - Any
-     - 
-  
-   * - `description`
-     - String
-     - The description of the variable.
-  
-   * - `lookup`
-     - Map
-     - The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID. See [_](#targets.<name>.variables.<name>.lookup).
-  
-   * - `type`
-     - String
-     - The type of the variable.
-  
-  
-### targets.<name>.variables.<name>.lookup
-  
-**`Type: Map`**
-  
-The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `alert`
-     - String
-     - 
-  
-   * - `cluster`
-     - String
-     - 
-  
-   * - `cluster_policy`
-     - String
-     - 
-  
-   * - `dashboard`
-     - String
-     - 
-  
-   * - `instance_pool`
-     - String
-     - 
-  
-   * - `job`
-     - String
-     - 
-  
-   * - `metastore`
-     - String
-     - 
-  
-   * - `notification_destination`
-     - String
-     - 
-  
-   * - `pipeline`
-     - String
-     - 
-  
-   * - `query`
-     - String
-     - 
-  
-   * - `service_principal`
-     - String
-     - 
-  
-   * - `warehouse`
-     - String
-     - 
-  
-  
-### targets.<name>.workspace
-  
-**`Type: Map`**
-  
-The Databricks workspace for the target.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `artifact_path`
-     - String
-     - The artifact path to use within the workspace for both deployments and workflow runs
-  
-   * - `auth_type`
-     - String
-     - The authentication type.
-  
-   * - `azure_client_id`
-     - String
-     - The Azure client ID
-  
-   * - `azure_environment`
-     - String
-     - The Azure environment
-  
-   * - `azure_login_app_id`
-     - String
-     - The Azure login app ID
-  
-   * - `azure_tenant_id`
-     - String
-     - The Azure tenant ID
-  
-   * - `azure_use_msi`
-     - Boolean
-     - Whether to use MSI for Azure
-  
-   * - `azure_workspace_resource_id`
-     - String
-     - The Azure workspace resource ID
-  
-   * - `client_id`
-     - String
-     - The client ID for the workspace
-  
-   * - `file_path`
-     - String
-     - The file path to use within the workspace for both deployments and workflow runs
-  
-   * - `google_service_account`
-     - String
-     - The Google service account name
-  
-   * - `host`
-     - String
-     - The Databricks workspace host URL
-  
-   * - `profile`
-     - String
-     - The Databricks workspace profile name
-  
-   * - `resource_path`
-     - String
-     - The workspace resource path
-  
-   * - `root_path`
-     - String
-     - The Databricks workspace root path
-  
-   * - `state_path`
-     - String
-     - The workspace state path
+     - The Databricks workspace for the target. See [_](#workspace).
   
   
 ## variables
@@ -1184,75 +678,11 @@ variables:
   
    * - `lookup`
      - Map
-     - The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID. See [_](#variables.<name>.lookup).
+     - The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID. See [_](#lookup).
   
    * - `type`
      - String
      - The type of the variable.
-  
-  
-### variables.<name>.lookup
-  
-**`Type: Map`**
-  
-The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-  
-  
-  
-.. list-table::
-   :header-rows: 1
-  
-   * - Key
-     - Type
-     - Description
-  
-   * - `alert`
-     - String
-     - 
-  
-   * - `cluster`
-     - String
-     - 
-  
-   * - `cluster_policy`
-     - String
-     - 
-  
-   * - `dashboard`
-     - String
-     - 
-  
-   * - `instance_pool`
-     - String
-     - 
-  
-   * - `job`
-     - String
-     - 
-  
-   * - `metastore`
-     - String
-     - 
-  
-   * - `notification_destination`
-     - String
-     - 
-  
-   * - `pipeline`
-     - String
-     - 
-  
-   * - `query`
-     - String
-     - 
-  
-   * - `service_principal`
-     - String
-     - 
-  
-   * - `warehouse`
-     - String
-     - 
   
   
 ## workspace

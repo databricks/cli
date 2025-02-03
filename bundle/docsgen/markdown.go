@@ -15,7 +15,8 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 		if node.TopLevel {
 			m = m.H2(node.Title)
 		} else {
-			m = m.H3(node.Title)
+			// m = m.H3(node.Title)
+			m = m.H2(node.Title)
 		}
 		m = m.LF()
 

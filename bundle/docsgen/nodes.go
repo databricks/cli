@@ -169,7 +169,8 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[stri
 		}
 		var reference string
 		if isReferenceType(v, refs, ownFields) && !circular {
-			reference = prefix + "." + k
+			// reference = prefix + "." + k
+			reference = k
 		}
 		attributes = append(attributes, attributeNode{
 			Title:       k,
@@ -209,7 +210,8 @@ func extractNodes(prefix string, props, refs map[string]*jsonschema.Schema, ownF
 		}
 		v = resolveRefs(v, refs)
 		if v.Type == "object" || v.Type == "array" {
-			nodes = append(nodes, rootProp{prefix + "." + k, v, false, isCycleField(k)})
+			// nodes = append(nodes, rootProp{prefix + "." + k, v, false, isCycleField(k)})
+			nodes = append(nodes, rootProp{k, v, false, isCycleField(k)})
 		}
 	}
 	return nodes
