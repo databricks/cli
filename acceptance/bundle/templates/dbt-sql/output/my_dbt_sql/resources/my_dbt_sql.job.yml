@@ -11,7 +11,7 @@ resources:
 
       email_notifications:
         on_failure:
-          - $USERNAME
+          - [USERNAME]
 
 
       tasks:

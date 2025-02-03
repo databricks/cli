@@ -1,5 +1,5 @@
 
->>> $CLI bundle --help
+>>> [CLI] bundle --help
 Databricks Asset Bundles let you express data/AI/analytics projects as code.
 
 Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.html

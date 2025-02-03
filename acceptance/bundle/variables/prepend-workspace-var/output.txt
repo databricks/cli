@@ -7,7 +7,7 @@
     },
     "target": "dev",
     "terraform": {
-      "exec_path": "$TERRAFORM"
+      "exec_path": "[TERRAFORM]"
     }
   },
   "resources": {
@@ -15,7 +15,7 @@
       "my_job": {
         "deployment": {
           "kind": "BUNDLE",
-          "metadata_file_path": "/Users/$USERNAME/path/to/root/state/metadata.json"
+          "metadata_file_path": "/Users/[USERNAME]/path/to/root/state/metadata.json"
         },
         "edit_mode": "UI_LOCKED",
         "format": "MULTI_TASK",
@@ -29,7 +29,7 @@
             "existing_cluster_id": "500",
             "python_wheel_task": {
               "named_parameters": {
-                "conf-file": "/Users/$USERNAME/path/to/root/files/path/to/config.yaml"
+                "conf-file": "/Users/[USERNAME]/path/to/root/files/path/to/config.yaml"
               }
             },
             "task_key": ""
@@ -46,17 +46,17 @@
   "targets": null,
   "variables": {
     "workspace_root": {
-      "default": "/Users/$USERNAME",
+      "default": "/Users/[USERNAME]",
       "description": "root directory in the Databricks workspace to store the asset bundle and associated artifacts",
-      "value": "/Users/$USERNAME"
+      "value": "/Users/[USERNAME]"
     }
   },
   "workspace": {
-    "artifact_path": "/Users/$USERNAME/path/to/root/artifacts",
-    "file_path": "/Users/$USERNAME/path/to/root/files",
+    "artifact_path": "/Users/[USERNAME]/path/to/root/artifacts",
+    "file_path": "/Users/[USERNAME]/path/to/root/files",
     "profile": "profile_name",
-    "resource_path": "/Users/$USERNAME/path/to/root/resources",
-    "root_path": "/Users/$USERNAME/path/to/root",
-    "state_path": "/Users/$USERNAME/path/to/root/state"
+    "resource_path": "/Users/[USERNAME]/path/to/root/resources",
+    "root_path": "/Users/[USERNAME]/path/to/root",
+    "state_path": "/Users/[USERNAME]/path/to/root/state"
   }
 }

@@ -1,5 +1,5 @@
 
->>> $CLI bundle validate -o json
+>>> [CLI] bundle validate -o json
 {
   "bundle": {
     "environment": "prod",
@@ -11,7 +11,7 @@
     "name": "git",
     "target": "prod",
     "terraform": {
-      "exec_path": "$TERRAFORM"
+      "exec_path": "[TERRAFORM]"
     }
   },
   "sync": {
@@ -27,24 +27,24 @@
     }
   },
   "workspace": {
-    "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/artifacts",
-    "file_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/files",
-    "resource_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/resources",
-    "root_path": "/Workspace/Users/$USERNAME/.bundle/git/prod",
-    "state_path": "/Workspace/Users/$USERNAME/.bundle/git/prod/state"
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/git/prod/artifacts",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/git/prod/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/git/prod/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/git/prod",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/git/prod/state"
   }
 }
 
->>> $CLI bundle validate
+>>> [CLI] bundle validate
 Name: git
 Target: prod
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/git/prod
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/git/prod
 
 Validation OK!
 
->>> $CLI bundle validate -o json -t dev
+>>> [CLI] bundle validate -o json -t dev
 {
   "bundle": {
     "environment": "dev",
@@ -56,7 +56,7 @@ Validation OK!
     "name": "git",
     "target": "dev",
     "terraform": {
-      "exec_path": "$TERRAFORM"
+      "exec_path": "[TERRAFORM]"
     }
   },
   "sync": {
@@ -72,19 +72,19 @@ Validation OK!
     }
   },
   "workspace": {
-    "artifact_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/artifacts",
-    "file_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/files",
-    "resource_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/resources",
-    "root_path": "/Workspace/Users/$USERNAME/.bundle/git/dev",
-    "state_path": "/Workspace/Users/$USERNAME/.bundle/git/dev/state"
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/git/dev/artifacts",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/git/dev/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/git/dev/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/git/dev",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/git/dev/state"
   }
 }
 
->>> $CLI bundle validate -t dev
+>>> [CLI] bundle validate -t dev
 Name: git
 Target: dev
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/git/dev
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/git/dev
 
 Validation OK!

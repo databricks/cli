@@ -2,7 +2,6 @@ package testdiff
 
 import (
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -16,7 +15,7 @@ import (
 )
 
 const (
-	testerName = "$USERNAME"
+	testerName = "[USERNAME]"
 )
 
 var (
@@ -140,25 +139,25 @@ func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsCont
 	t.Helper()
 	// in some clouds (gcp) w.Config.Host includes "https://" prefix in others it's really just a host (azure)
 	host := strings.TrimPrefix(strings.TrimPrefix(w.Config.Host, "http://"), "https://")
-	r.Set("https://"+host, "$DATABRICKS_URL")
-	r.Set("http://"+host, "$DATABRICKS_URL")
-	r.Set(host, "$DATABRICKS_HOST")
-	r.Set(w.Config.ClusterID, "$DATABRICKS_CLUSTER_ID")
-	r.Set(w.Config.WarehouseID, "$DATABRICKS_WAREHOUSE_ID")
-	r.Set(w.Config.ServerlessComputeID, "$DATABRICKS_SERVERLESS_COMPUTE_ID")
-	r.Set(w.Config.AccountID, "$DATABRICKS_ACCOUNT_ID")
-	r.Set(w.Config.Username, "$DATABRICKS_USERNAME")
-	r.SetPath(w.Config.Profile, "$DATABRICKS_CONFIG_PROFILE")
-	r.Set(w.Config.ConfigFile, "$DATABRICKS_CONFIG_FILE")
-	r.Set(w.Config.GoogleServiceAccount, "$DATABRICKS_GOOGLE_SERVICE_ACCOUNT")
-	r.Set(w.Config.AzureResourceID, "$DATABRICKS_AZURE_RESOURCE_ID")
+	r.Set("https://"+host, "[DATABRICKS_URL]")
+	r.Set("http://"+host, "[DATABRICKS_URL]")
+	r.Set(host, "[DATABRICKS_HOST]")
+	r.Set(w.Config.ClusterID, "[DATABRICKS_CLUSTER_ID]")
+	r.Set(w.Config.WarehouseID, "[DATABRICKS_WAREHOUSE_ID]")
+	r.Set(w.Config.ServerlessComputeID, "[DATABRICKS_SERVERLESS_COMPUTE_ID]")
+	r.Set(w.Config.AccountID, "[DATABRICKS_ACCOUNT_ID]")
+	r.Set(w.Config.Username, "[DATABRICKS_USERNAME]")
+	r.SetPath(w.Config.Profile, "[DATABRICKS_CONFIG_PROFILE]")
+	r.Set(w.Config.ConfigFile, "[DATABRICKS_CONFIG_FILE]")
+	r.Set(w.Config.GoogleServiceAccount, "[DATABRICKS_GOOGLE_SERVICE_ACCOUNT]")
+	r.Set(w.Config.AzureResourceID, "[DATABRICKS_AZURE_RESOURCE_ID]")
 	r.Set(w.Config.AzureClientID, testerName)
-	r.Set(w.Config.AzureTenantID, "$ARM_TENANT_ID")
-	r.Set(w.Config.AzureEnvironment, "$ARM_ENVIRONMENT")
-	r.Set(w.Config.ClientID, "$DATABRICKS_CLIENT_ID")
-	r.SetPath(w.Config.DatabricksCliPath, "$DATABRICKS_CLI_PATH")
+	r.Set(w.Config.AzureTenantID, "[ARM_TENANT_ID]")
+	r.Set(w.Config.AzureEnvironment, "[ARM_ENVIRONMENT]")
+	r.Set(w.Config.ClientID, "[DATABRICKS_CLIENT_ID]")
+	r.SetPath(w.Config.DatabricksCliPath, "[DATABRICKS_CLI_PATH]")
 	// This is set to words like "path" that happen too frequently
-	// r.Set(w.Config.AuthType, "$DATABRICKS_AUTH_TYPE")
+	// r.Set(w.Config.AuthType, "[DATABRICKS_AUTH_TYPE]")
 }
 
 func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.User) {
@@ -179,14 +178,14 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 
 	r.Set(iamutil.GetShortUserName(&u), testerName)
 
-	for ind, val := range u.Groups {
-		r.Set(val.Value, fmt.Sprintf("$USER.Groups[%d]", ind))
+	for _, val := range u.Groups {
+		r.Set(val.Value, "[USERGROUP]")
 	}
 
-	r.Set(u.Id, "$USER.Id")
+	r.Set(u.Id, "[USERID]")
 
-	for ind, val := range u.Roles {
-		r.Set(val.Value, fmt.Sprintf("$USER.Roles[%d]", ind))
+	for _, val := range u.Roles {
+		r.Set(val.Value, "[USERROLE]")
 	}
 }
 
@@ -207,5 +206,5 @@ func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsC
 
 func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(devVersionRegex, "$$DEV_VERSION")
+	r.append(devVersionRegex, "[DEV_VERSION]")
 }

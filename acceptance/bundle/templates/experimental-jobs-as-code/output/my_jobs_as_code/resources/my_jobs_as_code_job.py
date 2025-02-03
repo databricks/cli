@@ -17,7 +17,7 @@ my_jobs_as_code_job = Job.from_dict(
         },
         "email_notifications": {
             "on_failure": [
-                "$USERNAME",
+                "[USERNAME]",
             ],
         },
         "tasks": [
