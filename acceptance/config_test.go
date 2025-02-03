@@ -45,9 +45,6 @@ type TestConfig struct {
 	// out.requests.txt
 	RecordRequests bool
 
-	// List of fields to mask when recording requests.
-	MaskRequestFields []string
-
 	// Wait for these files to appear before starting assertion on the output.
 	// This is useful for concurrency control when tests spawn subprocesses.
 	EventuallyFiles []string
