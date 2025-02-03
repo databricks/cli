@@ -448,7 +448,6 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 	}
 
 	RunCommand(t, args, "..")
-	RunCommand(t, []string{execPath, "--version"}, ".")
 	return execPath
 }
 
