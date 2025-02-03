@@ -28,29 +28,6 @@ type Request struct {
 	Body   json.RawMessage `json:"body"`
 }
 
-// Returns a JSON string representation of the request, with the specified fields masked.
-func (r Request) JsonString(maskFields []string) (string, error) {
-	body := map[string]any{}
-	err := json.Unmarshal([]byte(r.Body), &body)
-	if err != nil {
-		return "", err
-	}
-
-	for _, field := range maskFields {
-		body[field] = "****"
-	}
-
-	newBody, err := json.Marshal(body)
-	if err != nil {
-		return "", err
-	}
-
-	r.Body = newBody
-
-	b, err := json.Marshal(r)
-	return string(b), err
-}
-
 func New(t testutil.TestingT) *Server {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
