@@ -2,6 +2,6 @@ panic: runtime error: index out of range [1] with length 1
 
 goroutine 1 [running]:
 main.main()
-	/Users/shreyas.goenka/cli/main.go:18 +0x154
+	/Users/shreyas.goenka/cli/main.go:22 +0x1b0
 
 Exit code: 2
