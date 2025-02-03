@@ -1,10 +1,5 @@
 package telemetry
 
-import (
-	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/config"
-)
-
 // RequestBody is the request body type bindings for the /telemetry-ext API endpoint.
 type RequestBody struct {
 	// Timestamp in millis for when the log was uploaded.
@@ -33,9 +28,4 @@ type ResponseBody struct {
 type LogError struct {
 	Message   string `json:"message"`
 	ErrorType string `json:"errorType"`
-}
-
-type WorkerInput struct {
-	AuthConfig *config.Config       `json:"authConfig"`
-	Logs       []protos.FrontendLog `json:"logs"`
 }

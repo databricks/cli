@@ -1,0 +1,5 @@
+
+>>> $CLI telemetry upload
+Successfully uploaded telemetry logs
+Response: 
+{"errors":null,"numProtoSuccess":2}

@@ -7,19 +7,16 @@ import (
 	"github.com/google/uuid"
 )
 
-const SkipEnvVar = "DATABRICKS_CLI_SKIP_TELEMETRY"
-
-// DATABRICKS_CLI_BLOCK_ON_TELEMETRY_UPLOAD is an environment variable that can be set
-// to make the CLI process block until the telemetry logs are uploaded.
-// Only used for testing.
-const BlockOnUploadEnvVar = "DATABRICKS_CLI_BLOCK_ON_TELEMETRY_UPLOAD"
-
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	fromContext(ctx).log(event)
 }
 
 func GetLogs(ctx context.Context) []protos.FrontendLog {
 	return fromContext(ctx).getLogs()
+}
+
+func HasLogs(ctx context.Context) bool {
+	return len(fromContext(ctx).getLogs()) > 0
 }
 
 func SetExecutionContext(ctx context.Context, ec protos.ExecutionContext) {

@@ -1,0 +1,5 @@
+export DATABRICKS_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload.txt
+
+# This test ensures that the main CLI command does not error even if
+# telemetry upload fails.
+trace $CLI telemetry dummy

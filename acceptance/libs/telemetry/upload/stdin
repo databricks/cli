@@ -1,0 +1,28 @@
+{
+    "config": {
+        "host": "$DATABRICKS_HOST",
+        "token": "$DATABRICKS_TOKEN"
+    },
+    "logs": [
+        {
+            "frontend_log_event_id": "BB79BB52-96F6-42C5-9E44-E63EEA84888D",
+            "entry": {
+                "databricks_cli_log": {
+                    "cli_test_event": {
+                        "name": "VALUE1"
+                    }
+                }
+            }
+        },
+        {
+            "frontend_log_event_id": "A7F597B0-66D1-462D-824C-C5C706F232E8",
+            "entry": {
+                "databricks_cli_log": {
+                    "cli_test_event": {
+                        "name": "VALUE2"
+                    }
+                }
+            }
+        }
+    ]
+}

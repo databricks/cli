@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,7 +36,7 @@ var (
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
 // example: var SingleTest = "bundle/variables/empty"
-var SingleTest = ""
+var SingleTest = "libs/telemetry/upload"
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -43,7 +44,7 @@ var SingleTest = ""
 var InprocessMode bool
 
 func init() {
-	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 }
@@ -156,6 +157,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
+	testdiff.PrepareReplaceUnixTimeMillis(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -280,6 +282,21 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Stderr = out
 	cmd.Dir = tmpDir
 	err = cmd.Run()
+
+	// Wait for the files to appear before starting assertion on the output.
+	// This is useful for concurrency control when the CLI spawns subprocesses.
+	missingFiles := config.EventuallyFiles
+	assert.Eventually(t, func() bool {
+		for _, file := range missingFiles {
+			_, err := os.Stat(filepath.Join(tmpDir, file))
+			if err == nil {
+				missingFiles = slices.DeleteFunc(missingFiles, func(n string) bool {
+					return n == file
+				})
+			}
+		}
+		return len(missingFiles) == 0
+	}, 10*time.Second, 100*time.Millisecond, "Files did not appear: %v", missingFiles)
 
 	// Write the requests made to the server to a output file if the test is
 	// configured to record requests.

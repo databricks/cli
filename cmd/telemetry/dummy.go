@@ -1,4 +1,4 @@
-package sendtestevent
+package telemetry
 
 import (
 	"github.com/databricks/cli/cmd/root"
@@ -7,16 +7,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
+func newDummyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "send-test-event",
-		Short:   "Send a test telemetry event to Databricks",
+		Use:     "dummy",
+		Short:   "log dummy telemetry events",
+		Long:    "Fire a test telemetry event against the configured Databricks workspace.",
 		Hidden:  true,
 		PreRunE: root.MustWorkspaceClient,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		for _, v := range []string{"VALUE1", "VALUE2", "VALUE3"} {
+		for _, v := range []string{"VALUE1", "VALUE2"} {
 			telemetry.Log(cmd.Context(), protos.DatabricksCliLog{
 				CliTestEvent: &protos.CliTestEvent{
 					Name: protos.DummyCliEnum(v),

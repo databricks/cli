@@ -24,7 +24,8 @@ var (
 	numIdRegex       = regexp.MustCompile(`[0-9]{3,}`)
 	privatePathRegex = regexp.MustCompile(`(/tmp|/private)(/.*)/([a-zA-Z0-9]+)`)
 	// Version could v0.0.0-dev+21e1aacf518a or just v0.0.0-dev (the latter is currently the case on Windows)
-	devVersionRegex = regexp.MustCompile(`0\.0\.0-dev(\+[a-f0-9]{10,16})?`)
+	devVersionRegex     = regexp.MustCompile(`0\.0\.0-dev(\+[a-f0-9]{10,16})?`)
+	unixTimeMillisRegex = regexp.MustCompile(`\b17\d{11}\b`)
 )
 
 type Replacement struct {
@@ -208,4 +209,10 @@ func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsC
 func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(devVersionRegex, "$$DEV_VERSION")
+}
+
+// TODO: Add tests for this
+func PrepareReplaceUnixTimeMillis(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.append(unixTimeMillisRegex, "\"[UNIX_TIME_MILLIS]\"")
 }
