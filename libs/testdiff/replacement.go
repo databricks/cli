@@ -211,9 +211,11 @@ func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) 
 	r.append(devVersionRegex, "$$DEV_VERSION")
 }
 
-// TODO: Add tests for this
 func PrepareReplaceUnixTimeMillis(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
+
+	// replacement is done with quotes to account for the case where the unix time
+	// is a integer in a JSON object.
 	r.append(unixTimeMillisRegex, "\"[UNIX_TIME_MILLIS]\"")
 }
 

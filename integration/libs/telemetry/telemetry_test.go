@@ -14,9 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: Have a test that ensures the dummy command succeeds even without a server.
-// Or a server that hangs.
-
 func TestTelemetryEndpoint(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W

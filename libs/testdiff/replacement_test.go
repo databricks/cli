@@ -1,6 +1,7 @@
 package testdiff
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,4 +44,20 @@ func TestReplacement_TemporaryDirectory(t *testing.T) {
 	PrepareReplacementsTemporaryDirectory(t, &repls)
 
 	assert.Equal(t, "/tmp/.../tail", repls.Replace("/tmp/foo/bar/qux/tail"))
+}
+
+func TestReplacement_OS(t *testing.T) {
+	var repls ReplacementsContext
+
+	PrepareReplaceOS(t, &repls)
+
+	assert.Equal(t, "[OS]", repls.Replace(runtime.GOOS))
+}
+
+func TestReplacement_UnixTimeMillis(t *testing.T) {
+	var repls ReplacementsContext
+
+	PrepareReplaceUnixTimeMillis(t, &repls)
+
+	assert.Equal(t, "\"[UNIX_TIME_MILLIS]\"", repls.Replace("abc 1738553834000"))
 }
