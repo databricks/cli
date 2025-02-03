@@ -110,4 +110,8 @@ func AddHandlers(server *testserver.Server) {
 			"token_type":   "Bearer",
 		}, nil
 	})
+
+	server.Handle("POST /api/2.0/workspace-files/import-file/", func(r *http.Request) (any, error) {
+		return "{}", nil
+	})
 }
