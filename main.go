@@ -19,7 +19,7 @@ func main() {
 	// "telemetry upload" command if there are logs to be uploaded. Having this outside
 	// of [root.Execute] ensures that the telemetry upload process is not spawned
 	// infinitely in a recursive manner.
-	if os.Args[1] == "telemetry" && os.Args[2] == "upload" {
+	if len(os.Args) == 3 && os.Args[1] == "telemetry" && os.Args[2] == "upload" {
 		var err error
 
 		// If the environment variable is set, redirect stdout to the file.
