@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -138,6 +139,31 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 	return err
 }
 
+func inheritEnvVars() []string {
+	base := os.Environ()
+	out := []string{}
+	authEnvVars := auth.EnvVars()
+
+	// Remove any existing auth environment variables. This is important because
+	// the CLI offers multiple levels of configuring authentication like `--profile`
+	// or `DATABRICKS_CONFIG_PROFILE` or `profile: <profile>` in the bundle config file.
+	//
+	// Each of these have different priorities and thus we don't want any auth configuration
+	// to piggyback into the child process environment.
+	for _, v := range base {
+		k, _, found := strings.Cut(v, "=")
+		if !found {
+			continue
+		}
+		if slices.Contains(authEnvVars, k) {
+			continue
+		}
+		out = append(out, v)
+	}
+
+	return out
+}
+
 func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, exitCode int) {
 	// Nothing to upload.
 	if !telemetry.HasLogs(ctx) {
@@ -165,7 +191,7 @@ func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, e
 		log.Debugf(ctx, "failed to get executable path: %s", err)
 	}
 	telemetryCmd := exec.Command(execPath, "telemetry", "upload")
-	telemetryCmd.Env = os.Environ()
+	telemetryCmd.Env = inheritEnvVars()
 	for k, v := range auth.Env(ConfigUsed(ctx)) {
 		telemetryCmd.Env = append(telemetryCmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
