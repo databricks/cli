@@ -1,0 +1,6 @@
+# TODO: We do not run this on windows because we don't have proper stubbing
+# for API errors yet. Run this on windows as well once we can stub API errors
+GOOS = {
+    "darwin",
+    "linux"
+}
