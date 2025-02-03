@@ -1,0 +1,1 @@
+{"method":"GET","path":"/api/2.0/preview/scim/v2/Me","headers":{"Authorization":"Basic dXNlcm5hbWU6cGFzc3dvcmQ=","User-Agent":"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/current-user_me cmd-exec-id/[UUID] auth/basic"},"body":null}

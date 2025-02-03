@@ -35,7 +35,7 @@ var (
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
 // example: var SingleTest = "bundle/variables/empty"
-var SingleTest = ""
+var SingleTest = "auth/oauth"
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -120,6 +120,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		defaultServer := testserver.New(t)
+		defaultServer.HandleUnknown()
 		AddHandlers(defaultServer)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
@@ -156,6 +157,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
+	testdiff.PrepareReplacementSdkVersion(t, &repls)
+	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -252,7 +255,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	//    server otherwise is a shared resource.
 	if len(config.Server) > 0 || config.RecordRequests {
 		server = testserver.New(t)
+		server.HandleUnknown()
 		server.RecordRequests = config.RecordRequests
+		server.IncludeReqHeaders = config.IncludeReqHeaders
 
 		// If no custom server stubs are defined, add the default handlers.
 		if len(config.Server) == 0 {
@@ -294,7 +299,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, req := range server.Requests {
 			reqJson, err := json.Marshal(req)
+			if err == nil {
+			}
 			require.NoError(t, err)
+
+			// if
 
 			line := fmt.Sprintf("%s\n", reqJson)
 			_, err = f.WriteString(line)

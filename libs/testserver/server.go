@@ -2,9 +2,12 @@ package testserver
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 
 	"github.com/stretchr/testify/assert"
 
@@ -17,15 +20,17 @@ type Server struct {
 
 	t testutil.TestingT
 
-	RecordRequests bool
+	RecordRequests    bool
+	IncludeReqHeaders []string
 
 	Requests []Request
 }
 
 type Request struct {
-	Method string `json:"method"`
-	Path   string `json:"path"`
-	Body   any    `json:"body"`
+	Method  string            `json:"method"`
+	Path    string            `json:"path"`
+	Headers map[string]string `json:"headers,omitempty"`
+	Body    any               `json:"body,omitempty"`
 }
 
 func New(t testutil.TestingT) *Server {
@@ -38,6 +43,23 @@ func New(t testutil.TestingT) *Server {
 		Mux:    mux,
 		t:      t,
 	}
+}
+
+func (s *Server) HandleUnknown() {
+	s.Handle("/", func(req *http.Request) (any, error) {
+		msg := fmt.Sprintf(`
+unknown API request received. Please add a handler for this request in
+your test. You can copy the following snippet in your test.toml file:
+
+[[Server]]
+Pattern = %s %s
+Response = '''
+  <response here>
+'''`, req.Method, req.URL.Path)
+
+		s.t.Fatalf(msg)
+		return nil, errors.New("unknown API request")
+	})
 }
 
 type HandlerFunc func(req *http.Request) (resp any, err error)
@@ -54,10 +76,29 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 			body, err := io.ReadAll(r.Body)
 			assert.NoError(s.t, err)
 
+			headers := make(map[string]string)
+			for k, v := range r.Header {
+				if !slices.Contains(s.IncludeReqHeaders, k) {
+					continue
+				}
+				if len(v) == 0 {
+					continue
+				}
+				headers[k] = v[0]
+			}
+
+			var reqBody any
+			if len(body) > 0 && body[0] == '{' {
+				reqBody = json.RawMessage(body)
+			} else {
+				reqBody = string(body)
+			}
+
 			s.Requests = append(s.Requests, Request{
-				Method: r.Method,
-				Path:   r.URL.Path,
-				Body:   json.RawMessage(body),
+				Method:  r.Method,
+				Path:    r.URL.Path,
+				Headers: headers,
+				Body:    reqBody,
 			})
 
 		}

@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"golang.org/x/mod/semver"
 )
 
 const (
@@ -207,4 +208,26 @@ func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsC
 func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(devVersionRegex, "[DEV_VERSION]")
+}
+
+func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.Set(databricks.Version(), "[SDK_VERSION]")
+}
+
+func goVersion() string {
+	gv := runtime.Version()
+	ssv := strings.ReplaceAll(gv, "go", "v")
+	sv := semver.Canonical(ssv)
+	return strings.TrimPrefix(sv, "v")
+}
+
+func PrepareReplacementsGoVersion(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.Set(goVersion(), "[GO_VERSION]")
+}
+
+func PrepareReplaceOS(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.Set(runtime.GOOS, "[OS]")
 }

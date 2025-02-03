@@ -94,4 +94,20 @@ func AddHandlers(server *testserver.Server) {
 	server.Handle("POST /api/2.0/workspace/mkdirs", func(r *http.Request) (any, error) {
 		return "{}", nil
 	})
+
+	server.Handle("GET /oidc/.well-known/oauth-authorization-server", func(r *http.Request) (any, error) {
+		return map[string]string{
+			"authorization_endpoint": server.URL + "oidc/v1/authorize",
+			"token_endpoint":         server.URL + "/oidc/v1/token",
+		}, nil
+	})
+
+	server.Handle("POST /oidc/v1/token", func(r *http.Request) (any, error) {
+		return map[string]string{
+			"access_token": "oauth-token",
+			"expires_in":   "3600",
+			"scope":        "all-apis",
+			"token_type":   "Bearer",
+		}, nil
+	})
 }

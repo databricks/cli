@@ -47,6 +47,8 @@ type TestConfig struct {
 	// Record the requests made to the server and write them as output to
 	// out.requests.txt
 	RecordRequests bool
+	// Include the following request headers in the recorded requests
+	IncludeReqHeaders []string
 }
 
 type ServerStub struct {
