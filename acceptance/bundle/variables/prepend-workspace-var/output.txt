@@ -53,11 +53,6 @@
   },
   "workspace": {
     "artifact_path": "/Users/$USERNAME/path/to/root/artifacts",
-    "current_user": {
-      "id": "$USER.Id",
-      "short_name": "$USERNAME",
-      "userName": "$USERNAME"
-    },
     "file_path": "/Users/$USERNAME/path/to/root/files",
     "profile": "profile_name",
     "resource_path": "/Users/$USERNAME/path/to/root/resources",

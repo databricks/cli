@@ -51,12 +51,12 @@ schema:
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
-INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h
+INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
 
-integration:
+integration: vendor
 	$(INTEGRATION)
 
-integration-short:
+integration-short: vendor
 	$(INTEGRATION) -short
 
 .PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs

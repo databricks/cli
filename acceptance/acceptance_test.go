@@ -209,6 +209,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 	}
 
+	cloudEnv := os.Getenv("CLOUD_ENV")
+	if config.LocalOnly && cloudEnv != "" {
+		t.Skipf("Disabled via LocalOnly setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	}
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
