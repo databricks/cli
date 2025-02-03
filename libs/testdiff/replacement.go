@@ -219,5 +219,5 @@ func PrepareReplaceUnixTimeMillis(t testutil.TestingT, r *ReplacementsContext) {
 
 func PrepareReplaceOS(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.Set(runtime.GOOS, "$OS")
+	r.Set(runtime.GOOS, "[OS]")
 }

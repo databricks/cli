@@ -1,8 +1,4 @@
 {
-    "config": {
-        "host": "$DATABRICKS_HOST",
-        "token": "$DATABRICKS_TOKEN"
-    },
     "logs": [
         {
             "frontend_log_event_id": "BB79BB52-96F6-42C5-9E44-E63EEA84888D",
