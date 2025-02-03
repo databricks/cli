@@ -54,7 +54,7 @@ your test. You can copy the following snippet in your test.toml file:
 [[Server]]
 Pattern = %s %s
 Response = '''
-  <response here>
+<response here>
 '''`, req.Method, req.URL.Path)
 
 		s.t.Fatalf(msg)
@@ -89,6 +89,7 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 
 			var reqBody any
 			if len(body) > 0 && body[0] == '{' {
+				// serialize the body as is, if it's JSON
 				reqBody = json.RawMessage(body)
 			} else {
 				reqBody = string(body)
