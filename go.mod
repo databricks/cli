@@ -13,8 +13,8 @@ require (
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.7.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.9.1 // MPL 2.0
-	github.com/hashicorp/terraform-exec v0.21.0 // MPL 2.0
-	github.com/hashicorp/terraform-json v0.23.0 // MPL 2.0
+	github.com/hashicorp/terraform-exec v0.22.0 // MPL 2.0
+	github.com/hashicorp/terraform-json v0.24.0 // MPL 2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD 3-Clause "New" or "Revised" License
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
@@ -62,7 +62,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
-	github.com/zclconf/go-cty v1.15.0 // indirect
+	github.com/zclconf/go-cty v1.16.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
