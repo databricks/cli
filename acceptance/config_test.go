@@ -26,6 +26,9 @@ type TestConfig struct {
 	// If absent, default to true.
 	GOOS map[string]bool
 
+	// If true, do not run this test against cloud environment
+	LocalOnly bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement

@@ -1,3 +1,4 @@
+LocalOnly = true  # request recording currently does not work with cloud environment
 RecordRequests = true
 
 [[Server]]

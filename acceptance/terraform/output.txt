@@ -37,7 +37,7 @@ commands will detect it and remind you to do so if necessary.
 
 >>> $TERRAFORM plan -no-color
 data.databricks_current_user.me: Reading...
-data.databricks_current_user.me: Read complete after 0s [id=$USER.Id]
+data.databricks_current_user.me: Read complete after (redacted) [id=$USER.Id]
 
 Changes to Outputs:
   + username = "$USERNAME"

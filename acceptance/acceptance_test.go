@@ -211,6 +211,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 	}
 
+	cloudEnv := os.Getenv("CLOUD_ENV")
+	if config.LocalOnly && cloudEnv != "" {
+		t.Skipf("Disabled via LocalOnly setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	}
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -352,7 +357,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	bufRef, okRef := tryReading(t, pathRef)
 	bufNew, okNew := tryReading(t, pathNew)
 	if !okRef && !okNew {
-		t.Errorf("Both files are missing or have errors: %s, %s", pathRef, pathNew)
+		t.Errorf("Both files are missing or have errors: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
 		return
 	}
 
@@ -367,7 +372,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
-		t.Errorf("Missing output file: %s", relPath)
+		t.Errorf("Missing output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
 		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
 		if testdiff.OverwriteMode {
 			t.Logf("Removing output file: %s", relPath)
@@ -378,7 +383,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// The test produced an unexpected output file.
 	if !okRef && okNew {
-		t.Errorf("Unexpected output file: %s", relPath)
+		t.Errorf("Unexpected output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
 		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
 		if testdiff.OverwriteMode {
 			t.Logf("Writing output file: %s", relPath)
@@ -465,7 +470,6 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 	}
 
 	RunCommand(t, args, "..")
-	RunCommand(t, []string{execPath, "--version"}, ".")
 	return execPath
 }
 
