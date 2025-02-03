@@ -181,7 +181,6 @@ func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, e
 		log.Debugf(ctx, "failed to create stdin pipe for telemetry worker: %s", err)
 	}
 
-	// TODO: Change this back to Run() once we have a way to test this.
 	err = telemetryCmd.Start()
 	if err != nil {
 		log.Debugf(ctx, "failed to start telemetry worker: %s", err)

@@ -7,7 +7,7 @@ import (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "telemetry",
-		Short:  "CLI commands to publish telemetry to the Databricks backend.",
+		Short:  "",
 		Hidden: true,
 	}
 

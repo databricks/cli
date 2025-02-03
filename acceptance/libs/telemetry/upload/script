@@ -1,1 +1,3 @@
-envsubst < ./stdin | trace $CLI telemetry upload
+# This command / test cannot be run in inprocess / debug mode. This is because
+# it does not go through the [root.Execute] function.
+trace $CLI telemetry upload < stdin
