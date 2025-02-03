@@ -1,2 +1,4 @@
+LocalOnly = true
+
 RecordRequests = true
 IncludeReqHeaders = ["Authorization", "User-Agent"]

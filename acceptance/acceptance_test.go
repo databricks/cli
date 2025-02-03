@@ -158,6 +158,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
+	testdiff.PrepareReplacementsGoVersion(t, &repls)
 	testdiff.PrepareReplaceOS(t, &repls)
 
 	testDirs := getTests(t)
