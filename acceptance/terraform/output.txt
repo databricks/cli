@@ -22,8 +22,6 @@ calculate lock file checksums locally for the following providers:
 
 
 To calculate additional checksums for another platform, run:
-  terraform providers lock -platform=OS_ARCH
-(where OS_ARCH is the platform to generate)
 
 Terraform has been successfully initialized!
 
