@@ -1,3 +1,0 @@
-[[Repls]]
-Old = 'Read complete after [^\s]+'
-New = 'Read complete after (redacted)'
