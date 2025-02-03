@@ -14,7 +14,3 @@ Response.Body = '''
 [[Repls]]
 Old = '17\d{11}'
 New = '"UNIX_TIME_MILLIS"'
-
-[[Repls]]
-Old = '\"execution_time_ms\":0'
-New = 'abcd'
