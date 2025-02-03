@@ -1,6 +1,6 @@
 [[Repls]]
-Old = 'linux_amd64'
-New = 'OS_ARCH'
+Old = 'linux'
+New = '[OS]'
 
 [[Repls]]
 Old = 'Read complete after [^\s]+'
