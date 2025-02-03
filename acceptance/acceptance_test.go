@@ -300,11 +300,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, req := range server.Requests {
 			reqJson, err := json.Marshal(req)
-			if err == nil {
-			}
 			require.NoError(t, err)
-
-			// if
 
 			line := fmt.Sprintf("%s\n", reqJson)
 			_, err = f.WriteString(line)
