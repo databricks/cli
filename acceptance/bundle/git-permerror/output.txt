@@ -2,20 +2,20 @@
 
 >>> chmod 000 .git
 
->>> $CLI bundle validate
+>>> [CLI] bundle validate
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 Name: git-permerror
 Target: default
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/git-permerror/default
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/git-permerror/default
 
 Found 1 error
 
 Exit code: 1
 
->>> $CLI bundle validate -o json
+>>> [CLI] bundle validate -o json
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 
@@ -24,7 +24,7 @@ Exit code: 1
   "bundle_root_path": "."
 }
 
->>> withdir subdir/a/b $CLI bundle validate -o json
+>>> withdir subdir/a/b [CLI] bundle validate -o json
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 
@@ -38,12 +38,12 @@ Exit code: 1
 
 >>> chmod 000 .git/HEAD
 
->>> $CLI bundle validate -o json
+>>> [CLI] bundle validate -o json
 {
   "bundle_root_path": "."
 }
 
->>> withdir subdir/a/b $CLI bundle validate -o json
+>>> withdir subdir/a/b [CLI] bundle validate -o json
 {
   "bundle_root_path": "."
 }
@@ -53,7 +53,7 @@ Exit code: 1
 
 >>> chmod 000 .git/config
 
->>> $CLI bundle validate -o json
+>>> [CLI] bundle validate -o json
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 
@@ -62,7 +62,7 @@ Exit code: 1
   "bundle_root_path": "."
 }
 
->>> withdir subdir/a/b $CLI bundle validate -o json
+>>> withdir subdir/a/b [CLI] bundle validate -o json
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 

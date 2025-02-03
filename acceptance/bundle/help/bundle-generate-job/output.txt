@@ -1,5 +1,5 @@
 
->>> $CLI bundle generate job --help
+>>> [CLI] bundle generate job --help
 Generate bundle configuration for a job
 
 Usage:

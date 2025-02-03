@@ -102,13 +102,13 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 
 	t.Setenv("CLI", execPath)
-	repls.SetPath(execPath, "$CLI")
+	repls.SetPath(execPath, "[CLI]")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
 	tempHomeDir := t.TempDir()
-	repls.SetPath(tempHomeDir, "$TMPHOME")
+	repls.SetPath(tempHomeDir, "[TMPHOME]")
 	t.Logf("$TMPHOME=%v", tempHomeDir)
 
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
@@ -133,7 +133,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
 	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
-	repls.SetPath(terraformrcPath, "$DATABRICKS_TF_CLI_CONFIG_FILE")
+	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
 	terraformExecPath := filepath.Join(buildDir, "terraform")
 	if runtime.GOOS == "windows" {
@@ -141,10 +141,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
-	repls.SetPath(terraformExecPath, "$TERRAFORM")
+	repls.SetPath(terraformExecPath, "[TERRAFORM]")
 
 	// do it last so that full paths match first:
-	repls.SetPath(buildDir, "$BUILD_DIR")
+	repls.SetPath(buildDir, "[BUILD_DIR]")
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -226,7 +226,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	repls.SetPathWithParents(tmpDir, "$TMPDIR")
+	repls.SetPathWithParents(tmpDir, "[TMPDIR]")
 	repls.Repls = append(repls.Repls, config.Repls...)
 
 	scriptContents := readMergedScriptContents(t, dir)
