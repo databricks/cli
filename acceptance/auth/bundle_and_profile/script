@@ -2,7 +2,6 @@
 envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
-export DATABRICKS_AUTH_TYPE=pat
 
 title "Inside the bundle, no flags"
 trace errcode $CLI current-user me | jq .userName
