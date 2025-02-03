@@ -11,13 +11,6 @@ import (
 	"github.com/slack-go/slack"
 )
 
-// Sometimes laptop usernames don't correspond to slack usernames. In this case, add a mapping from the former to
-// the latter here
-var usernameToSlack = map[string]string{
-	"jonathangabe":  "jgabe",
-	"blaynemoseley": "bmoseley",
-}
-
 type reportForcedDeplyoment struct {
 }
 
@@ -81,26 +74,4 @@ func (m *reportForcedDeplyoment) Apply(ctx context.Context, b *bundle.Bundle) di
 
 func Red(line string) string {
 	return fmt.Sprintf("\033[91m%s\033[0m\n", line)
-}
-
-func GetSlackUserFromEnv() string {
-	var username string
-	if os.Getenv("BUILDKITE") != "" {
-		username = "buildkite"
-	} else {
-		envUser := os.Getenv("USER")
-		corrected, ok := usernameToSlack[envUser]
-
-		if ok {
-			username = "@" + corrected
-		} else {
-			username = "@" + envUser
-		}
-
-		if username == "@" {
-			username = "Unknown user"
-		}
-	}
-
-	return username
 }

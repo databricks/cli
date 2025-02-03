@@ -141,6 +141,7 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 			apps.UploadConfig(),
 			metadata.Compute(),
 			metadata.Upload(),
+			segment.ReportDeployment(),
 			bundle.LogString("Deployment complete!"),
 		),
 	)
