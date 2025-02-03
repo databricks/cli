@@ -23,9 +23,9 @@ type Server struct {
 }
 
 type Request struct {
-	Method string          `json:"method"`
-	Path   string          `json:"path"`
-	Body   json.RawMessage `json:"body"`
+	Method string `json:"method"`
+	Path   string `json:"path"`
+	Body   any    `json:"body"`
 }
 
 func New(t testutil.TestingT) *Server {
