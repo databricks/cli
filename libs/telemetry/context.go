@@ -2,7 +2,7 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
+	"errors"
 )
 
 // Private type to store the telemetry logger in the context
@@ -18,7 +18,7 @@ func WithNewLogger(ctx context.Context) context.Context {
 func fromContext(ctx context.Context) *logger {
 	v := ctx.Value(telemetryLoggerKey)
 	if v == nil {
-		panic(fmt.Errorf("telemetry logger not found in the context"))
+		panic(errors.New("telemetry logger not found in the context"))
 	}
 
 	return v.(*logger)
