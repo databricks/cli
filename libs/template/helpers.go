@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"os"
 	"regexp"
@@ -12,7 +13,10 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 
 	"github.com/google/uuid"
@@ -35,7 +39,10 @@ var (
 	cachedUser               *iam.User
 	cachedIsServicePrincipal *bool
 	cachedCatalog            *string
+	cachedIsServerless       *bool
 )
+
+const defaultServerlessSupported = false
 
 // UUID that is stable for the duration of the template execution. This can be used
 // to populate the `bundle.uuid` field in databricks.yml by template authors.
@@ -43,6 +50,16 @@ var (
 // It's automatically logged in our telemetry logs when `databricks bundle init`
 // is run and can be used to attribute DBU revenue to bundle templates.
 var bundleUuid = uuid.New().String()
+
+type APISettingResponse struct {
+	Setting struct {
+		Value struct {
+			PreviewEnablementVal struct {
+				Enabled bool `json:"enabled"`
+			} `json:"preview_enablement_val"`
+		} `json:"value"`
+	} `json:"setting"`
+}
 
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := root.WorkspaceClient(ctx)
@@ -167,5 +184,43 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			cachedIsServicePrincipal = &result
 			return result, nil
 		},
+		"is_serverless_supported": func() bool {
+			if cachedIsServerless == nil {
+				result := isServerlessSupported(ctx, w)
+				cachedIsServerless = &result
+			}
+			return *cachedIsServerless
+		},
 	}
+}
+
+func isServerlessSupported(ctx context.Context, w *databricks.WorkspaceClient) bool {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		log.Warnf(ctx, "Failed to detect if serverless is supported: cannot create client: %s", err)
+		return defaultServerlessSupported
+	}
+
+	workspaceId, err := w.CurrentWorkspaceID(ctx)
+	if err != nil {
+		log.Warnf(ctx, "Failed to detect if serverless is supported: CurrentWorkspaceID() failed: %s", err)
+		return defaultServerlessSupported
+	}
+
+	apiEndpoint := fmt.Sprintf("/api/2.0/settings-api/workspace/%d/serverless_job_nb", workspaceId)
+	var response APISettingResponse
+	err = apiClient.Do(
+		ctx,
+		http.MethodGet,
+		apiEndpoint,
+		nil,
+		nil,
+		nil,
+		&response,
+	)
+	if err != nil {
+		log.Warnf(ctx, "Failed to detect if serverless is supported: %s failed: %s", apiEndpoint, err)
+		return defaultServerlessSupported
+	}
+	return response.Setting.Value.PreviewEnablementVal.Enabled
 }

@@ -4,6 +4,10 @@
 {{if and (eq .include_dlt "yes") (and (eq .include_notebook "no") (eq .include_python "no")) -}}
 # This job runs {{.project_name}}_pipeline on a schedule.
 {{end -}}
+{{$with_serverless := (eq .use_serverless "yes") -}}
+{{if (eq .use_serverless "auto") -}}
+    {{$with_serverless = is_serverless_supported -}}
+{{end -}}
 
 resources:
   jobs:
@@ -29,7 +33,8 @@ resources:
       tasks:
         {{- if eq .include_notebook "yes" }}
         - task_key: notebook_task
-          job_cluster_key: job_cluster
+        {{- if not $with_serverless}}
+          job_cluster_key: job_cluster{{end}}
           notebook_task:
             notebook_path: ../src/notebook.ipynb
         {{end -}}
@@ -52,7 +57,10 @@ resources:
           depends_on:
             - task_key: notebook_task
           {{end}}
-          job_cluster_key: job_cluster
+          {{- if $with_serverless }}
+          environment_key: default
+          {{- else }}
+          job_cluster_key: job_cluster{{end}}
           python_wheel_task:
             package_name: {{.project_name}}
             entry_point: main
@@ -64,6 +72,7 @@ resources:
 
       {{else}}
       {{end -}}
+      {{- if not $with_serverless -}}
       job_clusters:
         - job_cluster_key: job_cluster
           new_cluster:
@@ -72,3 +81,4 @@ resources:
             autoscale:
                 min_workers: 1
                 max_workers: 4
+      {{- end}}
