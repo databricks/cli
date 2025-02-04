@@ -1,2 +1,4 @@
 
 >>> $CLI telemetry dummy
+File ./telemetry.pid exists
+Process has ended

@@ -1,3 +1,7 @@
-export DATABRICKS_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload.txt
+export DATABRICKS_CLI_TELEMETRY_PID_FILE=./telemetry.pid
 
 trace $CLI telemetry dummy
+
+# Wait for the child telemetry process to finish
+trace wait_file ./telemetry.pid
+trace wait_pid $(cat ./telemetry.pid)

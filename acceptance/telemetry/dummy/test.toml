@@ -1,7 +1,4 @@
 RecordRequests = true
-EventuallyFiles = [
-    "out.upload.txt"
-]
 
 [[Server]]
 Pattern = "POST /telemetry-ext"

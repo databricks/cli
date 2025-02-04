@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -164,6 +165,8 @@ func inheritEnvVars() []string {
 	return out
 }
 
+const telemetryPidFileEnvVar = "DATABRICKS_CLI_TELEMETRY_PID_FILE"
+
 func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, exitCode int) {
 	// Nothing to upload.
 	if !telemetry.HasLogs(ctx) {
@@ -211,6 +214,13 @@ func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, e
 	if err != nil {
 		log.Debugf(ctx, "failed to start telemetry worker: %s", err)
 		return
+	}
+
+	if pidFilePath := env.Get(ctx, telemetryPidFileEnvVar); pidFilePath != "" {
+		err = os.WriteFile(pidFilePath, []byte(strconv.Itoa(telemetryCmd.Process.Pid)), 0o644)
+		if err != nil {
+			log.Debugf(ctx, "failed to write telemetry worker PID file: %s", err)
+		}
 	}
 
 	_, err = stdin.Write(b)

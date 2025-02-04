@@ -1,0 +1,27 @@
+#!/bin/bash
+
+wait_file() {
+    local file_path="$1"
+    local max_attempts=100
+    local attempt=0
+
+    while [ $attempt -lt $max_attempts ]; do
+        if [ -e "$file_path" ]; then
+            echo "File $file_path exists"
+            return 0
+        fi
+        sleep 0.1
+        attempt=$((attempt + 1))
+    done
+
+    echo "Timeout: File $file_path did not appear within 10 seconds"
+    return 1
+}
+
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <file_path>"
+    exit 1
+fi
+
+wait_file "$1"
+exit $?
