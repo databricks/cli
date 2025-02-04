@@ -25,7 +25,7 @@ type Server struct {
 }
 
 type Request struct {
-	Headers map[string]string `json:"headers"`
+	Headers map[string]string `json:"headers,omitempty"`
 	Method  string            `json:"method"`
 	Path    string            `json:"path"`
 	Body    any               `json:"body"`
