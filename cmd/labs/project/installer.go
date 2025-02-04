@@ -261,7 +261,7 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 	feedback <- "Installing Python library dependencies"
 	if i.Installer.Extras != "" {
 		// install main and optional dependencies
-		return i.installPythonDependencies(ctx, ".["+i.Installer.Extras+"]")
+		return i.installPythonDependencies(ctx, fmt.Sprintf(".[%s]", i.Installer.Extras))
 	}
 	return i.installPythonDependencies(ctx, ".")
 }
