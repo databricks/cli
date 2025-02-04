@@ -47,10 +47,6 @@ type TestConfig struct {
 	// Record the requests made to the server and write them as output to
 	// out.requests.txt
 	RecordRequests bool
-
-	// Wait for these files to appear before starting assertion on the output.
-	// This is useful for concurrency control when tests spawn subprocesses.
-	EventuallyFiles []string
 }
 
 type ServerStub struct {

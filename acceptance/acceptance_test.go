@@ -24,7 +24,6 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -288,21 +287,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Stderr = out
 	cmd.Dir = tmpDir
 	err = cmd.Run()
-
-	// Wait for the files to appear before starting assertion on the output.
-	// This is useful for concurrency control when the CLI spawns subprocesses.
-	missingFiles := config.EventuallyFiles
-	assert.Eventually(t, func() bool {
-		for _, file := range missingFiles {
-			_, err := os.Stat(filepath.Join(tmpDir, file))
-			if err == nil {
-				missingFiles = slices.DeleteFunc(missingFiles, func(n string) bool {
-					return n == file
-				})
-			}
-		}
-		return len(missingFiles) == 0
-	}, 10*time.Second, 100*time.Millisecond, "Files did not appear: %v", missingFiles)
 
 	// Write the requests made to the server to a output file if the test is
 	// configured to record requests.
