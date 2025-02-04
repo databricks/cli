@@ -5,7 +5,7 @@ POST /telemetry-ext
 > * Accept: application/json
 > * Authorization: REDACTED
 > * Content-Type: application/json
-> * Traceparent: 00-1997351cf21b2042c96c8bf415bbcfe8-7542779df43bc559-01
+> * Traceparent: 00-e27f6502db1cca42797a699350f519db-1af47293f6a135c1-01
 > * User-Agent: cli/$DEV_VERSION databricks-sdk-go/0.56.1 go/1.23.4 os/darwin auth/pat
 > {
 >   "items": null,
@@ -13,12 +13,12 @@ POST /telemetry-ext
 >     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"$DEV_VERSION\",\"command\":\"telemetry_dummy\",\"operating_system\":\"darwin\",\"execution_time_ms\":0,\"exit_code\":0},\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
 >     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"$DEV_VERSION\",\"command\":\"telemetry_dummy\",\"operating_system\":\"darwin\",\"execution_time_ms\":0,\"exit_code\":0},\"cli_test_event\":{\"name\":\"VALUE2\"}}}}"
 >   ],
->   "uploadTime": 1738682716822
+>   "uploadTime": 1738684185167
 > }
 < HTTP/1.1 404 Not Found
 < * Content-Length: 19
 < * Content-Type: text/plain; charset=utf-8
-< * Date: Tue, 04 Feb 2025 15:25:16 GMT
+< * Date: Tue, 04 Feb 2025 15:49:45 GMT
 < * X-Content-Type-Options: nosniff
 < 404 page not found
 < 

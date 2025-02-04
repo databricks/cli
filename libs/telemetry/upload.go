@@ -15,8 +15,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
-// File containing debug logs from the upload process.
 const (
+	// File containing debug logs from the upload process.
 	UploadLogsFileEnvVar = "DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE"
 
 	// File containing the PID of the telemetry upload process.
