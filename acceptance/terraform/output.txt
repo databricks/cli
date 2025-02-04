@@ -20,8 +20,12 @@ Due to your customized provider installation methods, Terraform was forced to
 calculate lock file checksums locally for the following providers:
   - databricks/databricks
 
+darwin_arm64, so Terraform running on another platform will fail to install
+these providers.
 
 To calculate additional checksums for another platform, run:
+  terraform providers lock -platform=linux_amd64
+(where linux_amd64 is the platform to generate)
 
 Terraform has been successfully initialized!
 
