@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/databricks/cli/cmd"
@@ -22,17 +24,27 @@ func main() {
 	if len(os.Args) == 3 && os.Args[1] == "telemetry" && os.Args[2] == "upload" {
 		var err error
 
+		// By default, this command should not write anything to stdout or stderr.
+		outW := io.Discard
+		errW := io.Discard
+
 		// If the environment variable is set, redirect stdout to the file.
 		// This is useful for testing.
 		if v := os.Getenv(telemetry.UploadLogsFileEnvVar); v != "" {
-			os.Stdout, _ = os.OpenFile(v, os.O_CREATE|os.O_WRONLY, 0o644)
-			os.Stderr = os.Stdout
+			outW, _ = os.OpenFile(v, os.O_CREATE|os.O_WRONLY, 0o644)
+			errW = outW
 		}
 
-		err = telemetry.Upload()
+		resp, err := telemetry.Upload()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			fmt.Fprintf(errW, "error: %s\n", err)
 			os.Exit(1)
+		}
+		fmt.Fprintf(outW, "Telemetry logs uploaded successfully\n")
+		fmt.Fprintln(outW, "Response:")
+		b, err := json.Marshal(resp)
+		if err == nil {
+			fmt.Fprintln(outW, string(b))
 		}
 		os.Exit(0)
 	}

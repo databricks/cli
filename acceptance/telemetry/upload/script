@@ -1,3 +1,5 @@
+export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload.txt
+
 # This command / test cannot be run in inprocess / debug mode. This is because
 # it does not go through the [root.Execute] function.
 trace $CLI telemetry upload < stdin

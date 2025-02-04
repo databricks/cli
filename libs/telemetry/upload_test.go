@@ -79,8 +79,8 @@ func TestTelemetryUpload(t *testing.T) {
 		os.Stdin = old
 	})
 
-	err = Upload()
+	resp, err := Upload()
 	require.NoError(t, err)
-
+	assert.Equal(t, int64(2), resp.NumProtoSuccess)
 	assert.Equal(t, 2, count)
 }

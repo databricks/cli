@@ -1,4 +1,5 @@
 export DATABRICKS_CLI_TELEMETRY_PID_FILE=./telemetry.pid
+export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload.txt
 
 trace $CLI telemetry dummy
 
