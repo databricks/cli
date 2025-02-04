@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type Server struct {
@@ -33,11 +34,21 @@ func New(t testutil.TestingT) *Server {
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
-	return &Server{
+	s := &Server{
 		Server: server,
 		Mux:    mux,
 		t:      t,
 	}
+
+	s.Handle("/", func(r *http.Request) (any, int) {
+		pattern := r.Method + " " + r.URL.Path
+
+		return apierr.APIError{
+			Message: "No stub found for pattern: " + pattern,
+		}, http.StatusNotFound
+	})
+
+	return s
 }
 
 type HandlerFunc func(req *http.Request) (resp any, statusCode int)
