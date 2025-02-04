@@ -1,0 +1,12 @@
+LocalOnly = true  # request recording currently does not work with cloud environment
+RecordRequests = true
+
+[[Server]]
+Pattern = "POST /api/2.1/jobs/create"
+Response.Body = '''
+{
+    "error_code": "PERMISSION_DENIED",
+    "message": "Invalid access token."
+}
+'''
+Response.StatusCode = 403

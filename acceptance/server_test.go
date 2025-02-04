@@ -11,7 +11,7 @@ import (
 )
 
 func AddHandlers(server *testserver.Server) {
-	server.Handle("GET /api/2.0/policies/clusters/list", func(r *http.Request) (any, error) {
+	server.Handle("GET /api/2.0/policies/clusters/list", func(r *http.Request) (any, int) {
 		return compute.ListPoliciesResponse{
 			Policies: []compute.Policy{
 				{
@@ -23,10 +23,10 @@ func AddHandlers(server *testserver.Server) {
 					Name:     "some-test-cluster-policy",
 				},
 			},
-		}, nil
+		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.0/instance-pools/list", func(r *http.Request) (any, error) {
+	server.Handle("GET /api/2.0/instance-pools/list", func(r *http.Request) (any, int) {
 		return compute.ListInstancePools{
 			InstancePools: []compute.InstancePoolAndStats{
 				{
@@ -34,10 +34,10 @@ func AddHandlers(server *testserver.Server) {
 					InstancePoolId:   "1234",
 				},
 			},
-		}, nil
+		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.1/clusters/list", func(r *http.Request) (any, error) {
+	server.Handle("GET /api/2.1/clusters/list", func(r *http.Request) (any, int) {
 		return compute.ListClustersResponse{
 			Clusters: []compute.ClusterDetails{
 				{
@@ -49,32 +49,32 @@ func AddHandlers(server *testserver.Server) {
 					ClusterId:   "9876",
 				},
 			},
-		}, nil
+		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.0/preview/scim/v2/Me", func(r *http.Request) (any, error) {
+	server.Handle("GET /api/2.0/preview/scim/v2/Me", func(r *http.Request) (any, int) {
 		return iam.User{
 			Id:       "1000012345",
 			UserName: "tester@databricks.com",
-		}, nil
+		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.0/workspace/get-status", func(r *http.Request) (any, error) {
+	server.Handle("GET /api/2.0/workspace/get-status", func(r *http.Request) (any, int) {
 		return workspace.ObjectInfo{
 			ObjectId:   1001,
 			ObjectType: "DIRECTORY",
 			Path:       "",
 			ResourceId: "1001",
-		}, nil
+		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.1/unity-catalog/current-metastore-assignment", func(r *http.Request) (any, error) {
+	server.Handle("GET /api/2.1/unity-catalog/current-metastore-assignment", func(r *http.Request) (any, int) {
 		return catalog.MetastoreAssignment{
 			DefaultCatalogName: "main",
-		}, nil
+		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.0/permissions/directories/1001", func(r *http.Request) (any, error) {
+	server.Handle("GET /api/2.0/permissions/directories/1001", func(r *http.Request) (any, int) {
 		return workspace.WorkspaceObjectPermissions{
 			ObjectId:   "1001",
 			ObjectType: "DIRECTORY",
@@ -88,10 +88,10 @@ func AddHandlers(server *testserver.Server) {
 					},
 				},
 			},
-		}, nil
+		}, http.StatusOK
 	})
 
-	server.Handle("POST /api/2.0/workspace/mkdirs", func(r *http.Request) (any, error) {
-		return "{}", nil
+	server.Handle("POST /api/2.0/workspace/mkdirs", func(r *http.Request) (any, int) {
+		return "{}", http.StatusOK
 	})
 }

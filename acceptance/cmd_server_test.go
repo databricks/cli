@@ -15,7 +15,7 @@ import (
 func StartCmdServer(t *testing.T) *testserver.Server {
 	server := testserver.New(t)
 
-	server.Handle("/", func(r *http.Request) (any, error) {
+	server.Handle("/", func(r *http.Request) (any, int) {
 		q := r.URL.Query()
 		args := strings.Split(q.Get("args"), " ")
 
@@ -40,7 +40,7 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 			exitcode = 1
 		}
 		result["exitcode"] = exitcode
-		return result, nil
+		return result, http.StatusOK
 	})
 	return server
 }
