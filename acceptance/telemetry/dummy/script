@@ -2,6 +2,8 @@ export DATABRICKS_CLI_TELEMETRY_PID_FILE=./telemetry.pid
 
 trace $CLI telemetry dummy
 
+echo "waiting for telemetry process to finish"
+
 # Wait for the child telemetry process to finish
-trace wait_file ./telemetry.pid
-trace wait_pid $(cat ./telemetry.pid)
+wait_file ./telemetry.pid
+wait_pid $(cat ./telemetry.pid)
