@@ -1,1 +1,1 @@
-{"method":"POST","path":"/api/2.1/jobs/create","body":{"name":"abc"}}
+{"headers":{},"method":"POST","path":"/api/2.1/jobs/create","body":{"name":"abc"}}
