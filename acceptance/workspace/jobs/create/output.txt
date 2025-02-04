@@ -1,9 +1,5 @@
 
->>> [CLI] jobs update --json {"name":"abc"}
-Warning: unknown field: name
-  at 
-  in (inline):1:3
-
-Error: No stub found for pattern: POST /api/2.1/jobs/update
-
-Exit code: 1
+>>> [CLI] jobs create --json {"name":"abc"}
+{
+  "job_id":1111
+}

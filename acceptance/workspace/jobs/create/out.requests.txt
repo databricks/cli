@@ -1,1 +1,1 @@
-{"method":"POST","path":"/api/2.1/jobs/update","body":{"job_id":0}}
+{"method":"POST","path":"/api/2.1/jobs/create","body":{"name":"abc"}}

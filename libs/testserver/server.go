@@ -43,6 +43,24 @@ func New(t testutil.TestingT) *Server {
 	s.Handle("/", func(r *http.Request) (any, int) {
 		pattern := r.Method + " " + r.URL.Path
 
+		t.Errorf(`
+
+----------------------------------------
+No stub found for pattern: %s
+
+To stub a response for this request, you can add
+the following to test.toml:
+[[Server]]
+Pattern = %q
+Response.Body = '''
+<response body here>
+'''
+Response.StatusCode = <response status-code here>
+----------------------------------------
+
+
+`, pattern, pattern)
+
 		return apierr.APIError{
 			Message: "No stub found for pattern: " + pattern,
 		}, http.StatusNotFound
