@@ -15,7 +15,7 @@ import (
 
 func TestConvertPipeline(t *testing.T) {
 	src := resources.Pipeline{
-		PipelineSpec: &pipelines.PipelineSpec{
+		CreatePipeline: &pipelines.CreatePipeline{
 			Name: "my pipeline",
 			Libraries: []pipelines.PipelineLibrary{
 				{

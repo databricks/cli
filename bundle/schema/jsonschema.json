@@ -628,6 +628,9 @@
                   {
                     "type": "object",
                     "properties": {
+                      "allow_duplicate_names": {
+                        "$ref": "#/$defs/bool"
+                      },
                       "budget_policy_id": {
                         "description": "Budget policy of this pipeline.",
                         "$ref": "#/$defs/string"
@@ -658,6 +661,9 @@
                       },
                       "development": {
                         "description": "Whether the pipeline is in Development mode. Defaults to false.",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "dry_run": {
                         "$ref": "#/$defs/bool"
                       },
                       "edition": {
@@ -702,6 +708,9 @@
                       "restart_window": {
                         "description": "Restart window of this pipeline.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow"
+                      },
+                      "run_as": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs"
                       },
                       "schema": {
                         "description": "The default schema (database) where tables are read from or published to. The presence of this field implies that the pipeline is in direct publishing mode.",
@@ -5378,6 +5387,29 @@
                   "required": [
                     "start_hour"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.RunAs": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.\n\nOnly `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.",
+                  "properties": {
+                    "service_principal_name": {
+                      "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "user_name": {
+                      "description": "The email of an active workspace user. Users can only set this field to their own email.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
