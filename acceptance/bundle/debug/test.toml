@@ -1,3 +1,5 @@
+LocalOnly = true
+
 [[Repls]]
 # The keys are unsorted and also vary per OS
 Old = 'Environment variables for Terraform: ([A-Z_ ,]+) '
