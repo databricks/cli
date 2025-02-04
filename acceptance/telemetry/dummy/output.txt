@@ -1,4 +1,8 @@
 
 >>> $CLI telemetry dummy
+
+>>> wait_file ./telemetry.pid
 File ./telemetry.pid exists
+
+>>> wait_pid 46711
 Process has ended

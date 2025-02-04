@@ -209,8 +209,3 @@ func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) 
 	t.Helper()
 	r.append(devVersionRegex, "$$DEV_VERSION")
 }
-
-func PrepareReplaceOS(t testutil.TestingT, r *ReplacementsContext) {
-	t.Helper()
-	r.Set(runtime.GOOS, "[OS]")
-}
