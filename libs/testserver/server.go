@@ -40,15 +40,11 @@ func New(t testutil.TestingT) *Server {
 	}
 }
 
-type HandlerFunc func(req *http.Request) (resp any, err error)
+type HandlerFunc func(req *http.Request) (resp any, statusCode int)
 
 func (s *Server) Handle(pattern string, handler HandlerFunc) {
 	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		resp, err := handler(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		resp, statusCode := handler(r)
 
 		if s.RecordRequests {
 			body, err := io.ReadAll(r.Body)
@@ -63,9 +59,10 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
 
 		var respBytes []byte
-
+		var err error
 		respString, ok := resp.(string)
 		if ok {
 			respBytes = []byte(respString)

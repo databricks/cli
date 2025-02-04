@@ -57,7 +57,8 @@ type ServerStub struct {
 
 	// The response body to return.
 	Response struct {
-		Body string
+		Body       string
+		StatusCode int
 	}
 }
 

@@ -261,8 +261,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
-			server.Handle(stub.Pattern, func(req *http.Request) (resp any, err error) {
-				return stub.Response.Body, nil
+			server.Handle(stub.Pattern, func(req *http.Request) (any, int) {
+				statusCode := http.StatusOK
+				if stub.Response.StatusCode != 0 {
+					statusCode = stub.Response.StatusCode
+				}
+				return stub.Response.Body, statusCode
 			})
 		}
 		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
