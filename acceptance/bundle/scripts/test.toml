@@ -1,5 +1,8 @@
 LocalOnly = true  # Deployment currently fails when run locally; once that is fixed, remove this setting
 
+# This test checks whether the scripts are executed in the correct order.
+# The API stubs are defined just in order to have all scripts execute during
+# bundle validate and deploy.
 [[Server]]
 Pattern = "GET  /api/2.0/preview/scim/v2/Me"
 Response.Body = '''
