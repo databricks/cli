@@ -41,7 +41,7 @@ func TestAuthEnv(t *testing.T) {
 	assert.Equal(t, expected, out)
 }
 
-func TestAUthEnvVars(t *testing.T) {
+func TestAuthEnvVars(t *testing.T) {
 	expected := []string{
 		"DATABRICKS_HOST",
 		"DATABRICKS_CLUSTER_ID",
