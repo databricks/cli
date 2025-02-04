@@ -1,0 +1,2 @@
+errcode trace $CLI bundle init .
+# test runner will complain if helpers.txt is found - it should not be there
