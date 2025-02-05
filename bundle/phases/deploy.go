@@ -155,6 +155,10 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 				mutator.ValidateGitDetails(),
 				artifacts.CleanUp(),
 				libraries.ExpandGlobReferences(),
+				// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
+				// know what are the actual library paths.
+				// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
+				// mutator is part of the deploy step rather than validate.
 				libraries.CheckForSameNameLibraries(),
 				libraries.Upload(),
 				trampoline.TransformWheelTask(),
