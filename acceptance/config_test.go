@@ -47,8 +47,9 @@ type TestConfig struct {
 	// Record the requests made to the server and write them as output to
 	// out.requests.txt
 	RecordRequests bool
-	// Include the following request headers in the recorded requests
-	IncludeReqHeaders []string
+
+	// List of request headers to include when recording requests.
+	IncludeRequestHeaders []string
 }
 
 type ServerStub struct {
@@ -59,7 +60,8 @@ type ServerStub struct {
 
 	// The response body to return.
 	Response struct {
-		Body string
+		Body       string
+		StatusCode int
 	}
 }
 

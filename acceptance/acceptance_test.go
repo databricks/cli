@@ -159,7 +159,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
-	testdiff.PrepareReplaceOS(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -258,7 +257,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		server = testserver.New(t)
 		server.HandleUnknown()
 		server.RecordRequests = config.RecordRequests
-		server.IncludeReqHeaders = config.IncludeReqHeaders
+		server.IncludeRequestHeaders = config.IncludeRequestHeaders
 
 		// If no custom server stubs are defined, add the default handlers.
 		if len(config.Server) == 0 {
@@ -267,8 +266,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
-			server.Handle(stub.Pattern, func(req *http.Request) (resp any, err error) {
-				return stub.Response.Body, nil
+			server.Handle(stub.Pattern, func(req *http.Request) (any, int) {
+				statusCode := http.StatusOK
+				if stub.Response.StatusCode != 0 {
+					statusCode = stub.Response.StatusCode
+				}
+				return stub.Response.Body, statusCode
 			})
 		}
 		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)

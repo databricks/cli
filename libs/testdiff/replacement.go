@@ -226,8 +226,3 @@ func PrepareReplacementsGoVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.Set(goVersion(), "[GO_VERSION]")
 }
-
-func PrepareReplaceOS(t testutil.TestingT, r *ReplacementsContext) {
-	t.Helper()
-	r.Set(runtime.GOOS, "[OS]")
-}
