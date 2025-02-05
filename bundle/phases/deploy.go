@@ -155,6 +155,7 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 				mutator.ValidateGitDetails(),
 				artifacts.CleanUp(),
 				libraries.ExpandGlobReferences(),
+				libraries.CheckForSameNameLibraries(),
 				libraries.Upload(),
 				trampoline.TransformWheelTask(),
 				files.Upload(outputHandler),
