@@ -1,2 +1,2 @@
-error: Failed to upload telemetry logs: Endpoint not found.
+error: Failed to upload telemetry logs: Endpoint not implemented.
 
