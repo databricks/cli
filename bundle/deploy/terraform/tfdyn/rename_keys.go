@@ -43,3 +43,29 @@ func renameKeys(v dyn.Value, rename map[string]string) (dyn.Value, error) {
 	// Merge the accumulator with the original value.
 	return merge.Merge(nv, acc)
 }
+
+func dropKeys(v dyn.Value, drop []string) (dyn.Value, error) {
+	var err error
+	nv, err := dyn.Walk(v, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		if len(p) == 0 {
+			return v, nil
+		}
+
+		// Check if this key should be dropped.
+		for _, key := range drop {
+			if p[0].Key() != key {
+				continue
+			}
+
+			return dyn.InvalidValue, dyn.ErrDrop
+		}
+
+		// Pass through all other values.
+		return v, dyn.ErrSkip
+	})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	return nv, nil
+}
