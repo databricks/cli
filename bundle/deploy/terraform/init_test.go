@@ -292,7 +292,7 @@ func TestInheritEnvVars(t *testing.T) {
 	t.Setenv("HOME", "/home/testuser")
 	t.Setenv("PATH", "/foo:/bar")
 	t.Setenv("TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
-	t.Setenv("AZURE_CONFIG_FILE", "/tmp/foo/bar")
+	t.Setenv("AZURE_CONFIG_DIR", "/tmp/foo/bar")
 
 	ctx := context.Background()
 	env := map[string]string{}
@@ -301,7 +301,7 @@ func TestInheritEnvVars(t *testing.T) {
 		assert.Equal(t, "/home/testuser", env["HOME"])
 		assert.Equal(t, "/foo:/bar", env["PATH"])
 		assert.Equal(t, "/tmp/config.tfrc", env["TF_CLI_CONFIG_FILE"])
-		assert.Equal(t, "/tmp/foo/bar", env["AZURE_CONFIG_FILE"])
+		assert.Equal(t, "/tmp/foo/bar", env["AZURE_CONFIG_DIR"])
 	}
 }
 

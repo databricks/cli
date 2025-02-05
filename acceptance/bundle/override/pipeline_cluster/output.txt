@@ -1,5 +1,5 @@
 
->>> $CLI bundle validate -o json -t development
+>>> [CLI] bundle validate -o json -t development
 {
   "foo": {
     "clusters": [
@@ -14,14 +14,14 @@
     ],
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/override_pipeline_cluster/development/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_pipeline_cluster/development/state/metadata.json"
     },
     "name": "job",
     "permissions": []
   }
 }
 
->>> $CLI bundle validate -o json -t staging
+>>> [CLI] bundle validate -o json -t staging
 {
   "foo": {
     "clusters": [
@@ -36,7 +36,7 @@
     ],
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/override_pipeline_cluster/staging/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_pipeline_cluster/staging/state/metadata.json"
     },
     "name": "job",
     "permissions": []

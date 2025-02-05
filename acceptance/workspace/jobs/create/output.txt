@@ -1,5 +1,5 @@
 
->>> $CLI jobs create --json {"name":"abc"}
+>>> [CLI] jobs create --json {"name":"abc"}
 {
   "job_id":1111
 }

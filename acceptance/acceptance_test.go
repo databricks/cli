@@ -102,13 +102,13 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 
 	t.Setenv("CLI", execPath)
-	repls.SetPath(execPath, "$CLI")
+	repls.SetPath(execPath, "[CLI]")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
 	tempHomeDir := t.TempDir()
-	repls.SetPath(tempHomeDir, "$TMPHOME")
+	repls.SetPath(tempHomeDir, "[TMPHOME]")
 	t.Logf("$TMPHOME=%v", tempHomeDir)
 
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
@@ -133,7 +133,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
 	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
-	repls.SetPath(terraformrcPath, "$DATABRICKS_TF_CLI_CONFIG_FILE")
+	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
 	terraformExecPath := filepath.Join(buildDir, "terraform")
 	if runtime.GOOS == "windows" {
@@ -141,10 +141,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
-	repls.SetPath(terraformExecPath, "$TERRAFORM")
+	repls.SetPath(terraformExecPath, "[TERRAFORM]")
 
 	// do it last so that full paths match first:
-	repls.SetPath(buildDir, "$BUILD_DIR")
+	repls.SetPath(buildDir, "[BUILD_DIR]")
 
 	workspaceClient, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -156,6 +156,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
+	testdiff.PrepareReplacementSdkVersion(t, &repls)
+	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -226,7 +228,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	repls.SetPathWithParents(tmpDir, "$TMPDIR")
+	repls.SetPathWithParents(tmpDir, "[TMPDIR]")
 	repls.Repls = append(repls.Repls, config.Repls...)
 
 	scriptContents := readMergedScriptContents(t, dir)
@@ -253,6 +255,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	if len(config.Server) > 0 || config.RecordRequests {
 		server = testserver.New(t)
 		server.RecordRequests = config.RecordRequests
+		server.IncludeRequestHeaders = config.IncludeRequestHeaders
 
 		// If no custom server stubs are defined, add the default handlers.
 		if len(config.Server) == 0 {
@@ -261,8 +264,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
-			server.Handle(stub.Pattern, func(req *http.Request) (resp any, err error) {
-				return stub.Response.Body, nil
+			server.Handle(stub.Pattern, func(req *http.Request) (any, int) {
+				statusCode := http.StatusOK
+				if stub.Response.StatusCode != 0 {
+					statusCode = stub.Response.StatusCode
+				}
+				return stub.Response.Body, statusCode
 			})
 		}
 		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)

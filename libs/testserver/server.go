@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 
 	"github.com/stretchr/testify/assert"
 
@@ -17,15 +18,17 @@ type Server struct {
 
 	t testutil.TestingT
 
-	RecordRequests bool
+	RecordRequests        bool
+	IncludeRequestHeaders []string
 
 	Requests []Request
 }
 
 type Request struct {
-	Method string `json:"method"`
-	Path   string `json:"path"`
-	Body   any    `json:"body"`
+	Headers map[string]string `json:"headers,omitempty"`
+	Method  string            `json:"method"`
+	Path    string            `json:"path"`
+	Body    any               `json:"body"`
 }
 
 func New(t testutil.TestingT) *Server {
@@ -40,32 +43,38 @@ func New(t testutil.TestingT) *Server {
 	}
 }
 
-type HandlerFunc func(req *http.Request) (resp any, err error)
+type HandlerFunc func(req *http.Request) (resp any, statusCode int)
 
 func (s *Server) Handle(pattern string, handler HandlerFunc) {
 	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		resp, err := handler(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		resp, statusCode := handler(r)
 
 		if s.RecordRequests {
 			body, err := io.ReadAll(r.Body)
 			assert.NoError(s.t, err)
 
+			headers := make(map[string]string)
+			for k, v := range r.Header {
+				if len(v) == 0 || !slices.Contains(s.IncludeRequestHeaders, k) {
+					continue
+				}
+				headers[k] = v[0]
+			}
+
 			s.Requests = append(s.Requests, Request{
-				Method: r.Method,
-				Path:   r.URL.Path,
-				Body:   json.RawMessage(body),
+				Headers: headers,
+				Method:  r.Method,
+				Path:    r.URL.Path,
+				Body:    json.RawMessage(body),
 			})
 
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
 
 		var respBytes []byte
-
+		var err error
 		respString, ok := resp.(string)
 		if ok {
 			respBytes = []byte(respString)

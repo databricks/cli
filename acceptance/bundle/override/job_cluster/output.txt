@@ -1,10 +1,10 @@
 
->>> $CLI bundle validate -o json -t development
+>>> [CLI] bundle validate -o json -t development
 {
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/override_job_cluster/development/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/development/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -27,12 +27,12 @@
   }
 }
 
->>> $CLI bundle validate -o json -t staging
+>>> [CLI] bundle validate -o json -t staging
 {
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/override_job_cluster/staging/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/staging/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
