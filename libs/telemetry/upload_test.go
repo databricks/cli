@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,19 +20,19 @@ func TestTelemetryUpload(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	count := 0
-	server.Handle("POST /telemetry-ext", func(req *http.Request) (resp any, err error) {
+	server.Handle("POST /telemetry-ext", func(req *http.Request) (resp any, statusCode int) {
 		count++
 		if count == 1 {
 			return ResponseBody{
 				NumProtoSuccess: 1,
-			}, nil
+			}, http.StatusOK
 		}
 		if count == 2 {
 			return ResponseBody{
 				NumProtoSuccess: 2,
-			}, nil
+			}, http.StatusOK
 		}
-		return nil, apierr.NotFound("not found")
+		return nil, http.StatusInternalServerError
 	})
 
 	t.Setenv("DATABRICKS_HOST", server.URL)
