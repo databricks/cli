@@ -156,6 +156,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
+	testdiff.PrepareReplacementSdkVersion(t, &repls)
+	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -253,6 +255,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	if len(config.Server) > 0 || config.RecordRequests {
 		server = testserver.New(t)
 		server.RecordRequests = config.RecordRequests
+		server.IncludeRequestHeaders = config.IncludeRequestHeaders
 
 		// If no custom server stubs are defined, add the default handlers.
 		if len(config.Server) == 0 {
