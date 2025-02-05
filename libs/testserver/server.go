@@ -61,11 +61,21 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 				headers[k] = v[0]
 			}
 
+			var reqBody any
+			if json.Valid(body) {
+				// If the request body is a valid JSON, typecast it to json.RawMessage.
+				// This way json.Marshal will ignore the body and serialize it
+				// as is, which is what we want because the body is already a JSON.
+				reqBody = json.RawMessage(body)
+			} else {
+				reqBody = body
+			}
+
 			s.Requests = append(s.Requests, Request{
 				Headers: headers,
 				Method:  r.Method,
 				Path:    r.URL.Path,
-				Body:    json.RawMessage(body),
+				Body:    reqBody,
 			})
 
 		}
