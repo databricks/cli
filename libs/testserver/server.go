@@ -68,7 +68,9 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 				// as is, which is what we want because the body is already a JSON.
 				reqBody = json.RawMessage(body)
 			} else {
-				reqBody = body
+				// JSON marshal encodes []byte to base64. Typecase it to string
+				// to avoid this.
+				reqBody = string(body)
 			}
 
 			s.Requests = append(s.Requests, Request{
