@@ -1,7 +1,6 @@
 package acceptance_test
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -96,23 +95,19 @@ func AddHandlers(server *testserver.Server) {
 		return "{}", http.StatusOK
 	})
 
-	server.Handle("GET /oidc/.well-known/oauth-authorization-server", func(r *http.Request) (any, error) {
+	server.Handle("GET /oidc/.well-known/oauth-authorization-server", func(r *http.Request) (any, int) {
 		return map[string]string{
 			"authorization_endpoint": server.URL + "oidc/v1/authorize",
 			"token_endpoint":         server.URL + "/oidc/v1/token",
-		}, nil
+		}, http.StatusOK
 	})
 
-	server.Handle("POST /oidc/v1/token", func(r *http.Request) (any, error) {
+	server.Handle("POST /oidc/v1/token", func(r *http.Request) (any, int) {
 		return map[string]string{
 			"access_token": "oauth-token",
 			"expires_in":   "3600",
 			"scope":        "all-apis",
 			"token_type":   "Bearer",
-		}, nil
-	})
-
-	server.Handle("POST /api/2.0/workspace-files/import-file/", func(r *http.Request) (any, error) {
-		return "{}", errors.New("not implemented")
+		}, http.StatusOK
 	})
 }
