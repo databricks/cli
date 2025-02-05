@@ -1,0 +1,2 @@
+error: Failed to upload telemetry logs: Endpoint not found.
+

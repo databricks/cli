@@ -1,2 +1,2 @@
 
->>> $CLI telemetry upload
+>>> [CLI] telemetry upload
