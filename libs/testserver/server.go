@@ -28,7 +28,7 @@ type Request struct {
 	Headers map[string]string `json:"headers,omitempty"`
 	Method  string            `json:"method"`
 	Path    string            `json:"path"`
-	Body    any               `json:"body"`
+	Body    any               `json:"body,omitempty"`
 }
 
 func New(t testutil.TestingT) *Server {
