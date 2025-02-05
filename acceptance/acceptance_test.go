@@ -120,7 +120,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		defaultServer := testserver.New(t)
-		defaultServer.HandleUnknown()
 		AddHandlers(defaultServer)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
@@ -255,7 +254,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	//    server otherwise is a shared resource.
 	if len(config.Server) > 0 || config.RecordRequests {
 		server = testserver.New(t)
-		server.HandleUnknown()
 		server.RecordRequests = config.RecordRequests
 		server.IncludeRequestHeaders = config.IncludeRequestHeaders
 
