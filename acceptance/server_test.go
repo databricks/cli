@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -94,26 +93,5 @@ func AddHandlers(server *testserver.Server) {
 
 	server.Handle("POST /api/2.0/workspace/mkdirs", func(r *http.Request) (any, int) {
 		return "{}", http.StatusOK
-	})
-
-	server.Handle("GET /api/2.1/jobs/get", func(r *http.Request) (any, int) {
-		return jobs.Job{
-			Settings: &jobs.JobSettings{
-				Name: "gitjob",
-				GitSource: &jobs.GitSource{
-					GitUrl:      "https://git.databricks.com",
-					GitProvider: "github",
-					GitBranch:   "main",
-					GitCommit:   "abcdef",
-				},
-				Tasks: []jobs.Task{
-					{
-						NotebookTask: &jobs.NotebookTask{
-							NotebookPath: "some/test/notebook.py",
-						},
-					},
-				},
-			},
-		}, http.StatusOK
 	})
 }

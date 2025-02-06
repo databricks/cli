@@ -3,7 +3,8 @@ resources:
     out:
       name: gitjob
       tasks:
-        - notebook_task:
+        - task_key: test_task
+          notebook_task:
             notebook_path: some/test/notebook.py
       git_source:
         git_provider: github
