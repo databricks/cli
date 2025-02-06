@@ -19,6 +19,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
+
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
@@ -123,7 +125,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		AddHandlers(defaultServer)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
-		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
@@ -146,10 +147,12 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	workspaceClient, err := databricks.NewWorkspaceClient()
+	config := databricks.Config{Token: "dbapi1234"}
+	workspaceClient, err := databricks.NewWorkspaceClient(&config)
 	require.NoError(t, err)
 
 	user, err := workspaceClient.CurrentUser.Me(ctx)
+
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
@@ -264,7 +267,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
-			server.Handle(stub.Pattern, func(req *http.Request) (any, int) {
+			server.Handle(stub.Pattern, func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
 				statusCode := http.StatusOK
 				if stub.Response.StatusCode != 0 {
 					statusCode = stub.Response.StatusCode
@@ -285,6 +288,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
+	// Each test should use a new token that will result into a new fake workspace,
+	// so that test don't interfere with each other.
+	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+	token := "dbapi" + tokenSuffix
+	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+token)
+	repls.Set(token, "[DATABRICKS_TOKEN]")
+
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
 	require.NoError(t, err)
@@ -303,7 +313,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			reqJson, err := json.Marshal(req)
 			require.NoError(t, err)
 
-			line := fmt.Sprintf("%s\n", reqJson)
+			reqJsonWithRepls := repls.Replace(string(reqJson))
+			line := fmt.Sprintf("%s\n", reqJsonWithRepls)
 			_, err = f.WriteString(line)
 			require.NoError(t, err)
 		}
