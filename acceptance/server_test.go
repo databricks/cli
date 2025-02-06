@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
-
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"net/http"
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
