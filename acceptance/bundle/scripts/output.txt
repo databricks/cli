@@ -42,11 +42,9 @@ from myscript.py 0 postbuild: hello stderr!
 Executing 'predeploy' script
 from myscript.py 0 predeploy: hello stdout!
 from myscript.py 0 predeploy: hello stderr!
-Error: unable to deploy to /Workspace/Users/[USERNAME]/.bundle/scripts/default/state as [USERNAME].
-Please make sure the current user or one of their groups is listed under the permissions of this bundle.
-For assistance, contact the owners of this project.
-They may need to redeploy the bundle to apply the new permissions.
-Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions.
-
-
-Exit code: 1
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts/default/files...
+Deploying resources...
+Deployment complete!
+Executing 'postdeploy' script
+from myscript.py 0 postdeploy: hello stdout!
+from myscript.py 0 postdeploy: hello stderr!

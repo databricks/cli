@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
+	"sync"
 
 	"github.com/stretchr/testify/assert"
 
@@ -17,6 +19,9 @@ type Server struct {
 	Mux *http.ServeMux
 
 	t testutil.TestingT
+
+	fakeWorkspaces map[string]*FakeWorkspace
+	mu             *sync.Mutex
 
 	RecordRequests        bool
 	IncludeRequestHeaders []string
@@ -37,17 +42,36 @@ func New(t testutil.TestingT) *Server {
 	t.Cleanup(server.Close)
 
 	return &Server{
-		Server: server,
-		Mux:    mux,
-		t:      t,
+		Server:         server,
+		Mux:            mux,
+		t:              t,
+		mu:             &sync.Mutex{},
+		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
 }
 
-type HandlerFunc func(req *http.Request) (resp any, statusCode int)
+type HandlerFunc func(fakeWorkspace *FakeWorkspace, req *http.Request) (resp any, statusCode int)
 
 func (s *Server) Handle(pattern string, handler HandlerFunc) {
 	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		resp, statusCode := handler(r)
+		// For simplicity we process requests sequentially. It's fast enough because
+		// we don't do any IO except reading and writing request/response bodies.
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
+		// it's own fake fakeWorkspace to avoid interference between tests.
+		var fakeWorkspace *FakeWorkspace = nil
+		token := getToken(r)
+		if token != "" {
+			if _, ok := s.fakeWorkspaces[token]; !ok {
+				s.fakeWorkspaces[token] = NewFakeWorkspace()
+			}
+
+			fakeWorkspace = s.fakeWorkspaces[token]
+		}
+
+		resp, statusCode := handler(fakeWorkspace, r)
 
 		if s.RecordRequests {
 			body, err := io.ReadAll(r.Body)
@@ -75,9 +99,10 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 
 		var respBytes []byte
 		var err error
-		respString, ok := resp.(string)
-		if ok {
+		if respString, ok := resp.(string); ok {
 			respBytes = []byte(respString)
+		} else if respBytes0, ok := resp.([]byte); ok {
+			respBytes = respBytes0
 		} else {
 			respBytes, err = json.MarshalIndent(resp, "", "    ")
 			if err != nil {
@@ -91,4 +116,15 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 			return
 		}
 	})
+}
+
+func getToken(r *http.Request) string {
+	header := r.Header.Get("Authorization")
+	prefix := "Bearer "
+
+	if !strings.HasPrefix(header, prefix) {
+		return ""
+	}
+
+	return header[len(prefix):]
 }
