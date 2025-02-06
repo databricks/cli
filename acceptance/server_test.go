@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -52,29 +53,6 @@ func AddHandlers(server *testserver.Server) {
 				{
 					ClusterName: "some-other-cluster",
 					ClusterId:   "9876",
-				},
-			},
-		}, http.StatusOK
-	})
-
-	server.Handle("GET /api/2.1/unity-catalog/current-metastore-assignment", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		return fakeWorkspace.CurrentMetastoreAssignment()
-	})
-
-	server.Handle("GET /api/2.0/permissions/directories/{objectId}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		objectId := r.PathValue("objectId")
-
-		return workspace.WorkspaceObjectPermissions{
-			ObjectId:   objectId,
-			ObjectType: "DIRECTORY",
-			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-				{
-					UserName: "tester@databricks.com",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
-						{
-							PermissionLevel: "CAN_MANAGE",
-						},
-					},
 				},
 			},
 		}, http.StatusOK
@@ -135,6 +113,31 @@ func AddHandlers(server *testserver.Server) {
 		}
 
 		return fakeWorkspace.WorkspaceFilesImportFile(path, body.Bytes())
+	})
+
+	server.Handle("GET /api/2.1/unity-catalog/current-metastore-assignment", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+		return catalog.MetastoreAssignment{
+			DefaultCatalogName: "main",
+		}, http.StatusOK
+	})
+
+	server.Handle("GET /api/2.0/permissions/directories/{objectId}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+		objectId := r.PathValue("objectId")
+
+		return workspace.WorkspaceObjectPermissions{
+			ObjectId:   objectId,
+			ObjectType: "DIRECTORY",
+			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
+				{
+					UserName: "tester@databricks.com",
+					AllPermissions: []workspace.WorkspaceObjectPermission{
+						{
+							PermissionLevel: "CAN_MANAGE",
+						},
+					},
+				},
+			},
+		}, http.StatusOK
 	})
 
 	server.Handle("POST /api/2.1/jobs/create", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {

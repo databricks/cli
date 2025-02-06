@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -31,12 +31,6 @@ func NewFakeWorkspace() *FakeWorkspace {
 		jobs:      map[int64]jobs.Job{},
 		nextJobId: 1,
 	}
-}
-
-func (s *FakeWorkspace) CurrentMetastoreAssignment() (catalog.MetastoreAssignment, int) {
-	return catalog.MetastoreAssignment{
-		DefaultCatalogName: "main",
-	}, http.StatusOK
 }
 
 func (s *FakeWorkspace) WorkspaceGetStatus(path string) (workspace.ObjectInfo, int) {
@@ -141,6 +135,11 @@ func (s *FakeWorkspace) JobsList() (any, int) {
 
 		list = append(list, baseJob)
 	}
+
+	// sort to have less non-determinism in tests
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].JobId < list[j].JobId
+	})
 
 	return jobs.ListJobsResponse{
 		Jobs: list,
