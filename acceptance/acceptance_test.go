@@ -314,8 +314,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			require.NoError(t, err)
 
 			reqJsonWithRepls := repls.Replace(string(reqJson))
-			line := fmt.Sprintf("%s\n", reqJsonWithRepls)
-			_, err = f.WriteString(line)
+			_, err = f.WriteString(reqJsonWithRepls + "\n")
 			require.NoError(t, err)
 		}
 
