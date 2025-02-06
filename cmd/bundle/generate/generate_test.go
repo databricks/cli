@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -213,6 +214,73 @@ func TestGenerateJobCommand(t *testing.T) {
 	data, err = os.ReadFile(filepath.Join(srcDir, "notebook.py"))
 	require.NoError(t, err)
 	require.Equal(t, "# Databricks notebook source\nNotebook content", string(data))
+}
+
+func TestGenerateJobWithGitSource(t *testing.T) {
+	cmd := NewGenerateJobCommand()
+
+	root := t.TempDir()
+	b := &bundle.Bundle{
+		BundleRootPath: root,
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	jobsApi := m.GetMockJobsAPI()
+	jobsApi.EXPECT().Get(mock.Anything, jobs.GetJobRequest{JobId: 1234}).Return(&jobs.Job{
+		Settings: &jobs.JobSettings{
+			Name: "test-job",
+			GitSource: &jobs.GitSource{
+				GitBranch:   "main",
+				GitCommit:   "abcdef",
+				GitProvider: "github",
+				GitUrl:      "https://git.databricks.com",
+			},
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "notebook_task",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "some/test/notebook.py",
+					},
+				},
+			},
+		},
+	}, nil)
+
+	cmd.SetContext(bundle.Context(context.Background(), b))
+	require.NoError(t, cmd.Flag("existing-job-id").Value.Set("1234"))
+
+	configDir := filepath.Join(root, "resources")
+	require.NoError(t, cmd.Flag("config-dir").Value.Set(configDir))
+
+	srcDir := filepath.Join(root, "src")
+	require.NoError(t, cmd.Flag("source-dir").Value.Set(srcDir))
+
+	var key string
+	cmd.Flags().StringVar(&key, "key", "test_job", "")
+
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(configDir, "test_job.job.yml"))
+	require.NoError(t, err)
+
+	// We split the string to make the test more robust to changes in the order of the keys in the yaml file
+	require.ElementsMatch(t, strings.Split(`resources:
+  jobs:
+    test_job:
+      name: test-job
+      tasks:
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: some/test/notebook.py
+      git_source:
+        git_provider: github
+        git_url: https://git.databricks.com
+        git_branch: main
+        git_commit: abcdef
+`, "\n"), strings.Split(string(data), "\n"))
 }
 
 func touchEmptyFile(t *testing.T, path string) {

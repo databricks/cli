@@ -50,10 +50,15 @@ func NewGenerateJobCommand() *cobra.Command {
 		}
 
 		downloader := newDownloader(w, sourceDir, configDir)
-		for _, task := range job.Settings.Tasks {
-			err := downloader.MarkTaskForDownload(ctx, &task)
-			if err != nil {
-				return err
+		// Don't download files if the job is using Git source
+		if job.Settings.GitSource != nil {
+			cmdio.LogString(ctx, "Job is using Git source, skipping downloading files")
+		} else {
+			for _, task := range job.Settings.Tasks {
+				err := downloader.MarkTaskForDownload(ctx, &task)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
