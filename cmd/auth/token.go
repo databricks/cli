@@ -46,6 +46,7 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [HOST]",
 		Short: "Get authentication token",
+		Hidden: true,
 	}
 
 	var tokenTimeout time.Duration
