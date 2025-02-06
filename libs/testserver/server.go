@@ -62,7 +62,8 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
 		// it's own fake fakeWorkspace to avoid interference between tests.
 		var fakeWorkspace *FakeWorkspace = nil
-		if token := getToken(r); token != "" {
+		token := getToken(r)
+		if token != "" {
 			if _, ok := s.fakeWorkspaces[token]; !ok {
 				s.fakeWorkspaces[token] = NewFakeWorkspace()
 			}
@@ -81,6 +82,7 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 				if len(v) == 0 || !slices.Contains(s.IncludeRequestHeaders, k) {
 					continue
 				}
+
 				headers[k] = v[0]
 			}
 

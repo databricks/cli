@@ -290,8 +290,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Each test should use a new token that will result into a new fake workspace,
 	// so that test don't interfere with each other.
-	token := strings.ReplaceAll(uuid.NewString(), "-", "")
-	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN=dbapi"+token)
+	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+	token := "dbapi" + tokenSuffix
+	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+token)
+	repls.Set(token, "[DATABRICKS_TOKEN]")
 
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
@@ -311,7 +313,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			reqJson, err := json.Marshal(req)
 			require.NoError(t, err)
 
-			line := fmt.Sprintf("%s\n", reqJson)
+			reqJsonWithRepls := repls.Replace(string(reqJson))
+			line := fmt.Sprintf("%s\n", reqJsonWithRepls)
 			_, err = f.WriteString(line)
 			require.NoError(t, err)
 		}
