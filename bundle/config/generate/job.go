@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	jobOrder  = yamlsaver.NewOrder([]string{"name", "job_clusters", "compute", "tasks"})
-	taskOrder = yamlsaver.NewOrder([]string{"task_key", "depends_on", "existing_cluster_id", "new_cluster", "job_cluster_key"})
+	jobOrder       = yamlsaver.NewOrder([]string{"name", "job_clusters", "compute", "tasks"})
+	taskOrder      = yamlsaver.NewOrder([]string{"task_key", "depends_on", "existing_cluster_id", "new_cluster", "job_cluster_key"})
+	gitSourceOrder = yamlsaver.NewOrder([]string{"git_provider", "git_url", "git_branch", "git_commit"})
 )
 
 func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
@@ -25,6 +26,15 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 		}
 		// We're using location lines to define the order of keys in exported YAML.
 		value["tasks"] = dyn.NewValue(tasks, []dyn.Location{{Line: jobOrder.Get("tasks")}})
+	}
+
+	if job.Settings.GitSource != nil {
+		gitSource, err := convertGitSourceToValue(job.Settings.GitSource, gitSourceOrder)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		value["git_source"] = gitSource
 	}
 
 	// We're processing job.Settings.Parameters separately to retain empty default values.
@@ -47,4 +57,9 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 func convertTaskToValue(task jobs.Task, order *yamlsaver.Order) (dyn.Value, error) {
 	dst := make(map[string]dyn.Value)
 	return yamlsaver.ConvertToMapValue(task, order, []string{"format"}, dst)
+}
+
+func convertGitSourceToValue(gitSource *jobs.GitSource, order *yamlsaver.Order) (dyn.Value, error) {
+	dst := make(map[string]dyn.Value)
+	return yamlsaver.ConvertToMapValue(gitSource, order, nil, dst)
 }
