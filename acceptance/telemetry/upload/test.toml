@@ -1,3 +1,4 @@
+LocalOnly = true
 RecordRequests = true
 
 [[Server]]
