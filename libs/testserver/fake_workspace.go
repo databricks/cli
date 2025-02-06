@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -35,33 +33,9 @@ func NewFakeWorkspace() *FakeWorkspace {
 	}
 }
 
-func (s *FakeWorkspace) ScimMe() (iam.User, int) {
-	return iam.User{
-		Id:       "1000012345",
-		UserName: "tester@databricks.com",
-	}, http.StatusOK
-}
-
 func (s *FakeWorkspace) CurrentMetastoreAssignment() (catalog.MetastoreAssignment, int) {
 	return catalog.MetastoreAssignment{
 		DefaultCatalogName: "main",
-	}, http.StatusOK
-}
-
-func (s *FakeWorkspace) DirectoryPermissions(objectId string) (workspace.WorkspaceObjectPermissions, int) {
-	return workspace.WorkspaceObjectPermissions{
-		ObjectId:   objectId,
-		ObjectType: "DIRECTORY",
-		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-			{
-				UserName: "tester@databricks.com",
-				AllPermissions: []workspace.WorkspaceObjectPermission{
-					{
-						PermissionLevel: "CAN_MANAGE",
-					},
-				},
-			},
-		},
 	}, http.StatusOK
 }
 
@@ -170,47 +144,6 @@ func (s *FakeWorkspace) JobsList() (any, int) {
 
 	return jobs.ListJobsResponse{
 		Jobs: list,
-	}, http.StatusOK
-}
-
-func (s *FakeWorkspace) InstancePoolsList() (compute.ListInstancePools, int) {
-	return compute.ListInstancePools{
-		InstancePools: []compute.InstancePoolAndStats{
-			{
-				InstancePoolName: "some-test-instance-pool",
-				InstancePoolId:   "1234",
-			},
-		},
-	}, http.StatusOK
-}
-
-func (s *FakeWorkspace) ClustersList() (compute.ListClustersResponse, int) {
-	return compute.ListClustersResponse{
-		Clusters: []compute.ClusterDetails{
-			{
-				ClusterName: "some-test-cluster",
-				ClusterId:   "4321",
-			},
-			{
-				ClusterName: "some-other-cluster",
-				ClusterId:   "9876",
-			},
-		},
-	}, http.StatusOK
-}
-
-func (s *FakeWorkspace) PoliciesList() (any, int) {
-	return compute.ListPoliciesResponse{
-		Policies: []compute.Policy{
-			{
-				PolicyId: "5678",
-				Name:     "wrong-cluster-policy",
-			},
-			{
-				PolicyId: "9876",
-				Name:     "some-test-cluster-policy",
-			},
-		},
 	}, http.StatusOK
 }
 

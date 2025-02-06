@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
+
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -14,15 +17,44 @@ import (
 
 func AddHandlers(server *testserver.Server) {
 	server.Handle("GET /api/2.0/policies/clusters/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		return fakeWorkspace.PoliciesList()
+		return compute.ListPoliciesResponse{
+			Policies: []compute.Policy{
+				{
+					PolicyId: "5678",
+					Name:     "wrong-cluster-policy",
+				},
+				{
+					PolicyId: "9876",
+					Name:     "some-test-cluster-policy",
+				},
+			},
+		}, http.StatusOK
 	})
 
 	server.Handle("GET /api/2.0/instance-pools/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		return fakeWorkspace.InstancePoolsList()
+		return compute.ListInstancePools{
+			InstancePools: []compute.InstancePoolAndStats{
+				{
+					InstancePoolName: "some-test-instance-pool",
+					InstancePoolId:   "1234",
+				},
+			},
+		}, http.StatusOK
 	})
 
 	server.Handle("GET /api/2.1/clusters/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		return fakeWorkspace.ClustersList()
+		return compute.ListClustersResponse{
+			Clusters: []compute.ClusterDetails{
+				{
+					ClusterName: "some-test-cluster",
+					ClusterId:   "4321",
+				},
+				{
+					ClusterName: "some-other-cluster",
+					ClusterId:   "9876",
+				},
+			},
+		}, http.StatusOK
 	})
 
 	server.Handle("GET /api/2.1/unity-catalog/current-metastore-assignment", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
@@ -32,11 +64,27 @@ func AddHandlers(server *testserver.Server) {
 	server.Handle("GET /api/2.0/permissions/directories/{objectId}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		objectId := r.PathValue("objectId")
 
-		return fakeWorkspace.DirectoryPermissions(objectId)
+		return workspace.WorkspaceObjectPermissions{
+			ObjectId:   objectId,
+			ObjectType: "DIRECTORY",
+			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
+				{
+					UserName: "tester@databricks.com",
+					AllPermissions: []workspace.WorkspaceObjectPermission{
+						{
+							PermissionLevel: "CAN_MANAGE",
+						},
+					},
+				},
+			},
+		}, http.StatusOK
 	})
 
 	server.Handle("GET /api/2.0/preview/scim/v2/Me", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		return fakeWorkspace.ScimMe()
+		return iam.User{
+			Id:       "1000012345",
+			UserName: "tester@databricks.com",
+		}, http.StatusOK
 	})
 
 	server.Handle("GET /api/2.0/workspace/get-status", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
