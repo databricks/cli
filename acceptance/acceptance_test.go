@@ -152,7 +152,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	require.NoError(t, err)
 
 	user, err := workspaceClient.CurrentUser.Me(ctx)
-
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, &repls, *user)
