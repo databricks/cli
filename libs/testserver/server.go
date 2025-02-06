@@ -82,7 +82,6 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 				if len(v) == 0 || !slices.Contains(s.IncludeRequestHeaders, k) {
 					continue
 				}
-
 				headers[k] = v[0]
 			}
 
