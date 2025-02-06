@@ -733,8 +733,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger"
                       }
                     },
-                    "additionalProperties": false,
-                    "markdownDescription": "The pipeline resource allows you to create \u003cDLT\u003e [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/delta-live-tables/index.html). For a tutorial that uses the \u003cDABS\u003e template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
+                    "additionalProperties": false
                   },
                   {
                     "type": "string",
