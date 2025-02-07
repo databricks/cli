@@ -1,0 +1,27 @@
+{
+  "volume1": {
+    "catalog_name": "catalog1",
+    "schema_name": "${resources.schemas.schema1.name}",
+    "volume_type": "MANAGED"
+  },
+  "volume2": {
+    "catalog_name": "catalog2",
+    "schema_name": "${resources.schemas.schema2.name}",
+    "volume_type": "MANAGED"
+  },
+  "volume3": {
+    "catalog_name": "catalog1",
+    "schema_name": "${resources.schemas.schema3.name}",
+    "volume_type": "MANAGED"
+  },
+  "volume4": {
+    "catalog_name": "catalogX",
+    "schema_name": "foobar",
+    "volume_type": "MANAGED"
+  },
+  "volume5": {
+    "catalog_name": "catalog1",
+    "schema_name": "schemaX",
+    "volume_type": "MANAGED"
+  }
+}

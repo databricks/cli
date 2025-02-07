@@ -1,0 +1,3 @@
+# We expect UC Volumes that use a schema defined in the bundle to have the
+# schema names replaced with a reference like `${resource.schemas.abc.name}`.
+$CLI bundle validate -o json | jq .resources.volumes > out.json

@@ -1,0 +1,28 @@
+{
+  "pipeline1": {
+    "catalog": "catalog1",
+    "target": "${resources.schemas.schema1.name}"
+  },
+  "pipeline2": {
+    "catalog": "catalog2",
+    "target": "${resources.schemas.schema2.name}"
+  },
+  "pipeline3": {
+    "catalog": "catalog1",
+    "target": "${resources.schemas.schema3.name}"
+  },
+  "pipeline4": {
+    "catalog": "catalogX",
+    "target": "foobar"
+  },
+  "pipeline5": {
+    "catalog": "catalog1",
+    "target": "schemaX"
+  },
+  "pipeline6": {
+    "target": "foobar"
+  },
+  "pipeline7": {
+    "name": "whatever"
+  }
+}
