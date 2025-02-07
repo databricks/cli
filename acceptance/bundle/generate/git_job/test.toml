@@ -19,6 +19,13 @@ Response.Body = '''
                 "notebook_task": {
                     "notebook_path": "some/test/notebook.py"
                 }
+            },
+            {
+                "task_key": "test_task_2",
+                "notebook_task": {
+                    "source": "WORKSPACE",
+                    "notebook_path": "/Workspace/Users/foo@bar.com/some/test/notebook.py"
+                }
             }
         ]
     }
