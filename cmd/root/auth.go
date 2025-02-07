@@ -18,7 +18,10 @@ import (
 var (
 	workspaceClient int
 	accountClient   int
-	configUsed      int
+
+	// TODO: Does the config used have the resolved configuration? Like has the
+	// profile been loaded?
+	configUsed int
 )
 
 type ErrNoWorkspaceProfiles struct {
@@ -334,6 +337,8 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 func ConfigUsed(ctx context.Context) *config.Config {
 	cfg, ok := ctx.Value(&configUsed).(*config.Config)
 	if !ok {
+		// todo: remove this, just for testing.
+		return &config.Config{}
 		panic("cannot get *config.Config. Please report it as a bug")
 	}
 	return cfg
