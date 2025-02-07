@@ -3,6 +3,7 @@
 >>> chmod 000 .git
 
 >>> [CLI] bundle validate
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 Name: git-permerror
@@ -16,6 +17,7 @@ Found 1 error
 Exit code: 1
 
 >>> [CLI] bundle validate -o json
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 
@@ -25,6 +27,7 @@ Exit code: 1
 }
 
 >>> withdir subdir/a/b [CLI] bundle validate -o json
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 
@@ -39,11 +42,15 @@ Exit code: 1
 >>> chmod 000 .git/HEAD
 
 >>> [CLI] bundle validate -o json
+Warn: failed to load current branch: open HEAD: permission denied
+Warn: failed to load latest commit: open HEAD: permission denied
 {
   "bundle_root_path": "."
 }
 
 >>> withdir subdir/a/b [CLI] bundle validate -o json
+Warn: failed to load current branch: open HEAD: permission denied
+Warn: failed to load latest commit: open HEAD: permission denied
 {
   "bundle_root_path": "."
 }
@@ -54,6 +61,7 @@ Exit code: 1
 >>> chmod 000 .git/config
 
 >>> [CLI] bundle validate -o json
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 
@@ -63,6 +71,7 @@ Exit code: 1
 }
 
 >>> withdir subdir/a/b [CLI] bundle validate -o json
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
 Error: unable to load repository specific gitconfig: open config: permission denied
 
 
