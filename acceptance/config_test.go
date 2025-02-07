@@ -62,7 +62,9 @@ type ServerStub struct {
 	}
 }
 
-// FindConfigs finds the closest config file.
+// FindConfigs finds all the config relevant for this test,
+// ordered from the most outermost (at acceptance/) to current test directory (identified by dir).
+// Argument dir must be a relative path from the root of acceptance tests (<project_root>/acceptance/).
 func FindConfigs(t *testing.T, dir string) []string {
 	configs := []string{}
 	for {
