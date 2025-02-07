@@ -147,7 +147,14 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	config := databricks.Config{Token: "dbapi1234"}
+	var config databricks.Config
+	if cloudEnv == "" {
+		// use fake token for local tests
+		config = databricks.Config{Token: "dbapi1234"}
+	} else {
+		// non-local tests rely on environment variables
+		config = databricks.Config{}
+	}
 	workspaceClient, err := databricks.NewWorkspaceClient(&config)
 	require.NoError(t, err)
 
@@ -287,12 +294,14 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
-	// Each test should use a new token that will result into a new fake workspace,
+	// Each local test should use a new token that will result into a new fake workspace,
 	// so that test don't interfere with each other.
-	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-	token := "dbapi" + tokenSuffix
-	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+token)
-	repls.Set(token, "[DATABRICKS_TOKEN]")
+	if cloudEnv == "" {
+		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+		token := "dbapi" + tokenSuffix
+		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+token)
+		repls.Set(token, "[DATABRICKS_TOKEN]")
+	}
 
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
