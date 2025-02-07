@@ -53,7 +53,7 @@ func New(t testutil.TestingT) *Server {
 	// The server resolves conflicting handlers by using the one with higher
 	// specificity. This handler is the least specific, so it will be used as a
 	// fallback when no other handlers match.
-	s.Handle("/", func(r *http.Request) (any, int) {
+	s.Handle("/", func(fakeWorkspace *FakeWorkspace, r *http.Request) (any, int) {
 		pattern := r.Method + " " + r.URL.Path
 
 		t.Errorf(`
