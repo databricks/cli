@@ -17,9 +17,15 @@ var patterns = []dyn.Pattern{
 	envDepsPattern.Append(dyn.AnyIndex()),
 }
 
+type libData struct {
+	fullPath  string
+	locations []dyn.Location
+	paths     []dyn.Path
+}
+
 func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-	libBaseNames := make(map[string]bool)
+	libs := make(map[string]*libData)
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
@@ -31,18 +37,22 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 					return lv, nil
 				}
 
-				lib := filepath.Base(lv.MustString())
-				if libBaseNames[lib] {
-					diags = append(diags, diag.Diagnostic{
-						Severity:  diag.Error,
-						Summary:   "Duplicate local library name",
-						Detail:    "Local library names must be unique",
-						Locations: lv.Locations(),
-						Paths:     []dyn.Path{p},
-					})
+				libFullPath := lv.MustString()
+				lib := filepath.Base(libFullPath)
+				// If the same basename was seen already but full path is different
+				// then it's a duplicate. Add the location to the location list.
+				lp, ok := libs[lib]
+				if !ok {
+					libs[lib] = &libData{
+						fullPath:  libFullPath,
+						locations: []dyn.Location{lv.Location()},
+						paths:     []dyn.Path{p},
+					}
+				} else if lp.fullPath != libFullPath {
+					lp.locations = append(lp.locations, lv.Location())
+					lp.paths = append(lp.paths, p)
 				}
 
-				libBaseNames[lib] = true
 				return lv, nil
 			})
 			if err != nil {
@@ -56,6 +66,21 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 
 		return v, nil
 	})
+
+	// Iterate over all the libraries and check if there are any duplicates.
+	// Duplicates will have more than one location.
+	// If there are duplicates, add a diagnostic.
+	for lib, lv := range libs {
+		if len(lv.locations) > 1 {
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Duplicate local library name " + lib,
+				Detail:    "Local library names must be unique",
+				Locations: lv.locations,
+				Paths:     lv.paths,
+			})
+		}
+	}
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))
 	}
