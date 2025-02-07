@@ -16,7 +16,7 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 	server := testserver.New(t)
 
 	// {$} is a wildcard that only matches the end of the URL.
-	server.Handle("/{$}", func(r *http.Request) (any, int) {
+	server.Handle("/{$}", func(w *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		q := r.URL.Query()
 		args := strings.Split(q.Get("args"), " ")
 
