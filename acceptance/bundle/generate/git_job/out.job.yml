@@ -11,7 +11,7 @@ resources:
             notebook_path: /Workspace/Users/foo@bar.com/some/test/notebook.py
             source: WORKSPACE
       git_source:
-        git_provider: github
-        git_url: https://git.databricks.com
         git_branch: main
         git_commit: abcdef
+        git_provider: github
+        git_url: https://git.databricks.com
