@@ -58,7 +58,7 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]*jsonschema.Schema) *j
 	node := s
 	description := s.Description
 	markdownDescription := s.MarkdownDescription
-	examples := s.Examples
+	examples := getExamples(s.Examples)
 
 	for node.Reference != nil {
 		ref := getRefType(node)
@@ -75,7 +75,7 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]*jsonschema.Schema) *j
 			markdownDescription = newNode.MarkdownDescription
 		}
 		if len(examples) == 0 {
-			examples = newNode.Examples
+			examples = getExamples(newNode.Examples)
 		}
 
 		node = newNode
@@ -87,6 +87,14 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]*jsonschema.Schema) *j
 	newNode.Examples = examples
 
 	return &newNode
+}
+
+func getExamples(examples any) []string {
+	typedExamples, ok := examples.([]string)
+	if !ok {
+		return []string{}
+	}
+	return typedExamples
 }
 
 func getRefType(node *jsonschema.Schema) string {
