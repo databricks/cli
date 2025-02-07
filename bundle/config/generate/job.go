@@ -47,8 +47,3 @@ func convertTaskToValue(task jobs.Task, order *yamlsaver.Order) (dyn.Value, erro
 	dst := make(map[string]dyn.Value)
 	return yamlsaver.ConvertToMapValue(task, order, []string{"format"}, dst)
 }
-
-func convertGitSourceToValue(gitSource *jobs.GitSource, order *yamlsaver.Order) (dyn.Value, error) {
-	dst := make(map[string]dyn.Value)
-	return yamlsaver.ConvertToMapValue(gitSource, order, nil, dst)
-}
