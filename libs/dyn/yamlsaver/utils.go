@@ -50,7 +50,14 @@ func sortMapAlphabetically(mv dyn.Value) (dyn.Value, error) {
 
 	for _, key := range keys {
 		value, _ := mapV.Get(key)
-		err := sortedMap.Set(key, value)
+		var err error
+		if value.Kind() == dyn.KindMap {
+			value, err = sortMapAlphabetically(value)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+		}
+		err = sortedMap.Set(key, value)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
