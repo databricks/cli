@@ -1,7 +1,8 @@
 #!/bin/bash
 
 
-# wait <pid> in bash only works for child process. This script is more general.
+# wait <pid> in bash only works for processes that are direct children to the calling
+# shell. This script is more general purpose.
 wait_pid() {
     local pid=$1
     local max_attempts=100  # 100 * 0.1 seconds = 10 seconds
