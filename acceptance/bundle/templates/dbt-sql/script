@@ -4,4 +4,5 @@ cd output/my_dbt_sql
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
+# Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore
