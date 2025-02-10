@@ -28,7 +28,7 @@ test:
 
 cover:
 	rm -fr ./acceptance/build/cover/
-	CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES}
+	CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES} -verbosetest
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
@@ -55,7 +55,7 @@ schema:
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
-INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
+INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h -verbosetest
 
 integration: vendor
 	$(INTEGRATION)
