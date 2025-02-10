@@ -77,9 +77,22 @@ Response.StatusCode = <response status-code here>
 
 `, pattern, pattern)
 
-		return apierr.APIError{
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotImplemented)
+		
+		resp := apierr.APIError{
 			Message: "No stub found for pattern: " + pattern,
-		}, http.StatusNotImplemented
+		}
+		respBytes, err := json.Marshal(resp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
+		if _, err := w.Write(respBytes); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	})
 
 	return s
