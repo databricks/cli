@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gorilla/mux"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -17,7 +19,7 @@ import (
 
 type Server struct {
 	*httptest.Server
-	Mux *http.ServeMux
+	Mux *mux.Router
 
 	t testutil.TestingT
 
@@ -39,22 +41,22 @@ type Request struct {
 }
 
 func New(t testutil.TestingT) *Server {
-	mux := http.NewServeMux()
-	server := httptest.NewServer(mux)
+	router := mux.NewRouter()
+	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
 
 	s := &Server{
 		Server:         server,
-		Mux:            mux,
+		Mux:            router,
 		t:              t,
 		mu:             &sync.Mutex{},
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
 
-	// The server resolves conflicting handlers by using the one with higher
-	// specificity. This handler is the least specific, so it will be used as a
-	// fallback when no other handlers match.
-	s.Handle("/", func(fakeWorkspace *FakeWorkspace, r *http.Request) (any, int) {
+	// Set up the not found handler as fallback
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		pattern := r.Method + " " + r.URL.Path
 
 		t.Errorf(`
@@ -86,7 +88,15 @@ Response.StatusCode = <response status-code here>
 type HandlerFunc func(fakeWorkspace *FakeWorkspace, req *http.Request) (resp any, statusCode int)
 
 func (s *Server) Handle(pattern string, handler HandlerFunc) {
-	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+	// Split method and path
+	parts := strings.SplitN(pattern, " ", 2)
+	method := parts[0]
+	path := "/"
+	if len(parts) > 1 {
+		path = parts[1]
+	}
+
+	s.Mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		// For simplicity we process requests sequentially. It's fast enough because
 		// we don't do any IO except reading and writing request/response bodies.
 		s.mu.Lock()
@@ -156,7 +166,7 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	})
+	}).Methods(method)
 }
 
 func getToken(r *http.Request) string {

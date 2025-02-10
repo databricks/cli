@@ -104,7 +104,8 @@ func AddHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("POST /api/2.0/workspace-files/import-file/{path}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		path := r.PathValue("path")
+		vars := mux.Vars(r)
+		path := vars["path"]
 
 		body := new(bytes.Buffer)
 		_, err := body.ReadFrom(r.Body)
@@ -122,7 +123,8 @@ func AddHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("GET /api/2.0/permissions/directories/{objectId}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		objectId := r.PathValue("objectId")
+		vars := mux.Vars(r)
+		objectId := vars["objectId"]
 
 		return workspace.WorkspaceObjectPermissions{
 			ObjectId:   objectId,
