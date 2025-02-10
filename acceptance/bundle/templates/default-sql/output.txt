@@ -149,10 +149,9 @@ Deployment complete!
 
 >>> [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod/files...
-Error: 
-
-
-Exit code: 1
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
 === Running validate -t dev -o json second time and comparing output to first time - there should be no difference
 >>> [CLI] bundle validate -t dev -o json
