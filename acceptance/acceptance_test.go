@@ -30,8 +30,9 @@ import (
 )
 
 var (
-	KeepTmp bool
-	NoRepl  bool
+	KeepTmp     bool
+	NoRepl      bool
+	VerboseTest bool
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -48,6 +49,7 @@ func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
+	flag.BoolVar(&VerboseTest, "verbosetest", false, "Print available replacements in case of failure")
 }
 
 const (
@@ -412,7 +414,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		testutil.WriteFile(t, pathRef, valueNew)
 	}
 
-	if !equal && printedRepls != nil && !*printedRepls {
+	if VerboseTest && !equal && printedRepls != nil && !*printedRepls {
 		*printedRepls = true
 		var items []string
 		for _, item := range repls.Repls {
