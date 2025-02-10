@@ -20,7 +20,7 @@ func TestTelemetryUpload(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	count := 0
-	server.Handle("POST /telemetry-ext", func(req *http.Request) (resp any, statusCode int) {
+	server.Handle("POST /telemetry-ext", func(_ *testserver.FakeWorkspace, req *http.Request) (resp any, statusCode int) {
 		count++
 		if count == 1 {
 			return ResponseBody{
