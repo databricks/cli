@@ -55,8 +55,6 @@ func New(t testutil.TestingT) *Server {
 
 	// Set up the not found handler as fallback
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.mu.Lock()
-		defer s.mu.Unlock()
 		pattern := r.Method + " " + r.URL.Path
 
 		t.Errorf(`
@@ -83,15 +81,15 @@ Response.StatusCode = <response status-code here>
 		resp := apierr.APIError{
 			Message: "No stub found for pattern: " + pattern,
 		}
+
 		respBytes, err := json.Marshal(resp)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			t.Errorf("JSON encoding error: %s", err)
+			respBytes = []byte("{\"message\": \"JSON encoding error\"}")
 		}
 
 		if _, err := w.Write(respBytes); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			t.Errorf("Response write error: %s", err)
 		}
 	})
 
