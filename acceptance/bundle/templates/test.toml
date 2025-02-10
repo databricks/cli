@@ -1,2 +1,20 @@
-# At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
-LocalOnly = true
+[[Repls]]
+Old = 'service_principal_name:'
+New = '$$USER_NAME_KEY:'
+
+[[Repls]]
+Old = 'user_name:'
+New = '$$USER_NAME_KEY:'
+
+[[Repls]]
+Old = '''
+      email_notifications:
+        on_failure:
+          - \$USERNAME
+
+'''
+New = ''
+
+[[Repls]]
+Old = '\bnode_type_id: [0-9a-zA-Z_.-]+\b'
+New = 'node_type_id: (redacted)'
