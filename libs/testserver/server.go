@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type Server struct {
@@ -41,13 +42,44 @@ func New(t testutil.TestingT) *Server {
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
-	return &Server{
+	s := &Server{
 		Server:         server,
 		Mux:            mux,
 		t:              t,
 		mu:             &sync.Mutex{},
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
+
+	// The server resolves conflicting handlers by using the one with higher
+	// specificity. This handler is the least specific, so it will be used as a
+	// fallback when no other handlers match.
+	s.Handle("/", func(fakeWorkspace *FakeWorkspace, r *http.Request) (any, int) {
+		pattern := r.Method + " " + r.URL.Path
+
+		t.Errorf(`
+
+----------------------------------------
+No stub found for pattern: %s
+
+To stub a response for this request, you can add
+the following to test.toml:
+[[Server]]
+Pattern = %q
+Response.Body = '''
+<response body here>
+'''
+Response.StatusCode = <response status-code here>
+----------------------------------------
+
+
+`, pattern, pattern)
+
+		return apierr.APIError{
+			Message: "No stub found for pattern: " + pattern,
+		}, http.StatusNotFound
+	})
+
+	return s
 }
 
 type HandlerFunc func(fakeWorkspace *FakeWorkspace, req *http.Request) (resp any, statusCode int)

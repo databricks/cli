@@ -10,7 +10,7 @@ lint:
 	golangci-lint run --fix
 
 tidy:
-	# not part of golangci-lint, apparently
+	@# not part of golangci-lint, apparently
 	go mod tidy
 
 lintcheck:

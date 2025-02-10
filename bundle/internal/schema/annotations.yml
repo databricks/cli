@@ -414,6 +414,16 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "allow_duplicate_names":
+    "description": |-
+      PLACEHOLDER
+  "dry_run":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-

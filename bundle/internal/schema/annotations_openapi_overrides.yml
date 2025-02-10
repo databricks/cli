@@ -239,7 +239,13 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
               - notebook:
                   path: ./pipeline.py
       ```
+  "dry_run":
+    "description": |-
+      PLACEHOLDER
   "permissions":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:

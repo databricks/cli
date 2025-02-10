@@ -5,6 +5,7 @@ go 1.23
 toolchain go1.23.4
 
 require (
+	dario.cat/mergo v1.0.1 // BSD 3-Clause
 	github.com/BurntSushi/toml v1.4.0 // MIT
 	github.com/Masterminds/semver/v3 v3.3.1 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0

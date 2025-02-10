@@ -1,0 +1,2 @@
+Job is using Git source, skipping downloading files
+Job configuration successfully saved to out.job.yml
