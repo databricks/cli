@@ -10,8 +10,8 @@ import (
 
 func TestLogLevelFlagDefault(t *testing.T) {
 	f := NewLogLevelFlag()
-	assert.Equal(t, log.LevelDisabled, f.Level())
-	assert.Equal(t, "disabled", f.String())
+	assert.Equal(t, log.LevelWarn, f.Level())
+	assert.Equal(t, "warn", f.String())
 }
 
 func TestLogLevelFlagSetValid(t *testing.T) {

@@ -1,2 +1,0 @@
-# Cloud run fails with Error: Path (TestResolveVariableReferencesToBundleVariables/bar/files) doesn't start with '/'
-LocalOnly = true

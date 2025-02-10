@@ -1,4 +1,4 @@
-default: vendor fmt lint
+default: vendor fmt lint tidy
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -8,6 +8,10 @@ GOTESTSUM_CMD ?= gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped
 
 lint:
 	golangci-lint run --fix
+
+tidy:
+	@# not part of golangci-lint, apparently
+	go mod tidy
 
 lintcheck:
 	golangci-lint run ./...
@@ -59,4 +63,4 @@ integration: vendor
 integration-short: vendor
 	$(INTEGRATION) -short
 
-.PHONY: lint lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs
+.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs

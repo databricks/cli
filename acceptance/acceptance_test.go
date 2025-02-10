@@ -19,6 +19,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
+
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
@@ -123,7 +125,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		AddHandlers(defaultServer)
 		// Redirect API access to local server:
 		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
-		t.Setenv("DATABRICKS_TOKEN", "dapi1234")
 
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
@@ -146,7 +147,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	workspaceClient, err := databricks.NewWorkspaceClient()
+	var config databricks.Config
+	if cloudEnv == "" {
+		// use fake token for local tests
+		config = databricks.Config{Token: "dbapi1234"}
+	} else {
+		// non-local tests rely on environment variables
+		config = databricks.Config{}
+	}
+	workspaceClient, err := databricks.NewWorkspaceClient(&config)
 	require.NoError(t, err)
 
 	user, err := workspaceClient.CurrentUser.Me(ctx)
@@ -264,7 +273,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
-			server.Handle(stub.Pattern, func(req *http.Request) (any, int) {
+			server.Handle(stub.Pattern, func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
 				statusCode := http.StatusOK
 				if stub.Response.StatusCode != 0 {
 					statusCode = stub.Response.StatusCode
@@ -285,6 +294,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
+	// Each local test should use a new token that will result into a new fake workspace,
+	// so that test don't interfere with each other.
+	if cloudEnv == "" {
+		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+		token := "dbapi" + tokenSuffix
+		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+token)
+		repls.Set(token, "[DATABRICKS_TOKEN]")
+	}
+
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
 	require.NoError(t, err)
@@ -303,8 +321,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			reqJson, err := json.Marshal(req)
 			require.NoError(t, err)
 
-			line := fmt.Sprintf("%s\n", reqJson)
-			_, err = f.WriteString(line)
+			reqJsonWithRepls := repls.Replace(string(reqJson))
+			_, err = f.WriteString(reqJsonWithRepls + "\n")
 			require.NoError(t, err)
 		}
 
@@ -325,6 +343,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Make sure there are not unaccounted for new files
 	files := ListDir(t, tmpDir)
+	unexpected := []string{}
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -332,12 +351,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if _, ok := outputs[relPath]; ok {
 			continue
 		}
-		t.Errorf("Unexpected output: %s", relPath)
+		unexpected = append(unexpected, relPath)
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
 			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
+	}
+
+	if len(unexpected) > 0 {
+		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
 }
 

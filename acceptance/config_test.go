@@ -3,20 +3,17 @@ package acceptance_test
 import (
 	"os"
 	"path/filepath"
-	"sync"
+	"slices"
+	"strings"
 	"testing"
 
+	"dario.cat/mergo"
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/require"
 )
 
 const configFilename = "test.toml"
-
-var (
-	configCache map[string]TestConfig
-	configMutex sync.Mutex
-)
 
 type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
@@ -65,58 +62,55 @@ type ServerStub struct {
 	}
 }
 
-// FindConfig finds the closest config file.
-func FindConfig(t *testing.T, dir string) (string, bool) {
-	shared := false
+// FindConfigs finds all the config relevant for this test,
+// ordered from the most outermost (at acceptance/) to current test directory (identified by dir).
+// Argument dir must be a relative path from the root of acceptance tests (<project_root>/acceptance/).
+func FindConfigs(t *testing.T, dir string) []string {
+	configs := []string{}
 	for {
 		path := filepath.Join(dir, configFilename)
 		_, err := os.Stat(path)
 
 		if err == nil {
-			return path, shared
+			configs = append(configs, path)
 		}
-
-		shared = true
 
 		if dir == "" || dir == "." {
 			break
 		}
 
-		if os.IsNotExist(err) {
-			dir = filepath.Dir(dir)
+		dir = filepath.Dir(dir)
+
+		if err == nil || os.IsNotExist(err) {
 			continue
 		}
 
 		t.Fatalf("Error while reading %s: %s", path, err)
 	}
 
-	t.Fatal("Config not found: " + configFilename)
-	return "", shared
+	slices.Reverse(configs)
+	return configs
 }
 
 // LoadConfig loads the config file. Non-leaf configs are cached.
 func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
-	path, leafConfig := FindConfig(t, dir)
+	configs := FindConfigs(t, dir)
 
-	if leafConfig {
-		return DoLoadConfig(t, path), path
+	if len(configs) == 0 {
+		return TestConfig{}, "(no config)"
 	}
 
-	configMutex.Lock()
-	defer configMutex.Unlock()
+	result := DoLoadConfig(t, configs[0])
 
-	if configCache == nil {
-		configCache = make(map[string]TestConfig)
+	for _, cfgName := range configs[1:] {
+		cfg := DoLoadConfig(t, cfgName)
+		err := mergo.Merge(&result, cfg, mergo.WithOverride, mergo.WithAppendSlice)
+		if err != nil {
+			t.Fatalf("Error during config merge: %s: %s", cfgName, err)
+		}
 	}
 
-	result, ok := configCache[path]
-	if ok {
-		return result, path
-	}
-
-	result = DoLoadConfig(t, path)
-	configCache[path] = result
-	return result, path
+	return result, strings.Join(configs, ", ")
 }
 
 func DoLoadConfig(t *testing.T, path string) TestConfig {

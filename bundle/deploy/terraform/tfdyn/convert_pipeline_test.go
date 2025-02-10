@@ -15,8 +15,17 @@ import (
 
 func TestConvertPipeline(t *testing.T) {
 	src := resources.Pipeline{
-		PipelineSpec: &pipelines.PipelineSpec{
+		CreatePipeline: &pipelines.CreatePipeline{
 			Name: "my pipeline",
+			// This fields is not part of TF schema yet, but once we upgrade to TF version that supports it, this test will fail because run_as
+			// will be exposed which is expected and test will need to be updated.
+			RunAs: &pipelines.RunAs{
+				UserName: "foo@bar.com",
+			},
+			// We expect AllowDuplicateNames and DryRun to be ignored and not passed to the TF output.
+			// This is not supported by TF now, so we don't want to expose it.
+			AllowDuplicateNames: true,
+			DryRun:              true,
 			Libraries: []pipelines.PipelineLibrary{
 				{
 					Notebook: &pipelines.NotebookLibrary{
