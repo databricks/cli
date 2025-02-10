@@ -409,6 +409,10 @@
                         "description": "Job-level parameter definitions",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition"
                       },
+                      "performance_target": {
+                        "description": "PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
+                      },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
                       },
@@ -3896,6 +3900,22 @@
                   "enum": [
                     "UNPAUSED",
                     "PAUSED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.PerformanceTarget": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.\nThe performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager\n(see cluster-common PerformanceTarget).",
+                  "enum": [
+                    "PERFORMANCE_OPTIMIZED",
+                    "COST_OPTIMIZED"
                   ]
                 },
                 {

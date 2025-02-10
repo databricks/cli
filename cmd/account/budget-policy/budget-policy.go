@@ -1,12 +1,14 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package custom_app_integration
+package budget_policy
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/oauth2"
+	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
 
@@ -16,14 +18,12 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "custom-app-integration",
-		Short: `These APIs enable administrators to manage custom OAuth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.`,
-		Long: `These APIs enable administrators to manage custom OAuth app integrations,
-  which is required for adding/using Custom OAuth App Integration like Tableau
-  Cloud for Databricks in AWS cloud.`,
-		GroupID: "oauth2",
+		Use:     "budget-policy",
+		Short:   `A service serves REST API about Budget policies.`,
+		Long:    `A service serves REST API about Budget policies`,
+		GroupID: "billing",
 		Annotations: map[string]string{
-			"package": "oauth2",
+			"package": "billing",
 		},
 	}
 
@@ -48,33 +48,27 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*oauth2.CreateCustomAppIntegration,
+	*billing.CreateBudgetPolicyRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq oauth2.CreateCustomAppIntegration
+	var createReq billing.CreateBudgetPolicyRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `This field indicates whether an OAuth client secret is required to authenticate this client.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the custom OAuth app.`)
-	// TODO: array: redirect_urls
-	// TODO: array: scopes
-	// TODO: complex arg: token_access_policy
-	// TODO: array: user_authorized_scopes
+	// TODO: array: custom_tags
+	cmd.Flags().StringVar(&createReq.PolicyName, "policy-name", createReq.PolicyName, `The name of the policy.`)
+	cmd.Flags().StringVar(&createReq.RequestId, "request-id", createReq.RequestId, `A unique identifier for this request.`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create Custom OAuth App Integration.`
-	cmd.Long = `Create Custom OAuth App Integration.
+	cmd.Short = `Create a budget policy.`
+	cmd.Long = `Create a budget policy.
   
-  Create Custom OAuth App Integration.
-  
-  You can retrieve the custom OAuth app integration via
-  :method:CustomAppIntegration/get.`
+  Creates a new policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -101,7 +95,7 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.CustomAppIntegration.Create(ctx, createReq)
+		response, err := a.BudgetPolicy.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -126,22 +120,24 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*oauth2.DeleteCustomAppIntegrationRequest,
+	*billing.DeleteBudgetPolicyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq oauth2.DeleteCustomAppIntegrationRequest
+	var deleteReq billing.DeleteBudgetPolicyRequest
 
 	// TODO: short flags
 
-	cmd.Use = "delete INTEGRATION_ID"
-	cmd.Short = `Delete Custom OAuth App Integration.`
-	cmd.Long = `Delete Custom OAuth App Integration.
+	cmd.Use = "delete POLICY_ID"
+	cmd.Short = `Delete a budget policy.`
+	cmd.Long = `Delete a budget policy.
   
-  Delete an existing Custom OAuth App Integration. You can retrieve the custom
-  OAuth app integration via :method:CustomAppIntegration/get.`
+  Deletes a policy
+
+  Arguments:
+    POLICY_ID: The Id of the policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -155,9 +151,9 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		deleteReq.IntegrationId = args[0]
+		deleteReq.PolicyId = args[0]
 
-		err = a.CustomAppIntegration.Delete(ctx, deleteReq)
+		err = a.BudgetPolicy.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -182,24 +178,24 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*oauth2.GetCustomAppIntegrationRequest,
+	*billing.GetBudgetPolicyRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq oauth2.GetCustomAppIntegrationRequest
+	var getReq billing.GetBudgetPolicyRequest
 
 	// TODO: short flags
 
-	cmd.Use = "get INTEGRATION_ID"
-	cmd.Short = `Get OAuth Custom App Integration.`
-	cmd.Long = `Get OAuth Custom App Integration.
+	cmd.Use = "get POLICY_ID"
+	cmd.Short = `Get a budget policy.`
+	cmd.Long = `Get a budget policy.
   
-  Gets the Custom OAuth App Integration for the given integration id.
+  Retrieves a policy by it's ID.
 
   Arguments:
-    INTEGRATION_ID: The OAuth app integration ID.`
+    POLICY_ID: The Id of the policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -213,9 +209,9 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		getReq.IntegrationId = args[0]
+		getReq.PolicyId = args[0]
 
-		response, err := a.CustomAppIntegration.Get(ctx, getReq)
+		response, err := a.BudgetPolicy.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -240,26 +236,27 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*oauth2.ListCustomAppIntegrationsRequest,
+	*billing.ListBudgetPoliciesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq oauth2.ListCustomAppIntegrationsRequest
+	var listReq billing.ListBudgetPoliciesRequest
 
 	// TODO: short flags
 
-	cmd.Flags().BoolVar(&listReq.IncludeCreatorUsername, "include-creator-username", listReq.IncludeCreatorUsername, ``)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+	// TODO: complex arg: filter_by
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of budget policies to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListServerlessPolicies call.`)
+	// TODO: complex arg: sort_spec
 
 	cmd.Use = "list"
-	cmd.Short = `Get custom oauth app integrations.`
-	cmd.Long = `Get custom oauth app integrations.
+	cmd.Short = `List policies.`
+	cmd.Long = `List policies.
   
-  Get the list of custom OAuth app integrations for the specified Databricks
-  account`
+  Lists all policies. Policies are returned in the alphabetically ascending
+  order of their names.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -273,7 +270,7 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		response := a.CustomAppIntegration.List(ctx, listReq)
+		response := a.BudgetPolicy.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -295,33 +292,42 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*oauth2.UpdateCustomAppIntegration,
+	*billing.UpdateBudgetPolicyRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq oauth2.UpdateCustomAppIntegration
+	var updateReq billing.UpdateBudgetPolicyRequest
+	updateReq.Policy = &billing.BudgetPolicy{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: redirect_urls
-	// TODO: array: scopes
-	// TODO: complex arg: token_access_policy
-	// TODO: array: user_authorized_scopes
+	// TODO: array: custom_tags
+	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
 
-	cmd.Use = "update INTEGRATION_ID"
-	cmd.Short = `Updates Custom OAuth App Integration.`
-	cmd.Long = `Updates Custom OAuth App Integration.
+	cmd.Use = "update POLICY_ID"
+	cmd.Short = `Update a budget policy.`
+	cmd.Long = `Update a budget policy.
   
-  Updates an existing custom OAuth App Integration. You can retrieve the custom
-  OAuth app integration via :method:CustomAppIntegration/get.`
+  Updates a policy
+
+  Arguments:
+    POLICY_ID: The Id of the policy. This field is generated by Databricks and globally
+      unique.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'policy_id' in your JSON input")
+			}
+			return nil
+		}
 		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
@@ -332,7 +338,7 @@ func newUpdate() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateJson.Unmarshal(&updateReq)
+			diags := updateJson.Unmarshal(&updateReq.Policy)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -343,13 +349,13 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.IntegrationId = args[0]
+		updateReq.PolicyId = args[0]
 
-		err = a.CustomAppIntegration.Update(ctx, updateReq)
+		response, err := a.BudgetPolicy.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -364,4 +370,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service CustomAppIntegration
+// end service BudgetPolicy

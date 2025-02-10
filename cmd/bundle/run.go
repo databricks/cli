@@ -173,6 +173,7 @@ task or a Python wheel task, the second example applies.
 				if err != nil {
 					return err
 				}
+				_, _ = cmd.OutOrStdout().Write([]byte{'\n'})
 			default:
 				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 			}
