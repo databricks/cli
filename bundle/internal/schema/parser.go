@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,8 +10,9 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
-	"gopkg.in/yaml.v3"
 )
 
 type Components struct {
@@ -122,7 +124,11 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 	if err != nil {
 		return err
 	}
-	err = yaml.Unmarshal(b, &overrides)
+	overridesDyn, err := yamlloader.LoadYAML(overridesPath, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	err = convert.ToTyped(&overrides, overridesDyn)
 	if err != nil {
 		return err
 	}

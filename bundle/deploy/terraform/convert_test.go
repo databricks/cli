@@ -203,7 +203,7 @@ func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 
 func TestBundleToTerraformPipeline(t *testing.T) {
 	src := resources.Pipeline{
-		PipelineSpec: &pipelines.PipelineSpec{
+		CreatePipeline: &pipelines.CreatePipeline{
 			Name: "my pipeline",
 			Libraries: []pipelines.PipelineLibrary{
 				{
@@ -759,7 +759,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline",
 					},
 				},
@@ -898,12 +898,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline",
 					},
 				},
 				"test_pipeline_new": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline_new",
 					},
 				},

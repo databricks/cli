@@ -5,10 +5,14 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
+	"strings"
+	"sync"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type Server struct {
@@ -17,15 +21,20 @@ type Server struct {
 
 	t testutil.TestingT
 
-	RecordRequests bool
+	fakeWorkspaces map[string]*FakeWorkspace
+	mu             *sync.Mutex
+
+	RecordRequests        bool
+	IncludeRequestHeaders []string
 
 	Requests []Request
 }
 
 type Request struct {
-	Method string `json:"method"`
-	Path   string `json:"path"`
-	Body   any    `json:"body"`
+	Headers http.Header `json:"headers,omitempty"`
+	Method  string      `json:"method"`
+	Path    string      `json:"path"`
+	Body    any         `json:"body"`
 }
 
 func New(t testutil.TestingT) *Server {
@@ -33,42 +42,101 @@ func New(t testutil.TestingT) *Server {
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
-	return &Server{
-		Server: server,
-		Mux:    mux,
-		t:      t,
+	s := &Server{
+		Server:         server,
+		Mux:            mux,
+		t:              t,
+		mu:             &sync.Mutex{},
+		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
+
+	// The server resolves conflicting handlers by using the one with higher
+	// specificity. This handler is the least specific, so it will be used as a
+	// fallback when no other handlers match.
+	s.Handle("/", func(fakeWorkspace *FakeWorkspace, r *http.Request) (any, int) {
+		pattern := r.Method + " " + r.URL.Path
+
+		t.Errorf(`
+
+----------------------------------------
+No stub found for pattern: %s
+
+To stub a response for this request, you can add
+the following to test.toml:
+[[Server]]
+Pattern = %q
+Response.Body = '''
+<response body here>
+'''
+Response.StatusCode = <response status-code here>
+----------------------------------------
+
+
+`, pattern, pattern)
+
+		return apierr.APIError{
+			Message: "No stub found for pattern: " + pattern,
+		}, http.StatusNotImplemented
+	})
+
+	return s
 }
 
-type HandlerFunc func(req *http.Request) (resp any, err error)
+type HandlerFunc func(fakeWorkspace *FakeWorkspace, req *http.Request) (resp any, statusCode int)
 
 func (s *Server) Handle(pattern string, handler HandlerFunc) {
 	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		resp, err := handler(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		// For simplicity we process requests sequentially. It's fast enough because
+		// we don't do any IO except reading and writing request/response bodies.
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
+		// it's own fake fakeWorkspace to avoid interference between tests.
+		var fakeWorkspace *FakeWorkspace = nil
+		token := getToken(r)
+		if token != "" {
+			if _, ok := s.fakeWorkspaces[token]; !ok {
+				s.fakeWorkspaces[token] = NewFakeWorkspace()
+			}
+
+			fakeWorkspace = s.fakeWorkspaces[token]
 		}
+
+		resp, statusCode := handler(fakeWorkspace, r)
 
 		if s.RecordRequests {
 			body, err := io.ReadAll(r.Body)
 			assert.NoError(s.t, err)
 
+			headers := make(http.Header)
+			for k, v := range r.Header {
+				if !slices.Contains(s.IncludeRequestHeaders, k) {
+					continue
+				}
+				for _, vv := range v {
+					headers.Add(k, vv)
+				}
+			}
+
 			s.Requests = append(s.Requests, Request{
-				Method: r.Method,
-				Path:   r.URL.Path,
-				Body:   json.RawMessage(body),
+				Headers: headers,
+				Method:  r.Method,
+				Path:    r.URL.Path,
+				Body:    json.RawMessage(body),
 			})
 
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
 
 		var respBytes []byte
-
-		respString, ok := resp.(string)
-		if ok {
+		var err error
+		if respString, ok := resp.(string); ok {
 			respBytes = []byte(respString)
+		} else if respBytes0, ok := resp.([]byte); ok {
+			respBytes = respBytes0
 		} else {
 			respBytes, err = json.MarshalIndent(resp, "", "    ")
 			if err != nil {
@@ -82,4 +150,15 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 			return
 		}
 	})
+}
+
+func getToken(r *http.Request) string {
+	header := r.Header.Get("Authorization")
+	prefix := "Bearer "
+
+	if !strings.HasPrefix(header, prefix) {
+		return ""
+	}
+
+	return header[len(prefix):]
 }

@@ -1,2 +1,0 @@
-# Cloud run fails with Error: failed to resolve cluster-policy: wrong-cluster-policy, err: Policy named 'wrong-cluster-policy' does not exist
-LocalOnly = true

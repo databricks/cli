@@ -7,6 +7,7 @@ import (
 
 	account_access_control "github.com/databricks/cli/cmd/account/access-control"
 	billable_usage "github.com/databricks/cli/cmd/account/billable-usage"
+	budget_policy "github.com/databricks/cli/cmd/account/budget-policy"
 	budgets "github.com/databricks/cli/cmd/account/budgets"
 	credentials "github.com/databricks/cli/cmd/account/credentials"
 	custom_app_integration "github.com/databricks/cli/cmd/account/custom-app-integration"
@@ -43,6 +44,7 @@ func New() *cobra.Command {
 
 	cmd.AddCommand(account_access_control.New())
 	cmd.AddCommand(billable_usage.New())
+	cmd.AddCommand(budget_policy.New())
 	cmd.AddCommand(credentials.New())
 	cmd.AddCommand(custom_app_integration.New())
 	cmd.AddCommand(encryption_keys.New())
