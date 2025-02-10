@@ -10,6 +10,8 @@ description: Learn about resources supported by Databricks Asset Bundles and how
 
 This article outlines supported resource types for bundles and provides details and an example for each supported type. For additional examples, see [_](/dev-tools/bundles/resource-examples.md).
 
+.. tip:: To generate YAML for any existing resource, use the `databricks bundle generate` command. See [_](/dev-tools/cli/bundle-commands.md#generate).
+
 ## <a id="resource-types"></a> Supported resources
 
 The following table lists supported resource types for bundles. Some resources can be created by defining them in a bundle and deploying the bundle, and some resources only support referencing an existing resource to include in the bundle.
@@ -19,53 +21,112 @@ Resources are defined using the corresponding [Databricks REST API](/api/workspa
 .. tip:: The `databricks bundle validate` command returns warnings if unknown resource properties are found in bundle configuration files.
 
 
-.. list-table::
-    :header-rows: 1
+.. azure-aws::
 
-    * - Resource
-      - Create support
-      - Corresponding REST API object
+  .. list-table::
+      :header-rows: 1
 
-    * - [cluster](#cluster)
-      - ✓
-      - [Cluster object](/api/workspace/clusters/create)
+      * - Resource
+        - Create support
+        - Corresponding REST API object
 
-    * - [dashboard](#dashboard)
-      -
-      - [Dashboard object](/api/workspace/lakeview/create)
+      * - [app](#apps)
+        - ✓
+        - [App object](/api/workspace/apps/create)
 
-    * - [experiment](#experiment)
-      - ✓
-      - [Experiment object](/api/workspace/experiments/createexperiment)
+      * - [cluster](#clusters)
+        - ✓
+        - [Cluster object](/api/workspace/clusters/create)
 
-    * - [job](#job)
-      - ✓
-      - [Job object](/api/workspace/jobs/create)
+      * - [dashboard](#dashboards)
+        -
+        - [Dashboard object](/api/workspace/lakeview/create)
 
-    * - [model (legacy)](#model-legacy)
-      - ✓
-      - [Model (legacy) object](/api/workspace/modelregistry/createmodel)
+      * - [experiment](#experiments)
+        - ✓
+        - [Experiment object](/api/workspace/experiments/createexperiment)
 
-    * - [model_serving_endpoint](#model-serving-endpoint)
-      - ✓
-      - [Model serving endpoint object](/api/workspace/servingendpoints/create)
+      * - [job](#jobs)
+        - ✓
+        - [Job object](/api/workspace/jobs/create)
 
-    * - [pipeline](#pipeline)
-      - ✓
-      - [Pipeline object](/api/workspace/pipelines/create)
+      * - [model (legacy)](#models)
+        - ✓
+        - [Model (legacy) object](/api/workspace/modelregistry/createmodel)
 
-    * - [quality_monitor](#quality-monitor)
-      - ✓
-      - [Quality monitor object](/api/workspace/qualitymonitors/create)
+      * - [model_serving_endpoint](#model_serving_endpoints)
+        - ✓
+        - [Model serving endpoint object](/api/workspace/servingendpoints/create)
 
-    * - [registered_model](#registered-model) (<UC>)
-      - ✓
-      - [Registered model object](/api/workspace/registeredmodels/create)
+      * - [pipeline](#pipelines)
+        - ✓
+        - [Pipeline object]](/api/workspace/pipelines/create)
 
-    * - [schema](#schema) (<UC>)
-      - ✓
-      - [Schema object](/api/workspace/schemas/create)
+      * - [quality_monitor](#quality_monitors)
+        - ✓
+        - [Quality monitor object](/api/workspace/qualitymonitors/create)
 
-    * - [volume](#volume) (<UC>)
-      - ✓
-      - [Volume object](/api/workspace/volumes/create)
+      * - [registered_model](#registered_models) (<UC>)
+        - ✓
+        - [Registered model object](/api/workspace/registeredmodels/create)
+
+      * - [schema](#schemas) (<UC>)
+        - ✓
+        - [Schema object](/api/workspace/schemas/create)
+
+      * - [volume](#volumes) (<UC>)
+        - ✓
+        - [Volume object](/api/workspace/volumes/create)
+
+.. gcp::
+
+  .. list-table::
+      :header-rows: 1
+
+      * - Resource
+        - Create support
+        - Corresponding REST API object
+
+      * - [cluster](#clusters)
+        - ✓
+        - [Cluster object](/api/workspace/clusters/create)
+
+      * - [dashboard](#dashboards)
+        -
+        - [Dashboard object](/api/workspace/lakeview/create)
+
+      * - [experiment](#experiments)
+        - ✓
+        - [Experiment object](/api/workspace/experiments/createexperiment)
+
+      * - [job](#job)
+        - ✓
+        - [Job object](/api/workspace/jobs/create)
+
+      * - [model (legacy)](#models)
+        - ✓
+        - [Model (legacy) object](/api/workspace/modelregistry/createmodel)
+
+      * - [model_serving_endpoint](#model_serving_endpoints)
+        - ✓
+        - [Model serving endpoint object](/api/workspace/servingendpoints/create)
+
+      * - [pipeline](#pipelines)
+        - ✓
+        - [Pipeline object]](/api/workspace/pipelines/create)
+
+      * - [quality_monitor](#quality_monitors)
+        - ✓
+        - [Quality monitor object](/api/workspace/qualitymonitors/create)
+
+      * - [registered_model](#registered_models) (<UC>)
+        - ✓
+        - [Registered model object](/api/workspace/registeredmodels/create)
+
+      * - [schema](#schemas) (<UC>)
+        - ✓
+        - [Schema object](/api/workspace/schemas/create)
+
+      * - [volume](#volumes) (<UC>)
+        - ✓
+        - [Volume object](/api/workspace/volumes/create)

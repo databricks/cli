@@ -1,25 +1,25 @@
 github.com/databricks/cli/bundle/config.Artifact:
   "build":
     "description": |-
-      An optional set of non-default build commands to run locally before deployment.
+      An optional set of build commands to run locally before deployment.
   "executable":
     "description": |-
       The executable type. Valid values are `bash`, `sh`, and `cmd`.
   "files":
     "description": |-
-      The source files for the artifact.
+      The relative or absolute path to the built artifact files.
   "path":
     "description": |-
-      The location where the built artifact will be saved.
+      The local path of the directory for the artifact.
   "type":
     "description": |-
-      Required. The type of the artifact.
+      Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
     "markdown_description": |-
       Required. The type of the artifact. Valid values are `whl`.
 github.com/databricks/cli/bundle/config.ArtifactFile:
   "source":
     "description": |-
-      Required. The path of the files used to build the artifact.
+      Required. The artifact source file.
 github.com/databricks/cli/bundle/config.Bundle:
   "cluster_id":
     "description": |-
@@ -28,7 +28,7 @@ github.com/databricks/cli/bundle/config.Bundle:
       The ID of a cluster to use to run the bundle. See [_](/dev-tools/bundles/settings.md#cluster_id).
   "compute_id":
     "description": |-
-      PLACEHOLDER
+      Deprecated. The ID of the compute to use to run the bundle.
   "databricks_cli_version":
     "description": |-
       The Databricks CLI version to use for the bundle.
@@ -225,7 +225,7 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       Specifies a list of path globs that contain configuration files to include within the bundle.
     "markdown_description": |-
-      Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
+      Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include).
   "permissions":
     "description": |-
       Defines a permission for a specific entity.
@@ -414,57 +414,47 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
-github.com/databricks/cli/bundle/config/resources.Pipeline:
-  "allow_duplicate_names":
-    "description": |-
-      PLACEHOLDER
-  "dry_run":
-    "description": |-
-      PLACEHOLDER
-  "run_as":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-
-      PLACEHOLDER
+      The name of the alert for which to retrieve an ID.
   "cluster":
     "description": |-
-      PLACEHOLDER
+      The name of the cluster for which to retrieve an ID.
   "cluster_policy":
     "description": |-
-      PLACEHOLDER
+      The name of the cluster_policy for which to retrieve an ID.
   "dashboard":
     "description": |-
-      PLACEHOLDER
+      The name of the dashboard for which to retrieve an ID.
   "instance_pool":
     "description": |-
-      PLACEHOLDER
+      The name of the instance_pool for which to retrieve an ID.
   "job":
     "description": |-
-      PLACEHOLDER
+      The name of the job for which to retrieve an ID.
   "metastore":
     "description": |-
-      PLACEHOLDER
+      The name of the metastore for which to retrieve an ID.
   "notification_destination":
     "description": |-
-      PLACEHOLDER
+      The name of the notification_destination for which to retrieve an ID.
   "pipeline":
     "description": |-
-      PLACEHOLDER
+      The name of the pipeline for which to retrieve an ID.
   "query":
     "description": |-
-      PLACEHOLDER
+      The name of the query for which to retrieve an ID.
   "service_principal":
     "description": |-
-      PLACEHOLDER
+      The name of the service_principal for which to retrieve an ID.
   "warehouse":
     "description": |-
-      PLACEHOLDER
+      The name of the warehouse for which to retrieve an ID.
 github.com/databricks/cli/bundle/config/variable.TargetVariable:
   "default":
     "description": |-
-      PLACEHOLDER
+      The default value for the variable.
   "description":
     "description": |-
       The description of the variable.
@@ -485,7 +475,7 @@ github.com/databricks/cli/bundle/config/variable.Variable:
       Defines a custom variable for the bundle. See [_](/dev-tools/bundles/settings.md#variables).
   "default":
     "description": |-
-      PLACEHOLDER
+      The default value for the variable.
   "description":
     "description": |-
       The description of the variable
