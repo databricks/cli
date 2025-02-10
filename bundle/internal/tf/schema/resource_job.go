@@ -1489,6 +1489,7 @@ type ResourceJob struct {
 	MaxRetries             int                              `json:"max_retries,omitempty"`
 	MinRetryIntervalMillis int                              `json:"min_retry_interval_millis,omitempty"`
 	Name                   string                           `json:"name,omitempty"`
+	PerformanceTarget      string                           `json:"performance_target,omitempty"`
 	RetryOnTimeout         bool                             `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                `json:"tags,omitempty"`
 	TimeoutSeconds         int                              `json:"timeout_seconds,omitempty"`
