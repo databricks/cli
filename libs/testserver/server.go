@@ -76,7 +76,7 @@ Response.StatusCode = <response status-code here>
 
 		return apierr.APIError{
 			Message: "No stub found for pattern: " + pattern,
-		}, http.StatusNotFound
+		}, http.StatusNotImplemented
 	})
 
 	return s
