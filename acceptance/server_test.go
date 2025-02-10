@@ -17,6 +17,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+var testUser = iam.User{
+	Id:       "1000012345",
+	UserName: "tester@databricks.com",
+}
+
 func AddHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		return compute.ListPoliciesResponse{
@@ -60,10 +65,7 @@ func AddHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		return iam.User{
-			Id:       "1000012345",
-			UserName: "tester@databricks.com",
-		}, http.StatusOK
+		return testUser, http.StatusOK
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {

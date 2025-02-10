@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"sort"
@@ -119,14 +120,12 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
-	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
 		defaultServer := testserver.New(t)
 		AddHandlers(defaultServer)
-		// Redirect API access to local server:
-		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
+		t.Setenv("DATABRICKS_DEFAULT_HOST", defaultServer.URL)
 
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
@@ -149,26 +148,12 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	var config databricks.Config
-	if cloudEnv == "" {
-		// use fake token for local tests
-		config = databricks.Config{Token: "dbapi1234"}
-	} else {
-		// non-local tests rely on environment variables
-		config = databricks.Config{}
-	}
-	workspaceClient, err := databricks.NewWorkspaceClient(&config)
-	require.NoError(t, err)
-
-	user, err := workspaceClient.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-	require.NotNil(t, user)
-	testdiff.PrepareReplacementsUser(t, &repls, *user)
-	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
+
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -254,6 +239,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
 
+	databricksHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
+
 	// Start a new server with a custom configuration if the acceptance test
 	// specifies a custom server stubs.
 	var server *testserver.Server
@@ -284,8 +271,36 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		// The earliest handlers take precedence, add default handlers last
 		AddHandlers(server)
 
-		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
+		databricksHost = server.URL
 	}
+
+	databricksToken := os.Getenv("DATABRICKS_TOKEN")
+
+	// Each local test should use a new token that will result into a new fake workspace,
+	// so that test don't interfere with each other.
+	if cloudEnv == "" {
+		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+		databricksToken = "dbapi" + tokenSuffix
+	}
+
+	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  databricksHost,
+		Token: databricksToken,
+	})
+	require.NoError(t, err)
+
+	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+databricksHost)
+	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+databricksToken)
+
+	ctx := context.Background()
+	if cloudEnv == "" {
+		testdiff.PrepareReplacementsUser(t, &repls, testUser)
+	} else {
+		user, err := workspaceClient.CurrentUser.Me(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, user)
+	}
+	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
@@ -295,15 +310,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
-	}
-
-	// Each local test should use a new token that will result into a new fake workspace,
-	// so that test don't interfere with each other.
-	if cloudEnv == "" {
-		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-		token := "dbapi" + tokenSuffix
-		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+token)
-		repls.Set(token, "[DATABRICKS_TOKEN]")
 	}
 
 	// Write combined output to a file
