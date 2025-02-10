@@ -31,10 +31,10 @@ type Server struct {
 }
 
 type Request struct {
-	Headers map[string]string `json:"headers,omitempty"`
-	Method  string            `json:"method"`
-	Path    string            `json:"path"`
-	Body    any               `json:"body"`
+	Headers http.Header `json:"headers,omitempty"`
+	Method  string      `json:"method"`
+	Path    string      `json:"path"`
+	Body    any         `json:"body"`
 }
 
 func New(t testutil.TestingT) *Server {
@@ -109,12 +109,14 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 			body, err := io.ReadAll(r.Body)
 			assert.NoError(s.t, err)
 
-			headers := make(map[string]string)
+			headers := make(http.Header)
 			for k, v := range r.Header {
-				if len(v) == 0 || !slices.Contains(s.IncludeRequestHeaders, k) {
+				if !slices.Contains(s.IncludeRequestHeaders, k) {
 					continue
 				}
-				headers[k] = v[0]
+				for _, vv := range v {
+					headers.Add(k, vv)
+				}
 			}
 
 			s.Requests = append(s.Requests, Request{
