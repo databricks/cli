@@ -83,8 +83,11 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
 	})
+	if err != nil {
+		return fmt.Errorf("SetPermissions(%d) failed: %w", obj.ObjectId, err)
+	}
 
-	return fmt.Errorf("SetPermissions(%d) failed: %w", obj.ObjectId, err)
+	return nil
 }
 
 func GetWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.WorkspaceObjectPermissionLevel, error) {
