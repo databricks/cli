@@ -11,3 +11,8 @@ New = '[TIMESTAMP]'
 # +    "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#//s*%%|#//s*//<codecell//>|#//s*In//[//d*?//]|#//s*In//[ //])",
 Old = '#\\s'
 New = '#//s'
+
+[[Repls]]
+# Windows paths inside JSON:
+Old = 'resources\\\\'
+New = 'resources/'

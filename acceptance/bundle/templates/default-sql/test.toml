@@ -1,6 +1,0 @@
-Badness = 'Deploy to prod failed but error message is empty'
-
-[[Repls]]
-# Windows paths inside JSON:
-Old = 'resources\\\\'
-New = 'resources/'
