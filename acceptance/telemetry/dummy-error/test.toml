@@ -1,6 +1,3 @@
-LocalOnly = true
-RecordRequests = true
-
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''
@@ -12,13 +9,5 @@ Response.Body = '''
 Response.StatusCode = 501
 
 [[Repls]]
-Old = '17\d{11}'
-New = '"UNIX_TIME_MILLIS"'
-
-[[Repls]]
 Old = 'execution_time_ms\\\":\d{1,5},'
 New = 'execution_time_ms\":\"SMALL_INT\",'
-
-[[Repls]]
-Old = 'darwin|linux|windows'
-New = 'OS'
