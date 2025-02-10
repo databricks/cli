@@ -130,6 +130,6 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.MarkdownDescription = a.MarkdownDescription
 	}
 	if a.MarkdownExamples != "" {
-		s.Examples = []any{a.MarkdownExamples}
+		s.Examples = []string{a.MarkdownExamples}
 	}
 }

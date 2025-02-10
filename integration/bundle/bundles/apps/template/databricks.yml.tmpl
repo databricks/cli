@@ -4,6 +4,10 @@ bundle:
 workspace:
   root_path: "~/.bundle/{{.unique_id}}"
 
+variables:
+  env_var_name:
+    default: "JOB_ID"
+
 resources:
   apps:
     test_app:
@@ -17,7 +21,7 @@ resources:
           - app
           - run
         env:
-          - name: JOB_ID
+          - name: ${var.env_var_name}
             value: ${resources.jobs.foo.id}
 
       resources:

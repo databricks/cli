@@ -1,1 +1,0 @@
-LocalOnly = true  # Deployment currently fails when run locally; once that is fixed, remove this setting

@@ -79,7 +79,7 @@ type Schema struct {
 
 	// Examples of the value for properties in the schema.
 	// https://json-schema.org/understanding-json-schema/reference/annotations
-	Examples []any `json:"examples,omitempty"`
+	Examples any `json:"examples,omitempty"`
 }
 
 // Default value defined in a JSON Schema, represented as a string.
