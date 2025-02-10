@@ -126,6 +126,10 @@ func AddHandlers(server *testserver.Server) {
 		}
 	})
 
+	server.Handle("PUT", "/api/2.0/permissions/directories/{objectId}", func(r testserver.Request) any {
+		return ""
+	})
+
 	server.Handle("POST", "/api/2.1/jobs/create", func(req testserver.Request) any {
 		var request jobs.CreateJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
