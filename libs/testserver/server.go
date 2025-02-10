@@ -100,8 +100,7 @@ Response.StatusCode = <response status-code here>
 
 type HandlerFunc func(fakeWorkspace *FakeWorkspace, req *http.Request) (resp any, statusCode int)
 
-func (s *Server) Handle(method string, path string, handler HandlerFunc) {
-
+func (s *Server) Handle(method, path string, handler HandlerFunc) {
 	s.Mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		// For simplicity we process requests sequentially. It's fast enough because
 		// we don't do any IO except reading and writing request/response bodies.
