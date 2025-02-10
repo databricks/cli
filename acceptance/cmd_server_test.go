@@ -14,7 +14,7 @@ import (
 
 func StartCmdServer(t *testing.T) *testserver.Server {
 	server := testserver.New(t)
-	server.Handle("GET /", func(_ *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/", func(_ *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		q := r.URL.Query()
 		args := strings.Split(q.Get("args"), " ")
 
