@@ -53,6 +53,19 @@ func FromErr(err error) Diagnostics {
 	}
 }
 
+// FromErrPrefix returns a new error diagnostic from the specified error, if any.
+func FromErrPrefix(prefix string, err error) Diagnostics {
+	if err == nil {
+		return nil
+	}
+	return []Diagnostic{
+		{
+			Severity: Error,
+			Summary:  prefix + err.Error(),
+		},
+	}
+}
+
 // FromErr returns a new warning diagnostic from the specified error, if any.
 func WarningFromErr(err error) Diagnostics {
 	if err == nil {

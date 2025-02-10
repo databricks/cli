@@ -75,7 +75,7 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 
 	obj, err := w.GetStatusByPath(ctx, path)
 	if err != nil {
-		return err
+		return fmt.Errorf("GetStatusByPath(%s) failed: %w", path, err)
 	}
 
 	_, err = w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
@@ -84,7 +84,7 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 		AccessControlList:   permissions,
 	})
 
-	return err
+	return fmt.Errorf("SetPermissions(%d) failed: %w", obj.ObjectId, err)
 }
 
 func GetWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.WorkspaceObjectPermissionLevel, error) {
