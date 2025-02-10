@@ -274,7 +274,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
-			server.Handle(stub.Pattern, func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
+			items := strings.Split(stub.Pattern, " ")
+			require.Len(t, items, 2)
+			server.Handle(items[0], items[1], func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
 				statusCode := http.StatusOK
 				if stub.Response.StatusCode != 0 {
 					statusCode = stub.Response.StatusCode
