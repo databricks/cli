@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -27,7 +28,7 @@ func (m *initializeURLs) Name() string {
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	workspaceId, err := b.WorkspaceClient().CurrentWorkspaceID(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErrPrefix("CurrentWorkspaceID failed: ", err)
 	}
 	orgId := strconv.FormatInt(workspaceId, 10)
 	host := b.WorkspaceClient().Config.CanonicalHostName()
@@ -41,7 +42,7 @@ func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 func initializeForWorkspace(b *bundle.Bundle, orgId, host string) error {
 	baseURL, err := url.Parse(host)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse host=%#v: %w", host, err)
 	}
 
 	// Add ?o=<workspace id> only if <workspace id> wasn't in the subdomain already.
