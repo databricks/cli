@@ -8,3 +8,5 @@ uv sync -q
 trace $CLI bundle validate -t dev --output json | jq ".resources"
 
 rm -fr .venv resources/__pycache__ uv.lock my_jobs_as_code.egg-info
+
+mv .gitignore out.gitignore
