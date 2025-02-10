@@ -267,11 +267,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		server.RecordRequests = config.RecordRequests
 		server.IncludeRequestHeaders = config.IncludeRequestHeaders
 
-		// If no custom server stubs are defined, add the default handlers.
-		if len(config.Server) == 0 {
-			AddHandlers(server)
-		}
-
 		for _, stub := range config.Server {
 			require.NotEmpty(t, stub.Pattern)
 			items := strings.Split(stub.Pattern, " ")
@@ -284,6 +279,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 				return stub.Response.Body, statusCode
 			})
 		}
+
+		// The earliest handlers take precedence, add default handlers last
+		AddHandlers(server)
+
 		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
 	}
 
