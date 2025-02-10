@@ -281,6 +281,9 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "parameters":
     "description": |-
       Job-level parameter definitions
+  "performance_target":
+    "description": |-
+      PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
   "queue":
     "description": |-
       The queue settings of the job.
@@ -1818,6 +1821,17 @@ github.com/databricks/databricks-sdk-go/service/jobs.PauseStatus:
         UNPAUSED
       - |-
         PAUSED
+github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget:
+  "_":
+    "description": |-
+      PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.
+      The performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager
+      (see cluster-common PerformanceTarget).
+    "enum":
+      - |-
+        PERFORMANCE_OPTIMIZED
+      - |-
+        COST_OPTIMIZED
 github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfiguration:
   "interval":
     "description": |-
