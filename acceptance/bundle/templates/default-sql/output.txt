@@ -30,3 +30,143 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod
 
 Validation OK!
+
+>>> [CLI] bundle validate -t dev -o json
+
+>>> [CLI] bundle validate -t prod -o json
+
+>>> diff -u ../../out.validate.dev.json ../../out.validate.prod.json
+--- ../../out.validate.dev.json	[TIMESTAMP]
++++ ../../out.validate.prod.json	[TIMESTAMP]
+@@ -1,15 +1,10 @@
+ {
+   "bundle": {
+-    "deployment": {
+-      "lock": {
+-        "enabled": false
+-      }
+-    },
+     "environment": "[TARGET]",
+     "git": {
+       "bundle_root_path": "."
+     },
+-    "mode": "[TARGET]elopment",
++    "mode": "[TARGET]uction",
+     "name": "my_default_sql",
+     "target": "[TARGET]",
+     "terraform": {
+\ No newline at end of file
+@@ -20,15 +15,12 @@
+   "include": [
+     "resources/my_default_sql_sql.job.yml"
+   ],
+-  "presets": {
+-    "jobs_max_concurrent_runs": 4,
+-    "name_prefix": "[[TARGET] [USERNAME]] ",
+-    "pipelines_[TARGET]elopment": true,
+-    "tags": {
+-      "[TARGET]": "[USERNAME]"
+-    },
+-    "trigger_pause_status": "PAUSED"
+-  },
++  "permissions": [
++    {
++      "level": "CAN_MANAGE",
++      "user_name": "[USERNAME]"
++    }
++  ],
+   "resources": {
+     "jobs": {
+       "my_default_sql_sql_job": {
+\ No newline at end of file
+@@ -43,15 +35,14 @@
+           ]
+         },
+         "format": "MULTI_TASK",
+-        "max_concurrent_runs": 4,
+-        "name": "[[TARGET] [USERNAME]] my_default_sql_sql_job",
++        "name": "my_default_sql_sql_job",
+         "parameters": [
+           {
+             "default": "main",
+             "name": "catalog"
+           },
+           {
+-            "default": "[USERNAME]",
++            "default": "default",
+             "name": "schema"
+           },
+           {
+\ No newline at end of file
+@@ -63,9 +54,10 @@
+         "queue": {
+           "enabled": true
+         },
+-        "tags": {
+-          "[TARGET]": "[USERNAME]"
++        "run_as": {
++          "user_name": "[USERNAME]"
+         },
++        "tags": {},
+         "tasks": [
+           {
+             "sql_task": {
+\ No newline at end of file
+@@ -92,7 +84,6 @@
+           }
+         ],
+         "trigger": {
+-          "pause_status": "PAUSED",
+           "periodic": {
+             "interval": 1,
+             "unit": "DAYS"
+\ No newline at end of file
+@@ -101,6 +92,9 @@
+       }
+     }
+   },
++  "run_as": {
++    "user_name": "[USERNAME]"
++  },
+   "sync": {
+     "paths": [
+       "."
+\ No newline at end of file
+@@ -114,9 +108,9 @@
+       "value": "main"
+     },
+     "schema": {
+-      "default": "[USERNAME]",
++      "default": "default",
+       "description": "The schema to use",
+-      "value": "[USERNAME]"
++      "value": "default"
+     },
+     "warehouse_id": {
+       "default": "f00dcafe",
+\ No newline at end of file
+
+Exit code: 1
+
+>>> [CLI] bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod/files...
+Error: 
+
+
+Exit code: 1
+
+=== Running validate -t dev -o json second time and comparing output to first time - there should be no difference
+>>> [CLI] bundle validate -t dev -o json
+
+>>> diff -u ../../out.validate.dev.json ../../out.validate.2nd.dev.json
+
+=== Running validate -t prod -o json second time and comparing output to first time - there should be no difference
+>>> [CLI] bundle validate -t prod -o json
+
+>>> diff -u ../../out.validate.prod.json ../../out.validate.2nd.prod.json

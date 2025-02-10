@@ -1,2 +1,6 @@
 # At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
 LocalOnly = true
+
+[[Repls]]
+Old = '\d\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:\d\d)?Z?'
+New = '[TIMESTAMP]'
