@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -81,6 +82,17 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) {
 		path = "/" + path
 	}
 	s.files[path] = body
+
+	for {
+		p = path.Dir(p)
+		if p == "" || p == "/" {
+			break
+		}
+
+		s.directories[p] = true
+	}
+
+	return "{}", http.StatusOK
 }
 
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
