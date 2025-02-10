@@ -9,3 +9,7 @@ Response.StatusCode = 201
 [[Repls]]
 Old = 'Date: .*'
 New = 'Date: (redacted)'
+
+[[Repls]]
+Old = 'Content-Length: [0-9]*'
+New = 'Content-Length: (redacted)'
