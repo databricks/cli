@@ -343,6 +343,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Make sure there are not unaccounted for new files
 	files := ListDir(t, tmpDir)
+	unexpected := []string{}
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -350,12 +351,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if _, ok := outputs[relPath]; ok {
 			continue
 		}
-		t.Errorf("Unexpected output: %s", relPath)
+		unexpected = append(unexpected, relPath)
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
 			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
+	}
+
+	if len(unexpected) > 0 {
+		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
 }
 
