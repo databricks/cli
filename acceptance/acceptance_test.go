@@ -148,7 +148,6 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
@@ -301,6 +300,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		require.NotNil(t, user)
 	}
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
+
+	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
+	testdiff.PrepareReplacementsUUID(t, &repls)
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
