@@ -104,7 +104,7 @@ func AddHandlers(server *testserver.Server) {
 		return fakeWorkspace.WorkspaceDelete(path, recursive)
 	})
 
-	server.Handle("POST /api/2.0/workspace-files/import-file/{path}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("POST /api/2.0/workspace-files/import-file/{path:.*}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		vars := mux.Vars(r)
 		path := vars["path"]
 
