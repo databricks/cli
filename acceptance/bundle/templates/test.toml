@@ -2,5 +2,5 @@
 LocalOnly = true
 
 [[Repls]]
-Old = '\d\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:\d\d)?Z?'
+Old = '\d\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:?\d\d)?Z?'
 New = '[TIMESTAMP]'
