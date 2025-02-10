@@ -322,7 +322,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, req := range server.Requests {
 			reqJson, err := json.MarshalIndent(req, "", "  ")
-			require.NoError(t, err)
+			require.NoErrorf(t, err, "Failed to indent: %#v", req)
 
 			reqJsonWithRepls := repls.Replace(string(reqJson))
 			_, err = f.WriteString(reqJsonWithRepls + "\n")
