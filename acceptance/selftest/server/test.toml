@@ -1,0 +1,11 @@
+[[Server]]
+Pattern = "GET /custom/endpoint"
+Response.Body = '''custom
+---
+response
+'''
+Response.StatusCode = 201
+
+[[Repls]]
+Old = 'Date: .*'
+New = 'Date: (redacted)'
