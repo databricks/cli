@@ -132,7 +132,7 @@ The bundle attributes when deploying to this target,
   
 **`Type: Map`**
   
-The definition of the bundle deployment
+The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md).
   
   
   
@@ -180,7 +180,7 @@ The deployment lock attributes.
   
 **`Type: Map`**
   
-The Git version control details that are associated with your bundle.
+The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git).
   
   
   
@@ -694,7 +694,7 @@ The bundle attributes when deploying to this target.
   
 **`Type: Map`**
   
-The definition of the bundle deployment
+The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md).
   
   
   
@@ -742,7 +742,7 @@ The deployment lock attributes.
   
 **`Type: Map`**
   
-The Git version control details that are associated with your bundle.
+The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git).
   
   
   
@@ -926,7 +926,7 @@ The resource definitions for the target.
   
 **`Type: Map`**
   
-The identity to use to run the bundle.
+The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md).
   
   
   
@@ -1196,7 +1196,7 @@ variables:
   
 **`Type: Map`**
   
-The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
   
   
   
