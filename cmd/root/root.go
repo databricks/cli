@@ -145,17 +145,23 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 	return err
 }
 
+// We want child telemetry processes to inherit environment variables like $HOME or $HTTPS_PROXY
+// because they influence auth resolution.
 func inheritEnvVars() []string {
 	base := os.Environ()
 	out := []string{}
 	authEnvVars := auth.EnvVars()
 
-	// Remove any existing auth environment variables. This is important because
-	// the CLI offers multiple levels of configuring authentication like `--profile`
-	// or `DATABRICKS_CONFIG_PROFILE` or `profile: <profile>` in the bundle config file.
+	// Remove any existing auth environment variables. This is done because
+	// the CLI offers multiple modalities of configuring authentication like
+	// `--profile` or `DATABRICKS_CONFIG_PROFILE` or `profile: <profile>` in the
+	// bundle config file.
 	//
-	// Each of these have different priorities and thus we don't want any auth configuration
-	// to piggyback into the child process environment.
+	// Each of these modalities have different priorities and thus we don't want
+	// any auth configuration to piggyback into the child process environment.
+	//
+	// This is a precaution to avoid conflicting auth configurations being passed
+	// to the child telemetry process.
 	for _, v := range base {
 		k, _, found := strings.Cut(v, "=")
 		if !found {
