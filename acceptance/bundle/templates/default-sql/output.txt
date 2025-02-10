@@ -55,7 +55,6 @@ Validation OK!
      "name": "my_default_sql",
      "target": "[TARGET]",
      "terraform": {
-\ No newline at end of file
 @@ -20,15 +15,12 @@
    "include": [
      "resources/my_default_sql_sql.job.yml"
@@ -78,7 +77,6 @@ Validation OK!
    "resources": {
      "jobs": {
        "my_default_sql_sql_job": {
-\ No newline at end of file
 @@ -43,15 +35,14 @@
            ]
          },
@@ -97,7 +95,6 @@ Validation OK!
              "name": "schema"
            },
            {
-\ No newline at end of file
 @@ -63,9 +54,10 @@
          "queue": {
            "enabled": true
@@ -111,7 +108,6 @@ Validation OK!
          "tasks": [
            {
              "sql_task": {
-\ No newline at end of file
 @@ -92,7 +84,6 @@
            }
          ],
@@ -120,7 +116,6 @@ Validation OK!
            "periodic": {
              "interval": 1,
              "unit": "DAYS"
-\ No newline at end of file
 @@ -101,6 +92,9 @@
        }
      }
@@ -131,7 +126,6 @@ Validation OK!
    "sync": {
      "paths": [
        "."
-\ No newline at end of file
 @@ -114,9 +108,9 @@
        "value": "main"
      },
@@ -144,7 +138,6 @@ Validation OK!
      },
      "warehouse_id": {
        "default": "f00dcafe",
-\ No newline at end of file
 
 Exit code: 1
 

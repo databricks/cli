@@ -6,10 +6,6 @@ Old = '\d\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:?\d\d)?Z?'
 New = '[TIMESTAMP]'
 
 [[Repls]]
-Old = '\\'
-New = '/'
-
-[[Repls]]
 # Fixing bundle\templates\default-sql\output\my_default_sql\.vscode\settings.json
 # -    "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#\\s*%%|#\\s*\\<codecell\\>|#\\s*In\\[\\d*?\\]|#\\s*In\\[ \\])",
 # +    "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#//s*%%|#//s*//<codecell//>|#//s*In//[//d*?//]|#//s*In//[ //])",
