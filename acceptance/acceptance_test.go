@@ -318,7 +318,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		require.NoError(t, err)
 
 		for _, req := range server.Requests {
-			reqJson, err := json.Marshal(req)
+			reqJson, err := json.MarshalIndent(req, "", "  ")
 			require.NoError(t, err)
 
 			reqJsonWithRepls := repls.Replace(string(reqJson))
