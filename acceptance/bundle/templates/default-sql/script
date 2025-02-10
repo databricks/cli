@@ -8,39 +8,49 @@ replace-target() {
   sed "s/$1/[TARGET]/"
 }
 
+printf "\n=== Testing validate"
+
 trace $CLI bundle validate -t dev -o json | replace-target dev > ../../out.validate.dev.json
 trace $CLI bundle validate -t prod -o json | replace-target prod > ../../out.validate.prod.json
 errcode trace diff -u ../../out.validate.dev.json ../../out.validate.prod.json
 
+
+printf "\n=== Testing deploy"
+
 errcode trace $CLI bundle deploy -t dev
 mv .databricks/bundle/dev/sync-snapshots/*.json .databricks/bundle/dev/sync-snapshots/snapshot.json
-rm -r .databricks/bundle/dev/terraform
 # TODO: This would be nice to include but .files currently has randomized order
 #jq < .databricks/bundle/dev/deployment.json > .databricks/bundle/dev/deployment.jq.json
 rm .databricks/bundle/dev/deployment.json
 
-
 errcode trace $CLI bundle deploy -t prod
 mv .databricks/bundle/prod/sync-snapshots/*.json .databricks/bundle/prod/sync-snapshots/snapshot.json
-rm -r .databricks/bundle/prod/terraform
 #jq < .databricks/bundle/prod/deployment.json > .databricks/bundle/prod/deployment.jq.json
 rm .databricks/bundle/prod/deployment.json
 
-#errcode trace $CLI bundle summary -t dev
-#errcode trace $CLI bundle summary -t prod
 
-#errcode trace $CLI bundle summary -t dev -o json > ../../out.summary.dev.json
-#errcode trace $CLI bundle summary -t prod -o json > ../../out.summary.prod.json
+printf "\n=== Testing summary, both JSON and regular output"
 
-printf "\n=== Running validate -t dev -o json second time and comparing output to first time - there should be no difference"
+errcode trace $CLI bundle summary -t dev --debug
+
+errcode trace $CLI bundle summary -t dev -o json > ../../out.summary.dev.json
+errcode trace $CLI bundle summary -t prod -o json > ../../out.summary.prod.json
+
+errcode trace $CLI bundle summary -t prod
+
+
+printf "\n=== Testing validate second time, there should be no difference"
+
 errcode trace $CLI bundle validate -t dev -o json | replace-target dev > ../../out.validate.2nd.dev.json
 errcode trace diff -u ../../out.validate.dev.json ../../out.validate.2nd.dev.json  # should be the same
 rm ../../out.validate.2nd.dev.json
 
-printf "\n=== Running validate -t prod -o json second time and comparing output to first time - there should be no difference"
 errcode trace $CLI bundle validate -t prod -o json | replace-target prod > ../../out.validate.2nd.prod.json
 errcode trace diff -u ../../out.validate.prod.json ../../out.validate.2nd.prod.json  # should be the same
 rm ../../out.validate.2nd.prod.json
+
+rm -r .databricks/bundle/dev/terraform
+rm -r .databricks/bundle/prod/terraform
 
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore
