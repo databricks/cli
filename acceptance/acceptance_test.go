@@ -32,7 +32,7 @@ import (
 var (
 	KeepTmp     bool
 	NoRepl      bool
-	VerboseTest bool
+	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -49,7 +49,6 @@ func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
-	flag.BoolVar(&VerboseTest, "verbosetest", false, "Print available replacements in case of failure")
 }
 
 const (
