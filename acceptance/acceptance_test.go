@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"sort"
@@ -26,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
 
@@ -72,7 +74,8 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode {
 		t.Skip("Already tested by TestAccept")
 	}
-	require.Equal(t, 1, testAccept(t, true, "selftest"))
+	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
+	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
@@ -118,14 +121,12 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
-	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
 		defaultServer := testserver.New(t)
 		AddHandlers(defaultServer)
-		// Redirect API access to local server:
-		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
+		t.Setenv("DATABRICKS_DEFAULT_HOST", defaultServer.URL)
 
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
@@ -148,26 +149,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	var config databricks.Config
-	if cloudEnv == "" {
-		// use fake token for local tests
-		config = databricks.Config{Token: "dbapi1234"}
-	} else {
-		// non-local tests rely on environment variables
-		config = databricks.Config{}
-	}
-	workspaceClient, err := databricks.NewWorkspaceClient(&config)
-	require.NoError(t, err)
-
-	user, err := workspaceClient.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-	require.NotNil(t, user)
-	testdiff.PrepareReplacementsUser(t, &repls, *user)
-	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
-	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
+
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -239,7 +225,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	repls.SetPathWithParents(tmpDir, "[TMPDIR]")
-	repls.Repls = append(repls.Repls, config.Repls...)
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -253,37 +238,78 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
 
+	var workspaceClient *databricks.WorkspaceClient
+	var user iam.User
+
 	// Start a new server with a custom configuration if the acceptance test
 	// specifies a custom server stubs.
 	var server *testserver.Server
 
-	// Start a new server for this test if either:
-	// 1. A custom server spec is defined in the test configuration.
-	// 2. The test is configured to record requests and assert on them. We need
-	//    a duplicate of the default server to record requests because the default
-	//    server otherwise is a shared resource.
-	if cloudEnv == "" && (len(config.Server) > 0 || config.RecordRequests) {
-		server = testserver.New(t)
-		server.RecordRequests = config.RecordRequests
-		server.IncludeRequestHeaders = config.IncludeRequestHeaders
+	if cloudEnv == "" {
+		// Start a new server for this test if either:
+		// 1. A custom server spec is defined in the test configuration.
+		// 2. The test is configured to record requests and assert on them. We need
+		//    a duplicate of the default server to record requests because the default
+		//    server otherwise is a shared resource.
 
-		// If no custom server stubs are defined, add the default handlers.
-		if len(config.Server) == 0 {
+		databricksLocalHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
+
+		if len(config.Server) > 0 || config.RecordRequests {
+			server = testserver.New(t)
+			server.RecordRequests = config.RecordRequests
+			server.IncludeRequestHeaders = config.IncludeRequestHeaders
+
+			for _, stub := range config.Server {
+				require.NotEmpty(t, stub.Pattern)
+				items := strings.Split(stub.Pattern, " ")
+				require.Len(t, items, 2)
+				server.Handle(items[0], items[1], func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
+					statusCode := http.StatusOK
+					if stub.Response.StatusCode != 0 {
+						statusCode = stub.Response.StatusCode
+					}
+					return stub.Response.Body, statusCode
+				})
+			}
+
+			// The earliest handlers take precedence, add default handlers last
 			AddHandlers(server)
+			databricksLocalHost = server.URL
 		}
 
-		for _, stub := range config.Server {
-			require.NotEmpty(t, stub.Pattern)
-			server.Handle(stub.Pattern, func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
-				statusCode := http.StatusOK
-				if stub.Response.StatusCode != 0 {
-					statusCode = stub.Response.StatusCode
-				}
-				return stub.Response.Body, statusCode
-			})
+		// Each local test should use a new token that will result into a new fake workspace,
+		// so that test don't interfere with each other.
+		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+		config := databricks.Config{
+			Host:  databricksLocalHost,
+			Token: "dbapi" + tokenSuffix,
 		}
-		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
+		workspaceClient, err = databricks.NewWorkspaceClient(&config)
+		require.NoError(t, err)
+
+		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+config.Host)
+		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+config.Token)
+
+		// For the purposes of replacements, use testUser.
+		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
+		user = testUser
+	} else {
+		// Use whatever authentication mechanism is configured by the test runner.
+		workspaceClient, err = databricks.NewWorkspaceClient(&databricks.Config{})
+		require.NoError(t, err)
+		pUser, err := workspaceClient.CurrentUser.Me(context.Background())
+		require.NoError(t, err, "Failed to get current user")
+		user = *pUser
 	}
+
+	testdiff.PrepareReplacementsUser(t, &repls, user)
+	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
+
+	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
+	testdiff.PrepareReplacementsUUID(t, &repls)
+
+	// User replacements come last:
+	repls.Repls = append(repls.Repls, config.Repls...)
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
@@ -293,15 +319,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
-	}
-
-	// Each local test should use a new token that will result into a new fake workspace,
-	// so that test don't interfere with each other.
-	if cloudEnv == "" {
-		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-		token := "dbapi" + tokenSuffix
-		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+token)
-		repls.Set(token, "[DATABRICKS_TOKEN]")
 	}
 
 	// Write combined output to a file
@@ -320,7 +337,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		for _, req := range server.Requests {
 			reqJson, err := json.MarshalIndent(req, "", "  ")
-			require.NoError(t, err)
+			require.NoErrorf(t, err, "Failed to indent: %#v", req)
 
 			reqJsonWithRepls := repls.Replace(string(reqJson))
 			_, err = f.WriteString(reqJsonWithRepls + "\n")

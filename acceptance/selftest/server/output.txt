@@ -1,0 +1,15 @@
+
+>>> curl -s [DATABRICKS_URL]/api/2.0/preview/scim/v2/Me
+{
+    "id": "[USERID]",
+    "userName": "[USERNAME]"
+}
+>>> curl -sD - [DATABRICKS_URL]/custom/endpoint?query=param
+HTTP/1.1 201 Created
+Content-Type: application/json
+Date: (redacted)
+Content-Length: (redacted)
+
+custom
+---
+response
