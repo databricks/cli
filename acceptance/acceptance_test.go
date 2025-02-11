@@ -262,7 +262,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// 2. The test is configured to record requests and assert on them. We need
 	//    a duplicate of the default server to record requests because the default
 	//    server otherwise is a shared resource.
-	if len(config.Server) > 0 || config.RecordRequests {
+	if cloudEnv == "" && (len(config.Server) > 0 || config.RecordRequests) {
 		server = testserver.New(t)
 		server.RecordRequests = config.RecordRequests
 		server.IncludeRequestHeaders = config.IncludeRequestHeaders
