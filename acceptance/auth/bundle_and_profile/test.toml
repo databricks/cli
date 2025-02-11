@@ -5,4 +5,8 @@ Badness = "When -p flag is used inside the bundle folder for any CLI commands, C
 # This is a workaround to replace DATABRICKS_URL with DATABRICKS_HOST
 [[Repls]]
 Old='DATABRICKS_HOST'
-New='DATABRICKS_URL'
+New='DATABRICKS_TARGET'
+
+[[Repls]]
+Old='DATABRICKS_URL'
+New='DATABRICKS_TARGET'
