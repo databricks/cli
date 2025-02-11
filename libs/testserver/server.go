@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gorilla/mux"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -17,7 +19,7 @@ import (
 
 type Server struct {
 	*httptest.Server
-	Mux *http.ServeMux
+	Router *mux.Router
 
 	t testutil.TestingT
 
@@ -34,26 +36,25 @@ type Request struct {
 	Headers http.Header `json:"headers,omitempty"`
 	Method  string      `json:"method"`
 	Path    string      `json:"path"`
-	Body    any         `json:"body"`
+	Body    any         `json:"body,omitempty"`
+	RawBody string      `json:"raw_body,omitempty"`
 }
 
 func New(t testutil.TestingT) *Server {
-	mux := http.NewServeMux()
-	server := httptest.NewServer(mux)
+	router := mux.NewRouter()
+	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
 
 	s := &Server{
 		Server:         server,
-		Mux:            mux,
+		Router:         router,
 		t:              t,
 		mu:             &sync.Mutex{},
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
 
-	// The server resolves conflicting handlers by using the one with higher
-	// specificity. This handler is the least specific, so it will be used as a
-	// fallback when no other handlers match.
-	s.Handle("/", func(fakeWorkspace *FakeWorkspace, r *http.Request) (any, int) {
+	// Set up the not found handler as fallback
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := r.Method + " " + r.URL.Path
 
 		t.Errorf(`
@@ -74,9 +75,22 @@ Response.StatusCode = <response status-code here>
 
 `, pattern, pattern)
 
-		return apierr.APIError{
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotImplemented)
+
+		resp := apierr.APIError{
 			Message: "No stub found for pattern: " + pattern,
-		}, http.StatusNotImplemented
+		}
+
+		respBytes, err := json.Marshal(resp)
+		if err != nil {
+			t.Errorf("JSON encoding error: %s", err)
+			respBytes = []byte("{\"message\": \"JSON encoding error\"}")
+		}
+
+		if _, err := w.Write(respBytes); err != nil {
+			t.Errorf("Response write error: %s", err)
+		}
 	})
 
 	return s
@@ -84,8 +98,8 @@ Response.StatusCode = <response status-code here>
 
 type HandlerFunc func(fakeWorkspace *FakeWorkspace, req *http.Request) (resp any, statusCode int)
 
-func (s *Server) Handle(pattern string, handler HandlerFunc) {
-	s.Mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Handle(method, path string, handler HandlerFunc) {
+	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		// For simplicity we process requests sequentially. It's fast enough because
 		// we don't do any IO except reading and writing request/response bodies.
 		s.mu.Lock()
@@ -119,13 +133,19 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 				}
 			}
 
-			s.Requests = append(s.Requests, Request{
+			req := Request{
 				Headers: headers,
 				Method:  r.Method,
 				Path:    r.URL.Path,
-				Body:    json.RawMessage(body),
-			})
+			}
 
+			if json.Valid(body) {
+				req.Body = json.RawMessage(body)
+			} else {
+				req.RawBody = string(body)
+			}
+
+			s.Requests = append(s.Requests, req)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -149,7 +169,7 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	})
+	}).Methods(method)
 }
 
 func getToken(r *http.Request) string {

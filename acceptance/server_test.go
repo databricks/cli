@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/gorilla/mux"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -16,8 +17,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+var testUser = iam.User{
+	Id:       "1000012345",
+	UserName: "tester@databricks.com",
+}
+
 func AddHandlers(server *testserver.Server) {
-	server.Handle("GET /api/2.0/policies/clusters/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/api/2.0/policies/clusters/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		return compute.ListPoliciesResponse{
 			Policies: []compute.Policy{
 				{
@@ -32,7 +38,7 @@ func AddHandlers(server *testserver.Server) {
 		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.0/instance-pools/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/api/2.0/instance-pools/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		return compute.ListInstancePools{
 			InstancePools: []compute.InstancePoolAndStats{
 				{
@@ -43,7 +49,7 @@ func AddHandlers(server *testserver.Server) {
 		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.1/clusters/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/api/2.1/clusters/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		return compute.ListClustersResponse{
 			Clusters: []compute.ClusterDetails{
 				{
@@ -58,20 +64,17 @@ func AddHandlers(server *testserver.Server) {
 		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.0/preview/scim/v2/Me", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		return iam.User{
-			Id:       "1000012345",
-			UserName: "tester@databricks.com",
-		}, http.StatusOK
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+		return testUser, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.0/workspace/get-status", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/api/2.0/workspace/get-status", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		path := r.URL.Query().Get("path")
 
 		return fakeWorkspace.WorkspaceGetStatus(path)
 	})
 
-	server.Handle("POST /api/2.0/workspace/mkdirs", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		request := workspace.Mkdirs{}
 		decoder := json.NewDecoder(r.Body)
 
@@ -83,13 +86,13 @@ func AddHandlers(server *testserver.Server) {
 		return fakeWorkspace.WorkspaceMkdirs(request)
 	})
 
-	server.Handle("GET /api/2.0/workspace/export", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/api/2.0/workspace/export", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		path := r.URL.Query().Get("path")
 
 		return fakeWorkspace.WorkspaceExport(path)
 	})
 
-	server.Handle("POST /api/2.0/workspace/delete", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("POST", "/api/2.0/workspace/delete", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		path := r.URL.Query().Get("path")
 		recursiveStr := r.URL.Query().Get("recursive")
 		var recursive bool
@@ -103,8 +106,9 @@ func AddHandlers(server *testserver.Server) {
 		return fakeWorkspace.WorkspaceDelete(path, recursive)
 	})
 
-	server.Handle("POST /api/2.0/workspace-files/import-file/{path}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		path := r.PathValue("path")
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path:.*}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+		vars := mux.Vars(r)
+		path := vars["path"]
 
 		body := new(bytes.Buffer)
 		_, err := body.ReadFrom(r.Body)
@@ -115,14 +119,15 @@ func AddHandlers(server *testserver.Server) {
 		return fakeWorkspace.WorkspaceFilesImportFile(path, body.Bytes())
 	})
 
-	server.Handle("GET /api/2.1/unity-catalog/current-metastore-assignment", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		return catalog.MetastoreAssignment{
 			DefaultCatalogName: "main",
 		}, http.StatusOK
 	})
 
-	server.Handle("GET /api/2.0/permissions/directories/{objectId}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
-		objectId := r.PathValue("objectId")
+	server.Handle("GET", "/api/2.0/permissions/directories/{objectId}", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+		vars := mux.Vars(r)
+		objectId := vars["objectId"]
 
 		return workspace.WorkspaceObjectPermissions{
 			ObjectId:   objectId,
@@ -140,7 +145,7 @@ func AddHandlers(server *testserver.Server) {
 		}, http.StatusOK
 	})
 
-	server.Handle("POST /api/2.1/jobs/create", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("POST", "/api/2.1/jobs/create", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		request := jobs.CreateJob{}
 		decoder := json.NewDecoder(r.Body)
 
@@ -152,14 +157,30 @@ func AddHandlers(server *testserver.Server) {
 		return fakeWorkspace.JobsCreate(request)
 	})
 
-	server.Handle("GET /api/2.1/jobs/get", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/api/2.1/jobs/get", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		jobId := r.URL.Query().Get("job_id")
 
 		return fakeWorkspace.JobsGet(jobId)
 	})
 
-	server.Handle("GET /api/2.1/jobs/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/api/2.1/jobs/list", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		return fakeWorkspace.JobsList()
+	})
+
+	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+		return map[string]string{
+			"authorization_endpoint": server.URL + "oidc/v1/authorize",
+			"token_endpoint":         server.URL + "/oidc/v1/token",
+		}, http.StatusOK
+	})
+
+	server.Handle("POST", "/oidc/v1/token", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+		return map[string]string{
+			"access_token": "oauth-token",
+			"expires_in":   "3600",
+			"scope":        "all-apis",
+			"token_type":   "Bearer",
+		}, http.StatusOK
 	})
 }
 
