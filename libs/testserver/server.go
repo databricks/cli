@@ -34,7 +34,8 @@ type Request struct {
 	Headers http.Header `json:"headers,omitempty"`
 	Method  string      `json:"method"`
 	Path    string      `json:"path"`
-	Body    any         `json:"body"`
+	Body    any         `json:"body,omitempty"`
+	RawBody string      `json:"raw_body,omitempty"`
 }
 
 func New(t testutil.TestingT) *Server {
@@ -119,13 +120,19 @@ func (s *Server) Handle(pattern string, handler HandlerFunc) {
 				}
 			}
 
-			s.Requests = append(s.Requests, Request{
+			req := Request{
 				Headers: headers,
 				Method:  r.Method,
 				Path:    r.URL.Path,
-				Body:    json.RawMessage(body),
-			})
+			}
 
+			if json.Valid(body) {
+				req.Body = json.RawMessage(body)
+			} else {
+				req.RawBody = string(body)
+			}
+
+			s.Requests = append(s.Requests, req)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
