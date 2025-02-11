@@ -293,15 +293,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+databricksToken)
 
 	ctx := context.Background()
-	var user *iam.User
+	var user iam.User
 	if cloudEnv == "" {
-		user = &testUser
+		user = testUser
 	} else {
-		user, err := workspaceClient.CurrentUser.Me(ctx)
+		puser, err := workspaceClient.CurrentUser.Me(ctx)
 		require.NoError(t, err)
-		require.NotNil(t, user)
+		require.NotNil(t, puser)
+		user = *puser
 	}
-	testdiff.PrepareReplacementsUser(t, &repls, *user)
+	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
