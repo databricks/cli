@@ -6,3 +6,7 @@ Badness = "When -p flag is used inside the bundle folder for any CLI commands, C
 [[Repls]]
 Old='DATABRICKS_HOST'
 New='DATABRICKS_URL'
+
+[[Repls]]
+Old='Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": .*'
+New='Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)'
