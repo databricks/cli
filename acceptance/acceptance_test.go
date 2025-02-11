@@ -239,69 +239,70 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
 
-	databricksHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
+	var workspaceClient *databricks.WorkspaceClient
+	var user iam.User
 
 	// Start a new server with a custom configuration if the acceptance test
 	// specifies a custom server stubs.
 	var server *testserver.Server
 
-	// Start a new server for this test if either:
-	// 1. A custom server spec is defined in the test configuration.
-	// 2. The test is configured to record requests and assert on them. We need
-	//    a duplicate of the default server to record requests because the default
-	//    server otherwise is a shared resource.
-	if cloudEnv == "" && (len(config.Server) > 0 || config.RecordRequests) {
-		server = testserver.New(t)
-		server.RecordRequests = config.RecordRequests
-		server.IncludeRequestHeaders = config.IncludeRequestHeaders
+	if cloudEnv == "" {
+		// Start a new server for this test if either:
+		// 1. A custom server spec is defined in the test configuration.
+		// 2. The test is configured to record requests and assert on them. We need
+		//    a duplicate of the default server to record requests because the default
+		//    server otherwise is a shared resource.
 
-		for _, stub := range config.Server {
-			require.NotEmpty(t, stub.Pattern)
-			items := strings.Split(stub.Pattern, " ")
-			require.Len(t, items, 2)
-			server.Handle(items[0], items[1], func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
-				statusCode := http.StatusOK
-				if stub.Response.StatusCode != 0 {
-					statusCode = stub.Response.StatusCode
-				}
-				return stub.Response.Body, statusCode
-			})
+		databricksLocalHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
+
+		if len(config.Server) > 0 || config.RecordRequests {
+			server = testserver.New(t)
+			server.RecordRequests = config.RecordRequests
+			server.IncludeRequestHeaders = config.IncludeRequestHeaders
+
+			for _, stub := range config.Server {
+				require.NotEmpty(t, stub.Pattern)
+				items := strings.Split(stub.Pattern, " ")
+				require.Len(t, items, 2)
+				server.Handle(items[0], items[1], func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
+					statusCode := http.StatusOK
+					if stub.Response.StatusCode != 0 {
+						statusCode = stub.Response.StatusCode
+					}
+					return stub.Response.Body, statusCode
+				})
+			}
+
+			// The earliest handlers take precedence, add default handlers last
+			AddHandlers(server)
+			databricksLocalHost = server.URL
 		}
 
-		// The earliest handlers take precedence, add default handlers last
-		AddHandlers(server)
-
-		databricksHost = server.URL
-	}
-
-	databricksToken := os.Getenv("DATABRICKS_TOKEN")
-
-	// Each local test should use a new token that will result into a new fake workspace,
-	// so that test don't interfere with each other.
-	if cloudEnv == "" {
+		// Each local test should use a new token that will result into a new fake workspace,
+		// so that test don't interfere with each other.
 		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-		databricksToken = "dbapi" + tokenSuffix
-	}
+		config := databricks.Config{
+			Host:  databricksLocalHost,
+			Token: "dbapi" + tokenSuffix,
+		}
+		workspaceClient, err = databricks.NewWorkspaceClient(&config)
+		require.NoError(t, err)
 
-	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  databricksHost,
-		Token: databricksToken,
-	})
-	require.NoError(t, err)
+		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+config.Host)
+		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+config.Token)
 
-	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+databricksHost)
-	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+databricksToken)
-
-	ctx := context.Background()
-	var user iam.User
-	if cloudEnv == "" {
+		// For the purposes of replacements, use testUser.
+		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
 		user = testUser
 	} else {
-		puser, err := workspaceClient.CurrentUser.Me(ctx)
+		// Use whatever authentication mechanism is configured by the test runner.
+		workspaceClient, err = databricks.NewWorkspaceClient(&databricks.Config{})
 		require.NoError(t, err)
-		require.NotNil(t, puser)
-		user = *puser
+		pUser, err := workspaceClient.CurrentUser.Me(context.Background())
+		require.NoError(t, err, "Failed to get current user")
+		user = *pUser
 	}
+
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
