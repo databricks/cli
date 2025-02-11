@@ -180,8 +180,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 
 	for _, dir := range testDirs {
-		testName := strings.ReplaceAll(dir, "\\", "/")
-		t.Run(testName, func(t *testing.T) {
+		t.Run(dir, func(t *testing.T) {
 			if !InprocessMode {
 				t.Parallel()
 			}
@@ -203,7 +202,8 @@ func getTests(t *testing.T) []string {
 		name := filepath.Base(path)
 		if name == EntryPointScript {
 			// Presence of 'script' marks a test case in this directory
-			testDirs = append(testDirs, filepath.Dir(path))
+			testName := filepath.ToSlash(filepath.Dir(path))
+			testDirs = append(testDirs, testName)
 		}
 		return nil
 	})
