@@ -9,7 +9,7 @@
 10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:folder_permissions
 10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:validate_sync_patterns
 10:07:59 Debug: Path /Workspace/Users/[USERNAME]/.bundle/debug/default/files has type directory (ID: 0) pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync
-10:07:59 Debug: non-retriable error:  pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync sdk=true
-< {} pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync sdk=true
-< {} pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync sdk=true
+10:07:59 Debug: non-retriable error: Not Found pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync sdk=true
+< HTTP/0.0 000 Not Found (Error: Not Found) pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync sdk=true
+< HTTP/0.0 000 OK pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync sdk=true
 < } pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=validate:files_to_sync sdk=true

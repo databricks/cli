@@ -5,13 +5,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -29,15 +29,153 @@ type Server struct {
 	RecordRequests        bool
 	IncludeRequestHeaders []string
 
-	Requests []Request
+	Requests []LoggedRequest
 }
 
-type Request struct {
+type LoggedRequest struct {
 	Headers http.Header `json:"headers,omitempty"`
 	Method  string      `json:"method"`
 	Path    string      `json:"path"`
 	Body    any         `json:"body,omitempty"`
 	RawBody string      `json:"raw_body,omitempty"`
+}
+
+type Request struct {
+	Method    string
+	URL       *url.URL
+	Headers   http.Header
+	Body      []byte
+	Vars      map[string]string
+	Workspace *FakeWorkspace
+}
+
+type Response struct {
+	StatusCode int
+	Headers    http.Header
+	Body       any
+}
+
+type encodedResponse struct {
+	StatusCode int
+	Headers    http.Header
+	Body       []byte
+}
+
+func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspace) Request {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		t.Fatalf("Failed to read request body: %s", err)
+	}
+
+	return Request{
+		Method:    r.Method,
+		URL:       r.URL,
+		Headers:   r.Header,
+		Body:      body,
+		Vars:      mux.Vars(r),
+		Workspace: fakeWorkspace,
+	}
+}
+
+func normalizeResponse(t testutil.TestingT, resp any) encodedResponse {
+	result := normalizeResponseBody(t, resp)
+	if result.StatusCode == 0 {
+		result.StatusCode = 200
+	}
+	return result
+}
+
+func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
+	if isNil(resp) {
+		return encodedResponse{StatusCode: 404, Body: []byte{}}
+	}
+
+	respBytes, ok := resp.([]byte)
+	if ok {
+		return encodedResponse{
+			Body:    respBytes,
+			Headers: getHeaders(respBytes),
+		}
+	}
+
+	respString, ok := resp.(string)
+	if ok {
+		return encodedResponse{
+			Body:    []byte(respString),
+			Headers: getHeaders([]byte(respString)),
+		}
+	}
+
+	respStruct, ok := resp.(Response)
+	if ok {
+		bytesVal, isBytes := respStruct.Body.([]byte)
+		if isBytes {
+			return encodedResponse{
+				StatusCode: respStruct.StatusCode,
+				Headers:    respStruct.Headers,
+				Body:       bytesVal,
+			}
+		}
+
+		stringVal, isString := respStruct.Body.(string)
+		if isString {
+			return encodedResponse{
+				StatusCode: respStruct.StatusCode,
+				Headers:    respStruct.Headers,
+				Body:       []byte(stringVal),
+			}
+		}
+
+		respBytes, err := json.MarshalIndent(respStruct.Body, "", "    ")
+		if err != nil {
+			t.Errorf("JSON encoding error: %s", err)
+			return encodedResponse{
+				StatusCode: 500,
+				Body:       []byte("internal error"),
+			}
+		}
+
+		headers := respStruct.Headers
+		if headers == nil {
+			headers = getJsonHeaders()
+		}
+
+		return encodedResponse{
+			StatusCode: respStruct.StatusCode,
+			Headers:    headers,
+			Body:       respBytes,
+		}
+	}
+
+	respBytes, err := json.MarshalIndent(resp, "", "    ")
+	if err != nil {
+		t.Errorf("JSON encoding error: %s", err)
+		return encodedResponse{
+			StatusCode: 500,
+			Body:       []byte("internal error"),
+		}
+	}
+
+	return encodedResponse{
+		Body:    respBytes,
+		Headers: getJsonHeaders(),
+	}
+}
+
+func getJsonHeaders() http.Header {
+	return map[string][]string{
+		"Content-Type": {"application/json"},
+	}
+}
+
+func getHeaders(value []byte) http.Header {
+	if json.Valid(value) {
+		return getJsonHeaders()
+	} else {
+		return map[string][]string{
+			"Content-Type": {"text/plain"},
+		}
+	}
 }
 
 func New(t testutil.TestingT) *Server {
@@ -96,7 +234,7 @@ Response.StatusCode = <response status-code here>
 	return s
 }
 
-type HandlerFunc func(fakeWorkspace *FakeWorkspace, req *http.Request) (resp any, statusCode int)
+type HandlerFunc func(req Request) any
 
 func (s *Server) Handle(method, path string, handler HandlerFunc) {
 	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
@@ -117,56 +255,22 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			fakeWorkspace = s.fakeWorkspaces[token]
 		}
 
-		resp, statusCode := handler(fakeWorkspace, r)
-
+		request := NewRequest(s.t, r, fakeWorkspace)
 		if s.RecordRequests {
-			body, err := io.ReadAll(r.Body)
-			assert.NoError(s.t, err)
-
-			headers := make(http.Header)
-			for k, v := range r.Header {
-				if !slices.Contains(s.IncludeRequestHeaders, k) {
-					continue
-				}
-				for _, vv := range v {
-					headers.Add(k, vv)
-				}
-			}
-
-			req := Request{
-				Headers: headers,
-				Method:  r.Method,
-				Path:    r.URL.Path,
-			}
-
-			if json.Valid(body) {
-				req.Body = json.RawMessage(body)
-			} else {
-				req.RawBody = string(body)
-			}
-
-			s.Requests = append(s.Requests, req)
+			s.Requests = append(s.Requests, getLoggedRequest(request, s.IncludeRequestHeaders))
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(statusCode)
+		respAny := handler(request)
+		resp := normalizeResponse(s.t, respAny)
 
-		var respBytes []byte
-		var err error
-		if respString, ok := resp.(string); ok {
-			respBytes = []byte(respString)
-		} else if respBytes0, ok := resp.([]byte); ok {
-			respBytes = respBytes0
-		} else {
-			respBytes, err = json.MarshalIndent(resp, "", "    ")
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+		for k, v := range resp.Headers {
+			w.Header()[k] = v
 		}
 
-		if _, err := w.Write(respBytes); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(resp.StatusCode)
+
+		if _, err := w.Write(resp.Body); err != nil {
+			s.t.Errorf("Failed to write response: %s", err)
 			return
 		}
 	}).Methods(method)
@@ -181,4 +285,44 @@ func getToken(r *http.Request) string {
 	}
 
 	return header[len(prefix):]
+}
+
+func getLoggedRequest(req Request, includedHeaders []string) LoggedRequest {
+	result := LoggedRequest{
+		Method:  req.Method,
+		Path:    req.URL.Path,
+		Headers: filterHeaders(req.Headers, includedHeaders),
+	}
+
+	if json.Valid(req.Body) {
+		result.Body = json.RawMessage(req.Body)
+	} else {
+		result.RawBody = string(req.Body)
+	}
+
+	return result
+}
+
+func filterHeaders(h http.Header, includedHeaders []string) http.Header {
+	headers := make(http.Header)
+	for k, v := range h {
+		if !slices.Contains(includedHeaders, k) {
+			continue
+		}
+		headers[k] = v
+	}
+	return headers
+}
+
+func isNil(i any) bool {
+	if i == nil {
+		return true
+	}
+	v := reflect.ValueOf(i)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
 }

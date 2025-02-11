@@ -12,6 +12,8 @@ Response.Body = '''custom
 response
 '''
 Response.StatusCode = 201
+[Server.Response.Headers]
+"X-Custom-Header" = ["hello"]
 
 [[Repls]]
 Old = 'Date: .*'

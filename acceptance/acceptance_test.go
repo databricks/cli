@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -267,12 +266,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 				require.NotEmpty(t, stub.Pattern)
 				items := strings.Split(stub.Pattern, " ")
 				require.Len(t, items, 2)
-				server.Handle(items[0], items[1], func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
-					statusCode := http.StatusOK
-					if stub.Response.StatusCode != 0 {
-						statusCode = stub.Response.StatusCode
-					}
-					return stub.Response.Body, statusCode
+				server.Handle(items[0], items[1], func(req testserver.Request) any {
+					return stub.Response
 				})
 			}
 

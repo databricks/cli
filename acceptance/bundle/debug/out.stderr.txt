@@ -78,12 +78,10 @@
 10:07:59 Debug: No script defined for postinit, skipping pid=12345 mutator=initialize mutator=seq mutator=scripts.postinit
 10:07:59 Debug: Apply pid=12345 mutator=validate
 10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/debug/default/files
-< HTTP/1.1 404 Not Found
 10:07:59 Debug: POST /api/2.0/workspace/mkdirs
 > {
 >   "path": "/Workspace/Users/[USERNAME]/.bundle/debug/default/files"
 > }
-< HTTP/1.1 200 OK
 10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/debug/default/files
 < HTTP/1.1 200 OK
 < {

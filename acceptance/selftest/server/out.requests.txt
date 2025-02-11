@@ -6,3 +6,7 @@
   "method": "GET",
   "path": "/custom/endpoint"
 }
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
