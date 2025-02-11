@@ -122,6 +122,9 @@ func TestConvertPipeline(t *testing.T) {
 				"num_workers": int64(1),
 			},
 		},
+		"run_as": map[string]any{
+			"user_name": "foo@bar.com",
+		},
 	}, out.Pipeline["my_pipeline"])
 
 	// Assert equality on the permissions

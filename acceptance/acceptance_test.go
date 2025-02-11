@@ -30,8 +30,9 @@ import (
 )
 
 var (
-	KeepTmp bool
-	NoRepl  bool
+	KeepTmp     bool
+	NoRepl      bool
+	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -261,7 +262,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// 2. The test is configured to record requests and assert on them. We need
 	//    a duplicate of the default server to record requests because the default
 	//    server otherwise is a shared resource.
-	if len(config.Server) > 0 || config.RecordRequests {
+	if cloudEnv == "" && (len(config.Server) > 0 || config.RecordRequests) {
 		server = testserver.New(t)
 		server.RecordRequests = config.RecordRequests
 		server.IncludeRequestHeaders = config.IncludeRequestHeaders
@@ -412,7 +413,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		testutil.WriteFile(t, pathRef, valueNew)
 	}
 
-	if !equal && printedRepls != nil && !*printedRepls {
+	if VerboseTest && !equal && printedRepls != nil && !*printedRepls {
 		*printedRepls = true
 		var items []string
 		for _, item := range repls.Repls {
