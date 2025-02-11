@@ -167,14 +167,14 @@ func AddHandlers(server *testserver.Server) {
 		return fakeWorkspace.JobsList()
 	})
 
-	server.Handle("GET /oidc/.well-known/oauth-authorization-server", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		return map[string]string{
 			"authorization_endpoint": server.URL + "oidc/v1/authorize",
 			"token_endpoint":         server.URL + "/oidc/v1/token",
 		}, http.StatusOK
 	})
 
-	server.Handle("POST /oidc/v1/token", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("POST", "/oidc/v1/token", func(fakeWorkspace *testserver.FakeWorkspace, r *http.Request) (any, int) {
 		return map[string]string{
 			"access_token": "oauth-token",
 			"expires_in":   "3600",
