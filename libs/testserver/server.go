@@ -19,7 +19,7 @@ import (
 
 type Server struct {
 	*httptest.Server
-	Mux *mux.Router
+	Router *mux.Router
 
 	t testutil.TestingT
 
@@ -47,7 +47,7 @@ func New(t testutil.TestingT) *Server {
 
 	s := &Server{
 		Server:         server,
-		Mux:            router,
+		Router:         router,
 		t:              t,
 		mu:             &sync.Mutex{},
 		fakeWorkspaces: map[string]*FakeWorkspace{},
@@ -99,7 +99,7 @@ Response.StatusCode = <response status-code here>
 type HandlerFunc func(fakeWorkspace *FakeWorkspace, req *http.Request) (resp any, statusCode int)
 
 func (s *Server) Handle(method, path string, handler HandlerFunc) {
-	s.Mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		// For simplicity we process requests sequentially. It's fast enough because
 		// we don't do any IO except reading and writing request/response bodies.
 		s.mu.Lock()
