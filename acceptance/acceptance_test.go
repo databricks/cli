@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
 
@@ -292,13 +293,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+databricksToken)
 
 	ctx := context.Background()
+	var user *iam.User
 	if cloudEnv == "" {
-		testdiff.PrepareReplacementsUser(t, &repls, testUser)
+		user = &testUser
 	} else {
 		user, err := workspaceClient.CurrentUser.Me(ctx)
 		require.NoError(t, err)
 		require.NotNil(t, user)
 	}
+	testdiff.PrepareReplacementsUser(t, &repls, *user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
