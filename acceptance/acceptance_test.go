@@ -259,6 +259,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			server.RecordRequests = config.RecordRequests
 			server.IncludeRequestHeaders = config.IncludeRequestHeaders
 
+			// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
+			// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
+			slices.Reverse(config.Server)
+
 			for _, stub := range config.Server {
 				require.NotEmpty(t, stub.Pattern)
 				items := strings.Split(stub.Pattern, " ")
