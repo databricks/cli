@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -77,11 +77,11 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+func (s *FakeWorkspace) WorkspaceFilesImportFile(p string, body []byte) {
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
 	}
-	s.files[path] = body
+	s.files[p] = body
 
 	for {
 		p = path.Dir(p)
@@ -91,8 +91,6 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) {
 
 		s.directories[p] = true
 	}
-
-	return "{}", http.StatusOK
 }
 
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
