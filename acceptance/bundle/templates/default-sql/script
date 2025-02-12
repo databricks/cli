@@ -12,7 +12,7 @@ printf "\n=== Testing validate"
 
 trace $CLI bundle validate -t dev -o json | replace-target dev > ../../out.validate.dev.json
 trace $CLI bundle validate -t prod -o json | replace-target prod > ../../out.validate.prod.json
-errcode trace diff -u ../../out.validate.dev.json ../../out.validate.prod.json
+errcode trace diff -u ../../out.validate.dev.json ../../out.validate.prod.json > ../../out.validate.diff
 
 
 printf "\n=== Testing deploy"
@@ -38,7 +38,7 @@ errcode trace $CLI bundle summary -t prod -o json | replace-target prod > ../../
 
 errcode trace $CLI bundle summary -t prod
 
-errcode trace diff -u ../../out.summary.dev.json ../../out.summary.prod.json
+errcode trace diff -u ../../out.summary.dev.json ../../out.summary.prod.json > ../../out.summary.diff
 
 
 printf "\n=== Testing validate second time, there should be no difference"
