@@ -46,36 +46,12 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/dev
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Error: terraform apply: exit status 1
-
-Error: cannot read job: 
-
-  with databricks_job.my_default_sql_sql_job,
-  on bundle.tf.json line 81, in resource.databricks_job.my_default_sql_sql_job:
-  81:       }
-
-
-
-
-Exit code: 1
 
 >>> [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Error: terraform apply: exit status 1
-
-Error: cannot read job: 
-
-  with databricks_job.my_default_sql_sql_job,
-  on bundle.tf.json line 80, in resource.databricks_job.my_default_sql_sql_job:
-  80:       }
-
-
-
-
-Exit code: 1
 
 === Testing summary, both JSON and regular output
 >>> [CLI] bundle summary -t dev
@@ -89,7 +65,7 @@ Resources:
   Jobs:
     my_default_sql_sql_job:
       Name: [dev [USERNAME]] my_default_sql_sql_job
-      URL:  [DATABRICKS_URL]/jobs/0?o=900800700600
+      URL:  [DATABRICKS_URL]/jobs/1?o=900800700600
 
 >>> [CLI] bundle summary -t dev -o json
 
@@ -106,7 +82,7 @@ Resources:
   Jobs:
     my_default_sql_sql_job:
       Name: my_default_sql_sql_job
-      URL:  [DATABRICKS_URL]/jobs/0?o=900800700600
+      URL:  [DATABRICKS_URL]/jobs/2?o=900800700600
 
 >>> diff -u ../../out.summary.dev.json ../../out.summary.prod.json
 

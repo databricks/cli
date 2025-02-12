@@ -62,7 +62,7 @@
           ]
         },
         "format": "MULTI_TASK",
-        "id": "0",
+        "id": "2",
         "name": "my_default_sql_sql_job",
         "parameters": [
           {
@@ -115,7 +115,7 @@
             "unit": "DAYS"
           }
         },
-        "url": "[DATABRICKS_URL]/jobs/0?o=900800700600"
+        "url": "[DATABRICKS_URL]/jobs/2?o=900800700600"
       }
     }
   },

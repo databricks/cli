@@ -26,12 +26,14 @@
      },
      "uuid": "[UUID]"
    },
-@@ -65,15 +63,14 @@
+@@ -64,16 +62,15 @@
+           ]
          },
          "format": "MULTI_TASK",
-         "id": "0",
+-        "id": "1",
 -        "max_concurrent_runs": 4,
 -        "name": "[[TARGET] [USERNAME]] my_default_sql_sql_job",
++        "id": "2",
 +        "name": "my_default_sql_sql_job",
          "parameters": [
            {
@@ -55,7 +57,7 @@
          },
          "tasks": [
            {
-@@ -113,7 +110,6 @@
+@@ -113,13 +110,12 @@
            }
          ],
          "trigger": {
@@ -63,6 +65,13 @@
            "periodic": {
              "interval": 1,
              "unit": "DAYS"
+           }
+         },
+-        "url": "[DATABRICKS_URL]/jobs/1?o=900800700600"
++        "url": "[DATABRICKS_URL]/jobs/2?o=900800700600"
+       }
+     }
+   },
 @@ -128,13 +124,14 @@
        "."
      ]

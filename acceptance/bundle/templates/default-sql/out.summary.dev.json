@@ -64,7 +64,7 @@
           ]
         },
         "format": "MULTI_TASK",
-        "id": "0",
+        "id": "1",
         "max_concurrent_runs": 4,
         "name": "[[TARGET] [USERNAME]] my_default_sql_sql_job",
         "parameters": [
@@ -119,7 +119,7 @@
             "unit": "DAYS"
           }
         },
-        "url": "[DATABRICKS_URL]/jobs/0?o=900800700600"
+        "url": "[DATABRICKS_URL]/jobs/1?o=900800700600"
       }
     }
   },
