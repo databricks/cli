@@ -3,6 +3,10 @@ RecordRequests = true
 
 [[Server]]
 Pattern = "GET /custom/endpoint"
+Response.Body = '''should not see this response, latter response takes precedence'''
+
+[[Server]]
+Pattern = "GET /custom/endpoint"
 Response.Body = '''custom
 ---
 response
