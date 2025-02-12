@@ -1,5 +1,13 @@
 # Version changelog
 
+## [Release] Release v0.241.2
+
+This is a bugfix release to address an issue where jobs with tasks with a
+libraries section with PyPI packages could not be deployed.
+
+Bundles:
+ * Revert changes related to basename check for local libraries ([#2345](https://github.com/databricks/cli/pull/2345)).
+
 ## [Release] Release v0.241.1
 
 Bundles:
