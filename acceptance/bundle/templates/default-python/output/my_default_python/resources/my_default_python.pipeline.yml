@@ -4,7 +4,7 @@ resources:
     my_default_python_pipeline:
       name: my_default_python_pipeline
       catalog: main
-      target: my_default_python_${bundle.target}
+      schema: my_default_python_${bundle.target}
       libraries:
         - notebook:
             path: ../src/dlt_pipeline.ipynb
