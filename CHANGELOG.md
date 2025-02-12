@@ -1,5 +1,10 @@
 # Version changelog
 
+## [Release] Release v0.241.1
+
+Bundles:
+ * Fix for regression deploying resources with PyPi and Maven library types ([#2341](https://github.com/databricks/cli/pull/2341)).
+
 ## [Release] Release v0.241.0
 
 Bundles:
