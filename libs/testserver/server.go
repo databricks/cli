@@ -87,7 +87,8 @@ func normalizeResponse(t testutil.TestingT, resp any) encodedResponse {
 
 func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 	if isNil(resp) {
-		return encodedResponse{StatusCode: 404, Body: []byte{}}
+		t.Errorf("Handler must not return nil")
+		return encodedResponse{StatusCode: 500}
 	}
 
 	respBytes, ok := resp.([]byte)
@@ -108,6 +109,14 @@ func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 
 	respStruct, ok := resp.(Response)
 	if ok {
+		if isNil(respStruct.Body) {
+			return encodedResponse{
+				StatusCode: respStruct.StatusCode,
+				Headers:    respStruct.Headers,
+				Body:       []byte{},
+			}
+		}
+
 		bytesVal, isBytes := respStruct.Body.([]byte)
 		if isBytes {
 			return encodedResponse{

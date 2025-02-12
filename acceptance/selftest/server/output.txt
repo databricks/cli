@@ -16,6 +16,6 @@ custom
 response
 
 >>> errcode [CLI] workspace get-status /a/b/c
-Error: Not Found
+Error: Workspace path not found
 
 Exit code: 1

@@ -32,20 +32,27 @@ func NewFakeWorkspace() *FakeWorkspace {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(path string) *workspace.ObjectInfo {
+func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	if s.directories[path] {
-		return &workspace.ObjectInfo{
-			ObjectType: "DIRECTORY",
-			Path:       path,
+		return Response{
+			Body: &workspace.ObjectInfo{
+				ObjectType: "DIRECTORY",
+				Path:       path,
+			},
 		}
 	} else if _, ok := s.files[path]; ok {
-		return &workspace.ObjectInfo{
-			ObjectType: "FILE",
-			Path:       path,
-			Language:   "SCALA",
+		return Response{
+			Body: &workspace.ObjectInfo{
+				ObjectType: "FILE",
+				Path:       path,
+				Language:   "SCALA",
+			},
 		}
 	} else {
-		return nil
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "Workspace path not found"},
+		}
 	}
 }
 
