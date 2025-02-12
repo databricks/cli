@@ -135,8 +135,7 @@ func AddHandlers(server *testserver.Server) {
 			}
 		}
 
-		req.Workspace.JobsCreate(request)
-		return ""
+		return req.Workspace.JobsCreate(request)
 	})
 
 	server.Handle("GET", "/api/2.1/jobs/get", func(req testserver.Request) any {
