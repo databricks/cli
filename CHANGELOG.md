@@ -14,17 +14,12 @@ API Changes:
  * Added `databricks account budget-policy` command group.
  * Added `databricks lakeview-embedded` command group.
  * Added `databricks query-execution` command group.
- * Changed `databricks serving-endpoints http-request` command to type `databricks serving-endpoints http-request` command.
  * Added `databricks account enable-ip-access-lists` command group.
  * Added `databricks redash-config` command group.
 
 OpenAPI commit c72c58f97b950fcb924a90ef164bcb10cfcd5ece (2025-02-03)
 Dependency updates:
  * Upgrade to TF provider 1.65.1 ([#2328](https://github.com/databricks/cli/pull/2328)).
- * Bump golangci/golangci-lint-action from 6.1.1 to 6.2.0 ([#2273](https://github.com/databricks/cli/pull/2273)).
- * Bump astral-sh/ruff-action from 3.0.1 to 3.1.0 ([#2274](https://github.com/databricks/cli/pull/2274)).
- * Bump actions/stale from 9.0.0 to 9.1.0 ([#2275](https://github.com/databricks/cli/pull/2275)).
- * Bump actions/create-github-app-token from 1.11.1 to 1.11.2 ([#2276](https://github.com/databricks/cli/pull/2276)).
  * Bump github.com/hashicorp/terraform-exec from 0.21.0 to 0.22.0 ([#2237](https://github.com/databricks/cli/pull/2237)).
  * Bump github.com/spf13/pflag from 1.0.5 to 1.0.6 ([#2281](https://github.com/databricks/cli/pull/2281)).
  * Bump github.com/databricks/databricks-sdk-go from 0.56.1 to 0.57.0 ([#2321](https://github.com/databricks/cli/pull/2321)).
