@@ -1,0 +1,140 @@
+{
+  "variables": {
+    "catalog": {
+      "default": "main",
+      "description": "The catalog to use",
+      "value": "main"
+    },
+    "schema": {
+      "default": "[USERNAME]",
+      "description": "The schema to use",
+      "value": "[USERNAME]"
+    },
+    "warehouse_id": {
+      "default": "f00dcafe",
+      "description": "The warehouse to use",
+      "value": "f00dcafe"
+    }
+  },
+  "bundle": {
+    "name": "my_default_sql",
+    "target": "[TARGET]",
+    "environment": "[TARGET]",
+    "terraform": {
+      "exec_path": "[TERRAFORM]"
+    },
+    "git": {
+      "bundle_root_path": "."
+    },
+    "mode": "[TARGET]elopment",
+    "deployment": {
+      "lock": {
+        "enabled": false
+      }
+    },
+    "uuid": "[UUID]"
+  },
+  "include": [
+    "resources/my_default_sql_sql.job.yml"
+  ],
+  "workspace": {
+    "host": "[DATABRICKS_URL]",
+    "current_user": {
+      "id": "[USERID]",
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/[TARGET]",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/[TARGET]/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/[TARGET]/resources",
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/[TARGET]/artifacts",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/[TARGET]/state"
+  },
+  "resources": {
+    "jobs": {
+      "my_default_sql_sql_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/[TARGET]/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {
+          "on_failure": [
+            "[USERNAME]"
+          ]
+        },
+        "format": "MULTI_TASK",
+        "id": "0",
+        "max_concurrent_runs": 4,
+        "name": "[[TARGET] [USERNAME]] my_default_sql_sql_job",
+        "parameters": [
+          {
+            "default": "main",
+            "name": "catalog"
+          },
+          {
+            "default": "[USERNAME]",
+            "name": "schema"
+          },
+          {
+            "default": "[TARGET]",
+            "name": "bundle_target"
+          }
+        ],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {
+          "[TARGET]": "[USERNAME]"
+        },
+        "tasks": [
+          {
+            "sql_task": {
+              "file": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/[TARGET]/files/src/orders_raw.sql"
+              },
+              "warehouse_id": "f00dcafe"
+            },
+            "task_key": "orders_raw"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "orders_raw"
+              }
+            ],
+            "sql_task": {
+              "file": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/[TARGET]/files/src/orders_daily.sql"
+              },
+              "warehouse_id": "f00dcafe"
+            },
+            "task_key": "orders_daily"
+          }
+        ],
+        "trigger": {
+          "pause_status": "PAUSED",
+          "periodic": {
+            "interval": 1,
+            "unit": "DAYS"
+          }
+        },
+        "url": "[DATABRICKS_URL]/jobs/0?o=900800700600"
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "presets": {
+    "name_prefix": "[[TARGET] [USERNAME]] ",
+    "pipelines_[TARGET]elopment": true,
+    "trigger_pause_status": "PAUSED",
+    "jobs_max_concurrent_runs": 4,
+    "tags": {
+      "[TARGET]": "[USERNAME]"
+    }
+  }
+}

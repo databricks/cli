@@ -31,12 +31,14 @@ rm .databricks/bundle/prod/deployment.json
 
 printf "\n=== Testing summary, both JSON and regular output"
 
-errcode trace $CLI bundle summary -t dev --debug
+errcode trace $CLI bundle summary -t dev
 
-errcode trace $CLI bundle summary -t dev -o json > ../../out.summary.dev.json
-errcode trace $CLI bundle summary -t prod -o json > ../../out.summary.prod.json
+errcode trace $CLI bundle summary -t dev -o json | replace-target dev > ../../out.summary.dev.json
+errcode trace $CLI bundle summary -t prod -o json | replace-target prod > ../../out.summary.prod.json
 
 errcode trace $CLI bundle summary -t prod
+
+errcode trace diff -u ../../out.summary.dev.json ../../out.summary.prod.json
 
 
 printf "\n=== Testing validate second time, there should be no difference"

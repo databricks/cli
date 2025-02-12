@@ -31,6 +31,7 @@ Workspace:
 
 Validation OK!
 
+=== Testing validate
 >>> [CLI] bundle validate -t dev -o json
 
 >>> [CLI] bundle validate -t prod -o json
@@ -141,24 +142,171 @@ Validation OK!
 
 Exit code: 1
 
+=== Testing deploy
 >>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/dev/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Error: terraform apply: exit status 1
+
+Error: cannot read job: 
+
+  with databricks_job.my_default_sql_sql_job,
+  on bundle.tf.json line 81, in resource.databricks_job.my_default_sql_sql_job:
+  81:       }
+
+
+
+
+Exit code: 1
 
 >>> [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Error: terraform apply: exit status 1
 
-=== Running validate -t dev -o json second time and comparing output to first time - there should be no difference
+Error: cannot read job: 
+
+  with databricks_job.my_default_sql_sql_job,
+  on bundle.tf.json line 80, in resource.databricks_job.my_default_sql_sql_job:
+  80:       }
+
+
+
+
+Exit code: 1
+
+=== Testing summary, both JSON and regular output
+>>> [CLI] bundle summary -t dev
+Name: my_default_sql
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_sql/dev
+Resources:
+  Jobs:
+    my_default_sql_sql_job:
+      Name: [dev [USERNAME]] my_default_sql_sql_job
+      URL:  [DATABRICKS_URL]/jobs/0?o=900800700600
+
+>>> [CLI] bundle summary -t dev -o json
+
+>>> [CLI] bundle summary -t prod -o json
+
+>>> [CLI] bundle summary -t prod
+Name: my_default_sql
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod
+Resources:
+  Jobs:
+    my_default_sql_sql_job:
+      Name: my_default_sql_sql_job
+      URL:  [DATABRICKS_URL]/jobs/0?o=900800700600
+
+>>> diff -u ../../out.summary.dev.json ../../out.summary.prod.json
+--- ../../out.summary.dev.json	[TIMESTAMP]
++++ ../../out.summary.prod.json	[TIMESTAMP]
+@@ -6,9 +6,9 @@
+       "value": "main"
+     },
+     "schema": {
+-      "default": "[USERNAME]",
++      "default": "default",
+       "description": "The schema to use",
+-      "value": "[USERNAME]"
++      "value": "default"
+     },
+     "warehouse_id": {
+       "default": "f00dcafe",
+@@ -26,11 +26,9 @@
+     "git": {
+       "bundle_root_path": "."
+     },
+-    "mode": "[TARGET]elopment",
++    "mode": "[TARGET]uction",
+     "deployment": {
+-      "lock": {
+-        "enabled": false
+-      }
++      "lock": {}
+     },
+     "uuid": "[UUID]"
+   },
+@@ -65,15 +63,14 @@
+         },
+         "format": "MULTI_TASK",
+         "id": "0",
+-        "max_concurrent_runs": 4,
+-        "name": "[[TARGET] [USERNAME]] my_default_sql_sql_job",
++        "name": "my_default_sql_sql_job",
+         "parameters": [
+           {
+             "default": "main",
+             "name": "catalog"
+           },
+           {
+-            "default": "[USERNAME]",
++            "default": "default",
+             "name": "schema"
+           },
+           {
+@@ -84,8 +81,8 @@
+         "queue": {
+           "enabled": true
+         },
+-        "tags": {
+-          "[TARGET]": "[USERNAME]"
++        "run_as": {
++          "user_name": "[USERNAME]"
+         },
+         "tasks": [
+           {
+@@ -113,7 +110,6 @@
+           }
+         ],
+         "trigger": {
+-          "pause_status": "PAUSED",
+           "periodic": {
+             "interval": 1,
+             "unit": "DAYS"
+@@ -128,13 +124,14 @@
+       "."
+     ]
+   },
+-  "presets": {
+-    "name_prefix": "[[TARGET] [USERNAME]] ",
+-    "pipelines_[TARGET]elopment": true,
+-    "trigger_pause_status": "PAUSED",
+-    "jobs_max_concurrent_runs": 4,
+-    "tags": {
+-      "[TARGET]": "[USERNAME]"
++  "run_as": {
++    "user_name": "[USERNAME]"
++  },
++  "presets": {},
++  "permissions": [
++    {
++      "level": "CAN_MANAGE",
++      "user_name": "[USERNAME]"
+     }
+-  }
++  ]
+ }
+
+Exit code: 1
+
+=== Testing validate second time, there should be no difference
 >>> [CLI] bundle validate -t dev -o json
 
 >>> diff -u ../../out.validate.dev.json ../../out.validate.2nd.dev.json
 
-=== Running validate -t prod -o json second time and comparing output to first time - there should be no difference
 >>> [CLI] bundle validate -t prod -o json
 
 >>> diff -u ../../out.validate.prod.json ../../out.validate.2nd.prod.json
