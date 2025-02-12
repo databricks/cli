@@ -30,3 +30,69 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod
 
 Validation OK!
+
+=== Testing validate
+>>> [CLI] bundle validate -t dev -o json
+
+>>> [CLI] bundle validate -t prod -o json
+
+>>> diff -u ../../out.validate.dev.json ../../out.validate.prod.json
+
+Exit code: 1
+
+=== Testing deploy
+>>> [CLI] bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Testing summary, both JSON and regular output
+>>> [CLI] bundle summary -t dev
+Name: my_default_sql
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_sql/dev
+Resources:
+  Jobs:
+    my_default_sql_sql_job:
+      Name: [dev [USERNAME]] my_default_sql_sql_job
+      URL:  [DATABRICKS_URL]/jobs/1?o=900800700600
+
+>>> [CLI] bundle summary -t dev -o json
+
+>>> [CLI] bundle summary -t prod -o json
+
+>>> [CLI] bundle summary -t prod
+Name: my_default_sql
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod
+Resources:
+  Jobs:
+    my_default_sql_sql_job:
+      Name: my_default_sql_sql_job
+      URL:  [DATABRICKS_URL]/jobs/2?o=900800700600
+
+>>> diff -u ../../out.summary.dev.json ../../out.summary.prod.json
+
+Exit code: 1
+
+=== Testing validate second time, there should be no difference
+>>> [CLI] bundle validate -t dev -o json
+
+>>> diff -u ../../out.validate.dev.json ../../out.validate.2nd.dev.json
+
+>>> [CLI] bundle validate -t prod -o json
+
+>>> diff -u ../../out.validate.prod.json ../../out.validate.2nd.prod.json

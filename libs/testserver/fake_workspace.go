@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -76,11 +77,20 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+func (s *FakeWorkspace) WorkspaceFilesImportFile(p string, body []byte) {
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
 	}
-	s.files[path] = body
+	s.files[p] = body
+
+	for {
+		p = path.Dir(p)
+		if p == "" || p == "/" {
+			break
+		}
+
+		s.directories[p] = true
+	}
 }
 
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {

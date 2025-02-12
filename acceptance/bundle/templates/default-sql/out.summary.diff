@@ -1,0 +1,97 @@
+--- ../../out.summary.dev.json	[TIMESTAMP]
++++ ../../out.summary.prod.json	[TIMESTAMP]
+@@ -6,9 +6,9 @@
+       "value": "main"
+     },
+     "schema": {
+-      "default": "[USERNAME]",
++      "default": "default",
+       "description": "The schema to use",
+-      "value": "[USERNAME]"
++      "value": "default"
+     },
+     "warehouse_id": {
+       "default": "f00dcafe",
+@@ -26,11 +26,9 @@
+     "git": {
+       "bundle_root_path": "."
+     },
+-    "mode": "[TARGET]elopment",
++    "mode": "[TARGET]uction",
+     "deployment": {
+-      "lock": {
+-        "enabled": false
+-      }
++      "lock": {}
+     },
+     "uuid": "[UUID]"
+   },
+@@ -64,16 +62,15 @@
+           ]
+         },
+         "format": "MULTI_TASK",
+-        "id": "1",
+-        "max_concurrent_runs": 4,
+-        "name": "[[TARGET] [USERNAME]] my_default_sql_sql_job",
++        "id": "2",
++        "name": "my_default_sql_sql_job",
+         "parameters": [
+           {
+             "default": "main",
+             "name": "catalog"
+           },
+           {
+-            "default": "[USERNAME]",
++            "default": "default",
+             "name": "schema"
+           },
+           {
+@@ -84,8 +81,8 @@
+         "queue": {
+           "enabled": true
+         },
+-        "tags": {
+-          "[TARGET]": "[USERNAME]"
++        "run_as": {
++          "user_name": "[USERNAME]"
+         },
+         "tasks": [
+           {
+@@ -113,13 +110,12 @@
+           }
+         ],
+         "trigger": {
+-          "pause_status": "PAUSED",
+           "periodic": {
+             "interval": 1,
+             "unit": "DAYS"
+           }
+         },
+-        "url": "[DATABRICKS_URL]/jobs/1?o=900800700600"
++        "url": "[DATABRICKS_URL]/jobs/2?o=900800700600"
+       }
+     }
+   },
+@@ -128,13 +124,14 @@
+       "."
+     ]
+   },
+-  "presets": {
+-    "name_prefix": "[[TARGET] [USERNAME]] ",
+-    "pipelines_[TARGET]elopment": true,
+-    "trigger_pause_status": "PAUSED",
+-    "jobs_max_concurrent_runs": 4,
+-    "tags": {
+-      "[TARGET]": "[USERNAME]"
++  "run_as": {
++    "user_name": "[USERNAME]"
++  },
++  "presets": {},
++  "permissions": [
++    {
++      "level": "CAN_MANAGE",
++      "user_name": "[USERNAME]"
+     }
+-  }
++  ]
+ }

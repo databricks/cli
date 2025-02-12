@@ -63,7 +63,10 @@ func AddHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
-		return testUser
+		return testserver.Response{
+			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
+			Body:    testUser,
+		}
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
@@ -105,6 +108,8 @@ func AddHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
 		return catalog.MetastoreAssignment{
 			DefaultCatalogName: "main",
+			MetastoreId:        "45f8dcfe-1914-47bc-b00e-1a5b9fea2cfc",
+			WorkspaceId:        100200300400,
 		}
 	})
 
@@ -124,6 +129,10 @@ func AddHandlers(server *testserver.Server) {
 				},
 			},
 		}
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/directories/{objectId}", func(r testserver.Request) any {
+		return ""
 	})
 
 	server.Handle("POST", "/api/2.1/jobs/create", func(req testserver.Request) any {

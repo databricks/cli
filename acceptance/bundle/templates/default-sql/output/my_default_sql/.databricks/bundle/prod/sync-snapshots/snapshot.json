@@ -1,0 +1,41 @@
+{
+  "version": "v1",
+  "host": "[DATABRICKS_URL]",
+  "remote_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod/files",
+  "last_modified_times": {
+    ".gitignore": "[TIMESTAMP]",
+    ".vscode/extensions.json": "[TIMESTAMP]",
+    ".vscode/settings.json": "[TIMESTAMP]",
+    "README.md": "[TIMESTAMP]",
+    "databricks.yml": "[TIMESTAMP]",
+    "resources/my_default_sql_sql.job.yml": "[TIMESTAMP]",
+    "scratch/README.md": "[TIMESTAMP]",
+    "scratch/exploration.ipynb": "[TIMESTAMP]",
+    "src/orders_daily.sql": "[TIMESTAMP]",
+    "src/orders_raw.sql": "[TIMESTAMP]"
+  },
+  "local_to_remote_names": {
+    ".gitignore": ".gitignore",
+    ".vscode/extensions.json": ".vscode/extensions.json",
+    ".vscode/settings.json": ".vscode/settings.json",
+    "README.md": "README.md",
+    "databricks.yml": "databricks.yml",
+    "resources/my_default_sql_sql.job.yml": "resources/my_default_sql_sql.job.yml",
+    "scratch/README.md": "scratch/README.md",
+    "scratch/exploration.ipynb": "scratch/exploration",
+    "src/orders_daily.sql": "src/orders_daily.sql",
+    "src/orders_raw.sql": "src/orders_raw.sql"
+  },
+  "remote_to_local_names": {
+    ".gitignore": ".gitignore",
+    ".vscode/extensions.json": ".vscode/extensions.json",
+    ".vscode/settings.json": ".vscode/settings.json",
+    "README.md": "README.md",
+    "databricks.yml": "databricks.yml",
+    "resources/my_default_sql_sql.job.yml": "resources/my_default_sql_sql.job.yml",
+    "scratch/README.md": "scratch/README.md",
+    "scratch/exploration": "scratch/exploration.ipynb",
+    "src/orders_daily.sql": "src/orders_daily.sql",
+    "src/orders_raw.sql": "src/orders_raw.sql"
+  }
+}
