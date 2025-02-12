@@ -10,6 +10,7 @@ import (
 	"dario.cat/mergo"
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,10 +57,7 @@ type ServerStub struct {
 	Pattern string
 
 	// The response body to return.
-	Response struct {
-		Body       string
-		StatusCode int
-	}
+	Response testserver.Response
 }
 
 // FindConfigs finds all the config relevant for this test,
