@@ -1,2 +1,0 @@
-trace errcode $CLI bundle deploy
-rm -rf whl1 whl2
