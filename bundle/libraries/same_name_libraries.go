@@ -31,13 +31,18 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 		var err error
 		for _, pattern := range patterns {
 			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
-				libPath := lv.MustString()
+				libFullPath, ok := lv.AsString()
+				// If the value is not a string, skip the check because it's not whl or jar type which defines the library
+				// as a string versus PyPi or Maven which defines the library as a map.
+				if !ok {
+					return v, nil
+				}
+
 				// If not local library, skip the check
-				if !IsLibraryLocal(libPath) {
+				if !IsLibraryLocal(libFullPath) {
 					return lv, nil
 				}
 
-				libFullPath := lv.MustString()
 				lib := filepath.Base(libFullPath)
 				// If the same basename was seen already but full path is different
 				// then it's a duplicate. Add the location to the location list.
