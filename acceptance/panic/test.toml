@@ -1,0 +1,3 @@
+[[Repls]]
+Old = "runtime/debug.Stack()\n.*"
+New = "runtime/debug.Stack()\n<stack-trace>"

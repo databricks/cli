@@ -109,7 +109,7 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 		version := build.GetInfo().Version
 		trace := debug.Stack()
 
-		log.Errorf(ctx, `The Databricks CLI unexpectedly panicked. This should not happen.
+		fmt.Fprintf(cmd.ErrOrStderr(), `The Databricks CLI unexpectedly panicked.
 Please report this issue to Databricks in the form of a GitHub issue at:
 https://github.com/databricks/cli
 

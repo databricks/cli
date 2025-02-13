@@ -75,5 +75,13 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 
+	cli.AddCommand(&cobra.Command{
+		Use: "panic",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			panic("The databricks panic command always panics")
+		},
+		Hidden: true,
+	})
+
 	return cli
 }
