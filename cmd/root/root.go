@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/databricks/cli/internal/build"
@@ -97,7 +98,28 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(ctx context.Context, cmd *cobra.Command) error {
-	// TODO: deferred panic recovery
+	defer func() {
+		r := recover()
+
+		// No panic. Return normally.
+		if r == nil {
+			return
+		}
+
+		version := build.GetInfo().Version
+		trace := debug.Stack()
+
+		log.Errorf(ctx, `The Databricks CLI unexpectedly panicked. This should not happen.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: %s
+
+Panic Payload: %v
+
+Stack Trace:
+%s`, version, r, string(trace))
+	}()
 
 	// Run the command
 	cmd, err := cmd.ExecuteContextC(ctx)
