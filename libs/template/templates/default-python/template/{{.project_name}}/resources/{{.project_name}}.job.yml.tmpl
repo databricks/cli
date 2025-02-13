@@ -64,14 +64,27 @@ resources:
           python_wheel_task:
             package_name: {{.project_name}}
             entry_point: main
+          {{- if not $with_serverless }}
           libraries:
             # By default we just include the .whl file generated for the {{.project_name}} package.
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../dist/*.whl
+          {{- end -}}
 {{else}}
       {{- end -}}
-      {{- if not $with_serverless}}
+      {{- if $with_serverless}}
+      # A list of task execution environment specifications that can be referenced by tasks of this job.
+      environments:
+        - environment_key: default
+
+          # Full documentation of this spec can be found at:
+          # https://docs.databricks.com/api/workspace/jobs/create#environments-spec
+          spec:
+            client: "1"
+            dependencies:
+              - ../dist/*.whl
+{{ else }}
       job_clusters:
         - job_cluster_key: job_cluster
           new_cluster:
