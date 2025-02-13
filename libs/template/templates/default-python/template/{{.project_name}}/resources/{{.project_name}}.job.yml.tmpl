@@ -69,10 +69,9 @@ resources:
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../dist/*.whl
-
-      {{else}}
-      {{end -}}
-      {{- if not $with_serverless -}}
+{{else}}
+      {{- end -}}
+      {{- if not $with_serverless}}
       job_clusters:
         - job_cluster_key: job_cluster
           new_cluster:
@@ -81,4 +80,4 @@ resources:
             autoscale:
                 min_workers: 1
                 max_workers: 4
-      {{- end}}
+{{end -}}
