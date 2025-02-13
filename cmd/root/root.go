@@ -97,7 +97,7 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, cmd *cobra.Command) error {
+func Execute(ctx context.Context, cmd *cobra.Command) (err error) {
 	defer func() {
 		r := recover()
 
@@ -108,6 +108,9 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 
 		version := build.GetInfo().Version
 		trace := debug.Stack()
+
+		// Set the error so that the CLI exits with a non-zero exit code.
+		err = fmt.Errorf("panic: %v", r)
 
 		fmt.Fprintf(cmd.ErrOrStderr(), `The Databricks CLI unexpectedly panicked.
 Please report this issue to Databricks in the form of a GitHub issue at:
@@ -122,7 +125,7 @@ Stack Trace:
 	}()
 
 	// Run the command
-	cmd, err := cmd.ExecuteContextC(ctx)
+	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
 		// If cmdio logger initialization succeeds, then this function logs with the
 		// initialized cmdio logger, otherwise with the default cmdio logger

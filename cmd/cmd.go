@@ -75,6 +75,8 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 
+	// Add hidden panic command. This command is meant to be used in tests to
+	// ensure that the CLI exists gracefully when a panic occurs.
 	cli.AddCommand(&cobra.Command{
 		Use: "panic",
 		RunE: func(cmd *cobra.Command, args []string) error {

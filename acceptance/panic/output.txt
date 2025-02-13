@@ -11,3 +11,5 @@ Panic Payload: The databricks panic command always panics
 Stack Trace:
 goroutine 1 [running]:
 runtime/debug.Stack()
+
+Exit code: 1
