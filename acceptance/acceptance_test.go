@@ -56,6 +56,7 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
+	ReplsFile        = "repls.json"
 	MaxFileSize      = 100_000
 )
 
@@ -63,6 +64,10 @@ var Scripts = map[string]bool{
 	EntryPointScript: true,
 	CleanupScript:    true,
 	PrepareScript:    true,
+}
+
+var Ignored = map[string]bool{
+	ReplsFile: true,
 }
 
 func TestAccept(t *testing.T) {
@@ -151,6 +156,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
+
+	repls.SetPath(cwd, "[TESTROOT]")
 
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
@@ -310,6 +317,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// User replacements come last:
 	repls.Repls = append(repls.Repls, config.Repls...)
 
+	if config.SaveRepls {
+		replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
+		require.NoError(t, err)
+		testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
+	}
+
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
@@ -319,6 +332,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
+
+	absDir, err := filepath.Abs(dir)
+	require.NoError(t, err)
+	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
@@ -366,6 +383,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			continue
 		}
 		if _, ok := outputs[relPath]; ok {
+			continue
+		}
+		if _, ok := Ignored[relPath]; ok {
 			continue
 		}
 		unexpected = append(unexpected, relPath)
