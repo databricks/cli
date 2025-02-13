@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""This script implements "diff -r -U2 dir1 dir2" but it applies replacements from repls.json to files found in dir2."""
+"""This script implements "diff -r -U2 dir1 dir2" but applies replacements first"""
 
 import sys
-import os
 import difflib
 import json
 import re
+from pathlib import Path
 
 
 def replaceAll(patterns, s):
@@ -16,8 +16,9 @@ def replaceAll(patterns, s):
 
 def main():
     d1, d2 = sys.argv[1:]
+    d1, d2 = Path(d1), Path(d2)
 
-    with open("repls.json") as f:
+    with open("repls.json") as f:  # Must have 'SaveRepls = true' in test.toml
         repls = json.load(f)
 
     patterns = []
@@ -28,33 +29,26 @@ def main():
         except re.error as e:
             print(f"Regex error for pattern {r}: {e}", file=sys.stderr)
 
-    files1 = []
-    for root, dirs, fs in os.walk(d1):
-        for f in fs:
-            files1.append(os.path.relpath(os.path.join(root, f), d1))
-
-    files2 = []
-    for root, dirs, fs in os.walk(d2):
-        for f in fs:
-            files2.append(os.path.relpath(os.path.join(root, f), d2))
+    files1 = [str(p.relative_to(d1)) for p in d1.rglob("*") if p.is_file()]
+    files2 = [str(p.relative_to(d2)) for p in d2.rglob("*") if p.is_file()]
 
     set1 = set(files1)
     set2 = set(files2)
 
     for f in sorted(set1 | set2):
-        p1 = os.path.join(d1, f)
-        p2 = os.path.join(d2, f)
+        p1 = d1 / f
+        p2 = d2 / f
         if f not in set2:
             print(f"Only in {d1}: {f}")
         elif f not in set1:
             print(f"Only in {d2}: {f}")
         else:
-            a = [replaceAll(patterns, x) for x in open(p1).readlines()]
-            b = [replaceAll(patterns, x) for x in open(p2).readlines()]
+            a = [replaceAll(patterns, x) for x in p1.read_text().splitlines(True)]
+            b = [replaceAll(patterns, x) for x in p2.read_text().splitlines(True)]
             if a != b:
-                p1 = p1.replace("\\", "/")
-                p2 = p2.replace("\\", "/")
-                for line in difflib.unified_diff(a, b, p1, p2, "", "", 2):
+                p1_str = p1.as_posix()
+                p2_str = p2.as_posix()
+                for line in difflib.unified_diff(a, b, p1_str, p2_str, "", "", 2):
                     print(line, end="")
 
 
