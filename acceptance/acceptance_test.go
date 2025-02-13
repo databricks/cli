@@ -402,8 +402,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
-		t.Errorf("Missing output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
-		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		t.Errorf("Missing output file: %s", relPath)
 		if testdiff.OverwriteMode {
 			t.Logf("Removing output file: %s", relPath)
 			require.NoError(t, os.Remove(pathRef))
