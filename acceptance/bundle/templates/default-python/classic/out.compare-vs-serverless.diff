@@ -37,3 +37,11 @@
 +            autoscale:
 +                min_workers: 1
 +                max_workers: 4
+--- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/my_default_python.pipeline.yml
++++ output/my_default_python/resources/my_default_python.pipeline.yml
+@@ -6,5 +6,4 @@
+       catalog: main
+       target: my_default_python_${bundle.target}
+-      serverless: true
+       libraries:
+         - notebook:
