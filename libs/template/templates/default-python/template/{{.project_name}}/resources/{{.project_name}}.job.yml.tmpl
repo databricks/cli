@@ -70,10 +70,10 @@ resources:
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../dist/*.whl
-          {{- end -}}
+{{- end -}}
 {{else}}
-      {{- end -}}
-      {{- if $with_serverless}}
+{{- end}}
+{{if $with_serverless}}
       # A list of task execution environment specifications that can be referenced by tasks of this job.
       environments:
         - environment_key: default

@@ -38,6 +38,7 @@ resources:
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../dist/*.whl
+
       job_clusters:
         - job_cluster_key: job_cluster
           new_cluster:
