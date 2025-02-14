@@ -32,7 +32,7 @@
         },
         "use_serverless": {
             "type": "string",
-            "default": "auto",
+            "default": "no",
             "enum": ["yes", "no", "auto"],
             "description": "Use serverless compute. If auto, it will be enabled unless it is disabled on workspace level.",
             "order": 5,
