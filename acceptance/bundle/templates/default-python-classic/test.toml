@@ -1,7 +1,0 @@
-# At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
-LocalOnly = true
-SaveRepls = true
-
-[[Server]]
-Pattern = "GET /api/2.0/settings-api/workspace/{workspaceId}/serverless_job_nb"
-Response.Body = '{}'
