@@ -222,5 +222,16 @@ func isServerlessSupported(ctx context.Context, w *databricks.WorkspaceClient) b
 		log.Warnf(ctx, "Failed to detect if serverless is supported: %s failed: %s", apiEndpoint, err)
 		return defaultServerlessSupported
 	}
-	return response.Setting.Value.PreviewEnablementVal.Enabled
+
+	log.Debugf(ctx, "Called %s: %#v", apiEndpoint, response)
+
+	isSupported := response.Setting.Value.PreviewEnablementVal.Enabled
+
+	if isSupported {
+		log.Infof(ctx, "Auto-detected that serverless is enabled for your workspace %d", workspaceId)
+	} else {
+		log.Warnf(ctx, "Auto-detected that serverless is not enabled for your workspace %d", workspaceId)
+	}
+
+	return isSupported
 }
