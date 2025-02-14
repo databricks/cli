@@ -1,0 +1,5 @@
+SaveRepls = true
+
+[[Server]]
+Pattern = "GET /api/2.0/settings-api/workspace/{workspaceId}/serverless_job_nb"
+Response.StatusCode = 500

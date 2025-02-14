@@ -1,0 +1,5 @@
+SaveRepls = true
+
+[[Server]]
+Pattern = "GET /api/2.0/settings-api/workspace/{workspaceId}/serverless_job_nb"
+Response.Body = '''{"setting": {"value": {"preview_enablement_val": {"enabled": true}}}}'''
