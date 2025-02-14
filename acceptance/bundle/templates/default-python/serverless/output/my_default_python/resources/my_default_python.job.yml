@@ -32,6 +32,7 @@ resources:
           python_wheel_task:
             package_name: my_default_python
             entry_point: main
+
       # A list of task execution environment specifications that can be referenced by tasks of this job.
       environments:
         - environment_key: default
