@@ -1,6 +1,6 @@
 trace $CLI bundle init default-python --config-file ./input.json --output-dir output
 mv output/my_default_python/.gitignore output/my_default_python/out.gitignore
 
-# Could not check if serverless is enabled, same output as classic:
-trace diff.py $TESTDIR/../classic/output output/
+# If serverless is "auto" and there was an error reaching settings-api, we should get the same output as 'classic'
+diff.py $TESTDIR/../classic/output output/
 rm -fr output

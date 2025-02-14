@@ -2,6 +2,6 @@ trace $CLI bundle init default-python --config-file ./input.json --output-dir ou
 mv output/my_default_python/.gitignore output/my_default_python/out.gitignore
 
 # serverless is disabled, same output as for classic
-trace diff.py $TESTDIR/../classic/output output/
+diff.py $TESTDIR/../classic/output output/
 
 rm -fr output
