@@ -30,7 +30,7 @@
             "description": "Include a stub (sample) Python package in '{{.project_name}}{{path_separator}}src'",
             "order": 4
         },
-        "use_serverless": {
+        "serverless": {
             "type": "string",
             "default": "no",
             "enum": ["yes", "no", "auto"],
