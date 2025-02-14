@@ -56,8 +56,9 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
-	ReplsFile        = "repls.json"
 	MaxFileSize      = 100_000
+	// Filename to save replacements if SaveRepls is set to true (used by diff.py)
+	ReplsFile = "repls.json"
 )
 
 var Scripts = map[string]bool{
