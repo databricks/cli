@@ -27,9 +27,6 @@ type TestConfig struct {
 	// If true, do not run this test against cloud environment
 	LocalOnly bool
 
-	// if true, save file repls.json with all the replacemnts
-	SaveRepls bool
-
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement

@@ -18,7 +18,7 @@ def main():
     d1, d2 = sys.argv[1:]
     d1, d2 = Path(d1), Path(d2)
 
-    with open("repls.json") as f:  # Must have 'SaveRepls = true' in test.toml
+    with open("repls.json") as f:
         repls = json.load(f)
 
     patterns = []

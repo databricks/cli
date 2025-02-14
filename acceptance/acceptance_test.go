@@ -57,7 +57,7 @@ const (
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 100_000
-	// Filename to save replacements if SaveRepls is set to true (used by diff.py)
+	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
 )
 
@@ -318,11 +318,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// User replacements come last:
 	repls.Repls = append(repls.Repls, config.Repls...)
 
-	if config.SaveRepls {
-		replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
-		require.NoError(t, err)
-		testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
-	}
+	// Save replacements to temp test directory so that it can be read by diff.py
+	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
+	require.NoError(t, err)
+	testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
