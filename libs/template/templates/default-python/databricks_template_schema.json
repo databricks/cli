@@ -29,6 +29,14 @@
             "enum": ["yes", "no"],
             "description": "Include a stub (sample) Python package in '{{.project_name}}{{path_separator}}src'",
             "order": 4
+        },
+        "serverless": {
+            "type": "string",
+            "default": "no",
+            "enum": ["yes", "no", "auto"],
+            "description": "Use serverless compute. If auto, it will be enabled unless it is disabled on workspace level.",
+            "order": 5,
+            "skip_prompt_if": {}
         }
     },
     "success_message": "Workspace to use (auto-detected, edit in '{{.project_name}}/databricks.yml'): {{workspace_host}}\n\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
