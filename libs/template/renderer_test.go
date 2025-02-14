@@ -116,13 +116,13 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 		for _, includeDlt := range options {
 			for _, includePython := range options {
 				for _, isServicePrincipal := range []bool{true, false} {
-					for _, useServerless := range options {
+					for _, serverless := range options {
 						config := map[string]any{
 							"project_name":     "my_project",
 							"include_notebook": includeNotebook,
 							"include_dlt":      includeDlt,
 							"include_python":   includePython,
-							"use_serverless":   useServerless,
+							"serverless":       serverless,
 						}
 						tempDir := t.TempDir()
 						assertBuiltinTemplateValid(t, "default-python", config, "dev", isServicePrincipal, build, tempDir)
@@ -138,7 +138,7 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 		"include_notebook": "yes",
 		"include_dlt":      "yes",
 		"include_python":   "yes",
-		"use_serverless":   "yes",
+		"serverless":       "yes",
 	}
 	isServicePrincipal = false
 	build = true
