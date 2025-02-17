@@ -4,3 +4,5 @@ $CLI selftest parent &> out.parentchild.txt
 
 echo "waiting for child process to finish"
 wait_pid $(cat ./child.pid)
+
+rm ./child.pid

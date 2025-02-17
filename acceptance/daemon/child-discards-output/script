@@ -1,0 +1,9 @@
+$CLI selftest parent
+
+echo "
+wait for child process to finish"
+wait_pid $(cat ./child.pid)
+
+echo "the child process should not have written any output."
+
+rm ./child.pid

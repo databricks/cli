@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -12,11 +11,7 @@ import (
 const DatabricksCliParentPid = "DATABRICKS_CLI_PARENT_PID"
 
 type Daemon struct {
-	// TODO: remove this.
-	ctx context.Context
-
 	// If provided, the child process will create a pid file at this path.
-	// TODO: Can we remove this?
 	PidFilePath string
 
 	// Environment variables to set in the child process.
@@ -48,7 +43,6 @@ func (d *Daemon) Start() error {
 	d.cmd.SysProcAttr = sysProcAttr()
 
 	// By default redirect stdout and stderr to /dev/null.
-	// TODO: Test that by default stdout and stderr do not leak to the parent process.
 	d.cmd.Stdout = nil
 	d.cmd.Stderr = nil
 
@@ -101,7 +95,8 @@ func (d *Daemon) Release() error {
 		return nil
 	}
 
-	// This does not seem to be strictly necessary, but the docs recommend
-	// adding it if Wait is not called. Thus we add it here to be safe.
+	// The docs recommend calling Release if Wait is not called. This does not
+	// seem to be necessary since the functionality works without it. However, we
+	// we add it just to be safe.
 	return d.cmd.Process.Release()
 }

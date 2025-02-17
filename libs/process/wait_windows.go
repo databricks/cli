@@ -17,7 +17,7 @@ func waitForPid(pid int) error {
 		uint32(pid),
 	)
 	if errors.Is(err, windows.ERROR_INVALID_PARAMETER) {
-		return ErrProcessDoesNotExist{Pid: pid}
+		return ErrProcessNotFound{Pid: pid}
 	}
 	if err != nil {
 		return fmt.Errorf("OpenProcess failed: %v", err)

@@ -1,0 +1,9 @@
+Parent process has started
+Started  the child process
+Provided input: Hello from the other side
+Released the child process
+Parent process is exiting
+
+wait for child process to finish
+Process has ended
+the child process should not have written any output.
