@@ -77,9 +77,5 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
 
-	cli.AddCommand(&cobra.Command{
-		Use: "stream-",
-	})
-
 	return cli
 }

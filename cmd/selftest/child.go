@@ -15,12 +15,7 @@ import (
 // TODO: Look into the release function and ensure whether I need to call it.
 const ()
 
-// TODO CONTINUE: Write command that wait for each other via the PID.
-// Ensure to check the process name as the PID otherwise can be reused pretty
-// quick.
-//
-// Implement dummy child and parent commands, and write acceptance tests to account
-// for all variations.
+// TODO CONTINUE:
 //
 // Ensure that a robust timeout mechanism exists for the telemetry process. We
 // do not want the daemons to hang indefinitely. Can this also be tested?
@@ -30,9 +25,6 @@ const ()
 // The other set of tests will assert on the functional behaviour, that the
 // parent and child process are indeed indpenedent, and that the child process
 // does not block the parent process.
-//
-// All this requires some PID handler which get the process information based on
-// the PID and some "name", since PIDs can be reused, being a source of flakyness.
 //
 // TODO: Make sure to acknowledge the risk of failing when people try to delete
 // the binary in windows.
