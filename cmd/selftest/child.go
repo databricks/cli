@@ -12,9 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: Look into the release function and ensure whether I need to call it.
-const ()
-
 // TODO CONTINUE:
 //
 // Ensure that a robust timeout mechanism exists for the telemetry process. We
