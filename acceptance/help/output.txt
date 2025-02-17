@@ -129,7 +129,6 @@ Additional Commands:
   configure                              Configure authentication
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
-  selftest                               Non functional CLI commands that are useful for testing
   version                                Retrieve information about the current version of this CLI
 
 Flags:
