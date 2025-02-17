@@ -17,8 +17,10 @@ type Daemon struct {
 	// Environment variables to set in the child process.
 	Env []string
 
-	// Arguments to pass to the child process. The main executable is always the CLI
-	// binary itself.
+	// Path to executable to run. If empty, the current executable is used.
+	Executable string
+
+	// Arguments to pass to the child process.
 	Args []string
 
 	// Log file to write the child process's output to.
@@ -34,7 +36,12 @@ func (d *Daemon) Start() error {
 		return err
 	}
 
-	d.cmd = exec.Command(cli, d.Args...)
+	executable := d.Executable
+	if executable == "" {
+		executable = cli
+	}
+
+	d.cmd = exec.Command(executable, d.Args...)
 
 	// Set environment variable so that the child process know's it's parent's PID.
 	d.Env = append(d.Env, fmt.Sprintf("%s=%d", DatabricksCliParentPid, os.Getpid()))

@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TODO: Manually test that indeed latency is not added.
 func newChildCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "child",
