@@ -12,22 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO CONTINUE:
-//
-// Ensure that a robust timeout mechanism exists for the telemetry process. We
-// do not want the daemons to hang indefinitely. Can this also be tested?
-//
-// TODO: One set of tests will be asserting that the tests have the right
-// properties. A thread on my personal slack account will help with that.
-// The other set of tests will assert on the functional behaviour, that the
-// parent and child process are indeed indpenedent, and that the child process
-// does not block the parent process.
-//
-// TODO: Make sure to acknowledge the risk of failing when people try to delete
-// the binary in windows.
-//
-// TODO: Ensure that child stdout / stderr are not sent to the parent process.
-
 func newChildCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "child",
