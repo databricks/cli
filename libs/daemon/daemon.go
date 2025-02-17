@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -8,15 +9,25 @@ import (
 	"strconv"
 )
 
+const DatabricksCliParentPid = "DATABRICKS_CLI_PARENT_PID"
+
 type Daemon struct {
+	// TODO: remove this.
+	ctx context.Context
+
 	// If provided, the child process will create a pid file at this path.
+	// TODO: Can we remove this?
 	PidFilePath string
 
 	// Environment variables to set in the child process.
 	Env []string
 
-	// Arguments to pass to the child process.
+	// Arguments to pass to the child process. The main executable is always the CLI
+	// binary itself.
 	Args []string
+
+	// Log file to write the child process's output to.
+	LogFile string
 
 	cmd   *exec.Cmd
 	stdin io.WriteCloser
@@ -29,8 +40,29 @@ func (d *Daemon) Start() error {
 	}
 
 	d.cmd = exec.Command(cli, d.Args...)
+
+	// Set environment variable so that the child process know's it's parent's PID.
+	d.Env = append(d.Env, fmt.Sprintf("%s=%d", DatabricksCliParentPid, os.Getpid()))
 	d.cmd.Env = d.Env
+
 	d.cmd.SysProcAttr = sysProcAttr()
+
+	// By default redirect stdout and stderr to /dev/null.
+	// TODO: Test that by default stdout and stderr do not leak to the parent process.
+	d.cmd.Stdout = nil
+	d.cmd.Stderr = nil
+
+	// If a log file is provided, redirect stdout and stderr to the log file.
+	if d.LogFile != "" {
+		f, err := os.OpenFile(d.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err != nil {
+			return fmt.Errorf("failed to open log file: %w", err)
+		}
+		defer f.Close()
+
+		d.cmd.Stdout = f
+		d.cmd.Stderr = f
+	}
 
 	d.stdin, err = d.cmd.StdinPipe()
 	if err != nil {
@@ -52,14 +84,12 @@ func (d *Daemon) Start() error {
 	return nil
 }
 
-func (d *Daemon) Release() error {
-	if d.PidFilePath != "" {
-		err := os.Remove(d.PidFilePath)
-		if err != nil {
-			return fmt.Errorf("failed to remove pid file: %w", err)
-		}
-	}
+func (d *Daemon) WriteInput(b []byte) error {
+	_, err := d.stdin.Write(b)
+	return err
+}
 
+func (d *Daemon) Release() error {
 	if d.stdin != nil {
 		err := d.stdin.Close()
 		if err != nil {
@@ -71,5 +101,7 @@ func (d *Daemon) Release() error {
 		return nil
 	}
 
+	// This does not seem to be strictly necessary, but the docs recommend
+	// adding it if Wait is not called. Thus we add it here to be safe.
 	return d.cmd.Process.Release()
 }

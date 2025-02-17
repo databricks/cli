@@ -10,6 +10,7 @@ func New() *cobra.Command {
 		Short: "Non functional CLI commands that are useful for testing",
 	}
 
-	cmd.AddCommand(newPrintStdin())
+	cmd.AddCommand(newChildCommand())
+	cmd.AddCommand(newParentCommand())
 	return cmd
 }

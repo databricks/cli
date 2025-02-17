@@ -77,6 +77,7 @@ func TestInprocessMode(t *testing.T) {
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
+// TODO: Maybe add flag to mark tests that cannot be completely debugged in test.toml.
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()

@@ -1,0 +1,2 @@
+waiting for child process to finish
+Process has ended

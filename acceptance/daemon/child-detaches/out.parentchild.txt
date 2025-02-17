@@ -1,0 +1,13 @@
+Parent process has started
+Started  the child process
+Provided input: Hello from the other side
+Released the child process
+Parent process is exiting
+
+====================
+
+All output from this point on is from the child process
+Parent process has exited
+Received input from parent process:
+Hello from the other side
+

@@ -129,6 +129,7 @@ Additional Commands:
   configure                              Configure authentication
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
+  selftest                               Non functional CLI commands that are useful for testing
   version                                Retrieve information about the current version of this CLI
 
 Flags:
@@ -138,5 +139,8 @@ Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
   -v, --version          version for databricks
+
+Additional help topics:
+  databricks stream-                                
 
 Use "databricks [command] --help" for more information about a command.
