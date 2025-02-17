@@ -1,0 +1,110 @@
+{
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/complex-variables/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "job_clusters": [
+          {
+            "job_cluster_key": "key",
+            "new_cluster": {
+              "node_type_id": "Standard_DS3_v2",
+              "num_workers": 2,
+              "policy_id": "some-policy-id",
+              "spark_conf": {
+                "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+                "spark.random": "true",
+                "spark.speculation": "true"
+              },
+              "spark_version": "13.2.x-scala2.11"
+            }
+          }
+        ],
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {},
+        "tasks": [
+          {
+            "job_cluster_key": "key",
+            "libraries": [
+              {
+                "jar": "/path/to/jar"
+              },
+              {
+                "egg": "/path/to/egg"
+              },
+              {
+                "whl": "/path/to/whl"
+              }
+            ],
+            "task_key": "task with spark version 13.2.x-scala2.11 and jar /path/to/jar"
+          }
+        ]
+      }
+    }
+  },
+  "variables": {
+    "cluster": {
+      "default": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 2,
+        "policy_id": "some-policy-id",
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.random": true,
+          "spark.speculation": true
+        },
+        "spark_version": "13.2.x-scala2.11"
+      },
+      "description": "A cluster definition",
+      "type": "complex",
+      "value": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 2,
+        "policy_id": "some-policy-id",
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.random": true,
+          "spark.speculation": true
+        },
+        "spark_version": "13.2.x-scala2.11"
+      }
+    },
+    "libraries": {
+      "default": [
+        {
+          "jar": "/path/to/jar"
+        },
+        {
+          "egg": "/path/to/egg"
+        },
+        {
+          "whl": "/path/to/whl"
+        }
+      ],
+      "description": "A libraries definition",
+      "type": "complex",
+      "value": [
+        {
+          "jar": "/path/to/jar"
+        },
+        {
+          "egg": "/path/to/egg"
+        },
+        {
+          "whl": "/path/to/whl"
+        }
+      ]
+    },
+    "node_type": {
+      "default": "Standard_DS3_v2",
+      "value": "Standard_DS3_v2"
+    }
+  }
+}

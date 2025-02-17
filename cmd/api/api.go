@@ -62,7 +62,7 @@ func makeCommand(method string) *cobra.Command {
 
 			var response any
 			headers := map[string]string{"Content-Type": "application/json"}
-			err = api.Do(cmd.Context(), method, path, headers, request, &response)
+			err = api.Do(cmd.Context(), method, path, headers, nil, request, &response)
 			if err != nil {
 				return err
 			}

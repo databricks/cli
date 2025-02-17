@@ -86,6 +86,16 @@ func Infof(format string, args ...any) Diagnostics {
 	}
 }
 
+// Recommendationf creates a new recommendation diagnostic.
+func Recommendationf(format string, args ...any) Diagnostics {
+	return []Diagnostic{
+		{
+			Severity: Recommendation,
+			Summary:  fmt.Sprintf(format, args...),
+		},
+	}
+}
+
 // Diagnostics holds zero or more instances of [Diagnostic].
 type Diagnostics []Diagnostic
 

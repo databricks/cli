@@ -1,0 +1,6 @@
+
+>>> errcode [CLI] bundle validate -o json -t development
+Error: file ./test1.py not found
+
+
+Exit code: 1

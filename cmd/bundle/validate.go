@@ -11,18 +11,19 @@ import (
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
-func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle, diags diag.Diagnostics) error {
+func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 	buf, err := json.MarshalIndent(b.Config.Value().AsAny(), "", "  ")
 	if err != nil {
 		return err
 	}
-	_, _ = cmd.OutOrStdout().Write(buf)
-	return diags.Error()
+	out := cmd.OutOrStdout()
+	_, _ = out.Write(buf)
+	_, _ = out.Write([]byte{'\n'})
+	return nil
 }
 
 func newValidateCommand() *cobra.Command {
@@ -66,7 +67,23 @@ func newValidateCommand() *cobra.Command {
 
 			return nil
 		case flags.OutputJSON:
-			return renderJsonOutput(cmd, b, diags)
+			renderOpts := render.RenderOptions{RenderSummaryTable: false}
+			err1 := render.RenderDiagnostics(cmd.ErrOrStderr(), b, diags, renderOpts)
+			err2 := renderJsonOutput(cmd, b)
+
+			if err2 != nil {
+				return err2
+			}
+
+			if err1 != nil {
+				return err1
+			}
+
+			if diags.HasError() {
+				return root.ErrAlreadyPrinted
+			}
+
+			return nil
 		default:
 			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 		}

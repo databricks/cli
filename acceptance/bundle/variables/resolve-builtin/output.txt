@@ -1,0 +1,7 @@
+{
+  "artifact_path": "TestResolveVariableReferences/bar/artifacts",
+  "file_path": "TestResolveVariableReferences/bar/baz",
+  "resource_path": "TestResolveVariableReferences/bar/resources",
+  "root_path": "TestResolveVariableReferences/bar",
+  "state_path": "TestResolveVariableReferences/bar/state"
+}

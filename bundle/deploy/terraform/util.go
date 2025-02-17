@@ -33,7 +33,12 @@ type stateResourceInstance struct {
 }
 
 type stateInstanceAttributes struct {
-	ID   string `json:"id"`
+	ID string `json:"id"`
+
+	// Some resources such as Apps do not have an ID, so we use the name instead.
+	// We need this for cases when such resource is removed from bundle config but
+	// exists in the workspace still so we can correctly display its summary.
+	Name string `json:"name,omitempty"`
 	ETag string `json:"etag,omitempty"`
 }
 

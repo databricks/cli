@@ -189,7 +189,7 @@ func (l *Logger) writeJson(event Event) {
 		// we panic because there we cannot catch this in jobs.RunNowAndWait
 		panic(err)
 	}
-	_, _ = l.Writer.Write([]byte(b))
+	_, _ = l.Writer.Write(b)
 	_, _ = l.Writer.Write([]byte("\n"))
 }
 

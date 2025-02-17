@@ -1,0 +1,3 @@
+Error: failed to compute file content for helpers.txt.tmpl. template: :1:14: executing "" at <user_name>: error calling user_name: 
+
+Exit code: 1

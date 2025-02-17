@@ -1,0 +1,50 @@
+
+>>> EXITCODE=0 errcode [CLI] bundle validate
+Executing 'preinit' script
+from myscript.py 0 preinit: hello stdout!
+from myscript.py 0 preinit: hello stderr!
+Executing 'postinit' script
+from myscript.py 0 postinit: hello stdout!
+from myscript.py 0 postinit: hello stderr!
+Name: scripts
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/scripts/default
+
+Validation OK!
+
+>>> EXITCODE=1 errcode [CLI] bundle validate
+Executing 'preinit' script
+from myscript.py 1 preinit: hello stdout!
+from myscript.py 1 preinit: hello stderr!
+Error: failed to execute script: exit status 1
+
+Name: scripts
+
+Found 1 error
+
+Exit code: 1
+
+>>> EXITCODE=0 errcode [CLI] bundle deploy
+Executing 'preinit' script
+from myscript.py 0 preinit: hello stdout!
+from myscript.py 0 preinit: hello stderr!
+Executing 'postinit' script
+from myscript.py 0 postinit: hello stdout!
+from myscript.py 0 postinit: hello stderr!
+Executing 'prebuild' script
+from myscript.py 0 prebuild: hello stdout!
+from myscript.py 0 prebuild: hello stderr!
+Executing 'postbuild' script
+from myscript.py 0 postbuild: hello stdout!
+from myscript.py 0 postbuild: hello stderr!
+Executing 'predeploy' script
+from myscript.py 0 predeploy: hello stdout!
+from myscript.py 0 predeploy: hello stderr!
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts/default/files...
+Deploying resources...
+Deployment complete!
+Executing 'postdeploy' script
+from myscript.py 0 postdeploy: hello stdout!
+from myscript.py 0 postdeploy: hello stderr!

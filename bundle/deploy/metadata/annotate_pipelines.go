@@ -20,11 +20,11 @@ func (m *annotatePipelines) Name() string {
 
 func (m *annotatePipelines) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, pipeline := range b.Config.Resources.Pipelines {
-		if pipeline.PipelineSpec == nil {
+		if pipeline.CreatePipeline == nil {
 			continue
 		}
 
-		pipeline.PipelineSpec.Deployment = &pipelines.PipelineDeployment{
+		pipeline.CreatePipeline.Deployment = &pipelines.PipelineDeployment{
 			Kind:             pipelines.DeploymentKindBundle,
 			MetadataFilePath: metadataFilePath(b),
 		}

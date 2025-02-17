@@ -1,0 +1,24 @@
+workspace:
+  profile: profile_name
+  root_path: ${var.workspace_root}/path/to/root
+
+variables:
+  workspace_root:
+    description: "root directory in the Databricks workspace to store the asset bundle and associated artifacts"
+    default: /Users/${workspace.current_user.userName}
+
+targets:
+  dev:
+    default: true
+  prod:
+    variables:
+      workspace_root: /Shared
+
+resources:
+  jobs:
+    my_job:
+      tasks:
+        - existing_cluster_id: 500
+          python_wheel_task:
+            named_parameters:
+              conf-file: "${workspace.file_path}/path/to/config.yaml"

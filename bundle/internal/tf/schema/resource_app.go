@@ -91,6 +91,7 @@ type ResourceApp struct {
 	DefaultSourceCodePath    string                        `json:"default_source_code_path,omitempty"`
 	Description              string                        `json:"description,omitempty"`
 	Name                     string                        `json:"name"`
+	NoCompute                bool                          `json:"no_compute,omitempty"`
 	PendingDeployment        *ResourceAppPendingDeployment `json:"pending_deployment,omitempty"`
 	Resources                []ResourceAppResources        `json:"resources,omitempty"`
 	ServicePrincipalClientId string                        `json:"service_principal_client_id,omitempty"`

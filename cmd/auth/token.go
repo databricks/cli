@@ -23,6 +23,10 @@ func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [HOST]",
 		Short: "Get authentication token",
+		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
+Refresh the access token if it is expired. Note: This command only works with
+U2M authentication (using the 'databricks auth login' command). M2M authentication
+using a client ID and secret is not supported.`,
 	}
 
 	var tokenTimeout time.Duration

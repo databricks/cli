@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle validate -o json -t default
+{
+  "autoscale": {
+    "max_workers": 7,
+    "min_workers": 2
+  },
+  "cluster_name": "foo",
+  "custom_tags": {},
+  "node_type_id": "i3.xlarge",
+  "num_workers": 2,
+  "spark_conf": {
+    "spark.executor.memory": "2g"
+  },
+  "spark_version": "13.3.x-scala2.12"
+}
+
+>>> [CLI] bundle validate -o json -t development
+{
+  "autoscale": {
+    "max_workers": 3,
+    "min_workers": 1
+  },
+  "cluster_name": "foo-override",
+  "custom_tags": {},
+  "node_type_id": "m5.xlarge",
+  "num_workers": 3,
+  "spark_conf": {
+    "spark.executor.memory": "4g",
+    "spark.executor.memory2": "4g"
+  },
+  "spark_version": "15.2.x-scala2.12"
+}

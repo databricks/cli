@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle validate --help
+Validate configuration
+
+Usage:
+  databricks bundle validate [flags]
+
+Flags:
+  -h, --help   help for validate
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

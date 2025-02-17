@@ -6,13 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/cli/cmd"
@@ -42,6 +39,8 @@ type Runner struct {
 	StderrLines <-chan string
 
 	errch <-chan error
+
+	Verbose bool
 }
 
 func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan string {
@@ -66,39 +65,6 @@ func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan s
 		}
 	}()
 	return ch
-}
-
-func (r *Runner) registerFlagCleanup(c *cobra.Command) {
-	r.Helper()
-	// Find target command that will be run. Example: if the command run is `databricks fs cp`,
-	// target command corresponds to `cp`
-	targetCmd, _, err := c.Find(r.args)
-	if err != nil && strings.HasPrefix(err.Error(), "unknown command") {
-		// even if command is unknown, we can proceed
-		require.NotNil(r, targetCmd)
-	} else {
-		require.NoError(r, err)
-	}
-
-	// Force initialization of default flags.
-	// These are initialized by cobra at execution time and would otherwise
-	// not be cleaned up by the cleanup function below.
-	targetCmd.InitDefaultHelpFlag()
-	targetCmd.InitDefaultVersionFlag()
-
-	// Restore flag values to their original value on test completion.
-	targetCmd.Flags().VisitAll(func(f *pflag.Flag) {
-		v := reflect.ValueOf(f.Value)
-		if v.Kind() == reflect.Ptr {
-			v = v.Elem()
-		}
-		// Store copy of the current flag value.
-		reset := reflect.New(v.Type()).Elem()
-		reset.Set(v)
-		r.Cleanup(func() {
-			v.Set(reset)
-		})
-	})
 }
 
 // Like [Runner.Eventually], but more specific
@@ -159,12 +125,6 @@ func (r *Runner) RunBackground() {
 		cli.SetIn(r.stdinR)
 	}
 
-	// Register cleanup function to restore flags to their original values
-	// once test has been executed. This is needed because flag values reside
-	// in a global singleton data-structure, and thus subsequent tests might
-	// otherwise interfere with each other
-	r.registerFlagCleanup(cli)
-
 	errch := make(chan error)
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -181,7 +141,9 @@ func (r *Runner) RunBackground() {
 	go func() {
 		err := root.Execute(ctx, cli)
 		if err != nil {
-			r.Logf("Error running command: %s", err)
+			if r.Verbose {
+				r.Logf("Error running command: %s", err)
+			}
 		}
 
 		// Close pipes to signal EOF.
@@ -196,7 +158,9 @@ func (r *Runner) RunBackground() {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(r.stdout.Bytes()))
 			for scanner.Scan() {
-				r.Logf("[databricks stdout]: %s", scanner.Text())
+				if r.Verbose {
+					r.Logf("[databricks stdout]: %s", scanner.Text())
+				}
 			}
 		}
 
@@ -204,15 +168,11 @@ func (r *Runner) RunBackground() {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(r.stderr.Bytes()))
 			for scanner.Scan() {
-				r.Logf("[databricks stderr]: %s", scanner.Text())
+				if r.Verbose {
+					r.Logf("[databricks stderr]: %s", scanner.Text())
+				}
 			}
 		}
-
-		// Reset context on command for the next test.
-		// These commands are globals so we have to clean up to the best of our ability after each run.
-		// See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
-		//nolint:staticcheck  // cobra sets the context and doesn't clear it
-		cli.SetContext(nil)
 
 		// Make caller aware of error.
 		errch <- err
@@ -244,18 +204,24 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 	cli.SetErr(&stderr)
 	cli.SetArgs(r.args)
 
-	r.Logf("  args: %s", strings.Join(r.args, ", "))
+	if r.Verbose {
+		r.Logf("  args: %s", strings.Join(r.args, ", "))
+	}
 
 	err := root.Execute(ctx, cli)
 	if err != nil {
-		r.Logf(" error: %s", err)
+		if r.Verbose {
+			r.Logf(" error: %s", err)
+		}
 	}
 
 	if stdout.Len() > 0 {
 		// Make a copy of the buffer such that it remains "unread".
 		scanner := bufio.NewScanner(bytes.NewBuffer(stdout.Bytes()))
 		for scanner.Scan() {
-			r.Logf("stdout: %s", scanner.Text())
+			if r.Verbose {
+				r.Logf("stdout: %s", scanner.Text())
+			}
 		}
 	}
 
@@ -263,7 +229,9 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 		// Make a copy of the buffer such that it remains "unread".
 		scanner := bufio.NewScanner(bytes.NewBuffer(stderr.Bytes()))
 		for scanner.Scan() {
-			r.Logf("stderr: %s", scanner.Text())
+			if r.Verbose {
+				r.Logf("stderr: %s", scanner.Text())
+			}
 		}
 	}
 
@@ -323,8 +291,9 @@ func NewRunner(t testutil.TestingT, ctx context.Context, args ...string) *Runner
 	return &Runner{
 		TestingT: t,
 
-		ctx:  ctx,
-		args: args,
+		ctx:     ctx,
+		args:    args,
+		Verbose: true,
 	}
 }
 

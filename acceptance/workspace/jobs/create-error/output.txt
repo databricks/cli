@@ -1,0 +1,5 @@
+
+>>> [CLI] jobs create --json {"name":"abc"}
+Error: Invalid access token.
+
+Exit code: 1

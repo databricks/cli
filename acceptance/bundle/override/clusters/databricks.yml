@@ -1,0 +1,33 @@
+bundle:
+  name: clusters
+
+resources:
+  clusters:
+    foo:
+      cluster_name: foo
+      num_workers: 2
+      node_type_id: "i3.xlarge"
+      autoscale:
+        min_workers: 2
+        max_workers: 7
+      spark_version: "13.3.x-scala2.12"
+      spark_conf:
+        "spark.executor.memory": "2g"
+
+targets:
+  default:
+
+  development:
+    resources:
+      clusters:
+        foo:
+          cluster_name: foo-override
+          num_workers: 3
+          node_type_id: "m5.xlarge"
+          autoscale:
+            min_workers: 1
+            max_workers: 3
+          spark_version: "15.2.x-scala2.12"
+          spark_conf:
+            "spark.executor.memory": "4g"
+            "spark.executor.memory2": "4g"

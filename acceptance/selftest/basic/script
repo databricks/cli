@@ -1,0 +1,29 @@
+printf "=== Capturing STDERR"
+trace python3 -c 'import sys; sys.stderr.write("STDERR\n")'
+
+printf "\n=== Capturing STDOUT"
+trace python3 -c 'import sys; sys.stderr.write("STDOUT\n")'
+
+printf "\n=== Capturing exit code"
+trace errcode python3 -c 'raise SystemExit(5)'
+
+printf "\n=== Capturing exit code (alt)"
+errcode trace python3 -c 'raise SystemExit(7)'
+
+printf "\n=== Capturing pwd"
+trace python3 -c 'import os; print(os.getcwd())'
+
+printf "\n=== Capturing subdir"
+trace mkdir -p subdir/a/b/c
+trace withdir subdir/a/b/c python3 -c 'import os; print(os.getcwd())'
+
+printf "\n=== Custom output files - everything starting with out is captured and compared"
+trace echo HELLO > out.hello.txt
+
+printf "\n=== Custom regex can be specified in [[Repl]] section\n"
+echo 1234
+echo 12345
+echo 123456
+
+printf "\n=== Testing --version"
+trace $CLI --version

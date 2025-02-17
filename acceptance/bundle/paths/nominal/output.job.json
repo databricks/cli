@@ -1,0 +1,89 @@
+[
+  {
+    "job_cluster_key": "default",
+    "notebook_task": {
+      "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/notebook"
+    },
+    "task_key": "notebook_example"
+  },
+  {
+    "job_cluster_key": "default",
+    "spark_python_task": {
+      "python_file": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/file.py"
+    },
+    "task_key": "spark_python_example"
+  },
+  {
+    "dbt_task": {
+      "commands": [
+        "dbt run",
+        "dbt run"
+      ],
+      "project_directory": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/dbt_project"
+    },
+    "job_cluster_key": "default",
+    "task_key": "dbt_example"
+  },
+  {
+    "job_cluster_key": "default",
+    "sql_task": {
+      "file": {
+        "path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/sql.sql"
+      },
+      "warehouse_id": "cafef00d"
+    },
+    "task_key": "sql_example"
+  },
+  {
+    "job_cluster_key": "default",
+    "libraries": [
+      {
+        "whl": "dist/wheel1.whl"
+      },
+      {
+        "whl": "dist/wheel2.whl"
+      }
+    ],
+    "python_wheel_task": {
+      "package_name": "my_package"
+    },
+    "task_key": "python_wheel_example"
+  },
+  {
+    "job_cluster_key": "default",
+    "libraries": [
+      {
+        "jar": "target/jar1.jar"
+      },
+      {
+        "jar": "target/jar2.jar"
+      }
+    ],
+    "spark_jar_task": {
+      "main_class_name": "com.example.Main"
+    },
+    "task_key": "spark_jar_example"
+  },
+  {
+    "for_each_task": {
+      "task": {
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/notebook"
+        }
+      }
+    },
+    "job_cluster_key": "default",
+    "task_key": "for_each_notebook_example"
+  },
+  {
+    "for_each_task": {
+      "task": {
+        "job_cluster_key": "default",
+        "spark_python_task": {
+          "python_file": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/file.py"
+        }
+      }
+    },
+    "task_key": "for_each_spark_python_example"
+  }
+]

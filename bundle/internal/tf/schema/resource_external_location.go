@@ -13,8 +13,13 @@ type ResourceExternalLocationEncryptionDetails struct {
 
 type ResourceExternalLocation struct {
 	AccessPoint       string                                     `json:"access_point,omitempty"`
+	BrowseOnly        bool                                       `json:"browse_only,omitempty"`
 	Comment           string                                     `json:"comment,omitempty"`
+	CreatedAt         int                                        `json:"created_at,omitempty"`
+	CreatedBy         string                                     `json:"created_by,omitempty"`
+	CredentialId      string                                     `json:"credential_id,omitempty"`
 	CredentialName    string                                     `json:"credential_name"`
+	Fallback          bool                                       `json:"fallback,omitempty"`
 	ForceDestroy      bool                                       `json:"force_destroy,omitempty"`
 	ForceUpdate       bool                                       `json:"force_update,omitempty"`
 	Id                string                                     `json:"id,omitempty"`
@@ -24,6 +29,8 @@ type ResourceExternalLocation struct {
 	Owner             string                                     `json:"owner,omitempty"`
 	ReadOnly          bool                                       `json:"read_only,omitempty"`
 	SkipValidation    bool                                       `json:"skip_validation,omitempty"`
+	UpdatedAt         int                                        `json:"updated_at,omitempty"`
+	UpdatedBy         string                                     `json:"updated_by,omitempty"`
 	Url               string                                     `json:"url"`
 	EncryptionDetails *ResourceExternalLocationEncryptionDetails `json:"encryption_details,omitempty"`
 }

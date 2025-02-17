@@ -1,0 +1,71 @@
+bundle:
+  name: apps
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+variables:
+  app_config:
+    type: complex
+    default:
+      command:
+          - "python"
+          - "app.py"
+      env:
+        - name: SOME_ENV_VARIABLE
+          value: "Some value"
+
+resources:
+  apps:
+    my_app:
+      name: "my-app"
+      description: "My App"
+      source_code_path: ./app
+      config: ${var.app_config}
+
+      resources:
+        - name: "my-sql-warehouse"
+          sql_warehouse:
+            id: 1234
+            permission: "CAN_USE"
+        - name: "my-job"
+          job:
+            id: 5678
+            permission: "CAN_MANAGE_RUN"
+      permissions:
+        - user_name: "foo@bar.com"
+          level: "CAN_VIEW"
+        - service_principal_name: "my_sp"
+          level: "CAN_MANAGE"
+
+
+targets:
+  default:
+
+  development:
+    variables:
+      app_config:
+        command:
+          - "python"
+          - "dev.py"
+        env:
+          - name: SOME_ENV_VARIABLE_2
+            value: "Some value 2"
+    resources:
+      apps:
+        my_app:
+          source_code_path: ./app-dev
+          resources:
+          - name: "my-sql-warehouse"
+            sql_warehouse:
+              id: 1234
+              permission: "CAN_MANAGE"
+          - name: "my-job"
+            job:
+              id: 5678
+              permission: "CAN_MANAGE"
+          - name: "my-secret"
+            secret:
+              key: "key"
+              scope: "scope"
+              permission: "CAN_USE"

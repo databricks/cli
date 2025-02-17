@@ -25,7 +25,7 @@ type LogLevelFlag struct {
 
 func NewLogLevelFlag() LogLevelFlag {
 	return LogLevelFlag{
-		l: log.LevelDisabled,
+		l: log.LevelWarn,
 	}
 }
 

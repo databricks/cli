@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle init default-sql --config-file ./input.json --output-dir output
+
+Welcome to the default SQL template for Databricks Asset Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_default_sql' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> [CLI] bundle validate -t dev
+Name: my_default_sql
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_sql/dev
+
+Validation OK!
+
+>>> [CLI] bundle validate -t prod
+Name: my_default_sql
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_sql/prod
+
+Validation OK!

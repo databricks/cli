@@ -81,6 +81,22 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 
 	// Configure the workspace profile if the flag has been set.
 	diags = diags.Extend(configureProfile(cmd, b))
+	if diags.HasError() {
+		return b, diags
+	}
+
+	// Set the auth configuration in the command context. This can be used
+	// downstream to initialize a API client.
+	//
+	// Note that just initializing a workspace client and loading auth configuration
+	// is a fast operation. It does not perform network I/O or invoke processes (for example the Azure CLI).
+	client, err := b.WorkspaceClientE()
+	if err != nil {
+		return b, diags.Extend(diag.FromErr(err))
+	}
+	ctx = context.WithValue(ctx, &configUsed, client.Config)
+	cmd.SetContext(ctx)
+
 	return b, diags
 }
 

@@ -8,6 +8,7 @@ install:
   warehouse_types:
     - PRO
   script: install.py
+  extras: ""
 entrypoint: main.py
 min_python: 3.9
 commands:

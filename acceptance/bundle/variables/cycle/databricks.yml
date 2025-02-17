@@ -1,0 +1,8 @@
+bundle:
+  name: cycle
+
+variables:
+  a:
+    default: ${var.b}
+  b:
+    default: ${var.a}

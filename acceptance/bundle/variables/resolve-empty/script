@@ -1,0 +1,1 @@
+$CLI bundle validate -o json | jq .resources.jobs.job1.tags

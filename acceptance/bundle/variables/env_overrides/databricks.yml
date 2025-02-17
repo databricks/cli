@@ -1,0 +1,58 @@
+variables:
+  a:
+    description: optional variable
+    default: default-a
+
+  b:
+    description: required variable
+
+  d:
+    description: variable with lookup
+    default: ""
+
+  e:
+    description: variable with lookup
+    default: "some-value"
+
+  f:
+    description: variable with lookup
+    lookup:
+      cluster_policy: wrong-cluster-policy
+
+  result:
+    default: ${var.a} ${var.b}
+
+bundle:
+  name: test bundle
+
+targets:
+  env-with-single-variable-override:
+    variables:
+      b: dev-b
+
+  env-missing-a-required-variable-assignment:
+    variables:
+      a: staging-a
+
+  env-with-two-variable-overrides:
+    variables:
+      a: prod-a
+      b: prod-b
+
+  env-using-an-undefined-variable:
+    variables:
+      c: prod-c
+      b: prod-b
+
+  env-overrides-lookup:
+    variables:
+      d:
+        lookup:
+          cluster: some-test-cluster
+      e:
+        lookup:
+          instance_pool: some-test-instance-pool
+      f:
+        lookup:
+          cluster_policy: some-test-cluster-policy
+      b: prod-b
