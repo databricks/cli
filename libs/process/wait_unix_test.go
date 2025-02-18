@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -13,7 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWait(t *testing.T) {
+func TestWaitUnix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows")
+	}
+
 	t.Parallel()
 	tmpDir := t.TempDir()
 
