@@ -13,7 +13,7 @@ rm ./child.pid
 # 1. The parent process does not wait for the child process to end.
 # 2. The child process correctly receives input from the parent process.
 #
-# Property (1) is validated because the child process waits for it's parent process
+# Property (1) is validated because the child process waits for its parent process
 # to end before it writes to stdout.
 #
 # Property (2) is directly validated by the output of the child process.
