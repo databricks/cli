@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # wait <pid> in bash only works for processes that are direct children to the calling
 # shell. This script is more general purpose.
 wait_pid() {
