@@ -1,0 +1,1 @@
+trace $CLI panic 2>&1 | sed '/runtime\/debug\.Stack()/q'
