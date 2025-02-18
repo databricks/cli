@@ -1,0 +1,148 @@
+
+>>> $CLI model-versions delete --help
+Delete a Model Version.
+  
+  Deletes a model version from the specified registered model. Any aliases
+  assigned to the model version will also be deleted.
+  
+  The caller must be a metastore admin or an owner of the parent registered
+  model. For the latter case, the caller must also be the owner or have the
+  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
+  privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the model version
+    VERSION: The integer version number of the model version
+
+Usage:
+  databricks model-versions delete FULL_NAME VERSION [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI model-versions get --help
+Get a Model Version.
+  
+  Get a model version.
+  
+  The caller must be a metastore admin or an owner of (or have the **EXECUTE**
+  privilege on) the parent registered model. For the latter case, the caller
+  must also be the owner or have the **USE_CATALOG** privilege on the parent
+  catalog and the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the model version
+    VERSION: The integer version number of the model version
+
+Usage:
+  databricks model-versions get FULL_NAME VERSION [flags]
+
+Flags:
+  -h, --help              help for get
+      --include-aliases   Whether to include aliases associated with the model version in the response.
+      --include-browse    Whether to include model versions in the response for which the principal can only access selective metadata for.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI model-versions get-by-alias --help
+Get Model Version By Alias.
+  
+  Get a model version by alias.
+  
+  The caller must be a metastore admin or an owner of (or have the **EXECUTE**
+  privilege on) the registered model. For the latter case, the caller must also
+  be the owner or have the **USE_CATALOG** privilege on the parent catalog and
+  the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model
+    ALIAS: The name of the alias
+
+Usage:
+  databricks model-versions get-by-alias FULL_NAME ALIAS [flags]
+
+Flags:
+  -h, --help              help for get-by-alias
+      --include-aliases   Whether to include aliases associated with the model version in the response.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI model-versions list --help
+List Model Versions.
+  
+  List model versions. You can list model versions under a particular schema, or
+  list all model versions in the current metastore.
+  
+  The returned models are filtered based on the privileges of the calling user.
+  For example, the metastore admin is able to list all the model versions. A
+  regular user needs to be the owner or have the **EXECUTE** privilege on the
+  parent registered model to recieve the model versions in the response. For the
+  latter case, the caller must also be the owner or have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema.
+  
+  There is no guarantee of a specific ordering of the elements in the response.
+  The elements in the response will not contain any aliases or tags.
+
+  Arguments:
+    FULL_NAME: The full three-level name of the registered model under which to list
+      model versions
+
+Usage:
+  databricks model-versions list FULL_NAME [flags]
+
+Flags:
+  -h, --help                help for list
+      --include-browse      Whether to include model versions in the response for which the principal can only access selective metadata for.
+      --max-results int     Maximum number of model versions to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI model-versions update --help
+Update a Model Version.
+  
+  Updates the specified model version.
+  
+  The caller must be a metastore admin or an owner of the parent registered
+  model. For the latter case, the caller must also be the owner or have the
+  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
+  privilege on the parent schema.
+  
+  Currently only the comment of the model version can be updated.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the model version
+    VERSION: The integer version number of the model version
+
+Usage:
+  databricks model-versions update FULL_NAME VERSION [flags]
+
+Flags:
+      --comment string   The comment attached to the model version.
+  -h, --help             help for update
+      --json JSON        either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

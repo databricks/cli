@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI genie create-message --help
+trace $CLI genie execute-message-query --help
+trace $CLI genie get-message --help
+trace $CLI genie get-message-query-result --help
+trace $CLI genie start-conversation --help

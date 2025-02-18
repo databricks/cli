@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI global-init-scripts create --help
+trace $CLI global-init-scripts delete --help
+trace $CLI global-init-scripts get --help
+trace $CLI global-init-scripts list --help
+trace $CLI global-init-scripts update --help

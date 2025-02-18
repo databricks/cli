@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI model-versions delete --help
+trace $CLI model-versions get --help
+trace $CLI model-versions get-by-alias --help
+trace $CLI model-versions list --help
+trace $CLI model-versions update --help

@@ -1,0 +1,134 @@
+
+>>> $CLI clean-rooms create --help
+Create a clean room.
+  
+  Create a new clean room with the specified collaborators. This method is
+  asynchronous; the returned name field inside the clean_room field can be used
+  to poll the clean room status, using the :method:cleanrooms/get method. When
+  this method returns, the cluster will be in a PROVISIONING state. The cluster
+  will be usable once it enters an ACTIVE state.
+  
+  The caller must be a metastore admin or have the **CREATE_CLEAN_ROOM**
+  privilege on the metastore.
+
+Usage:
+  databricks clean-rooms create [flags]
+
+Flags:
+      --comment string   
+  -h, --help             help for create
+      --json JSON        either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string      The name of the clean room.
+      --owner string     This is Databricks username of the owner of the local clean room securable for permission management.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-rooms create-output-catalog --help
+Create an output catalog.
+  
+  Create the output catalog of the clean room.
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room.
+
+Usage:
+  databricks clean-rooms create-output-catalog CLEAN_ROOM_NAME [flags]
+
+Flags:
+      --catalog-name string   The name of the output catalog in UC.
+  -h, --help                  help for create-output-catalog
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-rooms delete --help
+Delete a clean room.
+  
+  Delete a clean room. After deletion, the clean room will be removed from the
+  metastore. If the other collaborators have not deleted the clean room, they
+  will still have the clean room in their metastore, but it will be in a DELETED
+  state and no operations other than deletion can be performed on it.
+
+  Arguments:
+    NAME: Name of the clean room.
+
+Usage:
+  databricks clean-rooms delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-rooms get --help
+Get a clean room.
+  
+  Get the details of a clean room given its name.
+
+Usage:
+  databricks clean-rooms get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-rooms list --help
+List clean rooms.
+  
+  Get a list of all clean rooms of the metastore. Only clean rooms the caller
+  has access to are returned.
+
+Usage:
+  databricks clean-rooms list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       Maximum number of clean rooms to return (i.e., the page length).
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clean-rooms update --help
+Update a clean room.
+  
+  Update a clean room. The caller must be the owner of the clean room, have
+  **MODIFY_CLEAN_ROOM** privilege, or be metastore admin.
+  
+  When the caller is a metastore admin, only the __owner__ field can be updated.
+
+  Arguments:
+    NAME: Name of the clean room.
+
+Usage:
+  databricks clean-rooms update NAME [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

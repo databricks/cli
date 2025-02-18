@@ -1,0 +1,100 @@
+
+>>> $CLI alerts create --help
+Create an alert.
+  
+  Creates an alert.
+
+Usage:
+  databricks alerts create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI alerts delete --help
+Delete an alert.
+  
+  Moves an alert to the trash. Trashed alerts immediately disappear from
+  searches and list views, and can no longer trigger. You can restore a trashed
+  alert through the UI. A trashed alert is permanently deleted after 30 days.
+
+Usage:
+  databricks alerts delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI alerts get --help
+Get an alert.
+  
+  Gets an alert.
+
+Usage:
+  databricks alerts get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI alerts list --help
+List alerts.
+  
+  Gets a list of alerts accessible to the user, ordered by creation time.
+  **Warning:** Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.
+
+Usage:
+  databricks alerts list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI alerts update --help
+Update an alert.
+  
+  Updates an alert.
+
+  Arguments:
+    ID: 
+    UPDATE_MASK: Field mask is required to be passed into the PATCH request. Field mask
+      specifies which fields of the setting payload will be updated. The field
+      mask needs to be supplied as single string. To specify multiple fields in
+      the field mask, use comma as the separator (no space).
+
+Usage:
+  databricks alerts update ID UPDATE_MASK [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

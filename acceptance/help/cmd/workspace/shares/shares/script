@@ -1,0 +1,8 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI shares create --help
+trace $CLI shares delete --help
+trace $CLI shares get --help
+trace $CLI shares list --help
+trace $CLI shares share-permissions --help
+trace $CLI shares update --help
+trace $CLI shares update-permissions --help

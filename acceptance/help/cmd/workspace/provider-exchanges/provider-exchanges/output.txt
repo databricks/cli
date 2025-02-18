@@ -1,0 +1,162 @@
+
+>>> $CLI provider-exchanges add-listing-to-exchange --help
+Add an exchange for listing.
+  
+  Associate an exchange with a listing
+
+Usage:
+  databricks provider-exchanges add-listing-to-exchange LISTING_ID EXCHANGE_ID [flags]
+
+Flags:
+  -h, --help        help for add-listing-to-exchange
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchanges create --help
+Create an exchange.
+  
+  Create an exchange
+
+Usage:
+  databricks provider-exchanges create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchanges delete --help
+Delete an exchange.
+  
+  This removes a listing from marketplace.
+
+Usage:
+  databricks provider-exchanges delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchanges delete-listing-from-exchange --help
+Remove an exchange for listing.
+  
+  Disassociate an exchange with a listing
+
+Usage:
+  databricks provider-exchanges delete-listing-from-exchange ID [flags]
+
+Flags:
+  -h, --help   help for delete-listing-from-exchange
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchanges get --help
+Get an exchange.
+  
+  Get an exchange.
+
+Usage:
+  databricks provider-exchanges get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchanges list --help
+List exchanges.
+  
+  List exchanges visible to provider
+
+Usage:
+  databricks provider-exchanges list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchanges list-exchanges-for-listing --help
+List exchanges for listing.
+  
+  List exchanges associated with a listing
+
+Usage:
+  databricks provider-exchanges list-exchanges-for-listing LISTING_ID [flags]
+
+Flags:
+  -h, --help                help for list-exchanges-for-listing
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchanges list-listings-for-exchange --help
+List listings for exchange.
+  
+  List listings associated with an exchange
+
+Usage:
+  databricks provider-exchanges list-listings-for-exchange EXCHANGE_ID [flags]
+
+Flags:
+  -h, --help                help for list-listings-for-exchange
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchanges update --help
+Update exchange.
+  
+  Update an exchange
+
+Usage:
+  databricks provider-exchanges update ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

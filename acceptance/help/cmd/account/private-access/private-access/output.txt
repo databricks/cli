@@ -1,0 +1,157 @@
+
+>>> $CLI account private-access create --help
+Create private access settings.
+  
+  Creates a private access settings object, which specifies how your workspace
+  is accessed over [AWS PrivateLink]. To use AWS PrivateLink, a workspace must
+  have a private access settings object referenced by ID in the workspace's
+  private_access_settings_id property.
+  
+  You can share one private access settings with multiple workspaces in a single
+  account. However, private access settings are specific to AWS regions, so only
+  workspaces in the same AWS region can use a given private access settings
+  object.
+  
+  Before configuring PrivateLink, read the [Databricks article about
+  PrivateLink].
+  
+  [AWS PrivateLink]: https://aws.amazon.com/privatelink
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_NAME: The human-readable name of the private access settings object.
+    REGION: The cloud region for workspaces associated with this private access
+      settings object.
+
+Usage:
+  databricks account private-access create PRIVATE_ACCESS_SETTINGS_NAME REGION [flags]
+
+Flags:
+  -h, --help                                      help for create
+      --json JSON                                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --private-access-level PrivateAccessLevel   The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]
+      --public-access-enabled                     Determines if the workspace can be accessed over public internet.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account private-access delete --help
+Delete a private access settings object.
+  
+  Deletes a private access settings object, which determines how your workspace
+  is accessed over [AWS PrivateLink].
+  
+  Before configuring PrivateLink, read the [Databricks article about
+  PrivateLink].",
+  
+  [AWS PrivateLink]: https://aws.amazon.com/privatelink
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.
+
+Usage:
+  databricks account private-access delete PRIVATE_ACCESS_SETTINGS_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account private-access get --help
+Get a private access settings object.
+  
+  Gets a private access settings object, which specifies how your workspace is
+  accessed over [AWS PrivateLink].
+  
+  Before configuring PrivateLink, read the [Databricks article about
+  PrivateLink].",
+  
+  [AWS PrivateLink]: https://aws.amazon.com/privatelink
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.
+
+Usage:
+  databricks account private-access get PRIVATE_ACCESS_SETTINGS_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account private-access list --help
+Get all private access settings objects.
+  
+  Gets a list of all private access settings objects for an account, specified
+  by ID.
+
+Usage:
+  databricks account private-access list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account private-access replace --help
+Replace private access settings.
+  
+  Updates an existing private access settings object, which specifies how your
+  workspace is accessed over [AWS PrivateLink]. To use AWS PrivateLink, a
+  workspace must have a private access settings object referenced by ID in the
+  workspace's private_access_settings_id property.
+  
+  This operation completely overwrites your existing private access settings
+  object attached to your workspaces. All workspaces attached to the private
+  access settings are affected by any change. If public_access_enabled,
+  private_access_level, or allowed_vpc_endpoint_ids are updated, effects of
+  these changes might take several minutes to propagate to the workspace API.
+  
+  You can share one private access settings object with multiple workspaces in a
+  single account. However, private access settings are specific to AWS regions,
+  so only workspaces in the same AWS region can use a given private access
+  settings object.
+  
+  Before configuring PrivateLink, read the [Databricks article about
+  PrivateLink].
+  
+  [AWS PrivateLink]: https://aws.amazon.com/privatelink
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.
+    PRIVATE_ACCESS_SETTINGS_NAME: The human-readable name of the private access settings object.
+    REGION: The cloud region for workspaces associated with this private access
+      settings object.
+
+Usage:
+  databricks account private-access replace PRIVATE_ACCESS_SETTINGS_ID PRIVATE_ACCESS_SETTINGS_NAME REGION [flags]
+
+Flags:
+  -h, --help                                      help for replace
+      --json JSON                                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --private-access-level PrivateAccessLevel   The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]
+      --public-access-enabled                     Determines if the workspace can be accessed over public internet.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

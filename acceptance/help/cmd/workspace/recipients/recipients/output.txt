@@ -1,0 +1,171 @@
+
+>>> $CLI recipients create --help
+Create a share recipient.
+  
+  Creates a new recipient with the delta sharing authentication type in the
+  metastore. The caller must be a metastore admin or have the
+  **CREATE_RECIPIENT** privilege on the metastore.
+
+  Arguments:
+    NAME: Name of Recipient.
+    AUTHENTICATION_TYPE: The delta sharing authentication type.
+
+Usage:
+  databricks recipients create NAME AUTHENTICATION_TYPE [flags]
+
+Flags:
+      --comment string                              Description about the recipient.
+      --data-recipient-global-metastore-id string   The global Unity Catalog metastore id provided by the data recipient.
+      --expiration-time int                         Expiration timestamp of the token, in epoch milliseconds.
+  -h, --help                                        help for create
+      --json JSON                                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --owner string                                Username of the recipient owner.
+      --sharing-code string                         The one-time sharing code provided by the data recipient.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI recipients delete --help
+Delete a share recipient.
+  
+  Deletes the specified recipient from the metastore. The caller must be the
+  owner of the recipient.
+
+  Arguments:
+    NAME: Name of the recipient.
+
+Usage:
+  databricks recipients delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI recipients get --help
+Get a share recipient.
+  
+  Gets a share recipient from the metastore if:
+  
+  * the caller is the owner of the share recipient, or: * is a metastore admin
+
+  Arguments:
+    NAME: Name of the recipient.
+
+Usage:
+  databricks recipients get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI recipients list --help
+List share recipients.
+  
+  Gets an array of all share recipients within the current metastore where:
+  
+  * the caller is a metastore admin, or * the caller is the owner. There is no
+  guarantee of a specific ordering of the elements in the array.
+
+Usage:
+  databricks recipients list [flags]
+
+Flags:
+      --data-recipient-global-metastore-id string   If not provided, all recipients will be returned.
+  -h, --help                                        help for list
+      --max-results int                             Maximum number of recipients to return.
+      --page-token string                           Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI recipients rotate-token --help
+Rotate a token.
+  
+  Refreshes the specified recipient's delta sharing authentication token with
+  the provided token info. The caller must be the owner of the recipient.
+
+  Arguments:
+    NAME: The name of the Recipient.
+    EXISTING_TOKEN_EXPIRE_IN_SECONDS: The expiration time of the bearer token in ISO 8601 format. This will set
+      the expiration_time of existing token only to a smaller timestamp, it
+      cannot extend the expiration_time. Use 0 to expire the existing token
+      immediately, negative number will return an error.
+
+Usage:
+  databricks recipients rotate-token NAME EXISTING_TOKEN_EXPIRE_IN_SECONDS [flags]
+
+Flags:
+  -h, --help        help for rotate-token
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI recipients share-permissions --help
+Get recipient share permissions.
+  
+  Gets the share permissions for the specified Recipient. The caller must be a
+  metastore admin or the owner of the Recipient.
+
+  Arguments:
+    NAME: The name of the Recipient.
+
+Usage:
+  databricks recipients share-permissions NAME [flags]
+
+Flags:
+  -h, --help                help for share-permissions
+      --max-results int     Maximum number of permissions to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI recipients update --help
+Update a share recipient.
+  
+  Updates an existing recipient in the metastore. The caller must be a metastore
+  admin or the owner of the recipient. If the recipient name will be updated,
+  the user must be both a metastore admin and the owner of the recipient.
+
+  Arguments:
+    NAME: Name of the recipient.
+
+Usage:
+  databricks recipients update NAME [flags]
+
+Flags:
+      --comment string        Description about the recipient.
+      --expiration-time int   Expiration timestamp of the token, in epoch milliseconds.
+  -h, --help                  help for update
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string       New name for the recipient.
+      --owner string          Username of the recipient owner.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

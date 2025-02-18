@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI system-schemas disable --help
+trace $CLI system-schemas enable --help
+trace $CLI system-schemas list --help

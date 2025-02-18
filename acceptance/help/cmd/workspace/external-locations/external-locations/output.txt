@@ -1,0 +1,132 @@
+
+>>> $CLI external-locations create --help
+Create an external location.
+  
+  Creates a new external location entry in the metastore. The caller must be a
+  metastore admin or have the **CREATE_EXTERNAL_LOCATION** privilege on both the
+  metastore and the associated storage credential.
+
+  Arguments:
+    NAME: Name of the external location.
+    URL: Path URL of the external location.
+    CREDENTIAL_NAME: Name of the storage credential used with this location.
+
+Usage:
+  databricks external-locations create NAME URL CREDENTIAL_NAME [flags]
+
+Flags:
+      --access-point string   The AWS access point to use when accesing s3 for this external location.
+      --comment string        User-provided free-form text description.
+      --fallback              Indicates whether fallback mode is enabled for this external location.
+  -h, --help                  help for create
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --read-only             Indicates whether the external location is read-only.
+      --skip-validation       Skips validation of the storage credential associated with the external location.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI external-locations delete --help
+Delete an external location.
+  
+  Deletes the specified external location from the metastore. The caller must be
+  the owner of the external location.
+
+  Arguments:
+    NAME: Name of the external location.
+
+Usage:
+  databricks external-locations delete NAME [flags]
+
+Flags:
+      --force   Force deletion even if there are dependent external tables or mounts.
+  -h, --help    help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI external-locations get --help
+Get an external location.
+  
+  Gets an external location from the metastore. The caller must be either a
+  metastore admin, the owner of the external location, or a user that has some
+  privilege on the external location.
+
+  Arguments:
+    NAME: Name of the external location.
+
+Usage:
+  databricks external-locations get NAME [flags]
+
+Flags:
+  -h, --help             help for get
+      --include-browse   Whether to include external locations in the response for which the principal can only access selective metadata for.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI external-locations list --help
+List external locations.
+  
+  Gets an array of external locations (__ExternalLocationInfo__ objects) from
+  the metastore. The caller must be a metastore admin, the owner of the external
+  location, or a user that has some privilege on the external location. There is
+  no guarantee of a specific ordering of the elements in the array.
+
+Usage:
+  databricks external-locations list [flags]
+
+Flags:
+  -h, --help                help for list
+      --include-browse      Whether to include external locations in the response for which the principal can only access selective metadata for.
+      --max-results int     Maximum number of external locations to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI external-locations update --help
+Update an external location.
+  
+  Updates an external location in the metastore. The caller must be the owner of
+  the external location, or be a metastore admin. In the second case, the admin
+  can only update the name of the external location.
+
+  Arguments:
+    NAME: Name of the external location.
+
+Usage:
+  databricks external-locations update NAME [flags]
+
+Flags:
+      --access-point string            The AWS access point to use when accesing s3 for this external location.
+      --comment string                 User-provided free-form text description.
+      --credential-name string         Name of the storage credential used with this location.
+      --fallback                       Indicates whether fallback mode is enabled for this external location.
+      --force                          Force update even if changing url invalidates dependent external tables or mounts.
+  -h, --help                           help for update
+      --isolation-mode IsolationMode   . Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]
+      --json JSON                      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string                New name for the external location.
+      --owner string                   The owner of the external location.
+      --read-only                      Indicates whether the external location is read-only.
+      --skip-validation                Skips validation of the storage credential associated with the external location.
+      --url string                     Path URL of the external location.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

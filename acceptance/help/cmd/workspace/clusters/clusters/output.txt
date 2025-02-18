@@ -1,0 +1,586 @@
+
+>>> $CLI clusters change-owner --help
+Change cluster owner.
+  
+  Change the owner of the cluster. You must be an admin and the cluster must be
+  terminated to perform this operation. The service principal application ID can
+  be supplied as an argument to owner_username.
+
+  Arguments:
+    CLUSTER_ID: <needs content added>
+    OWNER_USERNAME: New owner of the cluster_id after this RPC.
+
+Usage:
+  databricks clusters change-owner CLUSTER_ID OWNER_USERNAME [flags]
+
+Flags:
+  -h, --help        help for change-owner
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters create --help
+Create new cluster.
+  
+  Creates a new Spark cluster. This method will acquire new instances from the
+  cloud provider if necessary. Note: Databricks may not be able to acquire some
+  of the requested nodes, due to cloud provider limitations (account limits,
+  spot price, etc.) or transient network issues.
+  
+  If Databricks acquires at least 85% of the requested on-demand nodes, cluster
+  creation will succeed. Otherwise the cluster will terminate with an
+  informative error message.
+  
+  Rather than authoring the cluster's JSON definition from scratch, Databricks
+  recommends filling out the [create compute UI] and then copying the generated
+  JSON definition from the UI.
+  
+  [create compute UI]: https://docs.databricks.com/compute/configure.html
+
+  Arguments:
+    SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
+      available Spark versions can be retrieved by using the
+      :method:clusters/sparkVersions API call.
+
+Usage:
+  databricks clusters create SPARK_VERSION [flags]
+
+Flags:
+      --apply-policy-default-values           When set to true, fixed and default values from the policy will be used for fields that are omitted.
+      --autotermination-minutes int           Automatically terminates the cluster after it is inactive for this time in minutes.
+      --cluster-name string                   Cluster name requested by the user.
+      --data-security-mode DataSecurityMode   Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
+                                                DATA_SECURITY_MODE_AUTO,
+                                                DATA_SECURITY_MODE_DEDICATED,
+                                                DATA_SECURITY_MODE_STANDARD,
+                                                LEGACY_PASSTHROUGH,
+                                                LEGACY_SINGLE_USER,
+                                                LEGACY_SINGLE_USER_STANDARD,
+                                                LEGACY_TABLE_ACL,
+                                                NONE,
+                                                SINGLE_USER,
+                                                USER_ISOLATION,
+                                              ]
+      --driver-instance-pool-id string        The optional ID of the instance pool for the driver of the cluster belongs.
+      --driver-node-type-id string            The node type of the Spark driver.
+      --enable-elastic-disk                   Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.
+      --enable-local-disk-encryption          Whether to enable LUKS on cluster VMs' local disks.
+  -h, --help                                  help for create
+      --instance-pool-id string               The optional ID of the instance pool to which the cluster belongs.
+      --is-single-node                        This field can only be used with kind.
+      --json JSON                             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --kind Kind                             The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]
+      --no-wait                               do not wait to reach RUNNING state
+      --node-type-id string                   This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.
+      --num-workers int                       Number of worker nodes that this cluster should have.
+      --policy-id string                      The ID of the cluster policy used to create the cluster if applicable.
+      --runtime-engine RuntimeEngine          Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]
+      --single-user-name string               Single user name if data_security_mode is SINGLE_USER.
+      --timeout duration                      maximum amount of time to reach RUNNING state (default 20m0s)
+      --use-ml-runtime                        This field can only be used with kind.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters delete --help
+Terminate cluster.
+  
+  Terminates the Spark cluster with the specified ID. The cluster is removed
+  asynchronously. Once the termination has completed, the cluster will be in a
+  TERMINATED state. If the cluster is already in a TERMINATING or
+  TERMINATED state, nothing will happen.
+
+  Arguments:
+    CLUSTER_ID: The cluster to be terminated.
+
+Usage:
+  databricks clusters delete CLUSTER_ID [flags]
+
+Flags:
+  -h, --help               help for delete
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach TERMINATED state
+      --timeout duration   maximum amount of time to reach TERMINATED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters edit --help
+Update cluster configuration.
+  
+  Updates the configuration of a cluster to match the provided attributes and
+  size. A cluster can be updated if it is in a RUNNING or TERMINATED state.
+  
+  If a cluster is updated while in a RUNNING state, it will be restarted so
+  that the new attributes can take effect.
+  
+  If a cluster is updated while in a TERMINATED state, it will remain
+  TERMINATED. The next time it is started using the clusters/start API, the
+  new attributes will take effect. Any attempt to update a cluster in any other
+  state will be rejected with an INVALID_STATE error code.
+  
+  Clusters created by the Databricks Jobs service cannot be edited.
+
+  Arguments:
+    CLUSTER_ID: ID of the cluster
+    SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
+      available Spark versions can be retrieved by using the
+      :method:clusters/sparkVersions API call.
+
+Usage:
+  databricks clusters edit CLUSTER_ID SPARK_VERSION [flags]
+
+Flags:
+      --apply-policy-default-values           When set to true, fixed and default values from the policy will be used for fields that are omitted.
+      --autotermination-minutes int           Automatically terminates the cluster after it is inactive for this time in minutes.
+      --cluster-name string                   Cluster name requested by the user.
+      --data-security-mode DataSecurityMode   Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
+                                                DATA_SECURITY_MODE_AUTO,
+                                                DATA_SECURITY_MODE_DEDICATED,
+                                                DATA_SECURITY_MODE_STANDARD,
+                                                LEGACY_PASSTHROUGH,
+                                                LEGACY_SINGLE_USER,
+                                                LEGACY_SINGLE_USER_STANDARD,
+                                                LEGACY_TABLE_ACL,
+                                                NONE,
+                                                SINGLE_USER,
+                                                USER_ISOLATION,
+                                              ]
+      --driver-instance-pool-id string        The optional ID of the instance pool for the driver of the cluster belongs.
+      --driver-node-type-id string            The node type of the Spark driver.
+      --enable-elastic-disk                   Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.
+      --enable-local-disk-encryption          Whether to enable LUKS on cluster VMs' local disks.
+  -h, --help                                  help for edit
+      --instance-pool-id string               The optional ID of the instance pool to which the cluster belongs.
+      --is-single-node                        This field can only be used with kind.
+      --json JSON                             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --kind Kind                             The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]
+      --no-wait                               do not wait to reach RUNNING state
+      --node-type-id string                   This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.
+      --num-workers int                       Number of worker nodes that this cluster should have.
+      --policy-id string                      The ID of the cluster policy used to create the cluster if applicable.
+      --runtime-engine RuntimeEngine          Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]
+      --single-user-name string               Single user name if data_security_mode is SINGLE_USER.
+      --timeout duration                      maximum amount of time to reach RUNNING state (default 20m0s)
+      --use-ml-runtime                        This field can only be used with kind.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters events --help
+List cluster activity events.
+  
+  Retrieves a list of events about the activity of a cluster. This API is
+  paginated. If there are more events to read, the response includes all the
+  nparameters necessary to request the next page of events.
+
+  Arguments:
+    CLUSTER_ID: The ID of the cluster to retrieve events about.
+
+Usage:
+  databricks clusters events CLUSTER_ID [flags]
+
+Flags:
+      --end-time int           The end time in epoch milliseconds.
+  -h, --help                   help for events
+      --json JSON              either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --limit int              The maximum number of events to include in a page of events.
+      --offset int             The offset in the result set.
+      --order GetEventsOrder   The order to list events in; either "ASC" or "DESC". Supported values: [ASC, DESC]
+      --start-time int         The start time in epoch milliseconds.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters get --help
+Get cluster info.
+  
+  Retrieves the information for a cluster given its identifier. Clusters can be
+  described while they are running, or up to 60 days after they are terminated.
+
+  Arguments:
+    CLUSTER_ID: The cluster about which to retrieve information.
+
+Usage:
+  databricks clusters get CLUSTER_ID [flags]
+
+Flags:
+  -h, --help               help for get
+      --no-wait            do not wait to reach RUNNING state
+      --timeout duration   maximum amount of time to reach RUNNING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters get-permission-levels --help
+Get cluster permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    CLUSTER_ID: The cluster for which to get or manage permissions.
+
+Usage:
+  databricks clusters get-permission-levels CLUSTER_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters get-permissions --help
+Get cluster permissions.
+  
+  Gets the permissions of a cluster. Clusters can inherit permissions from their
+  root object.
+
+  Arguments:
+    CLUSTER_ID: The cluster for which to get or manage permissions.
+
+Usage:
+  databricks clusters get-permissions CLUSTER_ID [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters list --help
+List clusters.
+  
+  Return information about all pinned and active clusters, and all clusters
+  terminated within the last 30 days. Clusters terminated prior to this period
+  are not included.
+
+Usage:
+  databricks clusters list [flags]
+
+Flags:
+      --cluster-sources []string   Filter clusters by source
+      --cluster-states []string    Filter clusters by states
+  -h, --help                       help for list
+      --is-pinned                  Filter clusters by pinned status
+      --page-size int              Use this field to specify the maximum number of results to be returned by the server.
+      --page-token string          Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of clusters respectively.
+      --policy-id string           Filter clusters by policy id
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters list-node-types --help
+List node types.
+  
+  Returns a list of supported Spark node types. These node types can be used to
+  launch a cluster.
+
+Usage:
+  databricks clusters list-node-types [flags]
+
+Flags:
+  -h, --help   help for list-node-types
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters list-zones --help
+List availability zones.
+  
+  Returns a list of availability zones where clusters can be created in (For
+  example, us-west-2a). These zones can be used to launch a cluster.
+
+Usage:
+  databricks clusters list-zones [flags]
+
+Flags:
+  -h, --help   help for list-zones
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters permanent-delete --help
+Permanently delete cluster.
+  
+  Permanently deletes a Spark cluster. This cluster is terminated and resources
+  are asynchronously removed.
+  
+  In addition, users will no longer see permanently deleted clusters in the
+  cluster list, and API users can no longer perform any action on permanently
+  deleted clusters.
+
+  Arguments:
+    CLUSTER_ID: The cluster to be deleted.
+
+Usage:
+  databricks clusters permanent-delete CLUSTER_ID [flags]
+
+Flags:
+  -h, --help        help for permanent-delete
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters pin --help
+Pin cluster.
+  
+  Pinning a cluster ensures that the cluster will always be returned by the
+  ListClusters API. Pinning a cluster that is already pinned will have no
+  effect. This API can only be called by workspace admins.
+
+  Arguments:
+    CLUSTER_ID: <needs content added>
+
+Usage:
+  databricks clusters pin CLUSTER_ID [flags]
+
+Flags:
+  -h, --help        help for pin
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters resize --help
+Resize cluster.
+  
+  Resizes a cluster to have a desired number of workers. This will fail unless
+  the cluster is in a RUNNING state.
+
+  Arguments:
+    CLUSTER_ID: The cluster to be resized.
+
+Usage:
+  databricks clusters resize CLUSTER_ID [flags]
+
+Flags:
+  -h, --help               help for resize
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach RUNNING state
+      --num-workers int    Number of worker nodes that this cluster should have.
+      --timeout duration   maximum amount of time to reach RUNNING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters restart --help
+Restart cluster.
+  
+  Restarts a Spark cluster with the supplied ID. If the cluster is not currently
+  in a RUNNING state, nothing will happen.
+
+  Arguments:
+    CLUSTER_ID: The cluster to be started.
+
+Usage:
+  databricks clusters restart CLUSTER_ID [flags]
+
+Flags:
+  -h, --help                  help for restart
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait               do not wait to reach RUNNING state
+      --restart-user string   <needs content added>.
+      --timeout duration      maximum amount of time to reach RUNNING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters set-permissions --help
+Set cluster permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    CLUSTER_ID: The cluster for which to get or manage permissions.
+
+Usage:
+  databricks clusters set-permissions CLUSTER_ID [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters spark-versions --help
+List available Spark versions.
+  
+  Returns the list of available Spark versions. These versions can be used to
+  launch a cluster.
+
+Usage:
+  databricks clusters spark-versions [flags]
+
+Flags:
+  -h, --help   help for spark-versions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters start --help
+Start terminated cluster.
+  
+  Starts a terminated Spark cluster with the supplied ID. This works similar to
+  createCluster except:
+  
+  * The previous cluster id and attributes are preserved. * The cluster starts
+  with the last specified cluster size. * If the previous cluster was an
+  autoscaling cluster, the current cluster starts with the minimum number of
+  nodes. * If the cluster is not currently in a TERMINATED state, nothing will
+  happen. * Clusters launched to run a job cannot be started.
+
+  Arguments:
+    CLUSTER_ID: The cluster to be started.
+
+Usage:
+  databricks clusters start CLUSTER_ID [flags]
+
+Flags:
+  -h, --help               help for start
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach RUNNING state
+      --timeout duration   maximum amount of time to reach RUNNING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters unpin --help
+Unpin cluster.
+  
+  Unpinning a cluster will allow the cluster to eventually be removed from the
+  ListClusters API. Unpinning a cluster that is not pinned will have no effect.
+  This API can only be called by workspace admins.
+
+  Arguments:
+    CLUSTER_ID: <needs content added>
+
+Usage:
+  databricks clusters unpin CLUSTER_ID [flags]
+
+Flags:
+  -h, --help        help for unpin
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters update --help
+Update cluster configuration (partial).
+  
+  Updates the configuration of a cluster to match the partial set of attributes
+  and size. Denote which fields to update using the update_mask field in the
+  request body. A cluster can be updated if it is in a RUNNING or TERMINATED
+  state. If a cluster is updated while in a RUNNING state, it will be
+  restarted so that the new attributes can take effect. If a cluster is updated
+  while in a TERMINATED state, it will remain TERMINATED. The updated
+  attributes will take effect the next time the cluster is started using the
+  clusters/start API. Attempts to update a cluster in any other state will be
+  rejected with an INVALID_STATE error code. Clusters created by the
+  Databricks Jobs service cannot be updated.
+
+  Arguments:
+    CLUSTER_ID: ID of the cluster.
+    UPDATE_MASK: Specifies which fields of the cluster will be updated. This is required in
+      the POST request. The update mask should be supplied as a single string.
+      To specify multiple fields, separate them with commas (no spaces). To
+      delete a field from a cluster configuration, add it to the update_mask
+      string but omit it from the cluster object.
+
+Usage:
+  databricks clusters update CLUSTER_ID UPDATE_MASK [flags]
+
+Flags:
+  -h, --help               help for update
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach RUNNING state
+      --timeout duration   maximum amount of time to reach RUNNING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI clusters update-permissions --help
+Update cluster permissions.
+  
+  Updates the permissions on a cluster. Clusters can inherit permissions from
+  their root object.
+
+  Arguments:
+    CLUSTER_ID: The cluster for which to get or manage permissions.
+
+Usage:
+  databricks clusters update-permissions CLUSTER_ID [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

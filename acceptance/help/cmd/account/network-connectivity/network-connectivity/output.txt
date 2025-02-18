@@ -1,0 +1,184 @@
+
+>>> $CLI account network-connectivity create-network-connectivity-configuration --help
+Create a network connectivity configuration.
+
+  Arguments:
+    NAME: The name of the network connectivity configuration. The name can contain
+      alphanumeric characters, hyphens, and underscores. The length must be
+      between 3 and 30 characters. The name must match the regular expression
+      ^[0-9a-zA-Z-_]{3,30}$.
+    REGION: The region for the network connectivity configuration. Only workspaces in
+      the same region can be attached to the network connectivity configuration.
+
+Usage:
+  databricks account network-connectivity create-network-connectivity-configuration NAME REGION [flags]
+
+Flags:
+  -h, --help        help for create-network-connectivity-configuration
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account network-connectivity create-private-endpoint-rule --help
+Create a private endpoint rule.
+  
+  Create a private endpoint rule for the specified network connectivity config
+  object. Once the object is created, Databricks asynchronously provisions a new
+  Azure private endpoint to your specified Azure resource.
+  
+  **IMPORTANT**: You must use Azure portal or other Azure tools to approve the
+  private endpoint to complete the connection. To get the information of the
+  private endpoint created, make a GET request on the new private endpoint
+  rule. See [serverless private link].
+  
+  [serverless private link]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security/serverless-private-link
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+    RESOURCE_ID: The Azure resource ID of the target resource.
+    GROUP_ID: The sub-resource type (group ID) of the target resource. Note that to
+      connect to workspace root storage (root DBFS), you need two endpoints, one
+      for blob and one for dfs.
+
+Usage:
+  databricks account network-connectivity create-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID RESOURCE_ID GROUP_ID [flags]
+
+Flags:
+  -h, --help        help for create-private-endpoint-rule
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account network-connectivity delete-network-connectivity-configuration --help
+Delete a network connectivity configuration.
+  
+  Deletes a network connectivity configuration.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+
+Usage:
+  databricks account network-connectivity delete-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID [flags]
+
+Flags:
+  -h, --help   help for delete-network-connectivity-configuration
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account network-connectivity delete-private-endpoint-rule --help
+Delete a private endpoint rule.
+  
+  Initiates deleting a private endpoint rule. If the connection state is PENDING
+  or EXPIRED, the private endpoint is immediately deleted. Otherwise, the
+  private endpoint is deactivated and will be deleted after seven days of
+  deactivation. When a private endpoint is deactivated, the deactivated field
+  is set to true and the private endpoint is not available to your serverless
+  compute resources.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.
+
+Usage:
+  databricks account network-connectivity delete-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID [flags]
+
+Flags:
+  -h, --help   help for delete-private-endpoint-rule
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account network-connectivity get-network-connectivity-configuration --help
+Get a network connectivity configuration.
+  
+  Gets a network connectivity configuration.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+
+Usage:
+  databricks account network-connectivity get-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID [flags]
+
+Flags:
+  -h, --help   help for get-network-connectivity-configuration
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account network-connectivity get-private-endpoint-rule --help
+Get a private endpoint rule.
+  
+  Gets the private endpoint rule.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.
+
+Usage:
+  databricks account network-connectivity get-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID [flags]
+
+Flags:
+  -h, --help   help for get-private-endpoint-rule
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account network-connectivity list-network-connectivity-configurations --help
+List network connectivity configurations.
+  
+  Gets an array of network connectivity configurations.
+
+Usage:
+  databricks account network-connectivity list-network-connectivity-configurations [flags]
+
+Flags:
+  -h, --help                help for list-network-connectivity-configurations
+      --page-token string   Pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account network-connectivity list-private-endpoint-rules --help
+List private endpoint rules.
+  
+  Gets an array of private endpoint rules.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+
+Usage:
+  databricks account network-connectivity list-private-endpoint-rules NETWORK_CONNECTIVITY_CONFIG_ID [flags]
+
+Flags:
+  -h, --help                help for list-private-endpoint-rules
+      --page-token string   Pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account access-control get-assignable-roles-for-resource --help
+trace $CLI account access-control get-rule-set --help
+trace $CLI account access-control update-rule-set --help

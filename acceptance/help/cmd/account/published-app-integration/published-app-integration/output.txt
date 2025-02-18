@@ -1,0 +1,96 @@
+
+>>> $CLI account published-app-integration create --help
+Create Published OAuth App Integration.
+  
+  Create Published OAuth App Integration.
+  
+  You can retrieve the published OAuth app integration via
+  :method:PublishedAppIntegration/get.
+
+Usage:
+  databricks account published-app-integration create [flags]
+
+Flags:
+      --app-id string   App id of the OAuth published app integration.
+  -h, --help            help for create
+      --json JSON       either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account published-app-integration delete --help
+Delete Published OAuth App Integration.
+  
+  Delete an existing Published OAuth App Integration. You can retrieve the
+  published OAuth app integration via :method:PublishedAppIntegration/get.
+
+Usage:
+  databricks account published-app-integration delete INTEGRATION_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account published-app-integration get --help
+Get OAuth Published App Integration.
+  
+  Gets the Published OAuth App Integration for the given integration id.
+
+Usage:
+  databricks account published-app-integration get INTEGRATION_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account published-app-integration list --help
+Get published oauth app integrations.
+  
+  Get the list of published OAuth app integrations for the specified Databricks
+  account
+
+Usage:
+  databricks account published-app-integration list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account published-app-integration update --help
+Updates Published OAuth App Integration.
+  
+  Updates an existing published OAuth App Integration. You can retrieve the
+  published OAuth app integration via :method:PublishedAppIntegration/get.
+
+Usage:
+  databricks account published-app-integration update INTEGRATION_ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,91 @@
+
+>>> $CLI account networks create --help
+Create network configuration.
+  
+  Creates a Databricks network configuration that represents an VPC and its
+  resources. The VPC will be used for new Databricks clusters. This requires a
+  pre-existing VPC and subnets.
+
+  Arguments:
+    NETWORK_NAME: The human-readable name of the network configuration.
+
+Usage:
+  databricks account networks create NETWORK_NAME [flags]
+
+Flags:
+  -h, --help            help for create
+      --json JSON       either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --vpc-id string   The ID of the VPC associated with this network.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account networks delete --help
+Delete a network configuration.
+  
+  Deletes a Databricks network configuration, which represents a cloud VPC and
+  its resources. You cannot delete a network that is associated with a
+  workspace.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.
+
+  Arguments:
+    NETWORK_ID: Databricks Account API network configuration ID.
+
+Usage:
+  databricks account networks delete NETWORK_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account networks get --help
+Get a network configuration.
+  
+  Gets a Databricks network configuration, which represents a cloud VPC and its
+  resources.
+
+  Arguments:
+    NETWORK_ID: Databricks Account API network configuration ID.
+
+Usage:
+  databricks account networks get NETWORK_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account networks list --help
+Get all network configurations.
+  
+  Gets a list of all Databricks network configurations for an account, specified
+  by ID.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.
+
+Usage:
+  databricks account networks list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
