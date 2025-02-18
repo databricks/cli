@@ -44,7 +44,7 @@ func (d *Daemon) Start() error {
 
 	d.cmd = exec.Command(executable, d.Args...)
 
-	// Set environment variable so that the child process knows it's parent's PID.
+	// Set environment variable so that the child process knows its parent's PID.
 	// In unix systems orphaned processes are automatically re-parented to init (pid 1)
 	// so we cannot rely on os.Getppid() to get the original parent's pid.
 	d.Env = append(d.Env, fmt.Sprintf("%s=%d", DatabricksCliParentPid, os.Getpid()))
