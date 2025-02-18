@@ -27,7 +27,7 @@ wait_pid() {
         attempt=$((attempt + 1))
     done
 
-    echo "Timeout: Process $pid did not end within 10 seconds"
+    echo "Timeout: Process $pid did not end within 1 minute"
     return 1
 }
 
