@@ -35,7 +35,7 @@ type LocalCache[T any] struct {
 }
 
 func (r *LocalCache[T]) Load(ctx context.Context, refresh func() (T, error)) (T, error) {
-	cached, err := r.loadCache()
+	cached, err := r.LoadCache()
 	if errors.Is(err, fs.ErrNotExist) {
 		return r.refreshCache(ctx, refresh, r.zero)
 	} else if err != nil {
@@ -96,7 +96,7 @@ func (r *LocalCache[T]) FileName() string {
 	return filepath.Join(r.dir, r.name+".json")
 }
 
-func (r *LocalCache[T]) loadCache() (*cached[T], error) {
+func (r *LocalCache[T]) LoadCache() (*cached[T], error) {
 	jsonFile := r.FileName()
 	raw, err := os.ReadFile(r.FileName())
 	if err != nil {

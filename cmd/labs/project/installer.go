@@ -79,7 +79,7 @@ type installer struct {
 	cmd *cobra.Command
 }
 
-func (i *installer) Install(ctx context.Context) error {
+func (i *installer) Install(ctx context.Context, offlineInstall bool) error {
 	err := i.EnsureFoldersExist()
 	if err != nil {
 		return fmt.Errorf("folders: %w", err)
@@ -101,9 +101,15 @@ func (i *installer) Install(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("login: %w", err)
 	}
-	err = i.downloadLibrary(ctx)
-	if err != nil {
-		return fmt.Errorf("lib: %w", err)
+	if !offlineInstall {
+		err = i.downloadLibrary(ctx)
+		if err != nil {
+			return fmt.Errorf("lib: %w", err)
+		}
+	}
+
+	if _, err := os.Stat(i.LibDir()); os.IsNotExist(err) {
+		return fmt.Errorf("no local installation found: %w", err)
 	}
 	err = i.setupPythonVirtualEnvironment(ctx, w)
 	if err != nil {
