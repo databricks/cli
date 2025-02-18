@@ -13,5 +13,6 @@ func New() *cobra.Command {
 
 	cmd.AddCommand(newChildCommand())
 	cmd.AddCommand(newParentCommand())
+	cmd.AddCommand(newSendTelemetry())
 	return cmd
 }

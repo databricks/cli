@@ -1,0 +1,7 @@
+[[Server]]
+Pattern = "POST /telemetry-ext"
+Response.Body = '''
+{
+    "numProtoSuccess": 2
+}
+'''

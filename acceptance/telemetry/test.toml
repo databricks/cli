@@ -1,0 +1,11 @@
+LocalOnly = true
+RecordRequests = true
+IncludeRequestHeaders = ["Authorization", "User-Agent"]
+
+[[Repls]]
+Old = '17\d{11}'
+New = '"UNIX_TIME_MILLIS"'
+
+[[Repls]]
+Old = 'darwin|linux|windows'
+New = 'OS'

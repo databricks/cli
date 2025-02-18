@@ -1,0 +1,13 @@
+[[Server]]
+Pattern = "POST /telemetry-ext"
+Response.Body = '''
+{
+    "error_code": "ERROR_CODE",
+    "message": "Endpoint not implemented."
+}
+'''
+Response.StatusCode = 501
+
+[[Repls]]
+Old = 'execution_time_ms\\\":\d{1,5},'
+New = 'execution_time_ms\":\"SMALL_INT\",'

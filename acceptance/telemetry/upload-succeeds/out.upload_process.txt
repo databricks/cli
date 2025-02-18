@@ -1,0 +1,3 @@
+Telemetry logs uploaded successfully
+Response:
+{"errors":null,"numProtoSuccess":2}
