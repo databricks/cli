@@ -181,6 +181,11 @@ func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, e
 		return
 	}
 
+	// Telemetry is disabled. We don't upload logs.
+	if _, ok := os.LookupEnv(telemetry.DisableEnvVar); ok {
+		return
+	}
+
 	telemetry.SetExecutionContext(ctx, protos.ExecutionContext{
 		CmdExecID:       cmdExecId,
 		Version:         build.GetInfo().Version,

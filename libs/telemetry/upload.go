@@ -21,6 +21,10 @@ const (
 
 	// File containing the PID of the telemetry upload process.
 	PidFileEnvVar = "DATABRICKS_CLI_TELEMETRY_PID_FILE"
+
+	// Environment variable to disable telemetry. If this is set to any value, telemetry
+	// will be disabled.
+	DisableEnvVar = "DATABRICKS_CLI_DISABLE_TELEMETRY"
 )
 
 type UploadConfig struct {

@@ -14,6 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: Add flag to allow skipping telemetry.
+// TODO: Add verification that the telemetry process uses the correct authentication
+// credentials.
+
 func TestTelemetryUploadRetries(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
