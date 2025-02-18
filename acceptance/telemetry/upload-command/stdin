@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "frontend_log_event_id": "BB79BB52-96F6-42C5-9E44-E63EEA84888D",
+            "frontend_log_event_id": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
             "entry": {
                 "databricks_cli_log": {
                     "cli_test_event": {
@@ -11,7 +11,7 @@
             }
         },
         {
-            "frontend_log_event_id": "A7F597B0-66D1-462D-824C-C5C706F232E8",
+            "frontend_log_event_id": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
             "entry": {
                 "databricks_cli_log": {
                     "cli_test_event": {

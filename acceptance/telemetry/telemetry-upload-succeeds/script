@@ -1,14 +1,11 @@
 export DATABRICKS_CLI_TELEMETRY_PID_FILE=./telemetry.pid
-export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload.txt
+export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.send_telemetry.txt
 
-# This test ensures that the main CLI command does not error even if
-# telemetry upload fails.
-trace $CLI telemetry dummy
+trace $CLI selftest send-telemetry
 
 echo "waiting for telemetry process to finish"
 
 # Wait for the child telemetry process to finish
-wait_file ./telemetry.pid
 wait_pid $(cat ./telemetry.pid)
 
 # cleanup the pid file

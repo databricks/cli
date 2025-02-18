@@ -7,16 +7,15 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"runtime"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/daemon"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -198,47 +197,38 @@ func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, e
 		Logs: logs,
 	}
 
-	execPath, err := os.Executable()
-	if err != nil {
-		log.Debugf(ctx, "failed to get executable path: %s", err)
-	}
-	telemetryCmd := exec.Command(execPath, "telemetry", "upload")
-	telemetryCmd.Env = inheritEnvVars()
+	// Compute environment variables with the appropriate auth configuration.
+	env := inheritEnvVars()
 	for k, v := range auth.Env(ConfigUsed(ctx)) {
-		telemetryCmd.Env = append(telemetryCmd.Env, fmt.Sprintf("%s=%s", k, v))
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	b, err := json.Marshal(in)
-	if err != nil {
-		log.Debugf(ctx, "failed to marshal telemetry logs: %s", err)
-		return
+	d := daemon.Daemon{
+		Args:        []string{"telemetry", "upload"},
+		Env:         env,
+		PidFilePath: os.Getenv(telemetry.PidFileEnvVar),
+		LogFile:     os.Getenv(telemetry.UploadLogsFileEnvVar),
 	}
 
-	stdin, err := telemetryCmd.StdinPipe()
-	if err != nil {
-		log.Debugf(ctx, "failed to create stdin pipe for telemetry worker: %s", err)
-	}
-
-	err = telemetryCmd.Start()
+	err := d.Start()
 	if err != nil {
 		log.Debugf(ctx, "failed to start telemetry worker: %s", err)
 		return
 	}
 
-	if pidFilePath := env.Get(ctx, telemetry.PidFileEnvVar); pidFilePath != "" {
-		err = os.WriteFile(pidFilePath, []byte(strconv.Itoa(telemetryCmd.Process.Pid)), 0o644)
-		if err != nil {
-			log.Debugf(ctx, "failed to write telemetry worker PID file: %s", err)
-		}
+	// If the telemetry worker is started successfully, we write the logs to its stdin.
+	b, err := json.Marshal(in)
+	if err != nil {
+		log.Debugf(ctx, "failed to marshal telemetry logs: %s", err)
+		return
 	}
-
-	_, err = stdin.Write(b)
+	err = d.WriteInput(b)
 	if err != nil {
 		log.Debugf(ctx, "failed to write to telemetry worker: %s", err)
 	}
 
-	err = stdin.Close()
+	err = d.Release()
 	if err != nil {
-		log.Debugf(ctx, "failed to close stdin for telemetry worker: %s", err)
+		log.Debugf(ctx, "failed to release telemetry worker: %s", err)
 	}
 }

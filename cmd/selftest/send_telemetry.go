@@ -1,4 +1,4 @@
-package telemetry
+package selftest
 
 import (
 	"github.com/databricks/cli/cmd/root"
@@ -7,12 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newDummyCommand() *cobra.Command {
+func newSendTelemetry() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "dummy",
-		Short:   "log dummy telemetry events",
-		Long:    "Fire a test telemetry event against the configured Databricks workspace.",
-		Hidden:  true,
+		Use:     "send-telemetry",
+		Short:   "log some test telemetry events",
 		PreRunE: root.MustWorkspaceClient,
 	}
 

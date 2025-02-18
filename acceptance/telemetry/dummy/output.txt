@@ -1,5 +1,0 @@
-
->>> [CLI] telemetry dummy
-waiting for telemetry process to finish
-File ./telemetry.pid exists
-Process has ended
