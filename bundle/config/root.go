@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/dynloc"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
@@ -69,6 +70,10 @@ type Root struct {
 	// Permissions section allows to define permissions which will be
 	// applied to all resources defined in bundle
 	Permissions []resources.Permission `json:"permissions,omitempty"`
+
+	// Locations is an output-only field that holds configuration location
+	// information for every path in the configuration tree.
+	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
 }
 
 // Load loads the bundle configuration file at the specified path.
