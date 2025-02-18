@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,12 +57,18 @@ const (
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 100_000
+	// Filename to save replacements to (used by diff.py)
+	ReplsFile = "repls.json"
 )
 
 var Scripts = map[string]bool{
 	EntryPointScript: true,
 	CleanupScript:    true,
 	PrepareScript:    true,
+}
+
+var Ignored = map[string]bool{
+	ReplsFile: true,
 }
 
 func TestAccept(t *testing.T) {
@@ -152,6 +157,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
+
+	repls.SetPath(cwd, "[TESTROOT]")
 
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
@@ -259,16 +266,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			server.RecordRequests = config.RecordRequests
 			server.IncludeRequestHeaders = config.IncludeRequestHeaders
 
+			// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
+			// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
+			slices.Reverse(config.Server)
+
 			for _, stub := range config.Server {
 				require.NotEmpty(t, stub.Pattern)
 				items := strings.Split(stub.Pattern, " ")
 				require.Len(t, items, 2)
-				server.Handle(items[0], items[1], func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
-					statusCode := http.StatusOK
-					if stub.Response.StatusCode != 0 {
-						statusCode = stub.Response.StatusCode
-					}
-					return stub.Response.Body, statusCode
+				server.Handle(items[0], items[1], func(req testserver.Request) any {
+					return stub.Response
 				})
 			}
 
@@ -311,6 +318,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// User replacements come last:
 	repls.Repls = append(repls.Repls, config.Repls...)
 
+	// Save replacements to temp test directory so that it can be read by diff.py
+	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
+	require.NoError(t, err)
+	testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
+
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
@@ -320,6 +332,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
+
+	absDir, err := filepath.Abs(dir)
+	require.NoError(t, err)
+	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
@@ -369,6 +385,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if _, ok := outputs[relPath]; ok {
 			continue
 		}
+		if _, ok := Ignored[relPath]; ok {
+			continue
+		}
 		unexpected = append(unexpected, relPath)
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
@@ -403,8 +422,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
-		t.Errorf("Missing output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
-		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		t.Errorf("Missing output file: %s", relPath)
 		if testdiff.OverwriteMode {
 			t.Logf("Removing output file: %s", relPath)
 			require.NoError(t, os.Remove(pathRef))
