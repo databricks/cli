@@ -1,0 +1,13 @@
+$CLI selftest parent
+
+echo "[script] waiting for child process to end..."
+echo -n "[script]"
+wait_pid $(cat ./child.pid)
+
+echo "[script] child process should not have written any output."
+
+rm ./child.pid
+
+# README:
+# THis test validates that stdout / stderr from the child process are not leaked
+# to the parent process's output.

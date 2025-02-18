@@ -1,0 +1,21 @@
+export DATABRICKS_CLI_SELFTEST_CHILD_OUTPUT_FILE="out.parentchild.txt"
+
+$CLI selftest parent > "out.parentchild.txt"
+
+echo "[script] waiting for child process to end..."
+echo -n "[script]"
+wait_pid $(cat ./child.pid)
+
+rm ./child.pid
+
+# README:
+# This test validates two features of libs/daemon:
+# 1. The parent process does not wait for the child process to end.
+# 2. The child process correctly receives input from the parent process.
+#
+# Property (1) is validated because the child process waits for its parent process
+# to end before it writes to stdout.
+#
+# Property (2) is directly validated by the output of the child process.
+#
+# See the code for "selftest parent" and "selftest child" commands for more details.
