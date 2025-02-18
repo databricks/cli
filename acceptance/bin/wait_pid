@@ -1,11 +1,10 @@
 #!/bin/bash
 
-
 # wait <pid> in bash only works for processes that are direct children to the calling
 # shell. This script is more general purpose.
 wait_pid() {
     local pid=$1
-    local max_attempts=100  # 100 * 0.1 seconds = 10 seconds
+    local max_attempts=600  # 600 * 0.1 seconds = 1 Minute
     local attempt=0
     local sleep_time=0.1
 
@@ -13,13 +12,13 @@ wait_pid() {
         if [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "cygwin"* ]]; then
             # Windows approach
             if ! tasklist | grep -q $pid; then
-                echo "Process has ended"
+                echo "[wait_pid] process has ended"
                 return 0
             fi
         else
             # Linux/macOS approach
             if ! kill -0 $pid 2>/dev/null; then
-                echo "Process has ended"
+                echo "[wait_pid] process has ended"
                 return 0
             fi
         fi
@@ -28,7 +27,7 @@ wait_pid() {
         attempt=$((attempt + 1))
     done
 
-    echo "Timeout: Process $pid did not end within 10 seconds"
+    echo "Timeout: Process $pid did not end within 1 minute"
     return 1
 }
 
