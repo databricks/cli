@@ -26,7 +26,7 @@ type Daemon struct {
 	// Log file to write the child process's output to.
 	LogFile string
 
-	outFile *os.File
+	logFile *os.File
 	cmd     *exec.Cmd
 	stdin   io.WriteCloser
 }
@@ -58,13 +58,13 @@ func (d *Daemon) Start() error {
 
 	// If a log file is provided, redirect stdout and stderr to the log file.
 	if d.LogFile != "" {
-		d.outFile, err = os.OpenFile(d.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		d.logFile, err = os.OpenFile(d.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if err != nil {
 			return fmt.Errorf("failed to open log file: %w", err)
 		}
 
-		d.cmd.Stdout = d.outFile
-		d.cmd.Stderr = d.outFile
+		d.cmd.Stdout = d.logFile
+		d.cmd.Stderr = d.logFile
 	}
 
 	d.stdin, err = d.cmd.StdinPipe()
@@ -100,8 +100,8 @@ func (d *Daemon) Release() error {
 		}
 	}
 
-	if d.outFile != nil {
-		err := d.outFile.Close()
+	if d.logFile != nil {
+		err := d.logFile.Close()
 		if err != nil {
 			return fmt.Errorf("failed to close log file: %w", err)
 		}
