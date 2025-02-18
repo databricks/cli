@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"encoding/json"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,24 +14,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTelemetryUpload(t *testing.T) {
+func TestTelemetryUploadRetries(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
 	count := 0
-	server.Handle("POST", "/telemetry-ext", func(_ *testserver.FakeWorkspace, req *http.Request) (resp any, statusCode int) {
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
 		count++
 		if count == 1 {
 			return ResponseBody{
 				NumProtoSuccess: 1,
-			}, http.StatusOK
+			}
 		}
 		if count == 2 {
 			return ResponseBody{
 				NumProtoSuccess: 2,
-			}, http.StatusOK
+			}
 		}
-		return nil, http.StatusInternalServerError
+		return nil
 	})
 
 	t.Setenv("DATABRICKS_HOST", server.URL)
@@ -67,14 +66,14 @@ func TestTelemetryUpload(t *testing.T) {
 	tmpDir := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(tmpDir, "stdin"), string(b))
 
-	fd, err := os.OpenFile(filepath.Join(tmpDir, "stdin"), os.O_RDONLY, 0o644)
+	f, err := os.OpenFile(filepath.Join(tmpDir, "stdin"), os.O_RDONLY, 0o644)
 	require.NoError(t, err)
 
 	// Redirect stdin to the file containing the telemetry logs.
 	old := os.Stdin
-	os.Stdin = fd
+	os.Stdin = f
 	t.Cleanup(func() {
-		fd.Close()
+		f.Close()
 		os.Stdin = old
 	})
 
