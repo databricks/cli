@@ -186,6 +186,8 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	return w, err
 }
 
+// TODO: Make upload with oauth work.
+// TODO: Move env var inheritance to the daemon library.
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
