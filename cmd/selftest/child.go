@@ -17,8 +17,8 @@ func newChildCommand() *cobra.Command {
 			// wait_pid lives in acceptance/bin. We expect this command to only be called
 			// from acceptance tests.
 			//
-			// Note: The golang stdlib only provides a way to wait on processes
-			// that are children of the current process. While it's possible to
+			// Note: The golang standard library only provides a way to wait on
+			// processes that are children of the current process. While it's possible to
 			// rely on os native syscalls to wait on arbitrary processes, it's hard
 			// to get right and test.
 			waitCmd := exec.Command("bash", "-euo", "pipefail", "wait_pid", os.Getenv(daemon.DatabricksCliParentPid))
