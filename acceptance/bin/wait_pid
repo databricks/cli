@@ -5,7 +5,7 @@
 # shell. This script is more general purpose.
 wait_pid() {
     local pid=$1
-    local max_attempts=100  # 100 * 0.1 seconds = 10 seconds
+    local max_attempts=600  # 600 * 0.1 seconds = 1 Minute
     local attempt=0
     local sleep_time=0.1
 
