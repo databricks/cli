@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "pypi": {
+      "package": "dbt-databricks>=1.8.0,<2.0.0"
+    }
+  }
+]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pypi/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
