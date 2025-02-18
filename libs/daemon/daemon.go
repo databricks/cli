@@ -111,8 +111,7 @@ func (d *Daemon) Release() error {
 		return nil
 	}
 
-	// The docs recommend calling Release if Wait is not called. This does not
-	// seem to be necessary since the functionality works without it. However, we
-	// we add it just to be safe.
+	// The docs for [os.Process.Release] recommend calling Release if Wait is not called.
+	// It's probably not necessary but we call it just to be safe.
 	return d.cmd.Process.Release()
 }
