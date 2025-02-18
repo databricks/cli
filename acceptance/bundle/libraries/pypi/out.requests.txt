@@ -1,0 +1,52 @@
+{
+  "method": "POST",
+  "path": "/api/2.1/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pypi/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "test-job",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "dbt_task": {
+          "commands": [
+            "dbt deps --target=default",
+            "dbt seed --target=default --vars \"{ dev_schema: [USERNAME] }\"",
+            "dbt run --target=default --vars \"{ dev_schema: [USERNAME] }\""
+          ],
+          "profiles_directory": "dbt_profiles/",
+          "project_directory": "/Workspace/Users/[USERNAME]/.bundle/pypi/default/files",
+          "schema": "default"
+        },
+        "libraries": [
+          {
+            "pypi": {
+              "package": "dbt-databricks\u003e=1.8.0,\u003c2.0.0"
+            }
+          }
+        ],
+        "new_cluster": {
+          "custom_tags": {
+            "ResourceClass": "SingleNode"
+          },
+          "data_security_mode": "SINGLE_USER",
+          "node_type_id": "i3.xlarge",
+          "num_workers": 0,
+          "spark_conf": {
+            "spark.databricks.cluster.profile": "singleNode",
+            "spark.master": "local[*, 4]"
+          },
+          "spark_version": "15.4.x-scala2.12"
+        },
+        "task_key": "dbt"
+      }
+    ]
+  }
+}

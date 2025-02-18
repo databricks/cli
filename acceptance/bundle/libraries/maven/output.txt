@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "maven": {
+      "coordinates": "org.jsoup:jsoup:1.7.2"
+    }
+  }
+]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/maven/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

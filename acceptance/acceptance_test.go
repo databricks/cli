@@ -350,8 +350,23 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	if config.RecordRequests {
 		f, err := os.OpenFile(filepath.Join(tmpDir, "out.requests.txt"), os.O_CREATE|os.O_WRONLY, 0o644)
 		require.NoError(t, err)
+		var filter []*regexp.Regexp
+		if config.FilterRequestsPattern != "" {
+			parts := strings.Split(config.FilterRequestsPattern, " ")
+			require.Len(t, parts, 2)
+			methodRegexp := regexp.MustCompile(parts[0])
+			pathRegexp := regexp.MustCompile(parts[1])
+
+			filter = []*regexp.Regexp{methodRegexp, pathRegexp}
+		}
 
 		for _, req := range server.Requests {
+			if filter != nil {
+				if !filter[0].MatchString(req.Method) || !filter[1].MatchString(req.Path) {
+					continue
+				}
+			}
+
 			reqJson, err := json.MarshalIndent(req, "", "  ")
 			require.NoErrorf(t, err, "Failed to indent: %#v", req)
 

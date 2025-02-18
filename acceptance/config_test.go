@@ -46,6 +46,10 @@ type TestConfig struct {
 	// out.requests.txt
 	RecordRequests bool
 
+	// Filter the requests made to the server. Only requests that match the
+	// pattern will be recorded. The pattern is like METHOD /api/2.0/...
+	FilterRequestsPattern string
+
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
 }

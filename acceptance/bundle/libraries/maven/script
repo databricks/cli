@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json | jq '.resources.jobs.testjob.tasks[0].libraries'
+trace $CLI bundle deploy
