@@ -14,8 +14,6 @@ func newParentCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "parent",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Parent process has started")
-
 			d := daemon.Daemon{
 				Env:         os.Environ(),
 				Args:        []string{"selftest", "child"},
@@ -27,21 +25,19 @@ func newParentCommand() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to start child process: %w", err)
 			}
-			fmt.Println("Started  the child process")
+			fmt.Println("[parent] started child")
 
 			err = d.WriteInput([]byte("Hello from the other side\n"))
 			if err != nil {
 				return fmt.Errorf("failed to write to child process: %w", err)
 			}
-			fmt.Println("Provided input: Hello from the other side")
+			fmt.Println("[parent] input sent to child: Hello from the other side")
 
 			err = d.Release()
 			if err != nil {
 				return fmt.Errorf("failed to release child process: %w", err)
 			}
-			fmt.Println("Released the child process")
-
-			fmt.Println("Parent process is exiting")
+			fmt.Println("[parent] exiting")
 			return nil
 		},
 	}

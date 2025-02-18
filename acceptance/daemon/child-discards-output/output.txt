@@ -1,9 +1,6 @@
-Parent process has started
-Started  the child process
-Provided input: Hello from the other side
-Released the child process
-Parent process is exiting
-
-wait for child process to finish
-Process has ended
-the child process should not have written any output.
+[parent] started child
+[parent] input sent to child: Hello from the other side
+[parent] exiting
+[script] waiting for child process to end...
+[script][wait_pid] process has ended
+[script] child process should not have written any output.

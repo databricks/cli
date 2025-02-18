@@ -1,8 +1,9 @@
 export DATABRICKS_CLI_SELFTEST_CHILD_OUTPUT_FILE="out.parentchild.txt"
 
-$CLI selftest parent &> out.parentchild.txt
+$CLI selftest parent > "out.parentchild.txt"
 
-echo "waiting for child process to finish"
+echo "[script] waiting for child process to end..."
+echo -n "[script]"
 wait_pid $(cat ./child.pid)
 
 rm ./child.pid

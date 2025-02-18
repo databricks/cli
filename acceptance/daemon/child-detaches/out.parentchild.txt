@@ -1,13 +1,7 @@
-Parent process has started
-Started  the child process
-Provided input: Hello from the other side
-Released the child process
-Parent process is exiting
-
-====================
-
-All output from this point on is from the child process
-Parent process has exited
-Received input from parent process:
-Hello from the other side
+[parent] started child
+[parent] input sent to child: Hello from the other side
+[parent] exiting
+[child][wait_pid] process has ended
+[child] Parent process has exited
+[child] input from parent: Hello from the other side
 

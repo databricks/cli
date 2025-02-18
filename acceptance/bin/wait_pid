@@ -13,13 +13,13 @@ wait_pid() {
         if [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "cygwin"* ]]; then
             # Windows approach
             if ! tasklist | grep -q $pid; then
-                echo "Process has ended"
+                echo "[wait_pid] process has ended"
                 return 0
             fi
         else
             # Linux/macOS approach
             if ! kill -0 $pid 2>/dev/null; then
-                echo "Process has ended"
+                echo "[wait_pid] process has ended"
                 return 0
             fi
         fi

@@ -1,2 +1,2 @@
-waiting for child process to finish
-Process has ended
+[script] waiting for child process to end...
+[script][wait_pid] process has ended
