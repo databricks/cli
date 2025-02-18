@@ -26,8 +26,9 @@ type Daemon struct {
 	// Log file to write the child process's output to.
 	LogFile string
 
-	cmd   *exec.Cmd
-	stdin io.WriteCloser
+	outFile *os.File
+	cmd     *exec.Cmd
+	stdin   io.WriteCloser
 }
 
 func (d *Daemon) Start() error {
@@ -43,7 +44,9 @@ func (d *Daemon) Start() error {
 
 	d.cmd = exec.Command(executable, d.Args...)
 
-	// Set environment variable so that the child process know's it's parent's PID.
+	// Set environment variable so that the child process knows it's parent's PID.
+	// In unix systems orphaned processes are automatically re-parented to init (pid 1)
+	// so we cannot rely on os.Getppid() to get the original parent's pid.
 	d.Env = append(d.Env, fmt.Sprintf("%s=%d", DatabricksCliParentPid, os.Getpid()))
 	d.cmd.Env = d.Env
 
@@ -55,14 +58,13 @@ func (d *Daemon) Start() error {
 
 	// If a log file is provided, redirect stdout and stderr to the log file.
 	if d.LogFile != "" {
-		f, err := os.OpenFile(d.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		d.outFile, err = os.OpenFile(d.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if err != nil {
 			return fmt.Errorf("failed to open log file: %w", err)
 		}
-		defer f.Close()
 
-		d.cmd.Stdout = f
-		d.cmd.Stderr = f
+		d.cmd.Stdout = d.outFile
+		d.cmd.Stderr = d.outFile
 	}
 
 	d.stdin, err = d.cmd.StdinPipe()
@@ -95,6 +97,13 @@ func (d *Daemon) Release() error {
 		err := d.stdin.Close()
 		if err != nil {
 			return fmt.Errorf("failed to close stdin: %w", err)
+		}
+	}
+
+	if d.outFile != nil {
+		err := d.outFile.Close()
+		if err != nil {
+			return fmt.Errorf("failed to close log file: %w", err)
 		}
 	}
 
