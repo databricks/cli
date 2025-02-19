@@ -9,7 +9,7 @@
     ],
     "go.useLanguageServer": true,
     "gopls": {
-        "formatting.gofumpt": true
+         "formatting.gofumpt": true
     },
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
