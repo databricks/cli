@@ -1,7 +1,0 @@
-[parent] started child
-[parent] input sent to child: Hello from the other side
-[parent] exiting
-[child][wait_pid] process has ended
-[child] Parent process has exited
-[child] input from parent: Hello from the other side
-
