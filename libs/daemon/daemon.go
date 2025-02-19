@@ -11,7 +11,8 @@ import (
 const DatabricksCliParentPid = "DATABRICKS_CLI_PARENT_PID"
 
 type Daemon struct {
-	// If provided, the child process will create a pid file at this path.
+	// If provided, the child process's pid will be written in the file at this
+	// path.
 	PidFilePath string
 
 	// Environment variables to set in the child process.
