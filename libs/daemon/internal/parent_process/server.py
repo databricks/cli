@@ -35,7 +35,8 @@ def shutdown_server(httpd):
     httpd.shutdown()
 
 # Start a background thread that will shut down the server after 120 seconds).
-# This is a precautions to prevent tests servers from running indefinitely and consuming resources.
+# This is a precaution to prevent tests servers from leaking and consuming resources
+# indefinitely.
 shutdown_thread = threading.Thread(target=shutdown_server, args=(httpd,), daemon=True)
 shutdown_thread.start()
 
