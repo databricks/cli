@@ -7,14 +7,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestLoadsReleasesForCLI(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/databricks/cli/releases" {
 			_, err := w.Write([]byte(`[{"tag_name": "v1.2.3"}, {"tag_name": "v1.2.2"}]`))
-			require.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			return
 		}
 		t.Logf("Requested: %s", r.URL.Path)

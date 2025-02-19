@@ -151,17 +151,14 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath, expected
 	filePath := path.Join(a.remoteRoot, relativePath)
 
 	// Remove leading "/" so we can use it in the URL.
-	urlPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/%s",
-		strings.TrimLeft(filePath, "/"),
-	)
+	urlPath := "/api/2.0/workspace-files/" + strings.TrimLeft(filePath, "/")
 
 	apiClient, err := client.New(a.w.Config)
 	require.NoError(a.t, err)
 
 	var res []byte
 	a.c.Eventually(func() bool {
-		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, &res)
+		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, nil, &res)
 		require.NoError(a.t, err)
 		actualContent := string(res)
 		return actualContent == expectedContent
@@ -225,7 +222,7 @@ func (a *syncTest) snapshotContains(files []string) {
 	assert.Equal(a.t, s.RemotePath, a.remoteRoot)
 	for _, filePath := range files {
 		_, ok := s.LastModifiedTimes[filePath]
-		assert.True(a.t, ok, fmt.Sprintf("%s not in snapshot file: %v", filePath, s.LastModifiedTimes))
+		assert.True(a.t, ok, "%s not in snapshot file: %v", filePath, s.LastModifiedTimes)
 	}
 	assert.Equal(a.t, len(files), len(s.LastModifiedTimes))
 }

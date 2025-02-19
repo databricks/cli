@@ -1,0 +1,11 @@
+Error: no value assigned to required variable a. Assignment can be done using "--var", by setting the BUNDLE_VAR_a environment variable, or in .databricks/bundle/<target>/variable-overrides.json file
+
+Name: empty${var.a}
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/empty${var.a}/default
+
+Found 1 error
+
+Exit code: 1

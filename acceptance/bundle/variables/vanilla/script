@@ -1,0 +1,2 @@
+trace BUNDLE_VAR_b=def $CLI bundle validate -o json | jq .bundle.name
+trace errcode $CLI bundle validate

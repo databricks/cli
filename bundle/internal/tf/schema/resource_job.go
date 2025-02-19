@@ -904,6 +904,7 @@ type ResourceJobTaskForEachTaskTaskSparkJarTask struct {
 	JarUri        string   `json:"jar_uri,omitempty"`
 	MainClassName string   `json:"main_class_name,omitempty"`
 	Parameters    []string `json:"parameters,omitempty"`
+	RunAsRepl     bool     `json:"run_as_repl,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskSparkPythonTask struct {
@@ -1299,6 +1300,7 @@ type ResourceJobTaskSparkJarTask struct {
 	JarUri        string   `json:"jar_uri,omitempty"`
 	MainClassName string   `json:"main_class_name,omitempty"`
 	Parameters    []string `json:"parameters,omitempty"`
+	RunAsRepl     bool     `json:"run_as_repl,omitempty"`
 }
 
 type ResourceJobTaskSparkPythonTask struct {
@@ -1487,6 +1489,7 @@ type ResourceJob struct {
 	MaxRetries             int                              `json:"max_retries,omitempty"`
 	MinRetryIntervalMillis int                              `json:"min_retry_interval_millis,omitempty"`
 	Name                   string                           `json:"name,omitempty"`
+	PerformanceTarget      string                           `json:"performance_target,omitempty"`
 	RetryOnTimeout         bool                             `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                `json:"tags,omitempty"`
 	TimeoutSeconds         int                              `json:"timeout_seconds,omitempty"`

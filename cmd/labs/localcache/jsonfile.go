@@ -93,7 +93,7 @@ func (r *LocalCache[T]) writeCache(ctx context.Context, data T) (T, error) {
 }
 
 func (r *LocalCache[T]) FileName() string {
-	return filepath.Join(r.dir, fmt.Sprintf("%s.json", r.name))
+	return filepath.Join(r.dir, r.name+".json")
 }
 
 func (r *LocalCache[T]) LoadCache() (*cached[T], error) {

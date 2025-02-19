@@ -3,7 +3,6 @@ package generate
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -302,7 +301,7 @@ func TestGenerateJobCommandOldFileRename(t *testing.T) {
 
 	// Make sure file do not exists after the run
 	_, err = os.Stat(oldFilename)
-	require.True(t, errors.Is(err, fs.ErrNotExist))
+	require.ErrorIs(t, err, fs.ErrNotExist)
 
 	data, err := os.ReadFile(filepath.Join(configDir, "test_job.job.yml"))
 	require.NoError(t, err)

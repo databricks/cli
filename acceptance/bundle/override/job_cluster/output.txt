@@ -1,0 +1,56 @@
+
+>>> [CLI] bundle validate -o json -t development
+{
+  "foo": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/development/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "job_clusters": [
+      {
+        "job_cluster_key": "key",
+        "new_cluster": {
+          "node_type_id": "i3.xlarge",
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
+        }
+      }
+    ],
+    "name": "job",
+    "permissions": [],
+    "queue": {
+      "enabled": true
+    },
+    "tags": {}
+  }
+}
+
+>>> [CLI] bundle validate -o json -t staging
+{
+  "foo": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/staging/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "job_clusters": [
+      {
+        "job_cluster_key": "key",
+        "new_cluster": {
+          "node_type_id": "i3.2xlarge",
+          "num_workers": 4,
+          "spark_version": "13.3.x-scala2.12"
+        }
+      }
+    ],
+    "name": "job",
+    "permissions": [],
+    "queue": {
+      "enabled": true
+    },
+    "tags": {}
+  }
+}

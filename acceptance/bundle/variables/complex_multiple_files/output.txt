@@ -1,0 +1,159 @@
+{
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/complex-variables-multiple-files/dev/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "job_clusters": [
+          {
+            "job_cluster_key": "key1",
+            "new_cluster": {
+              "node_type_id": "Standard_DS3_v2",
+              "num_workers": 4,
+              "spark_conf": {
+                "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+                "spark.speculation": "false"
+              },
+              "spark_version": "14.2.x-scala2.11"
+            }
+          },
+          {
+            "job_cluster_key": "key2",
+            "new_cluster": {
+              "node_type_id": "Standard_DS3_v2",
+              "num_workers": 4,
+              "spark_conf": {
+                "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+                "spark.speculation": "false"
+              },
+              "spark_version": "14.2.x-scala2.11"
+            }
+          },
+          {
+            "job_cluster_key": "key3",
+            "new_cluster": {
+              "node_type_id": "Standard_DS3_v2",
+              "num_workers": 4,
+              "spark_conf": {
+                "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+                "spark.speculation": "false"
+              },
+              "spark_version": "14.2.x-scala2.11"
+            }
+          },
+          {
+            "job_cluster_key": "key4",
+            "new_cluster": {
+              "node_type_id": "Standard_DS3_v2",
+              "num_workers": 4,
+              "spark_conf": {
+                "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+                "spark.speculation": "false"
+              },
+              "spark_version": "14.2.x-scala2.11"
+            }
+          }
+        ],
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {}
+      }
+    }
+  },
+  "variables": {
+    "cluster1": {
+      "default": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      },
+      "description": "A cluster definition",
+      "type": "complex",
+      "value": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      }
+    },
+    "cluster2": {
+      "default": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      },
+      "description": "A cluster definition",
+      "type": "complex",
+      "value": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      }
+    },
+    "cluster3": {
+      "default": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      },
+      "description": "A cluster definition",
+      "type": "complex",
+      "value": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      }
+    },
+    "cluster4": {
+      "default": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      },
+      "description": "A cluster definition",
+      "type": "complex",
+      "value": {
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.databricks.delta.retentionDurationCheck.enabled": false,
+          "spark.speculation": false
+        },
+        "spark_version": "14.2.x-scala2.11"
+      }
+    }
+  }
+}

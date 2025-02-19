@@ -49,6 +49,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetOpenApi())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newHttpRequest())
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newLogs())
 	cmd.AddCommand(newPatch())
@@ -153,15 +154,33 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: ai_gateway
+	// TODO: complex arg: config
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
 
-	cmd.Use = "create"
+	cmd.Use = "create NAME"
 	cmd.Short = `Create a new serving endpoint.`
-	cmd.Long = `Create a new serving endpoint.`
+	cmd.Long = `Create a new serving endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint. This field is required and must be
+      unique across a Databricks workspace. An endpoint name can consist of
+      alphanumeric characters, dashes, and underscores.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -179,8 +198,9 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.Name = args[0]
 		}
 
 		wait, err := w.ServingEndpoints.Create(ctx, createReq)
@@ -233,10 +253,7 @@ func newDelete() *cobra.Command {
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a serving endpoint.`
-	cmd.Long = `Delete a serving endpoint.
-
-  Arguments:
-    NAME: The name of the serving endpoint. This field is required.`
+	cmd.Long = `Delete a serving endpoint.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -432,11 +449,12 @@ func newGetOpenApi() *cobra.Command {
 
 		getOpenApiReq.Name = args[0]
 
-		err = w.ServingEndpoints.GetOpenApi(ctx, getOpenApiReq)
+		response, err := w.ServingEndpoints.GetOpenApi(ctx, getOpenApiReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
 	}
 
 	// Disable completions since they are not applicable.
@@ -563,6 +581,78 @@ func newGetPermissions() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getPermissionsOverrides {
 		fn(cmd, &getPermissionsReq)
+	}
+
+	return cmd
+}
+
+// start http-request command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var httpRequestOverrides []func(
+	*cobra.Command,
+	*serving.ExternalFunctionRequest,
+)
+
+func newHttpRequest() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var httpRequestReq serving.ExternalFunctionRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&httpRequestReq.Headers, "headers", httpRequestReq.Headers, `Additional headers for the request.`)
+	cmd.Flags().StringVar(&httpRequestReq.Json, "json", httpRequestReq.Json, `The JSON payload to send in the request body.`)
+	cmd.Flags().StringVar(&httpRequestReq.Params, "params", httpRequestReq.Params, `Query parameters for the request.`)
+
+	cmd.Use = "http-request CONNECTION_NAME METHOD PATH"
+	cmd.Short = `Make external services call using the credentials stored in UC Connection.`
+	cmd.Long = `Make external services call using the credentials stored in UC Connection.
+
+  Arguments:
+    CONNECTION_NAME: The connection name to use. This is required to identify the external
+      connection.
+    METHOD: The HTTP method to use (e.g., 'GET', 'POST').
+    PATH: The relative path for the API endpoint. This is required.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		httpRequestReq.ConnectionName = args[0]
+		_, err = fmt.Sscan(args[1], &httpRequestReq.Method)
+		if err != nil {
+			return fmt.Errorf("invalid METHOD: %s", args[1])
+		}
+		httpRequestReq.Path = args[2]
+
+		response, err := w.ServingEndpoints.HttpRequest(ctx, httpRequestReq)
+		if err != nil {
+			return err
+		}
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range httpRequestOverrides {
+		fn(cmd, &httpRequestReq)
 	}
 
 	return cmd
@@ -849,7 +939,7 @@ func newPutAiGateway() *cobra.Command {
 	cmd.Long = `Update AI Gateway of a serving endpoint.
   
   Used to update the AI Gateway of a serving endpoint. NOTE: Only external model
-  endpoints are currently supported.
+  and provisioned throughput endpoints are currently supported.
 
   Arguments:
     NAME: The name of the serving endpoint whose AI Gateway is being updated. This

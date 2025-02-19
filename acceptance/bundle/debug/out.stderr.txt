@@ -1,0 +1,93 @@
+10:07:59 Info: start pid=12345 version=[DEV_VERSION] args="[CLI], bundle, validate, --debug"
+10:07:59 Debug: Found bundle root at [TMPDIR] (file [TMPDIR]/databricks.yml) pid=12345
+10:07:59 Debug: Apply pid=12345 mutator=load
+10:07:59 Info: Phase: load pid=12345 mutator=load
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=EntryPoint
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=scripts.preinit
+10:07:59 Debug: No script defined for preinit, skipping pid=12345 mutator=load mutator=seq mutator=scripts.preinit
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=ProcessRootIncludes
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=ProcessRootIncludes mutator=seq
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=VerifyCliVersion
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=EnvironmentsToTargets
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=ComputeIdToClusterId
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=InitializeVariables
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=DefineDefaultTarget(default)
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=PythonMutator(load)
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=validate:unique_resource_keys
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=SelectDefaultTarget
+10:07:59 Debug: Apply pid=12345 mutator=load mutator=seq mutator=SelectDefaultTarget mutator=SelectTarget(default)
+10:07:59 Debug: Apply pid=12345 mutator=<func>
+10:07:59 Debug: Apply pid=12345 mutator=initialize
+10:07:59 Info: Phase: initialize pid=12345 mutator=initialize
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=validate:AllResourcesHaveValues
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=RewriteSyncPaths
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=SyncDefaultPath
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=SyncInferRoot
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=PopulateCurrentUser
+10:07:59 Debug: GET /api/2.0/preview/scim/v2/Me
+< HTTP/1.1 200 OK
+< {
+<   "id": "[USERID]",
+<   "userName": "[USERNAME]"
+< } pid=12345 mutator=initialize mutator=seq mutator=PopulateCurrentUser sdk=true
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=LoadGitDetails
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ApplySourceLinkedDeploymentPreset
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=DefineDefaultWorkspaceRoot
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ExpandWorkspaceRoot
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=DefaultWorkspacePaths
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=PrependWorkspacePrefix
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=RewriteWorkspacePrefix
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=SetVariables
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=PythonMutator(init)
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=PythonMutator(load_resources)
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=PythonMutator(apply_mutators)
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ResolveResourceReferences
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=MergeJobClusters
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=MergeJobParameters
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=MergeJobTasks
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=MergePipelineClusters
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=MergeApps
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=CaptureSchemaDependency
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=CheckPermissions
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=SetRunAs
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=OverrideCompute
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ConfigureDashboardDefaults
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ConfigureVolumeDefaults
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ProcessTargetMode
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ApplyPresets
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=DefaultQueueing
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ExpandPipelineGlobPaths
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ConfigureWSFS
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=TranslatePaths
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=PythonWrapperWarning
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=apps.Validate
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ValidateSharedRootPermissions
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=ApplyBundlePermissions
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=FilterCurrentUserFromPermissions
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=metadata.AnnotateJobs
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=metadata.AnnotatePipelines
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
+10:07:59 Debug: Using Terraform from DATABRICKS_TF_EXEC_PATH at [TERRAFORM] pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
+10:07:59 Debug: Using Terraform CLI config from DATABRICKS_TF_CLI_CONFIG_FILE at [DATABRICKS_TF_CLI_CONFIG_FILE] pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
+10:07:59 Debug: Environment variables for Terraform: ...redacted... pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=scripts.postinit
+10:07:59 Debug: No script defined for postinit, skipping pid=12345 mutator=initialize mutator=seq mutator=scripts.postinit
+10:07:59 Debug: Apply pid=12345 mutator=validate
+10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/debug/default/files
+< HTTP/1.1 404 Not Found
+< {
+<   "message": "Workspace path not found"
+10:07:59 Debug: POST /api/2.0/workspace/mkdirs
+> {
+>   "path": "/Workspace/Users/[USERNAME]/.bundle/debug/default/files"
+> }
+10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/debug/default/files
+< HTTP/1.1 200 OK
+< {
+<   "object_type": "DIRECTORY",
+<   "path": "/Workspace/Users/[USERNAME]/.bundle/debug/default/files"
+10:07:59 Info: completed execution pid=12345 exit_code=0

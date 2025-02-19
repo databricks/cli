@@ -1,0 +1,38 @@
+name: "Close Stale Issues"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *" # Run at midnight every day
+
+jobs:
+  cleanup:
+    name: Stale issue job
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      issues: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
+        with:
+          stale-issue-message: This issue has not received a response in a while. If you want to keep this issue open, please leave a comment below and auto-close will be canceled.
+          stale-pr-message: This PR has not received an update in a while. If you want to keep this PR open, please leave a comment below or push a new commit and auto-close will be canceled.
+
+          # These labels are required
+          stale-issue-label: Stale
+          stale-pr-label: Stale
+
+          exempt-issue-labels: No Autoclose
+          exempt-pr-labels: No Autoclose
+
+          # Issue timing
+          days-before-stale: 60
+          days-before-close: 30
+
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          loglevel: DEBUG

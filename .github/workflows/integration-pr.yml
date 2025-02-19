@@ -5,41 +5,25 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  check-token:
-    runs-on: ubuntu-latest
-    environment: "test-trigger-is"
-
-    outputs:
-      has_token: ${{ steps.set-token-status.outputs.has_token }}
-
-    steps:
-      - name: Check if DECO_WORKFLOW_TRIGGER_APP_ID is set
-        id: set-token-status
-        run: |
-          if [ -z "${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}" ]; then
-            echo "DECO_WORKFLOW_TRIGGER_APP_ID is empty. User has no access to secrets."
-            echo "::set-output name=has_token::false"
-          else
-            echo "DECO_WORKFLOW_TRIGGER_APP_ID is set. User has access to secrets."
-            echo "::set-output name=has_token::true"
-          fi
-
   # Trigger for pull requests.
   #
   # This workflow triggers the integration test workflow in a different repository.
   # It requires secrets from the "test-trigger-is" environment, which are only available to authorized users.
-  # It depends on the "check-token" workflow to confirm access to this environment to avoid failures.
   trigger:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
     environment: "test-trigger-is"
 
-    if: needs.check-token.outputs.has_token == 'true'
-    needs: check-token
+    # Only run this job for PRs from branches on the main repository and not from forks.
+    # Workflows triggered by PRs from forks don't have access to the "test-trigger-is" environment.
+    if: "${{ !github.event.pull_request.head.repo.fork }}"
 
     steps:
       - name: Generate GitHub App Token
         id: generate-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@136412a57a7081aa63c935a2cc2918f76c34f514 # v1.11.2
         with:
           app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
           private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}

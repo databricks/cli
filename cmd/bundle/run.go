@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -48,7 +49,7 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 	}
 
 	if len(args) < 1 {
-		return "", nil, fmt.Errorf("expected a KEY of the resource to run")
+		return "", nil, errors.New("expected a KEY of the resource to run")
 	}
 
 	return args[0], args[1:], nil
@@ -172,6 +173,7 @@ task or a Python wheel task, the second example applies.
 				if err != nil {
 					return err
 				}
+				_, _ = cmd.OutOrStdout().Write([]byte{'\n'})
 			default:
 				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 			}

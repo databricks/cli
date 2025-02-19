@@ -1,0 +1,61 @@
+errcode() {
+    # Temporarily disable 'set -e' to prevent the script from exiting on error
+    set +e
+    # Execute the provided command with all arguments
+    "$@"
+    local exit_code=$?
+    # Re-enable 'set -e' if it was previously set
+    set -e
+    if [ $exit_code -ne 0 ]; then
+        >&2 printf "\nExit code: $exit_code\n"
+    fi
+}
+
+trace() {
+    >&2 printf "\n>>> %s\n" "$*"
+
+    if [[ "$1" == *"="* ]]; then
+        # If the first argument contains '=', collect all env vars
+        local env_vars=()
+        while [[ "$1" == *"="* ]]; do
+            env_vars+=("$1")
+            shift
+        done
+        # Export environment variables in a subshell and execute the command
+        (
+            export "${env_vars[@]}"
+            "$@"
+        )
+    else
+        # Execute the command normally
+        "$@"
+    fi
+
+    return $?
+}
+
+git-repo-init() {
+    git init -qb main
+    git config core.autocrlf false
+    git config user.name "Tester"
+    git config user.email "tester@databricks.com"
+    git config core.hooksPath no-hooks
+    git add databricks.yml
+    git commit -qm 'Add databricks.yml'
+}
+
+title() {
+    local label="$1"
+    printf "\n=== %s" "$label"
+}
+
+withdir() {
+    local dir="$1"
+    shift
+    local orig_dir="$(pwd)"
+    cd "$dir" || return $?
+    "$@"
+    local exit_code=$?
+    cd "$orig_dir" || return $?
+    return $exit_code
+}

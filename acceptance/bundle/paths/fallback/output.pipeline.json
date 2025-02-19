@@ -1,0 +1,22 @@
+[
+  {
+    "file": {
+      "path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/file1.py"
+    }
+  },
+  {
+    "notebook": {
+      "path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/notebook1"
+    }
+  },
+  {
+    "file": {
+      "path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/file2.py"
+    }
+  },
+  {
+    "notebook": {
+      "path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/notebook2"
+    }
+  }
+]

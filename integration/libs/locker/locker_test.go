@@ -60,15 +60,14 @@ func TestLock(t *testing.T) {
 
 	lockerErrs := make([]error, numConcurrentLocks)
 	lockers := make([]*lockpkg.Locker, numConcurrentLocks)
-	for i := 0; i < numConcurrentLocks; i++ {
+	for i := range numConcurrentLocks {
 		lockers[i], err = lockpkg.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot, wsc)
 		require.NoError(t, err)
 	}
 
 	var wg sync.WaitGroup
-	for i := 0; i < numConcurrentLocks; i++ {
+	for currentIndex := range numConcurrentLocks {
 		wg.Add(1)
-		currentIndex := i
 		go func() {
 			defer wg.Done()
 			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
@@ -80,7 +79,7 @@ func TestLock(t *testing.T) {
 	countActive := 0
 	indexOfActiveLocker := 0
 	indexOfAnInactiveLocker := -1
-	for i := 0; i < numConcurrentLocks; i++ {
+	for i := range numConcurrentLocks {
 		if lockers[i].Active {
 			countActive += 1
 			assert.NoError(t, lockerErrs[i])
@@ -102,7 +101,7 @@ func TestLock(t *testing.T) {
 	assert.True(t, remoteLocker.AcquisitionTime.Equal(lockers[indexOfActiveLocker].State.AcquisitionTime), "remote locker acquisition time does not match active locker")
 
 	// test all other locks (inactive ones) do not match the remote lock and Unlock fails
-	for i := 0; i < numConcurrentLocks; i++ {
+	for i := range numConcurrentLocks {
 		if i == indexOfActiveLocker {
 			continue
 		}
@@ -112,7 +111,7 @@ func TestLock(t *testing.T) {
 	}
 
 	// test inactive locks fail to write a file
-	for i := 0; i < numConcurrentLocks; i++ {
+	for i := range numConcurrentLocks {
 		if i == indexOfActiveLocker {
 			continue
 		}
@@ -140,7 +139,7 @@ func TestLock(t *testing.T) {
 	assert.Equal(t, "Shah Rukh", res["name"])
 
 	// inactive locker file reads fail
-	for i := 0; i < numConcurrentLocks; i++ {
+	for i := range numConcurrentLocks {
 		if i == indexOfActiveLocker {
 			continue
 		}

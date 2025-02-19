@@ -17,14 +17,12 @@ func TestFsRmFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			// Create a file
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			err := f.Write(context.Background(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
@@ -48,14 +46,12 @@ func TestFsRmEmptyDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			// Create a directory
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			err := f.Mkdir(context.Background(), "a")
 			require.NoError(t, err)
 
@@ -79,14 +75,12 @@ func TestFsRmNonEmptyDirectory(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			// Create a directory
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 			err := f.Mkdir(context.Background(), "a")
 			require.NoError(t, err)
 
@@ -110,13 +104,11 @@ func TestFsRmForNonExistentFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			_, tmpDir := tc.setupFiler(t)
+			_, tmpDir := testCase.setupFiler(t)
 
 			// Expect error if file does not exist
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "rm", path.Join(tmpDir, "does-not-exist"))
@@ -129,13 +121,11 @@ func TestFsRmDirRecursively(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
-		tc := testCase
-
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			f, tmpDir := tc.setupFiler(t)
+			f, tmpDir := testCase.setupFiler(t)
 
 			// Create a directory
 			err := f.Mkdir(context.Background(), "a")

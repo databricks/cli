@@ -13,7 +13,6 @@ var (
 
 func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 	value := make(map[string]dyn.Value)
-
 	if job.Settings.Tasks != nil {
 		tasks := make([]dyn.Value, 0)
 		for _, task := range job.Settings.Tasks {

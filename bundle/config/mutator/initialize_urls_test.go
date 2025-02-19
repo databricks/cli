@@ -31,8 +31,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						ID:           "3",
-						PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1"},
+						ID:             "3",
+						CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline1"},
 					},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{

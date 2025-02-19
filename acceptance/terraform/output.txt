@@ -1,0 +1,51 @@
+
+>>> [TERRAFORM] init -no-color -get=false
+
+Initializing the backend...
+
+Initializing provider plugins...
+- Finding databricks/databricks versions matching "1.65.1"...
+- Installing databricks/databricks v1.65.1...
+- Installed databricks/databricks v1.65.1 (unauthenticated)
+
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+
+Warning: Incomplete lock file information for providers
+
+Due to your customized provider installation methods, Terraform was forced to
+calculate lock file checksums locally for the following providers:
+  - databricks/databricks
+
+
+To calculate additional checksums for another platform, run:
+  terraform providers lock -platform=linux_amd64
+(where linux_amd64 is the platform to generate)
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+
+>>> [TERRAFORM] plan -no-color
+data.databricks_current_user.me: Reading...
+data.databricks_current_user.me: Read complete after (redacted) [id=[USERID]]
+
+Changes to Outputs:
+  + username = "[USERNAME]"
+
+You can apply this plan to save these new output values to the Terraform
+state, without changing any real infrastructure.
+
+─────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.

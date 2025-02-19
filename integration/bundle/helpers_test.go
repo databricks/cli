@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/template"
@@ -40,10 +39,19 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
-	out, err := filer.NewLocalClient(bundleRoot)
+	r := template.Resolver{
+		TemplatePathOrUrl: templateRoot,
+		ConfigFile:        configFilePath,
+		OutputDir:         bundleRoot,
+	}
+
+	tmpl, err := r.Resolve(ctx)
 	require.NoError(t, err)
-	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), out)
+	defer tmpl.Reader.Cleanup(ctx)
+
+	err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
 	require.NoError(t, err)
+
 	return bundleRoot
 }
 
@@ -117,6 +125,17 @@ func runResource(t testutil.TestingT, ctx context.Context, path, key string) (st
 	c := testcli.NewRunner(t, ctx, "bundle", "run", key)
 	stdout, _, err := c.Run()
 	return stdout.String(), err
+}
+
+func runResourceWithStderr(t testutil.TestingT, ctx context.Context, path, key string) (string, string) {
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
+	ctx = cmdio.NewContext(ctx, cmdio.Default())
+
+	c := testcli.NewRunner(t, ctx, "bundle", "run", key)
+	stdout, stderr, err := c.Run()
+	require.NoError(t, err)
+
+	return stdout.String(), stderr.String()
 }
 
 func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key string, params ...string) (string, error) {

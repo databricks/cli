@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"slices"
@@ -244,8 +243,8 @@ func prepareDBFSFiles(t *testing.T) *testFiles {
 	return &testFiles{
 		w:               w,
 		pyNotebookPath:  path.Join(baseDir, "test.py"),
-		sparkPythonPath: fmt.Sprintf("dbfs:%s", path.Join(baseDir, "spark.py")),
-		wheelPath:       fmt.Sprintf("dbfs:%s", path.Join(baseDir, "my_test_code-0.0.1-py3-none-any.whl")),
+		sparkPythonPath: "dbfs:" + path.Join(baseDir, "spark.py"),
+		wheelPath:       "dbfs:" + path.Join(baseDir, "my_test_code-0.0.1-py3-none-any.whl"),
 	}
 }
 
@@ -266,9 +265,9 @@ func prepareRepoFiles(t *testing.T) *testFiles {
 
 func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
 	tasks := make([]jobs.SubmitTask, 0)
-	for i := 0; i < len(versions); i++ {
+	for i := range versions {
 		task := jobs.SubmitTask{
-			TaskKey: fmt.Sprintf("notebook_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			TaskKey: "notebook_" + strings.ReplaceAll(versions[i], ".", "_"),
 			NotebookTask: &jobs.NotebookTask{
 				NotebookPath: notebookPath,
 			},
@@ -287,9 +286,9 @@ func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId st
 
 func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
 	tasks := make([]jobs.SubmitTask, 0)
-	for i := 0; i < len(versions); i++ {
+	for i := range versions {
 		task := jobs.SubmitTask{
-			TaskKey: fmt.Sprintf("spark_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			TaskKey: "spark_" + strings.ReplaceAll(versions[i], ".", "_"),
 			SparkPythonTask: &jobs.SparkPythonTask{
 				PythonFile: notebookPath,
 			},
@@ -308,9 +307,9 @@ func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId
 
 func GenerateWheelTasks(wheelPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
 	tasks := make([]jobs.SubmitTask, 0)
-	for i := 0; i < len(versions); i++ {
+	for i := range versions {
 		task := jobs.SubmitTask{
-			TaskKey: fmt.Sprintf("whl_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			TaskKey: "whl_" + strings.ReplaceAll(versions[i], ".", "_"),
 			PythonWheelTask: &jobs.PythonWheelTask{
 				PackageName: "my_test_code",
 				EntryPoint:  "run",

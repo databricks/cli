@@ -8,6 +8,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -23,7 +25,6 @@ import (
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -56,6 +57,9 @@ type Bundle struct {
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
 
+	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
+	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
+
 	// Metadata about the bundle deployment. This is the interface Databricks services
 	// rely on to integrate with bundles when they need additional information about
 	// a bundle deployment.
@@ -68,6 +72,7 @@ type Bundle struct {
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
 	client     *databricks.WorkspaceClient
+	clientErr  error
 
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
@@ -130,23 +135,25 @@ func TryLoad(ctx context.Context) (*Bundle, error) {
 	return Load(ctx, root)
 }
 
-func (b *Bundle) InitializeWorkspaceClient() (*databricks.WorkspaceClient, error) {
-	client, err := b.Config.Workspace.Client()
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
-	}
-	return client, nil
+func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
+	b.clientOnce.Do(func() {
+		var err error
+		b.client, err = b.Config.Workspace.Client()
+		if err != nil {
+			b.clientErr = fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
+		}
+	})
+
+	return b.client, b.clientErr
 }
 
 func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
-	b.clientOnce.Do(func() {
-		var err error
-		b.client, err = b.InitializeWorkspaceClient()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return b.client
+	client, err := b.WorkspaceClientE()
+	if err != nil {
+		panic(err)
+	}
+
+	return client
 }
 
 // SetWorkpaceClient sets the workspace client for this bundle.
@@ -234,25 +241,9 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 // we call into from this bundle context.
 func (b *Bundle) AuthEnv() (map[string]string, error) {
 	if b.client == nil {
-		return nil, fmt.Errorf("workspace client not initialized yet")
+		return nil, errors.New("workspace client not initialized yet")
 	}
 
 	cfg := b.client.Config
-	out := make(map[string]string)
-	for _, attr := range sdkconfig.ConfigAttributes {
-		// Ignore profile so that downstream tools don't try and reload
-		// the profile even though we know the current configuration is valid.
-		if attr.Name == "profile" {
-			continue
-		}
-		if len(attr.EnvVars) == 0 {
-			continue
-		}
-		if attr.IsZero(cfg) {
-			continue
-		}
-		out[attr.EnvVars[0]] = attr.GetString(cfg)
-	}
-
-	return out, nil
+	return auth.Env(cfg), nil
 }

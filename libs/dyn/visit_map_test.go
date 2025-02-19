@@ -1,6 +1,7 @@
 package dyn_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -71,7 +72,7 @@ func TestMapFuncOnMap(t *testing.T) {
 	}, vbar.AsAny())
 
 	// Return error from map function.
-	ref := fmt.Errorf("error")
+	ref := errors.New("error")
 	verr, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("foo")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	})
@@ -87,12 +88,12 @@ func TestMapFuncOnMapWithEmptySequence(t *testing.T) {
 		dyn.V([]dyn.Value{dyn.V(42)}),
 	}
 
-	for i := 0; i < len(variants); i++ {
+	for i := range variants {
 		vin := dyn.V(map[string]dyn.Value{
 			"key": variants[i],
 		})
 
-		for j := 0; j < len(variants); j++ {
+		for j := range variants {
 			vout, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("key")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 				return variants[j], nil
 			})
@@ -137,7 +138,7 @@ func TestMapFuncOnSequence(t *testing.T) {
 	assert.Equal(t, []any{42, 45}, v1.AsAny())
 
 	// Return error from map function.
-	ref := fmt.Errorf("error")
+	ref := errors.New("error")
 	verr, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	})
@@ -153,12 +154,12 @@ func TestMapFuncOnSequenceWithEmptySequence(t *testing.T) {
 		dyn.V([]dyn.Value{dyn.V(42)}),
 	}
 
-	for i := 0; i < len(variants); i++ {
+	for i := range variants {
 		vin := dyn.V([]dyn.Value{
 			variants[i],
 		})
 
-		for j := 0; j < len(variants); j++ {
+		for j := range variants {
 			vout, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 				return variants[j], nil
 			})
@@ -211,7 +212,7 @@ func TestMapForeachOnMapError(t *testing.T) {
 	})
 
 	// Check that an error from the map function propagates.
-	ref := fmt.Errorf("error")
+	ref := errors.New("error")
 	_, err := dyn.Map(vin, ".", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	}))
@@ -255,7 +256,7 @@ func TestMapForeachOnSequenceError(t *testing.T) {
 	})
 
 	// Check that an error from the map function propagates.
-	ref := fmt.Errorf("error")
+	ref := errors.New("error")
 	_, err := dyn.Map(vin, ".", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	}))

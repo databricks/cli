@@ -32,7 +32,7 @@ func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	//)
 
 	py := python.GetExecutable()
-	artifact.BuildCommand = fmt.Sprintf(`%s setup.py bdist_wheel`, py)
+	artifact.BuildCommand = py + " setup.py bdist_wheel"
 
 	return nil
 }

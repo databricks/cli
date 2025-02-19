@@ -209,7 +209,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	}
 
 	out := make([]dyn.Value, src.Len())
-	for i := 0; i < src.Len(); i++ {
+	for i := range src.Len() {
 		v := src.Index(i)
 		refv := ref.Index(i)
 

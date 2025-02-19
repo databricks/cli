@@ -1,0 +1,6 @@
+trace $CLI bundle validate -t env-with-single-variable-override -o json | jq .variables.result.value
+trace $CLI bundle validate -t env-with-two-variable-overrides -o json | jq .variables.result.value
+trace BUNDLE_VAR_b=env-var-b $CLI bundle validate -t env-with-two-variable-overrides -o json | jq .variables.result.value
+trace errcode $CLI bundle validate -t env-missing-a-required-variable-assignment
+trace errcode $CLI bundle validate -t env-using-an-undefined-variable
+trace $CLI bundle validate -t env-overrides-lookup -o json | jq '.variables | map_values(.value)'

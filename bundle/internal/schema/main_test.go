@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -11,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
@@ -80,7 +80,7 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Empty(t, updatedFieldPaths, fmt.Sprintf("Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n")))
+	assert.Empty(t, updatedFieldPaths, "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n"))
 }
 
 // Checks whether types in annotation files are still present in Config type
@@ -114,13 +114,33 @@ func TestNoDetachedAnnotations(t *testing.T) {
 	assert.Empty(t, types, "Detached annotations found, regenerate schema and check for package path changes")
 }
 
-func getAnnotations(path string) (annotationFile, error) {
+func getAnnotations(path string) (annotation.File, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var data annotationFile
+	var data annotation.File
 	err = yaml.Unmarshal(b, &data)
 	return data, err
+}
+
+func TestNoDuplicatedAnnotations(t *testing.T) {
+	// Check for duplicated annotations in annotation files
+	files := []string{
+		"annotations_openapi_overrides.yml",
+		"annotations.yml",
+	}
+
+	annotations := map[string]bool{}
+	for _, file := range files {
+		annotationsFile, err := getAnnotations(file)
+		assert.NoError(t, err)
+		for k := range annotationsFile {
+			if _, ok := annotations[k]; ok {
+				t.Errorf("Annotation `%s` is duplicated in %s", k, file)
+			}
+			annotations[k] = true
+		}
+	}
 }

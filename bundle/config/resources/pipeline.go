@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
@@ -17,7 +16,7 @@ type Pipeline struct {
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
 
-	*pipelines.PipelineSpec
+	*pipelines.CreatePipeline
 }
 
 func (s *Pipeline) UnmarshalJSON(b []byte) error {
@@ -47,7 +46,7 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 	if p.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("pipelines/%s", p.ID)
+	baseURL.Path = "pipelines/" + p.ID
 	p.URL = baseURL.String()
 }
 
@@ -60,5 +59,5 @@ func (s *Pipeline) GetURL() string {
 }
 
 func (s *Pipeline) IsNil() bool {
-	return s.PipelineSpec == nil
+	return s.CreatePipeline == nil
 }

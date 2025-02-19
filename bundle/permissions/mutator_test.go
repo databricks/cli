@@ -58,6 +58,10 @@ func TestApplyBundlePermissions(t *testing.T) {
 					"dashboard_1": {},
 					"dashboard_2": {},
 				},
+				Apps: map[string]*resources.App{
+					"app_1": {},
+					"app_2": {},
+				},
 			},
 		},
 	}
@@ -114,6 +118,10 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Len(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_READ", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.Permission{Level: "CAN_USE", GroupName: "TestGroup"})
 }
 
 func TestWarningOnOverlapPermission(t *testing.T) {
@@ -164,7 +172,7 @@ func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
 
 	for _, resource := range unsupportedResources {
 		_, ok := levelsMap[resource]
-		assert.False(t, ok, fmt.Sprintf("Resource %s is defined in both levelsMap and unsupportedResources", resource))
+		assert.False(t, ok, "Resource %s is defined in both levelsMap and unsupportedResources", resource)
 	}
 
 	for _, resource := range r.AllResources() {
