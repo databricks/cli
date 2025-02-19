@@ -25,7 +25,7 @@ func TestDaemon(t *testing.T) {
 	assert.FileExists(t, childPidFile)
 
 	// Terminate the child process when the test is done. The server automatically
-	// terminates after 2 minutes but is added to make cleanup more robust.
+	// terminates after 2 minutes but we add this to make cleanup more robust.
 	t.Cleanup(func() {
 		pid, err := strconv.Atoi(testutil.ReadFile(t, childPidFile))
 		require.NoError(t, err)
