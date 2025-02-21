@@ -13,7 +13,8 @@ func main() {
 	d := daemon.Daemon{
 		PidFilePath: filepath.Join(tmpDir, "child.pid"),
 		Executable:  "python3",
-		// The server script writes the port number the server is up on to the specified file.
+		// The server script writes the port number the server is listening on
+		// to the specified file.
 		Args: []string{"./internal/parent_process/server.py", filepath.Join(tmpDir, "port.txt")},
 	}
 

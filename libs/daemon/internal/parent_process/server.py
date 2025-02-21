@@ -31,7 +31,7 @@ with open(port_file_path, "w") as f:
 
 try:
     # Automatically shut down the server after 2 minutes. This is a precaution to
-    # prevent the server from running indefinitely the GET API is never called.
+    # prevent the server from running indefinitely incase the GET API is never called.
     httpd.timeout = 120
 
     # This server will exit after one request.
