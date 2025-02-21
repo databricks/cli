@@ -1,7 +1,12 @@
 export DATABRICKS_CLI_TELEMETRY_PID_FILE=./telemetry.pid
 export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload_process.txt
 
-# TODO: Move the environment variable calculation to the daemon library.
+# Unset the token which is configured by default
+# in acceptance tests
+export DATABRICKS_TOKEN=""
+
+export DATABRICKS_CLIENT_ID=client_id
+export DATABRICKS_CLIENT_SECRET=client_secret
 
 trace $CLI selftest send-telemetry
 
