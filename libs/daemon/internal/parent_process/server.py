@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import sys
-import time
-import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 if len(sys.argv) < 2:
@@ -31,23 +29,12 @@ assigned_port = httpd.server_address[1]
 with open(port_file_path, "w") as f:
     f.write(str(assigned_port))
 
-
-def shutdown_server(httpd):
-    time.sleep(120)
-    print("2 minutes elapsed. Shutting down the server.")
-    httpd.shutdown()
-
-
-# Start a background thread that will shut down the server after 120 seconds).
-# This is a precaution to prevent tests servers from leaking and consuming resources
-# indefinitely.
-shutdown_thread = threading.Thread(target=shutdown_server, args=(httpd,), daemon=True)
-shutdown_thread.start()
-
 try:
-    httpd.serve_forever()
+    # Automatically shut down the server after 2 minutes. This is a precaution to
+    # prevent the server from running indefinitely the GET API is never called.
+    httpd.timeout = 120
+
+    # This server will exit after one request.
+    httpd.handle_request()
 except KeyboardInterrupt:
     print("\nServer is shutting down.")
-    httpd.server_close()
-finally:
-    httpd.server_close()

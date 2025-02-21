@@ -23,21 +23,8 @@ func TestDaemon(t *testing.T) {
 	err := cmd.Run()
 	require.NoError(t, err)
 
-	childPidFile := filepath.Join(tmpDir, "child.pid")
-	assert.FileExists(t, childPidFile)
-
-	// Terminate the child process when the test is done. The server automatically
-	// terminates after 2 minutes but we add this to make cleanup more robust.
-	t.Cleanup(func() {
-		pid, err := strconv.Atoi(testutil.ReadFile(t, childPidFile))
-		require.NoError(t, err)
-
-		p, err := os.FindProcess(pid)
-		require.NoError(t, err)
-
-		err = p.Kill()
-		require.NoError(t, err)
-	})
+	// Assert that a PID file was created for the child process.
+	assert.FileExists(t, filepath.Join(tmpDir, "child.pid"))
 
 	// Wait 10 seconds for the server to start and to write the port number to
 	// a file.
