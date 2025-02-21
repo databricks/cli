@@ -11,8 +11,6 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
-	cmd.AddCommand(newChildCommand())
-	cmd.AddCommand(newParentCommand())
 	cmd.AddCommand(newSendTelemetry())
 	return cmd
 }
