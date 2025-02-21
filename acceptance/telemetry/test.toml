@@ -1,6 +1,6 @@
 LocalOnly = true
 RecordRequests = true
-IncludeRequestHeaders = ["Authorization", "User-Agent"]
+IncludeRequestHeaders = ["Authorization"]
 
 [[Repls]]
 Old = '17\d{11}'

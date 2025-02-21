@@ -2,9 +2,6 @@
   "headers": {
     "Authorization": [
       "Bearer [DATABRICKS_TOKEN]"
-    ],
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS auth/pat"
     ]
   },
   "method": "POST",
