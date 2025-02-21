@@ -18,6 +18,8 @@ import (
 func TestDaemon(t *testing.T) {
 	tmpDir := t.TempDir()
 	cmd := exec.Command("go", "run", "internal/parent_process/main.go", tmpDir)
+
+	// cmd.Run() will block until the parent process exits.
 	err := cmd.Run()
 	require.NoError(t, err)
 
