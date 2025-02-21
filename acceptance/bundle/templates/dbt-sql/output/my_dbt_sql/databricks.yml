@@ -28,7 +28,7 @@ targets:
       # We explicitly specify /Workspace/Users/[USERNAME] to make sure we only have a single copy.
       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     permissions:
-      - user_name: [USERNAME]
+      - $USER_NAME_KEY: [USERNAME]
         level: CAN_MANAGE
     run_as:
-      user_name: [USERNAME]
+      $USER_NAME_KEY: [USERNAME]
