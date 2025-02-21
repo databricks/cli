@@ -11,7 +11,8 @@ import (
 const DatabricksCliParentPid = "DATABRICKS_CLI_PARENT_PID"
 
 type Daemon struct {
-	// If provided, the child process will create a pid file at this path.
+	// If provided, the child process's pid will be written in the file at this
+	// path.
 	PidFilePath string
 
 	// Environment variables to set in the child process.
@@ -100,6 +101,8 @@ func (d *Daemon) Release() error {
 		}
 	}
 
+	// Note that the child process will stream it's output directly to the log file.
+	// So it's safe to close this file handle even if the child process is still running.
 	if d.logFile != nil {
 		err := d.logFile.Close()
 		if err != nil {

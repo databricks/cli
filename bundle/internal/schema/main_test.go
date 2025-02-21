@@ -124,3 +124,23 @@ func getAnnotations(path string) (annotation.File, error) {
 	err = yaml.Unmarshal(b, &data)
 	return data, err
 }
+
+func TestNoDuplicatedAnnotations(t *testing.T) {
+	// Check for duplicated annotations in annotation files
+	files := []string{
+		"annotations_openapi_overrides.yml",
+		"annotations.yml",
+	}
+
+	annotations := map[string]bool{}
+	for _, file := range files {
+		annotationsFile, err := getAnnotations(file)
+		assert.NoError(t, err)
+		for k := range annotationsFile {
+			if _, ok := annotations[k]; ok {
+				t.Errorf("Annotation `%s` is duplicated in %s", k, file)
+			}
+			annotations[k] = true
+		}
+	}
+}
