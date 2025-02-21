@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/cmd"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/databricks-sdk-go/logger"
 )
 
 func main() {
@@ -33,6 +34,11 @@ func main() {
 		if v := os.Getenv(telemetry.UploadLogsFileEnvVar); v != "" {
 			outW, _ = os.OpenFile(v, os.O_CREATE|os.O_WRONLY, 0o644)
 			errW = outW
+		}
+
+		// Suppress non-error logs from the SDK.
+		logger.DefaultLogger = &logger.SimpleLogger{
+			Level: logger.LevelError,
 		}
 
 		resp, err := telemetry.Upload()
