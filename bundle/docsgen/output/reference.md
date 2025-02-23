@@ -43,7 +43,7 @@ artifacts:
   
    * - `files`
      - Sequence
-     - The source files for the artifact. See [_](#artifacts.<name>.files).
+     - The source files for the artifact. See [_](#artifactsnamefiles).
   
    * - `path`
      - String
@@ -64,7 +64,7 @@ artifacts:
     path: .
 ```
   
-### artifacts.<name>.files
+### artifacts.\<name\>.files
   
 **`Type: Sequence`**
   
@@ -113,11 +113,11 @@ The bundle attributes when deploying to this target,
   
    * - `deployment`
      - Map
-     - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#bundle.deployment).
+     - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#bundledeployment).
   
    * - `git`
      - Map
-     - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#bundle.git).
+     - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#bundlegit).
   
    * - `name`
      - String
@@ -132,7 +132,7 @@ The bundle attributes when deploying to this target,
   
 **`Type: Map`**
   
-The definition of the bundle deployment
+The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md).
   
   
   
@@ -149,7 +149,7 @@ The definition of the bundle deployment
   
    * - `lock`
      - Map
-     - The deployment lock attributes. See [_](#bundle.deployment.lock).
+     - The deployment lock attributes. See [_](#bundledeploymentlock).
   
   
 ### bundle.deployment.lock
@@ -180,7 +180,7 @@ The deployment lock attributes.
   
 **`Type: Map`**
   
-The Git version control details that are associated with your bundle.
+The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git).
   
   
   
@@ -217,11 +217,11 @@ Defines attributes for experimental features.
   
    * - `pydabs`
      - Map
-     - The PyDABs configuration. See [_](#experimental.pydabs).
+     - The PyDABs configuration. See [_](#experimentalpydabs).
   
    * - `python`
      - Map
-     - Configures loading of Python code defined with 'databricks-bundles' package. See [_](#experimental.python).
+     - Configures loading of Python code defined with 'databricks-bundles' package. See [_](#experimentalpython).
   
    * - `python_wheel_wrapper`
      - Boolean
@@ -530,11 +530,11 @@ targets:
   
    * - `artifacts`
      - Map
-     - The artifacts to include in the target deployment. See [_](#targets.<name>.artifacts).
+     - The artifacts to include in the target deployment. See [_](#targetsnameartifacts).
   
    * - `bundle`
      - Map
-     - The bundle attributes when deploying to this target. See [_](#targets.<name>.bundle).
+     - The bundle attributes when deploying to this target. See [_](#targetsnamebundle).
   
    * - `cluster_id`
      - String
@@ -550,7 +550,7 @@ targets:
   
    * - `git`
      - Map
-     - The Git version control settings for the target. See [_](#targets.<name>.git).
+     - The Git version control settings for the target. See [_](#targetsnamegit).
   
    * - `mode`
      - String
@@ -558,34 +558,34 @@ targets:
   
    * - `permissions`
      - Sequence
-     - The permissions for deploying and running the bundle in the target. See [_](#targets.<name>.permissions).
+     - The permissions for deploying and running the bundle in the target. See [_](#targetsnamepermissions).
   
    * - `presets`
      - Map
-     - The deployment presets for the target. See [_](#targets.<name>.presets).
+     - The deployment presets for the target. See [_](#targetsnamepresets).
   
    * - `resources`
      - Map
-     - The resource definitions for the target. See [_](#targets.<name>.resources).
+     - The resource definitions for the target. See [_](#targetsnameresources).
   
    * - `run_as`
      - Map
-     - The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md). See [_](#targets.<name>.run_as).
+     - The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md). See [_](#targetsnamerun_as).
   
    * - `sync`
      - Map
-     - The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#targets.<name>.sync).
+     - The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#targetsnamesync).
   
    * - `variables`
      - Map
-     - The custom variable definitions for the target. See [_](#targets.<name>.variables).
+     - The custom variable definitions for the target. See [_](#targetsnamevariables).
   
    * - `workspace`
      - Map
-     - The Databricks workspace for the target. See [_](#targets.<name>.workspace).
+     - The Databricks workspace for the target. See [_](#targetsnameworkspace).
   
   
-### targets.<name>.artifacts
+### targets.\<name\>.artifacts
   
 **`Type: Map`**
   
@@ -615,7 +615,7 @@ artifacts:
   
    * - `files`
      - Sequence
-     - The source files for the artifact. See [_](#targets.<name>.artifacts.<name>.files).
+     - The source files for the artifact. See [_](#targetsnameartifactsnamefiles).
   
    * - `path`
      - String
@@ -626,7 +626,7 @@ artifacts:
      - Required. The type of the artifact. Valid values are `whl`.
   
   
-### targets.<name>.artifacts.<name>.files
+### targets.\<name\>.artifacts.\<name\>.files
   
 **`Type: Sequence`**
   
@@ -646,7 +646,7 @@ The source files for the artifact.
      - Required. The path of the files used to build the artifact.
   
   
-### targets.<name>.bundle
+### targets.\<name\>.bundle
   
 **`Type: Map`**
   
@@ -675,11 +675,11 @@ The bundle attributes when deploying to this target.
   
    * - `deployment`
      - Map
-     - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#targets.<name>.bundle.deployment).
+     - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#targetsnamebundledeployment).
   
    * - `git`
      - Map
-     - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#targets.<name>.bundle.git).
+     - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#targetsnamebundlegit).
   
    * - `name`
      - String
@@ -690,11 +690,11 @@ The bundle attributes when deploying to this target.
      - Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
   
   
-### targets.<name>.bundle.deployment
+### targets.\<name\>.bundle.deployment
   
 **`Type: Map`**
   
-The definition of the bundle deployment
+The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md).
   
   
   
@@ -711,10 +711,10 @@ The definition of the bundle deployment
   
    * - `lock`
      - Map
-     - The deployment lock attributes. See [_](#targets.<name>.bundle.deployment.lock).
+     - The deployment lock attributes. See [_](#targetsnamebundledeploymentlock).
   
   
-### targets.<name>.bundle.deployment.lock
+### targets.\<name\>.bundle.deployment.lock
   
 **`Type: Map`**
   
@@ -738,11 +738,11 @@ The deployment lock attributes.
      - Whether to force this lock if it is enabled.
   
   
-### targets.<name>.bundle.git
+### targets.\<name\>.bundle.git
   
 **`Type: Map`**
   
-The Git version control details that are associated with your bundle.
+The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git).
   
   
   
@@ -762,7 +762,7 @@ The Git version control details that are associated with your bundle.
      - The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git).
   
   
-### targets.<name>.git
+### targets.\<name\>.git
   
 **`Type: Map`**
   
@@ -786,7 +786,7 @@ The Git version control settings for the target.
      - The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git).
   
   
-### targets.<name>.permissions
+### targets.\<name\>.permissions
   
 **`Type: Sequence`**
   
@@ -818,7 +818,7 @@ The permissions for deploying and running the bundle in the target.
      - The name of the user that has the permission set in level.
   
   
-### targets.<name>.presets
+### targets.\<name\>.presets
   
 **`Type: Map`**
   
@@ -858,7 +858,7 @@ The deployment presets for the target.
      - A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
   
   
-### targets.<name>.resources
+### targets.\<name\>.resources
   
 **`Type: Map`**
   
@@ -922,11 +922,11 @@ The resource definitions for the target.
      - The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volumes)
   
   
-### targets.<name>.run_as
+### targets.\<name\>.run_as
   
 **`Type: Map`**
   
-The identity to use to run the bundle.
+The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md).
   
   
   
@@ -946,7 +946,7 @@ The identity to use to run the bundle.
      - The email of an active workspace user. Non-admin users can only set this field to their own email.
   
   
-### targets.<name>.sync
+### targets.\<name\>.sync
   
 **`Type: Map`**
   
@@ -974,7 +974,7 @@ The local paths to sync to the target workspace when a bundle is run or deployed
      - The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.
   
   
-### targets.<name>.variables
+### targets.\<name\>.variables
   
 **`Type: Map`**
   
@@ -1004,14 +1004,14 @@ variables:
   
    * - `lookup`
      - Map
-     - The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID. See [_](#targets.<name>.variables.<name>.lookup).
+     - The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID. See [_](#targetsnamevariablesnamelookup).
   
    * - `type`
      - String
      - The type of the variable.
   
   
-### targets.<name>.variables.<name>.lookup
+### targets.\<name\>.variables.\<name\>.lookup
   
 **`Type: Map`**
   
@@ -1075,7 +1075,7 @@ The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, m
      - 
   
   
-### targets.<name>.workspace
+### targets.\<name\>.workspace
   
 **`Type: Map`**
   
@@ -1185,18 +1185,18 @@ variables:
   
    * - `lookup`
      - Map
-     - The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID. See [_](#variables.<name>.lookup).
+     - The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID. See [_](#variablesnamelookup).
   
    * - `type`
      - String
      - The type of the variable.
   
   
-### variables.<name>.lookup
+### variables.\<name\>.lookup
   
 **`Type: Map`**
   
-The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
   
   
   
