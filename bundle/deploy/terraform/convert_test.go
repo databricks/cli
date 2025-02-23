@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -202,7 +203,7 @@ func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 
 func TestBundleToTerraformPipeline(t *testing.T) {
 	src := resources.Pipeline{
-		PipelineSpec: &pipelines.PipelineSpec{
+		CreatePipeline: &pipelines.CreatePipeline{
 			Name: "my pipeline",
 			Libraries: []pipelines.PipelineLibrary{
 				{
@@ -418,7 +419,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 	src := resources.ModelServingEndpoint{
 		CreateServingEndpoint: &serving.CreateServingEndpoint{
 			Name: "name",
-			Config: serving.EndpointCoreConfigInput{
+			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
 					{
 						ModelName:          "model_name",
@@ -473,7 +474,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 			// and as such observed the `omitempty` tag.
 			// The new method leverages [dyn.Value] where any field that is not
 			// explicitly set is not part of the value.
-			Config: serving.EndpointCoreConfigInput{
+			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
 					{
 						ModelName:          "model_name",
@@ -694,6 +695,14 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{ID: "1"}},
 				},
 			},
+			{
+				Type: "databricks_app",
+				Mode: "managed",
+				Name: "test_app",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{Name: "app1"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -732,6 +741,9 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
+	assert.Equal(t, "app1", config.Resources.Apps["test_app"].Name)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
+
 	AssertFullResourceCoverage(t, &config)
 }
 
@@ -747,7 +759,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline",
 					},
 				},
@@ -815,6 +827,13 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			Apps: map[string]*resources.App{
+				"test_app": {
+					App: &apps.App{
+						Description: "test_app",
+					},
+				},
+			},
 		},
 	}
 	tfState := resourcesState{
@@ -856,6 +875,9 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
+	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
+
 	AssertFullResourceCoverage(t, &config)
 }
 
@@ -876,12 +898,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline",
 					},
 				},
 				"test_pipeline_new": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline_new",
 					},
 				},
@@ -991,6 +1013,18 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				"test_dashboard_new": {
 					Dashboard: &dashboards.Dashboard{
 						DisplayName: "test_dashboard_new",
+					},
+				},
+			},
+			Apps: map[string]*resources.App{
+				"test_app": {
+					App: &apps.App{
+						Name: "test_app",
+					},
+				},
+				"test_app_new": {
+					App: &apps.App{
+						Name: "test_app_new",
 					},
 				},
 			},
@@ -1174,6 +1208,22 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{ID: "2"}},
 				},
 			},
+			{
+				Type: "databricks_app",
+				Mode: "managed",
+				Name: "test_app",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{Name: "test_app"}},
+				},
+			},
+			{
+				Type: "databricks_app",
+				Mode: "managed",
+				Name: "test_app_old",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{Name: "test_app_old"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -1255,6 +1305,13 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
+
+	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
+	assert.Equal(t, resources.ModifiedStatusUpdated, config.Resources.Apps["test_app"].ModifiedStatus)
+	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].Name)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
+	assert.Equal(t, "test_app_new", config.Resources.Apps["test_app_new"].Name)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

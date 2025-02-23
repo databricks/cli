@@ -1,0 +1,5 @@
+Badness = "inferred flag is set to true incorrect; bundle_root_path is not correct; Warn and Error talk about the same; Warn goes to stderr, Error goes to stdout (for backward compat); Warning about permissions repeated twice"
+
+[GOOS]
+# This test relies on chmod which does not work on Windows
+windows = false

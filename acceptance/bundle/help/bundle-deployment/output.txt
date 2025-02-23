@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle deployment --help
+Deployment related commands
+
+Usage:
+  databricks bundle deployment [command]
+
+Available Commands:
+  bind        Bind bundle-defined resources to existing resources
+  unbind      Unbind bundle-defined resources from its managed remote resource
+
+Flags:
+  -h, --help   help for deployment
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+
+Use "databricks bundle deployment [command] --help" for more information about a command.

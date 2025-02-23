@@ -1,0 +1,46 @@
+bundle:
+  name: basic
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
+variables:
+  env_var_name:
+    default: "JOB_ID"
+
+resources:
+  apps:
+    test_app:
+      name: "{{.app_id}}"
+      description: "App which manages job created by this bundle"
+      source_code_path: ./app
+      config:
+        command:
+          - flask
+          - --app
+          - app
+          - run
+        env:
+          - name: ${var.env_var_name}
+            value: ${resources.jobs.foo.id}
+
+      resources:
+        - name: "app-job"
+          description: "A job for app to be able to work with"
+          job:
+            id: ${resources.jobs.foo.id}
+            permission: "CAN_MANAGE_RUN"
+
+  jobs:
+    foo:
+      name: test-job-with-cluster-{{.unique_id}}
+      tasks:
+        - task_key: my_notebook_task
+          new_cluster:
+            num_workers: 1
+            spark_version: "{{.spark_version}}"
+            node_type_id: "{{.node_type_id}}"
+            data_security_mode: USER_ISOLATION
+            instance_pool_id: "{{.instance_pool_id}}"
+          spark_python_task:
+            python_file: ./hello_world.py

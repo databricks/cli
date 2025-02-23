@@ -1,0 +1,8 @@
+# This should error, we do not allow syncroot outside of git repo.
+mkdir myrepo
+cd myrepo
+cp ../databricks.yml .
+git-repo-init
+errcode $CLI bundle validate
+cd ..
+rm -fr myrepo

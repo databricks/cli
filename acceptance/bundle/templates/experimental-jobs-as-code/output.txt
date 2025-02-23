@@ -1,0 +1,87 @@
+
+>>> [CLI] bundle init experimental-jobs-as-code --config-file ./input.json --output-dir output
+
+Welcome to (EXPERIMENTAL) "Jobs as code" template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'my_jobs_as_code/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_jobs_as_code' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> [CLI] bundle validate -t dev --output json
+Warning: Ignoring Databricks CLI version constraint for development build. Required: >= 0.238.0, current: [DEV_VERSION]
+
+{
+  "jobs": {
+    "my_jobs_as_code_job": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "email_notifications": {
+        "on_failure": [
+          "[USERNAME]"
+        ]
+      },
+      "format": "MULTI_TASK",
+      "job_clusters": [
+        {
+          "job_cluster_key": "job_cluster",
+          "new_cluster": {
+            "autoscale": {
+              "max_workers": 4,
+              "min_workers": 1
+            },
+            "node_type_id": "i3.xlarge",
+            "spark_version": "15.4.x-scala2.12"
+          }
+        }
+      ],
+      "max_concurrent_runs": 4,
+      "name": "[dev [USERNAME]] my_jobs_as_code_job",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      },
+      "tags": {
+        "dev": "[USERNAME]"
+      },
+      "tasks": [
+        {
+          "job_cluster_key": "job_cluster",
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook"
+          },
+          "task_key": "notebook_task"
+        },
+        {
+          "depends_on": [
+            {
+              "task_key": "notebook_task"
+            }
+          ],
+          "job_cluster_key": "job_cluster",
+          "libraries": [
+            {
+              "whl": "dist/*.whl"
+            }
+          ],
+          "python_wheel_task": {
+            "entry_point": "main",
+            "package_name": "my_jobs_as_code"
+          },
+          "task_key": "main_task"
+        }
+      ],
+      "trigger": {
+        "pause_status": "PAUSED",
+        "periodic": {
+          "interval": 1,
+          "unit": "DAYS"
+        }
+      }
+    }
+  }
+}

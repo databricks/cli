@@ -1,0 +1,25 @@
+
+>>> [CLI] bundle generate --help
+Generate bundle configuration
+
+Usage:
+  databricks bundle generate [command]
+
+Available Commands:
+  app         Generate bundle configuration for a Databricks app
+  dashboard   Generate configuration for a dashboard
+  job         Generate bundle configuration for a job
+  pipeline    Generate bundle configuration for a pipeline
+
+Flags:
+  -h, --help         help for generate
+      --key string   resource key to use for the generated configuration
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+
+Use "databricks bundle generate [command] --help" for more information about a command.

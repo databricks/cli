@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle generate pipeline --help
+Generate bundle configuration for a pipeline
+
+Usage:
+  databricks bundle generate pipeline [flags]
+
+Flags:
+  -d, --config-dir string             Dir path where the output config will be stored (default "resources")
+      --existing-pipeline-id string   ID of the pipeline to generate config for
+  -f, --force                         Force overwrite existing files in the output directory
+  -h, --help                          help for pipeline
+  -s, --source-dir string             Dir path where the downloaded files will be stored (default "src")
+
+Global Flags:
+      --debug            enable debug logging
+      --key string       resource key to use for the generated configuration
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

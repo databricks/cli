@@ -66,6 +66,7 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		http.MethodGet,
 		apiEndpoint,
 		nil,
+		nil,
 		map[string]string{
 			"path":            path,
 			"return_git_info": "true",

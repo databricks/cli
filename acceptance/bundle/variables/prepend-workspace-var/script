@@ -1,0 +1,2 @@
+echo /Workspace should be prepended on all paths, but it is not the case: #2181
+$CLI bundle validate -o json | jq 'del(.workspace.current_user)'

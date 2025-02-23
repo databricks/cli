@@ -1,0 +1,10 @@
+errcode trace $CLI bundle validate -t development -o json > output.tmp.json
+
+# Capture job tasks
+jq '.resources.jobs.my_job.tasks' output.tmp.json > output.job.json
+
+# Capture pipeline libraries
+jq '.resources.pipelines.my_pipeline.libraries' output.tmp.json > output.pipeline.json
+
+# Expect failure for the "error" target
+errcode trace $CLI bundle validate -t error

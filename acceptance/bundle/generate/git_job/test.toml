@@ -1,0 +1,33 @@
+LocalOnly = true  # This test needs to run against stubbed Databricks API
+
+[[Server]]
+Pattern = "GET /api/2.1/jobs/get"
+Response.Body = '''
+{
+    "job_id": 11223344,
+    "settings": {
+        "name": "gitjob",
+        "git_source": {
+            "git_url":      "https://git.databricks.com",
+            "git_provider": "github",
+            "git_branch":   "main",
+            "git_commit":   "abcdef"
+        },
+        "tasks": [
+            {
+                "task_key": "test_task",
+                "notebook_task": {
+                    "notebook_path": "some/test/notebook.py"
+                }
+            },
+            {
+                "task_key": "test_task_2",
+                "notebook_task": {
+                    "source": "WORKSPACE",
+                    "notebook_path": "/Workspace/Users/foo@bar.com/some/test/notebook.py"
+                }
+            }
+        ]
+    }
+}
+'''

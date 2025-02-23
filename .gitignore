@@ -20,14 +20,12 @@ dist/
 
 *.log
 coverage.txt
+coverage-acceptance.txt
 
 __pycache__
 *.pyc
 
-.terraform
-.terraform.lock.hcl
-
 .vscode/launch.json
 .vscode/tasks.json
 
-.databricks
+.ruff_cache

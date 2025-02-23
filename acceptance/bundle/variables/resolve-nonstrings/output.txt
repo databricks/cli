@@ -1,0 +1,52 @@
+{
+  "variables": {
+    "max_workers": {
+      "value": "2"
+    },
+    "min_workers": {
+      "value": "1"
+    },
+    "no_alert_for_canceled_runs": {
+      "value": "true"
+    },
+    "no_alert_for_skipped_runs": {
+      "value": "false"
+    },
+    "spot_bid_max_price": {
+      "value": "0.5"
+    }
+  },
+  "jobs": {
+    "job1": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/TestResolveVariableReferencesForPrimitiveNonStringFields/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "notification_settings": {
+        "no_alert_for_canceled_runs": true,
+        "no_alert_for_skipped_runs": false
+      },
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      },
+      "tags": {},
+      "tasks": [
+        {
+          "new_cluster": {
+            "autoscale": {
+              "max_workers": 2,
+              "min_workers": 1
+            },
+            "azure_attributes": {
+              "spot_bid_max_price": 0.5
+            }
+          },
+          "task_key": ""
+        }
+      ]
+    }
+  }
+}

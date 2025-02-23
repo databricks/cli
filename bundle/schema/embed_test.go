@@ -59,8 +59,8 @@ func TestJsonSchema(t *testing.T) {
 	}
 
 	providers := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "jobs.GitProvider")
-	assert.Contains(t, providers.Enum, "gitHub")
-	assert.Contains(t, providers.Enum, "bitbucketCloud")
-	assert.Contains(t, providers.Enum, "gitHubEnterprise")
-	assert.Contains(t, providers.Enum, "bitbucketServer")
+	assert.Contains(t, providers.OneOf[0].Enum, "gitHub")
+	assert.Contains(t, providers.OneOf[0].Enum, "bitbucketCloud")
+	assert.Contains(t, providers.OneOf[0].Enum, "gitHubEnterprise")
+	assert.Contains(t, providers.OneOf[0].Enum, "bitbucketServer")
 }

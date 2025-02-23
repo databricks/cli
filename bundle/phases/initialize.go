@@ -2,6 +2,7 @@ package phases
 
 import (
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
@@ -33,11 +34,6 @@ func Initialize() bundle.Mutator {
 			// If it is an ancestor, this updates all paths to be relative to the sync root path.
 			mutator.SyncInferRoot(),
 
-			mutator.MergeJobClusters(),
-			mutator.MergeJobParameters(),
-			mutator.MergeJobTasks(),
-			mutator.MergePipelineClusters(),
-			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
 			mutator.LoadGitDetails(),
 
@@ -64,12 +60,20 @@ func Initialize() bundle.Mutator {
 			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 			mutator.ResolveVariableReferencesInLookup(),
 			mutator.ResolveResourceReferences(),
-			mutator.ResolveVariableReferencesInComplexVariables(),
 			mutator.ResolveVariableReferences(
 				"bundle",
 				"workspace",
 				"variables",
 			),
+
+			mutator.MergeJobClusters(),
+			mutator.MergeJobParameters(),
+			mutator.MergeJobTasks(),
+			mutator.MergePipelineClusters(),
+			mutator.MergeApps(),
+
+			mutator.CaptureSchemaDependency(),
+
 			// Provide permission config errors & warnings after initializing all variables
 			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),
@@ -86,6 +90,8 @@ func Initialize() bundle.Mutator {
 
 			mutator.TranslatePaths(),
 			trampoline.WrapperWarning(),
+
+			apps.Validate(),
 
 			permissions.ValidateSharedRootPermissions(),
 			permissions.ApplyBundlePermissions(),
