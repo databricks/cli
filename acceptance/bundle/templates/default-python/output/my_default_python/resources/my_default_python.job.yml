@@ -12,7 +12,7 @@ resources:
 
       email_notifications:
         on_failure:
-          - $USERNAME
+          - [USERNAME]
 
       tasks:
         - task_key: notebook_task

@@ -1,5 +1,5 @@
 
->>> $CLI bundle generate --help
+>>> [CLI] bundle generate --help
 Generate bundle configuration
 
 Usage:

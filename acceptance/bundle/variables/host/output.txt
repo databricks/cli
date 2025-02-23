@@ -1,5 +1,5 @@
 
->>> errcode $CLI bundle validate -o json
+>>> errcode [CLI] bundle validate -o json
 Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
 
 {
@@ -23,9 +23,10 @@ Error: failed during request visitor: parse "https://${var.host}": invalid chara
     "host": "${var.host}"
   }
 }
+
 Exit code: 1
 
->>> errcode $CLI bundle validate
+>>> errcode [CLI] bundle validate
 Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
 
 Name: host

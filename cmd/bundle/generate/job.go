@@ -50,10 +50,22 @@ func NewGenerateJobCommand() *cobra.Command {
 		}
 
 		downloader := newDownloader(w, sourceDir, configDir)
-		for _, task := range job.Settings.Tasks {
-			err := downloader.MarkTaskForDownload(ctx, &task)
-			if err != nil {
-				return err
+
+		// Don't download files if the job is using Git source
+		// When Git source is used, the job will be using the files from the Git repository
+		// but specific tasks might override this behaviour by using `source: WORKSPACE` setting.
+		// In this case, we don't want to download the files as well for these specific tasks
+		// because it leads to confusion with relative paths between workspace and GIT files.
+		// Instead we keep these tasks as is and let the user handle the files manually.
+		// The configuration will be deployable as tasks paths for source: WORKSPACE tasks will be absolute workspace paths.
+		if job.Settings.GitSource != nil {
+			cmdio.LogString(ctx, "Job is using Git source, skipping downloading files")
+		} else {
+			for _, task := range job.Settings.Tasks {
+				err := downloader.MarkTaskForDownload(ctx, &task)
+				if err != nil {
+					return err
+				}
 			}
 		}
 

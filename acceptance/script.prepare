@@ -39,6 +39,7 @@ git-repo-init() {
     git config core.autocrlf false
     git config user.name "Tester"
     git config user.email "tester@databricks.com"
+    git config core.hooksPath no-hooks
     git add databricks.yml
     git commit -qm 'Add databricks.yml'
 }

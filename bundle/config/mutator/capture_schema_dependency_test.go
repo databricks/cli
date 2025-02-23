@@ -118,43 +118,43 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Schema:  "foobar",
 						},
 					},
 					"pipeline2": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalog2",
 							Schema:  "foobar",
 						},
 					},
 					"pipeline3": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Schema:  "barfoo",
 						},
 					},
 					"pipeline4": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalogX",
 							Schema:  "foobar",
 						},
 					},
 					"pipeline5": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Schema:  "schemaX",
 						},
 					},
 					"pipeline6": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "",
 							Schema:  "foobar",
 						},
 					},
 					"pipeline7": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "",
 							Schema:  "",
 							Name:    "whatever",
@@ -179,7 +179,7 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline7"].Schema)
 
 	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"])
-	assert.Nil(t, b.Config.Resources.Pipelines["emptyPipeline"].PipelineSpec)
+	assert.Nil(t, b.Config.Resources.Pipelines["emptyPipeline"].CreatePipeline)
 
 	for _, k := range []string{"pipeline1", "pipeline2", "pipeline3", "pipeline4", "pipeline5", "pipeline6", "pipeline7"} {
 		assert.Empty(t, b.Config.Resources.Pipelines[k].Target)
@@ -214,43 +214,43 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Target:  "foobar",
 						},
 					},
 					"pipeline2": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalog2",
 							Target:  "foobar",
 						},
 					},
 					"pipeline3": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Target:  "barfoo",
 						},
 					},
 					"pipeline4": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalogX",
 							Target:  "foobar",
 						},
 					},
 					"pipeline5": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Target:  "schemaX",
 						},
 					},
 					"pipeline6": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "",
 							Target:  "foobar",
 						},
 					},
 					"pipeline7": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Catalog: "",
 							Target:  "",
 							Name:    "whatever",

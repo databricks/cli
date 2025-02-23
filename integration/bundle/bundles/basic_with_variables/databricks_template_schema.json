@@ -1,0 +1,21 @@
+{
+    "properties": {
+        "unique_id": {
+            "type": "string",
+            "description": "Unique ID for job name"
+        },
+        "spark_version": {
+            "type": "string",
+            "description": "Spark version used for job cluster"
+        },
+        "node_type_id": {
+            "type": "string",
+            "description": "Node type id for job cluster"
+        },
+        "root_path": {
+            "type": "string",
+            "description": "Root path to deploy bundle to",
+            "default": ""
+        }
+    }
+}

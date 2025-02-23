@@ -14,11 +14,11 @@ trace BUNDLE_VAR_cluster_key=mlops_stacks-cluster-overriden $CLI bundle validate
 title "variable has value in config file"
 trace $CLI bundle validate -o json --target with_value | jq $cluster_expr
 
-# title "file cannot be parsed"
-# trace errcode $CLI bundle validate -o json --target invalid_json | jq $cluster_expr
+title "file cannot be parsed"
+trace errcode $CLI bundle validate -o json --target invalid_json | jq $cluster_expr
 
-# title "file has wrong structure"
-# trace errcode $CLI bundle validate -o json --target wrong_file_structure | jq $cluster_expr
+title "file has wrong structure"
+trace errcode $CLI bundle validate -o json --target wrong_file_structure | jq $cluster_expr
 
 title "file has variable that is complex but default is string"
 trace errcode $CLI bundle validate -o json --target complex_to_string | jq $cluster_expr

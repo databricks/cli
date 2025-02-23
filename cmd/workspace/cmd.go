@@ -3,6 +3,7 @@
 package workspace
 
 import (
+	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
 	apps "github.com/databricks/cli/cmd/workspace/apps"
@@ -38,6 +39,7 @@ import (
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
 	jobs "github.com/databricks/cli/cmd/workspace/jobs"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
+	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
@@ -61,11 +63,13 @@ import (
 	quality_monitors "github.com/databricks/cli/cmd/workspace/quality-monitors"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
 	queries_legacy "github.com/databricks/cli/cmd/workspace/queries-legacy"
+	query_execution "github.com/databricks/cli/cmd/workspace/query-execution"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
 	query_visualizations_legacy "github.com/databricks/cli/cmd/workspace/query-visualizations-legacy"
 	recipient_activation "github.com/databricks/cli/cmd/workspace/recipient-activation"
 	recipients "github.com/databricks/cli/cmd/workspace/recipients"
+	redash_config "github.com/databricks/cli/cmd/workspace/redash-config"
 	registered_models "github.com/databricks/cli/cmd/workspace/registered-models"
 	repos "github.com/databricks/cli/cmd/workspace/repos"
 	resource_quotas "github.com/databricks/cli/cmd/workspace/resource-quotas"
@@ -96,6 +100,7 @@ import (
 func All() []*cobra.Command {
 	var out []*cobra.Command
 
+	out = append(out, access_control.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())
 	out = append(out, apps.New())
@@ -131,6 +136,7 @@ func All() []*cobra.Command {
 	out = append(out, ip_access_lists.New())
 	out = append(out, jobs.New())
 	out = append(out, lakeview.New())
+	out = append(out, lakeview_embedded.New())
 	out = append(out, libraries.New())
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
@@ -154,11 +160,13 @@ func All() []*cobra.Command {
 	out = append(out, quality_monitors.New())
 	out = append(out, queries.New())
 	out = append(out, queries_legacy.New())
+	out = append(out, query_execution.New())
 	out = append(out, query_history.New())
 	out = append(out, query_visualizations.New())
 	out = append(out, query_visualizations_legacy.New())
 	out = append(out, recipient_activation.New())
 	out = append(out, recipients.New())
+	out = append(out, redash_config.New())
 	out = append(out, registered_models.New())
 	out = append(out, repos.New())
 	out = append(out, resource_quotas.New())

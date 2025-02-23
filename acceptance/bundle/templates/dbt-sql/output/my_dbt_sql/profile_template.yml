@@ -5,7 +5,7 @@ fixed:
   type: databricks
 prompts:
   host:
-    default: $DATABRICKS_HOST
+    default: [DATABRICKS_HOST]
   token:
     hint: 'personal access token to use, dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
     hide_input: true
@@ -16,7 +16,7 @@ prompts:
     hint: 'initial catalog'
     default: main
   schema:
-    hint: 'personal schema where dbt will build objects during development, example: $USERNAME'
+    hint: 'personal schema where dbt will build objects during development, example: [USERNAME]'
   threads:
     hint: 'threads to use during development, 1 or more'
     type: 'int'

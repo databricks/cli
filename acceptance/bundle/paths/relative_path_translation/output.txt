@@ -1,4 +1,4 @@
 
->>> $CLI bundle validate -t default -o json
+>>> [CLI] bundle validate -t default -o json
 
->>> $CLI bundle validate -t override -o json
+>>> [CLI] bundle validate -t override -o json

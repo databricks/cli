@@ -203,7 +203,7 @@ func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 
 func TestBundleToTerraformPipeline(t *testing.T) {
 	src := resources.Pipeline{
-		PipelineSpec: &pipelines.PipelineSpec{
+		CreatePipeline: &pipelines.CreatePipeline{
 			Name: "my pipeline",
 			Libraries: []pipelines.PipelineLibrary{
 				{
@@ -419,7 +419,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 	src := resources.ModelServingEndpoint{
 		CreateServingEndpoint: &serving.CreateServingEndpoint{
 			Name: "name",
-			Config: serving.EndpointCoreConfigInput{
+			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
 					{
 						ModelName:          "model_name",
@@ -474,7 +474,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 			// and as such observed the `omitempty` tag.
 			// The new method leverages [dyn.Value] where any field that is not
 			// explicitly set is not part of the value.
-			Config: serving.EndpointCoreConfigInput{
+			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
 					{
 						ModelName:          "model_name",
@@ -759,7 +759,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline",
 					},
 				},
@@ -898,12 +898,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline",
 					},
 				},
 				"test_pipeline_new": {
-					PipelineSpec: &pipelines.PipelineSpec{
+					CreatePipeline: &pipelines.CreatePipeline{
 						Name: "test_pipeline_new",
 					},
 				},

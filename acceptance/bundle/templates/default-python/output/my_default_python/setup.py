@@ -23,7 +23,7 @@ setup(
     # to ensure that changes to wheel package are picked up when used on all-purpose clusters
     version=my_default_python.__version__ + "+" + local_version,
     url="https://databricks.com",
-    author="$USERNAME",
+    author="[USERNAME]",
     description="wheel file based on my_default_python/src",
     packages=find_packages(where="./src"),
     package_dir={"": "src"},

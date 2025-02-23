@@ -135,11 +135,6 @@ func findNonUserPath(b *bundle.Bundle) string {
 }
 
 func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
-	if b.Config.Bundle.Git.Inferred {
-		env := b.Config.Bundle.Target
-		log.Warnf(ctx, "target with 'mode: production' should specify an explicit 'targets.%s.git' configuration", env)
-	}
-
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {

@@ -106,7 +106,7 @@ func (info *wsfsFileInfo) MarshalJSON() ([]byte, error) {
 // as an interface to allow for mocking in tests.
 type apiClient interface {
 	Do(ctx context.Context, method, path string,
-		headers map[string]string, request, response any,
+		headers map[string]string, queryString map[string]any, request, response any,
 		visitors ...func(*http.Request) error) error
 }
 
@@ -156,7 +156,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, body, nil)
+	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, nil, body, nil)
 
 	// Return early on success.
 	if err == nil {
@@ -340,6 +340,7 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		ctx,
 		http.MethodGet,
 		"/api/2.0/workspace/get-status",
+		nil,
 		nil,
 		map[string]string{
 			"path":               absPath,

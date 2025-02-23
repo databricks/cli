@@ -109,6 +109,20 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	return s
 }
 
+func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	switch typ {
+	case reflect.TypeOf(resources.Pipeline{}):
+		// Even though DABs supports this field, TF provider does not. Thus, we
+		// should not expose it to the user.
+		delete(s.Properties, "dry_run")
+		delete(s.Properties, "allow_duplicate_names")
+	default:
+		// Do nothing
+	}
+
+	return s
+}
+
 // While volume_type is required in the volume create API, DABs automatically sets
 // it's value to "MANAGED" if it's not provided. Thus, we make it optional
 // in the bundle schema.
@@ -168,6 +182,7 @@ func generateSchema(workdir, outputFile string) {
 	// Generate the JSON schema from the bundle Go struct.
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
+		removePipelineFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
 		addInterpolationPatterns,
