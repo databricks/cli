@@ -1,0 +1,20 @@
+# Badness = "Brief description of what's wrong with the test output, if anything"
+
+#[GOOS]
+# Disable on Windows
+#windows = false
+
+# Disable on Mac
+#mac = false
+
+# Disable on Linux
+#linux = false
+
+[[Repls]]
+Old = '\b[0-9]{5}\b'
+New = "CUSTOM_NUMBER_REGEX"
+
+[[Repls]]
+# Fix path with reverse slashes in the output for Windows.
+Old = 'TMPDIR]\\subdir\\a\\b\\c'
+New = 'TMPDIR]/subdir/a/b/c'

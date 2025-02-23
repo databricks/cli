@@ -40,7 +40,6 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	b.Config.Bundle.Git.ActualBranch = info.CurrentBranch
 	if b.Config.Bundle.Git.Branch == "" {
 		// Only load branch if there's no user defined value
-		b.Config.Bundle.Git.Inferred = true
 		b.Config.Bundle.Git.Branch = info.CurrentBranch
 	}
 

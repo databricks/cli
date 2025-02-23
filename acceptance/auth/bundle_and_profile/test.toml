@@ -1,0 +1,12 @@
+Badness = "When -p flag is used inside the bundle folder for any CLI commands, CLI use bundle host anyway instead of profile one"
+
+# Some of the clouds have DATABRICKS_HOST variable setup without https:// prefix
+# In the result, output is replaced with DATABRICKS_URL variable instead of DATABRICKS_HOST
+# This is a workaround to replace DATABRICKS_URL with DATABRICKS_HOST
+[[Repls]]
+Old='DATABRICKS_HOST'
+New='DATABRICKS_TARGET'
+
+[[Repls]]
+Old='DATABRICKS_URL'
+New='DATABRICKS_TARGET'

@@ -109,3 +109,12 @@ License - https://github.com/hexops/gotextdiff/blob/main/LICENSE
 https://github.com/BurntSushi/toml
 Copyright (c) 2013 TOML authors
 https://github.com/BurntSushi/toml/blob/master/COPYING
+
+dario.cat/mergo
+Copyright (c) 2013 Dario Castañé. All rights reserved.
+Copyright (c) 2012 The Go Authors. All rights reserved.
+https://github.com/darccio/mergo/blob/master/LICENSE
+
+https://github.com/gorilla/mux
+Copyright (c) 2023 The Gorilla Authors. All rights reserved.
+https://github.com/gorilla/mux/blob/main/LICENSE

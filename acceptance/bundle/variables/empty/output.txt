@@ -3,8 +3,8 @@ Error: no value assigned to required variable a. Assignment can be done using "-
 Name: empty${var.a}
 Target: default
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/empty${var.a}/default
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/empty${var.a}/default
 
 Found 1 error
 

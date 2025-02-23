@@ -1,0 +1,3 @@
+# The tests here intend to test variable interpolation via "bundle validate".
+# Even though "bundle validate" does a few API calls, that's not the focus there.
+LocalOnly = true

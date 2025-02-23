@@ -34,7 +34,6 @@ func Initialize() bundle.Mutator {
 			// If it is an ancestor, this updates all paths to be relative to the sync root path.
 			mutator.SyncInferRoot(),
 
-			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
 			mutator.LoadGitDetails(),
 

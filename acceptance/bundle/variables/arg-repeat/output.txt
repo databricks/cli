@@ -1,5 +1,5 @@
 
->>> errcode $CLI bundle validate --var a=one -o json
+>>> errcode [CLI] bundle validate --var a=one -o json
 {
   "a": {
     "default": "hello",
@@ -7,7 +7,7 @@
   }
 }
 
->>> errcode $CLI bundle validate --var a=one --var a=two
+>>> errcode [CLI] bundle validate --var a=one --var a=two
 Error: failed to assign two to a: variable has already been assigned value: one
 
 Name: arg-repeat

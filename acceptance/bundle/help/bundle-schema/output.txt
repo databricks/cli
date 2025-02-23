@@ -1,5 +1,5 @@
 
->>> $CLI bundle schema --help
+>>> [CLI] bundle schema --help
 Generate JSON Schema for bundle configuration
 
 Usage:

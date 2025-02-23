@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
-	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -33,6 +32,7 @@ type hook struct {
 	RequireDatabricksConnect bool    `yaml:"require_databricks_connect,omitempty"`
 	MinRuntimeVersion        string  `yaml:"min_runtime_version,omitempty"`
 	WarehouseTypes           whTypes `yaml:"warehouse_types,omitempty"`
+	Extras                   string  `yaml:"extras,omitempty"`
 }
 
 func (h *hook) RequireRunningCluster() bool {
@@ -223,7 +223,7 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 	feedback := cmdio.Spinner(ctx)
 	defer close(feedback)
 	feedback <- "Detecting all installed Python interpreters on the system"
-	pythonInterpreters, err := python.DetectInterpreters(ctx)
+	pythonInterpreters, err := DetectInterpreters(ctx)
 	if err != nil {
 		return fmt.Errorf("detect: %w", err)
 	}
@@ -259,6 +259,10 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 		}
 	}
 	feedback <- "Installing Python library dependencies"
+	if i.Installer.Extras != "" {
+		// install main and optional dependencies
+		return i.installPythonDependencies(ctx, fmt.Sprintf(".[%s]", i.Installer.Extras))
+	}
 	return i.installPythonDependencies(ctx, ".")
 }
 

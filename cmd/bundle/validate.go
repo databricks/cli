@@ -20,7 +20,9 @@ func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
-	_, _ = cmd.OutOrStdout().Write(buf)
+	out := cmd.OutOrStdout()
+	_, _ = out.Write(buf)
+	_, _ = out.Write([]byte{'\n'})
 	return nil
 }
 

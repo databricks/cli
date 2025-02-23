@@ -1,5 +1,5 @@
 
->>> $CLI bundle open --help
+>>> [CLI] bundle open --help
 Open a resource in the browser
 
 Usage:

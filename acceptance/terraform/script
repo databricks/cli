@@ -1,0 +1,14 @@
+# Want to filter out these message:
+# Mac:
+# The current .terraform.lock.hcl file only includes checksums for
+# darwin_arm64, so Terraform running on another platform will fail to install
+# these providers.
+#
+# Linux:
+# The current .terraform.lock.hcl file only includes checksums for linux_amd64,
+# so Terraform running on another platform will fail to install these
+# providers.
+
+trace $TERRAFORM init -no-color -get=false | grep -v 'includes checksums for' | grep -v 'so Terraform running on another' | grep -v 'providers\.'
+trace $TERRAFORM plan -no-color
+rm -fr .terraform.lock.hcl .terraform
