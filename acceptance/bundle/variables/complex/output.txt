@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle validate -o json
+
+>>> jq .resources.jobs.my_job.tasks[0].task_key out.default.json
+"task with spark version 13.2.x-scala2.11 and jar /path/to/jar"
+
+>>> [CLI] bundle validate -o json -t dev
+
+>>> jq .resources.jobs.my_job.tasks[0].task_key out.dev.json
+"task with spark version 14.2.x-scala2.11 and jar /newpath/to/jar"
+policy_id and spark_conf.spark_random fields do not exist in dev target:
+
+>>> jq .resources.jobs.my_job.job_clusters[0].new_cluster.policy_id out.dev.json
+null

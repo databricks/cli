@@ -2,20 +2,21 @@ package output
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-type NotebookOutput jobs.NotebookOutput
-type DbtOutput jobs.DbtOutput
-type SqlOutput jobs.SqlOutput
-type LogsOutput struct {
-	Logs          string `json:"logs"`
-	LogsTruncated bool   `json:"logs_truncated"`
-}
+type (
+	NotebookOutput jobs.NotebookOutput
+	DbtOutput      jobs.DbtOutput
+	SqlOutput      jobs.SqlOutput
+	LogsOutput     struct {
+		Logs          string `json:"logs"`
+		LogsTruncated bool   `json:"logs_truncated"`
+	}
+)
 
-func structToString(val interface{}) (string, error) {
+func structToString(val any) (string, error) {
 	b, err := json.MarshalIndent(val, "", "  ")
 	if err != nil {
 		return "", err
@@ -25,7 +26,7 @@ func structToString(val interface{}) (string, error) {
 
 func (out *NotebookOutput) String() (string, error) {
 	if out.Truncated {
-		return fmt.Sprintf("%s\n[truncated...]\n", out.Result), nil
+		return out.Result + "\n[truncated...]\n", nil
 	}
 	return out.Result, nil
 }
@@ -40,7 +41,7 @@ func (out *DbtOutput) String() (string, error) {
 	// JSON is used because it's a convenient representation.
 	// If user needs machine parsable output, they can use the --output json
 	// flag
-	return fmt.Sprintf("Dbt Task Output:\n%s", outputString), nil
+	return "Dbt Task Output:\n" + outputString, nil
 }
 
 func (out *SqlOutput) String() (string, error) {
@@ -53,12 +54,12 @@ func (out *SqlOutput) String() (string, error) {
 	// JSON is used because it's a convenient representation.
 	// If user needs machine parsable output, they can use the --output json
 	// flag
-	return fmt.Sprintf("SQL Task Output:\n%s", outputString), nil
+	return "SQL Task Output:\n" + outputString, nil
 }
 
 func (out *LogsOutput) String() (string, error) {
 	if out.LogsTruncated {
-		return fmt.Sprintf("%s\n[truncated...]\n", out.Logs), nil
+		return out.Logs + "\n[truncated...]\n", nil
 	}
 	return out.Logs, nil
 }

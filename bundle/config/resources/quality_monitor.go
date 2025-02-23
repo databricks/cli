@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -51,7 +50,7 @@ func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 	if s.TableName == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("explore/data/%s", strings.ReplaceAll(s.TableName, ".", "/"))
+	baseURL.Path = "explore/data/" + strings.ReplaceAll(s.TableName, ".", "/")
 	s.URL = baseURL.String()
 }
 
@@ -61,4 +60,8 @@ func (s *QualityMonitor) GetName() string {
 
 func (s *QualityMonitor) GetURL() string {
 	return s.URL
+}
+
+func (s *QualityMonitor) IsNil() bool {
+	return s.CreateMonitor == nil
 }

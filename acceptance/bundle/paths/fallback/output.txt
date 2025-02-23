@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle validate -t development -o json
+
+>>> [CLI] bundle validate -t error
+Error: notebook this value is overridden not found. Local notebook references are expected
+to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]
+
+Name: fallback
+Target: error
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/fallback/error
+
+Found 1 error
+
+Exit code: 1

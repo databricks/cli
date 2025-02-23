@@ -52,10 +52,10 @@ func (e *EventChanges) IsEmpty() bool {
 func (e *EventChanges) String() string {
 	var changes []string
 	if len(e.Put) > 0 {
-		changes = append(changes, fmt.Sprintf("PUT: %s", strings.Join(e.Put, ", ")))
+		changes = append(changes, "PUT: "+strings.Join(e.Put, ", "))
 	}
 	if len(e.Delete) > 0 {
-		changes = append(changes, fmt.Sprintf("DELETE: %s", strings.Join(e.Delete, ", ")))
+		changes = append(changes, "DELETE: "+strings.Join(e.Delete, ", "))
 	}
 	return strings.Join(changes, ", ")
 }
@@ -70,10 +70,10 @@ func (e *EventStart) String() string {
 		return ""
 	}
 
-	return fmt.Sprintf("Action: %s", e.EventChanges.String())
+	return "Action: " + e.EventChanges.String()
 }
 
-func newEventStart(seq int, put []string, delete []string) Event {
+func newEventStart(seq int, put, delete []string) Event {
 	return &EventStart{
 		EventBase:    newEventBase(seq, EventTypeStart),
 		EventChanges: &EventChanges{Put: put, Delete: delete},
@@ -98,9 +98,9 @@ func (e *EventSyncProgress) String() string {
 
 	switch e.Action {
 	case EventActionPut:
-		return fmt.Sprintf("Uploaded %s", e.Path)
+		return "Uploaded " + e.Path
 	case EventActionDelete:
-		return fmt.Sprintf("Deleted %s", e.Path)
+		return "Deleted " + e.Path
 	default:
 		panic("invalid action")
 	}
@@ -133,7 +133,7 @@ func (e *EventSyncComplete) String() string {
 	return "Complete"
 }
 
-func newEventComplete(seq int, put []string, delete []string) Event {
+func newEventComplete(seq int, put, delete []string) Event {
 	return &EventSyncComplete{
 		EventBase:    newEventBase(seq, EventTypeComplete),
 		EventChanges: &EventChanges{Put: put, Delete: delete},

@@ -3,7 +3,9 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 
@@ -67,6 +69,17 @@ type Schema struct {
 
 	// Schema that must match any of the schemas in the array
 	AnyOf []Schema `json:"anyOf,omitempty"`
+
+	// Schema that must match one of the schemas in the array
+	OneOf []Schema `json:"oneOf,omitempty"`
+
+	// Title of the object, rendered as inline documentation in the IDE.
+	// https://json-schema.org/understanding-json-schema/reference/annotations
+	Title string `json:"title,omitempty"`
+
+	// Examples of the value for properties in the schema.
+	// https://json-schema.org/understanding-json-schema/reference/annotations
+	Examples any `json:"examples,omitempty"`
 }
 
 // Default value defined in a JSON Schema, represented as a string.
@@ -255,7 +268,12 @@ func (schema *Schema) validate() error {
 }
 
 func Load(path string) (*Schema, error) {
-	b, err := os.ReadFile(path)
+	dir, file := filepath.Split(path)
+	return LoadFS(os.DirFS(dir), file)
+}
+
+func LoadFS(fsys fs.FS, path string) (*Schema, error) {
+	b, err := fs.ReadFile(fsys, path)
 	if err != nil {
 		return nil, err
 	}

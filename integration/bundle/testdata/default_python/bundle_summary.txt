@@ -1,0 +1,185 @@
+{
+  "bundle": {
+    "name": "project_name_$UNIQUE_PRJ",
+    "target": "dev",
+    "environment": "dev",
+    "terraform": {
+      "exec_path": "/tmp/.../terraform"
+    },
+    "git": {
+      "bundle_root_path": "."
+    },
+    "mode": "development",
+    "deployment": {
+      "lock": {
+        "enabled": false
+      }
+    },
+    "uuid": "[UUID]"
+  },
+  "include": [
+    "resources/project_name_$UNIQUE_PRJ.job.yml",
+    "resources/project_name_$UNIQUE_PRJ.pipeline.yml"
+  ],
+  "workspace": {
+    "host": "[DATABRICKS_URL]",
+    "current_user": {
+      "active": true,
+      "displayName": "[USERNAME]",
+      "emails": [
+        {
+          "primary": true,
+          "type": "work",
+          "value": "[USERNAME]"
+        }
+      ],
+      "groups": [
+        {
+          "$ref": "Groups/[USERGROUP]",
+          "display": "team.engineering",
+          "type": "direct",
+          "value": "[USERGROUP]"
+        }
+      ],
+      "id": "[USERID]",
+      "name": {
+        "familyName": "[USERNAME]",
+        "givenName": "[USERNAME]"
+      },
+      "schemas": [
+        "urn:ietf:params:scim:schemas:core:2.0:User",
+        "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
+      ],
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/resources",
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/artifacts",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/state"
+  },
+  "resources": {
+    "jobs": {
+      "project_name_$UNIQUE_PRJ_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {
+          "on_failure": [
+            "[USERNAME]"
+          ]
+        },
+        "format": "MULTI_TASK",
+        "id": "[NUMID]",
+        "job_clusters": [
+          {
+            "job_cluster_key": "job_cluster",
+            "new_cluster": {
+              "autoscale": {
+                "max_workers": 4,
+                "min_workers": 1
+              },
+              "node_type_id": "i3.xlarge",
+              "spark_version": "15.4.x-scala2.12"
+            }
+          }
+        ],
+        "max_concurrent_runs": 4,
+        "name": "[dev [USERNAME]] project_name_$UNIQUE_PRJ_job",
+        "queue": {
+          "enabled": true
+        },
+        "tags": {
+          "dev": "[USERNAME]"
+        },
+        "tasks": [
+          {
+            "job_cluster_key": "job_cluster",
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/notebook"
+            },
+            "task_key": "notebook_task"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "notebook_task"
+              }
+            ],
+            "pipeline_task": {
+              "pipeline_id": "${resources.pipelines.project_name_$UNIQUE_PRJ_pipeline.id}"
+            },
+            "task_key": "refresh_pipeline"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "refresh_pipeline"
+              }
+            ],
+            "job_cluster_key": "job_cluster",
+            "libraries": [
+              {
+                "whl": "dist/*.whl"
+              }
+            ],
+            "python_wheel_task": {
+              "entry_point": "main",
+              "package_name": "project_name_$UNIQUE_PRJ"
+            },
+            "task_key": "main_task"
+          }
+        ],
+        "trigger": {
+          "pause_status": "PAUSED",
+          "periodic": {
+            "interval": 1,
+            "unit": "DAYS"
+          }
+        },
+        "url": "[DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]"
+      }
+    },
+    "pipelines": {
+      "project_name_$UNIQUE_PRJ_pipeline": {
+        "catalog": "main",
+        "configuration": {
+          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files/src"
+        },
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
+        },
+        "development": true,
+        "id": "[UUID]",
+        "libraries": [
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/dlt_pipeline"
+            }
+          }
+        ],
+        "name": "[dev [USERNAME]] project_name_$UNIQUE_PRJ_pipeline",
+        "target": "project_name_$UNIQUE_PRJ_dev",
+        "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "presets": {
+    "name_prefix": "[dev [USERNAME]] ",
+    "pipelines_development": true,
+    "trigger_pause_status": "PAUSED",
+    "jobs_max_concurrent_runs": 4,
+    "tags": {
+      "dev": "[USERNAME]"
+    }
+  }
+}

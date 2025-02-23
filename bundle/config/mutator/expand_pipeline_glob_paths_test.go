@@ -17,7 +17,7 @@ import (
 )
 
 func touchEmptyFile(t *testing.T, path string) {
-	err := os.MkdirAll(filepath.Dir(path), 0700)
+	err := os.MkdirAll(filepath.Dir(path), 0o700)
 	require.NoError(t, err)
 	f, err := os.Create(path)
 	require.NoError(t, err)
@@ -47,7 +47,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{

@@ -113,7 +113,7 @@ func (h *testCoreExcludesHelper) initialize(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", h.xdgConfigHome)
 
 	xdgConfigHomeGit := filepath.Join(h.xdgConfigHome, "git")
-	err := os.MkdirAll(xdgConfigHomeGit, 0755)
+	err := os.MkdirAll(xdgConfigHomeGit, 0o755)
 	require.NoError(t, err)
 }
 
@@ -124,7 +124,7 @@ func (h *testCoreExcludesHelper) coreExcludesFile() (string, error) {
 }
 
 func (h *testCoreExcludesHelper) writeConfig(path, contents string) {
-	err := os.WriteFile(path, []byte(contents), 0644)
+	err := os.WriteFile(path, []byte(contents), 0o644)
 	require.NoError(h, err)
 }
 

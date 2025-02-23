@@ -2,9 +2,10 @@ package phases
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -23,10 +24,10 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func parseTerraformActions(changes []*tfjson.ResourceChange, toInclude func(typ string, actions tfjson.Actions) bool) []terraformlib.Action {
+func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []terraformlib.Action {
 	res := make([]terraformlib.Action, 0)
 	for _, rc := range changes {
-		if !toInclude(rc.Type, rc.Change.Actions) {
+		if rc.Type != resourceType {
 			continue
 		}
 
@@ -37,7 +38,7 @@ func parseTerraformActions(changes []*tfjson.ResourceChange, toInclude func(typ 
 		case rc.Change.Actions.Replace():
 			actionType = terraformlib.ActionTypeRecreate
 		default:
-			// No use case for other action types yet.
+			// Filter other action types..
 			continue
 		}
 
@@ -54,7 +55,7 @@ func parseTerraformActions(changes []*tfjson.ResourceChange, toInclude func(typ 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	tf := b.Terraform
 	if tf == nil {
-		return false, fmt.Errorf("terraform not initialized")
+		return false, errors.New("terraform not initialized")
 	}
 
 	// read plan file
@@ -63,30 +64,12 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	schemaActions := parseTerraformActions(plan.ResourceChanges, func(typ string, actions tfjson.Actions) bool {
-		// Filter in only UC schema resources.
-		if typ != "databricks_schema" {
-			return false
-		}
-
-		// We only display prompts for destructive actions like deleting or
-		// recreating a schema.
-		return actions.Delete() || actions.Replace()
-	})
-
-	dltActions := parseTerraformActions(plan.ResourceChanges, func(typ string, actions tfjson.Actions) bool {
-		// Filter in only DLT pipeline resources.
-		if typ != "databricks_pipeline" {
-			return false
-		}
-
-		// Recreating DLT pipeline leads to metadata loss and for a transient period
-		// the underling tables will be unavailable.
-		return actions.Replace() || actions.Delete()
-	})
+	schemaActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_schema")
+	dltActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_pipeline")
+	volumeActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_volume")
 
 	// We don't need to display any prompts in this case.
-	if len(dltActions) == 0 && len(schemaActions) == 0 {
+	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 {
 		return true, nil
 	}
 
@@ -111,12 +94,25 @@ properties such as the 'catalog' or 'storage' are changed:`
 		}
 	}
 
+	// One or more volumes is being recreated.
+	if len(volumeActions) != 0 {
+		msg := `
+This action will result in the deletion or recreation of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:`
+		cmdio.LogString(ctx, msg)
+		for _, action := range volumeActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
 	if b.AutoApprove {
 		return true, nil
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, fmt.Errorf("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 	}
 
 	cmdio.LogString(ctx, "")
@@ -140,6 +136,8 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 		bundle.Seq(
 			terraform.StatePush(),
 			terraform.Load(),
+			apps.InterpolateVariables(),
+			apps.UploadConfig(),
 			metadata.Compute(),
 			metadata.Upload(),
 			bundle.LogString("Deployment complete!"),

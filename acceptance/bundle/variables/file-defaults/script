@@ -1,0 +1,30 @@
+cluster_expr=".resources.jobs.job1.job_clusters[0]"
+
+# defaults from variable file, see .databricks/bundle/<target>/variable-overrides.json
+
+title "variable file"
+trace $CLI bundle validate -o json | jq $cluster_expr
+
+title "variable file and variable flag"
+trace $CLI bundle validate -o json --var="cluster_key=mlops_stacks-cluster-overriden" | jq $cluster_expr
+
+title "variable file and environment variable"
+trace BUNDLE_VAR_cluster_key=mlops_stacks-cluster-overriden $CLI bundle validate -o json | jq $cluster_expr
+
+title "variable has value in config file"
+trace $CLI bundle validate -o json --target with_value | jq $cluster_expr
+
+title "file cannot be parsed"
+trace errcode $CLI bundle validate -o json --target invalid_json | jq $cluster_expr
+
+title "file has wrong structure"
+trace errcode $CLI bundle validate -o json --target wrong_file_structure | jq $cluster_expr
+
+title "file has variable that is complex but default is string"
+trace errcode $CLI bundle validate -o json --target complex_to_string | jq $cluster_expr
+
+title "file has variable that is string but default is complex"
+trace errcode $CLI bundle validate -o json --target string_to_complex | jq $cluster_expr
+
+title "variable is required but it's not provided in the file"
+trace errcode $CLI bundle validate -o json --target without_defaults | jq $cluster_expr

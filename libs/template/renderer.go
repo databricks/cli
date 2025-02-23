@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"sort"
@@ -52,32 +50,38 @@ type renderer struct {
 	// do not match any glob patterns from this list
 	skipPatterns []string
 
-	// Filer rooted at template root. The file tree from this root is walked to
-	// generate the project
-	templateFiler filer.Filer
-
-	// Root directory for the project instantiated from the template
-	instanceRoot string
+	// [fs.FS] that holds the template's file tree.
+	srcFS fs.FS
 }
 
-func newRenderer(ctx context.Context, config map[string]any, helpers template.FuncMap, templateRoot, libraryRoot, instanceRoot string) (*renderer, error) {
+func newRenderer(
+	ctx context.Context,
+	config map[string]any,
+	helpers template.FuncMap,
+	templateFS fs.FS,
+	templateDir string,
+	libraryDir string,
+) (*renderer, error) {
 	// Initialize new template, with helper functions loaded
 	tmpl := template.New("").Funcs(helpers)
 
-	// Load user defined associated templates from the library root
-	libraryGlob := filepath.Join(libraryRoot, "*")
-	matches, err := filepath.Glob(libraryGlob)
+	// Find user-defined templates in the library directory
+	matches, err := fs.Glob(templateFS, path.Join(libraryDir, "*"))
 	if err != nil {
 		return nil, err
 	}
+
+	// Parse user-defined templates.
+	// Note: we do not call [ParseFS] with the glob directly because
+	// it returns an error if no files match the pattern.
 	if len(matches) != 0 {
-		tmpl, err = tmpl.ParseFiles(matches...)
+		tmpl, err = tmpl.ParseFS(templateFS, matches...)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	templateFiler, err := filer.NewLocalClient(templateRoot)
+	srcFS, err := fs.Sub(templateFS, path.Clean(templateDir))
 	if err != nil {
 		return nil, err
 	}
@@ -85,13 +89,12 @@ func newRenderer(ctx context.Context, config map[string]any, helpers template.Fu
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("action", "initialize-template"))
 
 	return &renderer{
-		ctx:           ctx,
-		config:        config,
-		baseTemplate:  tmpl,
-		files:         make([]file, 0),
-		skipPatterns:  make([]string, 0),
-		templateFiler: templateFiler,
-		instanceRoot:  instanceRoot,
+		ctx:          ctx,
+		config:       config,
+		baseTemplate: tmpl,
+		files:        make([]file, 0),
+		skipPatterns: make([]string, 0),
+		srcFS:        srcFS,
 	}, nil
 }
 
@@ -141,11 +144,15 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 
 func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	// read file permissions
-	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
+	info, err := fs.Stat(r.srcFS, relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
 	perm := info.Mode().Perm()
+
+	// Always include the write bit for the owner of the file.
+	// It does not make sense to have a file that is not writable by the owner.
+	perm |= 0o200
 
 	// Execute relative path template to get destination path for the file
 	relPath, err := r.executeTemplate(relPathTemplate)
@@ -157,14 +164,10 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	// over as is, without treating it as a template
 	if !strings.HasSuffix(relPathTemplate, templateExtension) {
 		return &copyFile{
-			dstPath: &destinationPath{
-				root:    r.instanceRoot,
-				relPath: relPath,
-			},
-			perm:     perm,
-			ctx:      r.ctx,
-			srcPath:  relPathTemplate,
-			srcFiler: r.templateFiler,
+			perm:    perm,
+			relPath: relPath,
+			srcFS:   r.srcFS,
+			srcPath: relPathTemplate,
 		}, nil
 	} else {
 		// Trim the .tmpl suffix from file name, if specified in the template
@@ -173,7 +176,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 
 	// read template file's content
-	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
+	templateReader, err := r.srcFS.Open(relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -194,11 +197,8 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 
 	return &inMemoryFile{
-		dstPath: &destinationPath{
-			root:    r.instanceRoot,
-			relPath: relPath,
-		},
 		perm:    perm,
+		relPath: relPath,
 		content: []byte(content),
 	}, nil
 }
@@ -263,7 +263,7 @@ func (r *renderer) walk() error {
 		//
 		// 2. For directories: They are appended to a slice, which acts as a queue
 		//     allowing BFS traversal of the template file tree
-		entries, err := r.templateFiler.ReadDir(r.ctx, currentDirectory)
+		entries, err := fs.ReadDir(r.srcFS, currentDirectory)
 		if err != nil {
 			return err
 		}
@@ -283,7 +283,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			logger.Infof(r.ctx, "added file to list of possible project files: %s", f.DstPath().relPath)
+			logger.Infof(r.ctx, "added file to list of possible project files: %s", f.RelPath())
 			r.files = append(r.files, f)
 		}
 
@@ -291,17 +291,17 @@ func (r *renderer) walk() error {
 	return nil
 }
 
-func (r *renderer) persistToDisk() error {
+func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 	// Accumulate files which we will persist, skipping files whose path matches
 	// any of the skip patterns
 	filesToPersist := make([]file, 0)
 	for _, file := range r.files {
-		match, err := isSkipped(file.DstPath().relPath, r.skipPatterns)
+		match, err := isSkipped(file.RelPath(), r.skipPatterns)
 		if err != nil {
 			return err
 		}
 		if match {
-			log.Infof(r.ctx, "skipping file: %s", file.DstPath())
+			log.Infof(r.ctx, "skipping file: %s", file.RelPath())
 			continue
 		}
 		filesToPersist = append(filesToPersist, file)
@@ -309,19 +309,19 @@ func (r *renderer) persistToDisk() error {
 
 	// Assert no conflicting files exist
 	for _, file := range filesToPersist {
-		path := file.DstPath().absPath()
-		_, err := os.Stat(path)
+		path := file.RelPath()
+		_, err := out.Stat(ctx, path)
 		if err == nil {
 			return fmt.Errorf("failed to initialize template, one or more files already exist: %s", path)
 		}
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("error while verifying file %s does not already exist: %w", path, err)
 		}
 	}
 
 	// Persist files to disk
 	for _, file := range filesToPersist {
-		err := file.PersistToDisk()
+		err := file.Write(ctx, out)
 		if err != nil {
 			return err
 		}

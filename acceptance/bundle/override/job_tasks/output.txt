@@ -1,0 +1,77 @@
+{
+  "name": "job",
+  "queue": {
+    "enabled": true
+  },
+  "tags": {},
+  "tasks": [
+    {
+      "new_cluster": {
+        "node_type_id": "i3.xlarge",
+        "num_workers": 1,
+        "spark_version": "13.3.x-scala2.12"
+      },
+      "spark_python_task": {
+        "python_file": "./test1.py"
+      },
+      "task_key": "key1"
+    },
+    {
+      "new_cluster": {
+        "spark_version": "13.3.x-scala2.12"
+      },
+      "spark_python_task": {
+        "python_file": "./test2.py"
+      },
+      "task_key": "key2"
+    }
+  ]
+}
+
+>>> errcode [CLI] bundle validate -o json -t staging
+Error: file ./test1.py not found
+
+
+Exit code: 1
+{
+  "name": "job",
+  "queue": {
+    "enabled": true
+  },
+  "tags": {},
+  "tasks": [
+    {
+      "new_cluster": {
+        "spark_version": "13.3.x-scala2.12"
+      },
+      "spark_python_task": {
+        "python_file": "./test1.py"
+      },
+      "task_key": "key1"
+    },
+    {
+      "new_cluster": {
+        "node_type_id": "i3.2xlarge",
+        "num_workers": 4,
+        "spark_version": "13.3.x-scala2.12"
+      },
+      "spark_python_task": {
+        "python_file": "./test3.py"
+      },
+      "task_key": "key2"
+    }
+  ]
+}
+
+>>> errcode [CLI] bundle validate -t staging
+Error: file ./test1.py not found
+
+Name: override_job_tasks
+Target: staging
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/override_job_tasks/staging
+
+Found 1 error
+
+Exit code: 1

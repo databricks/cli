@@ -31,7 +31,6 @@ func TestComputeMetadataMutator(t *testing.T) {
 					OriginURL:      "www.host.com",
 					Commit:         "abcd",
 					BundleRootPath: "a/b/c/d",
-					Inferred:       true,
 				},
 			},
 			Resources: config.Resources{
@@ -72,9 +71,6 @@ func TestComputeMetadataMutator(t *testing.T) {
 					OriginURL:      "www.host.com",
 					Commit:         "abcd",
 					BundleRootPath: "a/b/c/d",
-
-					// Test that this field doesn't carry over into the metadata.
-					Inferred: false,
 				},
 			},
 			Resources: metadata.Resources{
@@ -96,4 +92,25 @@ func TestComputeMetadataMutator(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, expectedMetadata, b.Metadata)
+}
+
+func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
+	syncRootPath := "/Users/shreyas.goenka@databricks.com/source"
+	enabled := true
+	b := &bundle.Bundle{
+		SyncRootPath: syncRootPath,
+		Config: config.Root{
+			Presets: config.Presets{
+				SourceLinkedDeployment: &enabled,
+			},
+			Workspace: config.Workspace{
+				FilePath: "/Users/shreyas.goenka@databricks.com/files",
+			},
+		},
+	}
+
+	diags := bundle.Apply(context.Background(), b, Compute())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
 }

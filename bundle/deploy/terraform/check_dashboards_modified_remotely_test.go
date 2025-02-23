@@ -2,7 +2,7 @@ package terraform
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -122,7 +122,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T)
 	dashboardsAPI := m.GetMockLakeviewAPI()
 	dashboardsAPI.EXPECT().
 		GetByDashboardId(mock.Anything, "id1").
-		Return(nil, fmt.Errorf("failure")).
+		Return(nil, errors.New("failure")).
 		Once()
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
@@ -139,7 +139,7 @@ func writeFakeDashboardState(t *testing.T, ctx context.Context, b *bundle.Bundle
 	require.NoError(t, err)
 
 	// Write fake state file.
-	testutil.WriteFile(t, `
+	testutil.WriteFile(t, filepath.Join(tfDir, TerraformStateFileName), `
     {
       "version": 4,
       "terraform_version": "1.5.5",
@@ -187,5 +187,5 @@ func writeFakeDashboardState(t *testing.T, ctx context.Context, b *bundle.Bundle
         }
       ]
     }
-	`, filepath.Join(tfDir, TerraformStateFileName))
+	`)
 }

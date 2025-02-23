@@ -84,7 +84,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Pipelines presets: Prefix, PipelinesDevelopment
 	for key, p := range r.Pipelines {
-		if p.PipelineSpec == nil {
+		if p.CreatePipeline == nil {
 			diags = diags.Extend(diag.Errorf("pipeline %s is not defined", key))
 			continue
 		}
@@ -220,6 +220,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}
+
+	// Apps: No presets
 
 	return diags
 }

@@ -2,7 +2,7 @@ package process_test
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os/exec"
 	"testing"
 
@@ -32,7 +32,7 @@ func TestStubOutput(t *testing.T) {
 func TestStubFailure(t *testing.T) {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
-	stub.WithFailure(fmt.Errorf("nope"))
+	stub.WithFailure(errors.New("nope"))
 
 	_, err := process.Background(ctx, []string{"/bin/meeecho", "1"})
 	require.EqualError(t, err, "/bin/meeecho 1: nope")
@@ -43,9 +43,15 @@ func TestStubCallback(t *testing.T) {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 	stub.WithCallback(func(cmd *exec.Cmd) error {
-		cmd.Stderr.Write([]byte("something..."))
-		cmd.Stdout.Write([]byte("else..."))
-		return fmt.Errorf("yep")
+		_, err := cmd.Stderr.Write([]byte("something..."))
+		if err != nil {
+			return err
+		}
+		_, err = cmd.Stdout.Write([]byte("else..."))
+		if err != nil {
+			return err
+		}
+		return errors.New("yep")
 	})
 
 	_, err := process.Background(ctx, []string{"/bin/meeecho", "1"})
@@ -64,7 +70,7 @@ func TestStubResponses(t *testing.T) {
 	stub.
 		WithStdoutFor("qux 1", "first").
 		WithStdoutFor("qux 2", "second").
-		WithFailureFor("qux 3", fmt.Errorf("nope"))
+		WithFailureFor("qux 3", errors.New("nope"))
 
 	first, err := process.Background(ctx, []string{"/path/is/irrelevant/qux", "1"})
 	require.NoError(t, err)

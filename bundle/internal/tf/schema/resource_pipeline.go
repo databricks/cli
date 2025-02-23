@@ -244,9 +244,14 @@ type ResourcePipelineNotification struct {
 }
 
 type ResourcePipelineRestartWindow struct {
-	DaysOfWeek string `json:"days_of_week,omitempty"`
-	StartHour  int    `json:"start_hour"`
-	TimeZoneId string `json:"time_zone_id,omitempty"`
+	DaysOfWeek []string `json:"days_of_week,omitempty"`
+	StartHour  int      `json:"start_hour"`
+	TimeZoneId string   `json:"time_zone_id,omitempty"`
+}
+
+type ResourcePipelineRunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
 }
 
 type ResourcePipelineTriggerCron struct {
@@ -296,5 +301,6 @@ type ResourcePipeline struct {
 	Library              []ResourcePipelineLibrary            `json:"library,omitempty"`
 	Notification         []ResourcePipelineNotification       `json:"notification,omitempty"`
 	RestartWindow        *ResourcePipelineRestartWindow       `json:"restart_window,omitempty"`
+	RunAs                *ResourcePipelineRunAs               `json:"run_as,omitempty"`
 	Trigger              *ResourcePipelineTrigger             `json:"trigger,omitempty"`
 }

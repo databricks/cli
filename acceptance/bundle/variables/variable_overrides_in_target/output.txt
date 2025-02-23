@@ -1,0 +1,84 @@
+
+>>> [CLI] bundle validate -o json -t use-default-variable-values
+{
+  "pipelines": {
+    "my_pipeline": {
+      "clusters": [
+        {
+          "label": "default",
+          "num_workers": 42
+        }
+      ],
+      "continuous": true,
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/use-default-variable-values/state/metadata.json"
+      },
+      "name": "a_string",
+      "permissions": []
+    }
+  }
+}
+
+>>> [CLI] bundle validate -o json -t override-string-variable
+{
+  "pipelines": {
+    "my_pipeline": {
+      "clusters": [
+        {
+          "label": "default",
+          "num_workers": 42
+        }
+      ],
+      "continuous": true,
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-string-variable/state/metadata.json"
+      },
+      "name": "overridden_string",
+      "permissions": []
+    }
+  }
+}
+
+>>> [CLI] bundle validate -o json -t override-int-variable
+{
+  "pipelines": {
+    "my_pipeline": {
+      "clusters": [
+        {
+          "label": "default",
+          "num_workers": 43
+        }
+      ],
+      "continuous": true,
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-int-variable/state/metadata.json"
+      },
+      "name": "a_string",
+      "permissions": []
+    }
+  }
+}
+
+>>> [CLI] bundle validate -o json -t override-both-bool-and-string-variables
+{
+  "pipelines": {
+    "my_pipeline": {
+      "clusters": [
+        {
+          "label": "default",
+          "num_workers": 42
+        }
+      ],
+      "continuous": false,
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-both-bool-and-string-variables/state/metadata.json"
+      },
+      "name": "overridden_string",
+      "permissions": []
+    }
+  }
+}

@@ -1,0 +1,62 @@
+/Workspace should be prepended on all paths, but it is not the case:
+{
+  "bundle": {
+    "environment": "dev",
+    "git": {
+      "bundle_root_path": "."
+    },
+    "target": "dev",
+    "terraform": {
+      "exec_path": "[TERRAFORM]"
+    }
+  },
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Users/[USERNAME]/path/to/root/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {},
+        "tasks": [
+          {
+            "existing_cluster_id": "500",
+            "python_wheel_task": {
+              "named_parameters": {
+                "conf-file": "/Users/[USERNAME]/path/to/root/files/path/to/config.yaml"
+              }
+            },
+            "task_key": ""
+          }
+        ]
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "targets": null,
+  "variables": {
+    "workspace_root": {
+      "default": "/Users/[USERNAME]",
+      "description": "root directory in the Databricks workspace to store the asset bundle and associated artifacts",
+      "value": "/Users/[USERNAME]"
+    }
+  },
+  "workspace": {
+    "artifact_path": "/Users/[USERNAME]/path/to/root/artifacts",
+    "file_path": "/Users/[USERNAME]/path/to/root/files",
+    "profile": "profile_name",
+    "resource_path": "/Users/[USERNAME]/path/to/root/resources",
+    "root_path": "/Users/[USERNAME]/path/to/root",
+    "state_path": "/Users/[USERNAME]/path/to/root/state"
+  }
+}

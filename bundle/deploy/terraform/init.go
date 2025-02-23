@@ -54,7 +54,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return tf.ExecPath, nil
 	}
 
-	binDir, err := b.CacheDir(context.Background(), "bin")
+	binDir, err := b.CacheDir(ctx, "bin")
 	if err != nil {
 		return "", err
 	}
@@ -88,41 +88,43 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	return tf.ExecPath, nil
 }
 
-// This function inherits some environment variables for Terraform CLI.
-func inheritEnvVars(ctx context.Context, environ map[string]string) error {
+var envCopy = []string{
 	// Include $HOME in set of environment variables to pass along.
-	home, ok := env.Lookup(ctx, "HOME")
-	if ok {
-		environ["HOME"] = home
-	}
+	"HOME",
 
 	// Include $USERPROFILE in set of environment variables to pass along.
 	// This variable is used by Azure CLI on Windows to find stored credentials and metadata
-	userProfile, ok := env.Lookup(ctx, "USERPROFILE")
-	if ok {
-		environ["USERPROFILE"] = userProfile
-	}
+	"USERPROFILE",
 
 	// Include $PATH in set of environment variables to pass along.
 	// This is necessary to ensure that our Terraform provider can use the
 	// same auxiliary programs (e.g. `az`, or `gcloud`) as the CLI.
-	path, ok := env.Lookup(ctx, "PATH")
-	if ok {
-		environ["PATH"] = path
-	}
+	"PATH",
 
-	// Include $AZURE_CONFIG_FILE in set of environment variables to pass along.
+	// Include $AZURE_CONFIG_DIR in set of environment variables to pass along.
 	// This is set in Azure DevOps by the AzureCLI@2 task.
-	azureConfigFile, ok := env.Lookup(ctx, "AZURE_CONFIG_FILE")
-	if ok {
-		environ["AZURE_CONFIG_FILE"] = azureConfigFile
-	}
+	"AZURE_CONFIG_DIR",
 
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
 	// See: https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration
-	devConfigFile, ok := env.Lookup(ctx, "TF_CLI_CONFIG_FILE")
-	if ok {
-		environ["TF_CLI_CONFIG_FILE"] = devConfigFile
+	"TF_CLI_CONFIG_FILE",
+
+	// Include $USE_SDK_V2_RESOURCES and $USE_SDK_V2_DATA_SOURCES, these are used to switch back from plugin framework to SDKv2.
+	// This is used for mitigation issues with resource migrated to plugin framework, as recommended here:
+	// https://registry.terraform.io/providers/databricks/databricks/latest/docs/guides/troubleshooting#plugin-framework-migration-problems
+	// It is currently a workaround for deploying quality_monitors
+	// https://github.com/databricks/terraform-provider-databricks/issues/4229#issuecomment-2520344690
+	"USE_SDK_V2_RESOURCES",
+	"USE_SDK_V2_DATA_SOURCES",
+}
+
+// This function inherits some environment variables for Terraform CLI.
+func inheritEnvVars(ctx context.Context, environ map[string]string) error {
+	for _, key := range envCopy {
+		value, ok := env.Lookup(ctx, key)
+		if ok {
+			environ[key] = value
+		}
 	}
 
 	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
@@ -145,7 +147,7 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 // This function is used for env vars set by the Databricks VSCode extension. The variables are intended to be used by the CLI
 // bundled with the Databricks VSCode extension, but users can use different CLI versions in the VSCode terminals, in which case we want to ignore
 // the variables if that CLI uses different versions of the dependencies.
-func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versionVarName string, currentVersion string) (string, error) {
+func getEnvVarWithMatchingVersion(ctx context.Context, envVarName, versionVarName, currentVersion string) (string, error) {
 	envValue := env.Get(ctx, envVarName)
 	versionValue := env.Get(ctx, versionVarName)
 
@@ -230,9 +232,13 @@ func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error 
 	// Add "cli" to the user agent in set by the Databricks Terraform provider.
 	// This will allow us to attribute downstream requests made by the Databricks
 	// Terraform provider to the CLI.
-	products := []string{fmt.Sprintf("cli/%s", build.GetInfo().Version)}
+	products := []string{"cli/" + build.GetInfo().Version}
 	if experimental := b.Config.Experimental; experimental != nil {
-		if experimental.PyDABs.Enabled {
+		hasPython := experimental.Python.Resources != nil || experimental.Python.Mutators != nil
+
+		if hasPython {
+			products = append(products, "databricks-pydabs/0.7.0")
+		} else if experimental.PyDABs.Enabled {
 			products = append(products, "databricks-pydabs/0.0.0")
 		}
 	}

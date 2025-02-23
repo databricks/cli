@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
@@ -39,22 +40,37 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		}
 	}
 
-	switch s.Type {
-	case jsonschema.ArrayType, jsonschema.ObjectType:
-		// arrays and objects can have complex variable values specified.
+	// Allows using variables in enum fields
+	if s.Type == jsonschema.StringType && s.Enum != nil {
 		return jsonschema.Schema{
-			AnyOf: []jsonschema.Schema{
+			OneOf: []jsonschema.Schema{
 				s,
 				{
 					Type:    jsonschema.StringType,
 					Pattern: interpolationPattern("var"),
-				}},
+				},
+			},
+		}
+	}
+
+	switch s.Type {
+	case jsonschema.ArrayType, jsonschema.ObjectType:
+		// arrays and objects can have complex variable values specified.
+		return jsonschema.Schema{
+			// OneOf is used because we don't expect more than 1 match and schema-based auto-complete works better with OneOf
+			OneOf: []jsonschema.Schema{
+				s,
+				{
+					Type:    jsonschema.StringType,
+					Pattern: interpolationPattern("var"),
+				},
+			},
 		}
 	case jsonschema.IntegerType, jsonschema.NumberType, jsonschema.BooleanType:
 		// primitives can have variable values, or references like ${bundle.xyz}
 		// or ${workspace.xyz}
 		return jsonschema.Schema{
-			AnyOf: []jsonschema.Schema{
+			OneOf: []jsonschema.Schema{
 				s,
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("resources")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("bundle")},
@@ -93,33 +109,99 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	return s
 }
 
+func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	switch typ {
+	case reflect.TypeOf(resources.Pipeline{}):
+		// Even though DABs supports this field, TF provider does not. Thus, we
+		// should not expose it to the user.
+		delete(s.Properties, "dry_run")
+		delete(s.Properties, "allow_duplicate_names")
+	default:
+		// Do nothing
+	}
+
+	return s
+}
+
+// While volume_type is required in the volume create API, DABs automatically sets
+// it's value to "MANAGED" if it's not provided. Thus, we make it optional
+// in the bundle schema.
+func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	if typ != reflect.TypeOf(resources.Volume{}) {
+		return s
+	}
+
+	res := []string{}
+	for _, r := range s.Required {
+		if r != "volume_type" {
+			res = append(res, r)
+		}
+	}
+	s.Required = res
+	return s
+}
+
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: go run main.go <output-file>")
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
 		os.Exit(1)
 	}
 
+	// Directory with annotation files
+	workdir := os.Args[1]
 	// Output file, where the generated JSON schema will be written to.
-	outputFile := os.Args[1]
+	outputFile := os.Args[2]
+
+	generateSchema(workdir, outputFile)
+}
+
+func generateSchema(workdir, outputFile string) {
+	annotationsPath := filepath.Join(workdir, "annotations.yml")
+	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
+	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
 	// Input file, the databricks openapi spec.
 	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
-	if inputFile == "" {
-		log.Fatal("DATABRICKS_OPENAPI_SPEC environment variable not set")
+	if inputFile != "" {
+		p, err := newParser(inputFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
+		err = p.extractAnnotations(reflect.TypeOf(config.Root{}), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	p, err := newParser(inputFile)
+	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Generate the JSON schema from the bundle Go struct.
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		p.addDescriptions,
-		p.addEnums,
 		removeJobsFields,
+		removePipelineFields,
+		makeVolumeTypeOptional,
+		a.addAnnotations,
 		addInterpolationPatterns,
 	})
+
+	// AdditionalProperties is set to an empty schema to allow non-typed keys used as yaml-anchors
+	// Example:
+	// some_anchor: &some_anchor
+	//   file_path: /some/path/
+	// workspace:
+	//   <<: *some_anchor
+	s.AdditionalProperties = jsonschema.Schema{}
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Overwrite the input annotation file, adding missing annotations
+	err = a.syncWithMissingAnnotations(annotationsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,7 +212,7 @@ func main() {
 	}
 
 	// Write the schema descriptions to the output file.
-	err = os.WriteFile(outputFile, b, 0644)
+	err = os.WriteFile(outputFile, b, 0o644)
 	if err != nil {
 		log.Fatal(err)
 	}

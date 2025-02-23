@@ -17,7 +17,7 @@ const (
 )
 
 // Marshal "serialized_dashboard" as JSON if it is set in the input but not in the output.
-func marshalSerializedDashboard(vin dyn.Value, vout dyn.Value) (dyn.Value, error) {
+func marshalSerializedDashboard(vin, vout dyn.Value) (dyn.Value, error) {
 	// Skip if the "serialized_dashboard" field is already set.
 	if v := vout.Get(serializedDashboardFieldName); v.IsValid() {
 		return vout, nil

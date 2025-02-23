@@ -55,16 +55,14 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 					}
 				}
 
-				return dyn.NewValue(fmt.Sprintf("/Workspace%s", path), v.Locations()), nil
+				return dyn.NewValue("/Workspace"+path, v.Locations()), nil
 			})
-
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
 		}
 		return v, nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}

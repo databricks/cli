@@ -55,7 +55,7 @@ func (d *dummyIterator) Next(ctx context.Context) (*provisioning.Workspace, erro
 func makeWorkspaces(count int) []*provisioning.Workspace {
 	res := make([]*provisioning.Workspace, 0, count)
 	next := []*provisioning.Workspace{&dummyWorkspace1, &dummyWorkspace2}
-	for i := 0; i < count; i++ {
+	for range count {
 		n := next[0]
 		next = append(next[1:], n)
 		res = append(res, n)
@@ -74,7 +74,7 @@ func makeIterator(count int) listing.Iterator[*provisioning.Workspace] {
 func makeBigOutput(count int) string {
 	res := bytes.Buffer{}
 	for _, ws := range makeWorkspaces(count) {
-		res.Write([]byte(fmt.Sprintf("%d  %s\n", ws.WorkspaceId, ws.WorkspaceName)))
+		res.WriteString(fmt.Sprintf("%d  %s\n", ws.WorkspaceId, ws.WorkspaceName))
 	}
 	return res.String()
 }
@@ -171,8 +171,9 @@ func TestRender(t *testing.T) {
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
-			cmdIO := NewIO(c.outputFormat, nil, output, output, c.headerTemplate, c.template)
-			ctx := InContext(context.Background(), cmdIO)
+			ctx := context.Background()
+			cmdIO := NewIO(ctx, c.outputFormat, nil, output, output, c.headerTemplate, c.template)
+			ctx = InContext(ctx, cmdIO)
 			var err error
 			if vv, ok := c.v.(listing.Iterator[*provisioning.Workspace]); ok {
 				err = RenderIterator(ctx, vv)

@@ -1,12 +1,16 @@
 package dynvar
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/databricks/cli/libs/dyn"
 )
 
-var re = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`)
+var (
+	baseVarDef = `[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`
+	re         = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, baseVarDef, baseVarDef))
+)
 
 // ref represents a variable reference.
 // It is a string [dyn.Value] contained in a larger [dyn.Value].
@@ -70,4 +74,24 @@ func (v ref) references() []string {
 
 func IsPureVariableReference(s string) bool {
 	return len(s) > 0 && re.FindString(s) == s
+}
+
+// If s is a pure variable reference, this function returns the corresponding
+// dyn.Path. Otherwise, it returns false.
+func PureReferenceToPath(s string) (dyn.Path, bool) {
+	ref, ok := newRef(dyn.V(s))
+	if !ok {
+		return nil, false
+	}
+
+	if !ref.isPure() {
+		return nil, false
+	}
+
+	p, err := dyn.NewPathFromString(ref.references()[0])
+	if err != nil {
+		return nil, false
+	}
+
+	return p, true
 }

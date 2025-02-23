@@ -1,0 +1,16 @@
+bundle:
+  name: TestResolveComplexVariableReferencesToFields
+
+variables:
+  cluster:
+    type: "complex"
+    default:
+      node_type_id: "Standard_DS3_v2"
+      num_workers: 2
+
+resources:
+  jobs:
+    job1:
+      job_clusters:
+        - new_cluster:
+            node_type_id: "${var.cluster.node_type_id}"

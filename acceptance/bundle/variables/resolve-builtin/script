@@ -1,0 +1,1 @@
+$CLI bundle validate -o json | jq .workspace | jq 'del(.current_user)'

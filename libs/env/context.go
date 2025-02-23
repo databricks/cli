@@ -65,7 +65,7 @@ func Set(ctx context.Context, key, value string) context.Context {
 	return setMap(ctx, m)
 }
 
-func homeEnvVar() string {
+func HomeEnvVar() string {
 	if runtime.GOOS == "windows" {
 		return "USERPROFILE"
 	}
@@ -73,14 +73,14 @@ func homeEnvVar() string {
 }
 
 func WithUserHomeDir(ctx context.Context, value string) context.Context {
-	return Set(ctx, homeEnvVar(), value)
+	return Set(ctx, HomeEnvVar(), value)
 }
 
 // ErrNoHomeEnv indicates the absence of $HOME env variable
 var ErrNoHomeEnv = errors.New("$HOME is not set")
 
 func UserHomeDir(ctx context.Context) (string, error) {
-	home := Get(ctx, homeEnvVar())
+	home := Get(ctx, HomeEnvVar())
 	if home == "" {
 		return "", ErrNoHomeEnv
 	}

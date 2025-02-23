@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -22,6 +26,8 @@ type Specification struct {
 type openapiParser struct {
 	ref map[string]jsonschema.Schema
 }
+
+const RootTypeKey = "_"
 
 func newParser(path string) (*openapiParser, error) {
 	b, err := os.ReadFile(path)
@@ -51,7 +57,7 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 
 	// Check for embedded Databricks Go SDK types.
 	if typ.Kind() == reflect.Struct {
-		for i := 0; i < typ.NumField(); i++ {
+		for i := range typ.NumField() {
 			if !typ.Field(i).Anonymous {
 				continue
 			}
@@ -78,7 +84,11 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 		// Skip if the type is not in the openapi spec.
 		_, ok := p.ref[k]
 		if !ok {
-			continue
+			k = mapIncorrectTypNames(k)
+			_, ok = p.ref[k]
+			if !ok {
+				continue
+			}
 		}
 
 		// Return the first Go SDK type found in the openapi spec.
@@ -88,36 +98,126 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 	return jsonschema.Schema{}, false
 }
 
-// Use the OpenAPI spec to load descriptions for the given type.
-func (p *openapiParser) addDescriptions(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	ref, ok := p.findRef(typ)
-	if !ok {
-		return s
+// Fix inconsistent type names between the Go SDK and the OpenAPI spec.
+// E.g. "serving.PaLmConfig" in the Go SDK is "serving.PaLMConfig" in the OpenAPI spec.
+func mapIncorrectTypNames(ref string) string {
+	switch ref {
+	case "serving.PaLmConfig":
+		return "serving.PaLMConfig"
+	case "serving.OpenAiConfig":
+		return "serving.OpenAIConfig"
+	case "serving.GoogleCloudVertexAiConfig":
+		return "serving.GoogleCloudVertexAIConfig"
+	case "serving.Ai21LabsConfig":
+		return "serving.AI21LabsConfig"
+	default:
+		return ref
 	}
-
-	s.Description = ref.Description
-	for k, v := range s.Properties {
-		if refProp, ok := ref.Properties[k]; ok {
-			v.Description = refProp.Description
-		}
-	}
-
-	return s
 }
 
-// Use the OpenAPI spec add enum values for the given type.
-func (p *openapiParser) addEnums(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	ref, ok := p.findRef(typ)
+// Use the OpenAPI spec to load descriptions for the given type.
+func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
+	annotations := annotation.File{}
+	overrides := annotation.File{}
+
+	b, err := os.ReadFile(overridesPath)
+	if err != nil {
+		return err
+	}
+	overridesDyn, err := yamlloader.LoadYAML(overridesPath, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	err = convert.ToTyped(&overrides, overridesDyn)
+	if err != nil {
+		return err
+	}
+	if overrides == nil {
+		overrides = annotation.File{}
+	}
+
+	_, err = jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+			ref, ok := p.findRef(typ)
+			if !ok {
+				return s
+			}
+
+			basePath := getPath(typ)
+			pkg := map[string]annotation.Descriptor{}
+			annotations[basePath] = pkg
+
+			if ref.Description != "" || ref.Enum != nil {
+				pkg[RootTypeKey] = annotation.Descriptor{Description: ref.Description, Enum: ref.Enum}
+			}
+
+			for k := range s.Properties {
+				if refProp, ok := ref.Properties[k]; ok {
+					pkg[k] = annotation.Descriptor{Description: refProp.Description, Enum: refProp.Enum}
+					if refProp.Description == "" {
+						addEmptyOverride(k, basePath, overrides)
+					}
+				} else {
+					addEmptyOverride(k, basePath, overrides)
+				}
+			}
+			return s
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = saveYamlWithStyle(overridesPath, overrides)
+	if err != nil {
+		return err
+	}
+	err = saveYamlWithStyle(outputPath, annotations)
+	if err != nil {
+		return err
+	}
+	err = prependCommentToFile(outputPath, "# This file is auto-generated. DO NOT EDIT.\n")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func prependCommentToFile(outputPath, comment string) error {
+	b, err := os.ReadFile(outputPath)
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(comment)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(b)
+	return err
+}
+
+func addEmptyOverride(key, pkg string, overridesFile annotation.File) {
+	if overridesFile[pkg] == nil {
+		overridesFile[pkg] = map[string]annotation.Descriptor{}
+	}
+
+	overrides := overridesFile[pkg]
+	if overrides[key].Description == "" {
+		overrides[key] = annotation.Descriptor{Description: annotation.Placeholder}
+	}
+
+	a, ok := overrides[key]
 	if !ok {
-		return s
+		a = annotation.Descriptor{}
 	}
-
-	s.Enum = append(s.Enum, ref.Enum...)
-	for k, v := range s.Properties {
-		if refProp, ok := ref.Properties[k]; ok {
-			v.Enum = append(v.Enum, refProp.Enum...)
-		}
+	if a.Description == "" {
+		a.Description = annotation.Placeholder
 	}
-
-	return s
+	overrides[key] = a
 }

@@ -1,0 +1,51 @@
+# This is a Databricks asset bundle definition for {{.project_name}}.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: {{.project_name}}
+  uuid: {{bundle_uuid}}
+  databricks_cli_version: ">= 0.238.0"
+
+experimental:
+  python:
+    # Activate virtual environment before loading resources defined in Python.
+    # If disabled, defaults to using the Python interpreter available in the current shell.
+    venv_path: .venv
+    # Functions called to load resources defined in Python. See resources/__init__.py
+    resources:
+      - "resources:load_resources"
+
+{{ if .include_python -}}
+artifacts:
+  default:
+    type: whl
+    path: .
+    # We use timestamp as Local version identifier (https://peps.python.org/pep-0440/#local-version-identifiers.)
+    # to ensure that changes to wheel package are picked up when used on all-purpose clusters
+    build: LOCAL_VERSION=$(date +%Y%m%d.%H%M%S) uv build
+
+{{ end -}}
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+    workspace:
+      host: {{workspace_host}}
+
+  prod:
+    mode: production
+    workspace:
+      host: {{workspace_host}}
+      # We explicitly specify /Workspace/Users/{{user_name}} to make sure we only have a single copy.
+      root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
+        level: CAN_MANAGE
+    run_as:
+      {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}

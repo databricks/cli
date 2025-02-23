@@ -32,6 +32,7 @@ func allResourceTypes(t *testing.T) []string {
 	// the dyn library gives us the correct list of all resources supported. Please
 	// also update this check when adding a new resource
 	require.Equal(t, []string{
+		"apps",
 		"clusters",
 		"dashboards",
 		"experiments",
@@ -42,6 +43,7 @@ func allResourceTypes(t *testing.T) []string {
 		"quality_monitors",
 		"registered_models",
 		"schemas",
+		"volumes",
 	},
 		resourceTypes,
 	)
@@ -103,46 +105,47 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 	}
 }
 
-func TestRunAsErrorForUnsupportedResources(t *testing.T) {
-	// Bundle "run_as" has two modes of operation, each with a different set of
-	// resources that are supported.
-	// Cases:
-	//   1. When the bundle "run_as" identity is same as the current deployment
-	//      identity. In this case all resources are supported.
-	//   2. When the bundle "run_as" identity is different from the current
-	//      deployment identity. In this case only a subset of resources are
-	//      supported. This subset of resources are defined in the allow list below.
-	//
-	// To be a part of the allow list, the resource must satisfy one of the following
-	// two conditions:
-	//   1. The resource supports setting a run_as identity to a different user
-	//      from the owner/creator of the resource. For example, jobs.
-	//   2. Run as semantics do not apply to the resource. We do not plan to add
-	//      platform side support for `run_as` for these resources. For example,
-	//      experiments or registered models.
-	//
-	// Any resource that is not on the allow list cannot be used when the bundle
-	// run_as is different from the current deployment user. "bundle validate" must
-	// return an error if such a resource has been defined, and the run_as identity
-	// is different from the current deployment identity.
-	//
-	// Action Item: If you are adding a new resource to DABs, please check in with
-	// the relevant owning team whether the resource should be on the allow list or (implicitly) on
-	// the deny list. Any resources that could have run_as semantics in the future
-	// should be on the deny list.
-	// For example: Teams for pipelines, model serving endpoints or Lakeview dashboards
-	// are planning to add platform side support for `run_as` for these resources at
-	// some point in the future. These resources are (implicitly) on the deny list, since
-	// they are not on the allow list below.
-	allowList := []string{
-		"clusters",
-		"jobs",
-		"models",
-		"registered_models",
-		"experiments",
-		"schemas",
-	}
+// Bundle "run_as" has two modes of operation, each with a different set of
+// resources that are supported.
+// Cases:
+//  1. When the bundle "run_as" identity is same as the current deployment
+//     identity. In this case all resources are supported.
+//  2. When the bundle "run_as" identity is different from the current
+//     deployment identity. In this case only a subset of resources are
+//     supported. This subset of resources are defined in the allow list below.
+//
+// To be a part of the allow list, the resource must satisfy one of the following
+// two conditions:
+//  1. The resource supports setting a run_as identity to a different user
+//     from the owner/creator of the resource. For example, jobs.
+//  2. Run as semantics do not apply to the resource. We do not plan to add
+//     platform side support for `run_as` for these resources. For example,
+//     experiments or registered models.
+//
+// Any resource that is not on the allow list cannot be used when the bundle
+// run_as is different from the current deployment user. "bundle validate" must
+// return an error if such a resource has been defined, and the run_as identity
+// is different from the current deployment identity.
+//
+// Action Item: If you are adding a new resource to DABs, please check in with
+// the relevant owning team whether the resource should be on the allow list or (implicitly) on
+// the deny list. Any resources that could have run_as semantics in the future
+// should be on the deny list.
+// For example: Teams for pipelines, model serving endpoints or Lakeview dashboards
+// are planning to add platform side support for `run_as` for these resources at
+// some point in the future. These resources are (implicitly) on the deny list, since
+// they are not on the allow list below.
+var allowList = []string{
+	"clusters",
+	"jobs",
+	"models",
+	"registered_models",
+	"experiments",
+	"schemas",
+	"volumes",
+}
 
+func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 	base := config.Root{
 		Workspace: config.Workspace{
 			CurrentUser: &config.User{
@@ -193,5 +196,56 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		assert.Contains(t, diags.Error().Error(), "do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: alice. Run as identity: bob.\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", rt)
+	}
+}
+
+func TestRunAsNoErrorForSupportedResources(t *testing.T) {
+	base := config.Root{
+		Workspace: config.Workspace{
+			CurrentUser: &config.User{
+				User: &iam.User{
+					UserName: "alice",
+				},
+			},
+		},
+		RunAs: &jobs.JobRunAs{
+			UserName: "bob",
+		},
+	}
+
+	v, err := convert.FromTyped(base, dyn.NilValue)
+	require.NoError(t, err)
+
+	// Define top level resources key in the bundle configuration.
+	// This is not part of the typed configuration, so we need to add it manually.
+	v, err = dyn.Set(v, "resources", dyn.V(map[string]dyn.Value{}))
+	require.NoError(t, err)
+
+	for _, rt := range allResourceTypes(t) {
+		// Skip unsupported resources
+		if !slices.Contains(allowList, rt) {
+			continue
+		}
+
+		// Add an instance of the resource type that is not on the allow list to
+		// the bundle configuration.
+		nv, err := dyn.SetByPath(v, dyn.NewPath(dyn.Key("resources"), dyn.Key(rt)), dyn.V(map[string]dyn.Value{
+			"foo": dyn.V(map[string]dyn.Value{
+				"name": dyn.V("bar"),
+			}),
+		}))
+		require.NoError(t, err)
+
+		// Get back typed configuration from the newly created invalid bundle configuration.
+		r := &config.Root{}
+		err = convert.ToTyped(r, nv)
+		require.NoError(t, err)
+
+		// Assert this configuration passes validation.
+		b := &bundle.Bundle{
+			Config: *r,
+		}
+		diags := bundle.Apply(context.Background(), b, SetRunAs())
+		require.NoError(t, diags.Error())
 	}
 }

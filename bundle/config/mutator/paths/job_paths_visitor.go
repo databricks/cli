@@ -95,7 +95,7 @@ func jobRewritePatterns() []jobRewritePattern {
 // VisitJobPaths visits all paths in job resources and applies a function to each path.
 func VisitJobPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
 	var err error
-	var newValue = value
+	newValue := value
 
 	for _, rewritePattern := range jobRewritePatterns() {
 		newValue, err = dyn.MapByPattern(newValue, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -105,7 +105,6 @@ func VisitJobPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
 
 			return fn(p, rewritePattern.kind, v)
 		})
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}

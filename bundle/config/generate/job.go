@@ -6,12 +6,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-var jobOrder = yamlsaver.NewOrder([]string{"name", "job_clusters", "compute", "tasks"})
-var taskOrder = yamlsaver.NewOrder([]string{"task_key", "depends_on", "existing_cluster_id", "new_cluster", "job_cluster_key"})
+var (
+	jobOrder  = yamlsaver.NewOrder([]string{"name", "job_clusters", "compute", "tasks"})
+	taskOrder = yamlsaver.NewOrder([]string{"task_key", "depends_on", "existing_cluster_id", "new_cluster", "job_cluster_key"})
+)
 
 func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 	value := make(map[string]dyn.Value)
-
 	if job.Settings.Tasks != nil {
 		tasks := make([]dyn.Value, 0)
 		for _, task := range job.Settings.Tasks {

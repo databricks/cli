@@ -1,0 +1,3248 @@
+# This file is auto-generated. DO NOT EDIT.
+github.com/databricks/cli/bundle/config/resources.App:
+  "active_deployment":
+    "description": |-
+      The active deployment of the app. A deployment is considered active when it has been deployed
+      to the app compute.
+  "app_status": {}
+  "compute_status": {}
+  "create_time":
+    "description": |-
+      The creation time of the app. Formatted timestamp in ISO 6801.
+  "creator":
+    "description": |-
+      The email of the user that created the app.
+  "default_source_code_path":
+    "description": |-
+      The default workspace file system path of the source code from which app deployment are
+      created. This field tracks the workspace source code path of the last active deployment.
+  "description":
+    "description": |-
+      The description of the app.
+  "name":
+    "description": |-
+      The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.
+      It must be unique within the workspace.
+  "pending_deployment":
+    "description": |-
+      The pending deployment of the app. A deployment is considered pending when it is being prepared
+      for deployment to the app compute.
+  "resources":
+    "description": |-
+      Resources for the app.
+  "service_principal_client_id": {}
+  "service_principal_id": {}
+  "service_principal_name": {}
+  "update_time":
+    "description": |-
+      The update time of the app. Formatted timestamp in ISO 6801.
+  "updater":
+    "description": |-
+      The email of the user that last updated the app.
+  "url":
+    "description": |-
+      The URL of the app once it is deployed.
+github.com/databricks/cli/bundle/config/resources.Cluster:
+  "apply_policy_default_values":
+    "description": |-
+      When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied.
+  "autoscale":
+    "description": |-
+      Parameters needed in order to automatically scale clusters up and down based on load.
+      Note: autoscaling works best with DB runtime versions 3.0 or later.
+  "autotermination_minutes":
+    "description": |-
+      Automatically terminates the cluster after it is inactive for this time in minutes. If not set,
+      this cluster will not be automatically terminated. If specified, the threshold must be between
+      10 and 10000 minutes.
+      Users can also set this value to 0 to explicitly disable automatic termination.
+  "aws_attributes":
+    "description": |-
+      Attributes related to clusters running on Amazon Web Services.
+      If not specified at cluster creation, a set of default values will be used.
+  "azure_attributes":
+    "description": |-
+      Attributes related to clusters running on Microsoft Azure.
+      If not specified at cluster creation, a set of default values will be used.
+  "cluster_log_conf":
+    "description": |-
+      The configuration for delivering spark logs to a long-term storage destination.
+      Two kinds of destinations (dbfs and s3) are supported. Only one destination can be specified
+      for one cluster. If the conf is given, the logs will be delivered to the destination every
+      `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
+      the destination of executor logs is `$destination/$clusterId/executor`.
+  "cluster_name":
+    "description": |
+      Cluster name requested by the user. This doesn't have to be unique.
+      If not specified at creation, the cluster name will be an empty string.
+  "custom_tags":
+    "description": |-
+      Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
+      instances and EBS volumes) with these tags in addition to `default_tags`. Notes:
+
+      - Currently, Databricks allows at most 45 custom tags
+
+      - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
+  "data_security_mode": {}
+  "docker_image": {}
+  "driver_instance_pool_id":
+    "description": |-
+      The optional ID of the instance pool for the driver of the cluster belongs.
+      The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
+      assigned.
+  "driver_node_type_id":
+    "description": |
+      The node type of the Spark driver. Note that this field is optional;
+      if unset, the driver node type will be set as the same value
+      as `node_type_id` defined above.
+  "enable_elastic_disk":
+    "description": |-
+      Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
+      space when its Spark workers are running low on disk space. This feature requires specific AWS
+      permissions to function correctly - refer to the User Guide for more details.
+  "enable_local_disk_encryption":
+    "description": |-
+      Whether to enable LUKS on cluster VMs' local disks
+  "gcp_attributes":
+    "description": |-
+      Attributes related to clusters running on Google Cloud Platform.
+      If not specified at cluster creation, a set of default values will be used.
+  "init_scripts":
+    "description": |-
+      The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
+  "instance_pool_id":
+    "description": |-
+      The optional ID of the instance pool to which the cluster belongs.
+  "is_single_node":
+    "description": |
+      This field can only be used with `kind`.
+
+      When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
+  "kind": {}
+  "node_type_id":
+    "description": |
+      This field encodes, through a single value, the resources available to each of
+      the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
+      and optimized for memory or compute intensive workloads. A list of available node
+      types can be retrieved by using the :method:clusters/listNodeTypes API call.
+  "num_workers":
+    "description": |-
+      Number of worker nodes that this cluster should have. A cluster has one Spark Driver
+      and `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.
+
+      Note: When reading the properties of a cluster, this field reflects the desired number
+      of workers rather than the actual current number of workers. For instance, if a cluster
+      is resized from 5 to 10 workers, this field will immediately be updated to reflect
+      the target size of 10 workers, whereas the workers listed in `spark_info` will gradually
+      increase from 5 to 10 as the new nodes are provisioned.
+  "policy_id":
+    "description": |-
+      The ID of the cluster policy used to create the cluster if applicable.
+  "runtime_engine": {}
+  "single_user_name":
+    "description": |-
+      Single user name if data_security_mode is `SINGLE_USER`
+  "spark_conf":
+    "description": |
+      An object containing a set of optional, user-specified Spark configuration key-value pairs.
+      Users can also pass in a string of extra JVM options to the driver and the executors via
+      `spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.
+  "spark_env_vars":
+    "description": |-
+      An object containing a set of optional, user-specified environment variable key-value pairs.
+      Please note that key-value pair of the form (X,Y) will be exported as is (i.e.,
+      `export X='Y'`) while launching the driver and workers.
+
+      In order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending
+      them to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all
+      default databricks managed environmental variables are included as well.
+
+      Example Spark environment variables:
+      `{"SPARK_WORKER_MEMORY": "28000m", "SPARK_LOCAL_DIRS": "/local_disk0"}` or
+      `{"SPARK_DAEMON_JAVA_OPTS": "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
+  "spark_version":
+    "description": |
+      The Spark version of the cluster, e.g. `3.3.x-scala2.11`.
+      A list of available Spark versions can be retrieved by using
+      the :method:clusters/sparkVersions API call.
+  "ssh_public_keys":
+    "description": |-
+      SSH public key contents that will be added to each Spark node in this cluster. The
+      corresponding private keys can be used to login with the user name `ubuntu` on port `2200`.
+      Up to 10 keys can be specified.
+  "use_ml_runtime":
+    "description": |
+      This field can only be used with `kind`.
+
+      `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
+  "workload_type": {}
+github.com/databricks/cli/bundle/config/resources.Dashboard:
+  "create_time":
+    "description": |-
+      The timestamp of when the dashboard was created.
+  "dashboard_id":
+    "description": |-
+      UUID identifying the dashboard.
+  "display_name":
+    "description": |-
+      The display name of the dashboard.
+  "etag":
+    "description": |-
+      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
+      has not been modified since the last read.
+      This field is excluded in List Dashboards responses.
+  "lifecycle_state":
+    "description": |-
+      The state of the dashboard resource. Used for tracking trashed status.
+  "parent_path":
+    "description": |-
+      The workspace path of the folder containing the dashboard. Includes leading slash and no
+      trailing slash.
+      This field is excluded in List Dashboards responses.
+  "path":
+    "description": |-
+      The workspace path of the dashboard asset, including the file name.
+      Exported dashboards always have the file extension `.lvdash.json`.
+      This field is excluded in List Dashboards responses.
+  "serialized_dashboard":
+    "description": |-
+      The contents of the dashboard in serialized string form.
+      This field is excluded in List Dashboards responses.
+      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
+      to retrieve an example response, which includes the `serialized_dashboard` field.
+      This field provides the structure of the JSON string that represents the dashboard's
+      layout and components.
+  "update_time":
+    "description": |-
+      The timestamp of when the dashboard was last updated by the user.
+      This field is excluded in List Dashboards responses.
+  "warehouse_id":
+    "description": |-
+      The warehouse ID used to run the dashboard.
+github.com/databricks/cli/bundle/config/resources.Job:
+  "budget_policy_id":
+    "description": |-
+      The id of the user specified budget policy to use for this job.
+      If not specified, a default budget policy may be applied when creating or modifying the job.
+      See `effective_budget_policy_id` for the budget policy used by this workload.
+  "continuous":
+    "description": |-
+      An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.
+  "deployment":
+    "description": |-
+      Deployment information for jobs managed by external sources.
+  "description":
+    "description": |-
+      An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.
+  "edit_mode":
+    "description": |-
+      Edit mode of the job.
+
+      * `UI_LOCKED`: The job is in a locked UI state and cannot be modified.
+      * `EDITABLE`: The job is in an editable state and can be modified.
+  "email_notifications":
+    "description": |-
+      An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.
+  "environments":
+    "description": |-
+      A list of task execution environment specifications that can be referenced by serverless tasks of this job.
+      An environment is required to be present for serverless tasks.
+      For serverless notebook tasks, the environment is accessible in the notebook environment panel.
+      For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
+  "format":
+    "description": |-
+      Used to tell what is the format of the job. This field is ignored in Create/Update/Reset calls. When using the Jobs API 2.1 this value is always set to `"MULTI_TASK"`.
+  "git_source":
+    "description": |-
+      An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.
+
+      If `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.
+
+      Note: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.
+  "health": {}
+  "job_clusters":
+    "description": |-
+      A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
+      If more than 100 job clusters are available, you can paginate through them using :method:jobs/get.
+  "max_concurrent_runs":
+    "description": |-
+      An optional maximum allowed number of concurrent runs of the job.
+      Set this value if you want to be able to execute multiple runs of the same job concurrently.
+      This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.
+      This setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs.
+      However, from then on, new runs are skipped unless there are fewer than 3 active runs.
+      This value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped.
+  "name":
+    "description": |-
+      An optional name for the job. The maximum length is 4096 bytes in UTF-8 encoding.
+  "notification_settings":
+    "description": |-
+      Optional notification settings that are used when sending notifications to each of the `email_notifications` and `webhook_notifications` for this job.
+  "parameters":
+    "description": |-
+      Job-level parameter definitions
+  "performance_target":
+    "description": |-
+      PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
+  "queue":
+    "description": |-
+      The queue settings of the job.
+  "run_as": {}
+  "schedule":
+    "description": |-
+      An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
+  "tags":
+    "description": |-
+      A map of tags associated with the job. These are forwarded to the cluster as cluster tags for jobs clusters, and are subject to the same limitations as cluster tags. A maximum of 25 tags can be added to the job.
+  "tasks":
+    "description": |-
+      A list of task specifications to be executed by this job.
+      If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
+  "timeout_seconds":
+    "description": |-
+      An optional timeout applied to each run of this job. A value of `0` means no timeout.
+  "trigger":
+    "description": |-
+      A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
+  "webhook_notifications":
+    "description": |-
+      A collection of system notification IDs to notify when runs of this job begin or complete.
+github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
+  "artifact_location":
+    "description": |-
+      Location where artifacts for the experiment are stored.
+  "creation_time":
+    "description": |-
+      Creation time
+  "experiment_id":
+    "description": |-
+      Unique identifier for the experiment.
+  "last_update_time":
+    "description": |-
+      Last update time
+  "lifecycle_stage":
+    "description": |-
+      Current life cycle stage of the experiment: "active" or "deleted".
+      Deleted experiments are not returned by APIs.
+  "name":
+    "description": |-
+      Human readable name that identifies the experiment.
+  "tags":
+    "description": |-
+      Tags: Additional metadata key-value pairs.
+github.com/databricks/cli/bundle/config/resources.MlflowModel:
+  "creation_timestamp":
+    "description": |-
+      Timestamp recorded when this `registered_model` was created.
+  "description":
+    "description": |-
+      Description of this `registered_model`.
+  "last_updated_timestamp":
+    "description": |-
+      Timestamp recorded when metadata for this `registered_model` was last updated.
+  "latest_versions":
+    "description": |-
+      Collection of latest model versions for each stage.
+      Only contains models with current `READY` status.
+  "name":
+    "description": |-
+      Unique name for the model.
+  "tags":
+    "description": |-
+      Tags: Additional metadata key-value pairs for this `registered_model`.
+  "user_id":
+    "description": |-
+      User that created this `registered_model`
+github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
+  "ai_gateway":
+    "description": |-
+      The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported.
+  "config":
+    "description": |-
+      The core config of the serving endpoint.
+  "name":
+    "description": |-
+      The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.
+      An endpoint name can consist of alphanumeric characters, dashes, and underscores.
+  "rate_limits":
+    "description": |-
+      Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.
+  "route_optimized":
+    "description": |-
+      Enable route optimization for the serving endpoint.
+  "tags":
+    "description": |-
+      Tags to be attached to the serving endpoint and automatically propagated to billing logs.
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "allow_duplicate_names":
+    "description": |-
+      If false, deployment will fail if name conflicts with that of another pipeline.
+  "budget_policy_id":
+    "description": |-
+      Budget policy of this pipeline.
+  "catalog":
+    "description": |-
+      A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.
+  "channel":
+    "description": |-
+      DLT Release Channel that specifies which version to use.
+  "clusters":
+    "description": |-
+      Cluster settings for this pipeline deployment.
+  "configuration":
+    "description": |-
+      String-String configuration for this pipeline execution.
+  "continuous":
+    "description": |-
+      Whether the pipeline is continuous or triggered. This replaces `trigger`.
+  "deployment":
+    "description": |-
+      Deployment type of this pipeline.
+  "development":
+    "description": |-
+      Whether the pipeline is in Development mode. Defaults to false.
+  "dry_run": {}
+  "edition":
+    "description": |-
+      Pipeline product edition.
+  "filters":
+    "description": |-
+      Filters on which Pipeline packages to include in the deployed graph.
+  "gateway_definition":
+    "description": |-
+      The definition of a gateway pipeline to support change data capture.
+  "id":
+    "description": |-
+      Unique identifier for this pipeline.
+  "ingestion_definition":
+    "description": |-
+      The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'target' or 'catalog' settings.
+  "libraries":
+    "description": |-
+      Libraries or code needed by this deployment.
+  "name":
+    "description": |-
+      Friendly identifier for this pipeline.
+  "notifications":
+    "description": |-
+      List of notification settings for this pipeline.
+  "photon":
+    "description": |-
+      Whether Photon is enabled for this pipeline.
+  "restart_window":
+    "description": |-
+      Restart window of this pipeline.
+  "run_as": {}
+  "schema":
+    "description": |-
+      The default schema (database) where tables are read from or published to. The presence of this field implies that the pipeline is in direct publishing mode.
+  "serverless":
+    "description": |-
+      Whether serverless compute is enabled for this pipeline.
+  "storage":
+    "description": |-
+      DBFS root directory for storing checkpoints and tables.
+  "target":
+    "description": |-
+      Target schema (database) to add tables in this pipeline to. If not specified, no data is published to the Hive metastore or Unity Catalog. To publish to Unity Catalog, also specify `catalog`.
+  "trigger":
+    "description": |-
+      Which pipeline trigger to use. Deprecated: Use `continuous` instead.
+github.com/databricks/cli/bundle/config/resources.QualityMonitor:
+  "assets_dir":
+    "description": |-
+      The directory to store monitoring assets (e.g. dashboard, metric tables).
+  "baseline_table_name":
+    "description": |
+      Name of the baseline table from which drift metrics are computed from.
+      Columns in the monitored table should also be present in the baseline table.
+  "custom_metrics":
+    "description": |
+      Custom metrics to compute on the monitored table. These can be aggregate metrics, derived
+      metrics (from already computed aggregate metrics), or drift metrics (comparing metrics across time
+      windows).
+  "data_classification_config":
+    "description": |-
+      The data classification config for the monitor.
+  "inference_log":
+    "description": |-
+      Configuration for monitoring inference logs.
+  "notifications":
+    "description": |-
+      The notification settings for the monitor.
+  "output_schema_name":
+    "description": |-
+      Schema where output metric tables are created.
+  "schedule":
+    "description": |-
+      The schedule for automatically updating and refreshing metric tables.
+  "skip_builtin_dashboard":
+    "description": |-
+      Whether to skip creating a default dashboard summarizing data quality metrics.
+  "slicing_exprs":
+    "description": |
+      List of column expressions to slice data with for targeted analysis. The data is grouped by
+      each expression independently, resulting in a separate slice for each predicate and its
+      complements. For high-cardinality columns, only the top 100 unique values by frequency will
+      generate slices.
+  "snapshot":
+    "description": |-
+      Configuration for monitoring snapshot tables.
+  "time_series":
+    "description": |-
+      Configuration for monitoring time series tables.
+  "warehouse_id":
+    "description": |
+      Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
+      warehouse will be used.
+github.com/databricks/cli/bundle/config/resources.RegisteredModel:
+  "catalog_name":
+    "description": |-
+      The name of the catalog where the schema and the registered model reside
+  "comment":
+    "description": |-
+      The comment attached to the registered model
+  "name":
+    "description": |-
+      The name of the registered model
+  "schema_name":
+    "description": |-
+      The name of the schema where the registered model resides
+  "storage_location":
+    "description": |-
+      The storage location on the cloud under which model version data files are stored
+github.com/databricks/cli/bundle/config/resources.Schema:
+  "catalog_name":
+    "description": |-
+      Name of parent catalog.
+  "comment":
+    "description": |-
+      User-provided free-form text description.
+  "name":
+    "description": |-
+      Name of schema, relative to parent catalog.
+  "properties": {}
+  "storage_root":
+    "description": |-
+      Storage root URL for managed tables within schema.
+github.com/databricks/cli/bundle/config/resources.Volume:
+  "catalog_name":
+    "description": |-
+      The name of the catalog where the schema and the volume are
+  "comment":
+    "description": |-
+      The comment attached to the volume
+  "name":
+    "description": |-
+      The name of the volume
+  "schema_name":
+    "description": |-
+      The name of the schema where the volume is
+  "storage_location":
+    "description": |-
+      The storage location on the cloud
+  "volume_type": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
+  "create_time":
+    "description": |-
+      The creation time of the deployment. Formatted timestamp in ISO 6801.
+  "creator":
+    "description": |-
+      The email of the user creates the deployment.
+  "deployment_artifacts":
+    "description": |-
+      The deployment artifacts for an app.
+  "deployment_id":
+    "description": |-
+      The unique id of the deployment.
+  "mode":
+    "description": |-
+      The mode of which the deployment will manage the source code.
+  "source_code_path":
+    "description": |-
+      The workspace file system path of the source code used to create the app deployment. This is different from
+      `deployment_artifacts.source_code_path`, which is the path used by the deployed app. The former refers
+      to the original source code location of the app in the workspace during deployment creation, whereas
+      the latter provides a system generated stable snapshotted source code path used by the deployment.
+  "status":
+    "description": |-
+      Status and status message of the deployment
+  "update_time":
+    "description": |-
+      The update time of the deployment. Formatted timestamp in ISO 6801.
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts:
+  "source_code_path":
+    "description": |-
+      The snapshotted workspace file system path of the source code loaded by the deployed app.
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode:
+  "_":
+    "enum":
+      - |-
+        SNAPSHOT
+      - |-
+        AUTO_SYNC
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentState:
+  "_":
+    "enum":
+      - |-
+        SUCCEEDED
+      - |-
+        FAILED
+      - |-
+        IN_PROGRESS
+      - |-
+        CANCELLED
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
+  "message":
+    "description": |-
+      Message corresponding with the deployment state.
+  "state":
+    "description": |-
+      State of the deployment.
+github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "description":
+    "description": |-
+      Description of the App Resource.
+  "job": {}
+  "name":
+    "description": |-
+      Name of the App Resource.
+  "secret": {}
+  "serving_endpoint": {}
+  "sql_warehouse": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
+  "id":
+    "description": |-
+      Id of the job to grant permission on.
+  "permission":
+    "description": |-
+      Permissions to grant on the Job. Supported permissions are: "CAN_MANAGE", "IS_OWNER", "CAN_MANAGE_RUN", "CAN_VIEW".
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceJobJobPermission:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        IS_OWNER
+      - |-
+        CAN_MANAGE_RUN
+      - |-
+        CAN_VIEW
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret:
+  "key":
+    "description": |-
+      Key of the secret to grant permission on.
+  "permission":
+    "description": |-
+      Permission to grant on the secret scope. For secrets, only one permission is allowed. Permission must be one of: "READ", "WRITE", "MANAGE".
+  "scope":
+    "description": |-
+      Scope of the secret to grant permission on.
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecretSecretPermission:
+  "_":
+    "description": |-
+      Permission to grant on the secret scope. Supported permissions are: "READ", "WRITE", "MANAGE".
+    "enum":
+      - |-
+        READ
+      - |-
+        WRITE
+      - |-
+        MANAGE
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint:
+  "name":
+    "description": |-
+      Name of the serving endpoint to grant permission on.
+  "permission":
+    "description": |-
+      Permission to grant on the serving endpoint. Supported permissions are: "CAN_MANAGE", "CAN_QUERY", "CAN_VIEW".
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpointServingEndpointPermission:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_QUERY
+      - |-
+        CAN_VIEW
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse:
+  "id":
+    "description": |-
+      Id of the SQL warehouse to grant permission on.
+  "permission":
+    "description": |-
+      Permission to grant on the SQL warehouse. Supported permissions are: "CAN_MANAGE", "CAN_USE", "IS_OWNER".
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlWarehousePermission:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
+      - |-
+        IS_OWNER
+github.com/databricks/databricks-sdk-go/service/apps.ApplicationState:
+  "_":
+    "enum":
+      - |-
+        DEPLOYING
+      - |-
+        RUNNING
+      - |-
+        CRASHED
+      - |-
+        UNAVAILABLE
+github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
+  "message":
+    "description": |-
+      Application status message
+  "state":
+    "description": |-
+      State of the application.
+github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
+  "_":
+    "enum":
+      - |-
+        ERROR
+      - |-
+        DELETING
+      - |-
+        STARTING
+      - |-
+        STOPPING
+      - |-
+        UPDATING
+      - |-
+        STOPPED
+      - |-
+        ACTIVE
+github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
+  "message":
+    "description": |-
+      Compute status message
+  "state":
+    "description": |-
+      State of the app compute.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule:
+  "pause_status":
+    "description": |-
+      Read only field that indicates whether a schedule is paused or not.
+  "quartz_cron_expression":
+    "description": |
+      The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).
+  "timezone_id":
+    "description": |
+      The timezone id (e.g., ``"PST"``) in which to evaluate the quartz expression.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedulePauseStatus:
+  "_":
+    "description": |-
+      Read only field that indicates whether a schedule is paused or not.
+    "enum":
+      - |-
+        UNPAUSED
+      - |-
+        PAUSED
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig:
+  "enabled":
+    "description": |-
+      Whether data classification is enabled.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination:
+  "email_addresses":
+    "description": |-
+      The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
+  "granularities":
+    "description": |
+      Granularities for aggregating data into time windows based on their timestamp. Currently the following static
+      granularities are supported:
+      {``"5 minutes"``, ``"30 minutes"``, ``"1 hour"``, ``"1 day"``, ``"<n> week(s)"``, ``"1 month"``, ``"1 year"``}.
+  "label_col":
+    "description": |-
+      Optional column that contains the ground truth for the prediction.
+  "model_id_col":
+    "description": |
+      Column that contains the id of the model generating the predictions. Metrics will be computed per model id by
+      default, and also across all model ids.
+  "prediction_col":
+    "description": |-
+      Column that contains the output/prediction from the model.
+  "prediction_proba_col":
+    "description": |
+      Optional column that contains the prediction probabilities for each class in a classification problem type.
+      The values in this column should be a map, mapping each class label to the prediction probability for a given
+      sample. The map should be of PySpark MapType().
+  "problem_type":
+    "description": |-
+      Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.
+  "timestamp_col":
+    "description": |
+      Column that contains the timestamps of requests. The column must be one of the following:
+      - A ``TimestampType`` column
+      - A column whose values can be converted to timestamps through the pyspark
+        ``to_timestamp`` [function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.to_timestamp.html).
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLogProblemType:
+  "_":
+    "description": |-
+      Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.
+    "enum":
+      - |-
+        PROBLEM_TYPE_CLASSIFICATION
+      - |-
+        PROBLEM_TYPE_REGRESSION
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric:
+  "definition":
+    "description": |-
+      Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).
+  "input_columns":
+    "description": |
+      A list of column names in the input table the metric should be computed for.
+      Can use ``":table"`` to indicate that the metric needs information from multiple columns.
+  "name":
+    "description": |-
+      Name of the metric in the output tables.
+  "output_data_type":
+    "description": |-
+      The output type of the custom metric.
+  "type":
+    "description": |
+      Can only be one of ``"CUSTOM_METRIC_TYPE_AGGREGATE"``, ``"CUSTOM_METRIC_TYPE_DERIVED"``, or ``"CUSTOM_METRIC_TYPE_DRIFT"``.
+      The ``"CUSTOM_METRIC_TYPE_AGGREGATE"`` and ``"CUSTOM_METRIC_TYPE_DERIVED"`` metrics
+      are computed on a single table, whereas the ``"CUSTOM_METRIC_TYPE_DRIFT"`` compare metrics across
+      baseline and input table, or across the two consecutive time windows.
+      - CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table
+      - CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics
+      - CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetricType:
+  "_":
+    "description": |
+      Can only be one of ``"CUSTOM_METRIC_TYPE_AGGREGATE"``, ``"CUSTOM_METRIC_TYPE_DERIVED"``, or ``"CUSTOM_METRIC_TYPE_DRIFT"``.
+      The ``"CUSTOM_METRIC_TYPE_AGGREGATE"`` and ``"CUSTOM_METRIC_TYPE_DERIVED"`` metrics
+      are computed on a single table, whereas the ``"CUSTOM_METRIC_TYPE_DRIFT"`` compare metrics across
+      baseline and input table, or across the two consecutive time windows.
+      - CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table
+      - CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics
+      - CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics
+    "enum":
+      - |-
+        CUSTOM_METRIC_TYPE_AGGREGATE
+      - |-
+        CUSTOM_METRIC_TYPE_DERIVED
+      - |-
+        CUSTOM_METRIC_TYPE_DRIFT
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications:
+  "on_failure":
+    "description": |-
+      Who to send notifications to on monitor failure.
+  "on_new_classification_tag_detected":
+    "description": |-
+      Who to send notifications to when new data classification tags are detected.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorSnapshot: {}
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
+  "granularities":
+    "description": |
+      Granularities for aggregating data into time windows based on their timestamp. Currently the following static
+      granularities are supported:
+      {``"5 minutes"``, ``"30 minutes"``, ``"1 hour"``, ``"1 day"``, ``"<n> week(s)"``, ``"1 month"``, ``"1 year"``}.
+  "timestamp_col":
+    "description": |
+      Column that contains the timestamps of requests. The column must be one of the following:
+      - A ``TimestampType`` column
+      - A column whose values can be converted to timestamps through the pyspark
+        ``to_timestamp`` [function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.to_timestamp.html).
+github.com/databricks/databricks-sdk-go/service/catalog.VolumeType:
+  "_":
+    "enum":
+      - |-
+        EXTERNAL
+      - |-
+        MANAGED
+github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info:
+  "destination":
+    "description": |-
+      abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
+github.com/databricks/databricks-sdk-go/service/compute.AutoScale:
+  "max_workers":
+    "description": |-
+      The maximum number of workers to which the cluster can scale up when overloaded.
+      Note that `max_workers` must be strictly greater than `min_workers`.
+  "min_workers":
+    "description": |-
+      The minimum number of workers to which the cluster can scale down when underutilized.
+      It is also the initial number of workers the cluster will have after creation.
+github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
+  "availability": {}
+  "ebs_volume_count":
+    "description": |-
+      The number of volumes launched for each instance. Users can choose up to 10 volumes.
+      This feature is only enabled for supported node types. Legacy node types cannot specify
+      custom EBS volumes.
+      For node types with no instance store, at least one EBS volume needs to be specified;
+      otherwise, cluster creation will fail.
+
+      These EBS volumes will be mounted at `/ebs0`, `/ebs1`, and etc.
+      Instance store volumes will be mounted at `/local_disk0`, `/local_disk1`, and etc.
+
+      If EBS volumes are attached, Databricks will configure Spark to use only the EBS volumes for
+      scratch storage because heterogenously sized scratch devices can lead to inefficient disk
+      utilization. If no EBS volumes are attached, Databricks will configure Spark to use instance
+      store volumes.
+
+      Please note that if EBS volumes are specified, then the Spark configuration `spark.local.dir`
+      will be overridden.
+  "ebs_volume_iops":
+    "description": |-
+      If using gp3 volumes, what IOPS to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used.
+  "ebs_volume_size":
+    "description": |-
+      The size of each EBS volume (in GiB) launched for each instance. For general purpose
+      SSD, this value must be within the range 100 - 4096. For throughput optimized HDD,
+      this value must be within the range 500 - 4096.
+  "ebs_volume_throughput":
+    "description": |-
+      If using gp3 volumes, what throughput to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used.
+  "ebs_volume_type": {}
+  "first_on_demand":
+    "description": |-
+      The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.
+      If this value is greater than 0, the cluster driver node in particular will be placed on an
+      on-demand instance. If this value is greater than or equal to the current cluster size, all
+      nodes will be placed on on-demand instances. If this value is less than the current cluster
+      size, `first_on_demand` nodes will be placed on on-demand instances and the remainder will
+      be placed on `availability` instances. Note that this value does not affect
+      cluster size and cannot currently be mutated over the lifetime of a cluster.
+  "instance_profile_arn":
+    "description": |-
+      Nodes for this cluster will only be placed on AWS instances with this instance profile. If
+      ommitted, nodes will be placed on instances without an IAM instance profile. The instance
+      profile must have previously been added to the Databricks environment by an account
+      administrator.
+
+      This feature may only be available to certain customer plans.
+
+      If this field is ommitted, we will pull in the default from the conf if it exists.
+  "spot_bid_price_percent":
+    "description": |-
+      The bid price for AWS spot instances, as a percentage of the corresponding instance type's
+      on-demand price.
+      For example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot
+      instance, then the bid price is half of the price of
+      on-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice
+      the price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.
+      When spot instances are requested for this cluster, only spot instances whose bid price
+      percentage matches this field will be considered.
+      Note that, for safety, we enforce this field to be no more than 10000.
+
+      The default value and documentation here should be kept consistent with
+      CommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent.
+  "zone_id":
+    "description": |-
+      Identifier for the availability zone/datacenter in which the cluster resides.
+      This string will be of a form like "us-west-2a". The provided availability
+      zone must be in the same region as the Databricks deployment. For example, "us-west-2a"
+      is not a valid zone id if the Databricks deployment resides in the "us-east-1" region.
+      This is an optional field at cluster creation, and if not specified, a default zone will be used.
+      If the zone specified is "auto", will try to place cluster in a zone with high availability,
+      and will retry placement in a different AZ if there is not enough capacity.
+      The list of available zones as well as the default value can be found by using the
+      `List Zones` method.
+github.com/databricks/databricks-sdk-go/service/compute.AwsAvailability:
+  "_":
+    "description": |
+      Availability type used for all subsequent nodes past the `first_on_demand` ones.
+
+      Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
+    "enum":
+      - |-
+        SPOT
+      - |-
+        ON_DEMAND
+      - |-
+        SPOT_WITH_FALLBACK
+github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes:
+  "availability": {}
+  "first_on_demand":
+    "description": |-
+      The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.
+      This value should be greater than 0, to make sure the cluster driver node is placed on an
+      on-demand instance. If this value is greater than or equal to the current cluster size, all
+      nodes will be placed on on-demand instances. If this value is less than the current cluster
+      size, `first_on_demand` nodes will be placed on on-demand instances and the remainder will
+      be placed on `availability` instances. Note that this value does not affect
+      cluster size and cannot currently be mutated over the lifetime of a cluster.
+  "log_analytics_info":
+    "description": |-
+      Defines values necessary to configure and run Azure Log Analytics agent
+  "spot_bid_max_price":
+    "description": |-
+      The max bid price to be used for Azure spot instances.
+      The Max price for the bid cannot be higher than the on-demand price of the instance.
+      If not specified, the default value is -1, which specifies that the instance cannot be evicted
+      on the basis of price, and only on the basis of availability. Further, the value should > 0 or -1.
+github.com/databricks/databricks-sdk-go/service/compute.AzureAvailability:
+  "_":
+    "description": |-
+      Availability type used for all subsequent nodes past the `first_on_demand` ones.
+      Note: If `first_on_demand` is zero (which only happens on pool clusters), this availability
+      type will be used for the entire cluster.
+    "enum":
+      - |-
+        SPOT_AZURE
+      - |-
+        ON_DEMAND_AZURE
+      - |-
+        SPOT_WITH_FALLBACK_AZURE
+github.com/databricks/databricks-sdk-go/service/compute.ClientsTypes:
+  "jobs":
+    "description": |-
+      With jobs set, the cluster can be used for jobs
+  "notebooks":
+    "description": |-
+      With notebooks set, this cluster can be used for notebooks
+github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf:
+  "dbfs":
+    "description": |-
+      destination needs to be provided. e.g.
+      `{ "dbfs" : { "destination" : "dbfs:/home/cluster_log" } }`
+  "s3":
+    "description": |-
+      destination and either the region or endpoint need to be provided. e.g.
+      `{ "s3": { "destination" : "s3://cluster_log_bucket/prefix", "region" : "us-west-2" } }`
+      Cluster iam role is used to access s3, please make sure the cluster iam role in
+      `instance_profile_arn` has permission to write data to the s3 destination.
+github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
+  "apply_policy_default_values":
+    "description": |-
+      When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied.
+  "autoscale":
+    "description": |-
+      Parameters needed in order to automatically scale clusters up and down based on load.
+      Note: autoscaling works best with DB runtime versions 3.0 or later.
+  "autotermination_minutes":
+    "description": |-
+      Automatically terminates the cluster after it is inactive for this time in minutes. If not set,
+      this cluster will not be automatically terminated. If specified, the threshold must be between
+      10 and 10000 minutes.
+      Users can also set this value to 0 to explicitly disable automatic termination.
+  "aws_attributes":
+    "description": |-
+      Attributes related to clusters running on Amazon Web Services.
+      If not specified at cluster creation, a set of default values will be used.
+  "azure_attributes":
+    "description": |-
+      Attributes related to clusters running on Microsoft Azure.
+      If not specified at cluster creation, a set of default values will be used.
+  "cluster_log_conf":
+    "description": |-
+      The configuration for delivering spark logs to a long-term storage destination.
+      Two kinds of destinations (dbfs and s3) are supported. Only one destination can be specified
+      for one cluster. If the conf is given, the logs will be delivered to the destination every
+      `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
+      the destination of executor logs is `$destination/$clusterId/executor`.
+  "cluster_name":
+    "description": |
+      Cluster name requested by the user. This doesn't have to be unique.
+      If not specified at creation, the cluster name will be an empty string.
+  "custom_tags":
+    "description": |-
+      Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
+      instances and EBS volumes) with these tags in addition to `default_tags`. Notes:
+
+      - Currently, Databricks allows at most 45 custom tags
+
+      - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
+  "data_security_mode": {}
+  "docker_image": {}
+  "driver_instance_pool_id":
+    "description": |-
+      The optional ID of the instance pool for the driver of the cluster belongs.
+      The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
+      assigned.
+  "driver_node_type_id":
+    "description": |
+      The node type of the Spark driver. Note that this field is optional;
+      if unset, the driver node type will be set as the same value
+      as `node_type_id` defined above.
+  "enable_elastic_disk":
+    "description": |-
+      Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
+      space when its Spark workers are running low on disk space. This feature requires specific AWS
+      permissions to function correctly - refer to the User Guide for more details.
+  "enable_local_disk_encryption":
+    "description": |-
+      Whether to enable LUKS on cluster VMs' local disks
+  "gcp_attributes":
+    "description": |-
+      Attributes related to clusters running on Google Cloud Platform.
+      If not specified at cluster creation, a set of default values will be used.
+  "init_scripts":
+    "description": |-
+      The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
+  "instance_pool_id":
+    "description": |-
+      The optional ID of the instance pool to which the cluster belongs.
+  "is_single_node":
+    "description": |
+      This field can only be used with `kind`.
+
+      When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
+  "kind": {}
+  "node_type_id":
+    "description": |
+      This field encodes, through a single value, the resources available to each of
+      the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
+      and optimized for memory or compute intensive workloads. A list of available node
+      types can be retrieved by using the :method:clusters/listNodeTypes API call.
+  "num_workers":
+    "description": |-
+      Number of worker nodes that this cluster should have. A cluster has one Spark Driver
+      and `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.
+
+      Note: When reading the properties of a cluster, this field reflects the desired number
+      of workers rather than the actual current number of workers. For instance, if a cluster
+      is resized from 5 to 10 workers, this field will immediately be updated to reflect
+      the target size of 10 workers, whereas the workers listed in `spark_info` will gradually
+      increase from 5 to 10 as the new nodes are provisioned.
+  "policy_id":
+    "description": |-
+      The ID of the cluster policy used to create the cluster if applicable.
+  "runtime_engine": {}
+  "single_user_name":
+    "description": |-
+      Single user name if data_security_mode is `SINGLE_USER`
+  "spark_conf":
+    "description": |
+      An object containing a set of optional, user-specified Spark configuration key-value pairs.
+      Users can also pass in a string of extra JVM options to the driver and the executors via
+      `spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.
+  "spark_env_vars":
+    "description": |-
+      An object containing a set of optional, user-specified environment variable key-value pairs.
+      Please note that key-value pair of the form (X,Y) will be exported as is (i.e.,
+      `export X='Y'`) while launching the driver and workers.
+
+      In order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending
+      them to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all
+      default databricks managed environmental variables are included as well.
+
+      Example Spark environment variables:
+      `{"SPARK_WORKER_MEMORY": "28000m", "SPARK_LOCAL_DIRS": "/local_disk0"}` or
+      `{"SPARK_DAEMON_JAVA_OPTS": "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
+  "spark_version":
+    "description": |
+      The Spark version of the cluster, e.g. `3.3.x-scala2.11`.
+      A list of available Spark versions can be retrieved by using
+      the :method:clusters/sparkVersions API call.
+  "ssh_public_keys":
+    "description": |-
+      SSH public key contents that will be added to each Spark node in this cluster. The
+      corresponding private keys can be used to login with the user name `ubuntu` on port `2200`.
+      Up to 10 keys can be specified.
+  "use_ml_runtime":
+    "description": |
+      This field can only be used with `kind`.
+
+      `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
+  "workload_type": {}
+github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode:
+  "_":
+    "description": |
+      Data security mode decides what data governance model to use when accessing data
+      from a cluster.
+
+      The following modes can only be used with `kind`.
+      * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
+      * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
+      * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
+
+      The following modes can be used regardless of `kind`.
+      * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
+      * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
+      * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+
+      The following modes are deprecated starting with Databricks Runtime 15.0 and
+      will be removed for future Databricks Runtime versions:
+
+      * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
+      * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
+      * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
+      * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+    "enum":
+      - |-
+        DATA_SECURITY_MODE_AUTO
+      - |-
+        DATA_SECURITY_MODE_STANDARD
+      - |-
+        DATA_SECURITY_MODE_DEDICATED
+      - |-
+        NONE
+      - |-
+        SINGLE_USER
+      - |-
+        USER_ISOLATION
+      - |-
+        LEGACY_TABLE_ACL
+      - |-
+        LEGACY_PASSTHROUGH
+      - |-
+        LEGACY_SINGLE_USER
+      - |-
+        LEGACY_SINGLE_USER_STANDARD
+github.com/databricks/databricks-sdk-go/service/compute.DbfsStorageInfo:
+  "destination":
+    "description": |-
+      dbfs destination, e.g. `dbfs:/my/path`
+github.com/databricks/databricks-sdk-go/service/compute.DockerBasicAuth:
+  "password":
+    "description": |-
+      Password of the user
+  "username":
+    "description": |-
+      Name of the user
+github.com/databricks/databricks-sdk-go/service/compute.DockerImage:
+  "basic_auth": {}
+  "url":
+    "description": |-
+      URL of the docker image.
+github.com/databricks/databricks-sdk-go/service/compute.EbsVolumeType:
+  "_":
+    "description": |-
+      The type of EBS volumes that will be launched with this cluster.
+    "enum":
+      - |-
+        GENERAL_PURPOSE_SSD
+      - |-
+        THROUGHPUT_OPTIMIZED_HDD
+github.com/databricks/databricks-sdk-go/service/compute.Environment:
+  "_":
+    "description": |-
+      The environment entity used to preserve serverless environment side panel and jobs' environment for non-notebook task.
+      In this minimal environment spec, only pip dependencies are supported.
+  "client":
+    "description": |-
+      Client version used by the environment
+      The client is the user-facing environment of the runtime.
+      Each client comes with a specific set of pre-installed libraries.
+      The version is a string, consisting of the major client version.
+  "dependencies":
+    "description": |-
+      List of pip dependencies, as supported by the version of pip in this environment.
+      Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
+      Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
+      E.g. dependencies: ["foo==0.0.1", "-r /Workspace/test/requirements.txt"]
+github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
+  "availability": {}
+  "boot_disk_size":
+    "description": |-
+      boot disk size in GB
+  "google_service_account":
+    "description": |-
+      If provided, the cluster will impersonate the google service account when accessing
+      gcloud services (like GCS). The google service account
+      must have previously been added to the Databricks environment by an account
+      administrator.
+  "local_ssd_count":
+    "description": |-
+      If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type.
+  "use_preemptible_executors":
+    "description": |-
+      This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).
+      Note: Soon to be deprecated, use the availability field instead.
+  "zone_id":
+    "description": |-
+      Identifier for the availability zone in which the cluster resides.
+      This can be one of the following:
+      - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default]
+      - "AUTO" => Databricks picks an availability zone to schedule the cluster on.
+      - A GCP availability zone => Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones.
+github.com/databricks/databricks-sdk-go/service/compute.GcpAvailability:
+  "_":
+    "description": |-
+      This field determines whether the instance pool will contain preemptible
+      VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
+    "enum":
+      - |-
+        PREEMPTIBLE_GCP
+      - |-
+        ON_DEMAND_GCP
+      - |-
+        PREEMPTIBLE_WITH_FALLBACK_GCP
+github.com/databricks/databricks-sdk-go/service/compute.GcsStorageInfo:
+  "destination":
+    "description": |-
+      GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
+github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
+  "abfss":
+    "description": |-
+      destination needs to be provided. e.g.
+      `{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }
+  "dbfs":
+    "description": |-
+      destination needs to be provided. e.g.
+      `{ "dbfs" : { "destination" : "dbfs:/home/cluster_log" } }`
+  "file":
+    "description": |-
+      destination needs to be provided. e.g.
+      `{ "file" : { "destination" : "file:/my/local/file.sh" } }`
+  "gcs":
+    "description": |-
+      destination needs to be provided. e.g.
+      `{ "gcs": { "destination": "gs://my-bucket/file.sh" } }`
+  "s3":
+    "description": |-
+      destination and either the region or endpoint need to be provided. e.g.
+      `{ "s3": { "destination" : "s3://cluster_log_bucket/prefix", "region" : "us-west-2" } }`
+      Cluster iam role is used to access s3, please make sure the cluster iam role in
+      `instance_profile_arn` has permission to write data to the s3 destination.
+  "volumes":
+    "description": |-
+      destination needs to be provided. e.g.
+      `{ "volumes" : { "destination" : "/Volumes/my-init.sh" } }`
+  "workspace":
+    "description": |-
+      destination needs to be provided. e.g.
+      `{ "workspace" : { "destination" : "/Users/user1@databricks.com/my-init.sh" } }`
+github.com/databricks/databricks-sdk-go/service/compute.Library:
+  "cran":
+    "description": |-
+      Specification of a CRAN library to be installed as part of the library
+  "egg":
+    "description": |-
+      Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.
+  "jar":
+    "description": |-
+      URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.
+      For example: `{ "jar": "/Workspace/path/to/library.jar" }`, `{ "jar" : "/Volumes/path/to/library.jar" }` or
+      `{ "jar": "s3://my-bucket/library.jar" }`.
+      If S3 is used, please make sure the cluster has read access on the library. You may need to
+      launch the cluster with an IAM role to access the S3 URI.
+  "maven":
+    "description": |-
+      Specification of a maven library to be installed. For example:
+      `{ "coordinates": "org.jsoup:jsoup:1.7.2" }`
+  "pypi":
+    "description": |-
+      Specification of a PyPi library to be installed. For example:
+      `{ "package": "simplejson" }`
+  "requirements":
+    "description": |-
+      URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.
+      For example: `{ "requirements": "/Workspace/path/to/requirements.txt" }` or `{ "requirements" : "/Volumes/path/to/requirements.txt" }`
+  "whl":
+    "description": |-
+      URI of the wheel library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.
+      For example: `{ "whl": "/Workspace/path/to/library.whl" }`, `{ "whl" : "/Volumes/path/to/library.whl" }` or
+      `{ "whl": "s3://my-bucket/library.whl" }`.
+      If S3 is used, please make sure the cluster has read access on the library. You may need to
+      launch the cluster with an IAM role to access the S3 URI.
+github.com/databricks/databricks-sdk-go/service/compute.LocalFileInfo:
+  "destination":
+    "description": |-
+      local file destination, e.g. `file:/my/local/file.sh`
+github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
+  "log_analytics_primary_key":
+    "description": |-
+      <needs content added>
+  "log_analytics_workspace_id":
+    "description": |-
+      <needs content added>
+github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary:
+  "coordinates":
+    "description": |-
+      Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
+  "exclusions":
+    "description": |-
+      List of dependences to exclude. For example: `["slf4j:slf4j", "*:hadoop-client"]`.
+
+      Maven dependency exclusions:
+      https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
+  "repo":
+    "description": |-
+      Maven repo to install the Maven package from. If omitted, both Maven Central Repository
+      and Spark Packages are searched.
+github.com/databricks/databricks-sdk-go/service/compute.PythonPyPiLibrary:
+  "package":
+    "description": |-
+      The name of the pypi package to install. An optional exact version specification is also
+      supported. Examples: "simplejson" and "simplejson==3.8.0".
+  "repo":
+    "description": |-
+      The repository where the package can be found. If not specified, the default pip index is
+      used.
+github.com/databricks/databricks-sdk-go/service/compute.RCranLibrary:
+  "package":
+    "description": |-
+      The name of the CRAN package to install.
+  "repo":
+    "description": |-
+      The repository where the package can be found. If not specified, the default CRAN repo is used.
+github.com/databricks/databricks-sdk-go/service/compute.RuntimeEngine:
+  "_":
+    "description": |
+      Determines the cluster's runtime engine, either standard or Photon.
+
+      This field is not compatible with legacy `spark_version` values that contain `-photon-`.
+      Remove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.
+
+      If left unspecified, the runtime engine defaults to standard unless the spark_version
+      contains -photon-, in which case Photon will be used.
+    "enum":
+      - |-
+        NULL
+      - |-
+        STANDARD
+      - |-
+        PHOTON
+github.com/databricks/databricks-sdk-go/service/compute.S3StorageInfo:
+  "canned_acl":
+    "description": |-
+      (Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.
+      If `canned_cal` is set, please make sure the cluster iam role has `s3:PutObjectAcl` permission on
+      the destination bucket and prefix. The full list of possible canned acl can be found at
+      http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl.
+      Please also note that by default only the object owner gets full controls. If you are using cross account
+      role for writing data, you may want to set `bucket-owner-full-control` to make bucket owner able to
+      read the logs.
+  "destination":
+    "description": |-
+      S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using
+      cluster iam role, please make sure you set cluster iam role and the role has write access to the
+      destination. Please also note that you cannot use AWS keys to deliver logs.
+  "enable_encryption":
+    "description": |-
+      (Optional) Flag to enable server side encryption, `false` by default.
+  "encryption_type":
+    "description": |-
+      (Optional) The encryption type, it could be `sse-s3` or `sse-kms`. It will be used only when
+      encryption is enabled and the default type is `sse-s3`.
+  "endpoint":
+    "description": |-
+      S3 endpoint, e.g. `https://s3-us-west-2.amazonaws.com`. Either region or endpoint needs to be set.
+      If both are set, endpoint will be used.
+  "kms_key":
+    "description": |-
+      (Optional) Kms key which will be used if encryption is enabled and encryption type is set to `sse-kms`.
+  "region":
+    "description": |-
+      S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If both are set,
+      endpoint will be used.
+github.com/databricks/databricks-sdk-go/service/compute.VolumesStorageInfo:
+  "destination":
+    "description": |-
+      Unity Catalog Volumes file destination, e.g. `/Volumes/my-init.sh`
+github.com/databricks/databricks-sdk-go/service/compute.WorkloadType:
+  "clients":
+    "description": |2-
+       defined what type of clients can use the cluster. E.g. Notebooks, Jobs
+github.com/databricks/databricks-sdk-go/service/compute.WorkspaceStorageInfo:
+  "destination":
+    "description": |-
+      workspace files destination, e.g. `/Users/user1@databricks.com/my-init.sh`
+github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState:
+  "_":
+    "enum":
+      - |-
+        ACTIVE
+      - |-
+        TRASHED
+github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask:
+  "clean_room_name":
+    "description": |-
+      The clean room that the notebook belongs to.
+  "etag":
+    "description": |-
+      Checksum to validate the freshness of the notebook resource (i.e. the notebook being run is the latest version).
+      It can be fetched by calling the :method:cleanroomassets/get API.
+  "notebook_base_parameters":
+    "description": |-
+      Base parameters to be used for the clean room notebook job.
+  "notebook_name":
+    "description": |-
+      Name of the notebook being run.
+github.com/databricks/databricks-sdk-go/service/jobs.Condition:
+  "_":
+    "enum":
+      - |-
+        ANY_UPDATED
+      - |-
+        ALL_UPDATED
+github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask:
+  "left":
+    "description": |-
+      The left operand of the condition task. Can be either a string value or a job state or parameter reference.
+  "op":
+    "description": |-
+      * `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.
+      * `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” >= “12”` will evaluate to `true`, `“10.0” >= “12”` will evaluate to `false`.
+
+      The boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.
+  "right":
+    "description": |-
+      The right operand of the condition task. Can be either a string value or a job state or parameter reference.
+github.com/databricks/databricks-sdk-go/service/jobs.ConditionTaskOp:
+  "_":
+    "description": |-
+      * `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.
+      * `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” >= “12”` will evaluate to `true`, `“10.0” >= “12”` will evaluate to `false`.
+
+      The boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.
+    "enum":
+      - |-
+        EQUAL_TO
+      - |-
+        GREATER_THAN
+      - |-
+        GREATER_THAN_OR_EQUAL
+      - |-
+        LESS_THAN
+      - |-
+        LESS_THAN_OR_EQUAL
+      - |-
+        NOT_EQUAL
+github.com/databricks/databricks-sdk-go/service/jobs.Continuous:
+  "pause_status":
+    "description": |-
+      Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED.
+github.com/databricks/databricks-sdk-go/service/jobs.CronSchedule:
+  "pause_status":
+    "description": |-
+      Indicate whether this schedule is paused or not.
+  "quartz_cron_expression":
+    "description": |-
+      A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required.
+  "timezone_id":
+    "description": |-
+      A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
+github.com/databricks/databricks-sdk-go/service/jobs.DbtTask:
+  "catalog":
+    "description": |-
+      Optional name of the catalog to use. The value is the top level in the 3-level namespace of Unity Catalog (catalog / schema / relation). The catalog value can only be specified if a warehouse_id is specified. Requires dbt-databricks >= 1.1.1.
+  "commands":
+    "description": |-
+      A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
+  "profiles_directory":
+    "description": |-
+      Optional (relative) path to the profiles directory. Can only be specified if no warehouse_id is specified. If no warehouse_id is specified and this folder is unset, the root directory is used.
+  "project_directory":
+    "description": |-
+      Path to the project directory. Optional for Git sourced tasks, in which
+      case if no value is provided, the root of the Git repository is used.
+  "schema":
+    "description": |-
+      Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used.
+  "source":
+    "description": |-
+      Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved
+      from the local Databricks workspace. When set to `GIT`, the project will be retrieved from a Git repository
+      defined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.
+
+      * `WORKSPACE`: Project is located in Databricks workspace.
+      * `GIT`: Project is located in cloud Git provider.
+  "warehouse_id":
+    "description": |-
+      ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument.
+github.com/databricks/databricks-sdk-go/service/jobs.FileArrivalTriggerConfiguration:
+  "min_time_between_triggers_seconds":
+    "description": |-
+      If set, the trigger starts a run only after the specified amount of time passed since
+      the last time the trigger fired. The minimum allowed value is 60 seconds
+  "url":
+    "description": |-
+      URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location.
+  "wait_after_last_change_seconds":
+    "description": |-
+      If set, the trigger starts a run only after no file activity has occurred for the specified amount of time.
+      This makes it possible to wait for a batch of incoming files to arrive before triggering a run. The
+      minimum allowed value is 60 seconds.
+github.com/databricks/databricks-sdk-go/service/jobs.ForEachTask:
+  "concurrency":
+    "description": |-
+      An optional maximum allowed number of concurrent runs of the task.
+      Set this value if you want to be able to execute multiple runs of the task concurrently.
+  "inputs":
+    "description": |-
+      Array for task to iterate on. This can be a JSON string or a reference to
+      an array parameter.
+  "task":
+    "description": |-
+      Configuration for the task that will be run for each element in the array
+github.com/databricks/databricks-sdk-go/service/jobs.Format:
+  "_":
+    "enum":
+      - |-
+        SINGLE_TASK
+      - |-
+        MULTI_TASK
+github.com/databricks/databricks-sdk-go/service/jobs.GitProvider:
+  "_":
+    "enum":
+      - |-
+        gitHub
+      - |-
+        bitbucketCloud
+      - |-
+        azureDevOpsServices
+      - |-
+        gitHubEnterprise
+      - |-
+        bitbucketServer
+      - |-
+        gitLab
+      - |-
+        gitLabEnterpriseEdition
+      - |-
+        awsCodeCommit
+github.com/databricks/databricks-sdk-go/service/jobs.GitSnapshot:
+  "_":
+    "description": |-
+      Read-only state of the remote repository at the time the job was run. This field is only included on job runs.
+  "used_commit":
+    "description": |-
+      Commit that was used to execute the run. If git_branch was specified, this points to the HEAD of the branch at the time of the run; if git_tag was specified, this points to the commit the tag points to.
+github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
+  "_":
+    "description": |-
+      An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.
+
+      If `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.
+
+      Note: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.
+  "git_branch":
+    "description": |-
+      Name of the branch to be checked out and used by this job. This field cannot be specified in conjunction with git_tag or git_commit.
+  "git_commit":
+    "description": |-
+      Commit to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_tag.
+  "git_provider":
+    "description": |-
+      Unique identifier of the service used to host the Git repository. The value is case insensitive.
+  "git_snapshot": {}
+  "git_tag":
+    "description": |-
+      Name of the tag to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_commit.
+  "git_url":
+    "description": |-
+      URL of the repository to be cloned by this job.
+  "job_source":
+    "description": |-
+      The source of the job specification in the remote repository when the job is source controlled.
+github.com/databricks/databricks-sdk-go/service/jobs.JobCluster:
+  "job_cluster_key":
+    "description": |-
+      A unique name for the job cluster. This field is required and must be unique within the job.
+      `JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution.
+  "new_cluster":
+    "description": |-
+      If new_cluster, a description of a cluster that is created for each task.
+github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment:
+  "kind":
+    "description": |-
+      The kind of deployment that manages the job.
+
+      * `BUNDLE`: The job is managed by Databricks Asset Bundle.
+  "metadata_file_path":
+    "description": |-
+      Path of the file that contains deployment metadata.
+github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind:
+  "_":
+    "description": |-
+      * `BUNDLE`: The job is managed by Databricks Asset Bundle.
+    "enum":
+      - |-
+        BUNDLE
+github.com/databricks/databricks-sdk-go/service/jobs.JobEditMode:
+  "_":
+    "description": |-
+      Edit mode of the job.
+
+      * `UI_LOCKED`: The job is in a locked UI state and cannot be modified.
+      * `EDITABLE`: The job is in an editable state and can be modified.
+    "enum":
+      - |-
+        UI_LOCKED
+      - |-
+        EDITABLE
+github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications:
+  "no_alert_for_skipped_runs":
+    "description": |-
+      If true, do not send email to recipients specified in `on_failure` if the run is skipped.
+      This field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.
+  "on_duration_warning_threshold_exceeded":
+    "description": |-
+      A list of email addresses to be notified when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the `health` field for the job, notifications are not sent.
+  "on_failure":
+    "description": |-
+      A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.
+  "on_start":
+    "description": |-
+      A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.
+  "on_streaming_backlog_exceeded":
+    "description": |-
+      A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
+      Streaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.
+      Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.
+  "on_success":
+    "description": |-
+      A list of email addresses to be notified when a run successfully completes. A run is considered to have completed successfully if it ends with a `TERMINATED` `life_cycle_state` and a `SUCCESS` result_state. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.
+github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
+  "environment_key":
+    "description": |-
+      The key of an environment. It has to be unique within a job.
+  "spec": {}
+github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
+  "no_alert_for_canceled_runs":
+    "description": |-
+      If true, do not send notifications to recipients specified in `on_failure` if the run is canceled.
+  "no_alert_for_skipped_runs":
+    "description": |-
+      If true, do not send notifications to recipients specified in `on_failure` if the run is skipped.
+github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition:
+  "default":
+    "description": |-
+      Default value of the parameter.
+  "name":
+    "description": |-
+      The name of the defined parameter. May only contain alphanumeric characters, `_`, `-`, and `.`
+github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
+  "_":
+    "description": |-
+      Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.
+
+      Either `user_name` or `service_principal_name` should be specified. If not, an error is thrown.
+  "service_principal_name":
+    "description": |-
+      Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+  "user_name":
+    "description": |-
+      The email of an active workspace user. Non-admin users can only set this field to their own email.
+github.com/databricks/databricks-sdk-go/service/jobs.JobSource:
+  "_":
+    "description": |-
+      The source of the job specification in the remote repository when the job is source controlled.
+  "dirty_state":
+    "description": |-
+      Dirty state indicates the job is not fully synced with the job specification in the remote repository.
+
+      Possible values are:
+      * `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.
+      * `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.
+  "import_from_git_branch":
+    "description": |-
+      Name of the branch which the job is imported from.
+  "job_config_path":
+    "description": |-
+      Path of the job YAML file that contains the job specification.
+github.com/databricks/databricks-sdk-go/service/jobs.JobSourceDirtyState:
+  "_":
+    "description": |-
+      Dirty state indicates the job is not fully synced with the job specification
+      in the remote repository.
+
+      Possible values are:
+      * `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.
+      * `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.
+    "enum":
+      - |-
+        NOT_SYNCED
+      - |-
+        DISCONNECTED
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthMetric:
+  "_":
+    "description": |-
+      Specifies the health metric that is being evaluated for a particular health rule.
+
+      * `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.
+      * `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.
+      * `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.
+      * `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.
+      * `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.
+    "enum":
+      - |-
+        RUN_DURATION_SECONDS
+      - |-
+        STREAMING_BACKLOG_BYTES
+      - |-
+        STREAMING_BACKLOG_RECORDS
+      - |-
+        STREAMING_BACKLOG_SECONDS
+      - |-
+        STREAMING_BACKLOG_FILES
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthOperator:
+  "_":
+    "description": |-
+      Specifies the operator used to compare the health metric value with the specified threshold.
+    "enum":
+      - |-
+        GREATER_THAN
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule:
+  "metric": {}
+  "op": {}
+  "value":
+    "description": |-
+      Specifies the threshold value that the health metric should obey to satisfy the health rule.
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
+  "_":
+    "description": |-
+      An optional set of health rules that can be defined for this job.
+  "rules": {}
+github.com/databricks/databricks-sdk-go/service/jobs.NotebookTask:
+  "base_parameters":
+    "description": |-
+      Base parameters to be used for each run of this job. If the run is initiated by a call to :method:jobs/run
+      Now with parameters specified, the two parameters maps are merged. If the same key is specified in
+      `base_parameters` and in `run-now`, the value from `run-now` is used.
+      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+
+      If the notebook takes a parameter that is not specified in the job’s `base_parameters` or the `run-now` override parameters,
+      the default value from the notebook is used.
+
+      Retrieve these parameters in a notebook using [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-widgets).
+
+      The JSON representation of this field cannot exceed 1MB.
+  "notebook_path":
+    "description": |-
+      The path of the notebook to be run in the Databricks workspace or remote repository.
+      For notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.
+      For notebooks stored in a remote repository, the path must be relative. This field is required.
+  "source":
+    "description": |-
+      Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository
+      defined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.
+      * `WORKSPACE`: Notebook is located in Databricks workspace.
+      * `GIT`: Notebook is located in cloud Git provider.
+  "warehouse_id":
+    "description": |-
+      Optional `warehouse_id` to run the notebook on a SQL warehouse. Classic SQL warehouses are NOT supported, please use serverless or pro SQL warehouses.
+
+      Note that SQL warehouses only support SQL cells; if the notebook contains non-SQL cells, the run will fail.
+github.com/databricks/databricks-sdk-go/service/jobs.PauseStatus:
+  "_":
+    "enum":
+      - |-
+        UNPAUSED
+      - |-
+        PAUSED
+github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget:
+  "_":
+    "description": |-
+      PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.
+      The performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager
+      (see cluster-common PerformanceTarget).
+    "enum":
+      - |-
+        PERFORMANCE_OPTIMIZED
+      - |-
+        COST_OPTIMIZED
+github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfiguration:
+  "interval":
+    "description": |-
+      The interval at which the trigger should run.
+  "unit":
+    "description": |-
+      The unit of time for the interval.
+github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfigurationTimeUnit:
+  "_":
+    "enum":
+      - |-
+        HOURS
+      - |-
+        DAYS
+      - |-
+        WEEKS
+github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams:
+  "full_refresh":
+    "description": |-
+      If true, triggers a full refresh on the delta live table.
+github.com/databricks/databricks-sdk-go/service/jobs.PipelineTask:
+  "full_refresh":
+    "description": |-
+      If true, triggers a full refresh on the delta live table.
+  "pipeline_id":
+    "description": |-
+      The full name of the pipeline task to execute.
+github.com/databricks/databricks-sdk-go/service/jobs.PythonWheelTask:
+  "entry_point":
+    "description": |-
+      Named entry point to use, if it does not exist in the metadata of the package it executes the function from the package directly using `$packageName.$entryPoint()`
+  "named_parameters":
+    "description": |-
+      Command-line parameters passed to Python wheel task in the form of `["--name=task", "--data=dbfs:/path/to/data.json"]`. Leave it empty if `parameters` is not null.
+  "package_name":
+    "description": |-
+      Name of the package to execute
+  "parameters":
+    "description": |-
+      Command-line parameters passed to Python wheel task. Leave it empty if `named_parameters` is not null.
+github.com/databricks/databricks-sdk-go/service/jobs.QueueSettings:
+  "enabled":
+    "description": |-
+      If true, enable queueing for the job. This is a required field.
+github.com/databricks/databricks-sdk-go/service/jobs.RunIf:
+  "_":
+    "description": |-
+      An optional value indicating the condition that determines whether the task should be run once its dependencies have been completed. When omitted, defaults to `ALL_SUCCESS`.
+
+      Possible values are:
+      * `ALL_SUCCESS`: All dependencies have executed and succeeded
+      * `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded
+      * `NONE_FAILED`: None of the dependencies have failed and at least one was executed
+      * `ALL_DONE`: All dependencies have been completed
+      * `AT_LEAST_ONE_FAILED`: At least one dependency failed
+      * `ALL_FAILED`: ALl dependencies have failed
+    "enum":
+      - |-
+        ALL_SUCCESS
+      - |-
+        ALL_DONE
+      - |-
+        NONE_FAILED
+      - |-
+        AT_LEAST_ONE_SUCCESS
+      - |-
+        ALL_FAILED
+      - |-
+        AT_LEAST_ONE_FAILED
+github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
+  "dbt_commands":
+    "description": |-
+      An array of commands to execute for jobs with the dbt task, for example `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
+  "jar_params":
+    "description": |-
+      A list of parameters for jobs with Spark JAR tasks, for example `"jar_params": ["john doe", "35"]`.
+      The parameters are used to invoke the main function of the main class specified in the Spark JAR task.
+      If not specified upon `run-now`, it defaults to an empty list.
+      jar_params cannot be specified in conjunction with notebook_params.
+      The JSON representation of this field (for example `{"jar_params":["john doe","35"]}`) cannot exceed 10,000 bytes.
+
+      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+  "job_id":
+    "description": |-
+      ID of the job to trigger.
+  "job_parameters":
+    "description": |-
+      Job-level parameters used to trigger the job.
+  "notebook_params":
+    "description": |-
+      A map from keys to values for jobs with notebook task, for example `"notebook_params": {"name": "john doe", "age": "35"}`.
+      The map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.
+
+      If not specified upon `run-now`, the triggered run uses the job’s base parameters.
+
+      notebook_params cannot be specified in conjunction with jar_params.
+
+      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+
+      The JSON representation of this field (for example `{"notebook_params":{"name":"john doe","age":"35"}}`) cannot exceed 10,000 bytes.
+  "pipeline_params":
+    "description": |-
+      Controls whether the pipeline should perform a full refresh
+  "python_named_params": {}
+  "python_params":
+    "description": |-
+      A list of parameters for jobs with Python tasks, for example `"python_params": ["john doe", "35"]`.
+      The parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite
+      the parameters specified in job setting. The JSON representation of this field (for example `{"python_params":["john doe","35"]}`)
+      cannot exceed 10,000 bytes.
+
+      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+
+      Important
+
+      These parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.
+      Examples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.
+  "spark_submit_params":
+    "description": |-
+      A list of parameters for jobs with spark submit task, for example `"spark_submit_params": ["--class", "org.apache.spark.examples.SparkPi"]`.
+      The parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the
+      parameters specified in job setting. The JSON representation of this field (for example `{"python_params":["john doe","35"]}`)
+      cannot exceed 10,000 bytes.
+
+      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs
+
+      Important
+
+      These parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.
+      Examples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.
+  "sql_params":
+    "description": |-
+      A map from keys to values for jobs with SQL task, for example `"sql_params": {"name": "john doe", "age": "35"}`. The SQL alert task does not support custom parameters.
+github.com/databricks/databricks-sdk-go/service/jobs.Source:
+  "_":
+    "description": |-
+      Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\
+      from the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository
+      defined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.
+
+      * `WORKSPACE`: SQL file is located in Databricks workspace.
+      * `GIT`: SQL file is located in cloud Git provider.
+    "enum":
+      - |-
+        WORKSPACE
+      - |-
+        GIT
+github.com/databricks/databricks-sdk-go/service/jobs.SparkJarTask:
+  "jar_uri":
+    "description": |-
+      Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
+  "main_class_name":
+    "description": |-
+      The full name of the class containing the main method to be executed. This class must be contained in a JAR provided as a library.
+
+      The code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail.
+  "parameters":
+    "description": |-
+      Parameters passed to the main method.
+
+      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+  "run_as_repl":
+    "description": |-
+      Deprecated. A value of `false` is no longer supported.
+github.com/databricks/databricks-sdk-go/service/jobs.SparkPythonTask:
+  "parameters":
+    "description": |-
+      Command line parameters passed to the Python file.
+
+      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+  "python_file":
+    "description": |-
+      The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required.
+  "source":
+    "description": |-
+      Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local
+      Databricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,
+      the Python file will be retrieved from a Git repository defined in `git_source`.
+
+      * `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.
+      * `GIT`: The Python file is located in a remote Git repository.
+github.com/databricks/databricks-sdk-go/service/jobs.SparkSubmitTask:
+  "parameters":
+    "description": |-
+      Command-line parameters passed to spark submit.
+
+      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTask:
+  "alert":
+    "description": |-
+      If alert, indicates that this job must refresh a SQL alert.
+  "dashboard":
+    "description": |-
+      If dashboard, indicates that this job must refresh a SQL dashboard.
+  "file":
+    "description": |-
+      If file, indicates that this job runs a SQL file in a remote Git repository.
+  "parameters":
+    "description": |-
+      Parameters to be used for each run of this job. The SQL alert task does not support custom parameters.
+  "query":
+    "description": |-
+      If query, indicates that this job must execute a SQL query.
+  "warehouse_id":
+    "description": |-
+      The canonical identifier of the SQL warehouse. Recommended to use with serverless or pro SQL warehouses. Classic SQL warehouses are only supported for SQL alert, dashboard and query tasks and are limited to scheduled single-task jobs.
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskAlert:
+  "alert_id":
+    "description": |-
+      The canonical identifier of the SQL alert.
+  "pause_subscriptions":
+    "description": |-
+      If true, the alert notifications are not sent to subscribers.
+  "subscriptions":
+    "description": |-
+      If specified, alert notifications are sent to subscribers.
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskDashboard:
+  "custom_subject":
+    "description": |-
+      Subject of the email sent to subscribers of this task.
+  "dashboard_id":
+    "description": |-
+      The canonical identifier of the SQL dashboard.
+  "pause_subscriptions":
+    "description": |-
+      If true, the dashboard snapshot is not taken, and emails are not sent to subscribers.
+  "subscriptions":
+    "description": |-
+      If specified, dashboard snapshots are sent to subscriptions.
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskFile:
+  "path":
+    "description": |-
+      Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths.
+  "source":
+    "description": |-
+      Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved
+      from the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository
+      defined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.
+
+      * `WORKSPACE`: SQL file is located in Databricks workspace.
+      * `GIT`: SQL file is located in cloud Git provider.
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskQuery:
+  "query_id":
+    "description": |-
+      The canonical identifier of the SQL query.
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskSubscription:
+  "destination_id":
+    "description": |-
+      The canonical identifier of the destination to receive email notification. This parameter is mutually exclusive with user_name. You cannot set both destination_id and user_name for subscription notifications.
+  "user_name":
+    "description": |-
+      The user name to receive the subscription email. This parameter is mutually exclusive with destination_id. You cannot set both destination_id and user_name for subscription notifications.
+github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration:
+  "condition":
+    "description": |-
+      The table(s) condition based on which to trigger a job run.
+  "min_time_between_triggers_seconds":
+    "description": |-
+      If set, the trigger starts a run only after the specified amount of time has passed since
+      the last time the trigger fired. The minimum allowed value is 60 seconds.
+  "table_names":
+    "description": |-
+      A list of Delta tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
+  "wait_after_last_change_seconds":
+    "description": |-
+      If set, the trigger starts a run only after no table updates have occurred for the specified time
+      and can be used to wait for a series of table updates before triggering a run. The
+      minimum allowed value is 60 seconds.
+github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "clean_rooms_notebook_task":
+    "description": |-
+      The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook
+      when the `clean_rooms_notebook_task` field is present.
+  "condition_task":
+    "description": |-
+      The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.
+      The condition task does not require a cluster to execute and does not support retries or notifications.
+  "dbt_task":
+    "description": |-
+      The task runs one or more dbt commands when the `dbt_task` field is present. The dbt task requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.
+  "depends_on":
+    "description": |-
+      An optional array of objects specifying the dependency graph of the task. All tasks specified in this field must complete before executing this task. The task will run only if the `run_if` condition is true.
+      The key is `task_key`, and the value is the name assigned to the dependent task.
+  "description":
+    "description": |-
+      An optional description for this task.
+  "disable_auto_optimization":
+    "description": |-
+      An option to disable auto optimization in serverless
+  "email_notifications":
+    "description": |-
+      An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.
+  "environment_key":
+    "description": |-
+      The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute.
+  "existing_cluster_id":
+    "description": |-
+      If existing_cluster_id, the ID of an existing cluster that is used for all runs.
+      When running jobs or tasks on an existing cluster, you may need to manually restart
+      the cluster if it stops responding. We suggest running jobs and tasks on new clusters for
+      greater reliability
+  "for_each_task":
+    "description": |-
+      The task executes a nested task for every input provided when the `for_each_task` field is present.
+  "health": {}
+  "job_cluster_key":
+    "description": |-
+      If job_cluster_key, this task is executed reusing the cluster specified in `job.settings.job_clusters`.
+  "libraries":
+    "description": |-
+      An optional list of libraries to be installed on the cluster.
+      The default value is an empty list.
+  "max_retries":
+    "description": |-
+      An optional maximum number of times to retry an unsuccessful run. A run is considered to be unsuccessful if it completes with the `FAILED` result_state or `INTERNAL_ERROR` `life_cycle_state`. The value `-1` means to retry indefinitely and the value `0` means to never retry.
+  "min_retry_interval_millis":
+    "description": |-
+      An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried.
+  "new_cluster":
+    "description": |-
+      If new_cluster, a description of a new cluster that is created for each run.
+  "notebook_task":
+    "description": |-
+      The task runs a notebook when the `notebook_task` field is present.
+  "notification_settings":
+    "description": |-
+      Optional notification settings that are used when sending notifications to each of the `email_notifications` and `webhook_notifications` for this task.
+  "pipeline_task":
+    "description": |-
+      The task triggers a pipeline update when the `pipeline_task` field is present. Only pipelines configured to use triggered more are supported.
+  "python_wheel_task":
+    "description": |-
+      The task runs a Python wheel when the `python_wheel_task` field is present.
+  "retry_on_timeout":
+    "description": |-
+      An optional policy to specify whether to retry a job when it times out. The default behavior
+      is to not retry on timeout.
+  "run_if":
+    "description": |-
+      An optional value specifying the condition determining whether the task is run once its dependencies have been completed.
+
+      * `ALL_SUCCESS`: All dependencies have executed and succeeded
+      * `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded
+      * `NONE_FAILED`: None of the dependencies have failed and at least one was executed
+      * `ALL_DONE`: All dependencies have been completed
+      * `AT_LEAST_ONE_FAILED`: At least one dependency failed
+      * `ALL_FAILED`: ALl dependencies have failed
+  "run_job_task":
+    "description": |-
+      The task triggers another job when the `run_job_task` field is present.
+  "spark_jar_task":
+    "description": |-
+      The task runs a JAR when the `spark_jar_task` field is present.
+  "spark_python_task":
+    "description": |-
+      The task runs a Python file when the `spark_python_task` field is present.
+  "spark_submit_task":
+    "description": |-
+      (Legacy) The task runs the spark-submit script when the `spark_submit_task` field is present. This task can run only on new clusters and is not compatible with serverless compute.
+
+      In the `new_cluster` specification, `libraries` and `spark_conf` are not supported. Instead, use `--jars` and `--py-files` to add Java and Python libraries and `--conf` to set the Spark configurations.
+
+      `master`, `deploy-mode`, and `executor-cores` are automatically configured by Databricks; you _cannot_ specify them in parameters.
+
+      By default, the Spark submit job uses all available memory (excluding reserved memory for Databricks services). You can set `--driver-memory`, and `--executor-memory` to a smaller value to leave some room for off-heap usage.
+
+      The `--jars`, `--py-files`, `--files` arguments support DBFS and S3 paths.
+  "sql_task":
+    "description": |-
+      The task runs a SQL query or file, or it refreshes a SQL alert or a legacy SQL dashboard when the `sql_task` field is present.
+  "task_key":
+    "description": |-
+      A unique name for the task. This field is used to refer to this task from other tasks.
+      This field is required and must be unique within its parent job.
+      On Update or Reset, this field is used to reference the tasks to be updated or reset.
+  "timeout_seconds":
+    "description": |-
+      An optional timeout applied to each run of this job task. A value of `0` means no timeout.
+  "webhook_notifications":
+    "description": |-
+      A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.
+github.com/databricks/databricks-sdk-go/service/jobs.TaskDependency:
+  "outcome":
+    "description": |-
+      Can only be specified on condition task dependencies. The outcome of the dependent task that must be met for this task to run.
+  "task_key":
+    "description": |-
+      The name of the task this task depends on.
+github.com/databricks/databricks-sdk-go/service/jobs.TaskEmailNotifications:
+  "no_alert_for_skipped_runs":
+    "description": |-
+      If true, do not send email to recipients specified in `on_failure` if the run is skipped.
+      This field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.
+  "on_duration_warning_threshold_exceeded":
+    "description": |-
+      A list of email addresses to be notified when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the `health` field for the job, notifications are not sent.
+  "on_failure":
+    "description": |-
+      A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.
+  "on_start":
+    "description": |-
+      A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.
+  "on_streaming_backlog_exceeded":
+    "description": |-
+      A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
+      Streaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.
+      Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.
+  "on_success":
+    "description": |-
+      A list of email addresses to be notified when a run successfully completes. A run is considered to have completed successfully if it ends with a `TERMINATED` `life_cycle_state` and a `SUCCESS` result_state. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.
+github.com/databricks/databricks-sdk-go/service/jobs.TaskNotificationSettings:
+  "alert_on_last_attempt":
+    "description": |-
+      If true, do not send notifications to recipients specified in `on_start` for the retried runs and do not send notifications to recipients specified in `on_failure` until the last retry of the run.
+  "no_alert_for_canceled_runs":
+    "description": |-
+      If true, do not send notifications to recipients specified in `on_failure` if the run is canceled.
+  "no_alert_for_skipped_runs":
+    "description": |-
+      If true, do not send notifications to recipients specified in `on_failure` if the run is skipped.
+github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
+  "file_arrival":
+    "description": |-
+      File arrival trigger settings.
+  "pause_status":
+    "description": |-
+      Whether this trigger is paused or not.
+  "periodic":
+    "description": |-
+      Periodic trigger settings.
+  "table":
+    "description": |-
+      Old table trigger settings name. Deprecated in favor of `table_update`.
+  "table_update": {}
+github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
+  "id": {}
+github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications:
+  "on_duration_warning_threshold_exceeded":
+    "description": |-
+      An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.
+  "on_failure":
+    "description": |-
+      An optional list of system notification IDs to call when the run fails. A maximum of 3 destinations can be specified for the `on_failure` property.
+  "on_start":
+    "description": |-
+      An optional list of system notification IDs to call when the run starts. A maximum of 3 destinations can be specified for the `on_start` property.
+  "on_streaming_backlog_exceeded":
+    "description": |-
+      An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.
+      Streaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.
+      Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.
+      A maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.
+  "on_success":
+    "description": |-
+      An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.
+github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag:
+  "key":
+    "description": |-
+      The tag key.
+  "value":
+    "description": |-
+      The tag value.
+github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
+  "key":
+    "description": |-
+      The tag key.
+  "value":
+    "description": |-
+      The tag value.
+github.com/databricks/databricks-sdk-go/service/ml.ModelVersion:
+  "creation_timestamp":
+    "description": |-
+      Timestamp recorded when this `model_version` was created.
+  "current_stage":
+    "description": |-
+      Current stage for this `model_version`.
+  "description":
+    "description": |-
+      Description of this `model_version`.
+  "last_updated_timestamp":
+    "description": |-
+      Timestamp recorded when metadata for this `model_version` was last updated.
+  "name":
+    "description": |-
+      Unique name of the model
+  "run_id":
+    "description": |-
+      MLflow run ID used when creating `model_version`, if `source` was generated by an
+      experiment run stored in MLflow tracking server.
+  "run_link":
+    "description": |-
+      Run Link: Direct link to the run that generated this version
+  "source":
+    "description": |-
+      URI indicating the location of the source model artifacts, used when creating `model_version`
+  "status":
+    "description": |-
+      Current status of `model_version`
+  "status_message":
+    "description": |-
+      Details on current `status`, if it is pending or failed.
+  "tags":
+    "description": |-
+      Tags: Additional metadata key-value pairs for this `model_version`.
+  "user_id":
+    "description": |-
+      User that created this `model_version`.
+  "version":
+    "description": |-
+      Model's version number.
+github.com/databricks/databricks-sdk-go/service/ml.ModelVersionStatus:
+  "_":
+    "description": |-
+      Current status of `model_version`
+    "enum":
+      - |-
+        PENDING_REGISTRATION
+      - |-
+        FAILED_REGISTRATION
+      - |-
+        READY
+github.com/databricks/databricks-sdk-go/service/ml.ModelVersionTag:
+  "key":
+    "description": |-
+      The tag key.
+  "value":
+    "description": |-
+      The tag value.
+github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
+  "quartz_cron_schedule": {}
+  "timezone_id": {}
+github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek:
+  "_":
+    "description": |-
+      Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
+      If not specified all days of the week will be used.
+    "enum":
+      - |-
+        MONDAY
+      - |-
+        TUESDAY
+      - |-
+        WEDNESDAY
+      - |-
+        THURSDAY
+      - |-
+        FRIDAY
+      - |-
+        SATURDAY
+      - |-
+        SUNDAY
+github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind:
+  "_":
+    "description": |
+      The deployment method that manages the pipeline:
+      - BUNDLE: The pipeline is managed by a Databricks Asset Bundle.
+    "enum":
+      - |-
+        BUNDLE
+github.com/databricks/databricks-sdk-go/service/pipelines.FileLibrary:
+  "path":
+    "description": |-
+      The absolute path of the file.
+github.com/databricks/databricks-sdk-go/service/pipelines.Filters:
+  "exclude":
+    "description": |-
+      Paths to exclude.
+  "include":
+    "description": |-
+      Paths to include.
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig:
+  "report":
+    "description": |-
+      Select a specific source report.
+  "schema":
+    "description": |-
+      Select all tables from a specific source schema.
+  "table":
+    "description": |-
+      Select a specific source table.
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition:
+  "connection_id":
+    "description": |-
+      [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
+  "connection_name":
+    "description": |-
+      Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
+  "gateway_storage_catalog":
+    "description": |-
+      Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
+  "gateway_storage_name":
+    "description": |
+      Optional. The Unity Catalog-compatible name for the gateway storage location.
+      This is the destination to use for the data that is extracted by the gateway.
+      Delta Live Tables system will automatically create the storage location under the catalog and schema.
+  "gateway_storage_schema":
+    "description": |-
+      Required, Immutable. The name of the schema for the gateway pipelines's storage location.
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition:
+  "connection_name":
+    "description": |-
+      Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+  "ingestion_gateway_id":
+    "description": |-
+      Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
+  "objects":
+    "description": |-
+      Required. Settings specifying tables to replicate and the destination for the replicated tables.
+  "table_configuration":
+    "description": |-
+      Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
+github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
+github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
+  "path":
+    "description": |-
+      The absolute path of the notebook.
+github.com/databricks/databricks-sdk-go/service/pipelines.Notifications:
+  "alerts":
+    "description": |
+      A list of alerts that trigger the sending of notifications to the configured
+      destinations. The supported alerts are:
+
+      * `on-update-success`: A pipeline update completes successfully.
+      * `on-update-failure`: Each time a pipeline update fails.
+      * `on-update-fatal-failure`: A pipeline update fails with a non-retryable (fatal) error.
+      * `on-flow-failure`: A single data flow fails.
+  "email_recipients":
+    "description": |
+      A list of email addresses notified when a configured alert is triggered.
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster:
+  "apply_policy_default_values":
+    "description": |-
+      Note: This field won't be persisted. Only API users will check this field.
+  "autoscale":
+    "description": |-
+      Parameters needed in order to automatically scale clusters up and down based on load.
+      Note: autoscaling works best with DB runtime versions 3.0 or later.
+  "aws_attributes":
+    "description": |-
+      Attributes related to clusters running on Amazon Web Services.
+      If not specified at cluster creation, a set of default values will be used.
+  "azure_attributes":
+    "description": |-
+      Attributes related to clusters running on Microsoft Azure.
+      If not specified at cluster creation, a set of default values will be used.
+  "cluster_log_conf":
+    "description": |
+      The configuration for delivering spark logs to a long-term storage destination.
+      Only dbfs destinations are supported. Only one destination can be specified
+      for one cluster. If the conf is given, the logs will be delivered to the destination every
+      `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
+      the destination of executor logs is `$destination/$clusterId/executor`.
+  "custom_tags":
+    "description": |-
+      Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
+      instances and EBS volumes) with these tags in addition to `default_tags`. Notes:
+
+      - Currently, Databricks allows at most 45 custom tags
+
+      - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
+  "driver_instance_pool_id":
+    "description": |-
+      The optional ID of the instance pool for the driver of the cluster belongs.
+      The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
+      assigned.
+  "driver_node_type_id":
+    "description": |-
+      The node type of the Spark driver.
+      Note that this field is optional; if unset, the driver node type will be set as the same value
+      as `node_type_id` defined above.
+  "enable_local_disk_encryption":
+    "description": |-
+      Whether to enable local disk encryption for the cluster.
+  "gcp_attributes":
+    "description": |-
+      Attributes related to clusters running on Google Cloud Platform.
+      If not specified at cluster creation, a set of default values will be used.
+  "init_scripts":
+    "description": |-
+      The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
+  "instance_pool_id":
+    "description": |-
+      The optional ID of the instance pool to which the cluster belongs.
+  "label":
+    "description": |-
+      A label for the cluster specification, either `default` to configure the default cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.
+  "node_type_id":
+    "description": |
+      This field encodes, through a single value, the resources available to each of
+      the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
+      and optimized for memory or compute intensive workloads. A list of available node
+      types can be retrieved by using the :method:clusters/listNodeTypes API call.
+  "num_workers":
+    "description": |-
+      Number of worker nodes that this cluster should have. A cluster has one Spark Driver
+      and `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.
+
+      Note: When reading the properties of a cluster, this field reflects the desired number
+      of workers rather than the actual current number of workers. For instance, if a cluster
+      is resized from 5 to 10 workers, this field will immediately be updated to reflect
+      the target size of 10 workers, whereas the workers listed in `spark_info` will gradually
+      increase from 5 to 10 as the new nodes are provisioned.
+  "policy_id":
+    "description": |-
+      The ID of the cluster policy used to create the cluster if applicable.
+  "spark_conf":
+    "description": |
+      An object containing a set of optional, user-specified Spark configuration key-value pairs.
+      See :method:clusters/create for more details.
+  "spark_env_vars":
+    "description": |-
+      An object containing a set of optional, user-specified environment variable key-value pairs.
+      Please note that key-value pair of the form (X,Y) will be exported as is (i.e.,
+      `export X='Y'`) while launching the driver and workers.
+
+      In order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending
+      them to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all
+      default databricks managed environmental variables are included as well.
+
+      Example Spark environment variables:
+      `{"SPARK_WORKER_MEMORY": "28000m", "SPARK_LOCAL_DIRS": "/local_disk0"}` or
+      `{"SPARK_DAEMON_JAVA_OPTS": "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
+  "ssh_public_keys":
+    "description": |-
+      SSH public key contents that will be added to each Spark node in this cluster. The
+      corresponding private keys can be used to login with the user name `ubuntu` on port `2200`.
+      Up to 10 keys can be specified.
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutoscale:
+  "max_workers":
+    "description": |-
+      The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.
+  "min_workers":
+    "description": |-
+      The minimum number of workers the cluster can scale down to when underutilized.
+      It is also the initial number of workers the cluster will have after creation.
+  "mode":
+    "description": |
+      Databricks Enhanced Autoscaling optimizes cluster utilization by automatically
+      allocating cluster resources based on workload volume, with minimal impact to
+      the data processing latency of your pipelines. Enhanced Autoscaling is available
+      for `updates` clusters only. The legacy autoscaling feature is used for `maintenance`
+      clusters.
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutoscaleMode:
+  "_":
+    "description": |
+      Databricks Enhanced Autoscaling optimizes cluster utilization by automatically
+      allocating cluster resources based on workload volume, with minimal impact to
+      the data processing latency of your pipelines. Enhanced Autoscaling is available
+      for `updates` clusters only. The legacy autoscaling feature is used for `maintenance`
+      clusters.
+    "enum":
+      - |-
+        ENHANCED
+      - |-
+        LEGACY
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineDeployment:
+  "kind":
+    "description": |-
+      The deployment method that manages the pipeline.
+  "metadata_file_path":
+    "description": |-
+      The path to the file containing metadata about the deployment.
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
+  "file":
+    "description": |
+      The path to a file that defines a pipeline and is stored in the Databricks Repos.
+  "jar":
+    "description": |
+      URI of the jar to be installed. Currently only DBFS is supported.
+  "maven":
+    "description": |
+      Specification of a maven library to be installed.
+  "notebook":
+    "description": |
+      The path to a notebook that defines a pipeline and is stored in the Databricks workspace.
+  "whl":
+    "description": |-
+      URI of the whl to be installed.
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
+  "cron": {}
+  "manual": {}
+github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec:
+  "destination_catalog":
+    "description": |-
+      Required. Destination catalog to store table.
+  "destination_schema":
+    "description": |-
+      Required. Destination schema to store table.
+  "destination_table":
+    "description": |-
+      Required. Destination table name. The pipeline fails if a table with that name already exists.
+  "source_url":
+    "description": |-
+      Required. Report URL in the source system.
+  "table_configuration":
+    "description": |-
+      Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.
+github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow:
+  "days_of_week":
+    "description": |-
+      Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
+      If not specified all days of the week will be used.
+  "start_hour":
+    "description": |-
+      An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
+      Continuous pipeline restart is triggered only within a five-hour window starting at this hour.
+  "time_zone_id":
+    "description": |-
+      Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
+      If not specified, UTC will be used.
+github.com/databricks/databricks-sdk-go/service/pipelines.RunAs:
+  "_":
+    "description": |-
+      Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
+
+      Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+  "service_principal_name":
+    "description": |-
+      Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+  "user_name":
+    "description": |-
+      The email of an active workspace user. Users can only set this field to their own email.
+github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec:
+  "destination_catalog":
+    "description": |-
+      Required. Destination catalog to store tables.
+  "destination_schema":
+    "description": |-
+      Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
+  "source_catalog":
+    "description": |-
+      The source catalog name. Might be optional depending on the type of source.
+  "source_schema":
+    "description": |-
+      Required. Schema name in the source database.
+  "table_configuration":
+    "description": |-
+      Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.
+github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
+  "destination_catalog":
+    "description": |-
+      Required. Destination catalog to store table.
+  "destination_schema":
+    "description": |-
+      Required. Destination schema to store table.
+  "destination_table":
+    "description": |-
+      Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.
+  "source_catalog":
+    "description": |-
+      Source catalog name. Might be optional depending on the type of source.
+  "source_schema":
+    "description": |-
+      Schema name in the source database. Might be optional depending on the type of source.
+  "source_table":
+    "description": |-
+      Required. Table name in the source database.
+  "table_configuration":
+    "description": |-
+      Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.
+github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
+  "primary_keys":
+    "description": |-
+      The primary key of the table used to apply changes.
+  "salesforce_include_formula_fields":
+    "description": |-
+      If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
+  "scd_type":
+    "description": |-
+      The SCD type to use to ingest the table.
+  "sequence_by":
+    "description": |-
+      The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType:
+  "_":
+    "description": |-
+      The SCD type to use to ingest the table.
+    "enum":
+      - |-
+        SCD_TYPE_1
+      - |-
+        SCD_TYPE_2
+github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
+  "ai21labs_api_key":
+    "description": |-
+      The Databricks secret key reference for an AI21 Labs API key. If you
+      prefer to paste your API key directly, see `ai21labs_api_key_plaintext`.
+      You must provide an API key using one of the following fields:
+      `ai21labs_api_key` or `ai21labs_api_key_plaintext`.
+  "ai21labs_api_key_plaintext":
+    "description": |-
+      An AI21 Labs API key provided as a plaintext string. If you prefer to
+      reference your key using Databricks Secrets, see `ai21labs_api_key`. You
+      must provide an API key using one of the following fields:
+      `ai21labs_api_key` or `ai21labs_api_key_plaintext`.
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig:
+  "guardrails":
+    "description": |-
+      Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.
+  "inference_table_config":
+    "description": |-
+      Configuration for payload logging using inference tables.
+      Use these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.
+  "rate_limits":
+    "description": |-
+      Configuration for rate limits which can be set to limit endpoint traffic.
+  "usage_tracking_config":
+    "description": |-
+      Configuration to enable usage tracking using system tables.
+      These tables allow you to monitor operational usage on endpoints and their associated costs.
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters:
+  "invalid_keywords":
+    "description": |-
+      List of invalid keywords.
+      AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.
+  "pii":
+    "description": |-
+      Configuration for guardrail PII filter.
+  "safety":
+    "description": |-
+      Indicates whether the safety filter is enabled.
+  "valid_topics":
+    "description": |-
+      The list of allowed topics.
+      Given a chat request, this guardrail flags the request if its topic is not in the allowed topics.
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior:
+  "behavior":
+    "description": |-
+      Configuration for input guardrail filters.
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehaviorBehavior:
+  "_":
+    "enum":
+      - |-
+        NONE
+      - |-
+        BLOCK
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails:
+  "input":
+    "description": |-
+      Configuration for input guardrail filters.
+  "output":
+    "description": |-
+      Configuration for output guardrail filters.
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayInferenceTableConfig:
+  "catalog_name":
+    "description": |-
+      The name of the catalog in Unity Catalog. Required when enabling inference tables.
+      NOTE: On update, you have to disable inference table first in order to change the catalog name.
+  "enabled":
+    "description": |-
+      Indicates whether the inference table is enabled.
+  "schema_name":
+    "description": |-
+      The name of the schema in Unity Catalog. Required when enabling inference tables.
+      NOTE: On update, you have to disable inference table first in order to change the schema name.
+  "table_name_prefix":
+    "description": |-
+      The prefix of the table in Unity Catalog.
+      NOTE: On update, you have to disable inference table first in order to change the prefix name.
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
+  "calls":
+    "description": |-
+      Used to specify how many calls are allowed for a key within the renewal_period.
+  "key":
+    "description": |-
+      Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported,
+      with 'endpoint' being the default if not specified.
+  "renewal_period":
+    "description": |-
+      Renewal period field for a rate limit. Currently, only 'minute' is supported.
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey:
+  "_":
+    "enum":
+      - |-
+        user
+      - |-
+        endpoint
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod:
+  "_":
+    "enum":
+      - |-
+        minute
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayUsageTrackingConfig:
+  "enabled":
+    "description": |-
+      Whether to enable usage tracking.
+github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfig:
+  "aws_access_key_id":
+    "description": |-
+      The Databricks secret key reference for an AWS access key ID with
+      permissions to interact with Bedrock services. If you prefer to paste
+      your API key directly, see `aws_access_key_id_plaintext`. You must provide an API
+      key using one of the following fields: `aws_access_key_id` or
+      `aws_access_key_id_plaintext`.
+  "aws_access_key_id_plaintext":
+    "description": |-
+      An AWS access key ID with permissions to interact with Bedrock services
+      provided as a plaintext string. If you prefer to reference your key using
+      Databricks Secrets, see `aws_access_key_id`. You must provide an API key
+      using one of the following fields: `aws_access_key_id` or
+      `aws_access_key_id_plaintext`.
+  "aws_region":
+    "description": |-
+      The AWS region to use. Bedrock has to be enabled there.
+  "aws_secret_access_key":
+    "description": |-
+      The Databricks secret key reference for an AWS secret access key paired
+      with the access key ID, with permissions to interact with Bedrock
+      services. If you prefer to paste your API key directly, see
+      `aws_secret_access_key_plaintext`. You must provide an API key using one
+      of the following fields: `aws_secret_access_key` or
+      `aws_secret_access_key_plaintext`.
+  "aws_secret_access_key_plaintext":
+    "description": |-
+      An AWS secret access key paired with the access key ID, with permissions
+      to interact with Bedrock services provided as a plaintext string. If you
+      prefer to reference your key using Databricks Secrets, see
+      `aws_secret_access_key`. You must provide an API key using one of the
+      following fields: `aws_secret_access_key` or
+      `aws_secret_access_key_plaintext`.
+  "bedrock_provider":
+    "description": |-
+      The underlying provider in Amazon Bedrock. Supported values (case
+      insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.
+github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfigBedrockProvider:
+  "_":
+    "enum":
+      - |-
+        anthropic
+      - |-
+        cohere
+      - |-
+        ai21labs
+      - |-
+        amazon
+github.com/databricks/databricks-sdk-go/service/serving.AnthropicConfig:
+  "anthropic_api_key":
+    "description": |-
+      The Databricks secret key reference for an Anthropic API key. If you
+      prefer to paste your API key directly, see `anthropic_api_key_plaintext`.
+      You must provide an API key using one of the following fields:
+      `anthropic_api_key` or `anthropic_api_key_plaintext`.
+  "anthropic_api_key_plaintext":
+    "description": |-
+      The Anthropic API key provided as a plaintext string. If you prefer to
+      reference your key using Databricks Secrets, see `anthropic_api_key`. You
+      must provide an API key using one of the following fields:
+      `anthropic_api_key` or `anthropic_api_key_plaintext`.
+github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput:
+  "catalog_name":
+    "description": |-
+      The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled.
+  "enabled":
+    "description": |-
+      Indicates whether the inference table is enabled.
+  "schema_name":
+    "description": |-
+      The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if the inference table is already enabled.
+  "table_name_prefix":
+    "description": |-
+      The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled.
+github.com/databricks/databricks-sdk-go/service/serving.CohereConfig:
+  "cohere_api_base":
+    "description": |-
+      This is an optional field to provide a customized base URL for the Cohere
+      API. If left unspecified, the standard Cohere base URL is used.
+  "cohere_api_key":
+    "description": |-
+      The Databricks secret key reference for a Cohere API key. If you prefer
+      to paste your API key directly, see `cohere_api_key_plaintext`. You must
+      provide an API key using one of the following fields: `cohere_api_key` or
+      `cohere_api_key_plaintext`.
+  "cohere_api_key_plaintext":
+    "description": |-
+      The Cohere API key provided as a plaintext string. If you prefer to
+      reference your key using Databricks Secrets, see `cohere_api_key`. You
+      must provide an API key using one of the following fields:
+      `cohere_api_key` or `cohere_api_key_plaintext`.
+github.com/databricks/databricks-sdk-go/service/serving.DatabricksModelServingConfig:
+  "databricks_api_token":
+    "description": |-
+      The Databricks secret key reference for a Databricks API token that
+      corresponds to a user or service principal with Can Query access to the
+      model serving endpoint pointed to by this external model. If you prefer
+      to paste your API key directly, see `databricks_api_token_plaintext`. You
+      must provide an API key using one of the following fields:
+      `databricks_api_token` or `databricks_api_token_plaintext`.
+  "databricks_api_token_plaintext":
+    "description": |-
+      The Databricks API token that corresponds to a user or service principal
+      with Can Query access to the model serving endpoint pointed to by this
+      external model provided as a plaintext string. If you prefer to reference
+      your key using Databricks Secrets, see `databricks_api_token`. You must
+      provide an API key using one of the following fields:
+      `databricks_api_token` or `databricks_api_token_plaintext`.
+  "databricks_workspace_url":
+    "description": |-
+      The URL of the Databricks workspace containing the model serving endpoint
+      pointed to by this external model.
+github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput:
+  "auto_capture_config":
+    "description": |-
+      Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.
+      Note: this field is deprecated for creating new provisioned throughput endpoints,
+      or updating existing provisioned throughput endpoints that never have inference table configured;
+      in these cases please use AI Gateway to manage inference tables.
+  "served_entities":
+    "description": |-
+      The list of served entities under the serving endpoint config.
+  "served_models":
+    "description": |-
+      (Deprecated, use served_entities instead) The list of served models under the serving endpoint config.
+  "traffic_config":
+    "description": |-
+      The traffic configuration associated with the serving endpoint config.
+github.com/databricks/databricks-sdk-go/service/serving.EndpointTag:
+  "key":
+    "description": |-
+      Key field for a serving endpoint tag.
+  "value":
+    "description": |-
+      Optional value field for a serving endpoint tag.
+github.com/databricks/databricks-sdk-go/service/serving.ExternalModel:
+  "ai21labs_config":
+    "description": |-
+      AI21Labs Config. Only required if the provider is 'ai21labs'.
+  "amazon_bedrock_config":
+    "description": |-
+      Amazon Bedrock Config. Only required if the provider is 'amazon-bedrock'.
+  "anthropic_config":
+    "description": |-
+      Anthropic Config. Only required if the provider is 'anthropic'.
+  "cohere_config":
+    "description": |-
+      Cohere Config. Only required if the provider is 'cohere'.
+  "databricks_model_serving_config":
+    "description": |-
+      Databricks Model Serving Config. Only required if the provider is 'databricks-model-serving'.
+  "google_cloud_vertex_ai_config":
+    "description": |-
+      Google Cloud Vertex AI Config. Only required if the provider is 'google-cloud-vertex-ai'.
+  "name":
+    "description": |-
+      The name of the external model.
+  "openai_config":
+    "description": |-
+      OpenAI Config. Only required if the provider is 'openai'.
+  "palm_config":
+    "description": |-
+      PaLM Config. Only required if the provider is 'palm'.
+  "provider":
+    "description": |-
+      The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.
+  "task":
+    "description": |-
+      The task type of the external model.
+github.com/databricks/databricks-sdk-go/service/serving.ExternalModelProvider:
+  "_":
+    "enum":
+      - |-
+        ai21labs
+      - |-
+        anthropic
+      - |-
+        amazon-bedrock
+      - |-
+        cohere
+      - |-
+        databricks-model-serving
+      - |-
+        google-cloud-vertex-ai
+      - |-
+        openai
+      - |-
+        palm
+github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
+  "private_key":
+    "description": |-
+      The Databricks secret key reference for a private key for the service
+      account which has access to the Google Cloud Vertex AI Service. See [Best
+      practices for managing service account keys]. If you prefer to paste your
+      API key directly, see `private_key_plaintext`. You must provide an API
+      key using one of the following fields: `private_key` or
+      `private_key_plaintext`
+
+      [Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
+  "private_key_plaintext":
+    "description": |-
+      The private key for the service account which has access to the Google
+      Cloud Vertex AI Service provided as a plaintext secret. See [Best
+      practices for managing service account keys]. If you prefer to reference
+      your key using Databricks Secrets, see `private_key`. You must provide an
+      API key using one of the following fields: `private_key` or
+      `private_key_plaintext`.
+
+      [Best practices for managing service account keys]: https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
+  "project_id":
+    "description": |-
+      This is the Google Cloud project id that the service account is
+      associated with.
+  "region":
+    "description": |-
+      This is the region for the Google Cloud Vertex AI Service. See [supported
+      regions] for more details. Some models are only available in specific
+      regions.
+
+      [supported regions]: https://cloud.google.com/vertex-ai/docs/general/locations
+github.com/databricks/databricks-sdk-go/service/serving.OpenAiConfig:
+  "_":
+    "description": |-
+      Configs needed to create an OpenAI model route.
+  "microsoft_entra_client_id":
+    "description": |-
+      This field is only required for Azure AD OpenAI and is the Microsoft
+      Entra Client ID.
+  "microsoft_entra_client_secret":
+    "description": |-
+      The Databricks secret key reference for a client secret used for
+      Microsoft Entra ID authentication. If you prefer to paste your client
+      secret directly, see `microsoft_entra_client_secret_plaintext`. You must
+      provide an API key using one of the following fields:
+      `microsoft_entra_client_secret` or
+      `microsoft_entra_client_secret_plaintext`.
+  "microsoft_entra_client_secret_plaintext":
+    "description": |-
+      The client secret used for Microsoft Entra ID authentication provided as
+      a plaintext string. If you prefer to reference your key using Databricks
+      Secrets, see `microsoft_entra_client_secret`. You must provide an API key
+      using one of the following fields: `microsoft_entra_client_secret` or
+      `microsoft_entra_client_secret_plaintext`.
+  "microsoft_entra_tenant_id":
+    "description": |-
+      This field is only required for Azure AD OpenAI and is the Microsoft
+      Entra Tenant ID.
+  "openai_api_base":
+    "description": |-
+      This is a field to provide a customized base URl for the OpenAI API. For
+      Azure OpenAI, this field is required, and is the base URL for the Azure
+      OpenAI API service provided by Azure. For other OpenAI API types, this
+      field is optional, and if left unspecified, the standard OpenAI base URL
+      is used.
+  "openai_api_key":
+    "description": |-
+      The Databricks secret key reference for an OpenAI API key using the
+      OpenAI or Azure service. If you prefer to paste your API key directly,
+      see `openai_api_key_plaintext`. You must provide an API key using one of
+      the following fields: `openai_api_key` or `openai_api_key_plaintext`.
+  "openai_api_key_plaintext":
+    "description": |-
+      The OpenAI API key using the OpenAI or Azure service provided as a
+      plaintext string. If you prefer to reference your key using Databricks
+      Secrets, see `openai_api_key`. You must provide an API key using one of
+      the following fields: `openai_api_key` or `openai_api_key_plaintext`.
+  "openai_api_type":
+    "description": |-
+      This is an optional field to specify the type of OpenAI API to use. For
+      Azure OpenAI, this field is required, and adjust this parameter to
+      represent the preferred security access validation protocol. For access
+      token validation, use azure. For authentication using Azure Active
+      Directory (Azure AD) use, azuread.
+  "openai_api_version":
+    "description": |-
+      This is an optional field to specify the OpenAI API version. For Azure
+      OpenAI, this field is required, and is the version of the Azure OpenAI
+      service to utilize, specified by a date.
+  "openai_deployment_name":
+    "description": |-
+      This field is only required for Azure OpenAI and is the name of the
+      deployment resource for the Azure OpenAI service.
+  "openai_organization":
+    "description": |-
+      This is an optional field to specify the organization in OpenAI or Azure
+      OpenAI.
+github.com/databricks/databricks-sdk-go/service/serving.PaLmConfig:
+  "palm_api_key":
+    "description": |-
+      The Databricks secret key reference for a PaLM API key. If you prefer to
+      paste your API key directly, see `palm_api_key_plaintext`. You must
+      provide an API key using one of the following fields: `palm_api_key` or
+      `palm_api_key_plaintext`.
+  "palm_api_key_plaintext":
+    "description": |-
+      The PaLM API key provided as a plaintext string. If you prefer to
+      reference your key using Databricks Secrets, see `palm_api_key`. You must
+      provide an API key using one of the following fields: `palm_api_key` or
+      `palm_api_key_plaintext`.
+github.com/databricks/databricks-sdk-go/service/serving.RateLimit:
+  "calls":
+    "description": |-
+      Used to specify how many calls are allowed for a key within the renewal_period.
+  "key":
+    "description": |-
+      Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.
+  "renewal_period":
+    "description": |-
+      Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.
+github.com/databricks/databricks-sdk-go/service/serving.RateLimitKey:
+  "_":
+    "enum":
+      - |-
+        user
+      - |-
+        endpoint
+github.com/databricks/databricks-sdk-go/service/serving.RateLimitRenewalPeriod:
+  "_":
+    "enum":
+      - |-
+        minute
+github.com/databricks/databricks-sdk-go/service/serving.Route:
+  "served_model_name":
+    "description": |-
+      The name of the served model this route configures traffic for.
+  "traffic_percentage":
+    "description": |-
+      The percentage of endpoint traffic to send to this route. It must be an integer between 0 and 100 inclusive.
+github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
+  "entity_name":
+    "description": |-
+      The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.
+  "entity_version": {}
+  "environment_vars":
+    "description": |-
+      An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
+  "external_model":
+    "description": |-
+      The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled) can be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model, it cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later. The task type of all external models within an endpoint must be the same.
+  "instance_profile_arn":
+    "description": |-
+      ARN of the instance profile that the served entity uses to access AWS resources.
+  "max_provisioned_throughput":
+    "description": |-
+      The maximum tokens per second that the endpoint can scale up to.
+  "min_provisioned_throughput":
+    "description": |-
+      The minimum tokens per second that the endpoint can scale down to.
+  "name":
+    "description": |-
+      The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.
+  "scale_to_zero_enabled":
+    "description": |-
+      Whether the compute resources for the served entity should scale down to zero.
+  "workload_size":
+    "description": |-
+      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
+  "workload_type":
+    "description": |-
+      The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
+github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
+  "environment_vars":
+    "description": |-
+      An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
+  "instance_profile_arn":
+    "description": |-
+      ARN of the instance profile that the served entity uses to access AWS resources.
+  "max_provisioned_throughput":
+    "description": |-
+      The maximum tokens per second that the endpoint can scale up to.
+  "min_provisioned_throughput":
+    "description": |-
+      The minimum tokens per second that the endpoint can scale down to.
+  "model_name": {}
+  "model_version": {}
+  "name":
+    "description": |-
+      The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.
+  "scale_to_zero_enabled":
+    "description": |-
+      Whether the compute resources for the served entity should scale down to zero.
+  "workload_size":
+    "description": |-
+      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
+  "workload_type":
+    "description": |-
+      The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
+github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadSize:
+  "_":
+    "enum":
+      - |-
+        Small
+      - |-
+        Medium
+      - |-
+        Large
+github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadType:
+  "_":
+    "enum":
+      - |-
+        CPU
+      - |-
+        GPU_MEDIUM
+      - |-
+        GPU_SMALL
+      - |-
+        GPU_LARGE
+      - |-
+        MULTIGPU_MEDIUM
+github.com/databricks/databricks-sdk-go/service/serving.ServingModelWorkloadType:
+  "_":
+    "enum":
+      - |-
+        CPU
+      - |-
+        GPU_MEDIUM
+      - |-
+        GPU_SMALL
+      - |-
+        GPU_LARGE
+      - |-
+        MULTIGPU_MEDIUM
+github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
+  "routes":
+    "description": |-
+      The list of routes that define traffic to each served entity.

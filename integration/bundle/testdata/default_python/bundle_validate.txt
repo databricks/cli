@@ -1,0 +1,8 @@
+Name: project_name_$UNIQUE_PRJ
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev
+
+Validation OK!

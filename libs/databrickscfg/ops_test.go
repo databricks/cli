@@ -216,7 +216,7 @@ func TestSaveToProfile_ClearingPreviousProfile(t *testing.T) {
 
 	dlft, err := file.GetSection("DEFAULT")
 	assert.NoError(t, err)
-	assert.Len(t, dlft.KeysHash(), 0)
+	assert.Empty(t, dlft.KeysHash())
 
 	abc, err := file.GetSection("abc")
 	assert.NoError(t, err)

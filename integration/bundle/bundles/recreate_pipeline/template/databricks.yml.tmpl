@@ -1,0 +1,34 @@
+bundle:
+  name: recreate-pipeline
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
+variables:
+  catalog:
+    description: The catalog the DLT pipeline should use.
+    default: main
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-{{.unique_id}}
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      development: true
+      catalog: ${var.catalog}
+      target: ${resources.schemas.bar.id}
+
+  schemas:
+    bar:
+      name: test-schema-{{.unique_id}}
+      catalog_name: ${var.catalog}
+      comment: This schema was created from DABs
+
+include:
+  - "*.yml"
+
+targets:
+  development:
+    default: true

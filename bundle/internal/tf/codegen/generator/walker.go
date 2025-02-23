@@ -2,9 +2,8 @@ package generator
 
 import (
 	"fmt"
-	"strings"
-
 	"slices"
+	"strings"
 
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/iancoleman/strcase"
@@ -70,6 +69,25 @@ func nestedBlockKeys(block *tfjson.SchemaBlock) []string {
 	return keys
 }
 
+func nestedField(name []string, k string, isRef bool) field {
+	// Collect field properties.
+	fieldName := strcase.ToCamel(k)
+	fieldTypePrefix := ""
+	if isRef {
+		fieldTypePrefix = "*"
+	} else {
+		fieldTypePrefix = "[]"
+	}
+	fieldType := fmt.Sprintf("%s%s", fieldTypePrefix, strings.Join(append(name, strcase.ToCamel(k)), ""))
+	fieldTag := fmt.Sprintf("%s,omitempty", k)
+
+	return field{
+		Name: fieldName,
+		Type: fieldType,
+		Tag:  fieldTag,
+	}
+}
+
 func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 	// Produce nested types before this block itself.
 	// This ensures types are defined before they are referenced.
@@ -91,8 +109,22 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 		v := block.Attributes[k]
 
 		// Assert the attribute type is always set.
-		if v.AttributeType == cty.NilType {
+		if v.AttributeType == cty.NilType && v.AttributeNestedType == nil {
 			return fmt.Errorf("unexpected nil type for attribute %s", k)
+		}
+
+		// If there is a nested type, walk it and continue to next attribute.
+		if v.AttributeNestedType != nil {
+			nestedBlock := &tfjson.SchemaBlock{
+				Attributes: v.AttributeNestedType.Attributes,
+			}
+			err := w.walk(nestedBlock, append(name, strcase.ToCamel(k)))
+			if err != nil {
+				return err
+			}
+			// Append to list of fields for type.
+			typ.Fields = append(typ.Fields, nestedField(name, k, v.AttributeNestedType.NestingMode == tfjson.SchemaNestingModeSingle))
+			continue
 		}
 
 		// Collect field properties.
@@ -117,24 +149,8 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 	// Declare nested blocks.
 	for _, k := range nestedBlockKeys(block) {
 		v := block.NestedBlocks[k]
-
-		// Collect field properties.
-		fieldName := strcase.ToCamel(k)
-		fieldTypePrefix := ""
-		if v.MaxItems == 1 {
-			fieldTypePrefix = "*"
-		} else {
-			fieldTypePrefix = "[]"
-		}
-		fieldType := fmt.Sprintf("%s%s", fieldTypePrefix, strings.Join(append(name, strcase.ToCamel(k)), ""))
-		fieldTag := fmt.Sprintf("%s,omitempty", k)
-
 		// Append to list of fields for type.
-		typ.Fields = append(typ.Fields, field{
-			Name: fieldName,
-			Type: fieldType,
-			Tag:  fieldTag,
-		})
+		typ.Fields = append(typ.Fields, nestedField(name, k, v.MaxItems == 1))
 	}
 
 	// Append type to list of structs.

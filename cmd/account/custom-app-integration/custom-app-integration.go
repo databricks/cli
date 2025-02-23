@@ -65,6 +65,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: redirect_urls
 	// TODO: array: scopes
 	// TODO: complex arg: token_access_policy
+	// TODO: array: user_authorized_scopes
 
 	cmd.Use = "create"
 	cmd.Short = `Create Custom OAuth App Integration.`
@@ -195,7 +196,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get OAuth Custom App Integration.`
 	cmd.Long = `Get OAuth Custom App Integration.
   
-  Gets the Custom OAuth App Integration for the given integration id.`
+  Gets the Custom OAuth App Integration for the given integration id.
+
+  Arguments:
+    INTEGRATION_ID: The OAuth app integration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -304,7 +308,9 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: redirect_urls
+	// TODO: array: scopes
 	// TODO: complex arg: token_access_policy
+	// TODO: array: user_authorized_scopes
 
 	cmd.Use = "update INTEGRATION_ID"
 	cmd.Short = `Updates Custom OAuth App Integration.`

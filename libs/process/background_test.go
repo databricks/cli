@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"os/exec"
 	"strings"
 	"testing"
@@ -95,13 +95,13 @@ func TestBackgroundNoStdin(t *testing.T) {
 func TestBackgroundFails(t *testing.T) {
 	ctx := context.Background()
 	_, err := Background(ctx, []string{"ls", "/dev/null/x"})
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestBackgroundFailsOnOption(t *testing.T) {
 	ctx := context.Background()
 	_, err := Background(ctx, []string{"ls", "/dev/null/x"}, func(_ context.Context, c *exec.Cmd) error {
-		return fmt.Errorf("nope")
+		return errors.New("nope")
 	})
 	assert.EqualError(t, err, "nope")
 }

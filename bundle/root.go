@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -21,7 +22,7 @@ func getRootEnv(ctx context.Context) (string, error) {
 	}
 	stat, err := os.Stat(path)
 	if err == nil && !stat.IsDir() {
-		err = fmt.Errorf("not a directory")
+		err = errors.New("not a directory")
 	}
 	if err != nil {
 		return "", fmt.Errorf(`invalid bundle root %s="%s": %w`, env.RootVariable, path, err)

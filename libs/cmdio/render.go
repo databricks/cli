@@ -39,7 +39,7 @@ func Heredoc(tmpl string) (trimmed string) {
 			break
 		}
 	}
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		if lines[i] == "" || strings.TrimSpace(lines[i]) == "" {
 			continue
 		}
@@ -297,10 +297,10 @@ var renderFuncMap = template.FuncMap{
 	"yellow":  color.YellowString,
 	"magenta": color.MagentaString,
 	"cyan":    color.CyanString,
-	"bold": func(format string, a ...interface{}) string {
+	"bold": func(format string, a ...any) string {
 		return color.New(color.Bold).Sprintf(format, a...)
 	},
-	"italic": func(format string, a ...interface{}) string {
+	"italic": func(format string, a ...any) string {
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
 	"replace": strings.ReplaceAll,
@@ -361,7 +361,9 @@ func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, h
 		if err != nil {
 			return err
 		}
-		tw.Write([]byte("\n"))
+		if _, err := tw.Write([]byte("\n")); err != nil {
+			return err
+		}
 		// Do not flush here. Instead, allow the first 100 resources to determine the initial spacing of the header columns.
 	}
 	t, err := base.Parse(tmpl)

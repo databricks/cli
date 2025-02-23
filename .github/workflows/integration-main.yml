@@ -1,0 +1,36 @@
+name: integration-main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # Trigger for pushes to the main branch.
+  #
+  # This workflow triggers the integration test workflow in a different repository.
+  # It requires secrets from the "test-trigger-is" environment, which are only available to authorized users.
+  trigger:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    environment: "test-trigger-is"
+
+    steps:
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@136412a57a7081aa63c935a2cc2918f76c34f514 # v1.11.2
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: ${{ secrets.ORG_NAME }}
+          repositories: ${{secrets.REPO_NAME}}
+
+      - name: Trigger Workflow in Another Repo
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{secrets.REPO_NAME}} \
+          --ref main \
+          -f commit_sha=${{ github.event.after }}

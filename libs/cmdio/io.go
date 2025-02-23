@@ -31,9 +31,9 @@ type cmdIO struct {
 	err            io.Writer
 }
 
-func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, headerTemplate, template string) *cmdIO {
+func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
 	// The check below is similar to color.NoColor but uses the specified err writer.
-	dumb := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
+	dumb := env.Get(ctx, "NO_COLOR") != "" || env.Get(ctx, "TERM") == "dumb"
 	if f, ok := err.(*os.File); ok && !dumb {
 		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
 	}
@@ -284,4 +284,15 @@ func fromContext(ctx context.Context) *cmdIO {
 		panic("no cmdIO found in the context. Please report it as an issue")
 	}
 	return io
+}
+
+// Mocks the context with a cmdio object that discards all output.
+func MockDiscard(ctx context.Context) context.Context {
+	return InContext(ctx, &cmdIO{
+		interactive:  false,
+		outputFormat: flags.OutputText,
+		in:           io.NopCloser(strings.NewReader("")),
+		out:          io.Discard,
+		err:          io.Discard,
+	})
 }

@@ -1,9 +1,7 @@
 package git
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -19,10 +17,6 @@ var GitDirectoryName = ".git"
 // Repository represents a Git repository or a directory
 // that could later be initialized as Git repository.
 type Repository struct {
-	// real indicates if this is a real repository or a non-Git
-	// directory where we process .gitignore files.
-	real bool
-
 	// rootDir is the path to the root of the repository checkout.
 	// This can be either the main repository checkout or a worktree checkout.
 	// For more information about worktrees, see: https://git-scm.com/docs/git-worktree#_description.
@@ -208,19 +202,7 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 	return false, nil
 }
 
-func NewRepository(path vfs.Path) (*Repository, error) {
-	real := true
-	rootDir, err := vfs.FindLeafInTree(path, GitDirectoryName)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return nil, err
-		}
-		// Cannot find `.git` directory.
-		// Treat the specified path as a potential repository root checkout.
-		real = false
-		rootDir = path
-	}
-
+func NewRepository(rootDir vfs.Path) (*Repository, error) {
 	// Derive $GIT_DIR and $GIT_COMMON_DIR paths if this is a real repository.
 	// If it isn't a real repository, they'll point to the (non-existent) `.git` directory.
 	gitDir, gitCommonDir, err := resolveGitDirs(rootDir)
@@ -229,7 +211,6 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		real:         real,
 		rootDir:      rootDir,
 		gitDir:       gitDir,
 		gitCommonDir: gitCommonDir,

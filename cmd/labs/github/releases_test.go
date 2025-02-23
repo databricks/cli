@@ -12,7 +12,10 @@ import (
 func TestLoadsReleasesForCLI(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/databricks/cli/releases" {
-			w.Write([]byte(`[{"tag_name": "v1.2.3"}, {"tag_name": "v1.2.2"}]`))
+			_, err := w.Write([]byte(`[{"tag_name": "v1.2.3"}, {"tag_name": "v1.2.2"}]`))
+			if !assert.NoError(t, err) {
+				return
+			}
 			return
 		}
 		t.Logf("Requested: %s", r.URL.Path)

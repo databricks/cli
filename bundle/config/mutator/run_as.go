@@ -12,8 +12,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-type setRunAs struct {
-}
+type setRunAs struct{}
 
 // This mutator does two things:
 //
@@ -30,7 +29,7 @@ func (m *setRunAs) Name() string {
 	return "SetRunAs"
 }
 
-func reportRunAsNotSupported(resourceType string, location dyn.Location, currentUser string, runAsUser string) diag.Diagnostics {
+func reportRunAsNotSupported(resourceType string, location dyn.Location, currentUser, runAsUser string) diag.Diagnostics {
 	return diag.Diagnostics{{
 		Summary: fmt.Sprintf("%s do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: %s. Run as identity: %s.\n"+
@@ -115,6 +114,16 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"dashboards",
 			b.Config.GetLocation("resources.dashboards"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
+	}
+
+	// Apps do not support run_as in the API.
+	if len(b.Config.Resources.Apps) > 0 {
+		diags = diags.Extend(reportRunAsNotSupported(
+			"apps",
+			b.Config.GetLocation("resources.apps"),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))

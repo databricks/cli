@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json -t development | jq '.resources.jobs'
+trace $CLI bundle validate -o json -t staging | jq '.resources.jobs'

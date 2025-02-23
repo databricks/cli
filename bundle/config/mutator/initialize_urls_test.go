@@ -31,8 +31,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						ID:           "3",
-						PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1"},
+						ID:             "3",
+						CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline1"},
 					},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
@@ -110,7 +110,8 @@ func TestInitializeURLs(t *testing.T) {
 		"dashboard1":       "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?o=123456",
 	}
 
-	initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")
+	err := initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")
+	require.NoError(t, err)
 
 	for _, group := range b.Config.Resources.AllResources() {
 		for key, r := range group.Resources {
@@ -133,7 +134,8 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 		},
 	}
 
-	initializeForWorkspace(b, "123456", "https://adb-123456.azuredatabricks.net/")
+	err := initializeForWorkspace(b, "123456", "https://adb-123456.azuredatabricks.net/")
+	require.NoError(t, err)
 
 	require.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/1", b.Config.Resources.Jobs["job1"].URL)
 }

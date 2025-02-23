@@ -12,7 +12,10 @@ import (
 func TestFileFromRef(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/databrickslabs/ucx/main/README.md" {
-			w.Write([]byte(`abc`))
+			_, err := w.Write([]byte(`abc`))
+			if !assert.NoError(t, err) {
+				return
+			}
 			return
 		}
 		t.Logf("Requested: %s", r.URL.Path)
@@ -31,7 +34,10 @@ func TestFileFromRef(t *testing.T) {
 func TestDownloadZipball(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/databrickslabs/ucx/zipball/main" {
-			w.Write([]byte(`abc`))
+			_, err := w.Write([]byte(`abc`))
+			if !assert.NoError(t, err) {
+				return
+			}
 			return
 		}
 		t.Logf("Requested: %s", r.URL.Path)

@@ -1,0 +1,24 @@
+LocalOnly = true
+RecordRequests = true
+
+[[Server]]
+Pattern = "GET /custom/endpoint"
+Response.Body = '''should not see this response, latter response takes precedence'''
+
+[[Server]]
+Pattern = "GET /custom/endpoint"
+Response.Body = '''custom
+---
+response
+'''
+Response.StatusCode = 201
+[Server.Response.Headers]
+"X-Custom-Header" = ["hello"]
+
+[[Repls]]
+Old = 'Date: .*'
+New = 'Date: (redacted)'
+
+[[Repls]]
+Old = 'Content-Length: [0-9]*'
+New = 'Content-Length: (redacted)'

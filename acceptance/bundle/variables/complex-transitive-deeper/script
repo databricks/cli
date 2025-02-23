@@ -1,0 +1,2 @@
+# Currently, this errors instead of interpolating variables
+$CLI bundle validate -o json | jq '.resources.clusters'

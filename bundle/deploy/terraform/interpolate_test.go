@@ -31,8 +31,10 @@ func TestInterpolate(t *testing.T) {
 								"other_model_serving":    "${resources.model_serving_endpoints.other_model_serving.id}",
 								"other_registered_model": "${resources.registered_models.other_registered_model.id}",
 								"other_schema":           "${resources.schemas.other_schema.id}",
+								"other_volume":           "${resources.volumes.other_volume.id}",
 								"other_cluster":          "${resources.clusters.other_cluster.id}",
 								"other_dashboard":        "${resources.dashboards.other_dashboard.id}",
+								"other_app":              "${resources.apps.other_app.id}",
 							},
 							Tasks: []jobs.Task{
 								{
@@ -69,8 +71,10 @@ func TestInterpolate(t *testing.T) {
 	assert.Equal(t, "${databricks_model_serving.other_model_serving.id}", j.Tags["other_model_serving"])
 	assert.Equal(t, "${databricks_registered_model.other_registered_model.id}", j.Tags["other_registered_model"])
 	assert.Equal(t, "${databricks_schema.other_schema.id}", j.Tags["other_schema"])
+	assert.Equal(t, "${databricks_volume.other_volume.id}", j.Tags["other_volume"])
 	assert.Equal(t, "${databricks_cluster.other_cluster.id}", j.Tags["other_cluster"])
 	assert.Equal(t, "${databricks_dashboard.other_dashboard.id}", j.Tags["other_dashboard"])
+	assert.Equal(t, "${databricks_app.other_app.id}", j.Tags["other_app"])
 
 	m := b.Config.Resources.Models["my_model"]
 	assert.Equal(t, "my_model", m.Model.Name)

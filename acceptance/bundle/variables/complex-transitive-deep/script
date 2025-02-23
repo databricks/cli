@@ -1,0 +1,2 @@
+# Currently, this incorrectly outputs variable reference instead of resolved value
+$CLI bundle validate -o json | jq '.resources.clusters.my_cluster.spark_conf'

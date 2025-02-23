@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
-
-	"log/slog"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
@@ -115,10 +114,15 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 		if err == nil {
 			logger.Info("completed execution",
 				slog.String("exit_code", "0"))
-		} else {
-			logger.Error("failed execution",
+		} else if errors.Is(err, ErrAlreadyPrinted) {
+			logger.Debug("failed execution",
 				slog.String("exit_code", "1"),
-				slog.String("error", err.Error()))
+			)
+		} else {
+			logger.Info("failed execution",
+				slog.String("exit_code", "1"),
+				slog.String("error", err.Error()),
+			)
 		}
 	}
 

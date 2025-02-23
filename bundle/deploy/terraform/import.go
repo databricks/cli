@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
@@ -56,7 +57,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	buf := bytes.NewBuffer(nil)
 	tf.SetStdout(buf)
 
-	//lint:ignore SA1019 We use legacy -state flag for now to plan the import changes based on temporary state file
+	//nolint:staticcheck // SA1019 We use legacy -state flag for now to plan the import changes based on temporary state file
 	changed, err := tf.Plan(ctx, tfexec.State(tmpState), tfexec.Target(importAddress))
 	if err != nil {
 		return diag.Errorf("terraform plan: %v", err)
@@ -67,7 +68,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if changed && !m.opts.AutoApprove {
 		output := buf.String()
 		// Remove output starting from Warning until end of output
-		output = output[:bytes.Index([]byte(output), []byte("Warning:"))]
+		output = output[:strings.Index(output, "Warning:")]
 		cmdio.LogString(ctx, output)
 
 		if !cmdio.IsPromptSupported(ctx) {

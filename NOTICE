@@ -73,10 +73,6 @@ fatih/color - https://github.com/fatih/color
 Copyright (c) 2013 Fatih Arslan
 License - https://github.com/fatih/color/blob/main/LICENSE.md
 
-ghodss/yaml - https://github.com/ghodss/yaml
-Copyright (c) 2014 Sam Ghods
-License - https://github.com/ghodss/yaml/blob/master/LICENSE
-
 Masterminds/semver - https://github.com/Masterminds/semver
 Copyright (C) 2014-2019, Matt Butcher and Matt Farina
 License - https://github.com/Masterminds/semver/blob/master/LICENSE.txt
@@ -101,3 +97,24 @@ License - https://github.com/stretchr/testify/blob/master/LICENSE
 whilp/git-urls - https://github.com/whilp/git-urls
 Copyright (c) 2020 Will Maier
 License - https://github.com/whilp/git-urls/blob/master/LICENSE
+
+github.com/wI2L/jsondiff v0.6.1
+Copyright (c) 2020-2024 William Poussier <william.poussier@gmail.com>
+License - https://github.com/wI2L/jsondiff/blob/master/LICENSE
+
+https://github.com/hexops/gotextdiff
+Copyright (c) 2009 The Go Authors. All rights reserved.
+License - https://github.com/hexops/gotextdiff/blob/main/LICENSE
+
+https://github.com/BurntSushi/toml
+Copyright (c) 2013 TOML authors
+https://github.com/BurntSushi/toml/blob/master/COPYING
+
+dario.cat/mergo
+Copyright (c) 2013 Dario Castañé. All rights reserved.
+Copyright (c) 2012 The Go Authors. All rights reserved.
+https://github.com/darccio/mergo/blob/master/LICENSE
+
+https://github.com/gorilla/mux
+Copyright (c) 2023 The Gorilla Authors. All rights reserved.
+https://github.com/gorilla/mux/blob/main/LICENSE

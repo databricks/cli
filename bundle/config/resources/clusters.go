@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
@@ -45,7 +44,7 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("compute/clusters/%s", s.ID)
+	baseURL.Path = "compute/clusters/" + s.ID
 	s.URL = baseURL.String()
 }
 
@@ -55,4 +54,8 @@ func (s *Cluster) GetName() string {
 
 func (s *Cluster) GetURL() string {
 	return s.URL
+}
+
+func (s *Cluster) IsNil() bool {
+	return s.ClusterSpec == nil
 }

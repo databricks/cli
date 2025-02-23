@@ -3,7 +3,7 @@ package mutator
 import (
 	"context"
 	"reflect"
-	"strings"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -11,7 +11,9 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
+	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -86,7 +88,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1", Continuous: true}},
+					"pipeline1": {CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {Experiment: &ml.Experiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
@@ -128,6 +130,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
 				},
+				Volumes: map[string]*resources.Volume{
+					"volume1": {CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{Name: "volume1"}},
+				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
@@ -138,8 +143,16 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				Apps: map[string]*resources.App{
+					"app1": {
+						App: &apps.App{
+							Name: "app1",
+						},
+					},
+				},
 			},
 		},
+		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
 		// Use AWS implementation for testing.
 		Tagging: tags.ForCloud(&sdkconfig.Config{
 			Host: "https://company.cloud.databricks.com",
@@ -156,19 +169,19 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["existing"], "tag")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
+	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["existing"])
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job1"].Tags["dev"])
+	assert.Equal(t, jobs.PauseStatusPaused, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus)
 
 	// Job 2
 	assert.Equal(t, "[dev lennart] job2", b.Config.Resources.Jobs["job2"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job2"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus, jobs.PauseStatusUnpaused)
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
+	assert.Equal(t, jobs.PauseStatusUnpaused, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus)
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.Equal(t, false, b.Config.Resources.Pipelines["pipeline1"].Continuous)
-	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
+	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
 
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
@@ -303,10 +316,12 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
@@ -314,7 +329,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	diags := validateProductionMode(b, false)
-	require.ErrorContains(t, diags.Error(), "run_as")
+	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
@@ -322,7 +337,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
 
 	diags = validateProductionMode(b, false)
-	require.ErrorContains(t, diags.Error(), "production")
+	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
 	permissions := []resources.Permission{
 		{
@@ -347,10 +362,12 @@ func TestProcessTargetModeProduction(t *testing.T) {
 
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
@@ -366,12 +383,29 @@ func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	require.NoError(t, diags.Error())
 }
 
+func TestProcessTargetModeProductionOkWithRootPath(t *testing.T) {
+	b := mockBundle(config.Production)
+
+	// Our target has all kinds of problems when not using service principals ...
+	diags := validateProductionMode(b, false)
+	require.Error(t, diags.Error())
+
+	// ... but we're okay if we specify a root path
+	b.Target = &config.Target{
+		Workspace: &config.Workspace{
+			RootPath: "some-root-path",
+		},
+	}
+	diags = validateProductionMode(b, false)
+	require.NoError(t, diags.Error())
+}
+
 // Make sure that we have test coverage for all resource types
 func TestAllResourcesMocked(t *testing.T) {
 	b := mockBundle(config.Development)
 	resources := reflect.ValueOf(b.Config.Resources)
 
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 		if field.Kind() == reflect.Map {
 			assert.True(
@@ -384,30 +418,44 @@ func TestAllResourcesMocked(t *testing.T) {
 	}
 }
 
-// Make sure that we at least rename all resources
-func TestAllResourcesRenamed(t *testing.T) {
+// Make sure that we at rename all non UC resources
+func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
+
+	// UC resources should not have a prefix added to their name. Right now
+	// this list only contains the Volume resource since we have yet to remove
+	// prefixing support for UC schemas and registered models.
+	ucFields := []reflect.Type{
+		reflect.TypeOf(&resources.Volume{}),
+	}
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
-	for i := 0; i < resources.NumField(); i++ {
+	for i := range resources.NumField() {
 		field := resources.Field(i)
 
 		if field.Kind() == reflect.Map {
 			for _, key := range field.MapKeys() {
 				resource := field.MapIndex(key)
 				nameField := resource.Elem().FieldByName("Name")
-				if nameField.IsValid() && nameField.Kind() == reflect.String {
-					assert.True(
-						t,
-						strings.Contains(nameField.String(), "dev"),
-						"process_target_mode should rename '%s' in '%s'",
-						key,
-						resources.Type().Field(i).Name,
-					)
+				resourceType := resources.Type().Field(i).Name
+
+				// Skip apps, as they are not renamed
+				if resourceType == "Apps" {
+					continue
+				}
+
+				if !nameField.IsValid() || nameField.Kind() != reflect.String {
+					continue
+				}
+
+				if slices.Contains(ucFields, resource.Type()) {
+					assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resources.Type().Field(i).Name)
+				} else {
+					assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resources.Type().Field(i).Name)
 				}
 			}
 		}
@@ -520,5 +568,5 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
 }

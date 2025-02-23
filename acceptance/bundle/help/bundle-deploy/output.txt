@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle deploy --help
+Deploy bundle
+
+Usage:
+  databricks bundle deploy [flags]
+
+Flags:
+      --auto-approve          Skip interactive approvals that might be required for deployment.
+  -c, --cluster-id string     Override cluster in the deployment with the given cluster ID.
+      --fail-on-active-runs   Fail if there are running jobs or pipelines in the deployment.
+      --force                 Force-override Git branch validation.
+      --force-lock            Force acquisition of deployment lock.
+  -h, --help                  help for deploy
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

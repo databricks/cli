@@ -37,7 +37,7 @@ func TestGetFileSet(t *testing.T) {
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSet(root)
+	fileSet, err := git.NewFileSetAtRoot(root)
 	require.NoError(t, err)
 
 	err = fileSet.EnsureValidGitIgnoreExists()
@@ -59,7 +59,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 10)
+	require.Len(t, fileList, 10)
 
 	inc, err = fileset.NewGlobSet(root, []string{})
 	require.NoError(t, err)
@@ -77,7 +77,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 2)
+	require.Len(t, fileList, 2)
 
 	inc, err = fileset.NewGlobSet(root, []string{"./.databricks/*.go"})
 	require.NoError(t, err)
@@ -95,7 +95,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 11)
+	require.Len(t, fileList, 11)
 }
 
 func TestRecursiveExclude(t *testing.T) {
@@ -103,7 +103,7 @@ func TestRecursiveExclude(t *testing.T) {
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSet(root)
+	fileSet, err := git.NewFileSetAtRoot(root)
 	require.NoError(t, err)
 
 	err = fileSet.EnsureValidGitIgnoreExists()
@@ -125,7 +125,7 @@ func TestRecursiveExclude(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 7)
+	require.Len(t, fileList, 7)
 }
 
 func TestNegateExclude(t *testing.T) {
@@ -133,7 +133,7 @@ func TestNegateExclude(t *testing.T) {
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSet(root)
+	fileSet, err := git.NewFileSetAtRoot(root)
 	require.NoError(t, err)
 
 	err = fileSet.EnsureValidGitIgnoreExists()
@@ -155,6 +155,6 @@ func TestNegateExclude(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 1)
-	require.Equal(t, fileList[0].Relative, "test/sub1/sub2/h.txt")
+	require.Len(t, fileList, 1)
+	require.Equal(t, "test/sub1/sub2/h.txt", fileList[0].Relative)
 }

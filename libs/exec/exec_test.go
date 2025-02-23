@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExecutorWithSimpleInput(t *testing.T) {
@@ -84,11 +85,13 @@ func testExecutorWithShell(t *testing.T, shell string) {
 
 	// Create temporary directory with only the shell executable in the PATH.
 	tmpDir := t.TempDir()
-	t.Setenv("PATH", tmpDir)
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", tmpDir, os.PathListSeparator, os.Getenv("PATH")))
 	if runtime.GOOS == "windows" {
-		os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
+		err = os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
+		require.NoError(t, err)
 	} else {
-		os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+		err = os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+		require.NoError(t, err)
 	}
 
 	executor, err := NewCommandExecutor(".")
@@ -138,7 +141,7 @@ func TestMultipleCommandsRunInParrallel(t *testing.T) {
 	const count = 5
 	var wg sync.WaitGroup
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		wg.Add(1)
 		cmd, err := executor.StartCommand(context.Background(), fmt.Sprintf("echo 'Hello %d'", i))
 		go func(cmd Command, i int) {

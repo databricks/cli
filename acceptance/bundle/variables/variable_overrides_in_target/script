@@ -1,0 +1,4 @@
+trace $CLI bundle validate -o json -t use-default-variable-values | jq .resources
+trace $CLI bundle validate -o json -t override-string-variable | jq .resources
+trace $CLI bundle validate -o json -t override-int-variable | jq .resources
+trace $CLI bundle validate -o json -t override-both-bool-and-string-variables | jq .resources

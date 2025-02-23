@@ -25,12 +25,12 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(context.Background(), v, &variable, "foo")
+	v, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
-	assert.Equal(t, variable.Value, "process-env")
+	assert.Equal(t, "process-env", variable.Value)
 }
 
 func TestSetVariableUsingDefaultValue(t *testing.T) {
@@ -43,12 +43,12 @@ func TestSetVariableUsingDefaultValue(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(context.Background(), v, &variable, "foo")
+	v, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
-	assert.Equal(t, variable.Value, "default")
+	assert.Equal(t, "default", variable.Value)
 }
 
 func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
@@ -65,12 +65,12 @@ func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(context.Background(), v, &variable, "foo")
+	v, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
-	assert.Equal(t, variable.Value, "assigned-value")
+	assert.Equal(t, "assigned-value", variable.Value)
 }
 
 func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
@@ -90,12 +90,12 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(context.Background(), v, &variable, "foo")
+	v, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
-	assert.Equal(t, variable.Value, "assigned-value")
+	assert.Equal(t, "assigned-value", variable.Value)
 }
 
 func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
@@ -107,8 +107,8 @@ func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	_, err = setVariable(context.Background(), v, &variable, "foo")
-	assert.ErrorContains(t, err, "no value assigned to required variable foo. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_foo environment variable")
+	_, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
+	assert.ErrorContains(t, err, "no value assigned to required variable foo. Assignment can be done using \"--var\", by setting the BUNDLE_VAR_foo environment variable, or in .databricks/bundle/<target>/variable-overrides.json file")
 }
 
 func TestSetVariablesMutator(t *testing.T) {
@@ -157,6 +157,6 @@ func TestSetComplexVariablesViaEnvVariablesIsNotAllowed(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	_, err = setVariable(context.Background(), v, &variable, "foo")
+	_, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
 	assert.ErrorContains(t, err, "setting via environment variables (BUNDLE_VAR_foo) is not supported for complex variable foo")
 }

@@ -1,7 +1,6 @@
 package notebook
 
 import (
-	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func TestDetectCallsDetectJupyter(t *testing.T) {
 
 func TestDetectUnknownExtension(t *testing.T) {
 	_, _, err := Detect("./testdata/doesntexist.foobar")
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	nb, _, err := Detect("./testdata/unknown_extension.foobar")
 	require.NoError(t, err)
@@ -62,7 +61,7 @@ func TestDetectUnknownExtension(t *testing.T) {
 
 func TestDetectNoExtension(t *testing.T) {
 	_, _, err := Detect("./testdata/doesntexist")
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	nb, _, err := Detect("./testdata/no_extension")
 	require.NoError(t, err)
@@ -78,7 +77,7 @@ func TestDetectEmptyFile(t *testing.T) {
 	// Create empty file.
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.py")
-	err := os.WriteFile(path, nil, 0644)
+	err := os.WriteFile(path, nil, 0o644)
 	require.NoError(t, err)
 
 	// No contents means not a notebook.
@@ -92,7 +91,7 @@ func TestDetectFileWithLongHeader(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.py")
 	buf := make([]byte, 128*1024)
-	err := os.WriteFile(path, buf, 0644)
+	err := os.WriteFile(path, buf, 0o644)
 	require.NoError(t, err)
 
 	// Garbage contents means not a notebook.

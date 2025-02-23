@@ -63,7 +63,7 @@ func TestFsOpenFile(t *testing.T) {
 	assert.Equal(t, "fileA", info.Name())
 	assert.Equal(t, int64(3), info.Size())
 	assert.Equal(t, fs.FileMode(0), info.Mode())
-	assert.Equal(t, false, info.IsDir())
+	assert.False(t, info.IsDir())
 
 	// Read until closed.
 	b := make([]byte, 3)
@@ -91,7 +91,7 @@ func TestFsOpenDir(t *testing.T) {
 	info, err := fakeFile.Stat()
 	require.NoError(t, err)
 	assert.Equal(t, "root", info.Name())
-	assert.Equal(t, true, info.IsDir())
+	assert.True(t, info.IsDir())
 
 	de, ok := fakeFile.(fs.ReadDirFile)
 	require.True(t, ok)
@@ -107,7 +107,7 @@ func TestFsOpenDir(t *testing.T) {
 
 		de.Close()
 
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			tmp, err = de.ReadDir(1)
 			require.NoError(t, err)
 			entries = append(entries, tmp...)

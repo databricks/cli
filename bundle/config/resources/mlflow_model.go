@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
@@ -47,7 +46,7 @@ func (s *MlflowModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("ml/models/%s", s.ID)
+	baseURL.Path = "ml/models/" + s.ID
 	s.URL = baseURL.String()
 }
 
@@ -57,4 +56,8 @@ func (s *MlflowModel) GetName() string {
 
 func (s *MlflowModel) GetURL() string {
 	return s.URL
+}
+
+func (s *MlflowModel) IsNil() bool {
+	return s.Model == nil
 }

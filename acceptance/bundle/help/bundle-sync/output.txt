@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle sync --help
+Synchronize bundle tree to the workspace
+
+Usage:
+  databricks bundle sync [flags]
+
+Flags:
+      --full                perform full synchronization (default is incremental)
+  -h, --help                help for sync
+      --interval duration   file system polling interval (for --watch) (default 1s)
+      --output type         type of the output format
+      --watch               watch local file system for changes
+
+Global Flags:
+      --debug            enable debug logging
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

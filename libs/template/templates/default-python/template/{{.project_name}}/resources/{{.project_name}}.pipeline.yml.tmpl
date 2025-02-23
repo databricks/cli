@@ -9,7 +9,7 @@ resources:
       {{- else}}
       catalog: {{default_catalog}}
       {{- end}}
-      target: {{.project_name}}_${bundle.environment}
+      target: {{.project_name}}_${bundle.target}
       libraries:
         - notebook:
             path: ../src/dlt_pipeline.ipynb

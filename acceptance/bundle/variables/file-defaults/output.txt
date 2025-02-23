@@ -1,0 +1,113 @@
+
+=== variable file
+>>> [CLI] bundle validate -o json
+{
+  "job_cluster_key": "mlops_stacks-cluster",
+  "new_cluster": {
+    "node_type_id": "Standard_DS3_v2",
+    "num_workers": 2
+  }
+}
+
+=== variable file and variable flag
+>>> [CLI] bundle validate -o json --var=cluster_key=mlops_stacks-cluster-overriden
+{
+  "job_cluster_key": "mlops_stacks-cluster-overriden",
+  "new_cluster": {
+    "node_type_id": "Standard_DS3_v2",
+    "num_workers": 2
+  }
+}
+
+=== variable file and environment variable
+>>> BUNDLE_VAR_cluster_key=mlops_stacks-cluster-overriden [CLI] bundle validate -o json
+{
+  "job_cluster_key": "mlops_stacks-cluster-overriden",
+  "new_cluster": {
+    "node_type_id": "Standard_DS3_v2",
+    "num_workers": 2
+  }
+}
+
+=== variable has value in config file
+>>> [CLI] bundle validate -o json --target with_value
+{
+  "job_cluster_key": "mlops_stacks-cluster-from-file",
+  "new_cluster": {
+    "node_type_id": "default",
+    "num_workers": 1
+  }
+}
+
+=== file cannot be parsed
+>>> errcode [CLI] bundle validate -o json --target invalid_json
+Error: failed to parse variables file [TMPDIR]/.databricks/bundle/invalid_json/variable-overrides.json: error decoding JSON at :0:0: invalid character 'o' in literal false (expecting 'a')
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+=== file has wrong structure
+>>> errcode [CLI] bundle validate -o json --target wrong_file_structure
+Error: failed to parse variables file [TMPDIR]/.databricks/bundle/wrong_file_structure/variable-overrides.json: invalid format
+
+Variables file must be a JSON object with the following format:
+{"var1": "value1", "var2": "value2"}
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+=== file has variable that is complex but default is string
+>>> errcode [CLI] bundle validate -o json --target complex_to_string
+Error: variable cluster_key is not of type complex, but the value in the variable file is a complex type
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+=== file has variable that is string but default is complex
+>>> errcode [CLI] bundle validate -o json --target string_to_complex
+Error: variable cluster is of type complex, but the value in the variable file is not a complex type
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}
+
+=== variable is required but it's not provided in the file
+>>> errcode [CLI] bundle validate -o json --target without_defaults
+Error: no value assigned to required variable cluster. Assignment can be done using "--var", by setting the BUNDLE_VAR_cluster environment variable, or in .databricks/bundle/<target>/variable-overrides.json file
+
+
+Exit code: 1
+{
+  "job_cluster_key": "${var.cluster_key}",
+  "new_cluster": {
+    "node_type_id": "${var.cluster.node_type_id}",
+    "num_workers": "${var.cluster_workers}"
+  }
+}

@@ -15,16 +15,18 @@ import (
 )
 
 // Placeholders to use as unique keys in context.Context.
-var workspaceClient int
-var accountClient int
-var configUsed int
+var (
+	workspaceClient int
+	accountClient   int
+	configUsed      int
+)
 
 type ErrNoWorkspaceProfiles struct {
 	path string
 }
 
 func (e ErrNoWorkspaceProfiles) Error() string {
-	return fmt.Sprintf("%s does not contain workspace profiles; please create one by running 'databricks configure'", e.path)
+	return e.path + " does not contain workspace profiles; please create one by running 'databricks configure'"
 }
 
 type ErrNoAccountProfiles struct {
@@ -32,7 +34,7 @@ type ErrNoAccountProfiles struct {
 }
 
 func (e ErrNoAccountProfiles) Error() string {
-	return fmt.Sprintf("%s does not contain account profiles", e.path)
+	return e.path + " does not contain account profiles"
 }
 
 func initProfileFlag(cmd *cobra.Command) {
@@ -207,7 +209,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		if b != nil {
 			ctx = context.WithValue(ctx, &configUsed, b.Config.Workspace.Config())
 			cmd.SetContext(ctx)
-			client, err := b.InitializeWorkspaceClient()
+			client, err := b.WorkspaceClientE()
 			if err != nil {
 				return err
 			}
@@ -251,7 +253,7 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 		return profiles[0].Name, nil
 	}
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Workspace profiles defined in %s", path),
+		Label:             "Workspace profiles defined in " + path,
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,
@@ -285,7 +287,7 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 		return profiles[0].Name, nil
 	}
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Account profiles defined in %s", path),
+		Label:             "Account profiles defined in " + path,
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,

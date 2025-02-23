@@ -1,3 +1,3 @@
 package schema
 
-const ProviderVersion = "1.58.0"
+const ProviderVersion = "1.65.1"

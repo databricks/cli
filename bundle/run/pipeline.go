@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 
 func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
 	result := []pipelines.PipelineEvent{}
-	for i := 0; i < len(events); i++ {
+	for i := range events {
 		if events[i].Origin.UpdateId == updateId {
 			result = append(result, events[i])
 		}
@@ -32,16 +33,16 @@ func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineE
 	}
 	if event.Error != nil && len(event.Error.Exceptions) > 0 {
 		logString += "trace for most recent exception: \n"
-		for i := 0; i < len(event.Error.Exceptions); i++ {
-			logString += fmt.Sprintf("%s\n", event.Error.Exceptions[i].Message)
+		for i := range len(event.Error.Exceptions) {
+			logString += event.Error.Exceptions[i].Message + "\n"
 		}
 	}
 	if logString != "" {
-		log.Errorf(ctx, fmt.Sprintf("[%s] %s", event.EventType, logString))
+		log.Errorf(ctx, "[%s] %s", event.EventType, logString)
 	}
 }
 
-func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, updateId string) error {
+func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId string) error {
 	w := r.bundle.WorkspaceClient()
 
 	// Note: For a 100 percent correct and complete solution we should use the
@@ -78,23 +79,18 @@ type pipelineRunner struct {
 }
 
 func (r *pipelineRunner) Name() string {
-	if r.pipeline == nil || r.pipeline.PipelineSpec == nil {
+	if r.pipeline == nil || r.pipeline.CreatePipeline == nil {
 		return ""
 	}
-	return r.pipeline.PipelineSpec.Name
+	return r.pipeline.CreatePipeline.Name
 }
 
 func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
-	var pipelineID = r.pipeline.ID
+	pipelineID := r.pipeline.ID
 
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient()
-	_, err := w.Pipelines.GetByPipelineId(ctx, pipelineID)
-	if err != nil {
-		log.Warnf(ctx, "Cannot get pipeline: %s", err)
-		return nil, err
-	}
 
 	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID)
 	if err != nil {
@@ -112,7 +108,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	updateTracker := progress.NewUpdateTracker(pipelineID, updateID, w)
 	progressLogger, ok := cmdio.FromContext(ctx)
 	if !ok {
-		return nil, fmt.Errorf("no progress logger found")
+		return nil, errors.New("no progress logger found")
 	}
 
 	// Log the pipeline update URL as soon as it is available.
@@ -132,7 +128,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		}
 		for _, event := range events {
 			progressLogger.Log(&event)
-			log.Infof(ctx, event.String())
+			log.Info(ctx, event.String())
 		}
 
 		update, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
@@ -149,7 +145,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 		if state == pipelines.UpdateInfoStateCanceled {
 			log.Infof(ctx, "Update was cancelled!")
-			return nil, fmt.Errorf("update cancelled")
+			return nil, errors.New("update cancelled")
 		}
 		if state == pipelines.UpdateInfoStateFailed {
 			log.Infof(ctx, "Update has failed!")
@@ -157,7 +153,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			if err != nil {
 				return nil, err
 			}
-			return nil, fmt.Errorf("update failed")
+			return nil, errors.New("update failed")
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
 			log.Infof(ctx, "Update has completed successfully!")
@@ -173,7 +169,6 @@ func (r *pipelineRunner) Cancel(ctx context.Context) error {
 	wait, err := w.Pipelines.Stop(ctx, pipelines.StopRequest{
 		PipelineId: r.pipeline.ID,
 	})
-
 	if err != nil {
 		return err
 	}

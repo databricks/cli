@@ -1,0 +1,16 @@
+{
+    "properties": {
+        "unique_id": {
+            "type": "string",
+            "description": "Unique ID for job name"
+        },
+        "schema_name": {
+            "type": "string",
+            "description": "schema name to use in the artifact_path"
+        },
+        "volume_name": {
+            "type": "string",
+            "description": "volume name to use in the artifact_path"
+        }
+    }
+}

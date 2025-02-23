@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMarshal_String(t *testing.T) {
@@ -44,8 +45,8 @@ func TestMarshal_Time(t *testing.T) {
 
 func TestMarshal_Map(t *testing.T) {
 	m := dyn.NewMapping()
-	m.Set(dyn.V("key1"), dyn.V("value1"))
-	m.Set(dyn.V("key2"), dyn.V("value2"))
+	require.NoError(t, m.Set(dyn.V("key1"), dyn.V("value1")))
+	require.NoError(t, m.Set(dyn.V("key2"), dyn.V("value2")))
 
 	b, err := Marshal(dyn.V(m))
 	if assert.NoError(t, err) {
@@ -66,16 +67,16 @@ func TestMarshal_Sequence(t *testing.T) {
 
 func TestMarshal_Complex(t *testing.T) {
 	map1 := dyn.NewMapping()
-	map1.Set(dyn.V("str1"), dyn.V("value1"))
-	map1.Set(dyn.V("str2"), dyn.V("value2"))
+	require.NoError(t, map1.Set(dyn.V("str1"), dyn.V("value1")))
+	require.NoError(t, map1.Set(dyn.V("str2"), dyn.V("value2")))
 
 	seq1 := []dyn.Value{}
 	seq1 = append(seq1, dyn.V("value1"))
 	seq1 = append(seq1, dyn.V("value2"))
 
 	root := dyn.NewMapping()
-	root.Set(dyn.V("map1"), dyn.V(map1))
-	root.Set(dyn.V("seq1"), dyn.V(seq1))
+	require.NoError(t, root.Set(dyn.V("map1"), dyn.V(map1)))
+	require.NoError(t, root.Set(dyn.V("seq1"), dyn.V(seq1)))
 
 	// Marshal without indent.
 	b, err := Marshal(dyn.V(root))

@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
@@ -55,7 +54,7 @@ func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("ml/endpoints/%s", s.ID)
+	baseURL.Path = "ml/endpoints/" + s.ID
 	s.URL = baseURL.String()
 }
 
@@ -65,4 +64,8 @@ func (s *ModelServingEndpoint) GetName() string {
 
 func (s *ModelServingEndpoint) GetURL() string {
 	return s.URL
+}
+
+func (s *ModelServingEndpoint) IsNil() bool {
+	return s.CreateServingEndpoint == nil
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-type workspaceFilesExtensionsClient struct {
+type WorkspaceFilesExtensionsClient struct {
 	workspaceClient *databricks.WorkspaceClient
 
 	wsfs     Filer
@@ -32,7 +32,7 @@ type workspaceFileStatus struct {
 	nameForWorkspaceAPI string
 }
 
-func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) (wsfsFileInfo, error) {
+func (w *WorkspaceFilesExtensionsClient) stat(ctx context.Context, name string) (wsfsFileInfo, error) {
 	info, err := w.wsfs.Stat(ctx, name)
 	if err != nil {
 		return wsfsFileInfo{}, err
@@ -42,7 +42,7 @@ func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) 
 
 // This function returns the stat for the provided notebook. The stat object itself contains the path
 // with the extension since it is meant to be used in the context of a fs.FileInfo.
-func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
+func (w *WorkspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
 	ext := path.Ext(name)
 	nameWithoutExt := strings.TrimSuffix(name, ext)
 
@@ -52,7 +52,8 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 		notebook.ExtensionR,
 		notebook.ExtensionScala,
 		notebook.ExtensionSql,
-		notebook.ExtensionJupyter}, ext) {
+		notebook.ExtensionJupyter,
+	}, ext) {
 		return nil, nil
 	}
 
@@ -103,7 +104,7 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 	}, nil
 }
 
-func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
+func (w *WorkspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
 	stat, err := w.stat(ctx, name)
 	if err != nil {
 		return nil, err
@@ -183,7 +184,7 @@ func newWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root strin
 		filer = newWorkspaceFilesReadaheadCache(filer)
 	}
 
-	return &workspaceFilesExtensionsClient{
+	return &WorkspaceFilesExtensionsClient{
 		workspaceClient: w,
 
 		wsfs:     filer,
@@ -192,7 +193,7 @@ func newWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root strin
 	}, nil
 }
 
-func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
+func (w *WorkspaceFilesExtensionsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	entries, err := w.wsfs.ReadDir(ctx, name)
 	if err != nil {
 		return nil, err
@@ -234,7 +235,7 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 // Note: The import API returns opaque internal errors for namespace clashes
 // (e.g. a file and a notebook or a directory and a notebook). Thus users of this
 // method should be careful to avoid such clashes.
-func (w *workspaceFilesExtensionsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+func (w *WorkspaceFilesExtensionsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	if w.readonly {
 		return ReadOnlyError{"write"}
 	}
@@ -243,7 +244,18 @@ func (w *workspaceFilesExtensionsClient) Write(ctx context.Context, name string,
 }
 
 // Try to read the file as a regular file. If the file is not found, try to read it as a notebook.
-func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
+func (w *WorkspaceFilesExtensionsClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
+	// Ensure that the file / notebook exists. We do this check here to avoid reading
+	// the content of a notebook called `foo` when the user actually wanted
+	// to read the content of a file called `foo`.
+	//
+	// To read the content of a notebook called `foo` in the workspace the user
+	// should use the name with the extension included like `foo.ipynb` or `foo.sql`.
+	_, err := w.Stat(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
 	r, err := w.wsfs.Read(ctx, name)
 
 	// If the file is not found, it might be a notebook.
@@ -271,12 +283,23 @@ func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 }
 
 // Try to delete the file as a regular file. If the file is not found, try to delete it as a notebook.
-func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
+func (w *WorkspaceFilesExtensionsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	if w.readonly {
 		return ReadOnlyError{"delete"}
 	}
 
-	err := w.wsfs.Delete(ctx, name, mode...)
+	// Ensure that the file / notebook exists. We do this check here to avoid
+	// deleting the a notebook called `foo` when the user actually wanted to
+	// delete a file called `foo`.
+	//
+	// To delete a notebook called `foo` in the workspace the user should use the
+	// name with the extension included like `foo.ipynb` or `foo.sql`.
+	_, err := w.Stat(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	err = w.wsfs.Delete(ctx, name, mode...)
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -297,7 +320,7 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 }
 
 // Try to stat the file as a regular file. If the file is not found, try to stat it as a notebook.
-func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+func (w *WorkspaceFilesExtensionsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
 	info, err := w.wsfs.Stat(ctx, name)
 
 	// If the file is not found, it might be a notebook.
@@ -315,13 +338,30 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 		return wsfsFileInfo{ObjectInfo: stat.ObjectInfo}, nil
 	}
 
-	return info, err
+	if err != nil {
+		return nil, err
+	}
+
+	// If an object is found and it is a notebook, return a FileDoesNotExistError.
+	// If a notebook is found by the workspace files client, without having stripped
+	// the extension, this implies that no file with the same name exists.
+	//
+	// This check is done to avoid returning the stat for a notebook called `foo`
+	// when the user actually wanted to stat a file called `foo`.
+	//
+	// To stat the metadata of a notebook called `foo` in the workspace the user
+	// should use the name with the extension included like `foo.ipynb` or `foo.sql`.
+	if info.Sys().(workspace.ObjectInfo).ObjectType == workspace.ObjectTypeNotebook {
+		return nil, FileDoesNotExistError{name}
+	}
+
+	return info, nil
 }
 
 // Note: The import API returns opaque internal errors for namespace clashes
 // (e.g. a file and a notebook or a directory and a notebook). Thus users of this
 // method should be careful to avoid such clashes.
-func (w *workspaceFilesExtensionsClient) Mkdir(ctx context.Context, name string) error {
+func (w *WorkspaceFilesExtensionsClient) Mkdir(ctx context.Context, name string) error {
 	if w.readonly {
 		return ReadOnlyError{"mkdir"}
 	}

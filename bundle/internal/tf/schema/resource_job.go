@@ -240,6 +240,8 @@ type ResourceJobJobClusterNewCluster struct {
 	EnableLocalDiskEncryption bool                                              `json:"enable_local_disk_encryption,omitempty"`
 	IdempotencyToken          string                                            `json:"idempotency_token,omitempty"`
 	InstancePoolId            string                                            `json:"instance_pool_id,omitempty"`
+	IsSingleNode              bool                                              `json:"is_single_node,omitempty"`
+	Kind                      string                                            `json:"kind,omitempty"`
 	NodeTypeId                string                                            `json:"node_type_id,omitempty"`
 	NumWorkers                int                                               `json:"num_workers,omitempty"`
 	PolicyId                  string                                            `json:"policy_id,omitempty"`
@@ -249,6 +251,7 @@ type ResourceJobJobClusterNewCluster struct {
 	SparkEnvVars              map[string]string                                 `json:"spark_env_vars,omitempty"`
 	SparkVersion              string                                            `json:"spark_version"`
 	SshPublicKeys             []string                                          `json:"ssh_public_keys,omitempty"`
+	UseMlRuntime              bool                                              `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceJobJobClusterNewClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *ResourceJobJobClusterNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *ResourceJobJobClusterNewClusterAzureAttributes   `json:"azure_attributes,omitempty"`
@@ -462,6 +465,8 @@ type ResourceJobNewCluster struct {
 	EnableLocalDiskEncryption bool                                    `json:"enable_local_disk_encryption,omitempty"`
 	IdempotencyToken          string                                  `json:"idempotency_token,omitempty"`
 	InstancePoolId            string                                  `json:"instance_pool_id,omitempty"`
+	IsSingleNode              bool                                    `json:"is_single_node,omitempty"`
+	Kind                      string                                  `json:"kind,omitempty"`
 	NodeTypeId                string                                  `json:"node_type_id,omitempty"`
 	NumWorkers                int                                     `json:"num_workers,omitempty"`
 	PolicyId                  string                                  `json:"policy_id,omitempty"`
@@ -471,6 +476,7 @@ type ResourceJobNewCluster struct {
 	SparkEnvVars              map[string]string                       `json:"spark_env_vars,omitempty"`
 	SparkVersion              string                                  `json:"spark_version"`
 	SshPublicKeys             []string                                `json:"ssh_public_keys,omitempty"`
+	UseMlRuntime              bool                                    `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceJobNewClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *ResourceJobNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *ResourceJobNewClusterAzureAttributes   `json:"azure_attributes,omitempty"`
@@ -548,6 +554,13 @@ type ResourceJobSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type ResourceJobTaskCleanRoomsNotebookTask struct {
+	CleanRoomName          string            `json:"clean_room_name"`
+	Etag                   string            `json:"etag,omitempty"`
+	NotebookBaseParameters map[string]string `json:"notebook_base_parameters,omitempty"`
+	NotebookName           string            `json:"notebook_name"`
+}
+
 type ResourceJobTaskConditionTask struct {
 	Left  string `json:"left"`
 	Op    string `json:"op"`
@@ -576,6 +589,13 @@ type ResourceJobTaskEmailNotifications struct {
 	OnStart                            []string `json:"on_start,omitempty"`
 	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask struct {
+	CleanRoomName          string            `json:"clean_room_name"`
+	Etag                   string            `json:"etag,omitempty"`
+	NotebookBaseParameters map[string]string `json:"notebook_base_parameters,omitempty"`
+	NotebookName           string            `json:"notebook_name"`
 }
 
 type ResourceJobTaskForEachTaskTaskConditionTask struct {
@@ -814,6 +834,8 @@ type ResourceJobTaskForEachTaskTaskNewCluster struct {
 	EnableLocalDiskEncryption bool                                                       `json:"enable_local_disk_encryption,omitempty"`
 	IdempotencyToken          string                                                     `json:"idempotency_token,omitempty"`
 	InstancePoolId            string                                                     `json:"instance_pool_id,omitempty"`
+	IsSingleNode              bool                                                       `json:"is_single_node,omitempty"`
+	Kind                      string                                                     `json:"kind,omitempty"`
 	NodeTypeId                string                                                     `json:"node_type_id,omitempty"`
 	NumWorkers                int                                                        `json:"num_workers,omitempty"`
 	PolicyId                  string                                                     `json:"policy_id,omitempty"`
@@ -823,6 +845,7 @@ type ResourceJobTaskForEachTaskTaskNewCluster struct {
 	SparkEnvVars              map[string]string                                          `json:"spark_env_vars,omitempty"`
 	SparkVersion              string                                                     `json:"spark_version"`
 	SshPublicKeys             []string                                                   `json:"ssh_public_keys,omitempty"`
+	UseMlRuntime              bool                                                       `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceJobTaskForEachTaskTaskNewClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *ResourceJobTaskForEachTaskTaskNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *ResourceJobTaskForEachTaskTaskNewClusterAzureAttributes   `json:"azure_attributes,omitempty"`
@@ -881,6 +904,7 @@ type ResourceJobTaskForEachTaskTaskSparkJarTask struct {
 	JarUri        string   `json:"jar_uri,omitempty"`
 	MainClassName string   `json:"main_class_name,omitempty"`
 	Parameters    []string `json:"parameters,omitempty"`
+	RunAsRepl     bool     `json:"run_as_repl,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskSparkPythonTask struct {
@@ -963,34 +987,35 @@ type ResourceJobTaskForEachTaskTaskWebhookNotifications struct {
 }
 
 type ResourceJobTaskForEachTaskTask struct {
-	Description             string                                              `json:"description,omitempty"`
-	DisableAutoOptimization bool                                                `json:"disable_auto_optimization,omitempty"`
-	EnvironmentKey          string                                              `json:"environment_key,omitempty"`
-	ExistingClusterId       string                                              `json:"existing_cluster_id,omitempty"`
-	JobClusterKey           string                                              `json:"job_cluster_key,omitempty"`
-	MaxRetries              int                                                 `json:"max_retries,omitempty"`
-	MinRetryIntervalMillis  int                                                 `json:"min_retry_interval_millis,omitempty"`
-	RetryOnTimeout          bool                                                `json:"retry_on_timeout,omitempty"`
-	RunIf                   string                                              `json:"run_if,omitempty"`
-	TaskKey                 string                                              `json:"task_key"`
-	TimeoutSeconds          int                                                 `json:"timeout_seconds,omitempty"`
-	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask        `json:"condition_task,omitempty"`
-	DbtTask                 *ResourceJobTaskForEachTaskTaskDbtTask              `json:"dbt_task,omitempty"`
-	DependsOn               []ResourceJobTaskForEachTaskTaskDependsOn           `json:"depends_on,omitempty"`
-	EmailNotifications      *ResourceJobTaskForEachTaskTaskEmailNotifications   `json:"email_notifications,omitempty"`
-	Health                  *ResourceJobTaskForEachTaskTaskHealth               `json:"health,omitempty"`
-	Library                 []ResourceJobTaskForEachTaskTaskLibrary             `json:"library,omitempty"`
-	NewCluster              *ResourceJobTaskForEachTaskTaskNewCluster           `json:"new_cluster,omitempty"`
-	NotebookTask            *ResourceJobTaskForEachTaskTaskNotebookTask         `json:"notebook_task,omitempty"`
-	NotificationSettings    *ResourceJobTaskForEachTaskTaskNotificationSettings `json:"notification_settings,omitempty"`
-	PipelineTask            *ResourceJobTaskForEachTaskTaskPipelineTask         `json:"pipeline_task,omitempty"`
-	PythonWheelTask         *ResourceJobTaskForEachTaskTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
-	RunJobTask              *ResourceJobTaskForEachTaskTaskRunJobTask           `json:"run_job_task,omitempty"`
-	SparkJarTask            *ResourceJobTaskForEachTaskTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
-	SparkPythonTask         *ResourceJobTaskForEachTaskTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
-	SparkSubmitTask         *ResourceJobTaskForEachTaskTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
-	SqlTask                 *ResourceJobTaskForEachTaskTaskSqlTask              `json:"sql_task,omitempty"`
-	WebhookNotifications    *ResourceJobTaskForEachTaskTaskWebhookNotifications `json:"webhook_notifications,omitempty"`
+	Description             string                                                `json:"description,omitempty"`
+	DisableAutoOptimization bool                                                  `json:"disable_auto_optimization,omitempty"`
+	EnvironmentKey          string                                                `json:"environment_key,omitempty"`
+	ExistingClusterId       string                                                `json:"existing_cluster_id,omitempty"`
+	JobClusterKey           string                                                `json:"job_cluster_key,omitempty"`
+	MaxRetries              int                                                   `json:"max_retries,omitempty"`
+	MinRetryIntervalMillis  int                                                   `json:"min_retry_interval_millis,omitempty"`
+	RetryOnTimeout          bool                                                  `json:"retry_on_timeout,omitempty"`
+	RunIf                   string                                                `json:"run_if,omitempty"`
+	TaskKey                 string                                                `json:"task_key"`
+	TimeoutSeconds          int                                                   `json:"timeout_seconds,omitempty"`
+	CleanRoomsNotebookTask  *ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask          `json:"condition_task,omitempty"`
+	DbtTask                 *ResourceJobTaskForEachTaskTaskDbtTask                `json:"dbt_task,omitempty"`
+	DependsOn               []ResourceJobTaskForEachTaskTaskDependsOn             `json:"depends_on,omitempty"`
+	EmailNotifications      *ResourceJobTaskForEachTaskTaskEmailNotifications     `json:"email_notifications,omitempty"`
+	Health                  *ResourceJobTaskForEachTaskTaskHealth                 `json:"health,omitempty"`
+	Library                 []ResourceJobTaskForEachTaskTaskLibrary               `json:"library,omitempty"`
+	NewCluster              *ResourceJobTaskForEachTaskTaskNewCluster             `json:"new_cluster,omitempty"`
+	NotebookTask            *ResourceJobTaskForEachTaskTaskNotebookTask           `json:"notebook_task,omitempty"`
+	NotificationSettings    *ResourceJobTaskForEachTaskTaskNotificationSettings   `json:"notification_settings,omitempty"`
+	PipelineTask            *ResourceJobTaskForEachTaskTaskPipelineTask           `json:"pipeline_task,omitempty"`
+	PythonWheelTask         *ResourceJobTaskForEachTaskTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
+	RunJobTask              *ResourceJobTaskForEachTaskTaskRunJobTask             `json:"run_job_task,omitempty"`
+	SparkJarTask            *ResourceJobTaskForEachTaskTaskSparkJarTask           `json:"spark_jar_task,omitempty"`
+	SparkPythonTask         *ResourceJobTaskForEachTaskTaskSparkPythonTask        `json:"spark_python_task,omitempty"`
+	SparkSubmitTask         *ResourceJobTaskForEachTaskTaskSparkSubmitTask        `json:"spark_submit_task,omitempty"`
+	SqlTask                 *ResourceJobTaskForEachTaskTaskSqlTask                `json:"sql_task,omitempty"`
+	WebhookNotifications    *ResourceJobTaskForEachTaskTaskWebhookNotifications   `json:"webhook_notifications,omitempty"`
 }
 
 type ResourceJobTaskForEachTask struct {
@@ -1205,6 +1230,8 @@ type ResourceJobTaskNewCluster struct {
 	EnableLocalDiskEncryption bool                                        `json:"enable_local_disk_encryption,omitempty"`
 	IdempotencyToken          string                                      `json:"idempotency_token,omitempty"`
 	InstancePoolId            string                                      `json:"instance_pool_id,omitempty"`
+	IsSingleNode              bool                                        `json:"is_single_node,omitempty"`
+	Kind                      string                                      `json:"kind,omitempty"`
 	NodeTypeId                string                                      `json:"node_type_id,omitempty"`
 	NumWorkers                int                                         `json:"num_workers,omitempty"`
 	PolicyId                  string                                      `json:"policy_id,omitempty"`
@@ -1214,6 +1241,7 @@ type ResourceJobTaskNewCluster struct {
 	SparkEnvVars              map[string]string                           `json:"spark_env_vars,omitempty"`
 	SparkVersion              string                                      `json:"spark_version"`
 	SshPublicKeys             []string                                    `json:"ssh_public_keys,omitempty"`
+	UseMlRuntime              bool                                        `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceJobTaskNewClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *ResourceJobTaskNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *ResourceJobTaskNewClusterAzureAttributes   `json:"azure_attributes,omitempty"`
@@ -1272,6 +1300,7 @@ type ResourceJobTaskSparkJarTask struct {
 	JarUri        string   `json:"jar_uri,omitempty"`
 	MainClassName string   `json:"main_class_name,omitempty"`
 	Parameters    []string `json:"parameters,omitempty"`
+	RunAsRepl     bool     `json:"run_as_repl,omitempty"`
 }
 
 type ResourceJobTaskSparkPythonTask struct {
@@ -1354,35 +1383,36 @@ type ResourceJobTaskWebhookNotifications struct {
 }
 
 type ResourceJobTask struct {
-	Description             string                               `json:"description,omitempty"`
-	DisableAutoOptimization bool                                 `json:"disable_auto_optimization,omitempty"`
-	EnvironmentKey          string                               `json:"environment_key,omitempty"`
-	ExistingClusterId       string                               `json:"existing_cluster_id,omitempty"`
-	JobClusterKey           string                               `json:"job_cluster_key,omitempty"`
-	MaxRetries              int                                  `json:"max_retries,omitempty"`
-	MinRetryIntervalMillis  int                                  `json:"min_retry_interval_millis,omitempty"`
-	RetryOnTimeout          bool                                 `json:"retry_on_timeout,omitempty"`
-	RunIf                   string                               `json:"run_if,omitempty"`
-	TaskKey                 string                               `json:"task_key"`
-	TimeoutSeconds          int                                  `json:"timeout_seconds,omitempty"`
-	ConditionTask           *ResourceJobTaskConditionTask        `json:"condition_task,omitempty"`
-	DbtTask                 *ResourceJobTaskDbtTask              `json:"dbt_task,omitempty"`
-	DependsOn               []ResourceJobTaskDependsOn           `json:"depends_on,omitempty"`
-	EmailNotifications      *ResourceJobTaskEmailNotifications   `json:"email_notifications,omitempty"`
-	ForEachTask             *ResourceJobTaskForEachTask          `json:"for_each_task,omitempty"`
-	Health                  *ResourceJobTaskHealth               `json:"health,omitempty"`
-	Library                 []ResourceJobTaskLibrary             `json:"library,omitempty"`
-	NewCluster              *ResourceJobTaskNewCluster           `json:"new_cluster,omitempty"`
-	NotebookTask            *ResourceJobTaskNotebookTask         `json:"notebook_task,omitempty"`
-	NotificationSettings    *ResourceJobTaskNotificationSettings `json:"notification_settings,omitempty"`
-	PipelineTask            *ResourceJobTaskPipelineTask         `json:"pipeline_task,omitempty"`
-	PythonWheelTask         *ResourceJobTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
-	RunJobTask              *ResourceJobTaskRunJobTask           `json:"run_job_task,omitempty"`
-	SparkJarTask            *ResourceJobTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
-	SparkPythonTask         *ResourceJobTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
-	SparkSubmitTask         *ResourceJobTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
-	SqlTask                 *ResourceJobTaskSqlTask              `json:"sql_task,omitempty"`
-	WebhookNotifications    *ResourceJobTaskWebhookNotifications `json:"webhook_notifications,omitempty"`
+	Description             string                                 `json:"description,omitempty"`
+	DisableAutoOptimization bool                                   `json:"disable_auto_optimization,omitempty"`
+	EnvironmentKey          string                                 `json:"environment_key,omitempty"`
+	ExistingClusterId       string                                 `json:"existing_cluster_id,omitempty"`
+	JobClusterKey           string                                 `json:"job_cluster_key,omitempty"`
+	MaxRetries              int                                    `json:"max_retries,omitempty"`
+	MinRetryIntervalMillis  int                                    `json:"min_retry_interval_millis,omitempty"`
+	RetryOnTimeout          bool                                   `json:"retry_on_timeout,omitempty"`
+	RunIf                   string                                 `json:"run_if,omitempty"`
+	TaskKey                 string                                 `json:"task_key"`
+	TimeoutSeconds          int                                    `json:"timeout_seconds,omitempty"`
+	CleanRoomsNotebookTask  *ResourceJobTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	ConditionTask           *ResourceJobTaskConditionTask          `json:"condition_task,omitempty"`
+	DbtTask                 *ResourceJobTaskDbtTask                `json:"dbt_task,omitempty"`
+	DependsOn               []ResourceJobTaskDependsOn             `json:"depends_on,omitempty"`
+	EmailNotifications      *ResourceJobTaskEmailNotifications     `json:"email_notifications,omitempty"`
+	ForEachTask             *ResourceJobTaskForEachTask            `json:"for_each_task,omitempty"`
+	Health                  *ResourceJobTaskHealth                 `json:"health,omitempty"`
+	Library                 []ResourceJobTaskLibrary               `json:"library,omitempty"`
+	NewCluster              *ResourceJobTaskNewCluster             `json:"new_cluster,omitempty"`
+	NotebookTask            *ResourceJobTaskNotebookTask           `json:"notebook_task,omitempty"`
+	NotificationSettings    *ResourceJobTaskNotificationSettings   `json:"notification_settings,omitempty"`
+	PipelineTask            *ResourceJobTaskPipelineTask           `json:"pipeline_task,omitempty"`
+	PythonWheelTask         *ResourceJobTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
+	RunJobTask              *ResourceJobTaskRunJobTask             `json:"run_job_task,omitempty"`
+	SparkJarTask            *ResourceJobTaskSparkJarTask           `json:"spark_jar_task,omitempty"`
+	SparkPythonTask         *ResourceJobTaskSparkPythonTask        `json:"spark_python_task,omitempty"`
+	SparkSubmitTask         *ResourceJobTaskSparkSubmitTask        `json:"spark_submit_task,omitempty"`
+	SqlTask                 *ResourceJobTaskSqlTask                `json:"sql_task,omitempty"`
+	WebhookNotifications    *ResourceJobTaskWebhookNotifications   `json:"webhook_notifications,omitempty"`
 }
 
 type ResourceJobTriggerFileArrival struct {
@@ -1459,6 +1489,7 @@ type ResourceJob struct {
 	MaxRetries             int                              `json:"max_retries,omitempty"`
 	MinRetryIntervalMillis int                              `json:"min_retry_interval_millis,omitempty"`
 	Name                   string                           `json:"name,omitempty"`
+	PerformanceTarget      string                           `json:"performance_target,omitempty"`
 	RetryOnTimeout         bool                             `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                `json:"tags,omitempty"`
 	TimeoutSeconds         int                              `json:"timeout_seconds,omitempty"`

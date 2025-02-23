@@ -106,7 +106,7 @@ func (info *wsfsFileInfo) MarshalJSON() ([]byte, error) {
 // as an interface to allow for mocking in tests.
 type apiClient interface {
 	Do(ctx context.Context, method, path string,
-		headers map[string]string, request, response any,
+		headers map[string]string, queryString map[string]any, request, response any,
 		visitors ...func(*http.Request) error) error
 }
 
@@ -114,7 +114,7 @@ type apiClient interface {
 
 // NOTE: This API is available for files under /Repos if a workspace has files-in-repos enabled.
 // It can access any workspace path if files-in-workspace is enabled.
-type workspaceFilesClient struct {
+type WorkspaceFilesClient struct {
 	workspaceClient *databricks.WorkspaceClient
 	apiClient       apiClient
 
@@ -128,7 +128,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 		return nil, err
 	}
 
-	return &workspaceFilesClient{
+	return &WorkspaceFilesClient{
 		workspaceClient: w,
 		apiClient:       apiClient,
 
@@ -136,7 +136,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 	}, nil
 }
 
-func (w *workspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -156,7 +156,7 @@ func (w *workspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, body, nil)
+	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, nil, body, nil)
 
 	// Return early on success.
 	if err == nil {
@@ -195,7 +195,7 @@ func (w *workspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	// This API returns 400 if the file already exists, when the object type is notebook
 	regex := regexp.MustCompile(`Path \((.*)\) already exists.`)
-	if aerr.StatusCode == http.StatusBadRequest && regex.Match([]byte(aerr.Message)) {
+	if aerr.StatusCode == http.StatusBadRequest && regex.MatchString(aerr.Message) {
 		// Parse file path from regex capture group
 		matches := regex.FindStringSubmatch(aerr.Message)
 		if len(matches) == 2 {
@@ -214,7 +214,7 @@ func (w *workspaceFilesClient) Write(ctx context.Context, name string, reader io
 	return err
 }
 
-func (w *workspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
+func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func (w *workspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCl
 	return w.workspaceClient.Workspace.Download(ctx, absPath)
 }
 
-func (w *workspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
+func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -282,7 +282,7 @@ func (w *workspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 	return err
 }
 
-func (w *workspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
+func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -315,7 +315,7 @@ func (w *workspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 	return wsfsDirEntriesFromObjectInfos(objects), nil
 }
 
-func (w *workspaceFilesClient) Mkdir(ctx context.Context, name string) error {
+func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	dirPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -325,7 +325,7 @@ func (w *workspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	})
 }
 
-func (w *workspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -340,6 +340,7 @@ func (w *workspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		ctx,
 		http.MethodGet,
 		"/api/2.0/workspace/get-status",
+		nil,
 		nil,
 		map[string]string{
 			"path":               absPath,

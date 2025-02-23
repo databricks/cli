@@ -1,0 +1,57 @@
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - gofumpt
+    - goimports
+    - testifylint
+    - intrange
+    - mirror
+    - perfsprint
+    - unconvert
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - shadow
+    settings:
+      printf:
+        funcs:
+          - (github.com/databricks/cli/internal/testutil.TestingT).Infof
+          - (github.com/databricks/cli/internal/testutil.TestingT).Errorf
+          - (github.com/databricks/cli/internal/testutil.TestingT).Fatalf
+          - (github.com/databricks/cli/internal/testutil.TestingT).Skipf
+  gofmt:
+    rewrite-rules:
+      - pattern: 'a[b:len(a)]'
+        replacement: 'a[b:]'
+      - pattern: 'interface{}'
+        replacement: 'any'
+  errcheck:
+    exclude-functions:
+      - (*github.com/spf13/cobra.Command).RegisterFlagCompletionFunc
+      - (*github.com/spf13/cobra.Command).MarkFlagRequired
+      - (*github.com/spf13/pflag.FlagSet).MarkDeprecated
+      - (*github.com/spf13/pflag.FlagSet).MarkHidden
+  gofumpt:
+    module-path: github.com/databricks/cli
+    extra-rules: true
+  testifylint:
+    enable-all: true
+    disable:
+      # good check, but we have too many assert.(No)?Errorf? so excluding for now
+      - require-error
+  copyloopvar:
+    check-alias: true
+issues:
+  exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
+  max-issues-per-linter: 1000
+  max-same-issues: 1000

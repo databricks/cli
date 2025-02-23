@@ -1,0 +1,26 @@
+mkdir myrepo
+cd myrepo
+cp ../databricks.yml .
+git-repo-init
+mkdir -p subdir/a/b
+
+printf "=== No permission to access .git. Badness: inferred flag is set to true even though we did not infer branch. bundle_root_path is not correct in subdir case.\n"
+trace chmod 000 .git
+errcode trace $CLI bundle validate
+errcode trace $CLI bundle validate -o json | jq .bundle.git
+errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
+
+printf "\n\n=== No permissions to read .git/HEAD. Badness: warning is not shown. inferred is incorrectly set to true. bundle_root_path is not correct in subdir case.\n"
+chmod 700 .git
+trace chmod 000 .git/HEAD
+errcode trace $CLI bundle validate -o json | jq .bundle.git
+errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
+
+printf "\n\n=== No permissions to read .git/config. Badness: inferred is incorretly set to true. bundle_root_path is not correct is subdir case.\n"
+chmod 666 .git/HEAD
+trace chmod 000 .git/config
+errcode trace $CLI bundle validate -o json | jq .bundle.git
+errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
+
+cd ..
+rm -fr myrepo

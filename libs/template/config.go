@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -28,9 +29,8 @@ type config struct {
 	schema *jsonschema.Schema
 }
 
-func newConfig(ctx context.Context, schemaPath string) (*config, error) {
-	// Read config schema
-	schema, err := jsonschema.Load(schemaPath)
+func newConfig(ctx context.Context, templateFS fs.FS, schemaPath string) (*config, error) {
+	schema, err := jsonschema.LoadFS(templateFS, schemaPath)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 	c.values[name], err = property.ParseString(userInput)
 	if err != nil {
 		// Show error and retry if validation fails
-		cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+		cmdio.LogString(c.ctx, "Validation failed: "+err.Error())
 		return retriableError{err: err}
 	}
 
@@ -197,7 +197,7 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 	err = c.schema.ValidateInstance(c.values)
 	if err != nil {
 		// Show error and retry if validation fails
-		cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+		cmdio.LogString(c.ctx, "Validation failed: "+err.Error())
 		return retriableError{err: err}
 	}
 	return nil

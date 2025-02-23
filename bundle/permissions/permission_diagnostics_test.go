@@ -35,7 +35,7 @@ func TestPermissionDiagnosticsApplyFail(t *testing.T) {
 	})
 
 	diags := permissions.PermissionDiagnostics().Apply(context.Background(), b)
-	require.Equal(t, diags[0].Severity, diag.Recommendation)
+	require.Equal(t, diag.Recommendation, diags[0].Severity)
 
 	expectedMsg := "permissions section should explicitly include the current deployment identity " +
 		"'testuser@databricks.com' or one of its groups\n" +

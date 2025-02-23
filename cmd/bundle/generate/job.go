@@ -1,7 +1,9 @@
 package generate
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -30,13 +32,8 @@ func NewGenerateJobCommand() *cobra.Command {
 	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
 	cmd.MarkFlagRequired("existing-job-id")
 
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = "."
-	}
-
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", filepath.Join(wd, "resources"), `Dir path where the output config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", filepath.Join(wd, "src"), `Dir path where the downloaded files will be stored`)
+	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
+	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -53,10 +50,22 @@ func NewGenerateJobCommand() *cobra.Command {
 		}
 
 		downloader := newDownloader(w, sourceDir, configDir)
-		for _, task := range job.Settings.Tasks {
-			err := downloader.MarkTaskForDownload(ctx, &task)
-			if err != nil {
-				return err
+
+		// Don't download files if the job is using Git source
+		// When Git source is used, the job will be using the files from the Git repository
+		// but specific tasks might override this behaviour by using `source: WORKSPACE` setting.
+		// In this case, we don't want to download the files as well for these specific tasks
+		// because it leads to confusion with relative paths between workspace and GIT files.
+		// Instead we keep these tasks as is and let the user handle the files manually.
+		// The configuration will be deployable as tasks paths for source: WORKSPACE tasks will be absolute workspace paths.
+		if job.Settings.GitSource != nil {
+			cmdio.LogString(ctx, "Job is using Git source, skipping downloading files")
+		} else {
+			for _, task := range job.Settings.Tasks {
+				err := downloader.MarkTaskForDownload(ctx, &task)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -83,7 +92,17 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
+		oldFilename := filepath.Join(configDir, jobKey+".yml")
+		filename := filepath.Join(configDir, jobKey+".job.yml")
+
+		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
+		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
+		// Otherwise users can end up with duplicated resources.
+		err = os.Rename(oldFilename, filename)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
+		}
+
 		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
 			// Including all JobSettings and nested fields which are map[string]string type
 			"spark_conf":  yaml.DoubleQuotedStyle,
@@ -95,7 +114,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Job configuration successfully saved to %s", filename))
+		cmdio.LogString(ctx, "Job configuration successfully saved to "+filename)
 		return nil
 	}
 

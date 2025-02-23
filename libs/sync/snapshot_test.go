@@ -30,7 +30,7 @@ func TestDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -51,7 +51,7 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
-	assert.Len(t, change.delete, 0)
+	assert.Empty(t, change.delete)
 	assert.Len(t, change.put, 2)
 	assert.Contains(t, change.put, "hello.txt")
 	assert.Contains(t, change.put, "world.txt")
@@ -67,7 +67,7 @@ func TestDiff(t *testing.T) {
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 
-	assert.Len(t, change.delete, 0)
+	assert.Empty(t, change.delete)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "world.txt")
 	assertKeysOfMap(t, state.LastModifiedTimes, []string{"hello.txt", "world.txt"})
@@ -82,7 +82,7 @@ func TestDiff(t *testing.T) {
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
-	assert.Len(t, change.put, 0)
+	assert.Empty(t, change.put)
 	assert.Contains(t, change.delete, "hello.txt")
 	assertKeysOfMap(t, state.LastModifiedTimes, []string{"world.txt"})
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.LocalToRemoteNames)
@@ -94,7 +94,7 @@ func TestSymlinkDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -125,7 +125,7 @@ func TestFolderDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -145,8 +145,8 @@ func TestFolderDiff(t *testing.T) {
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
-	assert.Len(t, change.delete, 0)
-	assert.Len(t, change.rmdir, 0)
+	assert.Empty(t, change.delete)
+	assert.Empty(t, change.rmdir)
 	assert.Len(t, change.mkdir, 1)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.mkdir, "foo")
@@ -159,8 +159,8 @@ func TestFolderDiff(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.rmdir, 1)
-	assert.Len(t, change.mkdir, 0)
-	assert.Len(t, change.put, 0)
+	assert.Empty(t, change.mkdir)
+	assert.Empty(t, change.put)
 	assert.Contains(t, change.delete, "foo/bar")
 	assert.Contains(t, change.rmdir, "foo")
 }
@@ -170,7 +170,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -189,7 +189,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	foo.Overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
-	assert.Len(t, change.delete, 0)
+	assert.Empty(t, change.delete)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
 	assertKeysOfMap(t, state.LastModifiedTimes, []string{"foo.py"})
@@ -233,9 +233,9 @@ func TestPythonNotebookDiff(t *testing.T) {
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
-	assert.Len(t, change.put, 0)
+	assert.Empty(t, change.put)
 	assert.Contains(t, change.delete, "foo")
-	assert.Len(t, state.LastModifiedTimes, 0)
+	assert.Empty(t, state.LastModifiedTimes)
 	assert.Equal(t, map[string]string{}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{}, state.RemoteToLocalNames)
 }
@@ -245,7 +245,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -264,7 +264,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
-	assert.Len(t, change.delete, 0)
+	assert.Empty(t, change.delete)
 	assert.Len(t, change.put, 2)
 	assert.Contains(t, change.put, "foo.py")
 	assert.Contains(t, change.put, "foo")
@@ -282,7 +282,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -300,7 +300,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
-	assert.Len(t, change.delete, 0)
+	assert.Empty(t, change.delete)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
 

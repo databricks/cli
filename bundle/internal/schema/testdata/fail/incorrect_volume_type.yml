@@ -1,0 +1,10 @@
+bundle:
+  name: volume with incorrect type
+
+resources:
+  volumes:
+    foo:
+      catalog_name: main
+      name: my_volume
+      schema_name: myschema
+      volume_type: incorrect_type

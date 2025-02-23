@@ -69,7 +69,7 @@ func TestApplyPresetsPrefix(t *testing.T) {
 	}
 }
 
-func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
+func TestApplyPresetsPrefixForSchema(t *testing.T) {
 	tests := []struct {
 		name   string
 		prefix string
@@ -123,6 +123,36 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 			require.Equal(t, tt.want, b.Config.Resources.Schemas["schema1"].Name)
 		})
 	}
+}
+
+func TestApplyPresetsVolumesShouldNotBePrefixed(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Volumes: map[string]*resources.Volume{
+					"volume1": {
+						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+							Name:        "volume1",
+							CatalogName: "catalog1",
+							SchemaName:  "schema1",
+						},
+					},
+				},
+			},
+			Presets: config.Presets{
+				NamePrefix: "[prefix]",
+			},
+		},
+	}
+
+	ctx := context.Background()
+	diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
+
+	if diag.HasError() {
+		t.Fatalf("unexpected error: %v", diag)
+	}
+
+	require.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 }
 
 func TestApplyPresetsTags(t *testing.T) {

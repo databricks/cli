@@ -2,18 +2,28 @@ package filer
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/fs"
 )
 
+// WriteMode captures intent when writing a file.
+//
+// The first 9 bits are reserved for the [fs.FileMode] permission bits.
+// These are used only by the local filer implementation and have
+// no effect for the other implementations.
 type WriteMode int
 
+// writeModePerm is a mask to extract permission bits from a WriteMode.
+const writeModePerm = WriteMode(fs.ModePerm)
+
 const (
-	OverwriteIfExists WriteMode = 1 << iota
+	// Note: these constants are defined as powers of 2 to support combining them using a bit-wise OR.
+	// They starts from the 10th bit (permission mask + 1) to avoid conflicts with the permission bits.
+	OverwriteIfExists WriteMode = (writeModePerm + 1) << iota
 	CreateParentDirectories
 )
 
+// DeleteMode captures intent when deleting a file.
 type DeleteMode int
 
 const (
@@ -25,7 +35,7 @@ type FileAlreadyExistsError struct {
 }
 
 func (err FileAlreadyExistsError) Error() string {
-	return fmt.Sprintf("file already exists: %s", err.path)
+	return "file already exists: " + err.path
 }
 
 func (err FileAlreadyExistsError) Is(other error) bool {
@@ -41,7 +51,7 @@ func (err FileDoesNotExistError) Is(other error) bool {
 }
 
 func (err FileDoesNotExistError) Error() string {
-	return fmt.Sprintf("file does not exist: %s", err.path)
+	return "file does not exist: " + err.path
 }
 
 type NoSuchDirectoryError struct {
@@ -49,7 +59,7 @@ type NoSuchDirectoryError struct {
 }
 
 func (err NoSuchDirectoryError) Error() string {
-	return fmt.Sprintf("no such directory: %s", err.path)
+	return "no such directory: " + err.path
 }
 
 func (err NoSuchDirectoryError) Is(other error) bool {
@@ -61,7 +71,7 @@ type NotADirectory struct {
 }
 
 func (err NotADirectory) Error() string {
-	return fmt.Sprintf("not a directory: %s", err.path)
+	return "not a directory: " + err.path
 }
 
 func (err NotADirectory) Is(other error) bool {
@@ -73,7 +83,7 @@ type NotAFile struct {
 }
 
 func (err NotAFile) Error() string {
-	return fmt.Sprintf("not a file: %s", err.path)
+	return "not a file: " + err.path
 }
 
 func (err NotAFile) Is(other error) bool {
@@ -85,15 +95,14 @@ type DirectoryNotEmptyError struct {
 }
 
 func (err DirectoryNotEmptyError) Error() string {
-	return fmt.Sprintf("directory not empty: %s", err.path)
+	return "directory not empty: " + err.path
 }
 
 func (err DirectoryNotEmptyError) Is(other error) bool {
 	return other == fs.ErrInvalid
 }
 
-type CannotDeleteRootError struct {
-}
+type CannotDeleteRootError struct{}
 
 func (err CannotDeleteRootError) Error() string {
 	return "unable to delete filer root"
@@ -108,7 +117,7 @@ type PermissionError struct {
 }
 
 func (err PermissionError) Error() string {
-	return fmt.Sprintf("access denied: %s", err.path)
+	return "access denied: " + err.path
 }
 
 func (err PermissionError) Is(other error) bool {

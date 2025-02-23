@@ -27,7 +27,7 @@ func TestForwardedFails(t *testing.T) {
 	err := Forwarded(ctx, []string{
 		"_non_existent_",
 	}, strings.NewReader("abc\n"), &buf, &buf)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestForwardedFailsOnStdinPipe(t *testing.T) {
@@ -39,5 +39,5 @@ func TestForwardedFailsOnStdinPipe(t *testing.T) {
 		c.Stdin = strings.NewReader("x")
 		return nil
 	})
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

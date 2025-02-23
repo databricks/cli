@@ -78,6 +78,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation.`)
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	// TODO: complex arg: compute_status
@@ -942,14 +943,13 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 
-	cmd.Use = "update NAME NAME"
+	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`
 	cmd.Long = `Update an app.
   
   Updates the app with the supplied name.
 
   Arguments:
-    NAME: The name of the app.
     NAME: The name of the app. The name must contain only lowercase alphanumeric
       characters and hyphens. It must be unique within the workspace.`
 
@@ -963,7 +963,7 @@ func newUpdate() *cobra.Command {
 			}
 			return nil
 		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -985,9 +985,6 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.Name = args[0]
-		if !cmd.Flags().Changed("json") {
-			updateReq.App.Name = args[1]
-		}
 
 		response, err := w.Apps.Update(ctx, updateReq)
 		if err != nil {

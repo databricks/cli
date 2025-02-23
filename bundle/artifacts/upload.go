@@ -21,20 +21,15 @@ func (m *cleanUp) Name() string {
 }
 
 func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	uploadPath, err := libraries.GetUploadBasePath(b)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	client, err := libraries.GetFilerForLibraries(b.WorkspaceClient(), uploadPath)
-	if err != nil {
-		return diag.FromErr(err)
+	client, uploadPath, diags := libraries.GetFilerForLibraries(ctx, b)
+	if diags.HasError() {
+		return diags
 	}
 
 	// We intentionally ignore the error because it is not critical to the deployment
-	err = client.Delete(ctx, ".", filer.DeleteRecursively)
+	err := client.Delete(ctx, ".", filer.DeleteRecursively)
 	if err != nil {
-		log.Errorf(ctx, "failed to delete %s: %v", uploadPath, err)
+		log.Debugf(ctx, "failed to delete %s: %v", uploadPath, err)
 	}
 
 	err = client.Mkdir(ctx, ".")

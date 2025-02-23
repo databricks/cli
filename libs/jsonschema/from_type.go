@@ -111,6 +111,10 @@ func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (
 	return res, nil
 }
 
+func TypePath(typ reflect.Type) string {
+	return typePath(typ)
+}
+
 // typePath computes a unique string representation of the type. $ref in the generated
 // JSON schema will refer to this path. See TestTypePath for examples outputs.
 func typePath(typ reflect.Type) string {
@@ -211,7 +215,7 @@ func getStructFields(typ reflect.Type) []reflect.StructField {
 	fields := []reflect.StructField{}
 	bfsQueue := list.New()
 
-	for i := 0; i < typ.NumField(); i++ {
+	for i := range typ.NumField() {
 		bfsQueue.PushBack(typ.Field(i))
 	}
 	for bfsQueue.Len() > 0 {
@@ -233,7 +237,7 @@ func getStructFields(typ reflect.Type) []reflect.StructField {
 			fieldType = fieldType.Elem()
 		}
 
-		for i := 0; i < fieldType.NumField(); i++ {
+		for i := range fieldType.NumField() {
 			bfsQueue.PushBack(fieldType.Field(i))
 		}
 	}

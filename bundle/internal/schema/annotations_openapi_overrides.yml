@@ -1,0 +1,568 @@
+github.com/databricks/cli/bundle/config/resources.App:
+  "active_deployment":
+    "description": |-
+      PLACEHOLDER
+  "app_status":
+    "description": |-
+      PLACEHOLDER
+  "compute_status":
+    "description": |-
+      PLACEHOLDER
+  "config":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "creator":
+    "description": |-
+      PLACEHOLDER
+  "default_source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "pending_deployment":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "resources":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_client_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "updater":
+    "description": |-
+      PLACEHOLDER
+  "url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Cluster:
+  "_":
+    "markdown_description": |-
+      The cluster resource defines an [all-purpose cluster](/api/workspace/clusters/create).
+    "markdown_examples": |-
+      The following example creates a cluster named `my_cluster` and sets that as the cluster to use to run the notebook in `my_job`:
+
+      ```yaml
+      bundle:
+        name: clusters
+
+      resources:
+        clusters:
+          my_cluster:
+            num_workers: 2
+            node_type_id: "i3.xlarge"
+            autoscale:
+              min_workers: 2
+              max_workers: 7
+            spark_version: "13.3.x-scala2.12"
+            spark_conf:
+              "spark.executor.memory": "2g"
+
+        jobs:
+          my_job:
+            tasks:
+              - task_key: test_task
+                notebook_task:
+                  notebook_path: "./src/my_notebook.py"
+      ```
+  "data_security_mode":
+    "description": |-
+      PLACEHOLDER
+  "docker_image":
+    "description": |-
+      PLACEHOLDER
+  "kind":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "runtime_engine":
+    "description": |-
+      PLACEHOLDER
+  "workload_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Dashboard:
+  "_":
+    "markdown_description": |-
+      The dashboard resource allows you to manage [AI/BI dashboards](/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [_](/dashboards/index.md).
+    "markdown_examples": |-
+      The following example includes and deploys the sample __NYC Taxi Trip Analysis__ dashboard to the Databricks workspace.
+
+      ``` yaml
+      resources:
+        dashboards:
+          nyc_taxi_trip_analysis:
+            display_name: "NYC Taxi Trip Analysis"
+            file_path: ../src/nyc_taxi_trip_analysis.lvdash.json
+            warehouse_id: ${var.warehouse_id}
+      ```
+      If you use the UI to modify the dashboard, modifications made through the UI are not applied to the dashboard JSON file in the local bundle unless you explicitly update it using `bundle generate`. You can use the `--watch` option to continuously poll and retrieve changes to the dashboard. See [_](/dev-tools/cli/bundle-commands.md#generate).
+
+      In addition, if you attempt to deploy a bundle that contains a dashboard JSON file that is different than the one in the remote workspace, an error will occur. To force the deploy and overwrite the dashboard in the remote workspace with the local one, use the `--force` option. See [_](/dev-tools/cli/bundle-commands.md#deploy).
+  "embed_credentials":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Job:
+  "_":
+    "markdown_description": |-
+      The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a <DABS> template to create a job, see [_](/dev-tools/bundles/jobs-tutorial.md).
+    "markdown_examples": |-
+      The following example defines a job with the resource key `hello-job` with one notebook task:
+
+      ```yaml
+      resources:
+        jobs:
+          hello-job:
+            name: hello-job
+            tasks:
+              - task_key: hello-task
+                notebook_task:
+                  notebook_path: ./hello.py
+      ```
+
+      For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
+  "health":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
+  "_":
+    "markdown_description": |-
+      The experiment resource allows you to define [MLflow experiments](/api/workspace/experiments/createexperiment) in a bundle. For information about MLflow experiments, see [_](/mlflow/experiments.md).
+    "markdown_examples": |-
+      The following example defines an experiment that all users can view:
+
+      ```yaml
+      resources:
+        experiments:
+          experiment:
+            name: my_ml_experiment
+            permissions:
+              - level: CAN_READ
+                group_name: users
+            description: MLflow experiment used to track runs
+      ```
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.MlflowModel:
+  "_":
+    "markdown_description": |-
+      The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use <UC> [registered models](#registered-model) instead.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
+  "_":
+    "markdown_description": |-
+      The model_serving_endpoint resource allows you to define [model serving endpoints](/api/workspace/servingendpoints/create). See [_](/machine-learning/model-serving/manage-serving-endpoints.md).
+    "markdown_examples": |-
+      The following example defines a <UC> model serving endpoint:
+
+      ```yaml
+      resources:
+        model_serving_endpoints:
+          uc_model_serving_endpoint:
+            name: "uc-model-endpoint"
+            config:
+              served_entities:
+              - entity_name: "myCatalog.mySchema.my-ads-model"
+                entity_version: "10"
+                workload_size: "Small"
+                scale_to_zero_enabled: "true"
+              traffic_config:
+                routes:
+                - served_model_name: "my-ads-model-10"
+                  traffic_percentage: "100"
+            tags:
+            - key: "team"
+              value: "data science"
+      ```
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "_":
+    "markdown_description": |-
+      The pipeline resource allows you to create <DLT> [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/delta-live-tables/index.md). For a tutorial that uses the <DABS> template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+    "markdown_examples": |-
+      The following example defines a pipeline with the resource key `hello-pipeline`:
+
+      ```yaml
+      resources:
+        pipelines:
+          hello-pipeline:
+            name: hello-pipeline
+            clusters:
+              - label: default
+                num_workers: 1
+            development: true
+            continuous: false
+            channel: CURRENT
+            edition: CORE
+            photon: false
+            libraries:
+              - notebook:
+                  path: ./pipeline.py
+      ```
+  "dry_run":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.QualityMonitor:
+  "_":
+    "markdown_description": |-
+      The quality_monitor resource allows you to define a <UC> [table monitor](/api/workspace/qualitymonitors/create). For information about monitors, see [_](/machine-learning/model-serving/monitor-diagnose-endpoints.md).
+    "markdown_examples": |-
+      The following example defines a quality monitor:
+
+      ```yaml
+      resources:
+        quality_monitors:
+          my_quality_monitor:
+            table_name: dev.mlops_schema.predictions
+            output_schema_name: ${bundle.target}.mlops_schema
+            assets_dir: /Users/${workspace.current_user.userName}/databricks_lakehouse_monitoring
+            inference_log:
+              granularities: [1 day]
+              model_id_col: model_id
+              prediction_col: prediction
+              label_col: price
+              problem_type: PROBLEM_TYPE_REGRESSION
+              timestamp_col: timestamp
+            schedule:
+              quartz_cron_expression: 0 0 8 * * ? # Run Every day at 8am
+              timezone_id: UTC
+      ```
+  "table_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.RegisteredModel:
+  "_":
+    "markdown_description": |-
+      The registered model resource allows you to define models in <UC>. For information about <UC> [registered models](/api/workspace/registeredmodels/create), see [_](/machine-learning/manage-model-lifecycle/index.md).
+    "markdown_examples": |-
+      The following example defines a registered model in <UC>:
+
+      ```yaml
+      resources:
+        registered_models:
+            model:
+              name: my_model
+              catalog_name: ${bundle.target}
+              schema_name: mlops_schema
+              comment: Registered model in Unity Catalog for ${bundle.target} deployment target
+              grants:
+                - privileges:
+                    - EXECUTE
+                  principal: account users
+      ```
+  "grants":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Schema:
+  "_":
+    "markdown_description": |-
+      The schema resource type allows you to define <UC> [schemas](/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:
+
+      - The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.
+      - Only fields supported by the corresponding [Schemas object create API](/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](/api/workspace/schemas/update).
+    "markdown_examples": |-
+      The following example defines a pipeline with the resource key `my_pipeline` that creates a <UC> schema with the key `my_schema` as the target:
+
+      ```yaml
+      resources:
+        pipelines:
+          my_pipeline:
+            name: test-pipeline-{{.unique_id}}
+            libraries:
+              - notebook:
+                  path: ./nb.sql
+            development: true
+            catalog: main
+            target: ${resources.schemas.my_schema.id}
+
+        schemas:
+          my_schema:
+            name: test-schema-{{.unique_id}}
+            catalog_name: main
+            comment: This schema was created by DABs.
+      ```
+
+      A top-level grants mapping is not supported by <DABS>, so if you want to set grants for a schema, define the grants for the schema within the `schemas` mapping. For more information about grants, see [_](/data-governance/unity-catalog/manage-privileges/index.md#grant).
+
+      The following example defines a <UC> schema with grants:
+
+      ```yaml
+      resources:
+        schemas:
+          my_schema:
+            name: test-schema
+            grants:
+              - principal: users
+                privileges:
+                  - CAN_MANAGE
+              - principal: my_team
+                privileges:
+                  - CAN_READ
+            catalog_name: main
+        ```
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "properties":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Volume:
+  "_":
+    "markdown_description": |-
+      The volume resource type allows you to define and create <UC> [volumes](/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:
+
+      - A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use <DABS> to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.
+
+      - Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [_](/dev-tools/bundles/deployment-modes.md#custom-presets).
+    "markdown_examples": |-
+      The following example creates a <UC> volume with the key `my_volume`:
+
+      ```yaml
+      resources:
+        volumes:
+          my_volume:
+            catalog_name: main
+            name: my_volume
+            schema_name: my_schema
+      ```
+
+      For an example bundle that runs a job that writes to a file in <UC> volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "volume_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "creator":
+    "description": |-
+      PLACEHOLDER
+  "deployment_artifacts":
+    "description": |-
+      PLACEHOLDER
+  "deployment_id":
+    "description": |-
+      PLACEHOLDER
+  "mode":
+    "description": |-
+      PLACEHOLDER
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts:
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
+  "message":
+    "description": |-
+      PLACEHOLDER
+  "state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "job":
+    "description": |-
+      PLACEHOLDER
+  "secret":
+    "description": |-
+      PLACEHOLDER
+  "serving_endpoint":
+    "description": |-
+      PLACEHOLDER
+  "sql_warehouse":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret:
+  "key":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+  "scope":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse:
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
+  "message":
+    "description": |-
+      PLACEHOLDER
+  "state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
+  "message":
+    "description": |-
+      PLACEHOLDER
+  "state": {}
+github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
+  "availability":
+    "description": |-
+      PLACEHOLDER
+  "ebs_volume_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes:
+  "availability":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
+  "data_security_mode":
+    "description": |-
+      PLACEHOLDER
+  "docker_image":
+    "description": |-
+      PLACEHOLDER
+  "kind":
+    "description": |-
+      PLACEHOLDER
+  "runtime_engine":
+    "description": |-
+      PLACEHOLDER
+  "workload_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.DockerImage:
+  "basic_auth":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
+  "availability":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
+  "git_snapshot":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
+  "spec":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule:
+  "metric":
+    "description": |-
+      PLACEHOLDER
+  "op":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
+  "rules":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
+  "python_named_params":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "health":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
+  "table_update":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
+  "id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
+  "quartz_cron_schedule":
+    "description": |-
+      PLACEHOLDER
+  "timezone_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
+  "cron":
+    "description": |-
+      PLACEHOLDER
+  "manual":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
+  "entity_version":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
+  "model_name":
+    "description": |-
+      PLACEHOLDER
+  "model_version":
+    "description": |-
+      PLACEHOLDER
