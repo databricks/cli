@@ -1,0 +1,2 @@
+export NO_COLOR=1
+$CLI bundle init https://invalid-domain-123.databricks.com/hello/world

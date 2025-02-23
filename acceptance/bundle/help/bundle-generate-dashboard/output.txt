@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle generate dashboard --help
+Generate configuration for a dashboard
+
+Usage:
+  databricks bundle generate dashboard [flags]
+
+Flags:
+  -s, --dashboard-dir string   directory to write the dashboard representation to (default "src")
+      --existing-id string     ID of the dashboard to generate configuration for
+      --existing-path string   workspace path of the dashboard to generate configuration for
+  -f, --force                  force overwrite existing files in the output directory
+  -h, --help                   help for dashboard
+      --resource string        resource key of dashboard to watch for changes
+  -d, --resource-dir string    directory to write the configuration to (default "resources")
+      --watch                  watch for changes to the dashboard and update the configuration
+
+Global Flags:
+      --debug            enable debug logging
+      --key string       resource key to use for the generated configuration
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

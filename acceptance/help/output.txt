@@ -115,7 +115,6 @@ Marketplace
 
 Apps
   apps                                   Apps run directly on a customer’s Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.
-  apps                                   Apps run directly on a customer’s Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.
 
 Clean Rooms
   clean-room-assets                      Clean room assets are data and code objects — Tables, volumes, and notebooks that are shared with the clean room.

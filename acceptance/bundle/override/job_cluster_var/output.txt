@@ -1,25 +1,20 @@
 
->>> $CLI bundle validate -o json -t development
+>>> [CLI] bundle validate -o json -t development
 {
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/development/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/development/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
     "job_clusters": [
-      {
-        "job_cluster_key": "key",
-        "new_cluster": {
-          "spark_version": "13.3.x-scala2.12"
-        }
-      },
       {
         "job_cluster_key": "key",
         "new_cluster": {
           "node_type_id": "i3.xlarge",
-          "num_workers": 1
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
         }
       }
     ],
@@ -32,21 +27,21 @@
   }
 }
 
->>> $CLI bundle validate -t development
+>>> [CLI] bundle validate -t development
 Name: override_job_cluster
 Target: development
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/development
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/override_job_cluster/development
 
 Validation OK!
 
->>> $CLI bundle validate -o json -t staging
+>>> [CLI] bundle validate -o json -t staging
 {
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/staging/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/staging/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -54,14 +49,9 @@ Validation OK!
       {
         "job_cluster_key": "key",
         "new_cluster": {
-          "spark_version": "13.3.x-scala2.12"
-        }
-      },
-      {
-        "job_cluster_key": "key",
-        "new_cluster": {
           "node_type_id": "i3.2xlarge",
-          "num_workers": 4
+          "num_workers": 4,
+          "spark_version": "13.3.x-scala2.12"
         }
       }
     ],
@@ -74,11 +64,11 @@ Validation OK!
   }
 }
 
->>> $CLI bundle validate -t staging
+>>> [CLI] bundle validate -t staging
 Name: override_job_cluster
 Target: staging
 Workspace:
-  User: tester@databricks.com
-  Path: /Workspace/Users/tester@databricks.com/.bundle/override_job_cluster/staging
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/override_job_cluster/staging
 
 Validation OK!

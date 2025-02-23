@@ -1,0 +1,57 @@
+
+>>> [CLI] bundle run --help
+Run the job or pipeline identified by KEY.
+
+The KEY is the unique identifier of the resource to run. In addition to
+customizing the run using any of the available flags, you can also specify
+keyword or positional arguments as shown in these examples:
+
+   databricks bundle run my_job -- --key1 value1 --key2 value2
+
+Or:
+
+   databricks bundle run my_job -- value1 value2 value3
+
+If the specified job uses job parameters or the job has a notebook task with
+parameters, the first example applies and flag names are mapped to the
+parameter names.
+
+If the specified job does not use job parameters and the job has a Python file
+task or a Python wheel task, the second example applies.
+
+Usage:
+  databricks bundle run [flags] KEY
+
+Job Flags:
+      --params stringToString   comma separated k=v pairs for job parameters (default [])
+
+Job Task Flags:
+  Note: please prefer use of job-level parameters (--param) over task-level parameters.
+  For more information, see https://docs.databricks.com/en/workflows/jobs/create-run-jobs.html#pass-parameters-to-a-databricks-job-task
+      --dbt-commands strings                 A list of commands to execute for jobs with DBT tasks.
+      --jar-params strings                   A list of parameters for jobs with Spark JAR tasks.
+      --notebook-params stringToString       A map from keys to values for jobs with notebook tasks. (default [])
+      --pipeline-params stringToString       A map from keys to values for jobs with pipeline tasks. (default [])
+      --python-named-params stringToString   A map from keys to values for jobs with Python wheel tasks. (default [])
+      --python-params strings                A list of parameters for jobs with Python tasks.
+      --spark-submit-params strings          A list of parameters for jobs with Spark submit tasks.
+      --sql-params stringToString            A map from keys to values for jobs with SQL tasks. (default [])
+
+Pipeline Flags:
+      --full-refresh strings   List of tables to reset and recompute.
+      --full-refresh-all       Perform a full graph reset and recompute.
+      --refresh strings        List of tables to update.
+      --refresh-all            Perform a full graph update.
+      --validate-only          Perform an update to validate graph correctness.
+
+Flags:
+  -h, --help      help for run
+      --no-wait   Don't wait for the run to complete.
+      --restart   Restart the run if it is already running.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

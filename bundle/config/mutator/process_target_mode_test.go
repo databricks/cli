@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -87,7 +88,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1", Continuous: true}},
+					"pipeline1": {CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {Experiment: &ml.Experiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
@@ -142,6 +143,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				Apps: map[string]*resources.App{
+					"app1": {
+						App: &apps.App{
+							Name: "app1",
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -173,7 +181,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
-	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
 
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
@@ -308,7 +316,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
@@ -354,7 +362,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
@@ -433,6 +441,13 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 			for _, key := range field.MapKeys() {
 				resource := field.MapIndex(key)
 				nameField := resource.Elem().FieldByName("Name")
+				resourceType := resources.Type().Field(i).Name
+
+				// Skip apps, as they are not renamed
+				if resourceType == "Apps" {
+					continue
+				}
+
 				if !nameField.IsValid() || nameField.Kind() != reflect.String {
 					continue
 				}
@@ -553,5 +568,5 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
 }

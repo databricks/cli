@@ -1,12 +1,10 @@
 package cfgpickers
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -70,7 +68,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 	cfg, server := qa.HTTPFixtures{
 		{
 			Method:   "GET",
-			Resource: "/api/2.1/clusters/list?",
+			Resource: "/api/2.1/clusters/list?filter_by.cluster_sources=API&filter_by.cluster_sources=UI&page_size=100",
 			Response: compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
@@ -114,8 +112,8 @@ func TestFirstCompatibleCluster(t *testing.T) {
 	defer server.Close()
 	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
 
-	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
+	ctx := cmdio.MockDiscard(context.Background())
+
 	clusterID, err := AskForCluster(ctx, w, WithDatabricksConnect("13.1"))
 	require.NoError(t, err)
 	require.Equal(t, "bcd-id", clusterID)
@@ -125,7 +123,7 @@ func TestNoCompatibleClusters(t *testing.T) {
 	cfg, server := qa.HTTPFixtures{
 		{
 			Method:   "GET",
-			Resource: "/api/2.1/clusters/list?",
+			Resource: "/api/2.1/clusters/list?filter_by.cluster_sources=API&filter_by.cluster_sources=UI&page_size=100",
 			Response: compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
@@ -161,8 +159,7 @@ func TestNoCompatibleClusters(t *testing.T) {
 	defer server.Close()
 	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
 
-	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
+	ctx := cmdio.MockDiscard(context.Background())
 	_, err := AskForCluster(ctx, w, WithDatabricksConnect("13.1"))
 	require.Equal(t, ErrNoCompatibleClusters, err)
 }

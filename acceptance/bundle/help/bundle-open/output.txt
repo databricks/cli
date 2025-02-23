@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle open --help
+Open a resource in the browser
+
+Usage:
+  databricks bundle open [flags]
+
+Flags:
+      --force-pull   Skip local cache and load the state from the remote workspace
+  -h, --help         help for open
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

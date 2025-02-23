@@ -1,0 +1,6 @@
+bundle:
+  name: non_yaml_in_includes
+
+include:
+ - test.py
+ - resources/*.yml

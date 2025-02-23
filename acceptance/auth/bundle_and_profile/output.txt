@@ -1,0 +1,32 @@
+
+=== Inside the bundle, no flags
+>>> errcode [CLI] current-user me
+"[USERNAME]"
+
+=== Inside the bundle, target flags
+>>> errcode [CLI] current-user me -t dev
+"[USERNAME]"
+
+=== Inside the bundle, target and matching profile
+>>> errcode [CLI] current-user me -t dev -p DEFAULT
+"[USERNAME]"
+
+=== Inside the bundle, profile flag not matching bundle host. Badness: should use profile from flag instead and not fail
+>>> errcode [CLI] current-user me -p profile_name
+Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host https://non-existing-subdomain.databricks.com, but CLI configured to use [DATABRICKS_TARGET]
+
+Exit code: 1
+
+=== Inside the bundle, target and not matching profile
+>>> errcode [CLI] current-user me -t dev -p profile_name
+Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host https://non-existing-subdomain.databricks.com, but CLI configured to use [DATABRICKS_TARGET]
+
+Exit code: 1
+
+=== Outside the bundle, no flags
+>>> errcode [CLI] current-user me
+"[USERNAME]"
+
+=== Outside the bundle, profile flag
+>>> errcode [CLI] current-user me -p profile_name
+"[USERNAME]"

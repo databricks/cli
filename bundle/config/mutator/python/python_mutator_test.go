@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"testing"
 
@@ -55,6 +54,8 @@ func TestPythonMutator_Name_applyMutators(t *testing.T) {
 func TestPythonMutator_loadResources(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 
+	rootPath := filepath.Join(t.TempDir(), "my_project")
+
 	b := loadYaml("databricks.yml", `
       experimental:
         python:
@@ -64,6 +65,9 @@ func TestPythonMutator_loadResources(t *testing.T) {
         jobs:
           job0:
             name: job_0`)
+
+	// set rootPath so that we can make absolute paths in dyn.Location
+	b.BundleRootPath = rootPath
 
 	ctx := withProcessStub(
 		t,
@@ -93,6 +97,8 @@ func TestPythonMutator_loadResources(t *testing.T) {
 			}
 		}`,
 		`{"severity": "warning", "summary": "job doesn't have any tasks", "location": {"file": "src/examples/file.py", "line": 10, "column": 5}}`,
+		`{"path": "resources.jobs.job0", "file": "src/examples/job0.py", "line": 3, "column": 5}
+		{"path": "resources.jobs.job1", "file": "src/examples/job1.py", "line": 5, "column": 7}`,
 	)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
@@ -109,6 +115,25 @@ func TestPythonMutator_loadResources(t *testing.T) {
 	if job1, ok := b.Config.Resources.Jobs["job1"]; ok {
 		assert.Equal(t, "job_1", job1.Name)
 	}
+
+	// output of locations.json should be applied to underlying dyn.Value
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		name1, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job1.name"))
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		assert.Equal(t, []dyn.Location{
+			{
+				File:   filepath.Join(rootPath, "src/examples/job1.py"),
+				Line:   5,
+				Column: 7,
+			},
+		}, name1.Locations())
+
+		return v, nil
+	})
+	assert.NoError(t, err)
 
 	assert.Equal(t, 1, len(diags))
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
@@ -157,7 +182,7 @@ func TestPythonMutator_loadResources_disallowed(t *testing.T) {
 					}
 				}
 			}
-		}`, "")
+		}`, "", "")
 
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -202,7 +227,7 @@ func TestPythonMutator_applyMutators(t *testing.T) {
 					}
 				}
 			}
-		}`, "")
+		}`, "", "")
 
 	mutator := PythonMutator(PythonMutatorPhaseApplyMutators)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -224,7 +249,7 @@ func TestPythonMutator_applyMutators(t *testing.T) {
 		description, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.description"))
 		require.NoError(t, err)
 
-		expectedVirtualPath, err := filepath.Abs("__generated_by_python__.yml")
+		expectedVirtualPath, err := filepath.Abs(generatedFileName)
 		require.NoError(t, err)
 		assert.Equal(t, expectedVirtualPath, description.Location().File)
 
@@ -263,7 +288,7 @@ func TestPythonMutator_badOutput(t *testing.T) {
 					}
 				}
 			}
-		}`, "")
+		}`, "", "")
 
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -312,7 +337,7 @@ func TestGetOps_Python(t *testing.T) {
 	}, PythonMutatorPhaseLoadResources)
 
 	assert.NoError(t, err)
-	assert.Equal(t, opts{venvPath: ".venv", enabled: true}, actual)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
 }
 
 func TestGetOps_PyDABs(t *testing.T) {
@@ -328,7 +353,7 @@ func TestGetOps_PyDABs(t *testing.T) {
 	}, PythonMutatorPhaseInit)
 
 	assert.NoError(t, err)
-	assert.Equal(t, opts{venvPath: ".venv", enabled: true}, actual)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: false}, actual)
 }
 
 func TestGetOps_empty(t *testing.T) {
@@ -661,7 +686,7 @@ or activate the environment before running CLI commands:
 	assert.Equal(t, expected, out)
 }
 
-func withProcessStub(t *testing.T, args []string, output, diagnostics string) context.Context {
+func withProcessStub(t *testing.T, args []string, output, diagnostics, locations string) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 
@@ -673,30 +698,49 @@ func withProcessStub(t *testing.T, args []string, output, diagnostics string) co
 
 	inputPath := filepath.Join(cacheDir, "input.json")
 	outputPath := filepath.Join(cacheDir, "output.json")
+	locationsPath := filepath.Join(cacheDir, "locations.json")
 	diagnosticsPath := filepath.Join(cacheDir, "diagnostics.json")
-
-	args = append(args, "--input", inputPath)
-	args = append(args, "--output", outputPath)
-	args = append(args, "--diagnostics", diagnosticsPath)
 
 	stub.WithCallback(func(actual *exec.Cmd) error {
 		_, err := os.Stat(inputPath)
 		assert.NoError(t, err)
 
-		if reflect.DeepEqual(actual.Args, args) {
-			err := os.WriteFile(outputPath, []byte(output), 0o600)
-			require.NoError(t, err)
+		actualInputPath := getArg(actual.Args, "--input")
+		actualOutputPath := getArg(actual.Args, "--output")
+		actualDiagnosticsPath := getArg(actual.Args, "--diagnostics")
+		actualLocationsPath := getArg(actual.Args, "--locations")
 
-			err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0o600)
-			require.NoError(t, err)
+		require.Equal(t, inputPath, actualInputPath)
+		require.Equal(t, outputPath, actualOutputPath)
+		require.Equal(t, diagnosticsPath, actualDiagnosticsPath)
 
-			return nil
-		} else {
-			return fmt.Errorf("unexpected command: %v", actual.Args)
+		// locations is an optional argument
+		if locations != "" {
+			require.Equal(t, locationsPath, actualLocationsPath)
+
+			err = os.WriteFile(locationsPath, []byte(locations), 0o600)
+			require.NoError(t, err)
 		}
+
+		err = os.WriteFile(outputPath, []byte(output), 0o600)
+		require.NoError(t, err)
+
+		err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0o600)
+		require.NoError(t, err)
+
+		return nil
 	})
 
 	return ctx
+}
+
+func getArg(args []string, name string) string {
+	for i := range args {
+		if args[i] == name {
+			return args[i+1]
+		}
+	}
+	return ""
 }
 
 func loadYaml(name, content string) *bundle.Bundle {

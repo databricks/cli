@@ -1,0 +1,39 @@
+
+>>> errcode [CLI] bundle validate -o json
+Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
+
+{
+  "bundle": {
+    "environment": "default",
+    "name": "host",
+    "target": "default"
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "targets": null,
+  "variables": {
+    "host": {
+      "default": "https://nonexistent123.staging.cloud.databricks.com"
+    }
+  },
+  "workspace": {
+    "host": "${var.host}"
+  }
+}
+
+Exit code: 1
+
+>>> errcode [CLI] bundle validate
+Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
+
+Name: host
+Target: default
+Workspace:
+  Host: ${var.host}
+
+Found 1 error
+
+Exit code: 1

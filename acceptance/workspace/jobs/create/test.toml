@@ -1,0 +1,27 @@
+LocalOnly = true  # request recording currently does not work with cloud environment
+RecordRequests = true
+IncludeRequestHeaders = ["Authorization", "User-Agent"]
+
+[[Server]]
+Pattern = "POST /api/2.1/jobs/create"
+Response.Body = '''
+{
+    "job_id": 1111
+}
+'''
+
+[[Repls]]
+Old = "(linux|darwin|windows)"
+New = "[OS]"
+
+[[Repls]]
+Old = " upstream/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " upstream-version/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""

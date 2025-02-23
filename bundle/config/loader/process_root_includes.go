@@ -2,6 +2,7 @@ package loader
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -36,6 +37,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// Maintain list of files in order of files being loaded.
 	// This is stored in the bundle configuration for observability.
 	var files []string
+	var diags diag.Diagnostics
 
 	// For each glob, find all files to load.
 	// Ordering of the list of globs is maintained in the output.
@@ -60,7 +62,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 
 		// Filter matches to ones we haven't seen yet.
 		var includes []string
-		for _, match := range matches {
+		for i, match := range matches {
 			rel, err := filepath.Rel(b.BundleRootPath, match)
 			if err != nil {
 				return diag.FromErr(err)
@@ -69,7 +71,20 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 				continue
 			}
 			seen[rel] = true
+			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" && filepath.Ext(rel) != ".json" {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "Files in the 'include' configuration section must be YAML or JSON files.",
+					Detail:    fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML or JSON file, and only such files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
+					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", i)),
+				})
+				continue
+			}
 			includes = append(includes, rel)
+		}
+
+		if len(diags) > 0 {
+			return diags
 		}
 
 		// Add matches to list of mutators to return.

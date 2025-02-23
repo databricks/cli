@@ -1,0 +1,7 @@
+Name: basic
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/$UNIQUE_PRJ
+
+Validation OK!
