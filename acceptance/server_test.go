@@ -63,7 +63,10 @@ func AddHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
-		return testUser
+		return testserver.Response{
+			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
+			Body:    testUser,
+		}
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
