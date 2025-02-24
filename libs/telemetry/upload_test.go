@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -14,29 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTelemetryUploadRetries(t *testing.T) {
-	server := testserver.New(t)
-	t.Cleanup(server.Close)
-
-	count := 0
-	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
-		count++
-		if count == 1 {
-			return ResponseBody{
-				NumProtoSuccess: 1,
-			}
-		}
-		if count == 2 {
-			return ResponseBody{
-				NumProtoSuccess: 2,
-			}
-		}
-		return nil
-	})
-
-	t.Setenv("DATABRICKS_HOST", server.URL)
-	t.Setenv("DATABRICKS_TOKEN", "token")
-
+func configureStdin(t *testing.T) {
 	logs := []protos.FrontendLog{
 		{
 			FrontendLogEventID: uuid.New().String(),
@@ -76,9 +55,50 @@ func TestTelemetryUploadRetries(t *testing.T) {
 		f.Close()
 		os.Stdin = old
 	})
+}
 
-	resp, err := Upload()
+func TestTelemetryUploadRetries(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	count := 0
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		count++
+		if count == 1 {
+			return ResponseBody{
+				NumProtoSuccess: 1,
+			}
+		}
+		if count == 2 {
+			return ResponseBody{
+				NumProtoSuccess: 2,
+			}
+		}
+		return nil
+	})
+
+	t.Setenv("DATABRICKS_HOST", server.URL)
+	t.Setenv("DATABRICKS_TOKEN", "token")
+
+	configureStdin(t)
+
+	resp, err := Upload(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), resp.NumProtoSuccess)
 	assert.Equal(t, 2, count)
+}
+
+func TestTelemetryUploadCanceled(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	configureStdin(t)
+	_, err := Upload(ctx)
+
+	// Since the context is already cancelled, upload should fail immediately
+	// with a timeout error.
+	assert.ErrorContains(t, err, "Failed to flush telemetry log due to timeout")
 }

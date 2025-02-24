@@ -41,7 +41,7 @@ func main() {
 			Level: logger.LevelError,
 		}
 
-		resp, err := telemetry.Upload()
+		resp, err := telemetry.Upload(ctx)
 		if err != nil {
 			fmt.Fprintf(errW, "error: %s\n", err)
 			os.Exit(1)

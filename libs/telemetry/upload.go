@@ -37,7 +37,7 @@ type UploadConfig struct {
 // Upload reads telemetry logs from stdin and uploads them to the telemetry endpoint.
 // This function is always expected to be called in a separate child process from
 // the main CLI process.
-func Upload() (*ResponseBody, error) {
+func Upload(ctx context.Context) (*ResponseBody, error) {
 	var err error
 
 	b, err := io.ReadAll(os.Stdin)
@@ -80,7 +80,7 @@ func Upload() (*ResponseBody, error) {
 	}
 
 	// Set a maximum total time to try telemetry uploads.
-	ctx, cancel := context.WithTimeout(context.Background(), maxUploadTime)
+	ctx, cancel := context.WithTimeout(ctx, maxUploadTime)
 	defer cancel()
 
 	resp := &ResponseBody{}
