@@ -176,7 +176,6 @@ func inheritEnvVars() []string {
 	return out
 }
 
-// TODO: Add tests validating the auth resolution in the telemetry worker.
 func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, exitCode int) {
 	// Nothing to upload.
 	if !telemetry.HasLogs(ctx) {

@@ -11,7 +11,6 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
-	// TODO: Run the acceptance tests as integration tests?
 	cmd.AddCommand(newSendTelemetry())
 	return cmd
 }
