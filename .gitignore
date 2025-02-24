@@ -25,7 +25,6 @@ coverage-acceptance.txt
 __pycache__
 *.pyc
 
-.idea/
 .vscode/launch.json
 .vscode/tasks.json
 
