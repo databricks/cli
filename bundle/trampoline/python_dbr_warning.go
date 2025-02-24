@@ -60,11 +60,28 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 		}
 
 		if task.ExistingClusterId != "" {
-			version, err := getSparkVersionForCluster(ctx, b.WorkspaceClient(), task.ExistingClusterId)
-			// If there's error getting spark version for cluster, do not mark it as incompatible
-			if err != nil {
-				log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())
-				return false
+			var version string
+			var err error
+			// If the cluster id is a variable and it's not resolved, it means it references a cluster defined in the same bundle.
+			// So we can get the version from the cluster definition.
+			// It's defined in a form of resources.clusters.<cluster_key>.spark_version while the value here is
+			// ${resources.clusters.<cluster_key>.id}
+			if strings.HasPrefix(task.ExistingClusterId, "${") {
+				// Extract the cluster key from the variable
+				clusterKey := strings.Split(task.ExistingClusterId, ".")[2]
+				cluster, ok := b.Config.Resources.Clusters[clusterKey]
+				if !ok {
+					log.Warnf(ctx, "unable to find cluster with key %s", clusterKey)
+					return false
+				}
+				version = cluster.SparkVersion
+			} else {
+				version, err = getSparkVersionForCluster(ctx, b.WorkspaceClient(), task.ExistingClusterId)
+				// If there's error getting spark version for cluster, do not mark it as incompatible
+				if err != nil {
+					log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())
+					return false
+				}
 			}
 
 			if lowerThanExpectedVersion(version) {
