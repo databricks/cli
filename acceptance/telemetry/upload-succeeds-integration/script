@@ -5,8 +5,6 @@ trace $CLI selftest send-telemetry
 
 echo "waiting for telemetry process to finish"
 
-echo "hello"
-
 # Wait for the child telemetry process to finish
 wait_pid $(cat ./telemetry.pid)
 
