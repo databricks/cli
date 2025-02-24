@@ -53,11 +53,11 @@ func NewFriendlyHandler(out io.Writer, opts *Options) slog.Handler {
 
 	// Cache (colorized) level strings.
 	// The colors to use for each level are configured in `colors.go`.
-	h.levelTrace = h.sprintf(ttyColorLevelTrace, "%5s", "TRACE")
-	h.levelDebug = h.sprintf(ttyColorLevelDebug, "%5s", "DEBUG")
-	h.levelInfo = h.sprintf(ttyColorLevelInfo, "%5s", "INFO")
-	h.levelWarn = h.sprintf(ttyColorLevelWarn, "%5s", "WARN")
-	h.levelError = h.sprintf(ttyColorLevelError, "%5s", "ERROR")
+	h.levelTrace = h.sprintf(ttyColorLevelTrace, "%s", "Trace:")
+	h.levelDebug = h.sprintf(ttyColorLevelDebug, "%s", "Debug:")
+	h.levelInfo = h.sprintf(ttyColorLevelInfo, "%s", "Info:")
+	h.levelWarn = h.sprintf(ttyColorLevelWarn, "%s", "Warn:")
+	h.levelError = h.sprintf(ttyColorLevelError, "%s", "Error:")
 	return h
 }
 
@@ -185,33 +185,41 @@ func (s *handleState) appendAttr(a slog.Attr) {
 // Handle implements slog.Handler.
 func (h *friendlyHandler) Handle(ctx context.Context, r slog.Record) error {
 	state := h.handleState()
-	state.append(h.sprintf(ttyColorTime, "%02d:%02d:%02d ", r.Time.Hour(), r.Time.Minute(), r.Time.Second()))
+
+	if h.opts.Level.Level() <= slog.LevelDebug {
+		state.append(h.sprintf(ttyColorTime, "%02d:%02d:%02d ", r.Time.Hour(), r.Time.Minute(), r.Time.Second()))
+	}
+
 	state.appendf("%s ", h.coloredLevel(r))
 	state.append(h.sprint(ttyColorMessage, r.Message))
 
-	// Handle state from WithGroup and WithAttrs.
-	goas := h.goas
-	if r.NumAttrs() == 0 {
-		// If the record has no Attrs, remove groups at the end of the list; they are empty.
-		for len(goas) > 0 && goas[len(goas)-1].group != "" {
-			goas = goas[:len(goas)-1]
-		}
-	}
-	for _, goa := range goas {
-		if goa.group != "" {
-			state.openGroup(goa.group)
-		} else {
-			for _, a := range goa.attrs {
-				state.appendAttr(a)
+	if h.opts.Level.Level() <= slog.LevelDebug {
+
+		// Handle state from WithGroup and WithAttrs.
+		goas := h.goas
+		if r.NumAttrs() == 0 {
+			// If the record has no Attrs, remove groups at the end of the list; they are empty.
+			for len(goas) > 0 && goas[len(goas)-1].group != "" {
+				goas = goas[:len(goas)-1]
 			}
 		}
-	}
+		for _, goa := range goas {
+			if goa.group != "" {
+				state.openGroup(goa.group)
+			} else {
+				for _, a := range goa.attrs {
+					state.appendAttr(a)
+				}
+			}
+		}
 
-	// Add attributes from the record.
-	r.Attrs(func(a slog.Attr) bool {
-		state.appendAttr(a)
-		return true
-	})
+		// Add attributes from the record.
+		r.Attrs(func(a slog.Attr) bool {
+			state.appendAttr(a)
+			return true
+		})
+
+	}
 
 	// Add newline.
 	state.append("\n")

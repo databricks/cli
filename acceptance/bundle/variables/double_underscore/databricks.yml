@@ -1,0 +1,14 @@
+bundle:
+  name: double_underscore
+
+variables:
+  double__underscore:
+    description: "This is a variable with a double underscore"
+    default: "default"
+
+resources:
+  jobs:
+    test_job:
+      name: "test"
+      tasks:
+        - task_key: "test ${var.double__underscore}"

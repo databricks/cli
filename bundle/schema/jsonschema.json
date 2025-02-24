@@ -409,6 +409,10 @@
                         "description": "Job-level parameter definitions",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition"
                       },
+                      "performance_target": {
+                        "description": "PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
+                      },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
                       },
@@ -702,6 +706,9 @@
                       "restart_window": {
                         "description": "Restart window of this pipeline.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow"
+                      },
+                      "run_as": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs"
                       },
                       "schema": {
                         "description": "The default schema (database) where tables are read from or published to. The presence of this field implies that the pipeline is in direct publishing mode.",
@@ -3895,6 +3902,22 @@
                 }
               ]
             },
+            "jobs.PerformanceTarget": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.\nThe performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager\n(see cluster-common PerformanceTarget).",
+                  "enum": [
+                    "PERFORMANCE_OPTIMIZED",
+                    "COST_OPTIMIZED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "jobs.PeriodicTriggerConfiguration": {
               "oneOf": [
                 {
@@ -5372,6 +5395,29 @@
                   "required": [
                     "start_hour"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.RunAs": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.\n\nOnly `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.",
+                  "properties": {
+                    "service_principal_name": {
+                      "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "user_name": {
+                      "description": "The email of an active workspace user. Users can only set this field to their own email.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",

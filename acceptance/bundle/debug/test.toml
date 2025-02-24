@@ -1,0 +1,18 @@
+LocalOnly = true
+
+[[Repls]]
+# The keys are unsorted and also vary per OS
+Old = 'Environment variables for Terraform: ([A-Z_ ,]+) '
+New = 'Environment variables for Terraform: ...redacted... '
+
+[[Repls]]
+Old = 'pid=[0-9]+'
+New = 'pid=12345'
+
+[[Repls]]
+Old = '\d\d:\d\d:\d\d'
+New = '10:07:59'
+
+[[Repls]]
+Old = '\\'
+New = '/'

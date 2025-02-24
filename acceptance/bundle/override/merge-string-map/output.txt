@@ -1,5 +1,5 @@
 
->>> $CLI bundle validate -o json -t dev
+>>> [CLI] bundle validate -o json -t dev
 Warning: expected map, found string
   at resources.clusters.my_cluster
   in databricks.yml:6:17
@@ -13,7 +13,7 @@ Warning: expected map, found string
   }
 }
 
->>> $CLI bundle validate -t dev
+>>> [CLI] bundle validate -t dev
 Warning: expected map, found string
   at resources.clusters.my_cluster
   in databricks.yml:6:17
@@ -21,7 +21,7 @@ Warning: expected map, found string
 Name: merge-string-map
 Target: dev
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/merge-string-map/dev
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/merge-string-map/dev
 
 Found 1 warning

@@ -102,6 +102,8 @@ func formatDescription(a attributeNode) string {
 	return s
 }
 
+// Docs framework does not allow special characters in anchor links and strip them out by default
+// We need to clean them up to make sure the links pass the validation
 func cleanAnchor(s string) string {
 	s = strings.ReplaceAll(s, "<", "")
 	s = strings.ReplaceAll(s, ">", "")

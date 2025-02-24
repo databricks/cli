@@ -220,9 +220,9 @@ func isCycleField(field string) bool {
 }
 
 func getExample(v *jsonschema.Schema) string {
-	examples := v.Examples
+	examples := getExamples(v.Examples)
 	if len(examples) == 0 {
 		return ""
 	}
-	return examples[0].(string)
+	return examples[0]
 }

@@ -1,5 +1,5 @@
 
->>> $CLI bundle validate -o json -t default
+>>> [CLI] bundle validate -o json -t default
 {
   "autoscale": {
     "max_workers": 7,
@@ -15,7 +15,7 @@
   "spark_version": "13.3.x-scala2.12"
 }
 
->>> $CLI bundle validate -o json -t development
+>>> [CLI] bundle validate -o json -t development
 {
   "autoscale": {
     "max_workers": 3,
