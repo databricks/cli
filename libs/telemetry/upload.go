@@ -27,7 +27,7 @@ const (
 	DisableEnvVar = "DATABRICKS_CLI_TELEMETRY_DISABLE"
 
 	// Max time to try and upload the telemetry logs. Useful for testing.
-	UploadTimeout = "DATABRICKS_CLI_TELEMETRY_UPLOAD_TIMEOUT"
+	UploadTimeoutEnvVar = "DATABRICKS_CLI_TELEMETRY_UPLOAD_TIMEOUT"
 )
 
 type UploadConfig struct {
@@ -72,10 +72,10 @@ func Upload() (*ResponseBody, error) {
 	}
 
 	maxUploadTime := 30 * time.Second
-	if v, ok := os.LookupEnv(UploadTimeout); ok {
+	if v, ok := os.LookupEnv(UploadTimeoutEnvVar); ok {
 		maxUploadTime, err = time.ParseDuration(v)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse time limit %s: %s\n", UploadTimeout, err)
+			return nil, fmt.Errorf("Failed to parse time limit %s: %s\n", UploadTimeoutEnvVar, err)
 		}
 	}
 
