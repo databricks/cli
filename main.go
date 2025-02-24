@@ -16,7 +16,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	// Uploading telemetry data spawns a new process. We handle this separately
+	// A new process is spawned for uploading telemetry data. We handle this separately
 	// from the rest of the CLI commands.
 	// This is done because [root.Execute] spawns a new process to run the
 	// "telemetry upload" command if there are logs to be uploaded. Having this outside
