@@ -1,6 +1,6 @@
 export DATABRICKS_CLI_TELEMETRY_PID_FILE=./telemetry.pid
 export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload_process.txt
-export DATABRICKS_CLI_TELEMETRY_DISABLE="true"
+export DATABRICKS_CLI_DISABLE_TELEMETRY="true"
 
 trace $CLI selftest send-telemetry
 

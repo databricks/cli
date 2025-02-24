@@ -24,7 +24,7 @@ const (
 
 	// Environment variable to disable telemetry. If this is set to any value, telemetry
 	// will be disabled.
-	DisableEnvVar = "DATABRICKS_CLI_TELEMETRY_DISABLE"
+	DisableEnvVar = "DATABRICKS_CLI_DISABLE_TELEMETRY"
 
 	// Max time to try and upload the telemetry logs. Useful for testing.
 	UploadTimeoutEnvVar = "DATABRICKS_CLI_TELEMETRY_UPLOAD_TIMEOUT"
