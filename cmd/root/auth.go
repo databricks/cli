@@ -186,7 +186,6 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	return w, err
 }
 
-// TODO: Run as integration tests?
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
