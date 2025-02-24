@@ -8,16 +8,17 @@ This is a description
   
   
   
-.. list-table::
-   :header-rows: 1
+:::list-table
   
-   * - Key
-     - Type
-     - Description
+- - Key
+  - Type
+  - Description
   
-   * - `my_attribute`
-     - Map
-     - Desc with link. See [_](#some_fieldnamemy_attribute).
+- - `my_attribute`
+  - Map
+  - Desc with link. See [\_](#some_fieldnamemy_attribute).
+  
+:::
   
   
 ### some_field.\<name\>.my_attribute

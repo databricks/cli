@@ -97,7 +97,7 @@ func formatDescription(a attributeNode) string {
 		} else if s != "" {
 			s += ". "
 		}
-		s += fmt.Sprintf("See [_](#%s).", cleanAnchor(a.Link))
+		s += fmt.Sprintf("See [\\_](#%s).", cleanAnchor(a.Link))
 	}
 	return s
 }
