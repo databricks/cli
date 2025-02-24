@@ -15,7 +15,7 @@ github.com/databricks/cli/bundle/config.Artifact:
     "description": |-
       Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
     "markdown_description": |-
-      Required. The type of the artifact. Valid values are `whl`.
+      Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
 github.com/databricks/cli/bundle/config.ArtifactFile:
   "source":
     "description": |-
@@ -141,62 +141,64 @@ github.com/databricks/cli/bundle/config.Python:
 github.com/databricks/cli/bundle/config.Resources:
   "apps":
     "description": |-
-      PLACEHOLDER
+      The app resource defines a Databricks app.
+    "markdown_description": |-
+      The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [_](/dev-tools/databricks-apps/index.md).
   "clusters":
     "description": |-
       The cluster definitions for the bundle, where each key is the name of a cluster.
     "markdown_description": |-
-      The cluster definitions for the bundle, where each key is the name of a cluster. See [_](/dev-tools/bundles/resources.md#clusters)
+      The cluster definitions for the bundle, where each key is the name of a cluster. See [_](/dev-tools/bundles/resources.md#clusters).
   "dashboards":
     "description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
-      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [_](/dev-tools/bundles/resources.md#dashboards)
+      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [_](/dev-tools/bundles/resources.md#dashboards).
   "experiments":
     "description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
-      The experiment definitions for the bundle, where each key is the name of the experiment. See [_](/dev-tools/bundles/resources.md#experiments)
+      The experiment definitions for the bundle, where each key is the name of the experiment. See [_](/dev-tools/bundles/resources.md#experiments).
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
     "markdown_description": |-
-      The job definitions for the bundle, where each key is the name of the job. See [_](/dev-tools/bundles/resources.md#jobs)
+      The job definitions for the bundle, where each key is the name of the job. See [_](/dev-tools/bundles/resources.md#jobs).
   "model_serving_endpoints":
     "description": |-
       The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
     "markdown_description": |-
-      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [_](/dev-tools/bundles/resources.md#model_serving_endpoints)
+      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [_](/dev-tools/bundles/resources.md#model_serving_endpoints).
   "models":
     "description": |-
       The model definitions for the bundle, where each key is the name of the model.
     "markdown_description": |-
-      The model definitions for the bundle, where each key is the name of the model. See [_](/dev-tools/bundles/resources.md#models)
+      The model definitions for the bundle, where each key is the name of the model. See [_](/dev-tools/bundles/resources.md#models).
   "pipelines":
     "description": |-
       The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
-      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [_](/dev-tools/bundles/resources.md#pipelines)
+      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [_](/dev-tools/bundles/resources.md#pipelines).
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
     "markdown_description": |-
-      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality_monitors)
+      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality_monitors).
   "registered_models":
     "description": |-
       The registered model definitions for the bundle, where each key is the name of the <UC> registered model.
     "markdown_description": |-
-      The registered model definitions for the bundle, where each key is the name of the <UC> registered model. See [_](/dev-tools/bundles/resources.md#registered_models)
+      The registered model definitions for the bundle, where each key is the name of the <UC> registered model. See [_](/dev-tools/bundles/resources.md#registered_models).
   "schemas":
     "description": |-
       The schema definitions for the bundle, where each key is the name of the schema.
     "markdown_description": |-
-      The schema definitions for the bundle, where each key is the name of the schema. See [_](/dev-tools/bundles/resources.md#schemas)
+      The schema definitions for the bundle, where each key is the name of the schema. See [_](/dev-tools/bundles/resources.md#schemas).
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
     "markdown_description": |-
-      The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volumes)
+      The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volumes).
 github.com/databricks/cli/bundle/config.Root:
   "artifacts":
     "description": |-
