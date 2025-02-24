@@ -3,4 +3,3 @@
 LocalOnly = true
 
 RecordRequests = true
-FilterRequestsPattern = "POST /api/.*/jobs/create"
