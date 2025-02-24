@@ -9,3 +9,33 @@ Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): [D
 
 Please refer to the README.md file for "getting started" instructions.
 See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+--- [TESTROOT]/bundle/templates/default-python/serverless-auto-error/../classic/output/my_default_python/README.md
++++ output/my_default_python/README.md
+@@ -38,8 +38,10 @@
+    $ databricks bundle run
+    ```
+-
+-6. Optionally, install developer tools such as the Databricks extension for Visual Studio Code from
+-   https://docs.databricks.com/dev-tools/vscode-ext.html. Or read the "getting started" documentation for
+-   **Databricks Connect** for instructions on running the included Python code from a different IDE.
++6. Optionally, install the Databricks extension for Visual Studio code for local development from
++   https://docs.databricks.com/dev-tools/vscode-ext.html. It can configure your
++   virtual environment and setup Databricks Connect for running unit tests locally.
++   When not using these tools, consult your development environment's documentation
++   and/or the documentation for Databricks Connect for manually setting up your environment
++   (https://docs.databricks.com/en/dev-tools/databricks-connect/python/index.html).
+ 
+ 7. For documentation on the Databricks asset bundles format used
+--- [TESTROOT]/bundle/templates/default-python/serverless-auto-error/../classic/output/my_default_python/databricks.yml
++++ output/my_default_python/databricks.yml
+@@ -23,9 +23,7 @@
+     workspace:
+       host: [DATABRICKS_URL]
+-      # We explicitly specify /Workspace/Users/[USERNAME] to make sure we only have a single copy.
++      # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+     permissions:
+       - user_name: [USERNAME]
+         level: CAN_MANAGE
+-    run_as:
+-      user_name: [USERNAME]
