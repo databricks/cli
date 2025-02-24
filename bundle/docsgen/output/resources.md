@@ -899,11 +899,11 @@ Defines values necessary to configure and run Azure Log Analytics agent
   
 - - `log_analytics_primary_key`
   - String
-  - <needs content added>
+  - 
   
 - - `log_analytics_workspace_id`
   - String
-  - <needs content added>
+  - 
   
 :::
   
@@ -1115,7 +1115,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 - - `abfss`
   - Map
-  - destination needs to be provided. e.g. `{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }. See [\_](#clustersnameinit_scriptsabfss).
+  - See [\_](#clustersnameinit_scriptsabfss).
   
 - - `dbfs`
   - Map
@@ -1148,8 +1148,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 **`Type: Map`**
   
-destination needs to be provided. e.g.
-`{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }
+
   
   
   
@@ -1928,7 +1927,7 @@ In this minimal environment spec, only pip dependencies are supported.
   
 - - `dependencies`
   - Sequence
-  - List of pip dependencies, as supported by the version of pip in this environment. Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/ Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url> E.g. dependencies: ["foo==0.0.1", "-r /Workspace/test/requirements.txt"]
+  - 
   
 :::
   
@@ -2379,11 +2378,11 @@ Defines values necessary to configure and run Azure Log Analytics agent
   
 - - `log_analytics_primary_key`
   - String
-  - <needs content added>
+  - 
   
 - - `log_analytics_workspace_id`
   - String
-  - <needs content added>
+  - 
   
 :::
   
@@ -2595,7 +2594,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 - - `abfss`
   - Map
-  - destination needs to be provided. e.g. `{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }. See [\_](#jobsnamejob_clustersnew_clusterinit_scriptsabfss).
+  - See [\_](#jobsnamejob_clustersnew_clusterinit_scriptsabfss).
   
 - - `dbfs`
   - Map
@@ -2628,8 +2627,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 **`Type: Map`**
   
-destination needs to be provided. e.g.
-`{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }
+
   
   
   
@@ -3801,11 +3799,11 @@ Defines values necessary to configure and run Azure Log Analytics agent
   
 - - `log_analytics_primary_key`
   - String
-  - <needs content added>
+  - 
   
 - - `log_analytics_workspace_id`
   - String
-  - <needs content added>
+  - 
   
 :::
   
@@ -4017,7 +4015,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 - - `abfss`
   - Map
-  - destination needs to be provided. e.g. `{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }. See [\_](#jobsnametasksnew_clusterinit_scriptsabfss).
+  - See [\_](#jobsnametasksnew_clusterinit_scriptsabfss).
   
 - - `dbfs`
   - Map
@@ -4050,8 +4048,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 **`Type: Map`**
   
-destination needs to be provided. e.g.
-`{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }
+
   
   
   
@@ -6771,11 +6768,11 @@ Defines values necessary to configure and run Azure Log Analytics agent
   
 - - `log_analytics_primary_key`
   - String
-  - <needs content added>
+  - 
   
 - - `log_analytics_workspace_id`
   - String
-  - <needs content added>
+  - 
   
 :::
   
@@ -6938,7 +6935,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 - - `abfss`
   - Map
-  - destination needs to be provided. e.g. `{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }. See [\_](#pipelinesnameclustersinit_scriptsabfss).
+  - See [\_](#pipelinesnameclustersinit_scriptsabfss).
   
 - - `dbfs`
   - Map
@@ -6971,8 +6968,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 **`Type: Map`**
   
-destination needs to be provided. e.g.
-`{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }
+
   
   
   
@@ -8015,7 +8011,7 @@ Configuration for monitoring inference logs.
   
 - - `granularities`
   - Sequence
-  - Granularities for aggregating data into time windows based on their timestamp. Currently the following static granularities are supported: {``"5 minutes"``, ``"30 minutes"``, ``"1 hour"``, ``"1 day"``, ``"<n> week(s)"``, ``"1 month"``, ``"1 year"``}. 
+  - 
   
 - - `label_col`
   - String
@@ -8163,7 +8159,7 @@ Configuration for monitoring time series tables.
   
 - - `granularities`
   - Sequence
-  - Granularities for aggregating data into time windows based on their timestamp. Currently the following static granularities are supported: {``"5 minutes"``, ``"30 minutes"``, ``"1 hour"``, ``"1 day"``, ``"<n> week(s)"``, ``"1 month"``, ``"1 year"``}. 
+  - 
   
 - - `timestamp_col`
   - String
