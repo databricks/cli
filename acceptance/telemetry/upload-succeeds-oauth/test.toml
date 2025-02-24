@@ -10,9 +10,6 @@ Response.Body = '''
 }
 '''
 
-[[Repls]]
-Old = 'execution_time_ms\\\":\d{1,5},'
-New = 'execution_time_ms\":\"SMALL_INT\",'
 
 # "client_id:client_secret" in base64 is Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ=, expect to
 # see this in Authorization header
