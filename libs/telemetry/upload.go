@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	// File containing debug logs from the upload process.
+	// File containing output from the upload process.
 	UploadLogsFileEnvVar = "DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE"
 
 	// File containing the PID of the telemetry upload process.
