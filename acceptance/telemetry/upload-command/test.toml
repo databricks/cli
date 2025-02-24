@@ -1,7 +1,11 @@
+LocalOnly = true
+RecordRequests = true
+
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''
 {
+    "errors": [],
     "numProtoSuccess": 2
 }
 '''

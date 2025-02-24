@@ -1,0 +1,16 @@
+# RecordRequests is not supported for integration tests yet. Once we have support
+# for running integration tests with record requests we can remove this test since
+# it's a copy of acceptance/telemetry/upload-succeeds.
+
+[[Server]]
+Pattern = "POST /telemetry-ext"
+Response.Body = '''
+{
+    "errors": [],
+    "numProtoSuccess": 2
+}
+'''
+
+[[Repls]]
+Old = 'execution_time_ms\\\":\d{1,5},'
+New = 'execution_time_ms\":\"SMALL_INT\",'
