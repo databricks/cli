@@ -42,7 +42,7 @@ artifacts:
   
 - - `files`
   - Sequence
-  - The source files for the artifact. See [_](#artifactsnamefiles).
+  - The source files for the artifact. See [\_](#artifactsnamefiles).
   
 - - `path`
   - String
@@ -114,11 +114,11 @@ The bundle attributes when deploying to this target,
   
 - - `deployment`
   - Map
-  - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#bundledeployment).
+  - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [\_](#bundledeployment).
   
 - - `git`
   - Map
-  - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#bundlegit).
+  - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [\_](#bundlegit).
   
 - - `name`
   - String
@@ -151,7 +151,7 @@ The definition of the bundle deployment. For supported attributes see [_](/dev-t
   
 - - `lock`
   - Map
-  - The deployment lock attributes. See [_](#bundledeploymentlock).
+  - The deployment lock attributes. See [\_](#bundledeploymentlock).
   
 :::
   
@@ -222,11 +222,11 @@ Defines attributes for experimental features.
   
 - - `pydabs`
   - Map
-  - The PyDABs configuration. See [_](#experimentalpydabs).
+  - The PyDABs configuration. See [\_](#experimentalpydabs).
   
 - - `python`
   - Map
-  - Configures loading of Python code defined with 'databricks-bundles' package. See [_](#experimentalpython).
+  - Configures loading of Python code defined with 'databricks-bundles' package. See [\_](#experimentalpython).
   
 - - `python_wheel_wrapper`
   - Boolean
@@ -543,11 +543,11 @@ targets:
   
 - - `artifacts`
   - Map
-  - The artifacts to include in the target deployment. See [_](#targetsnameartifacts).
+  - The artifacts to include in the target deployment. See [\_](#targetsnameartifacts).
   
 - - `bundle`
   - Map
-  - The bundle attributes when deploying to this target. See [_](#targetsnamebundle).
+  - The bundle attributes when deploying to this target. See [\_](#targetsnamebundle).
   
 - - `cluster_id`
   - String
@@ -563,7 +563,7 @@ targets:
   
 - - `git`
   - Map
-  - The Git version control settings for the target. See [_](#targetsnamegit).
+  - The Git version control settings for the target. See [\_](#targetsnamegit).
   
 - - `mode`
   - String
@@ -571,31 +571,31 @@ targets:
   
 - - `permissions`
   - Sequence
-  - The permissions for deploying and running the bundle in the target. See [_](#targetsnamepermissions).
+  - The permissions for deploying and running the bundle in the target. See [\_](#targetsnamepermissions).
   
 - - `presets`
   - Map
-  - The deployment presets for the target. See [_](#targetsnamepresets).
+  - The deployment presets for the target. See [\_](#targetsnamepresets).
   
 - - `resources`
   - Map
-  - The resource definitions for the target. See [_](#targetsnameresources).
+  - The resource definitions for the target. See [\_](#targetsnameresources).
   
 - - `run_as`
   - Map
-  - The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md). See [_](#targetsnamerun_as).
+  - The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md). See [\_](#targetsnamerun_as).
   
 - - `sync`
   - Map
-  - The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#targetsnamesync).
+  - The local paths to sync to the target workspace when a bundle is run or deployed. See [\_](#targetsnamesync).
   
 - - `variables`
   - Map
-  - The custom variable definitions for the target. See [_](#targetsnamevariables).
+  - The custom variable definitions for the target. See [\_](#targetsnamevariables).
   
 - - `workspace`
   - Map
-  - The Databricks workspace for the target. See [_](#targetsnameworkspace).
+  - The Databricks workspace for the target. See [\_](#targetsnameworkspace).
   
 :::
   
@@ -629,7 +629,7 @@ artifacts:
   
 - - `files`
   - Sequence
-  - The source files for the artifact. See [_](#targetsnameartifactsnamefiles).
+  - The source files for the artifact. See [\_](#targetsnameartifactsnamefiles).
   
 - - `path`
   - String
@@ -691,11 +691,11 @@ The bundle attributes when deploying to this target.
   
 - - `deployment`
   - Map
-  - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [_](#targetsnamebundledeployment).
+  - The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md). See [\_](#targetsnamebundledeployment).
   
 - - `git`
   - Map
-  - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [_](#targetsnamebundlegit).
+  - The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git). See [\_](#targetsnamebundlegit).
   
 - - `name`
   - String
@@ -728,7 +728,7 @@ The definition of the bundle deployment. For supported attributes see [_](/dev-t
   
 - - `lock`
   - Map
-  - The deployment lock attributes. See [_](#targetsnamebundledeploymentlock).
+  - The deployment lock attributes. See [\_](#targetsnamebundledeploymentlock).
   
 :::
   
@@ -1030,7 +1030,7 @@ variables:
   
 - - `lookup`
   - Map
-  - The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID. See [_](#targetsnamevariablesnamelookup).
+  - The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID. See [\_](#targetsnamevariablesnamelookup).
   
 - - `type`
   - String
@@ -1214,7 +1214,7 @@ variables:
   
 - - `lookup`
   - Map
-  - The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID. See [_](#variablesnamelookup).
+  - The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID. See [\_](#variablesnamelookup).
   
 - - `type`
   - String
