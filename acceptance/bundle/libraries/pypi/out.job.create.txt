@@ -28,7 +28,7 @@
         "libraries": [
           {
             "pypi": {
-              "package": "dbt-databricks\u003e=1.8.0,\u003c2.0.0"
+              "package": "dbt-databricks>=1.8.0,<2.0.0"
             }
           }
         ],
