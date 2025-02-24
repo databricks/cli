@@ -18,14 +18,14 @@ func TestPermissionDiagnosticsApplySuccess(t *testing.T) {
 		{Level: "CAN_MANAGE", UserName: "testuser@databricks.com"},
 	})
 
-	diags := permissions.PermissionDiagnostics().Apply(context.Background(), b)
+	diags := bundle.Apply(context.Background(), b, permissions.PermissionDiagnostics())
 	require.NoError(t, diags.Error())
 }
 
 func TestPermissionDiagnosticsEmpty(t *testing.T) {
 	b := mockBundle(nil)
 
-	diags := permissions.PermissionDiagnostics().Apply(context.Background(), b)
+	diags := bundle.Apply(context.Background(), b, permissions.PermissionDiagnostics())
 	require.NoError(t, diags.Error())
 }
 
@@ -34,7 +34,7 @@ func TestPermissionDiagnosticsApplyFail(t *testing.T) {
 		{Level: "CAN_VIEW", UserName: "testuser@databricks.com"},
 	})
 
-	diags := permissions.PermissionDiagnostics().Apply(context.Background(), b)
+	diags := bundle.Apply(context.Background(), b, permissions.PermissionDiagnostics())
 	require.Equal(t, diag.Recommendation, diags[0].Severity)
 
 	expectedMsg := "permissions section should explicitly include the current deployment identity " +
