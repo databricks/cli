@@ -2094,6 +2094,7 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
+                      "description": "Granularities for aggregating data into time windows based on their timestamp. Currently the following static\ngranularities are supported:\n{``\"5 minutes\"``, ``\"30 minutes\"``, ``\"1 hour\"``, ``\"1 day\"``, ``\"\u003cn\u003e week(s)\"``, ``\"1 month\"``, ``\"1 year\"``}.\n",
                       "$ref": "#/$defs/slice/string"
                     },
                     "label_col": {
@@ -2250,6 +2251,7 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
+                      "description": "Granularities for aggregating data into time windows based on their timestamp. Currently the following static\ngranularities are supported:\n{``\"5 minutes\"``, ``\"30 minutes\"``, ``\"1 hour\"``, ``\"1 day\"``, ``\"\u003cn\u003e week(s)\"``, ``\"1 month\"``, ``\"1 year\"``}.\n",
                       "$ref": "#/$defs/slice/string"
                     },
                     "timestamp_col": {
@@ -2730,6 +2732,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "dependencies": {
+                      "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e\nE.g. dependencies: [\"foo==0.0.1\", \"-r /Workspace/test/requirements.txt\"]",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -2825,6 +2828,7 @@
                   "type": "object",
                   "properties": {
                     "abfss": {
+                      "description": "destination needs to be provided. e.g.\n`{ \"abfss\" : { \"destination\" : \"abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e\" } }",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info"
                     },
                     "dbfs": {
@@ -2932,9 +2936,11 @@
                   "type": "object",
                   "properties": {
                     "log_analytics_primary_key": {
+                      "description": "\u003cneeds content added\u003e",
                       "$ref": "#/$defs/string"
                     },
                     "log_analytics_workspace_id": {
+                      "description": "\u003cneeds content added\u003e",
                       "$ref": "#/$defs/string"
                     }
                   },

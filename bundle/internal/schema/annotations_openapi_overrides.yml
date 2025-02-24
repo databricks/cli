@@ -566,26 +566,3 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
   "model_version":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
-  "abfss":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.Environment:
-  "dependencies":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
-  "granularities":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
-  "granularities":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
-  "log_analytics_primary_key":
-    "description": |-
-      PLACEHOLDER
-  "log_analytics_workspace_id":
-    "description": |-
-      PLACEHOLDER
