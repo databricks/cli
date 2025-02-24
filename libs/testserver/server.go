@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
-	"slices"
 	"strings"
 	"sync"
 
@@ -26,18 +25,7 @@ type Server struct {
 	fakeWorkspaces map[string]*FakeWorkspace
 	mu             *sync.Mutex
 
-	RecordRequests        bool
-	IncludeRequestHeaders []string
-
-	Requests []LoggedRequest
-}
-
-type LoggedRequest struct {
-	Headers http.Header `json:"headers,omitempty"`
-	Method  string      `json:"method"`
-	Path    string      `json:"path"`
-	Body    any         `json:"body,omitempty"`
-	RawBody string      `json:"raw_body,omitempty"`
+	RecordRequestsCallback func(request *Request)
 }
 
 type Request struct {
@@ -265,10 +253,9 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 		}
 
 		request := NewRequest(s.t, r, fakeWorkspace)
-		if s.RecordRequests {
-			s.Requests = append(s.Requests, getLoggedRequest(request, s.IncludeRequestHeaders))
+		if s.RecordRequestsCallback != nil {
+			s.RecordRequestsCallback(&request)
 		}
-
 		respAny := handler(request)
 		resp := normalizeResponse(s.t, respAny)
 
@@ -294,33 +281,6 @@ func getToken(r *http.Request) string {
 	}
 
 	return header[len(prefix):]
-}
-
-func getLoggedRequest(req Request, includedHeaders []string) LoggedRequest {
-	result := LoggedRequest{
-		Method:  req.Method,
-		Path:    req.URL.Path,
-		Headers: filterHeaders(req.Headers, includedHeaders),
-	}
-
-	if json.Valid(req.Body) {
-		result.Body = json.RawMessage(req.Body)
-	} else {
-		result.RawBody = string(req.Body)
-	}
-
-	return result
-}
-
-func filterHeaders(h http.Header, includedHeaders []string) http.Header {
-	headers := make(http.Header)
-	for k, v := range h {
-		if !slices.Contains(includedHeaders, k) {
-			continue
-		}
-		headers[k] = v
-	}
-	return headers
 }
 
 func isNil(i any) bool {
