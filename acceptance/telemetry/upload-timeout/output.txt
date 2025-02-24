@@ -1,0 +1,4 @@
+
+>>> [CLI] selftest send-telemetry
+waiting for telemetry process to finish
+[wait_pid] process has ended
