@@ -1,7 +1,4 @@
 {{$with_serverless := (eq .serverless "yes") -}}
-{{if (eq .serverless "auto") -}}
-    {{$with_serverless = is_serverless_supported -}}
-{{end -}}
 # The main pipeline for {{.project_name}}
 resources:
   pipelines:
