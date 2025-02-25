@@ -11,7 +11,7 @@
 >>> errcode [CLI] current-user me -t dev -p DEFAULT
 "[USERNAME]"
 
-=== Inside the bundle, profile flag not matching bundle host.
+=== Inside the bundle, profile flag not matching bundle host. Should use profile from the flag and not the bundle.
 >>> errcode [CLI] current-user me -p profile_name
 Error: Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)
 
