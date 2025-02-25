@@ -1,6 +1,6 @@
 
 >>> [CLI] panic
-The Databricks CLI unexpectedly panicked.
+The Databricks CLI had a fatal error.
 Please report this issue to Databricks in the form of a GitHub issue at:
 https://github.com/databricks/cli
 

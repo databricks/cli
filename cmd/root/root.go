@@ -112,7 +112,7 @@ func Execute(ctx context.Context, cmd *cobra.Command) (err error) {
 		// Set the error so that the CLI exits with a non-zero exit code.
 		err = fmt.Errorf("panic: %v", r)
 
-		fmt.Fprintf(cmd.ErrOrStderr(), `The Databricks CLI unexpectedly panicked.
+		fmt.Fprintf(cmd.ErrOrStderr(), `The Databricks CLI had a fatal error.
 Please report this issue to Databricks in the form of a GitHub issue at:
 https://github.com/databricks/cli
 
