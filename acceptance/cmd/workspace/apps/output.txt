@@ -11,6 +11,7 @@
     "state":"ERROR"
   },
   "description":"My app description.",
+  "id":"12345",
   "name":"test-name",
   "resources": [
     {

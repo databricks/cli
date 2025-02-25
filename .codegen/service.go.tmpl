@@ -133,11 +133,11 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Flags().BoolVar(&{{.CamelName}}SkipWait, "no-wait", {{.CamelName}}SkipWait, `do not wait to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	{{end -}}
-	{{- $requestEntity := .Request -}}
+	{{- $request := .Request -}}
 	{{- if .RequestBodyField -}}
-	{{- $requestEntity = .RequestBodyField.Entity -}}
+	{{- $request = .RequestBodyField.Entity -}}
 	{{- end -}}
-    {{if $requestEntity }}// TODO: short flags
+    {{if $request }}// TODO: short flags
 	{{- if $canUseJson}}
 	cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
 	{{- end}}
@@ -173,14 +173,14 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
 
 	{{- $hasPosArgs := .HasRequiredPositionalArguments -}}
-	{{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len $requestEntity.RequiredFields)) -}}
+	{{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len $request.RequiredFields)) -}}
 	{{- $serviceHasNamedIdMap := and (and .Service.List .Service.List.NamedIdMap) (not (eq .PascalName "List")) -}}
 	{{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
 	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
-	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt $requestEntity) (eq 1 (len $requestEntity.RequiredRequestBodyFields))  -}}
+	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt $request) (eq 1 (len $request.RequiredRequestBodyFields))  -}}
 	{{- $onlyPathArgsRequiredAsPositionalArguments := and .Request (eq (len .RequiredPositionalArguments) (len .Request.RequiredPathFields)) -}}
-	{{- $hasDifferentArgsWithJsonFlag := and (not $onlyPathArgsRequiredAsPositionalArguments) (and $canUseJson (or $requestEntity.HasRequiredRequestBodyFields )) -}}
+	{{- $hasDifferentArgsWithJsonFlag := and (not $onlyPathArgsRequiredAsPositionalArguments) (and $canUseJson (or $request.HasRequiredRequestBodyFields )) -}}
 	{{- $hasCustomArgHandler := or $hasRequiredArgs $hasDifferentArgsWithJsonFlag -}}
 
 	{{- $atleastOneArgumentWithDescription := false -}}
@@ -221,9 +221,9 @@ func new{{.PascalName}}() *cobra.Command {
 			err := root.ExactArgs({{len .Request.RequiredPathFields}})(cmd, args)
 			if err != nil {
 			{{- if eq 0 (len .Request.RequiredPathFields) }}
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide{{- range $index, $field := $requestEntity.RequiredFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide{{- range $index, $field := $request.RequiredFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
 			{{- else }}
-				return fmt.Errorf("when --json flag is specified, provide only{{- range $index, $field := .Request.RequiredPathFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := $requestEntity.RequiredRequestBodyFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only{{- range $index, $field := .Request.RequiredPathFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := $request.RequiredRequestBodyFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
 			{{- end }}
 			}
 			return nil
@@ -263,20 +263,20 @@ func new{{.PascalName}}() *cobra.Command {
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {
 					promptSpinner := cmdio.Spinner(ctx)
-					promptSpinner <- "No{{range $requestEntity.RequiredFields}} {{.ConstantName}}{{end}} argument specified. Loading names for {{.Service.TitleName}} drop-down."
+					promptSpinner <- "No{{range $request.RequiredFields}} {{.ConstantName}}{{end}} argument specified. Loading names for {{.Service.TitleName}} drop-down."
 					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
 					close(promptSpinner)
 					if err != nil {
 						return fmt.Errorf("failed to load names for {{.Service.TitleName}} drop-down. Please manually specify required arguments. Original error: %w", err)
 					}
-					id, err := cmdio.Select(ctx, names, "{{range $requestEntity.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
+					id, err := cmdio.Select(ctx, names, "{{range $request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
 					if err != nil {
 						return err
 					}
 					args = append(args, id)
 				}
 				if len(args) != 1 {
-					return fmt.Errorf("expected to have {{range $requestEntity.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
+					return fmt.Errorf("expected to have {{range $request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
 				}
 			{{- end -}}
 
