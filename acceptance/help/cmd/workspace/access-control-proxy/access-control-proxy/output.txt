@@ -1,0 +1,5 @@
+
+>>> $CLI access-control-proxy get-assignable-roles-for-resource --help
+Error: unknown command "access-control-proxy" for "databricks"
+
+Exit code: 1

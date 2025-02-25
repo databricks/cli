@@ -1,0 +1,5 @@
+
+>>> $CLI automatic-cluster-update get --help
+Error: unknown command "automatic-cluster-update" for "databricks"
+
+Exit code: 1

@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI clean-room-assets create --help
+trace $CLI clean-room-assets delete --help
+trace $CLI clean-room-assets get --help
+trace $CLI clean-room-assets list --help
+trace $CLI clean-room-assets update --help

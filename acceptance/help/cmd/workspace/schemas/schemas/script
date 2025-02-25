@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI schemas create --help
+trace $CLI schemas delete --help
+trace $CLI schemas get --help
+trace $CLI schemas list --help
+trace $CLI schemas update --help

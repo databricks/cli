@@ -1,0 +1,22 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI clusters change-owner --help
+trace $CLI clusters create --help
+trace $CLI clusters delete --help
+trace $CLI clusters edit --help
+trace $CLI clusters events --help
+trace $CLI clusters get --help
+trace $CLI clusters get-permission-levels --help
+trace $CLI clusters get-permissions --help
+trace $CLI clusters list --help
+trace $CLI clusters list-node-types --help
+trace $CLI clusters list-zones --help
+trace $CLI clusters permanent-delete --help
+trace $CLI clusters pin --help
+trace $CLI clusters resize --help
+trace $CLI clusters restart --help
+trace $CLI clusters set-permissions --help
+trace $CLI clusters spark-versions --help
+trace $CLI clusters start --help
+trace $CLI clusters unpin --help
+trace $CLI clusters update --help
+trace $CLI clusters update-permissions --help

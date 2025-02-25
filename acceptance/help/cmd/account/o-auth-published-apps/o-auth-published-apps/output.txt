@@ -1,0 +1,19 @@
+
+>>> $CLI account o-auth-published-apps list --help
+Get all the published OAuth apps.
+  
+  Get all the available published OAuth apps in Databricks.
+
+Usage:
+  databricks account o-auth-published-apps list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       The max number of OAuth published apps to return in one page.
+      --page-token string   A token that can be used to get the next page of results.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

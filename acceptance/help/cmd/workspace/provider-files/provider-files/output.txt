@@ -1,0 +1,74 @@
+
+>>> $CLI provider-files create --help
+Create a file.
+  
+  Create a file. Currently, only provider icons and attached notebooks are
+  supported.
+
+Usage:
+  databricks provider-files create [flags]
+
+Flags:
+      --display-name string   
+  -h, --help                  help for create
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-files delete --help
+Delete a file.
+  
+  Delete a file
+
+Usage:
+  databricks provider-files delete FILE_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-files get --help
+Get a file.
+  
+  Get a file
+
+Usage:
+  databricks provider-files get FILE_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-files list --help
+List files.
+  
+  List files attached to a parent entity.
+
+Usage:
+  databricks provider-files list [flags]
+
+Flags:
+  -h, --help                help for list
+      --json JSON           either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

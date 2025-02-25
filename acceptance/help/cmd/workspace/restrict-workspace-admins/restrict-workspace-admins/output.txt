@@ -1,0 +1,5 @@
+
+>>> $CLI restrict-workspace-admins delete --help
+Error: unknown command "restrict-workspace-admins" for "databricks"
+
+Exit code: 1

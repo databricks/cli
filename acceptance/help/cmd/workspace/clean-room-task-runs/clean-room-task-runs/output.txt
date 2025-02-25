@@ -1,0 +1,23 @@
+
+>>> $CLI clean-room-task-runs list --help
+List notebook task runs.
+  
+  List all the historical notebook task runs in a clean room.
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room.
+
+Usage:
+  databricks clean-room-task-runs list CLEAN_ROOM_NAME [flags]
+
+Flags:
+  -h, --help                   help for list
+      --notebook-name string   Notebook name.
+      --page-size int          The maximum number of task runs to return.
+      --page-token string      Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,74 @@
+
+>>> $CLI query-visualizations-legacy create --help
+Add visualization to a query.
+  
+  Creates visualization in the query.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queryvisualizations/create instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks query-visualizations-legacy create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI query-visualizations-legacy delete --help
+Remove visualization.
+  
+  Removes a visualization from the query.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queryvisualizations/delete instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+  Arguments:
+    ID: Widget ID returned by :method:queryvizualisations/create
+
+Usage:
+  databricks query-visualizations-legacy delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI query-visualizations-legacy update --help
+Edit existing visualization.
+  
+  Updates visualization in the query.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queryvisualizations/update instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+  Arguments:
+    ID: The UUID for this visualization.
+
+Usage:
+  databricks query-visualizations-legacy update ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

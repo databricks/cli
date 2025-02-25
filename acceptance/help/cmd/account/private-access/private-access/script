@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account private-access create --help
+trace $CLI account private-access delete --help
+trace $CLI account private-access get --help
+trace $CLI account private-access list --help
+trace $CLI account private-access replace --help

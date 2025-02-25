@@ -1,0 +1,5 @@
+
+>>> $CLI dbsql-permissions get --help
+Error: unknown command "dbsql-permissions" for "databricks"
+
+Exit code: 1

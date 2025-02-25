@@ -1,0 +1,48 @@
+
+>>> $CLI resource-quotas get-quota --help
+Get information for a single resource quota.
+  
+  The GetQuota API returns usage information for a single resource quota,
+  defined as a child-parent pair. This API also refreshes the quota count if it
+  is out of date. Refreshes are triggered asynchronously. The updated count
+  might not be returned in the first call.
+
+  Arguments:
+    PARENT_SECURABLE_TYPE: Securable type of the quota parent.
+    PARENT_FULL_NAME: Full name of the parent resource. Provide the metastore ID if the parent
+      is a metastore.
+    QUOTA_NAME: Name of the quota. Follows the pattern of the quota type, with "-quota"
+      added as a suffix.
+
+Usage:
+  databricks resource-quotas get-quota PARENT_SECURABLE_TYPE PARENT_FULL_NAME QUOTA_NAME [flags]
+
+Flags:
+  -h, --help   help for get-quota
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI resource-quotas list-quotas --help
+List all resource quotas under a metastore.
+  
+  ListQuotas returns all quota values under the metastore. There are no SLAs on
+  the freshness of the counts returned. This API does not trigger a refresh of
+  quota counts.
+
+Usage:
+  databricks resource-quotas list-quotas [flags]
+
+Flags:
+  -h, --help                help for list-quotas
+      --max-results int     The number of quotas to return.
+      --page-token string   Opaque token for the next page of results.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

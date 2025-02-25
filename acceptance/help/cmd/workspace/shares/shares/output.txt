@@ -1,0 +1,180 @@
+
+>>> $CLI shares create --help
+Create a share.
+  
+  Creates a new share for data objects. Data objects can be added after creation
+  with **update**. The caller must be a metastore admin or have the
+  **CREATE_SHARE** privilege on the metastore.
+
+  Arguments:
+    NAME: Name of the share.
+
+Usage:
+  databricks shares create NAME [flags]
+
+Flags:
+      --comment string        User-provided free-form text description.
+  -h, --help                  help for create
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --storage-root string   Storage root URL for the share.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI shares delete --help
+Delete a share.
+  
+  Deletes a data object share from the metastore. The caller must be an owner of
+  the share.
+
+  Arguments:
+    NAME: The name of the share.
+
+Usage:
+  databricks shares delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI shares get --help
+Get a share.
+  
+  Gets a data object share from the metastore. The caller must be a metastore
+  admin or the owner of the share.
+
+  Arguments:
+    NAME: The name of the share.
+
+Usage:
+  databricks shares get NAME [flags]
+
+Flags:
+  -h, --help                  help for get
+      --include-shared-data   Query for data to include in the share.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI shares list --help
+List shares.
+  
+  Gets an array of data object shares from the metastore. The caller must be a
+  metastore admin or the owner of the share. There is no guarantee of a specific
+  ordering of the elements in the array.
+
+Usage:
+  databricks shares list [flags]
+
+Flags:
+  -h, --help                help for list
+      --max-results int     Maximum number of shares to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI shares share-permissions --help
+Get permissions.
+  
+  Gets the permissions for a data share from the metastore. The caller must be a
+  metastore admin or the owner of the share.
+
+  Arguments:
+    NAME: The name of the share.
+
+Usage:
+  databricks shares share-permissions NAME [flags]
+
+Flags:
+  -h, --help                help for share-permissions
+      --max-results int     Maximum number of permissions to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI shares update --help
+Update a share.
+  
+  Updates the share with the changes and data objects in the request. The caller
+  must be the owner of the share or a metastore admin.
+  
+  When the caller is a metastore admin, only the __owner__ field can be updated.
+  
+  In the case that the share name is changed, **updateShare** requires that the
+  caller is both the share owner and a metastore admin.
+  
+  If there are notebook files in the share, the __storage_root__ field cannot be
+  updated.
+  
+  For each table that is added through this method, the share owner must also
+  have **SELECT** privilege on the table. This privilege must be maintained
+  indefinitely for recipients to be able to access the table. Typically, you
+  should use a group as the share owner.
+  
+  Table removals through **update** do not require additional privileges.
+
+  Arguments:
+    NAME: The name of the share.
+
+Usage:
+  databricks shares update NAME [flags]
+
+Flags:
+      --comment string        User-provided free-form text description.
+  -h, --help                  help for update
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string       New name for the share.
+      --owner string          Username of current owner of share.
+      --storage-root string   Storage root URL for the share.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI shares update-permissions --help
+Update permissions.
+  
+  Updates the permissions for a data share in the metastore. The caller must be
+  a metastore admin or an owner of the share.
+  
+  For new recipient grants, the user must also be the owner of the recipients.
+  recipient revocations do not require additional privileges.
+
+  Arguments:
+    NAME: The name of the share.
+
+Usage:
+  databricks shares update-permissions NAME [flags]
+
+Flags:
+  -h, --help                help for update-permissions
+      --json JSON           either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --max-results int     Maximum number of permissions to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

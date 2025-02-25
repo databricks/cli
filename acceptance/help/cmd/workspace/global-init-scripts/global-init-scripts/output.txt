@@ -1,0 +1,110 @@
+
+>>> $CLI global-init-scripts create --help
+Create init script.
+  
+  Creates a new global init script in this workspace.
+
+  Arguments:
+    NAME: The name of the script
+    SCRIPT: The Base64-encoded content of the script.
+
+Usage:
+  databricks global-init-scripts create NAME SCRIPT [flags]
+
+Flags:
+      --enabled        Specifies whether the script is enabled.
+  -h, --help           help for create
+      --json JSON      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --position int   The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI global-init-scripts delete --help
+Delete init script.
+  
+  Deletes a global init script.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.
+
+Usage:
+  databricks global-init-scripts delete SCRIPT_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI global-init-scripts get --help
+Get an init script.
+  
+  Gets all the details of a script, including its Base64-encoded contents.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.
+
+Usage:
+  databricks global-init-scripts get SCRIPT_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI global-init-scripts list --help
+Get init scripts.
+  
+  Get a list of all global init scripts for this workspace. This returns all
+  properties for each script but **not** the script contents. To retrieve the
+  contents of a script, use the [get a global init
+  script](:method:globalinitscripts/get) operation.
+
+Usage:
+  databricks global-init-scripts list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI global-init-scripts update --help
+Update init script.
+  
+  Updates a global init script, specifying only the fields to change. All fields
+  are optional. Unspecified fields retain their current value.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.
+    NAME: The name of the script
+    SCRIPT: The Base64-encoded content of the script.
+
+Usage:
+  databricks global-init-scripts update SCRIPT_ID NAME SCRIPT [flags]
+
+Flags:
+      --enabled        Specifies whether the script is enabled.
+  -h, --help           help for update
+      --json JSON      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --position int   The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,9 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI files create-directory --help
+trace $CLI files delete --help
+trace $CLI files delete-directory --help
+trace $CLI files download --help
+trace $CLI files get-directory-metadata --help
+trace $CLI files get-metadata --help
+trace $CLI files list-directory-contents --help
+trace $CLI files upload --help

@@ -1,0 +1,152 @@
+
+>>> $CLI storage-credentials create --help
+Create a storage credential.
+  
+  Creates a new storage credential.
+
+  Arguments:
+    NAME: The credential name. The name must be unique within the metastore.
+
+Usage:
+  databricks storage-credentials create NAME [flags]
+
+Flags:
+      --comment string    Comment associated with the credential.
+  -h, --help              help for create
+      --json JSON         either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --read-only         Whether the storage credential is only usable for read operations.
+      --skip-validation   Supplying true to this argument skips validation of the created credential.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI storage-credentials delete --help
+Delete a credential.
+  
+  Deletes a storage credential from the metastore. The caller must be an owner
+  of the storage credential.
+
+  Arguments:
+    NAME: Name of the storage credential.
+
+Usage:
+  databricks storage-credentials delete NAME [flags]
+
+Flags:
+      --force   Force deletion even if there are dependent external locations or external tables.
+  -h, --help    help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI storage-credentials get --help
+Get a credential.
+  
+  Gets a storage credential from the metastore. The caller must be a metastore
+  admin, the owner of the storage credential, or have some permission on the
+  storage credential.
+
+  Arguments:
+    NAME: Name of the storage credential.
+
+Usage:
+  databricks storage-credentials get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI storage-credentials list --help
+List credentials.
+  
+  Gets an array of storage credentials (as __StorageCredentialInfo__ objects).
+  The array is limited to only those storage credentials the caller has
+  permission to access. If the caller is a metastore admin, retrieval of
+  credentials is unrestricted. There is no guarantee of a specific ordering of
+  the elements in the array.
+
+Usage:
+  databricks storage-credentials list [flags]
+
+Flags:
+  -h, --help                help for list
+      --max-results int     Maximum number of storage credentials to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI storage-credentials update --help
+Update a credential.
+  
+  Updates a storage credential on the metastore.
+
+  Arguments:
+    NAME: Name of the storage credential.
+
+Usage:
+  databricks storage-credentials update NAME [flags]
+
+Flags:
+      --comment string                 Comment associated with the credential.
+      --force                          Force update even if there are dependent external locations or external tables.
+  -h, --help                           help for update
+      --isolation-mode IsolationMode   . Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]
+      --json JSON                      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string                New name for the storage credential.
+      --owner string                   Username of current owner of credential.
+      --read-only                      Whether the storage credential is only usable for read operations.
+      --skip-validation                Supplying true to this argument skips validation of the updated credential.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI storage-credentials validate --help
+Validate a storage credential.
+  
+  Validates a storage credential. At least one of __external_location_name__ and
+  __url__ need to be provided. If only one of them is provided, it will be used
+  for validation. And if both are provided, the __url__ will be used for
+  validation, and __external_location_name__ will be ignored when checking
+  overlapping urls.
+  
+  Either the __storage_credential_name__ or the cloud-specific credential must
+  be provided.
+  
+  The caller must be a metastore admin or the storage credential owner or have
+  the **CREATE_EXTERNAL_LOCATION** privilege on the metastore and the storage
+  credential.
+
+Usage:
+  databricks storage-credentials validate [flags]
+
+Flags:
+      --external-location-name string    The name of an existing external location to validate.
+  -h, --help                             help for validate
+      --json JSON                        either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --read-only                        Whether the storage credential is only usable for read operations.
+      --storage-credential-name string   The name of the storage credential to validate.
+      --url string                       The external location url to validate.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

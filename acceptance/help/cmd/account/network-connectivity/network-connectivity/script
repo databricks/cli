@@ -1,0 +1,9 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account network-connectivity create-network-connectivity-configuration --help
+trace $CLI account network-connectivity create-private-endpoint-rule --help
+trace $CLI account network-connectivity delete-network-connectivity-configuration --help
+trace $CLI account network-connectivity delete-private-endpoint-rule --help
+trace $CLI account network-connectivity get-network-connectivity-configuration --help
+trace $CLI account network-connectivity get-private-endpoint-rule --help
+trace $CLI account network-connectivity list-network-connectivity-configurations --help
+trace $CLI account network-connectivity list-private-endpoint-rules --help

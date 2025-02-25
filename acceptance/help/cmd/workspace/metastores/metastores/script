@@ -1,0 +1,11 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI metastores assign --help
+trace $CLI metastores create --help
+trace $CLI metastores current --help
+trace $CLI metastores delete --help
+trace $CLI metastores get --help
+trace $CLI metastores list --help
+trace $CLI metastores summary --help
+trace $CLI metastores unassign --help
+trace $CLI metastores update --help
+trace $CLI metastores update-assignment --help
