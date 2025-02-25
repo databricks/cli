@@ -1,12 +1,12 @@
 
->>> [CLI] panic
+>>> [CLI] selftest panic
 The Databricks CLI had a fatal error.
 Please report this issue to Databricks in the form of a GitHub issue at:
 https://github.com/databricks/cli
 
 CLI Version: [DEV_VERSION]
 
-Panic Payload: The databricks panic command always panics
+Panic Payload: the databricks selftest panic command always panics
 
 Stack Trace:
 goroutine 1 [running]:

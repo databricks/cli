@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd/selftest"
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/cmd/workspace"
@@ -74,16 +75,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(labs.New(ctx))
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
-
-	// Add hidden panic command. This command is meant to be used in tests to
-	// ensure that the CLI exists gracefully when a panic occurs.
-	cli.AddCommand(&cobra.Command{
-		Use: "panic",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			panic("The databricks panic command always panics")
-		},
-		Hidden: true,
-	})
+	cli.AddCommand(selftest.New())
 
 	return cli
 }
