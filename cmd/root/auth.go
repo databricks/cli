@@ -196,8 +196,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	}
 
 	_, isTargetFlagSet := targetFlagValue(cmd)
+	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
 	if !isTargetFlagSet && hasProfileFlag {
-		// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
 		cmd.SetContext(SkipLoadBundle(cmd.Context()))
 	}
 
