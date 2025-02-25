@@ -346,6 +346,7 @@ func TestSparkVersionLowerThanExpected(t *testing.T) {
 		"13.x-rc-scala-2.12":              false,
 		"client.1.10-scala2.12":           false,
 		"latest-stable-gpu-scala2.11":     false,
+		"1.":                              false,
 		"10.4.x-aarch64-photon-scala2.12": true,
 		"10.4.x-scala2.12":                true,
 		"13.0.x-scala2.12":                true,
