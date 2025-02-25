@@ -1,6 +1,6 @@
 
 >>> [CLI] selftest panic
-The Databricks CLI had a fatal error.
+The Databricks CLI unexpectedly had a fatal error.
 Please report this issue to Databricks in the form of a GitHub issue at:
 https://github.com/databricks/cli
 
