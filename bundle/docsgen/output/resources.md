@@ -899,11 +899,11 @@ Defines values necessary to configure and run Azure Log Analytics agent
   
 - - `log_analytics_primary_key`
   - String
-  - 
+  - The primary key for the Azure Log Analytics agent configuration
   
 - - `log_analytics_workspace_id`
   - String
-  - 
+  - The workspace ID for the Azure Log Analytics agent configuration
   
 :::
   
@@ -1115,7 +1115,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 - - `abfss`
   - Map
-  - See [\_](#clustersnameinit_scriptsabfss).
+  - Contains the Azure Data Lake Storage destination path. See [\_](#clustersnameinit_scriptsabfss).
   
 - - `dbfs`
   - Map
@@ -1148,7 +1148,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 **`Type: Map`**
   
-
+Contains the Azure Data Lake Storage destination path
   
   
   
@@ -1927,7 +1927,7 @@ In this minimal environment spec, only pip dependencies are supported.
   
 - - `dependencies`
   - Sequence
-  - 
+  - List of pip dependencies, as supported by the version of pip in this environment.
   
 :::
   
@@ -2378,11 +2378,11 @@ Defines values necessary to configure and run Azure Log Analytics agent
   
 - - `log_analytics_primary_key`
   - String
-  - 
+  - The primary key for the Azure Log Analytics agent configuration
   
 - - `log_analytics_workspace_id`
   - String
-  - 
+  - The workspace ID for the Azure Log Analytics agent configuration
   
 :::
   
@@ -2594,7 +2594,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 - - `abfss`
   - Map
-  - See [\_](#jobsnamejob_clustersnew_clusterinit_scriptsabfss).
+  - Contains the Azure Data Lake Storage destination path. See [\_](#jobsnamejob_clustersnew_clusterinit_scriptsabfss).
   
 - - `dbfs`
   - Map
@@ -2627,7 +2627,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 **`Type: Map`**
   
-
+Contains the Azure Data Lake Storage destination path
   
   
   
@@ -3799,11 +3799,11 @@ Defines values necessary to configure and run Azure Log Analytics agent
   
 - - `log_analytics_primary_key`
   - String
-  - 
+  - The primary key for the Azure Log Analytics agent configuration
   
 - - `log_analytics_workspace_id`
   - String
-  - 
+  - The workspace ID for the Azure Log Analytics agent configuration
   
 :::
   
@@ -4015,7 +4015,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 - - `abfss`
   - Map
-  - See [\_](#jobsnametasksnew_clusterinit_scriptsabfss).
+  - Contains the Azure Data Lake Storage destination path. See [\_](#jobsnametasksnew_clusterinit_scriptsabfss).
   
 - - `dbfs`
   - Map
@@ -4048,7 +4048,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 **`Type: Map`**
   
-
+Contains the Azure Data Lake Storage destination path
   
   
   
@@ -6768,11 +6768,11 @@ Defines values necessary to configure and run Azure Log Analytics agent
   
 - - `log_analytics_primary_key`
   - String
-  - 
+  - The primary key for the Azure Log Analytics agent configuration
   
 - - `log_analytics_workspace_id`
   - String
-  - 
+  - The workspace ID for the Azure Log Analytics agent configuration
   
 :::
   
@@ -6935,7 +6935,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 - - `abfss`
   - Map
-  - See [\_](#pipelinesnameclustersinit_scriptsabfss).
+  - Contains the Azure Data Lake Storage destination path. See [\_](#pipelinesnameclustersinit_scriptsabfss).
   
 - - `dbfs`
   - Map
@@ -6968,7 +6968,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
   
 **`Type: Map`**
   
-
+Contains the Azure Data Lake Storage destination path
   
   
   
@@ -8011,7 +8011,7 @@ Configuration for monitoring inference logs.
   
 - - `granularities`
   - Sequence
-  - 
+  - Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
   
 - - `label_col`
   - String
@@ -8159,7 +8159,7 @@ Configuration for monitoring time series tables.
   
 - - `granularities`
   - Sequence
-  - 
+  - Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
   
 - - `timestamp_col`
   - String

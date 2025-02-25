@@ -2094,6 +2094,7 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
+                      "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "label_col": {
@@ -2250,6 +2251,7 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
+                      "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "timestamp_col": {
@@ -2730,6 +2732,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "dependencies": {
+                      "description": "List of pip dependencies, as supported by the version of pip in this environment.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -2825,6 +2828,7 @@
                   "type": "object",
                   "properties": {
                     "abfss": {
+                      "description": "Contains the Azure Data Lake Storage destination path",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info"
                     },
                     "dbfs": {
@@ -2932,9 +2936,11 @@
                   "type": "object",
                   "properties": {
                     "log_analytics_primary_key": {
+                      "description": "The primary key for the Azure Log Analytics agent configuration",
                       "$ref": "#/$defs/string"
                     },
                     "log_analytics_workspace_id": {
+                      "description": "The workspace ID for the Azure Log Analytics agent configuration",
                       "$ref": "#/$defs/string"
                     }
                   },

@@ -569,23 +569,23 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
 github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "abfss":
     "description": |-
-      PLACEHOLDER
+      Contains the Azure Data Lake Storage destination path
 github.com/databricks/databricks-sdk-go/service/compute.Environment:
   "dependencies":
     "description": |-
-      PLACEHOLDER
+      List of pip dependencies, as supported by the version of pip in this environment.
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
   "granularities":
     "description": |-
-      PLACEHOLDER
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
   "granularities":
     "description": |-
-      PLACEHOLDER
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":
     "description": |-
-      PLACEHOLDER
+      The primary key for the Azure Log Analytics agent configuration
   "log_analytics_workspace_id":
     "description": |-
-      PLACEHOLDER
+      The workspace ID for the Azure Log Analytics agent configuration
