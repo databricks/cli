@@ -44,16 +44,6 @@ var (
 // is run and can be used to attribute DBU revenue to bundle templates.
 var bundleUuid = uuid.New().String()
 
-type APISettingResponse struct {
-	Setting struct {
-		Value struct {
-			PreviewEnablementVal struct {
-				Enabled bool `json:"enabled"`
-			} `json:"preview_enablement_val"`
-		} `json:"value"`
-	} `json:"setting"`
-}
-
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := root.WorkspaceClient(ctx)
 	return template.FuncMap{
