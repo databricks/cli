@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"io"
 	"io/fs"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -886,4 +888,81 @@ func TestWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
+}
+
+func TestDbfsFilerForStreamingUploads(t *testing.T) {
+	ctx := context.Background()
+	f, _ := setupDbfsFiler(t)
+
+	// Set MaxDbfsPutFileSize to 1 to force streaming uploads
+	prevV := filer.MaxDbfsPutFileSize
+	filer.MaxDbfsPutFileSize = 1
+	t.Cleanup(func() {
+		filer.MaxDbfsPutFileSize = prevV
+	})
+
+	// Write a file to local disk.
+	tmpDir := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(tmpDir, "foo.txt"), "foobar")
+
+	fd, err := os.Open(filepath.Join(tmpDir, "foo.txt"))
+	require.NoError(t, err)
+	defer fd.Close()
+
+	// Write a file with streaming upload
+	err = f.Write(ctx, "foo.txt", fd)
+	require.NoError(t, err)
+
+	// Assert contents
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "foobar")
+
+	// Overwrite the file with streaming upload, and fail
+	err = f.Write(ctx, "foo.txt", strings.NewReader("barfoo"))
+	require.ErrorIs(t, err, fs.ErrExist)
+
+	// Overwrite the file with streaming upload, and succeed
+	err = f.Write(ctx, "foo.txt", strings.NewReader("barfoo"), filer.OverwriteIfExists)
+	require.NoError(t, err)
+
+	// Assert contents
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "barfoo")
+}
+
+func TestDbfsFilerForPutUploads(t *testing.T) {
+	ctx := context.Background()
+	f, _ := setupDbfsFiler(t)
+
+	// Write a file to local disk.
+	tmpDir := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(tmpDir, "foo.txt"), "foobar")
+	testutil.WriteFile(t, filepath.Join(tmpDir, "bar.txt"), "barfoo")
+	fdFoo, err := os.Open(filepath.Join(tmpDir, "foo.txt"))
+	require.NoError(t, err)
+	defer fdFoo.Close()
+
+	fdBar, err := os.Open(filepath.Join(tmpDir, "bar.txt"))
+	require.NoError(t, err)
+	defer fdBar.Close()
+
+	// Write a file with PUT upload
+	err = f.Write(ctx, "foo.txt", fdFoo)
+	require.NoError(t, err)
+
+	// Assert contents
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "foobar")
+
+	// Try to overwrite the file, and fail.
+	err = f.Write(ctx, "foo.txt", fdBar)
+	require.ErrorIs(t, err, fs.ErrExist)
+
+	// Reset the file descriptor.
+	_, err = fdBar.Seek(0, io.SeekStart)
+	require.NoError(t, err)
+
+	// Overwrite the file with OverwriteIfExists flag
+	err = f.Write(ctx, "foo.txt", fdBar, filer.OverwriteIfExists)
+	require.NoError(t, err)
+
+	// Assert contents
+	filerTest{t, f}.assertContents(ctx, "foo.txt", "barfoo")
 }
