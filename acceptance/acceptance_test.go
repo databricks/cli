@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,6 +28,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,12 +59,18 @@ const (
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 100_000
+	// Filename to save replacements to (used by diff.py)
+	ReplsFile = "repls.json"
 )
 
 var Scripts = map[string]bool{
 	EntryPointScript: true,
 	CleanupScript:    true,
 	PrepareScript:    true,
+}
+
+var Ignored = map[string]bool{
+	ReplsFile: true,
 }
 
 func TestAccept(t *testing.T) {
@@ -152,6 +160,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
+	repls.SetPath(cwd, "[TESTROOT]")
+
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
 	testDirs := getTests(t)
@@ -207,7 +217,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
-	if config.LocalOnly && cloudEnv != "" {
+	if isTruePtr(config.LocalOnly) && cloudEnv != "" {
 		t.Skipf("Disabled via LocalOnly setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 	}
 
@@ -253,10 +263,25 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		databricksLocalHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
 
-		if len(config.Server) > 0 || config.RecordRequests {
+		if len(config.Server) > 0 || isTruePtr(config.RecordRequests) {
 			server = testserver.New(t)
-			server.RecordRequests = config.RecordRequests
-			server.IncludeRequestHeaders = config.IncludeRequestHeaders
+			if isTruePtr(config.RecordRequests) {
+				requestsPath := filepath.Join(tmpDir, "out.requests.txt")
+				server.RecordRequestsCallback = func(request *testserver.Request) {
+					req := getLoggedRequest(request, config.IncludeRequestHeaders)
+					reqJson, err := json.MarshalIndent(req, "", "  ")
+					assert.NoErrorf(t, err, "Failed to indent: %#v", req)
+
+					reqJsonWithRepls := repls.Replace(string(reqJson))
+
+					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+					assert.NoError(t, err)
+					defer f.Close()
+
+					_, err = f.WriteString(reqJsonWithRepls + "\n")
+					assert.NoError(t, err)
+				}
+			}
 
 			// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
 			// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
@@ -310,6 +335,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// User replacements come last:
 	repls.Repls = append(repls.Repls, config.Repls...)
 
+	// Save replacements to temp test directory so that it can be read by diff.py
+	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
+	require.NoError(t, err)
+	testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
+
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
@@ -320,6 +350,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
+	absDir, err := filepath.Abs(dir)
+	require.NoError(t, err)
+	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
+
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
 	require.NoError(t, err)
@@ -327,25 +361,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Stderr = out
 	cmd.Dir = tmpDir
 	err = cmd.Run()
-
-	// Write the requests made to the server to a output file if the test is
-	// configured to record requests.
-	if config.RecordRequests {
-		f, err := os.OpenFile(filepath.Join(tmpDir, "out.requests.txt"), os.O_CREATE|os.O_WRONLY, 0o644)
-		require.NoError(t, err)
-
-		for _, req := range server.Requests {
-			reqJson, err := json.MarshalIndent(req, "", "  ")
-			require.NoErrorf(t, err, "Failed to indent: %#v", req)
-
-			reqJsonWithRepls := repls.Replace(string(reqJson))
-			_, err = f.WriteString(reqJsonWithRepls + "\n")
-			require.NoError(t, err)
-		}
-
-		err = f.Close()
-		require.NoError(t, err)
-	}
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -366,6 +381,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			continue
 		}
 		if _, ok := outputs[relPath]; ok {
+			continue
+		}
+		if _, ok := Ignored[relPath]; ok {
 			continue
 		}
 		unexpected = append(unexpected, relPath)
@@ -649,4 +667,43 @@ func RunCommand(t *testing.T, args []string, dir string) {
 	if len(out) > 0 {
 		t.Logf("%s output: %s", args, out)
 	}
+}
+
+type LoggedRequest struct {
+	Headers http.Header `json:"headers,omitempty"`
+	Method  string      `json:"method"`
+	Path    string      `json:"path"`
+	Body    any         `json:"body,omitempty"`
+	RawBody string      `json:"raw_body,omitempty"`
+}
+
+func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedRequest {
+	result := LoggedRequest{
+		Method:  req.Method,
+		Path:    req.URL.Path,
+		Headers: filterHeaders(req.Headers, includedHeaders),
+	}
+
+	if json.Valid(req.Body) {
+		result.Body = json.RawMessage(req.Body)
+	} else {
+		result.RawBody = string(req.Body)
+	}
+
+	return result
+}
+
+func filterHeaders(h http.Header, includedHeaders []string) http.Header {
+	headers := make(http.Header)
+	for k, v := range h {
+		if !slices.Contains(includedHeaders, k) {
+			continue
+		}
+		headers[k] = v
+	}
+	return headers
+}
+
+func isTruePtr(value *bool) bool {
+	return value != nil && *value
 }
