@@ -5,9 +5,6 @@
 # This job runs {{.project_name}}_pipeline on a schedule.
 {{end -}}
 {{$with_serverless := (eq .serverless "yes") -}}
-{{if (eq .serverless "auto") -}}
-    {{$with_serverless = is_serverless_supported -}}
-{{end -}}
 
 resources:
   jobs:
