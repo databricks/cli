@@ -2,11 +2,8 @@ package whl
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -26,11 +23,17 @@ func (m *detectPkg) Name() string {
 }
 
 func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	if b.Config.Artifacts != nil {
+		log.Debugf(ctx, "artifacts block is defined, skipping auto-detecting")
+		return nil
+	}
+
 	tasks := libraries.FindTasksWithLocalLibraries(b)
 	if len(tasks) == 0 {
 		log.Infof(ctx, "No local tasks in databricks.yml config, skipping auto detect")
 		return nil
 	}
+
 	log.Infof(ctx, "Detecting Python wheel project...")
 
 	// checking if there is setup.py in the bundle root
@@ -42,39 +45,18 @@ func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 
 	log.Infof(ctx, "Found Python wheel project at %s", b.BundleRootPath)
-	module := extractModuleName(setupPy)
-
-	if b.Config.Artifacts == nil {
-		b.Config.Artifacts = make(map[string]*config.Artifact)
-	}
 
 	pkgPath, err := filepath.Abs(b.BundleRootPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	b.Config.Artifacts[module] = &config.Artifact{
+
+	b.Config.Artifacts = make(map[string]*config.Artifact)
+	b.Config.Artifacts["python_artifact"] = &config.Artifact{
 		Path: pkgPath,
 		Type: config.ArtifactPythonWheel,
+		// BuildCommand will be set by bundle/artifacts/whl/infer.go to "python3 setup.py bdist_wheel"
 	}
 
 	return nil
-}
-
-func extractModuleName(setupPy string) string {
-	bytes, err := os.ReadFile(setupPy)
-	if err != nil {
-		return randomName()
-	}
-
-	content := string(bytes)
-	r := regexp.MustCompile(`name=['"](.*)['"]`)
-	matches := r.FindStringSubmatch(content)
-	if len(matches) == 0 {
-		return randomName()
-	}
-	return matches[1]
-}
-
-func randomName() string {
-	return fmt.Sprintf("artifact%d", time.Now().Unix())
 }
