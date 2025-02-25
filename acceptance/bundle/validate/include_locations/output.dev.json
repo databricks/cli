@@ -1,0 +1,93 @@
+{
+  "files": [
+    "databricks.yml",
+    "override.yml",
+    "resources/job.yml"
+  ],
+  "locations": {
+    "bundle": [
+      [
+        0,
+        2,
+        3
+      ]
+    ],
+    "bundle.name": [
+      [
+        0,
+        2,
+        9
+      ]
+    ],
+    "include": [
+      [
+        0,
+        5,
+        3
+      ]
+    ],
+    "include[0]": [
+      [
+        0,
+        5,
+        5
+      ]
+    ],
+    "include[1]": [
+      [
+        0,
+        6,
+        5
+      ]
+    ],
+    "resources": [
+      [
+        2,
+        2,
+        3
+      ],
+      [
+        1,
+        4,
+        7
+      ]
+    ],
+    "resources.jobs": [
+      [
+        2,
+        3,
+        5
+      ],
+      [
+        1,
+        5,
+        9
+      ]
+    ],
+    "resources.jobs.my_job": [
+      [
+        2,
+        4,
+        7
+      ],
+      [
+        1,
+        6,
+        11
+      ]
+    ],
+    "targets": [
+      [
+        0,
+        9,
+        3
+      ],
+      [
+        1,
+        2,
+        3
+      ]
+    ]
+  },
+  "version": 1
+}
