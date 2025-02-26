@@ -38,7 +38,7 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		return nil, diag.FromErr(err)
 	}
 
-	diags := phases.LoadNamedTarget(ctx, b, env)
+	diags := bundle.ApplySeq(ctx, b,
 		mutator.RewriteSyncPaths(),
 		mutator.SyncDefaultPath(),
 		mutator.SyncInferRoot(),
