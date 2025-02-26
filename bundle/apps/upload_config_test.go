@@ -70,6 +70,6 @@ env:
 
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(root, "databricks.yml")}})
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(mutator.TranslatePaths(), &u))
+	diags := bundle.ApplySeq(context.Background(), b, mutator.TranslatePaths(), &u)
 	require.NoError(t, diags.Error())
 }
