@@ -502,8 +502,7 @@ func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = nil
 
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
