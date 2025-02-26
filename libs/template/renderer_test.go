@@ -78,7 +78,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
 	require.NoError(t, err)
-	diags := bundle.Apply(ctx, b, phases.LoadNamedTarget(target))
+	diags := bundle.Apply(ctx, b, phases.LoadNamedTarget(ctx, b, target))
 	require.NoError(t, diags.Error())
 
 	// Apply initialize / validation mutators
@@ -94,13 +94,13 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	b.WorkspaceClient()
 
 	diags = bundle.ApplySeq(ctx, b,
-		phases.Initialize(),
+		phases.Initialize(ctx, b),
 	)
 	require.NoError(t, diags.Error())
 
 	// Apply build mutator
 	if build {
-		diags = bundle.Apply(ctx, b, phases.Build())
+		diags = bundle.Apply(ctx, b, phases.Build(ctx, b))
 		require.NoError(t, diags.Error())
 	}
 }

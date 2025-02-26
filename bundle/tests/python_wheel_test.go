@@ -18,7 +18,7 @@ func TestPythonWheelBuild(t *testing.T) {
 	b := loadTarget(t, "./python_wheel/python_wheel", "default")
 
 	ctx := context.Background()
-	diags := bundle.Apply(ctx, b, phases.Build())
+	diags := bundle.Apply(ctx, b, phases.Build(ctx, b))
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel/my_test_code/dist/my_test_code-*.whl")
