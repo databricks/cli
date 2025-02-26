@@ -1,0 +1,19 @@
+--- [TESTROOT]/bundle/templates/default-python/classic-cloud/../classic/output/my_default_python/databricks.yml
++++ output/my_default_python/databricks.yml
+@@ -26,4 +26,4 @@
+       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+     permissions:
+-      - user_name: [USERNAME]
++      - service_principal_name: [USERNAME]
+         level: CAN_MANAGE
+--- [TESTROOT]/bundle/templates/default-python/classic-cloud/../classic/output/my_default_python/resources/my_default_python.job.yml
++++ output/my_default_python/resources/my_default_python.job.yml
+@@ -10,8 +10,4 @@
+           interval: 1
+           unit: DAYS
+-
+-      email_notifications:
+-        on_failure:
+-          - [USERNAME]
+ 
+       tasks:
