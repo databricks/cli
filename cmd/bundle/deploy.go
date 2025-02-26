@@ -72,7 +72,7 @@ func newDeployCommand() *cobra.Command {
 			diags = diags.Extend(phases.Initialize(ctx, b))
 
 			if !diags.HasError() {
-				diags = diags.Extend(validate.FastValidate(ctx, b))
+				diags = diags.Extend(bundle.Apply(ctx, b, validate.FastValidate()))
 			}
 
 			if !diags.HasError() {

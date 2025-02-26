@@ -50,7 +50,7 @@ func newValidateCommand() *cobra.Command {
 		}
 
 		if !diags.HasError() {
-			diags = diags.Extend(validate.Validate(ctx, b))
+			diags = diags.Extend(bundle.Apply(ctx, b, validate.Validate()))
 		}
 
 		switch root.OutputType(cmd) {
