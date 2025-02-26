@@ -38,7 +38,7 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		return nil, diag.FromErr(err)
 	}
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(
+	diags := bundle.ApplySeq(ctx, b,
 		phases.LoadNamedTarget(env),
 		mutator.RewriteSyncPaths(),
 		mutator.SyncDefaultPath(),
@@ -48,7 +48,7 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		mutator.MergeJobTasks(),
 		mutator.MergePipelineClusters(),
 		mutator.MergeApps(),
-	))
+	)
 	return b, diags
 }
 

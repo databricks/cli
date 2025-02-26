@@ -93,9 +93,9 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	b.Tagging = tags.ForCloud(w.Config)
 	b.WorkspaceClient()
 
-	diags = bundle.Apply(ctx, b, bundle.Seq(
+	diags = bundle.ApplySeq(ctx, b,
 		phases.Initialize(),
-	))
+	)
 	require.NoError(t, diags.Error())
 
 	// Apply build mutator

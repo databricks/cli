@@ -90,10 +90,10 @@ func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
 		filer.CreateParentDirectories,
 	).Return(nil)
 
-	diags = bundle.Apply(ctx, b, bundle.Seq(
+	diags = bundle.ApplySeq(ctx, b,
 		libraries.ExpandGlobReferences(),
 		libraries.UploadWithClient(mockFiler),
-	))
+	)
 	require.NoError(t, diags.Error())
 	require.Empty(t, diags)
 	require.Equal(t, "/Workspace/foo/bar/.internal/my_test_code-0.0.1-py3-none-any.whl", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[0].Libraries[0].Whl)

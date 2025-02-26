@@ -34,7 +34,7 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions()))
+	diags := bundle.ApplySeq(context.Background(), b, ValidateSharedRootPermissions())
 	require.Empty(t, diags)
 }
 
