@@ -111,7 +111,7 @@ task or a Python wheel task, the second example applies.
 			return diags.Error()
 		}
 
-		diags = bundle.Apply(ctx, b, phases.Initialize())
+		diags = phases.Initialize(ctx, b)
 		if err := diags.Error(); err != nil {
 			return err
 		}
@@ -121,12 +121,12 @@ task or a Python wheel task, the second example applies.
 			return err
 		}
 
-		diags = bundle.Apply(ctx, b, bundle.Seq(
+		diags = bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),
 			terraform.Load(terraform.ErrorOnEmptyState),
-		))
+		)
 		if err := diags.Error(); err != nil {
 			return err
 		}

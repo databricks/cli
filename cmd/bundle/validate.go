@@ -46,11 +46,11 @@ func newValidateCommand() *cobra.Command {
 		}
 
 		if !diags.HasError() {
-			diags = diags.Extend(bundle.Apply(ctx, b, phases.Initialize()))
+			diags = diags.Extend(phases.Initialize(ctx, b))
 		}
 
 		if !diags.HasError() {
-			diags = diags.Extend(bundle.Apply(ctx, b, validate.Validate()))
+			diags = diags.Extend(validate.Validate(ctx, b))
 		}
 
 		switch root.OutputType(cmd) {
