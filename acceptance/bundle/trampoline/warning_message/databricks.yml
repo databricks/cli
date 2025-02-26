@@ -9,13 +9,13 @@ targets:
   prod:
     resources:
       clusters:
-        development_cluster:
+        interactive_cluster:
           spark_version: 14.2.x-cpu-ml-scala2.12
 
 
 resources:
   clusters:
-    development_cluster:
+    interactive_cluster:
       cluster_name: jobs-as-code-all-purpose-cluster
       spark_version: 12.2.x-cpu-ml-scala2.12
       node_type_id: r5d.8xlarge
@@ -32,6 +32,6 @@ resources:
           python_wheel_task:
             package_name: my_package
             entry_point: my_module.my_function
-          existing_cluster_id: ${resources.clusters.development_cluster.id}
+          existing_cluster_id: ${resources.clusters.interactive_cluster.id}
           libraries:
             - whl: ./dist/*.whl

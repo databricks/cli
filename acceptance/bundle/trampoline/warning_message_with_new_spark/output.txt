@@ -1,0 +1,9 @@
+
+>>> errcode [CLI] bundle validate
+Name: trampoline_warning_message_with_new_spark
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/trampoline_warning_message_with_new_spark/dev
+
+Validation OK!

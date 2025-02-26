@@ -65,14 +65,19 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 			var err error
 			// If the cluster id is a variable and it's not resolved, it means it references a cluster defined in the same bundle.
 			// So we can get the version from the cluster definition.
-			// It's defined in a form of resources.clusters.<cluster_key>.spark_version while the value here is
-			// ${resources.clusters.<cluster_key>.id}
+			// It's defined in a form of resources.clusters.<cluster_key>.id
 			if strings.HasPrefix(task.ExistingClusterId, "${") {
 				p, ok := dynvar.PureReferenceToPath(task.ExistingClusterId)
 				if !ok || len(p) < 3 {
 					log.Warnf(ctx, "unable to parse cluster key from %s", task.ExistingClusterId)
 					return false
 				}
+
+				if p[0].Key() != "resources" || p[1].Key() != "clusters" {
+					log.Warnf(ctx, "incorrect variable reference for cluster id %s", task.ExistingClusterId)
+					return false
+				}
+
 				clusterKey := p[2].Key()
 				cluster, ok := b.Config.Resources.Clusters[clusterKey]
 				if !ok {

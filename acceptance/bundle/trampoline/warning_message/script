@@ -1,2 +1,2 @@
-errcode $CLI bundle validate -t dev
-errcode $CLI bundle validate -t prod
+trace errcode $CLI bundle validate -t dev
+trace errcode $CLI bundle validate -t prod
