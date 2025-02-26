@@ -31,7 +31,11 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 		var err error
 		for _, pattern := range patterns {
 			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
-				libPath := lv.MustString()
+				libPath, ok := lv.AsString()
+				if !ok {
+					return lv, nil
+				}
+
 				// If not local library, skip the check
 				if !IsLibraryLocal(libPath) {
 					return lv, nil
