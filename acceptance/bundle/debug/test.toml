@@ -1,4 +1,4 @@
-LocalOnly = true
+Cloud = false
 
 [[Repls]]
 # The keys are unsorted and also vary per OS

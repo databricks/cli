@@ -24,8 +24,11 @@ type TestConfig struct {
 	// If absent, default to true.
 	GOOS map[string]bool
 
-	// If true, do not run this test against cloud environment
-	LocalOnly *bool
+	// If true, run this test when running locally with a testserver
+	Local *bool
+
+	// If true, run this test when running with cloud env configured
+	Cloud *bool
 
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
