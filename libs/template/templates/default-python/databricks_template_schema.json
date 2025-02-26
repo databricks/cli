@@ -35,6 +35,7 @@
             "default": "no",
             "enum": ["no", "yes"],
             "description": "Use serverless compute",
+            "skip_prompt_if": {},
             "order": 5
         }
     },
