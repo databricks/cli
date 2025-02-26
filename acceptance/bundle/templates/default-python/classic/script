@@ -11,3 +11,5 @@ cd ../../
 
 # Calculate the difference from the serverless template
 diff.py $TESTDIR/../serverless/output output/ > out.compare-vs-serverless.diff
+
+rm -fr output
