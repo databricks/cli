@@ -828,12 +828,10 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 	})
 	require.NoError(t, diags.Error())
 
-	diags = bundle.Apply(ctx, b,
-		bundle.Seq(
-			mutator.SetVariables(),
-			mutator.ResolveVariableReferences("variables"),
-			mutator.TranslatePaths(),
-		))
+	diags = bundle.ApplySeq(ctx, b,
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferences("variables"),
+		mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(
