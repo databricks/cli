@@ -54,46 +54,156 @@ func runSparkJarTestFromWorkspace(t *testing.T, sparkVersion string) {
 }
 
 func TestSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
-	testutil.RequireJDK(t, context.Background(), "1.8.0")
-
 	// Failure on earlier DBR versions:
 	//
 	//   JAR installation from Volumes is supported on UC Clusters with DBR >= 13.3.
 	//   Denied library is Jar(/Volumes/main/test-schema-ldgaklhcahlg/my-volume/.internal/PrintArgs.jar)
 	//
 
-	versions := []string{
-		"13.3.x-scala2.12", // 13.3 LTS (includes Apache Spark 3.4.1, Scala 2.12)
-		"14.3.x-scala2.12", // 14.3 LTS (includes Apache Spark 3.5.0, Scala 2.12)
-		"15.4.x-scala2.12", // 15.4 LTS Beta (includes Apache Spark 3.5.0, Scala 2.12)
+	testCases := []struct {
+		name                string // Test name
+		runtimeVersion      string // The Spark runtime version to test
+		requiredJavaVersion string // Java version that can compile jar to pass this test
+	}{
+		{
+			name:                "Databricks Runtime 13.3 LTS",
+			runtimeVersion:      "13.3.x-scala2.12", // 13.3 LTS (includes Apache Spark 3.4.1, Scala 2.12)
+			requiredJavaVersion: "1.8.0",            // Only JDK 8 is supported
+		},
+		{
+			name:                "Databricks Runtime 14.3 LTS",
+			runtimeVersion:      "14.3.x-scala2.12", // 14.3 LTS (includes Apache Spark 3.5.0, Scala 2.12)
+			requiredJavaVersion: "1.8.0",            // Only JDK 8 is supported
+		},
+		{
+			name:                "Databricks Runtime 15.4 LTS",
+			runtimeVersion:      "15.4.x-scala2.12", // 15.4 LTS (includes Apache Spark 3.5.0, Scala 2.12)
+			requiredJavaVersion: "1.8.0",            // Only JDK 8 is supported
+		},
+		{
+			name:                "Databricks Runtime 16.2",
+			runtimeVersion:      "16.2.x-scala2.12", // 16.2 (includes Apache Spark 3.5.2, Scala 2.12)
+			requiredJavaVersion: "11.0",             // Can run jars compiled by Java 11
+		},
 	}
 
-	for _, version := range versions {
-		t.Run(version, func(t *testing.T) {
+	type testRun struct {
+		canRun      bool
+		javaVersion string
+	}
+
+	testRuns := make(map[string]testRun)
+
+	// Identify which tests can run in this environment
+	for _, tc := range testCases {
+		testRun := testRun{canRun: false}
+		if testutil.HasJDK(t, context.Background(), tc.requiredJavaVersion) {
+			testRun.canRun = true
+			testRun.javaVersion = tc.requiredJavaVersion
+		}
+		testRuns[tc.name] = testRun
+	}
+
+	atLeastOneCanRun := false
+	for _, result := range testRuns {
+		if result.canRun {
+			atLeastOneCanRun = true
+			break
+		}
+	}
+
+	if !atLeastOneCanRun {
+		t.Fatal("At least one test is required to pass. All tests were skipped because no compatible Java version was found.")
+	}
+
+	// Run the tests that can run
+	for _, tc := range testCases {
+		tc := tc // Capture range variable for goroutine
+		result := testRuns[tc.name]
+
+		t.Run(tc.name, func(t *testing.T) {
+			if !result.canRun {
+				t.Skipf("Skipping %s: requires Java version %v", tc.name, tc.requiredJavaVersion)
+				return
+			}
+
 			t.Parallel()
-			runSparkJarTestFromVolume(t, version)
+			runSparkJarTestFromVolume(t, tc.runtimeVersion)
 		})
 	}
 }
 
 func TestSparkJarTaskDeployAndRunOnWorkspace(t *testing.T) {
-	testutil.RequireJDK(t, context.Background(), "1.8.0")
-
 	// Failure on earlier DBR versions:
 	//
 	//   Library from /Workspace is not allowed on this cluster.
 	//   Please switch to using DBR 14.1+ No Isolation Shared or DBR 13.1+ Shared cluster or 13.2+ Assigned cluster to use /Workspace libraries.
 	//
 
-	versions := []string{
-		"14.3.x-scala2.12", // 14.3 LTS (includes Apache Spark 3.5.0, Scala 2.12)
-		"15.4.x-scala2.12", // 15.4 LTS Beta (includes Apache Spark 3.5.0, Scala 2.12)
+	testCases := []struct {
+		name                string // Test name
+		runtimeVersion      string // The Spark runtime version to test
+		requiredJavaVersion string // Java version that can compile jar to pass this test
+	}{
+		{
+			name:                "Databricks Runtime 14.3 LTS",
+			runtimeVersion:      "14.3.x-scala2.12", // 14.3 LTS (includes Apache Spark 3.5.0, Scala 2.12)
+			requiredJavaVersion: "1.8.0",            // Only JDK 8 is supported
+		},
+		{
+			name:                "Databricks Runtime 15.4 LTS",
+			runtimeVersion:      "15.4.x-scala2.12", // 15.4 LTS (includes Apache Spark 3.5.0, Scala 2.12)
+			requiredJavaVersion: "1.8.0",            // Only JDK 8 is supported
+		},
+		{
+			name:                "Databricks Runtime 16.2",
+			runtimeVersion:      "16.2.x-scala2.12", // 16.2 (includes Apache Spark 3.5.2, Scala 2.12)
+			requiredJavaVersion: "11.0",             // Can run jars compiled by Java 11
+		},
 	}
 
-	for _, version := range versions {
-		t.Run(version, func(t *testing.T) {
+	type testRun struct {
+		canRun      bool
+		javaVersion string
+	}
+
+	testRuns := make(map[string]testRun)
+
+	// Identify which tests can run in this environment
+	for _, tc := range testCases {
+		testRun := testRun{canRun: false}
+		if testutil.HasJDK(t, context.Background(), tc.requiredJavaVersion) {
+			testRun.canRun = true
+			testRun.javaVersion = tc.requiredJavaVersion
+		}
+		testRuns[tc.name] = testRun
+	}
+
+	atLeastOneCanRun := false
+	for _, result := range testRuns {
+		if result.canRun {
+			atLeastOneCanRun = true
+			break
+		}
+	}
+
+	if !atLeastOneCanRun {
+		t.Fatal("At least one test is required to pass. All tests were skipped because no compatible Java version was found.")
+	}
+
+	// Run the tests that can run
+	for _, tc := range testCases {
+		tc := tc // Capture range variable for goroutine
+		result := testRuns[tc.name]
+
+		t.Run(tc.name, func(t *testing.T) {
+			if !result.canRun {
+				t.Skipf("Skipping %s: requires Java version %v", tc.name, tc.requiredJavaVersion)
+				return
+			}
+
 			t.Parallel()
-			runSparkJarTestFromWorkspace(t, version)
+			runSparkJarTestFromWorkspace(t, tc.runtimeVersion)
 		})
 	}
 }
