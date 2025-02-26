@@ -57,6 +57,10 @@ func (m *includesOutsideRoot) Apply(ctx context.Context, rb bundle.ReadOnlyBundl
 		return diag.FromErr(err)
 	}
 
+	if len(badLocations) == 0 {
+		return nil
+	}
+
 	return diag.Diagnostics{
 		{
 			Severity: diag.Warning,

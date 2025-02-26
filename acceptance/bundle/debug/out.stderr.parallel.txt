@@ -1,6 +1,7 @@
 10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel
 10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly)
 10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel
+10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel mutator (read-only)=validate:IncludesOutsideRoot
 10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel mutator (read-only)=validate:SingleNodeCluster
 10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel mutator (read-only)=validate:artifact_paths
 10:07:59 Debug: ApplyReadOnly pid=12345 mutator=validate mutator (read-only)=parallel mutator (read-only)=fast_validate(readonly) mutator (read-only)=parallel mutator (read-only)=validate:job_cluster_key_defined
