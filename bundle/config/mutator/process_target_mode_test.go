@@ -307,8 +307,7 @@ func TestValidateDevelopmentMode(t *testing.T) {
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
@@ -425,8 +424,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 		reflect.TypeOf(&resources.Volume{}),
 	}
 
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
@@ -480,8 +478,7 @@ func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.NamePrefix = "custom_lennart_deploy_"
 
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "custom_lennart_deploy_job1", b.Config.Resources.Jobs["job1"].Name)
@@ -494,8 +491,7 @@ func TestTagsAlreadySet(t *testing.T) {
 		"dev":    "foo",
 	}
 
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["custom"])
