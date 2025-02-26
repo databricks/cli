@@ -8,8 +8,6 @@ import (
 	"strconv"
 )
 
-const DatabricksCliParentPid = "DATABRICKS_CLI_PARENT_PID"
-
 type Daemon struct {
 	// If provided, the child process's pid will be written in the file at this
 	// path.
@@ -33,22 +31,17 @@ type Daemon struct {
 }
 
 func (d *Daemon) Start() error {
-	cli, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
+	var err error
 	executable := d.Executable
 	if executable == "" {
-		executable = cli
+		// If Executable is not provided, use the current CLI executable.
+		executable, err = os.Executable()
+		if err != nil {
+			return err
+		}
 	}
 
 	d.cmd = exec.Command(executable, d.Args...)
-
-	// Set environment variable so that the child process knows its parent's PID.
-	// In unix systems orphaned processes are automatically re-parented to init (pid 1)
-	// so we cannot rely on os.Getppid() to get the original parent's pid.
-	d.Env = append(d.Env, fmt.Sprintf("%s=%d", DatabricksCliParentPid, os.Getpid()))
 	d.cmd.Env = d.Env
 
 	d.cmd.SysProcAttr = sysProcAttr()
@@ -64,6 +57,7 @@ func (d *Daemon) Start() error {
 			return fmt.Errorf("failed to open log file: %w", err)
 		}
 
+		// The file descriptor for the log file is closed in the [Daemon.Release] method.
 		d.cmd.Stdout = d.logFile
 		d.cmd.Stderr = d.logFile
 	}
@@ -101,7 +95,7 @@ func (d *Daemon) Release() error {
 		}
 	}
 
-	// Note that the child process will stream it's output directly to the log file.
+	// Note that the child process will stream its output directly to the log file.
 	// So it's safe to close this file handle even if the child process is still running.
 	if d.logFile != nil {
 		err := d.logFile.Close()
@@ -114,7 +108,7 @@ func (d *Daemon) Release() error {
 		return nil
 	}
 
-	// The docs for [os.Process.Release] recommend calling Release if Wait is not called.
-	// It's probably not necessary but we call it just to be safe.
+	// The docs for [os.Process.Release] specify that we need to call Release if
+	// Wait is not called.
 	return d.cmd.Process.Release()
 }
