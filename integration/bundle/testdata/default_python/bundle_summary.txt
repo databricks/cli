@@ -33,11 +33,10 @@
           "value": "[USERNAME]"
         }
       ],
-      "externalId": "[UUID]",
       "groups": [
         {
           "$ref": "Groups/[USERGROUP]",
-          "display": "admins",
+          "display": "team.engineering",
           "type": "direct",
           "value": "[USERGROUP]"
         }
@@ -68,6 +67,11 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
         },
         "edit_mode": "UI_LOCKED",
+        "email_notifications": {
+          "on_failure": [
+            "[USERNAME]"
+          ]
+        },
         "format": "MULTI_TASK",
         "id": "[NUMID]",
         "job_clusters": [
@@ -79,7 +83,7 @@
                 "min_workers": 1
               },
               "data_security_mode": "SINGLE_USER",
-              "node_type_id": "Standard_D3_v2",
+              "node_type_id": "i3.xlarge",
               "spark_version": "15.4.x-scala2.12"
             }
           }
@@ -142,6 +146,7 @@
     },
     "pipelines": {
       "project_name_$UNIQUE_PRJ_pipeline": {
+        "catalog": "main",
         "configuration": {
           "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files/src"
         },
@@ -160,7 +165,7 @@
         ],
         "name": "[dev [USERNAME]] project_name_$UNIQUE_PRJ_pipeline",
         "target": "project_name_$UNIQUE_PRJ_dev",
-        "url": "[DATABRICKS_URL]/pipelines/[UUID]"
+        "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
       }
     }
   },
