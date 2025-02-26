@@ -18,7 +18,7 @@ func TestPythonWheelBuild(t *testing.T) {
 	b := loadTarget(t, "./python_wheel/python_wheel", "default")
 
 	ctx := context.Background()
-	diags := bundle.Apply(ctx, b, phases.Build(ctx, b))
+	diags := phases.Build(ctx, b)
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel/my_test_code/dist/my_test_code-*.whl")
@@ -34,7 +34,7 @@ func TestPythonWheelBuildAutoDetect(t *testing.T) {
 	b := loadTarget(t, "./python_wheel/python_wheel_no_artifact", "default")
 
 	ctx := context.Background()
-	diags := bundle.Apply(ctx, b, phases.Build())
+	diags := phases.Build(ctx, b)
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact/dist/my_test_code-*.whl")
@@ -50,7 +50,7 @@ func TestPythonWheelBuildAutoDetectWithNotebookTask(t *testing.T) {
 	b := loadTarget(t, "./python_wheel/python_wheel_no_artifact_notebook", "default")
 
 	ctx := context.Background()
-	diags := bundle.Apply(ctx, b, phases.Build())
+	diags := phases.Build(ctx, b)
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact_notebook/dist/my_test_code-*.whl")
