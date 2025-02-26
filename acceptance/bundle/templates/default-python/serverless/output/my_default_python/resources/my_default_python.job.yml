@@ -16,7 +16,6 @@ resources:
 
       tasks:
         - task_key: notebook_task
-          job_cluster_key: job_cluster
           notebook_task:
             notebook_path: ../src/notebook.ipynb
         
@@ -29,21 +28,18 @@ resources:
         - task_key: main_task
           depends_on:
             - task_key: refresh_pipeline
-          job_cluster_key: job_cluster
+          environment_key: default
           python_wheel_task:
             package_name: my_default_python
             entry_point: main
-          libraries:
-            # By default we just include the .whl file generated for the my_default_python package.
-            # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
-            # for more information on how to add other libraries.
-            - whl: ../dist/*.whl
 
-      job_clusters:
-        - job_cluster_key: job_cluster
-          new_cluster:
-            spark_version: 15.4.x-scala2.12
-            node_type_id: i3.xlarge
-            autoscale:
-                min_workers: 1
-                max_workers: 4
+      # A list of task execution environment specifications that can be referenced by tasks of this job.
+      environments:
+        - environment_key: default
+
+          # Full documentation of this spec can be found at:
+          # https://docs.databricks.com/api/workspace/jobs/create#environments-spec
+          spec:
+            client: "1"
+            dependencies:
+              - ../dist/*.whl
