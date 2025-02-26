@@ -163,7 +163,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -224,7 +224,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -239,7 +239,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -254,7 +254,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -311,7 +311,7 @@ func TestValidateDevelopmentMode(t *testing.T) {
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
@@ -429,7 +429,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 		reflect.TypeOf(&resources.Volume{}),
 	}
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -484,7 +484,7 @@ func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.NamePrefix = "custom_lennart_deploy_"
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -498,7 +498,7 @@ func TestTagsAlreadySet(t *testing.T) {
 		"dev":    "foo",
 	}
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -510,7 +510,7 @@ func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = nil
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
