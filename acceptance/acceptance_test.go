@@ -217,8 +217,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
-	if isTruePtr(config.LocalOnly) && cloudEnv != "" {
-		t.Skipf("Disabled via LocalOnly setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	if !isTruePtr(config.Local) && cloudEnv == "" {
+		t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	}
+
+	if !isTruePtr(config.Cloud) && cloudEnv != "" {
+		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 	}
 
 	var tmpDir string
