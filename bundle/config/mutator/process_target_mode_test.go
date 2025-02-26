@@ -163,8 +163,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Job 1
@@ -224,8 +223,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -239,8 +237,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
@@ -254,8 +251,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.ApplySeq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -521,8 +517,7 @@ func TestTagsEmptySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = map[string]string{}
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
@@ -532,8 +527,7 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.JobsMaxConcurrentRuns = 10
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 10, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
@@ -543,8 +537,7 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.JobsMaxConcurrentRuns = 1
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
@@ -554,8 +547,7 @@ func TestTriggerPauseStatusWhenUnpaused(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.TriggerPauseStatus = config.Unpaused
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.ErrorContains(t, diags.Error(), "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default")
 }
 
@@ -564,8 +556,7 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	notEnabled := false
 	b.Config.Presets.PipelinesDevelopment = &notEnabled
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
