@@ -3,9 +3,10 @@ Warning: Include section is defined outside root file
   in a.yml:2:5
      a.yml:3:5
 
-The include section is defined in a file that is not the root file
-These values will be ignored since only the includes defined in
-the bundle root file (typically databricks.yml) are loaded.
+The include section is defined in a file that is not the root file.
+These values will be ignored because only the includes defined in
+the bundle root file (that is databricks.yml or databricks.yaml)
+are loaded.
 
 Name: include_outside_root
 Target: default

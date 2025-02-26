@@ -65,9 +65,10 @@ func (m *includesOutsideRoot) Apply(ctx context.Context, rb bundle.ReadOnlyBundl
 		{
 			Severity: diag.Warning,
 			Summary:  "Include section is defined outside root file",
-			Detail: `The include section is defined in a file that is not the root file
-These values will be ignored since only the includes defined in
-the bundle root file (typically databricks.yml) are loaded.`,
+			Detail: `The include section is defined in a file that is not the root file.
+These values will be ignored because only the includes defined in
+the bundle root file (that is databricks.yml or databricks.yaml)
+are loaded.`,
 			Locations: badLocations,
 			Paths:     []dyn.Path{dyn.MustPathFromString("include")},
 		},
