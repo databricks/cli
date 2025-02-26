@@ -12,9 +12,10 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
 >>> diff.py [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output output/
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python.pipeline.yml
 +++ output/my_default_python/resources/my_default_python.pipeline.yml
-@@ -4,5 +4,5 @@
+@@ -4,6 +4,5 @@
      my_default_python_pipeline:
        name: my_default_python_pipeline
+-      ## Catalog is required for serverless compute
 -      catalog: main
 +      catalog: customcatalog
        target: my_default_python_${bundle.target}

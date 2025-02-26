@@ -40,8 +40,13 @@
 +                max_workers: 4
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/my_default_python.pipeline.yml
 +++ output/my_default_python/resources/my_default_python.pipeline.yml
-@@ -6,5 +6,4 @@
-       catalog: main
+@@ -4,8 +4,7 @@
+     my_default_python_pipeline:
+       name: my_default_python_pipeline
+-      ## Catalog is required for serverless compute
+-      catalog: main
++      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
++      # catalog: catalog_name
        target: my_default_python_${bundle.target}
 -      serverless: true
        libraries:
