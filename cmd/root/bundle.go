@@ -14,26 +14,35 @@ import (
 
 // getTarget returns the name of the target to operate in.
 func getTarget(cmd *cobra.Command) (value string) {
+	target, isFlagSet := targetFlagValue(cmd)
+	if isFlagSet {
+		return target
+	}
+
+	// If it's not set, use the environment variable.
+	target, _ = env.Target(cmd.Context())
+	return target
+}
+
+func targetFlagValue(cmd *cobra.Command) (string, bool) {
 	// The command line flag takes precedence.
 	flag := cmd.Flag("target")
 	if flag != nil {
-		value = flag.Value.String()
+		value := flag.Value.String()
 		if value != "" {
-			return
+			return value, true
 		}
 	}
 
 	oldFlag := cmd.Flag("environment")
 	if oldFlag != nil {
-		value = oldFlag.Value.String()
+		value := oldFlag.Value.String()
 		if value != "" {
-			return
+			return value, true
 		}
 	}
 
-	// If it's not set, use the environment variable.
-	target, _ := env.Target(cmd.Context())
-	return target
+	return "", false
 }
 
 func getProfile(cmd *cobra.Command) (value string) {
