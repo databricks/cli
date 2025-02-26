@@ -203,7 +203,7 @@ func TestResolveLookupVariableReferencesInVariableLookups(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
+	diags := bundle.ApplySeq(context.Background(), b, ResolveVariableReferencesInLookup(), ResolveResourceReferences())
 	require.ErrorContains(t, diags.Error(), "lookup variables cannot contain references to another lookup variables")
 }
 
