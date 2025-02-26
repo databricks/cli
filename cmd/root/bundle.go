@@ -76,7 +76,7 @@ func configureProfile(cmd *cobra.Command, b *bundle.Bundle) diag.Diagnostics {
 func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag.Diagnostics) {
 	// Load bundle and select target.
 	ctx := cmd.Context()
-	diags := diag.Diagnostics{}
+	var diags diag.Diagnostics
 	if target := getTarget(cmd); target == "" {
 		diags = phases.LoadDefaultTarget(ctx, b)
 	} else {
