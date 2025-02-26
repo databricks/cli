@@ -135,7 +135,7 @@ func TestPythonWheelNoBuild(t *testing.T) {
 	b := loadTarget(t, "./python_wheel/python_wheel_no_build", "default")
 
 	ctx := context.Background()
-	diags := bundle.Apply(ctx, b, phases.Build())
+	diags := phases.Build(ctx, b)
 	require.NoError(t, diags.Error())
 
 	match := libraries.ExpandGlobReferences()
