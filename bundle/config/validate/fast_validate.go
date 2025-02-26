@@ -30,6 +30,7 @@ func (f *fastValidateReadonly) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),
 		SingleNodeCluster(),
+		IncludesOutsideRoot(),
 
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
