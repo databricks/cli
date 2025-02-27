@@ -84,8 +84,11 @@ func destroyCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		terraform.Apply(),
 		files.Delete(),
 	)
-	// TODO: we should not print happy message if there were errors
-	cmdio.LogString(ctx, "Destroy complete!")
+
+	if !diags.HasError() {
+		cmdio.LogString(ctx, "Destroy complete!")
+	}
+
 	return diags
 }
 

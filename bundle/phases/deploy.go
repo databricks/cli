@@ -143,8 +143,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		metadata.Upload(),
 	))
 
-	// TODO: we should not output this happy message if there are errors
-	cmdio.LogString(ctx, "Deployment complete!")
+	if !diags.HasError() {
+		cmdio.LogString(ctx, "Deployment complete!")
+	}
+
 	return diags
 }
 
