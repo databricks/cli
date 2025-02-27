@@ -218,23 +218,23 @@ func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, e
 
 	err := d.Start()
 	if err != nil {
-		log.Debugf(ctx, "failed to start telemetry worker: %s", err)
+		log.Warnf(ctx, "failed to start telemetry worker: %s", err)
 		return
 	}
 
 	// If the telemetry worker is started successfully, we write the logs to its stdin.
 	b, err := json.Marshal(in)
 	if err != nil {
-		log.Debugf(ctx, "failed to marshal telemetry logs: %s", err)
+		log.Warnf(ctx, "failed to marshal telemetry logs: %s", err)
 		return
 	}
 	err = d.WriteInput(b)
 	if err != nil {
-		log.Debugf(ctx, "failed to write to telemetry worker: %s", err)
+		log.Warnf(ctx, "failed to write to telemetry worker: %s", err)
 	}
 
 	err = d.Release()
 	if err != nil {
-		log.Debugf(ctx, "failed to release telemetry worker: %s", err)
+		log.Warnf(ctx, "failed to release telemetry worker: %s", err)
 	}
 }
