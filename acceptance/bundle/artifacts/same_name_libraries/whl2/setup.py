@@ -1,11 +1,3 @@
-"""
-setup.py configuration script describing how to build and package this project.
-
-This file is primarily used by the setuptools library and typically should not
-be executed directly. See README.md for how to deploy, test, and run
-the my_default_python project.
-"""
-
 from setuptools import setup, find_packages
 
 import sys

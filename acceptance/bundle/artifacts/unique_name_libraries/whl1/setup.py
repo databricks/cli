@@ -4,19 +4,19 @@ import sys
 
 sys.path.append("./src")
 
-import my_default_python
+import my_package
 
 setup(
-    name="my_default_python",
-    version=my_default_python.__version__,
+    name="my_package",
+    version=my_package.__version__,
     url="https://databricks.com",
     author="[USERNAME]",
-    description="wheel file based on my_default_python/src",
+    description="wheel file based on my_package/src",
     packages=find_packages(where="./src"),
     package_dir={"": "src"},
     entry_points={
         "packages": [
-            "main=my_default_python.main:main",
+            "main=my_package.main:main",
         ],
     },
     install_requires=[

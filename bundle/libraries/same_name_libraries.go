@@ -27,37 +27,36 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 	var diags diag.Diagnostics
 	libs := make(map[string]*libData)
 
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(rootConfig dyn.Value) (dyn.Value, error) {
 		var err error
 		for _, pattern := range patterns {
-			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
-				libPath, ok := lv.AsString()
+			rootConfig, err = dyn.MapByPattern(rootConfig, pattern, func(p dyn.Path, libraryValue dyn.Value) (dyn.Value, error) {
+				libPath, ok := libraryValue.AsString()
 				if !ok {
-					return lv, nil
+					return libraryValue, nil
 				}
 
 				// If not local library, skip the check
 				if !IsLibraryLocal(libPath) {
-					return lv, nil
+					return libraryValue, nil
 				}
 
-				libFullPath := lv.MustString()
-				lib := filepath.Base(libFullPath)
+				lib := filepath.Base(libPath)
 				// If the same basename was seen already but full path is different
 				// then it's a duplicate. Add the location to the location list.
 				lp, ok := libs[lib]
 				if !ok {
 					libs[lib] = &libData{
-						fullPath:  libFullPath,
-						locations: []dyn.Location{lv.Location()},
+						fullPath:  libPath,
+						locations: []dyn.Location{libraryValue.Location()},
 						paths:     []dyn.Path{p},
 					}
-				} else if lp.fullPath != libFullPath {
-					lp.locations = append(lp.locations, lv.Location())
+				} else if lp.fullPath != libPath {
+					lp.locations = append(lp.locations, libraryValue.Location())
 					lp.paths = append(lp.paths, p)
 				}
 
-				return lv, nil
+				return libraryValue, nil
 			})
 			if err != nil {
 				return dyn.InvalidValue, err
@@ -68,7 +67,7 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 			return dyn.InvalidValue, err
 		}
 
-		return v, nil
+		return rootConfig, nil
 	})
 
 	// Iterate over all the libraries and check if there are any duplicates.
