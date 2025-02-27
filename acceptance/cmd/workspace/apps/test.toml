@@ -1,0 +1,30 @@
+RecordRequests = true
+
+[[Server]]
+Pattern = "PATCH /api/2.0/apps/test-name"
+Response.Body = '''
+{
+  "name": "test-name",
+  "description": "My app description.",
+  "compute_status": {
+    "state": "ERROR",
+    "message": "App compute is active."
+  },
+  "app_status": {
+    "state": "DEPLOYING",
+    "message": "Application is running."
+  },
+  "url": "test-name-123.cloud.databricksapps.com",
+  "resources": [
+    {
+      "name": "api-key",
+      "description": "API key for external service.",
+      "secret": {
+        "scope": "my-scope",
+        "key": "my-key",
+        "permission": "READ"
+      }
+    }
+  ],
+  "id": "12345"
+}'''

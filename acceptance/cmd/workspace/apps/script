@@ -1,0 +1,5 @@
+title "Apps update with correct input"
+trace $CLI apps update test-name --json @input.json
+
+title "Apps update with missing parameter"
+trace $CLI apps update --json @input.json

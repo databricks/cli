@@ -1,0 +1,22 @@
+
+>>> errcode [CLI] bundle validate -t dev
+Error: Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.
+
+Name: trampoline_warning_message
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/trampoline_warning_message/dev
+
+Found 1 error
+
+Exit code: 1
+
+>>> errcode [CLI] bundle validate -t prod
+Name: trampoline_warning_message
+Target: prod
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/trampoline_warning_message/prod
+
+Validation OK!
