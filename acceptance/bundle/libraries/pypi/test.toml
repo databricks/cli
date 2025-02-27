@@ -1,0 +1,5 @@
+# We run this test only locally for now because we need to figure out how to do
+# bundle destroy on script.cleanup first.
+Cloud = false
+
+RecordRequests = true

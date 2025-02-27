@@ -34,6 +34,7 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
               "max_workers": 4,
               "min_workers": 1
             },
+            "data_security_mode": "SINGLE_USER",
             "node_type_id": "i3.xlarge",
             "spark_version": "15.4.x-scala2.12"
           }

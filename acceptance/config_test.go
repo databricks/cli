@@ -18,14 +18,17 @@ const configFilename = "test.toml"
 
 type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
-	Badness string
+	Badness *string
 
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
 	// If absent, default to true.
 	GOOS map[string]bool
 
-	// If true, do not run this test against cloud environment
-	LocalOnly bool
+	// If true, run this test when running locally with a testserver
+	Local *bool
+
+	// If true, run this test when running with cloud env configured
+	Cloud *bool
 
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
@@ -44,7 +47,7 @@ type TestConfig struct {
 
 	// Record the requests made to the server and write them as output to
 	// out.requests.txt
-	RecordRequests bool
+	RecordRequests *bool
 
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
@@ -102,7 +105,7 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 
 	for _, cfgName := range configs[1:] {
 		cfg := DoLoadConfig(t, cfgName)
-		err := mergo.Merge(&result, cfg, mergo.WithOverride, mergo.WithAppendSlice)
+		err := mergo.Merge(&result, cfg, mergo.WithOverride, mergo.WithoutDereference, mergo.WithAppendSlice)
 		if err != nil {
 			t.Fatalf("Error during config merge: %s: %s", cfgName, err)
 		}

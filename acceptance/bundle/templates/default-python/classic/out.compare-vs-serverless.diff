@@ -1,0 +1,54 @@
+--- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/my_default_python.job.yml
++++ output/my_default_python/resources/my_default_python.job.yml
+@@ -17,4 +17,5 @@
+       tasks:
+         - task_key: notebook_task
++          job_cluster_key: job_cluster
+           notebook_task:
+             notebook_path: ../src/notebook.ipynb
+@@ -29,17 +30,21 @@
+           depends_on:
+             - task_key: refresh_pipeline
+-          environment_key: default
++          job_cluster_key: job_cluster
+           python_wheel_task:
+             package_name: my_default_python
+             entry_point: main
++          libraries:
++            # By default we just include the .whl file generated for the my_default_python package.
++            # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
++            # for more information on how to add other libraries.
++            - whl: ../dist/*.whl
+ 
+-      # A list of task execution environment specifications that can be referenced by tasks of this job.
+-      environments:
+-        - environment_key: default
+-
+-          # Full documentation of this spec can be found at:
+-          # https://docs.databricks.com/api/workspace/jobs/create#environments-spec
+-          spec:
+-            client: "1"
+-            dependencies:
+-              - ../dist/*.whl
++      job_clusters:
++        - job_cluster_key: job_cluster
++          new_cluster:
++            spark_version: 15.4.x-scala2.12
++            node_type_id: i3.xlarge
++            data_security_mode: SINGLE_USER
++            autoscale:
++                min_workers: 1
++                max_workers: 4
+--- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/my_default_python.pipeline.yml
++++ output/my_default_python/resources/my_default_python.pipeline.yml
+@@ -4,8 +4,7 @@
+     my_default_python_pipeline:
+       name: my_default_python_pipeline
+-      ## Catalog is required for serverless compute
+-      catalog: main
++      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
++      # catalog: catalog_name
+       target: my_default_python_${bundle.target}
+-      serverless: true
+       libraries:
+         - notebook:

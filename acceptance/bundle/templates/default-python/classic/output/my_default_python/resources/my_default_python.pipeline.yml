@@ -3,7 +3,8 @@ resources:
   pipelines:
     my_default_python_pipeline:
       name: my_default_python_pipeline
-      catalog: main
+      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+      # catalog: catalog_name
       target: my_default_python_${bundle.target}
       libraries:
         - notebook:
