@@ -1,11 +1,10 @@
 
 >>> errcode [CLI] bundle deploy
 Building whl1...
-Error: build failed whl1, error: exit status 1, output: Traceback (most recent call last):
-  File "[TMPDIR]/whl1/setup.py", line 1, in <module>
-    from setuptools import setup, find_packages
-ModuleNotFoundError: No module named 'setuptools'
-
-
-
-Exit code: 1
+Building whl2...
+Uploading [package name]
+Uploading [package name]
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/unique_name_libraries/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
