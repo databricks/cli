@@ -46,54 +46,25 @@ func TestGetEnvFor(t *testing.T) {
 		name     string
 		expected string
 	}{
-		{
-			name:     "host",
-			expected: "DATABRICKS_HOST",
-		},
-		{
-			name:     "profile",
-			expected: "DATABRICKS_CONFIG_PROFILE",
-		},
-		{
-			name:     "auth_type",
-			expected: "DATABRICKS_AUTH_TYPE",
-		},
-		{
-			name:     "metadata_service_url",
-			expected: "DATABRICKS_METADATA_SERVICE_URL",
-		},
-		{
-			name:     "client_id",
-			expected: "DATABRICKS_CLIENT_ID",
-		},
-		{
-			name:     "google_service_account",
-			expected: "DATABRICKS_GOOGLE_SERVICE_ACCOUNT",
-		},
-		{
-			name:     "azure_workspace_resource_id",
-			expected: "DATABRICKS_AZURE_RESOURCE_ID",
-		},
-		{
-			name:     "azure_use_msi",
-			expected: "ARM_USE_MSI",
-		},
-		{
-			name:     "azure_client_id",
-			expected: "ARM_CLIENT_ID",
-		},
-		{
-			name:     "azure_tenant_id",
-			expected: "ARM_TENANT_ID",
-		},
-		{
-			name:     "azure_environment",
-			expected: "ARM_ENVIRONMENT",
-		},
-		{
-			name:     "azure_login_app_id",
-			expected: "DATABRICKS_AZURE_LOGIN_APP_ID",
-		},
+		// Generic attributes.
+		{"host", "DATABRICKS_HOST"},
+		{"profile", "DATABRICKS_CONFIG_PROFILE"},
+		{"auth_type", "DATABRICKS_AUTH_TYPE"},
+		{"metadata_service_url", "DATABRICKS_METADATA_SERVICE_URL"},
+
+		// OAuth specific attributes.
+		{"client_id", "DATABRICKS_CLIENT_ID"},
+
+		// Google specific attributes.
+		{"google_service_account", "DATABRICKS_GOOGLE_SERVICE_ACCOUNT"},
+
+		// Azure specific attributes.
+		{"azure_workspace_resource_id", "DATABRICKS_AZURE_RESOURCE_ID"},
+		{"azure_use_msi", "ARM_USE_MSI"},
+		{"azure_client_id", "ARM_CLIENT_ID"},
+		{"azure_tenant_id", "ARM_TENANT_ID"},
+		{"azure_environment", "ARM_ENVIRONMENT"},
+		{"azure_login_app_id", "DATABRICKS_AZURE_LOGIN_APP_ID"},
 	}
 
 	for _, tcase := range tcases {
