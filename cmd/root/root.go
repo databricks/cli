@@ -106,7 +106,7 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 	// TODO: deferred panic recovery
 	ctx = telemetry.WithNewLogger(ctx)
 	ctx = dbr.DetectRuntime(ctx)
-	start := time.Now()
+	startTime := time.Now()
 
 	// Run the command
 	cmd, err := cmd.ExecuteContextC(ctx)
@@ -134,14 +134,12 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 			)
 		}
 	}
-
-	end := time.Now()
 	exitCode := 0
 	if err != nil {
 		exitCode = 1
 	}
 
-	uploadTelemetry(cmd.Context(), commandString(cmd), start, end, exitCode)
+	uploadTelemetry(cmd.Context(), commandString(cmd), startTime, exitCode)
 	return err
 }
 
@@ -176,7 +174,7 @@ func inheritEnvVars() []string {
 	return out
 }
 
-func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, exitCode int) {
+func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, exitCode int) {
 	// Nothing to upload.
 	if !telemetry.HasLogs(ctx) {
 		return
@@ -193,7 +191,7 @@ func uploadTelemetry(ctx context.Context, cmdStr string, start, end time.Time, e
 		Command:         cmdStr,
 		OperatingSystem: runtime.GOOS,
 		DbrVersion:      env.Get(ctx, dbr.EnvVarName),
-		ExecutionTimeMs: end.Sub(start).Milliseconds(),
+		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 		ExitCode:        int64(exitCode),
 	})
 
