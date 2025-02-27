@@ -39,7 +39,7 @@ func TestAuthDescribeFailure(t *testing.T) {
 	ctx := context.Background()
 	profileSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
 	profileName := "nonexistent-TestAuthDescribeFailure-" + profileSuffix
-	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", profileName)
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", profileName, "--host", "https://test@non-existing-subdomain.databricks.com")
 	outStr := stdout.String()
 
 	require.NotEmpty(t, outStr)
