@@ -1,0 +1,10 @@
+bundle:
+  name: include_locations
+
+include:
+  - resources/*.yml
+  - override.yml
+
+targets:
+  dev: {}
+  prod: {}
