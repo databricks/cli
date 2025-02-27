@@ -1,3 +1,4 @@
+export PYTHONDONTWRITEBYTECODE=1
 trace $CLI bundle deploy
 trace find . | grep whl
 jq .path < out.requests.txt | grep import | sort > out.requests.paths.txt

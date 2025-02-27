@@ -1,5 +1,5 @@
 # Testing that the wheel is built and uploaded
-Badness = "Wheel is uploaded twice, once to dist/ and once more to .internal/"
+Badness = "Wheel is uploaded twice, once to dist/ and once more to .internal/; A bunch of unnecessary stuff is uploaded, e.g. __pycache__"
 Cloud = false
 RecordRequests = true
 
