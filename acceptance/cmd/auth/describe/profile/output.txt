@@ -1,6 +1,6 @@
 
 >>> [CLI] auth describe
-Unable to authenticate: Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": dial tcp: lookup non-existing-subdomain.databricks.com: no such host
+Unable to authenticate: Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)
 -----
 Current configuration:
   ✓ host: https://non-existing-subdomain.databricks.com (from .databrickscfg config file)
