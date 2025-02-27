@@ -1,3 +1,0 @@
-export DATABRICKS_TOKEN=""
-
-$CLI bundle validate
