@@ -19,7 +19,7 @@ func (t *testMutator) Name() string {
 
 func (t *testMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	t.applyCalled++
-	return Apply(ctx, b, Seq(t.nestedMutators...))
+	return ApplySeq(ctx, b, t.nestedMutators...)
 }
 
 func TestMutator(t *testing.T) {

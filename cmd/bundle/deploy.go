@@ -69,14 +69,19 @@ func newDeployCommand() *cobra.Command {
 				}
 			}
 
-			diags = diags.Extend(
-				bundle.Apply(ctx, b, bundle.Seq(
-					phases.Initialize(),
-					validate.FastValidate(),
-					phases.Build(),
-					phases.Deploy(outputHandler),
-				)),
-			)
+			diags = diags.Extend(phases.Initialize(ctx, b))
+
+			if !diags.HasError() {
+				diags = diags.Extend(bundle.Apply(ctx, b, validate.FastValidate()))
+			}
+
+			if !diags.HasError() {
+				diags = diags.Extend(phases.Build(ctx, b))
+			}
+
+			if !diags.HasError() {
+				diags = diags.Extend(phases.Deploy(ctx, b, outputHandler))
+			}
 		}
 
 		renderOpts := render.RenderOptions{RenderSummaryTable: false}
