@@ -206,9 +206,7 @@ Body: %s
 For acceptance tests, add this to test.toml:
 [[Server]]
 Pattern = %q
-Response.Body = '''
-<response body here>
-'''
+Response.Body = '<response body here>'
 # Response.StatusCode = <response code if not 200>
 `, r.URL, body, pattern)
 
