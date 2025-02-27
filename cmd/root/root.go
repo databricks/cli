@@ -181,7 +181,7 @@ func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, ex
 	}
 
 	// Telemetry is disabled. We don't upload logs.
-	if _, ok := os.LookupEnv(telemetry.DisableEnvVar); ok {
+	if os.Getenv(telemetry.DisableEnvVar) != "" {
 		return
 	}
 
