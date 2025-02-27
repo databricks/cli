@@ -9,7 +9,6 @@
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/output.txt"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/repls.json"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/script"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/test.toml"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/state/deploy.lock"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/state/deployment.json"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/state/metadata.json"
