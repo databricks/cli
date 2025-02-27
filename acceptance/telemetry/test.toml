@@ -1,4 +1,6 @@
 IncludeRequestHeaders = ["Authorization"]
+Local = true
+Cloud = false
 
 [[Repls]]
 Old = '17\d{11}'
