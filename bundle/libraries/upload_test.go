@@ -93,7 +93,7 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 		filer.CreateParentDirectories,
 	).Return(nil)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ExpandGlobReferences(), UploadWithClient(mockFiler)))
+	diags := bundle.ApplySeq(context.Background(), b, ExpandGlobReferences(), UploadWithClient(mockFiler))
 	require.NoError(t, diags.Error())
 
 	// Test that libraries path is updated
@@ -181,7 +181,7 @@ func TestArtifactUploadForVolumes(t *testing.T) {
 		filer.CreateParentDirectories,
 	).Return(nil)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ExpandGlobReferences(), UploadWithClient(mockFiler)))
+	diags := bundle.ApplySeq(context.Background(), b, ExpandGlobReferences(), UploadWithClient(mockFiler))
 	require.NoError(t, diags.Error())
 
 	// Test that libraries path is updated
@@ -225,7 +225,7 @@ func TestArtifactUploadWithNoLibraryReference(t *testing.T) {
 		filer.CreateParentDirectories,
 	).Return(nil)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ExpandGlobReferences(), UploadWithClient(mockFiler)))
+	diags := bundle.ApplySeq(context.Background(), b, ExpandGlobReferences(), UploadWithClient(mockFiler))
 	require.NoError(t, diags.Error())
 
 	require.Equal(t, "/Workspace/foo/bar/artifacts/.internal/source.whl", b.Config.Artifacts["whl"].Files[0].RemotePath)
@@ -311,7 +311,7 @@ func TestUploadMultipleLibraries(t *testing.T) {
 		filer.CreateParentDirectories,
 	).Return(nil).Once()
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ExpandGlobReferences(), UploadWithClient(mockFiler)))
+	diags := bundle.ApplySeq(context.Background(), b, ExpandGlobReferences(), UploadWithClient(mockFiler))
 	require.NoError(t, diags.Error())
 
 	// Test that libraries path is updated

@@ -71,7 +71,7 @@ func newSyncCommand() *cobra.Command {
 		}
 
 		// Run initialize phase to make sure paths are set.
-		diags = bundle.Apply(ctx, b, phases.Initialize())
+		diags = phases.Initialize(ctx, b)
 		if err := diags.Error(); err != nil {
 			return err
 		}
