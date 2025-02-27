@@ -62,24 +62,24 @@ func newDestroyCommand() *cobra.Command {
 		}
 
 		diags = phases.Initialize(ctx, b)
-
-		if !diags.HasError() {
-			diags = diags.Extend(
-				// We need to resolve artifact variable (how we do it in build phase)
-				// because some of the to-be-destroyed resource might use this variable.
-				// Not resolving might lead to terraform "Reference to undeclared resource" error
-				bundle.Apply(ctx, b, mutator.ResolveVariableReferences("artifacts")),
-			)
+		if err := diags.Error(); err != nil {
+			return err
 		}
 
-		if !diags.HasError() {
-			diags = diags.Extend(phases.Destroy(ctx, b))
-		}
+		diags = diags.Extend(
+			// We need to resolve artifact variable (how we do it in build phase)
+			// because some of the to-be-destroyed resource might use this variable.
+			// Not resolving might lead to terraform "Reference to undeclared resource" error
+			bundle.Apply(ctx, b, mutator.ResolveVariableReferences("artifacts")),
+		)
 
 		if err := diags.Error(); err != nil {
 			return err
 		}
-		return nil
+
+		diags = diags.Extend(phases.Destroy(ctx, b))
+		// QQQ we're not reporting warnings there. This would be addressed by switching to streaming warnings/errors instead of accumulating.
+		return diags.Error()
 	}
 
 	return cmd
