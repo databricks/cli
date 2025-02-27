@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 
 	"github.com/databricks/cli/libs/log"
 	terraformlib "github.com/databricks/cli/libs/terraform"
@@ -77,42 +78,65 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return approved, nil
 }
 
-// The destroy phase deletes artifacts and resources.
-func Destroy() bundle.Mutator {
+func destroyCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Core destructive mutators for destroy. These require informed user consent.
-	destroyCore := bundle.Seq(
+	diags := bundle.ApplySeq(ctx, b,
 		terraform.Apply(),
 		files.Delete(),
-		bundle.LogString("Destroy complete!"),
 	)
 
-	destroyMutator := bundle.Seq(
-		lock.Acquire(),
-		bundle.Defer(
-			bundle.Seq(
-				terraform.StatePull(),
-				terraform.Interpolate(),
-				terraform.Write(),
-				terraform.Plan(terraform.PlanGoal("destroy")),
-				bundle.If(
-					approvalForDestroy,
-					destroyCore,
-					bundle.LogString("Destroy cancelled!"),
-				),
-			),
-			lock.Release(lock.GoalDestroy),
-		),
-	)
+	if !diags.HasError() {
+		cmdio.LogString(ctx, "Destroy complete!")
+	}
 
-	return newPhase(
-		"destroy",
-		[]bundle.Mutator{
-			// Only run deploy mutator if root path exists.
-			bundle.If(
-				assertRootPathExists,
-				destroyMutator,
-				bundle.LogString("No active deployment found to destroy!"),
-			),
-		},
-	)
+	return diags
+}
+
+// The destroy phase deletes artifacts and resources.
+func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
+	log.Info(ctx, "Phase: destroy")
+
+	ok, err := assertRootPathExists(ctx, b)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if !ok {
+		cmdio.LogString(ctx, "No active deployment found to destroy!")
+		return diags
+	}
+
+	diags = diags.Extend(bundle.Apply(ctx, b, lock.Acquire()))
+	if diags.HasError() {
+		return diags
+	}
+
+	defer func() {
+		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDestroy)))
+	}()
+
+	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+		terraform.StatePull(),
+		terraform.Interpolate(),
+		terraform.Write(),
+		terraform.Plan(terraform.PlanGoal("destroy")),
+	))
+
+	if diags.HasError() {
+		return diags
+	}
+
+	hasApproval, err := approvalForDestroy(ctx, b)
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+		return diags
+	}
+
+	if hasApproval {
+		diags = diags.Extend(destroyCore(ctx, b))
+	} else {
+		cmdio.LogString(ctx, "Destroy cancelled!")
+	}
+
+	return diags
 }

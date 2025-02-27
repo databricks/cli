@@ -32,10 +32,10 @@ func TestLoadWithNoState(t *testing.T) {
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
 	b.WorkspaceClient()
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(
+	diags := bundle.ApplySeq(context.Background(), b,
 		Initialize(),
 		Load(ErrorOnEmptyState),
-	))
+	)
 
 	require.ErrorContains(t, diags.Error(), "Did you forget to run 'databricks bundle deploy'")
 }

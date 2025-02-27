@@ -34,7 +34,7 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions()))
+	diags := bundle.Apply(context.Background(), b, ValidateSharedRootPermissions())
 	require.Empty(t, diags)
 }
 
@@ -59,7 +59,7 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions()))
+	diags := bundle.Apply(context.Background(), b, ValidateSharedRootPermissions())
 	require.Len(t, diags, 1)
 	require.Equal(t, "the bundle root path /Workspace/Shared/foo/bar is writable by all workspace users", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)

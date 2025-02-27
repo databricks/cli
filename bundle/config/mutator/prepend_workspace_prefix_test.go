@@ -80,7 +80,7 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(DefineDefaultWorkspaceRoot(), ExpandWorkspaceRoot(), DefineDefaultWorkspacePaths(), PrependWorkspacePrefix()))
+	diags := bundle.ApplySeq(context.Background(), b, DefineDefaultWorkspaceRoot(), ExpandWorkspaceRoot(), DefineDefaultWorkspacePaths(), PrependWorkspacePrefix())
 	require.Empty(t, diags)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev", b.Config.Workspace.RootPath)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/artifacts", b.Config.Workspace.ArtifactPath)

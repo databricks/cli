@@ -48,6 +48,17 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 	return diags
 }
 
+func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	for _, m := range mutators {
+		diags = diags.Extend(Apply(ctx, b, m))
+		if diags.HasError() {
+			return diags
+		}
+	}
+	return diags
+}
+
 type funcMutator struct {
 	fn func(context.Context, *Bundle) diag.Diagnostics
 }
