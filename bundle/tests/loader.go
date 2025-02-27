@@ -38,7 +38,9 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		return nil, diag.FromErr(err)
 	}
 
-	diags := bundle.ApplySeq(ctx, b,
+	diags := phases.LoadNamedTarget(ctx, b, env)
+
+	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		mutator.RewriteSyncPaths(),
 		mutator.SyncDefaultPath(),
 		mutator.SyncInferRoot(),
@@ -47,7 +49,7 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		mutator.MergeJobTasks(),
 		mutator.MergePipelineClusters(),
 		mutator.MergeApps(),
-	)
+	))
 	return b, diags
 }
 
@@ -68,7 +70,8 @@ func initializeTarget(t *testing.T, path, env string) (*bundle.Bundle, diag.Diag
 	configureMock(t, b)
 
 	ctx := dbr.MockRuntime(context.Background(), false)
-	diags := phases.Initialize(ctx, b)
+	diags := bundle.Apply(ctx, b, mutator.SelectTarget(env))
+	diags = diags.Extend(phases.Initialize(ctx, b))
 
 	return b, diags
 }
