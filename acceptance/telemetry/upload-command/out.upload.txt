@@ -1,3 +1,0 @@
-Telemetry logs uploaded successfully
-Response:
-{"errors":[],"numProtoSuccess":2}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/databricks/cli/cmd"
@@ -23,19 +22,6 @@ func main() {
 	// of [root.Execute] ensures that the telemetry upload process is not spawned
 	// infinitely in a recursive manner.
 	if len(os.Args) == 3 && os.Args[1] == "telemetry" && os.Args[2] == "upload" {
-		var err error
-
-		// By default, this command should not write anything to stdout or stderr.
-		outW := io.Discard
-		errW := io.Discard
-
-		// If the environment variable is set, redirect stdout to the file.
-		// This is useful for testing.
-		if v := os.Getenv(telemetry.UploadLogsFileEnvVar); v != "" {
-			outW, _ = os.OpenFile(v, os.O_CREATE|os.O_WRONLY, 0o644)
-			errW = outW
-		}
-
 		// Suppress non-error logs from the SDK.
 		logger.DefaultLogger = &logger.SimpleLogger{
 			Level: logger.LevelError,
@@ -43,14 +29,14 @@ func main() {
 
 		resp, err := telemetry.Upload(ctx)
 		if err != nil {
-			fmt.Fprintf(errW, "error: %s\n", err)
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(outW, "Telemetry logs uploaded successfully\n")
-		fmt.Fprintln(outW, "Response:")
+		fmt.Printf("Telemetry logs uploaded successfully\n")
+		fmt.Println("Response:")
 		b, err := json.Marshal(resp)
 		if err == nil {
-			fmt.Fprintln(outW, string(b))
+			fmt.Println(string(b))
 		}
 		os.Exit(0)
 	}
