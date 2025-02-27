@@ -181,8 +181,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// know what are the actual library paths.
 		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
 		// mutator is part of the deploy step rather than validate.
-		libraries.CheckForSameNameLibraries(),
 		libraries.ExpandGlobReferences(),
+		libraries.CheckForSameNameLibraries(),
 		libraries.Upload(),
 		trampoline.TransformWheelTask(),
 		files.Upload(outputHandler),

@@ -3,6 +3,7 @@ package libraries
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -18,9 +19,10 @@ var patterns = []dyn.Pattern{
 }
 
 type libData struct {
-	fullPath  string
-	locations []dyn.Location
-	paths     []dyn.Path
+	fullPath   string
+	locations  []dyn.Location
+	paths      []dyn.Path
+	otherPaths []string
 }
 
 func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -47,13 +49,15 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 				lp, ok := libs[lib]
 				if !ok {
 					libs[lib] = &libData{
-						fullPath:  libPath,
-						locations: []dyn.Location{libraryValue.Location()},
-						paths:     []dyn.Path{p},
+						fullPath:   libPath,
+						locations:  []dyn.Location{libraryValue.Location()},
+						paths:      []dyn.Path{p},
+						otherPaths: []string{},
 					}
 				} else if lp.fullPath != libPath {
 					lp.locations = append(lp.locations, libraryValue.Location())
 					lp.paths = append(lp.paths, p)
+					lp.otherPaths = append(lp.otherPaths, libPath)
 				}
 
 				return libraryValue, nil
@@ -77,8 +81,8 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 		if len(lv.locations) > 1 {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
-				Summary:   "Duplicate local library name " + lib,
-				Detail:    "Local library names must be unique",
+				Summary:   "Duplicate local library names: " + lib,
+				Detail:    "Local library names must be unique but found libraries with the same name: " + lv.fullPath + ", " + strings.Join(lv.otherPaths, ", "),
 				Locations: lv.locations,
 				Paths:     lv.paths,
 			})
