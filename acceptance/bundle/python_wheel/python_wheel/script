@@ -1,0 +1,4 @@
+trace $CLI bundle deploy
+trace find . | grep whl
+jq .path < out.requests.txt | grep import | sort > out.requests.paths.txt
+rm out.requests.txt

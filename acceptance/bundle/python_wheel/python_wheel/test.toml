@@ -1,0 +1,61 @@
+# Testing that the wheel is built and uploaded
+Badness = "Wheel is uploaded twice, once to dist/ and once more to .internal/"
+Cloud = false
+RecordRequests = true
+
+[[Server]]
+Pattern = "GET /api/2.1/clusters/get"
+Response.Body = '''
+{
+  "cluster_id": "0717-132531-5opeqon1",
+  "spark_context_id": 4020997813441462000,
+  "cluster_name": "my-cluster",
+  "spark_version": "13.3.x-scala2.12",
+  "aws_attributes": {
+    "zone_id": "us-west-2c",
+    "first_on_demand": 1,
+    "availability": "SPOT_WITH_FALLBACK",
+    "spot_bid_price_percent": 100,
+    "ebs_volume_count": 0
+  },
+  "node_type_id": "i3.xlarge",
+  "driver_node_type_id": "i3.xlarge",
+  "autotermination_minutes": 120,
+  "enable_elastic_disk": false,
+  "disk_spec": {
+    "disk_count": 0
+  },
+  "cluster_source": "UI",
+  "enable_local_disk_encryption": false,
+  "instance_source": {
+    "node_type_id": "i3.xlarge"
+  },
+  "driver_instance_source": {
+    "node_type_id": "i3.xlarge"
+  },
+  "state": "TERMINATED",
+  "state_message": "Inactive cluster terminated (inactive for 120 minutes).",
+  "start_time": 1618263108824,
+  "terminated_time": 1619746525713,
+  "last_state_loss_time": 1619739324740,
+  "num_workers": 30,
+  "default_tags": {
+    "Vendor": "Databricks",
+    "Creator": "someone@example.com",
+    "ClusterName": "my-cluster",
+    "ClusterId": "1234-567890-reef123"
+  },
+  "creator_user_name": "someone@example.com",
+  "termination_reason": {
+    "code": "INACTIVITY",
+    "parameters": {
+      "inactivity_duration_min": "120"
+    },
+    "type": "SUCCESS"
+  },
+  "init_scripts_safe_mode": false,
+  "spec": {
+    "spark_version": "13.3.x-scala2.12"
+  }
+}
+'''
