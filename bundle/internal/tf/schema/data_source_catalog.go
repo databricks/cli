@@ -28,7 +28,6 @@ type DataSourceCatalogCatalogInfo struct {
 	Owner                               string                                                           `json:"owner,omitempty"`
 	Properties                          map[string]string                                                `json:"properties,omitempty"`
 	ProviderName                        string                                                           `json:"provider_name,omitempty"`
-	SecurableKind                       string                                                           `json:"securable_kind,omitempty"`
 	SecurableType                       string                                                           `json:"securable_type,omitempty"`
 	ShareName                           string                                                           `json:"share_name,omitempty"`
 	StorageLocation                     string                                                           `json:"storage_location,omitempty"`

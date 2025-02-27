@@ -1,0 +1,6 @@
+git-repo-init
+trace $CLI bundle validate -o json | jq 'del(.workspace.current_user, .bundle.git.commit)'
+trace $CLI bundle validate
+trace $CLI bundle validate -o json -t dev | jq 'del(.workspace.current_user, .bundle.git.commit)'
+trace $CLI bundle validate -t dev
+rm -fr .git

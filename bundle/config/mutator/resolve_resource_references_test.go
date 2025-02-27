@@ -176,7 +176,7 @@ func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
 		{ClusterId: "9876-5432-xywz", ClusterName: "some other cluster"},
 	}, nil)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
+	diags := bundle.ApplySeq(context.Background(), b, ResolveVariableReferencesInLookup(), ResolveResourceReferences())
 	require.NoError(t, diags.Error())
 	require.Equal(t, "cluster-bar-dev", b.Config.Variables["lookup"].Lookup.Cluster)
 	require.Equal(t, "1234-5678-abcd", b.Config.Variables["lookup"].Value)
@@ -203,7 +203,7 @@ func TestResolveLookupVariableReferencesInVariableLookups(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
+	diags := bundle.ApplySeq(context.Background(), b, ResolveVariableReferencesInLookup(), ResolveResourceReferences())
 	require.ErrorContains(t, diags.Error(), "lookup variables cannot contain references to another lookup variables")
 }
 
@@ -229,7 +229,7 @@ func TestNoResolveLookupIfVariableSetWithEnvVariable(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.Set(ctx, "BUNDLE_VAR_lookup", "1234-5678-abcd")
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(SetVariables(), ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
+	diags := bundle.ApplySeq(ctx, b, SetVariables(), ResolveVariableReferencesInLookup(), ResolveResourceReferences())
 	require.NoError(t, diags.Error())
 	require.Equal(t, "1234-5678-abcd", b.Config.Variables["lookup"].Value)
 }

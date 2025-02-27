@@ -1,0 +1,81 @@
+=== No permission to access .git. Badness: inferred flag is set to true even though we did not infer branch. bundle_root_path is not correct in subdir case.
+
+>>> chmod 000 .git
+
+>>> [CLI] bundle validate
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
+Error: unable to load repository specific gitconfig: open config: permission denied
+
+Name: git-permerror
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/git-permerror/default
+
+Found 1 error
+
+Exit code: 1
+
+>>> [CLI] bundle validate -o json
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
+Error: unable to load repository specific gitconfig: open config: permission denied
+
+
+Exit code: 1
+{
+  "bundle_root_path": "."
+}
+
+>>> withdir subdir/a/b [CLI] bundle validate -o json
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
+Error: unable to load repository specific gitconfig: open config: permission denied
+
+
+Exit code: 1
+{
+  "bundle_root_path": "."
+}
+
+
+=== No permissions to read .git/HEAD. Badness: warning is not shown. inferred is incorrectly set to true. bundle_root_path is not correct in subdir case.
+
+>>> chmod 000 .git/HEAD
+
+>>> [CLI] bundle validate -o json
+Warn: failed to load current branch: open HEAD: permission denied
+Warn: failed to load latest commit: open HEAD: permission denied
+{
+  "bundle_root_path": "."
+}
+
+>>> withdir subdir/a/b [CLI] bundle validate -o json
+Warn: failed to load current branch: open HEAD: permission denied
+Warn: failed to load latest commit: open HEAD: permission denied
+{
+  "bundle_root_path": "."
+}
+
+
+=== No permissions to read .git/config. Badness: inferred is incorretly set to true. bundle_root_path is not correct is subdir case.
+
+>>> chmod 000 .git/config
+
+>>> [CLI] bundle validate -o json
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
+Error: unable to load repository specific gitconfig: open config: permission denied
+
+
+Exit code: 1
+{
+  "bundle_root_path": "."
+}
+
+>>> withdir subdir/a/b [CLI] bundle validate -o json
+Warn: failed to read .git: unable to load repository specific gitconfig: open config: permission denied
+Error: unable to load repository specific gitconfig: open config: permission denied
+
+
+Exit code: 1
+{
+  "bundle_root_path": "."
+}

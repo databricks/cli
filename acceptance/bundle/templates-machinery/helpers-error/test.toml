@@ -1,0 +1,6 @@
+Badness = '''(minor) error message is not great: executing "" at <user_name>: error calling user_name:'''
+
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/Me"
+Response.Body = '{}'
+Response.StatusCode = 500

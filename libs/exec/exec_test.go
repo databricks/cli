@@ -85,7 +85,7 @@ func testExecutorWithShell(t *testing.T, shell string) {
 
 	// Create temporary directory with only the shell executable in the PATH.
 	tmpDir := t.TempDir()
-	t.Setenv("PATH", tmpDir)
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", tmpDir, os.PathListSeparator, os.Getenv("PATH")))
 	if runtime.GOOS == "windows" {
 		err = os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
 		require.NoError(t, err)

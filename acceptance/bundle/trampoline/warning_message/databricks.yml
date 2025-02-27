@@ -1,0 +1,37 @@
+bundle:
+  name: trampoline_warning_message
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    resources:
+      clusters:
+        interactive_cluster:
+          spark_version: 14.2.x-cpu-ml-scala2.12
+
+
+resources:
+  clusters:
+    interactive_cluster:
+      cluster_name: jobs-as-code-all-purpose-cluster
+      spark_version: 12.2.x-cpu-ml-scala2.12
+      node_type_id: r5d.8xlarge
+      autotermination_minutes: 30
+      autoscale:
+        min_workers: 1
+        max_workers: 1
+      driver_node_type_id: r5d.8xlarge
+  jobs:
+    whl:
+      name: "wheel-job"
+      tasks:
+        - task_key: test_task
+          python_wheel_task:
+            package_name: my_package
+            entry_point: my_module.my_function
+          existing_cluster_id: ${resources.clusters.interactive_cluster.id}
+          libraries:
+            - whl: ./dist/*.whl

@@ -195,6 +195,12 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	_, isTargetFlagSet := targetFlagValue(cmd)
+	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
+	if !isTargetFlagSet && hasProfileFlag {
+		cmd.SetContext(SkipLoadBundle(cmd.Context()))
+	}
+
 	ctx := cmd.Context()
 	ctx = context.WithValue(ctx, &configUsed, cfg)
 	cmd.SetContext(ctx)
@@ -209,7 +215,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		if b != nil {
 			ctx = context.WithValue(ctx, &configUsed, b.Config.Workspace.Config())
 			cmd.SetContext(ctx)
-			client, err := b.InitializeWorkspaceClient()
+			client, err := b.WorkspaceClientE()
 			if err != nil {
 				return err
 			}

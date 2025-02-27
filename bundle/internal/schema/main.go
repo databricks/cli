@@ -40,6 +40,19 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		}
 	}
 
+	// Allows using variables in enum fields
+	if s.Type == jsonschema.StringType && s.Enum != nil {
+		return jsonschema.Schema{
+			OneOf: []jsonschema.Schema{
+				s,
+				{
+					Type:    jsonschema.StringType,
+					Pattern: interpolationPattern("var"),
+				},
+			},
+		}
+	}
+
 	switch s.Type {
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		// arrays and objects can have complex variable values specified.
@@ -89,6 +102,20 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 		delete(s.Properties, "job_source")
 		delete(s.Properties, "git_snapshot")
 
+	default:
+		// Do nothing
+	}
+
+	return s
+}
+
+func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	switch typ {
+	case reflect.TypeOf(resources.Pipeline{}):
+		// Even though DABs supports this field, TF provider does not. Thus, we
+		// should not expose it to the user.
+		delete(s.Properties, "dry_run")
+		delete(s.Properties, "allow_duplicate_names")
 	default:
 		// Do nothing
 	}
@@ -155,10 +182,20 @@ func generateSchema(workdir, outputFile string) {
 	// Generate the JSON schema from the bundle Go struct.
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
+		removePipelineFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
 		addInterpolationPatterns,
 	})
+
+	// AdditionalProperties is set to an empty schema to allow non-typed keys used as yaml-anchors
+	// Example:
+	// some_anchor: &some_anchor
+	//   file_path: /some/path/
+	// workspace:
+	//   <<: *some_anchor
+	s.AdditionalProperties = jsonschema.Schema{}
+
 	if err != nil {
 		log.Fatal(err)
 	}

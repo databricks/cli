@@ -42,9 +42,20 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 	// such that they are not logged multiple times.
 	// If this is done, we can omit this block.
 	if err := diags.Error(); err != nil {
-		log.Errorf(ctx, "Error: %s", err)
+		log.Debugf(ctx, "Error: %s", err)
 	}
 
+	return diags
+}
+
+func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	for _, m := range mutators {
+		diags = diags.Extend(Apply(ctx, b, m))
+		if diags.HasError() {
+			return diags
+		}
+	}
 	return diags
 }
 

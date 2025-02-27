@@ -1,0 +1,104 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "9a626959-61c8-4bba-84d2-2a4ecab1f7ec",
+     "showTitle": false,
+     "title": ""
+    }
+   },
+   "source": [
+    "# DLT pipeline\n",
+    "\n",
+    "This Delta Live Tables (DLT) definition is executed using a pipeline defined in resources/{{.project_name}}.pipeline.yml."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "9198e987-5606-403d-9f6d-8f14e6a4017f",
+     "showTitle": false,
+     "title": ""
+    }
+   },
+   "outputs": [],
+   "source": [
+   {{- if (eq .include_python "yes") }}
+    "# Import DLT and src/{{.project_name}}\n",
+    "import dlt\n",
+    "import sys\n",
+    "\n",
+    "sys.path.append(spark.conf.get(\"bundle.sourcePath\", \".\"))\n",
+    "from pyspark.sql.functions import expr\n",
+    "from {{.project_name}} import main"
+   {{else}}
+    "import dlt\n",
+    "from pyspark.sql.functions import expr\n",
+    "from pyspark.sql import SparkSession\n",
+    "\n",
+    "spark = SparkSession.builder.getOrCreate()"
+   {{end -}}
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "3fc19dba-61fd-4a89-8f8c-24fee63bfb14",
+     "showTitle": false,
+     "title": ""
+    }
+   },
+   "outputs": [],
+   "source": [
+    {{- if (eq .include_python "yes") }}
+    "@dlt.view\n",
+    "def taxi_raw():\n",
+    "    return main.get_taxis(spark)\n",
+    {{else}}
+    "@dlt.view\n",
+    "def taxi_raw():\n",
+    "    return spark.read.format(\"json\").load(\"/databricks-datasets/nyctaxi/sample/json/\")\n",
+    {{end -}}
+    "\n",
+    "\n",
+    "@dlt.table\n",
+    "def filtered_taxis():\n",
+    "    return dlt.read(\"taxi_raw\").filter(expr(\"fare_amount < 30\"))"
+   ]
+  }
+ ],
+ "metadata": {
+  "application/vnd.databricks.v1+notebook": {
+   "dashboards": [],
+   "language": "python",
+   "notebookMetadata": {
+    "pythonIndentUnit": 2
+   },
+   "notebookName": "dlt_pipeline",
+   "widgets": {}
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python",
+   "version": "3.11.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}

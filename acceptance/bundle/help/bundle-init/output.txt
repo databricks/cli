@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle init --help
+Initialize using a bundle template.
+
+TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
+- default-python: The default Python template for Notebooks / Delta Live Tables / Workflows
+- default-sql: The default SQL template for .sql files that run with Databricks SQL
+- dbt-sql: The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)
+- mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)
+- a local file system path with a template directory
+- a Git repository URL, e.g. https://github.com/my/repository
+
+See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.
+
+Usage:
+  databricks bundle init [TEMPLATE_PATH] [flags]
+
+Flags:
+      --branch string         Git branch to use for template initialization
+      --config-file string    JSON file containing key value pairs of input parameters required for template initialization.
+  -h, --help                  help for init
+      --output-dir string     Directory to write the initialized template to.
+      --tag string            Git tag to use for template initialization
+      --template-dir string   Directory path within a Git repository containing the template.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

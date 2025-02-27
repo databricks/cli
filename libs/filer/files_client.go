@@ -148,7 +148,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	urlPath = fmt.Sprintf("%s?overwrite=%t", urlPath, overwrite)
 	headers := map[string]string{"Content-Type": "application/octet-stream"}
-	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, headers, reader, nil)
+	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, headers, nil, reader, nil)
 
 	// Return early on success.
 	if err == nil {
@@ -176,7 +176,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 	}
 
 	var reader io.ReadCloser
-	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, &reader)
+	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, nil, &reader)
 
 	// Return early on success.
 	if err == nil {
@@ -303,8 +303,6 @@ func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
 	group.SetLimit(maxFilesRequestsInFlight)
 
 	for _, file := range filesToDelete {
-		file := file
-
 		// Skip the file if the context has already been cancelled.
 		select {
 		case <-groupCtx.Done():

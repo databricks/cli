@@ -38,8 +38,8 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline_1": {PipelineSpec: &pipelines.PipelineSpec{}},
-					"pipeline_2": {PipelineSpec: &pipelines.PipelineSpec{}},
+					"pipeline_1": {CreatePipeline: &pipelines.CreatePipeline{}},
+					"pipeline_2": {CreatePipeline: &pipelines.CreatePipeline{}},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model_1": {Model: &ml.Model{}},
@@ -73,7 +73,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 		WorkspaceObjectType: "directories",
 	}).Return(nil, nil)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions()))
+	diags := bundle.ApplySeq(context.Background(), b, ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions())
 	require.Empty(t, diags)
 }
 
@@ -98,8 +98,8 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline_1": {PipelineSpec: &pipelines.PipelineSpec{}},
-					"pipeline_2": {PipelineSpec: &pipelines.PipelineSpec{}},
+					"pipeline_1": {CreatePipeline: &pipelines.CreatePipeline{}},
+					"pipeline_2": {CreatePipeline: &pipelines.CreatePipeline{}},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model_1": {Model: &ml.Model{}},

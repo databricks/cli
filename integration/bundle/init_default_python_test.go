@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
@@ -53,12 +54,16 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	uniqueProjectId := testutil.RandomName("")
 	ctx, replacements := testdiff.WithReplacementsMap(ctx)
 	replacements.Set(uniqueProjectId, "$UNIQUE_PRJ")
+	replacements.Set(strings.ToLower(uniqueProjectId), "$UNIQUE_PRJ")
 
 	user, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, replacements, *user)
-	testdiff.PrepareReplacements(t, replacements, wt.W)
+	testdiff.PrepareReplacementsWorkspaceClient(t, replacements, wt.W)
+	testdiff.PrepareReplacementsUUID(t, replacements)
+	testdiff.PrepareReplacementsNumber(t, replacements)
+	testdiff.PrepareReplacementsTemporaryDirectory(t, replacements)
 
 	tmpDir := t.TempDir()
 	testutil.Chdir(t, tmpDir)

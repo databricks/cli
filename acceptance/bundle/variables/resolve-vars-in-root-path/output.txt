@@ -1,0 +1,7 @@
+{
+  "artifact_path": "TestResolveVariableReferencesToBundleVariables/bar/artifacts",
+  "file_path": "TestResolveVariableReferencesToBundleVariables/bar/files",
+  "resource_path": "TestResolveVariableReferencesToBundleVariables/bar/resources",
+  "root_path": "TestResolveVariableReferencesToBundleVariables/bar",
+  "state_path": "TestResolveVariableReferencesToBundleVariables/bar/state"
+}
