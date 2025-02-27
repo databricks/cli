@@ -70,7 +70,7 @@ func (transformWheelTask) Name() string {
 // This mutator takes the wheel task and transforms it into notebook
 // which installs uploaded wheels using %pip and then calling corresponding
 // entry point.
-func TransformWheelTask() transformWheelTask {
+func TransformWheelTask() bundle.Mutator {
 	return transformWheelTask{}
 }
 
