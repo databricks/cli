@@ -10,10 +10,10 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) diag.Diagnostics {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) (diags diag.Diagnostics) {
 	log.Info(ctx, "Phase: bind")
 
-	diags := bundle.Apply(ctx, b, lock.Acquire())
+	diags = bundle.Apply(ctx, b, lock.Acquire())
 	if diags.HasError() {
 		return diags
 	}
@@ -33,10 +33,10 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) di
 	return diags
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey string) diag.Diagnostics {
+func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey string) (diags diag.Diagnostics) {
 	log.Info(ctx, "Phase: unbind")
 
-	diags := bundle.Apply(ctx, b, lock.Acquire())
+	diags = bundle.Apply(ctx, b, lock.Acquire())
 	if diags.HasError() {
 		return diags
 	}
