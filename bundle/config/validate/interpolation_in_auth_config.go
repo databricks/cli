@@ -49,7 +49,6 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 			return diag.FromErr(err)
 		}
 
-		// If the field is not defined or empty, skip it.
 		if v.Kind() == dyn.KindInvalid || v.Kind() == dyn.KindNil {
 			continue
 		}
