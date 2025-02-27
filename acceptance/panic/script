@@ -1,0 +1,5 @@
+# We filter anything after runtime/debug.Stack() in the output because the stack
+# trace itself is hard to perform replacements on, since it can depend upon the
+# exact setup of where the modules are installed in your Go setup, memory addresses
+# at runtime etc.
+trace $CLI selftest panic 2>&1 | sed '/runtime\/debug\.Stack()/q'
