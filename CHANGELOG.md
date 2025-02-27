@@ -4,6 +4,7 @@
 
 Notable changes:
 Starting this version CLI does not load bundle auth information when CLI command is executed inside the bundle directory with explicitly provided via `-p` flag profile.
+For more details see the related GitHub issue https://github.com/databricks/cli/issues/1358
 
 CLI:
  * Do not load host from bundle for CLI commands when profile flag is used ([#2335](https://github.com/databricks/cli/pull/2335)).
