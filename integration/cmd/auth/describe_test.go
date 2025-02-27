@@ -10,8 +10,6 @@ import (
 )
 
 func TestAuthDescribeSuccess(t *testing.T) {
-	t.Skipf("Skipping because of https://github.com/databricks/cli/issues/2010")
-
 	ctx := context.Background()
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe")
 	outStr := stdout.String()
@@ -20,7 +18,7 @@ func TestAuthDescribeSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEmpty(t, outStr)
-	require.Contains(t, outStr, "Host: "+w.Config.Host)
+	require.Contains(t, outStr, "Host: https://"+w.Config.Host)
 
 	me, err := w.CurrentUser.Me(context.Background())
 	require.NoError(t, err)
@@ -32,8 +30,6 @@ func TestAuthDescribeSuccess(t *testing.T) {
 }
 
 func TestAuthDescribeFailure(t *testing.T) {
-	t.Skipf("Skipping because of https://github.com/databricks/cli/issues/2010")
-
 	ctx := context.Background()
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent")
 	outStr := stdout.String()
