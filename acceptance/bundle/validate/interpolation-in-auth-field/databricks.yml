@@ -1,0 +1,10 @@
+bundle:
+  name: interpolation-in-auth-field
+
+variables:
+  bar:
+    default: "12345"
+
+workspace:
+  client_id: ${var.bar}
+  auth_type: ${bundle.name}

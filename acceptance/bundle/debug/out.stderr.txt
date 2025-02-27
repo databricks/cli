@@ -22,6 +22,7 @@
 10:07:59 Info: Phase: initialize pid=12345 mutator=initialize
 10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq
 10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=validate:AllResourcesHaveValues
+10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=validate:interpolation_in_auth_config
 10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=RewriteSyncPaths
 10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=SyncDefaultPath
 10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=SyncInferRoot
@@ -72,7 +73,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=metadata.AnnotatePipelines
 10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
 10:07:59 Debug: Using Terraform from DATABRICKS_TF_EXEC_PATH at [TERRAFORM] pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
-10:07:59 Debug: Using Terraform CLI config from DATABRICKS_TF_CLI_CONFIG_FILE at [DATABRICKS_TF_CLI_CONFIG_FILE] pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
+10:07:59 Debug: DATABRICKS_TF_PROVIDER_VERSION as 1.62.0 does not match the current version 1.65.1, ignoring DATABRICKS_TF_CLI_CONFIG_FILE pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
 10:07:59 Debug: Environment variables for Terraform: ...redacted... pid=12345 mutator=initialize mutator=seq mutator=terraform.Initialize
 10:07:59 Debug: Apply pid=12345 mutator=initialize mutator=seq mutator=scripts.postinit
 10:07:59 Debug: No script defined for postinit, skipping pid=12345 mutator=initialize mutator=seq mutator=scripts.postinit

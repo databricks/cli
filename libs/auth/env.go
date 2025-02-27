@@ -24,3 +24,17 @@ func Env(cfg *config.Config) map[string]string {
 
 	return out
 }
+
+func GetEnvFor(name string) (string, bool) {
+	for _, attr := range config.ConfigAttributes {
+		if attr.Name != name {
+			continue
+		}
+		if len(attr.EnvVars) == 0 {
+			return "", false
+		}
+		return attr.EnvVars[0], true
+	}
+
+	return "", false
+}

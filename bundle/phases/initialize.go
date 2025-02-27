@@ -22,6 +22,7 @@ func Initialize() bundle.Mutator {
 		"initialize",
 		[]bundle.Mutator{
 			validate.AllResourcesHaveValues(),
+			validate.NoInterpolationInAuthConfig(),
 
 			// Update all path fields in the sync block to be relative to the bundle root path.
 			mutator.RewriteSyncPaths(),
