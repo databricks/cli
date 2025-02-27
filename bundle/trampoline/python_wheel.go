@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -61,22 +61,30 @@ s = f.getvalue()
 dbutils.notebook.exit(s)
 `
 
+type transformWheelTask struct{}
+
+func (transformWheelTask) Name() string {
+	return "TransformWheelTask"
+}
+
 // This mutator takes the wheel task and transforms it into notebook
 // which installs uploaded wheels using %pip and then calling corresponding
 // entry point.
 func TransformWheelTask() bundle.Mutator {
-	return bundle.If(
-		func(_ context.Context, b *bundle.Bundle) (bool, error) {
-			res := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
-			return res, nil
-		},
-		NewTrampoline(
-			"python_wheel",
-			&pythonTrampoline{},
-			NOTEBOOK_TEMPLATE,
-		),
-		mutator.NoOp(),
-	)
+	return transformWheelTask{}
+}
+
+func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	isEnabled := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
+	if !isEnabled {
+		return nil
+	}
+
+	return bundle.Apply(ctx, b, NewTrampoline(
+		"python_wheel",
+		&pythonTrampoline{},
+		NOTEBOOK_TEMPLATE,
+	))
 }
 
 type pythonTrampoline struct{}
