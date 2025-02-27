@@ -3,4 +3,9 @@
 Unable to authenticate: Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": dial tcp: lookup non-existing-subdomain.databricks.com: no such host
 -----
 Current configuration:
-  ✓ profile: myprofile (from bundle)
+  ✓ host: https://non-existing-subdomain.databricks.com (from .databrickscfg config file)
+  ✓ token: ******** (from .databrickscfg config file)
+  ✓ profile: myprofile (from DATABRICKS_CONFIG_PROFILE environment variable)
+  ✓ config_file: .databrickscfg (from DATABRICKS_CONFIG_FILE environment variable)
+  ✓ databricks_cli_path: [CLI]
+  ✓ auth_type: pat
