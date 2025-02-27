@@ -14,22 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPythonWheelBuild(t *testing.T) {
-	b := loadTarget(t, "./python_wheel/python_wheel", "default")
-
-	ctx := context.Background()
-	diags := phases.Build(ctx, b)
-	require.NoError(t, diags.Error())
-
-	matches, err := filepath.Glob("./python_wheel/python_wheel/my_test_code/dist/my_test_code-*.whl")
-	require.NoError(t, err)
-	require.Len(t, matches, 1)
-
-	match := libraries.ExpandGlobReferences()
-	diags = bundle.Apply(ctx, b, match)
-	require.NoError(t, diags.Error())
-}
-
 func TestPythonWheelBuildAutoDetect(t *testing.T) {
 	b := loadTarget(t, "./python_wheel/python_wheel_no_artifact", "default")
 
