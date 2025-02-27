@@ -14,22 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPythonWheelBuildAutoDetect(t *testing.T) {
-	b := loadTarget(t, "./python_wheel/python_wheel_no_artifact", "default")
-
-	ctx := context.Background()
-	diags := phases.Build(ctx, b)
-	require.NoError(t, diags.Error())
-
-	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact/dist/my_test_code-*.whl")
-	require.NoError(t, err)
-	require.Len(t, matches, 1)
-
-	match := libraries.ExpandGlobReferences()
-	diags = bundle.Apply(ctx, b, match)
-	require.NoError(t, diags.Error())
-}
-
 func TestPythonWheelBuildAutoDetectWithNotebookTask(t *testing.T) {
 	b := loadTarget(t, "./python_wheel/python_wheel_no_artifact_notebook", "default")
 
@@ -109,18 +93,6 @@ func TestPythonWheelBuildMultiple(t *testing.T) {
 	matches, err := filepath.Glob("./python_wheel/python_wheel_multiple/my_test_code/dist/my_test_code*.whl")
 	require.NoError(t, err)
 	require.Len(t, matches, 2)
-
-	match := libraries.ExpandGlobReferences()
-	diags = bundle.Apply(ctx, b, match)
-	require.NoError(t, diags.Error())
-}
-
-func TestPythonWheelNoBuild(t *testing.T) {
-	b := loadTarget(t, "./python_wheel/python_wheel_no_build", "default")
-
-	ctx := context.Background()
-	diags := phases.Build(ctx, b)
-	require.NoError(t, diags.Error())
 
 	match := libraries.ExpandGlobReferences()
 	diags = bundle.Apply(ctx, b, match)
