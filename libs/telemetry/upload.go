@@ -83,6 +83,9 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 	ctx, cancel := context.WithTimeout(ctx, maxUploadTime)
 	defer cancel()
 
+	maxRetries := 3
+	count := 0
+
 	resp := &ResponseBody{}
 	for {
 		select {
@@ -92,6 +95,8 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 		default:
 			// Proceed
 		}
+
+		count++
 
 		// Log the CLI telemetry events.
 		err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, nil, RequestBody{
@@ -110,5 +115,17 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 		if resp.NumProtoSuccess == int64(len(in.Logs)) {
 			return resp, nil
 		}
+
+		// We retry if the logs were partially uploaded. Subsequent retries have
+		// a chance of uploading all logs successfully. However we limit the number
+		// of retries to avoid excessive load on the telemetry endpoint.
+		if count > maxRetries {
+			return nil, fmt.Errorf("Failed to upload all telemetry logs after 4 tries. Only %d/%d logs uploaded", resp.NumProtoSuccess, len(in.Logs))
+		}
+
+		// Add a delay of 1 second before retrying. We avoid retrying immediately
+		// to avoid overwhelming the telemetry endpoint.
+		time.Sleep(1 * time.Second)
+
 	}
 }

@@ -102,3 +102,25 @@ func TestTelemetryUploadCanceled(t *testing.T) {
 	// with a timeout error.
 	assert.ErrorContains(t, err, "Failed to flush telemetry log due to timeout")
 }
+
+func TestTelemetryUploadMaxRetries(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	count := 0
+
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		count++
+		return ResponseBody{
+			NumProtoSuccess: 1,
+		}
+	})
+
+	t.Setenv("DATABRICKS_HOST", server.URL)
+	t.Setenv("DATABRICKS_TOKEN", "token")
+
+	configureStdin(t)
+
+	_, err := Upload(context.Background())
+	assert.EqualError(t, err, "Failed to upload all telemetry logs after 4 tries. Only 1/2 logs uploaded")
+	assert.Equal(t, 4, count)
+}
