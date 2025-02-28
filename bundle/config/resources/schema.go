@@ -2,9 +2,10 @@ package resources
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"strings"
+
+	"github.com/databricks/cli/libs/log"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -25,8 +26,15 @@ type Schema struct {
 	URL            string         `json:"url,omitempty" bundle:"internal"`
 }
 
-func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	return false, errors.New("schema.Exists() is not supported")
+func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (bool, error) {
+	log.Tracef(ctx, "Checking if schema with fullName=%s exists", fullName)
+
+	_, err := w.Schemas.GetByFullName(ctx, fullName)
+	if err != nil {
+		log.Debugf(ctx, "schema with full name %s does not exist", fullName)
+		return false, err
+	}
+	return true, nil
 }
 
 func (s *Schema) TerraformResourceName() string {
