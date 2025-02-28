@@ -10,3 +10,5 @@ title "Expecting 1 wheel to be uploaded"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
 
 rm out.requests.txt
+cd my_test_code
+rm -fr build dist my_test_code.egg-info
