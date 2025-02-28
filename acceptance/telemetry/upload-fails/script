@@ -6,7 +6,7 @@ export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload_process.txt
 trace $CLI selftest send-telemetry
 
 # Wait for the child telemetry process to finish
-wait_pid $(cat ./telemetry.pid)
+wait_pid.py $(cat ./telemetry.pid)
 
 # cleanup the pid file
 rm -f ./telemetry.pid
