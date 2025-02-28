@@ -1,8 +1,7 @@
 
-=== Expecting to find 2 wheels, initially provided
->>> sh -c find . | grep whl
-./dist/lib/other_test_code-0.0.1-py3-none-any.whl
-./dist/my_test_code-0.0.1-py3-none-any.whl
+>>> find.py --expect 2 whl
+dist/my_test_code-0.0.1-py3-none-any.whl
+dist/lib/other_test_code-0.0.1-py3-none-any.whl
 
 >>> [CLI] bundle deploy
 Deploying resources...
@@ -13,9 +12,9 @@ Uploading my_test_code-0.0.1-py3-none-any.whl...
 Uploading other_test_code-0.0.1-py3-none-any.whl...
 
 === Expecting to find 2 wheels, same as initially provided
->>> sh -c find . | grep whl
-./dist/lib/other_test_code-0.0.1-py3-none-any.whl
-./dist/my_test_code-0.0.1-py3-none-any.whl
+>>> find.py --expect 2 whl
+dist/my_test_code-0.0.1-py3-none-any.whl
+dist/lib/other_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 2 wheels in libraries section in /jobs/create
 >>> jq select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt

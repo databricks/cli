@@ -5,10 +5,8 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Expecting to find no wheels, must error
->>> errcode sh -c find . | grep whl
-
-Exit code: 1
+=== Expecting to find no wheels
+>>> errcode find.py --expect 0 whl
 
 === Expecting 1 wheel in libraries section in /jobs/create
 >>> jq select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt

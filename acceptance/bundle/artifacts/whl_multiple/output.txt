@@ -9,10 +9,9 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/defau
 Uploading my_test_code-0.0.1-py3-none-any.whl...
 Uploading my_test_code_2-0.0.1-py3-none-any.whl...
 
-=== Expecting to find 2 wheels
->>> sh -c find . | grep whl
-./my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl
-./my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
+>>> find.py --expect 2 whl
+my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl
+my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 2 wheels in libraries section in /jobs/create
 >>> jq select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt

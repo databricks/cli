@@ -1,7 +1,7 @@
 trace $CLI bundle deploy
 
-title "Expecting to find no wheels, must error"
-trace errcode sh -c 'find . | grep whl'
+title "Expecting to find no wheels"
+trace errcode find.py --expect 0 whl
 
 title "Expecting 1 wheel in libraries section in /jobs/create"
 trace jq 'select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt

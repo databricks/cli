@@ -1,10 +1,9 @@
-title "Expecting to find 2 wheels, initially provided"
-trace sh -c 'find . | grep whl'
+trace find.py --expect 2 whl
 
 trace $CLI bundle deploy 2>&1 | sort  # sorting because 'Uploading ...whl...' messages change order
 
 title "Expecting to find 2 wheels, same as initially provided"
-trace sh -c 'find . | grep whl'
+trace find.py --expect 2 whl
 
 title "Expecting 2 wheels in libraries section in /jobs/create"
 trace jq 'select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
