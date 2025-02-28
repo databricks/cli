@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"context"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -36,10 +37,25 @@ func TestAuthDescribeSuccess(t *testing.T) {
 }
 
 func TestAuthDescribeFailure(t *testing.T) {
+	// Store the original value of env variable
+	originalProfileValue, envProfileExists := os.LookupEnv("DATABRICKS_CONFIG_PROFILE")
+
+	// restore env variable after the test:
+	if envProfileExists {
+		// Unset the env variable for this test
+		err := os.Unsetenv("DATABRICKS_CONFIG_PROFILE")
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			err := os.Setenv("DATABRICKS_CONFIG_PROFILE", originalProfileValue)
+			require.NoError(t, err)
+		})
+	}
+
 	ctx := context.Background()
 	profileSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
 	profileName := "nonexistent-TestAuthDescribeFailure-" + profileSuffix
-	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "clusters", "list", "--profile", profileName)
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", profileName)
 	outStr := stdout.String()
 
 	require.NotEmpty(t, outStr)
