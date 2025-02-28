@@ -1,7 +1,7 @@
 title "Expecting to find 2 wheels, initially provided"
 trace sh -c 'find . | grep whl'
 
-trace $CLI bundle deploy
+trace $CLI bundle deploy 2>&1 | sort  # sorting because 'Uploading ...whl...' messages change order
 
 title "Expecting to find 2 wheels, same as initially provided"
 trace sh -c 'find . | grep whl'
