@@ -1,6 +1,14 @@
 package auth
 
-import "github.com/databricks/databricks-sdk-go/config"
+import (
+	"fmt"
+	"os"
+	"slices"
+	"sort"
+	"strings"
+
+	"github.com/databricks/databricks-sdk-go/config"
+)
 
 // Env generates the authentication environment variables we need to set for
 // downstream applications from the CLI to work correctly.
@@ -39,7 +47,7 @@ func GetEnvFor(name string) (string, bool) {
 	return "", false
 }
 
-func EnvVars() []string {
+func envVars() []string {
 	out := []string{}
 
 	for _, attr := range config.ConfigAttributes {
@@ -49,6 +57,55 @@ func EnvVars() []string {
 
 		out = append(out, attr.EnvVars[0])
 	}
+
+	return out
+}
+
+// ProcessEnv generates the environment variables can be set to authenticate downstream
+// processes to use the same auth credentials as in cfg.
+func ProcessEnv(cfg *config.Config) []string {
+	// We want child telemetry processes to inherit environment variables like $HOME or $HTTPS_PROXY
+	// because they influence auth resolution.
+	base := os.Environ()
+
+	out := []string{}
+	authEnvVars := envVars()
+
+	// Remove any existing auth environment variables. This is done because
+	// the CLI offers multiple modalities of configuring authentication like
+	// `--profile` or `DATABRICKS_CONFIG_PROFILE` or `profile: <profile>` in the
+	// bundle config file.
+	//
+	// Each of these modalities have different priorities and thus we don't want
+	// any auth configuration to piggyback into the child process environment.
+	//
+	// This is a precaution to avoid conflicting auth configurations being passed
+	// to the child telemetry process.
+	//
+	// Normally this should be unnecessary because the SDK should error if multiple
+	// authentication methods have been configured. But there is no harm in doing this
+	// as a precaution.
+	for _, v := range base {
+		k, _, found := strings.Cut(v, "=")
+		if !found {
+			continue
+		}
+		if slices.Contains(authEnvVars, k) {
+			continue
+		}
+		out = append(out, v)
+	}
+
+	// Now add the necessary authentication environment variables.
+	newEnv := Env(cfg)
+	for k, v := range newEnv {
+		out = append(out, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	// Sort the environment variables so that the output is deterministic.
+	sort.Slice(out, func(i, j int) bool {
+		return out[i] < out[j]
+	})
 
 	return out
 }

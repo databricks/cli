@@ -3,6 +3,7 @@ package auth
 import (
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -113,6 +114,39 @@ func TestAuthEnvVars(t *testing.T) {
 		"DATABRICKS_RATE_LIMIT",
 	}
 
-	out := EnvVars()
+	out := envVars()
+	assert.Equal(t, expected, out)
+}
+
+func TestAuthProcessEnv(t *testing.T) {
+	testutil.ClearEnvironment(t)
+
+	// Environment variables that should be inherited by child processes.
+	t.Setenv("HOME", "/home/user")
+	t.Setenv("HTTPS_PROXY", "http://proxy.com")
+
+	// Environment variables that should be cleaned up by process env:
+	t.Setenv("DATABRICKS_HOST", "https://test.com")
+	t.Setenv("DATABRICKS_TOKEN", "test-token")
+	t.Setenv("DATABRICKS_PASSWORD", "test-password")
+	t.Setenv("DATABRICKS_METADATA_SERVICE_URL", "http://somurl.com")
+	t.Setenv("ARM_USE_MSI", "true")
+	t.Setenv("ARM_TENANT_ID", "test-tenant-id")
+	t.Setenv("ARM_CLIENT_ID", "test-client-id")
+	t.Setenv("ARM_CLIENT_SECRET", "test-client-secret")
+
+	in := &config.Config{
+		Host:  "https://newhost.com",
+		Token: "new-token",
+	}
+
+	expected := []string{
+		"DATABRICKS_HOST=https://newhost.com",
+		"DATABRICKS_TOKEN=new-token",
+		"HOME=/home/user",
+		"HTTPS_PROXY=http://proxy.com",
+	}
+
+	out := ProcessEnv(in)
 	assert.Equal(t, expected, out)
 }
