@@ -13,8 +13,10 @@ import (
 type checkForSameNameLibraries struct{}
 
 var patterns = []dyn.Pattern{
-	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.AnyKey()),
-	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.AnyKey()),
+	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
+	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
+	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
+	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 	envDepsPattern.Append(dyn.AnyIndex()),
 }
 
