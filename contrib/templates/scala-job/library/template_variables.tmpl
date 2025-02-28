@@ -1,0 +1,31 @@
+{{ define `version` -}}
+    0.1
+{{- end }}
+
+{{ define `dbr_version` -}}
+    16.2
+{{- end }}
+
+{{ define `scala_major_minor_version` -}}
+    2.12
+{{- end }}
+
+{{ define `scala_version` -}}
+    {{template `scala_major_minor_version` .}}.18
+{{- end}}
+
+{{ define `java_version` -}}
+    17
+{{- end}}
+
+{{ define `organization` -}}
+    com.examples
+{{- end }}
+
+{{ define `main_class_name` -}}
+    {{template `organization` .}}.Main
+{{- end }}
+
+{{ define `jar_path` -}}
+    ./target/scala-{{template `scala_major_minor_version` .}}/{{.project_name}}-assembly-{{template `version` .}}.jar
+{{- end }}

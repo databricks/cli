@@ -1,0 +1,22 @@
+# The main job for {{.project_name}}
+
+resources:
+  jobs:
+    {{.project_name}}:
+      name: {{.project_name}}
+      tasks:
+        - task_key: main_task
+          job_cluster_key: {{.project_name}}_job_cluster
+          spark_jar_task:
+            main_class_name: {{template `main_class_name` .}}
+          libraries:
+            - jar: ../{{template `jar_path` .}}
+      job_clusters:
+        - job_cluster_key: {{.project_name}}_job_cluster
+          new_cluster:
+            spark_version: {{template `dbr_version` .}}.x-scala{{template `scala_major_minor_version` .}}
+            node_type_id: i3.xlarge  # Default instance type (can be changed)
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+            data_security_mode: USER_ISOLATION

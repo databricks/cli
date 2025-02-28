@@ -1,0 +1,41 @@
+# This is a Databricks asset bundle definition for {{.project_name}}.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: {{.project_name}}
+  uuid: {{bundle_uuid}}
+
+include:
+  - resources/*.yml
+
+workspace:
+  host: {{workspace_host}}
+  artifact_path: {{.artifacts_dest_path}}/${bundle.name}/${bundle.target}/${workspace.current_user.short_name}
+
+artifacts:
+  default:
+    type: jar
+    build: sbt package && sbt assembly
+    path: .
+    files:
+      - source: {{template `jar_path` .}}
+
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+    workspace:
+      host: {{workspace_host}}
+
+  prod:
+    mode: production
+    workspace:
+      host: {{workspace_host}}
+      # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
+      root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
+        level: CAN_MANAGE

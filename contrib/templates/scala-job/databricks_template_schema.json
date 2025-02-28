@@ -1,0 +1,19 @@
+{
+  "welcome_message": "\nWelcome to the scala-job template for Databricks Asset Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "\nPlease provide a unique name for this project.\nproject_name",
+      "order": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9-_]+$",
+      "pattern_match_failure_message": "Name must consist of letters, numbers, dashes, and underscores."
+    },
+    "artifacts_dest_path": {
+      "type": "string",
+      "description": "\nPlease provide the Volumes destination path in Databricks where the directory will be created containing the JAR and other artifacts to store. [example: /Volumes/abcdef1234567890].\nNote: Your admin must allowlist the Volumes JAR path you specify for your workspace (see https://docs.databricks.com/en/data-governance/unity-catalog/manage-privileges/allowlist.html)",
+      "order": 2,
+      "pattern": "^/Volumes(?:/[a-z0-9_-]+)+$",
+      "pattern_match_failure_message": "Path must be of the form ^/Volumes(?:/[a-z0-9_-]+)+$"
+    }
+  }
+}
