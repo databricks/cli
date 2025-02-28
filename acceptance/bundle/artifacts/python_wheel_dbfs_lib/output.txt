@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> errcode sh -c jq .path < out.requests.txt | grep whl
+
+Exit code: 1
+
+>>> jq select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
+
+>>> rm out.requests.txt
