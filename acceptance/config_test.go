@@ -11,6 +11,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
+	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,6 +52,11 @@ type TestConfig struct {
 
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
+
+	// List of gitignore patterns to ignore when checking output files
+	Ignore []string
+
+	CompiledIgnoreObject *ignore.GitIgnore
 }
 
 type ServerStub struct {
@@ -110,6 +116,8 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 			t.Fatalf("Error during config merge: %s: %s", cfgName, err)
 		}
 	}
+
+	result.CompiledIgnoreObject = ignore.CompileIgnoreLines(result.Ignore...)
 
 	return result, strings.Join(configs, ", ")
 }
