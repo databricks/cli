@@ -125,7 +125,7 @@ func TestAuthProcessEnv(t *testing.T) {
 	t.Setenv("HOME", "/home/user")
 	t.Setenv("HTTPS_PROXY", "http://proxy.com")
 
-	// Environment variables that should be cleaned up by process env:
+	// Environment variables that should be cleaned up by ProcessEnv():
 	t.Setenv("DATABRICKS_HOST", "https://test.com")
 	t.Setenv("DATABRICKS_TOKEN", "test-token")
 	t.Setenv("DATABRICKS_PASSWORD", "test-password")
