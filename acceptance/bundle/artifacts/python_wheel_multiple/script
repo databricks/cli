@@ -1,0 +1,13 @@
+export PYTHONDONTWRITEBYTECODE=1
+trace $CLI bundle deploy 2>&1 | sort  # sorting because 'Uploading ...whl...' messages change order
+
+title "Expecting to find 2 wheels"
+trace sh -c 'find . | grep whl'  # expecting 2 wheels
+
+title "Expecting 2 wheels in libraries section in /jobs/create"
+trace jq 'select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
+
+title "Expecting 2 wheels to be uploaded"
+trace jq .path < out.requests.txt | grep import | grep whl | sort
+
+rm out.requests.txt
