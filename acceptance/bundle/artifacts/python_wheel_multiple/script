@@ -1,4 +1,3 @@
-export PYTHONDONTWRITEBYTECODE=1
 trace $CLI bundle deploy 2>&1 | sort  # sorting because 'Uploading ...whl...' messages change order
 
 title "Expecting to find 2 wheels"

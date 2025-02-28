@@ -1,4 +1,3 @@
-export PYTHONDONTWRITEBYTECODE=1
 trace $CLI bundle deploy
 
 title "Expecting to find 1 wheel"
