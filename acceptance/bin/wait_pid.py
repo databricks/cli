@@ -5,8 +5,6 @@ import time
 import platform
 import subprocess
 
-# TODO CONTINUE: Making this script work and testing this on windows and mac.
-
 def wait_pid(pid):
     max_attempts = 600 # 600 * 0.1 seconds = 1 minute
     sleep_time = 0.1
