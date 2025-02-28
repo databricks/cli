@@ -77,3 +77,42 @@ func TestAuthEnvVars(t *testing.T) {
 	out := EnvVars()
 	assert.Equal(t, expected, out)
 }
+
+func TestGetEnvFor(t *testing.T) {
+	tcases := []struct {
+		name     string
+		expected string
+	}{
+		// Generic attributes.
+		{"host", "DATABRICKS_HOST"},
+		{"profile", "DATABRICKS_CONFIG_PROFILE"},
+		{"auth_type", "DATABRICKS_AUTH_TYPE"},
+		{"metadata_service_url", "DATABRICKS_METADATA_SERVICE_URL"},
+
+		// OAuth specific attributes.
+		{"client_id", "DATABRICKS_CLIENT_ID"},
+
+		// Google specific attributes.
+		{"google_service_account", "DATABRICKS_GOOGLE_SERVICE_ACCOUNT"},
+
+		// Azure specific attributes.
+		{"azure_workspace_resource_id", "DATABRICKS_AZURE_RESOURCE_ID"},
+		{"azure_use_msi", "ARM_USE_MSI"},
+		{"azure_client_id", "ARM_CLIENT_ID"},
+		{"azure_tenant_id", "ARM_TENANT_ID"},
+		{"azure_environment", "ARM_ENVIRONMENT"},
+		{"azure_login_app_id", "DATABRICKS_AZURE_LOGIN_APP_ID"},
+	}
+
+	for _, tcase := range tcases {
+		t.Run(tcase.name, func(t *testing.T) {
+			out, ok := GetEnvFor(tcase.name)
+			assert.True(t, ok)
+			assert.Equal(t, tcase.expected, out)
+		})
+	}
+
+	out, ok := GetEnvFor("notfound")
+	assert.False(t, ok)
+	assert.Empty(t, out)
+}

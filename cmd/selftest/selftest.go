@@ -12,5 +12,6 @@ func New() *cobra.Command {
 	}
 
 	cmd.AddCommand(newSendTelemetry())
+	cmd.AddCommand(newPanic())
 	return cmd
 }

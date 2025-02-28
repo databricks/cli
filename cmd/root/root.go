@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"time"
@@ -102,14 +103,39 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, cmd *cobra.Command) error {
-	// TODO: deferred panic recovery
+func Execute(ctx context.Context, cmd *cobra.Command) (err error) {
+	defer func() {
+		r := recover()
+
+		// No panic. Return normally.
+		if r == nil {
+			return
+		}
+
+		version := build.GetInfo().Version
+		trace := debug.Stack()
+
+		// Set the error so that the CLI exits with a non-zero exit code.
+		err = fmt.Errorf("panic: %v", r)
+
+		fmt.Fprintf(cmd.ErrOrStderr(), `The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: %s
+
+Panic Payload: %v
+
+Stack Trace:
+%s`, version, r, string(trace))
+	}()
+
 	ctx = telemetry.WithNewLogger(ctx)
 	ctx = dbr.DetectRuntime(ctx)
 	startTime := time.Now()
 
 	// Run the command
-	cmd, err := cmd.ExecuteContextC(ctx)
+	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
 		// If cmdio logger initialization succeeds, then this function logs with the
 		// initialized cmdio logger, otherwise with the default cmdio logger

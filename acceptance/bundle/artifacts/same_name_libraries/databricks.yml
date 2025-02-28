@@ -1,0 +1,54 @@
+bundle:
+  name: same_name_libraries
+
+variables:
+  cluster:
+    default:
+      spark_version: 15.4.x-scala2.12
+      node_type_id: i3.xlarge
+      data_security_mode: SINGLE_USER
+      num_workers: 0
+      spark_conf:
+          spark.master: "local[*, 4]"
+          spark.databricks.cluster.profile: singleNode
+      custom_tags:
+        ResourceClass: SingleNode
+
+artifacts:
+  whl1:
+    type: whl
+    path: ./whl1
+  whl2:
+    type: whl
+    path: ./whl2
+
+resources:
+  jobs:
+    test:
+      name: "test"
+      tasks:
+        - task_key: task1
+          new_cluster: ${var.cluster}
+          python_wheel_task:
+            entry_point: main
+            package_name: my_default_python
+          libraries:
+            - whl: ./whl1/dist/*.whl
+            - pypi:
+                package: test_package
+        - task_key: task2
+          new_cluster: ${var.cluster}
+          python_wheel_task:
+            entry_point: main
+            package_name: my_default_python
+          libraries:
+            - whl: ./whl2/dist/*.whl
+            - maven:
+                coordinates: org.apache.spark:spark-sql_2.12:3.1.1
+        - task_key: task3
+          new_cluster: ${var.cluster}
+          python_wheel_task:
+            entry_point: main
+            package_name: my_default_python
+          libraries:
+            - whl: ./whl1/dist/*.whl
