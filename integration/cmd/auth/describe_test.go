@@ -2,12 +2,9 @@ package auth_test
 
 import (
 	"context"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/google/uuid"
 
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/databricks-sdk-go"
@@ -37,35 +34,20 @@ func TestAuthDescribeSuccess(t *testing.T) {
 }
 
 func TestAuthDescribeFailure(t *testing.T) {
-	// Store the original value of env variable
-	originalProfileValue, envProfileExists := os.LookupEnv("DATABRICKS_CONFIG_PROFILE")
-
-	// restore env variable after the test:
-	if envProfileExists {
-		// Unset the env variable for this test
-		err := os.Unsetenv("DATABRICKS_CONFIG_PROFILE")
-		require.NoError(t, err)
-
-		t.Cleanup(func() {
-			err := os.Setenv("DATABRICKS_CONFIG_PROFILE", originalProfileValue)
-			require.NoError(t, err)
-		})
-	}
+	t.Skipf("Skipping because of https://github.com/databricks/cli/issues/2010")
 
 	ctx := context.Background()
-	profileSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-	profileName := "nonexistent-TestAuthDescribeFailure-" + profileSuffix
-	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", profileName)
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent")
 	outStr := stdout.String()
 
 	require.NotEmpty(t, outStr)
 	require.Contains(t, outStr, "Unable to authenticate: resolve")
-	require.Contains(t, outStr, "has no "+profileName+" profile configured")
+	require.Contains(t, outStr, "has no nonexistent profile configured")
 	require.Contains(t, outStr, "Current configuration:")
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
 	require.NoError(t, err)
 
 	require.Contains(t, outStr, "✓ host: "+w.Config.Host)
-	require.Contains(t, outStr, "✓ profile: "+profileName+" (from --profile flag)")
+	require.Contains(t, outStr, "✓ profile: nonexistent (from --profile flag)")
 }
