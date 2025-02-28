@@ -16,4 +16,4 @@ echo "waiting for telemetry process to finish"
 wait_pid.py $(cat ./telemetry.pid)
 
 # cleanup the pid file
-rm -f ./telemetry.pid
+rm ./telemetry.pid
