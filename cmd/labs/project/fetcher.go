@@ -151,17 +151,17 @@ func (i *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string
 	var err error
 	if !offlineInstall {
 		raw, err = github.ReadFileFromRef(ctx, "databrickslabs", i.name, version, "labs.yml")
-	} else {
-		libDir, file_err := PathInLabs(ctx, i.name, "lib")
-		if file_err != nil {
-			return nil, file_err
+		if err != nil {
+			return nil, fmt.Errorf("read labs.yml from GitHub: %w", err)
 		}
+	} else {
+		libDir, err := PathInLabs(ctx, i.name, "lib")
 		fileName := filepath.Join(libDir, "labs.yml")
 		raw, err = os.ReadFile(fileName)
+		if err != nil {
+			return nil, fmt.Errorf("read labs.yml from local path %s: %w", libDir, err)
+		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("read labs.yml from GitHub: %w", err)
-	}
 	return readFromBytes(ctx, raw)
 }
