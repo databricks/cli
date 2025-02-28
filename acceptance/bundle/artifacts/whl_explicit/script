@@ -9,4 +9,4 @@ trace jq 'select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
 title "Expecting 1 wheel to be uploaded"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
 
-rm out.requests.txt
+rm -fr out.requests.txt my_test_code/build my_test_code/dist my_test_code/my_test_code.egg-info
