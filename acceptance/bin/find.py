@@ -15,7 +15,7 @@ count = 0
 
 for root, dirs, files in os.walk("."):
     for filename in files:
-        path = os.path.join(root, filename).lstrip("./\\").replace('\\', '/')
+        path = os.path.join(root, filename).lstrip("./\\").replace("\\", "/")
         if regex.search(path):
             print(path)
             count += 1
