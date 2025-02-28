@@ -155,7 +155,7 @@ func (i *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string
 			return nil, fmt.Errorf("read labs.yml from GitHub: %w", err)
 		}
 	} else {
-		libDir, err := PathInLabs(ctx, i.name, "lib")
+		libDir, _ := PathInLabs(ctx, i.name, "lib")
 		fileName := filepath.Join(libDir, "labs.yml")
 		raw, err = os.ReadFile(fileName)
 		if err != nil {
