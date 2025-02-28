@@ -1,5 +1,17 @@
 export PYTHONDONTWRITEBYTECODE=1
+
+title "Expecting to find 2 wheels, initially provided"
+trace sh -c 'find . | grep whl'
+
 trace $CLI bundle deploy
-trace find . | grep whl
-jq .path < out.requests.txt | grep import | grep whl | sort > out.requests.paths.txt
+
+title "Expecting to find 2 wheels, same as initially provided"
+trace sh -c 'find . | grep whl'
+
+title "Expecting 2 wheels in libraries section in /jobs/create"
+trace jq 'select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
+
+title "Expecting 2 wheels to be uploaded"
+trace jq .path < out.requests.txt | grep import | grep whl | sort
+
 rm out.requests.txt
