@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""
+Usage: find.py <regex>
+Finds all files within current directory matching regex. The output is sorted and slashes are always forward.
+
+If --expect N is provided, the number of matches must be N or error is printed.
+"""
+
 import sys
 import os
 import re
