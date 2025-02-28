@@ -22,10 +22,10 @@ func main() {
 	// of [root.Execute] ensures that the telemetry upload process is not spawned
 	// infinitely in a recursive manner.
 	if len(os.Args) == 3 && os.Args[1] == "telemetry" && os.Args[2] == "upload" {
-		// Suppress non-error logs from the SDK. This ensures that INFO / WARN logs
+		// Suppress info logs (and lower) from the SDK. This ensures that INFO / DEBUG logs
 		// from the SDK are not printed to stdout / stderr.
 		logger.DefaultLogger = &logger.SimpleLogger{
-			Level: logger.LevelError,
+			Level: logger.LevelWarn,
 		}
 
 		resp, err := telemetry.Upload(ctx)

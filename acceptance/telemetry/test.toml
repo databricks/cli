@@ -8,7 +8,7 @@ New = '"UNIX_TIME_MILLIS"'
 
 [[Repls]]
 Old = 'darwin|linux|windows'
-New = 'OS'
+New = '[OS]'
 
 [[Repls]]
 Old = 'execution_time_ms\\\":\d{1,5},'
