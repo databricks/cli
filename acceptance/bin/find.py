@@ -11,15 +11,19 @@ parser.add_argument("--expect", type=int)
 args = parser.parse_args()
 
 regex = re.compile(args.regex)
-count = 0
+result = []
 
 for root, dirs, files in os.walk("."):
     for filename in files:
         path = os.path.join(root, filename).lstrip("./\\").replace("\\", "/")
         if regex.search(path):
-            print(path)
-            count += 1
+            result.append(path)
+
+result.sort()
+for item in result:
+    print(item)
+sys.stdout.flush()
 
 if args.expect is not None:
-    if args.expect != count:
-        sys.exit(f"Expected {args.expect}, got {count}")
+    if args.expect != len(result):
+        sys.exit(f"Expected {args.expect}, got {len(result)}")

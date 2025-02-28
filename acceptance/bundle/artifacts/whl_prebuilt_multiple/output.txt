@@ -1,7 +1,7 @@
 
 >>> find.py --expect 2 whl
-dist/my_test_code-0.0.1-py3-none-any.whl
 dist/lib/other_test_code-0.0.1-py3-none-any.whl
+dist/my_test_code-0.0.1-py3-none-any.whl
 
 >>> [CLI] bundle deploy
 Deploying resources...
@@ -13,11 +13,11 @@ Uploading other_test_code-0.0.1-py3-none-any.whl...
 
 === Expecting to find 2 wheels, same as initially provided
 >>> find.py --expect 2 whl
-dist/my_test_code-0.0.1-py3-none-any.whl
 dist/lib/other_test_code-0.0.1-py3-none-any.whl
+dist/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 2 wheels in libraries section in /jobs/create
->>> jq select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
 [
   {
     "existing_cluster_id": "0717-132531-5opeqon1",
