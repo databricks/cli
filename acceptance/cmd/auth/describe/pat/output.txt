@@ -1,0 +1,12 @@
+
+>>> [CLI] auth describe
+Host: [DATABRICKS_URL]
+User: [USERNAME]
+Authenticated with: pat
+-----
+Current configuration:
+  ✓ host: [DATABRICKS_URL] (from DATABRICKS_HOST environment variable)
+  ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
+  ✓ profile: default
+  ✓ databricks_cli_path: [CLI]
+  ✓ auth_type: pat

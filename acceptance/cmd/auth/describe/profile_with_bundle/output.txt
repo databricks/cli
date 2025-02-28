@@ -1,0 +1,6 @@
+
+>>> [CLI] auth describe
+Unable to authenticate: Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)
+-----
+Current configuration:
+  ✓ profile: myprofile (from bundle)

@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: Unset auth type as well.
 var (
 	KeepTmp     bool
 	NoRepl      bool

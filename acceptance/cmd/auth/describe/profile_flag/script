@@ -1,0 +1,5 @@
+export DATABRICKS_HOST=""
+export DATABRICKS_TOKEN=""
+export DATABRICKS_CONFIG_FILE=".databrickscfg"
+
+trace $CLI auth describe -p myprofile
