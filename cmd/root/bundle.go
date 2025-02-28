@@ -45,6 +45,17 @@ func targetFlagValue(cmd *cobra.Command) (string, bool) {
 	return "", false
 }
 
+
+// TODO CONTINUE: Fixing the source here. Might not need to do this for the flag
+// as the environment variable seems to be the only problem.
+// Note that this should be a separate PR.
+type profileSource string
+
+const (
+	profileSourceFlag profileSource = "flag"
+)
+
+
 func getProfile(cmd *cobra.Command) (value string) {
 	// The command line flag takes precedence.
 	flag := cmd.Flag("profile")
