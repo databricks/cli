@@ -1,11 +1,11 @@
 
 === Expecting to find 2 wheels, initially provided
 >>> sh -c find . | grep whl
-./dist/lib/my_test_code-0.0.1-py3-none-any.whl
+./dist/lib/other_test_code-0.0.1-py3-none-any.whl
 ./dist/my_test_code-0.0.1-py3-none-any.whl
 
 >>> [CLI] bundle deploy
-Uploading my_test_code-0.0.1-py3-none-any.whl...
+Uploading other_test_code-0.0.1-py3-none-any.whl...
 Uploading my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
 Deploying resources...
@@ -14,7 +14,7 @@ Deployment complete!
 
 === Expecting to find 2 wheels, same as initially provided
 >>> sh -c find . | grep whl
-./dist/lib/my_test_code-0.0.1-py3-none-any.whl
+./dist/lib/other_test_code-0.0.1-py3-none-any.whl
 ./dist/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 2 wheels in libraries section in /jobs/create
@@ -27,7 +27,7 @@ Deployment complete!
         "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
       },
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
       }
     ],
     "python_wheel_task": {
@@ -41,6 +41,6 @@ Deployment complete!
 === Expecting 2 wheels to be uploaded
 >>> jq .path
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/dist/lib/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/dist/lib/other_test_code-0.0.1-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/dist/my_test_code-0.0.1-py3-none-any.whl"
