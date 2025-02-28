@@ -27,3 +27,7 @@ echo 123456
 
 printf "\n=== Testing --version"
 trace $CLI --version
+
+touch ignored_file.txt
+mkdir ignored_dir
+touch ignored_dir/hello.txt
