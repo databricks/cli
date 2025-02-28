@@ -5,8 +5,9 @@ import time
 import platform
 import subprocess
 
+
 def wait_pid(pid):
-    max_attempts = 600 # 600 * 0.1 seconds = 1 minute
+    max_attempts = 600  # 600 * 0.1 seconds = 1 minute
     sleep_time = 0.1
 
     for i in range(max_attempts):
@@ -15,7 +16,7 @@ def wait_pid(pid):
             # Windows approach: use tasklist to check for the existence of the process.
             try:
                 # Get the output of 'tasklist'
-                output = subprocess.check_output(['tasklist'], text=True)
+                output = subprocess.check_output(["tasklist"], text=True)
             except subprocess.CalledProcessError:
                 print("[wait_pid] Error retrieving tasklist. Assuming process has ended.")
                 return 0
@@ -36,6 +37,7 @@ def wait_pid(pid):
 
     print(f"Timeout: Process {pid} did not end within 1 minute")
     return 1
+
 
 try:
     pid = int(sys.argv[1])
