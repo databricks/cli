@@ -5,10 +5,30 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> errcode sh -c jq .path < out.requests.txt | grep whl
+=== Expecting to find no wheels, must error
+>>> errcode sh -c find . | grep whl
 
 Exit code: 1
 
+=== Expecting 1 wheel in libraries section in /jobs/create
 >>> jq select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
+[
+  {
+    "existing_cluster_id": "0717-132531-5opeqon1",
+    "libraries": [
+      {
+        "whl": "dbfs:/path/to/dist/mywheel.whl"
+      }
+    ],
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "my_test_code"
+    },
+    "task_key": "TestTask"
+  }
+]
 
->>> rm out.requests.txt
+=== Expecting no wheels to be uploaded
+>>> errcode sh -c jq .path < out.requests.txt | grep import | grep whl
+
+Exit code: 1

@@ -1,5 +1,13 @@
 export PYTHONDONTWRITEBYTECODE=1
 trace $CLI bundle deploy
-trace errcode sh -c 'jq .path < out.requests.txt | grep whl'  # should error as there are no wheels uploaded
-trace jq 'select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt > out.jobs.create.txt
-trace rm out.requests.txt
+
+title "Expecting to find no wheels, must error"
+trace errcode sh -c 'find . | grep whl'
+
+title "Expecting 1 wheel in libraries section in /jobs/create"
+trace jq 'select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
+
+title "Expecting no wheels to be uploaded"
+trace errcode sh -c 'jq .path < out.requests.txt | grep import | grep whl'
+
+rm out.requests.txt
