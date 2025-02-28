@@ -1,1 +1,5 @@
 export PYTHONDONTWRITEBYTECODE=1
+
+uv venv -q --python 3.12 .env
+source .env/bin/activate
+uv pip install -q setuptools
