@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Expecting to find no wheels
+>>> errcode find.py --expect 0 whl
+
+=== Expecting 1 wheel in libraries section in /jobs/create
+>>> jq -s .[] | select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
+[
+  {
+    "existing_cluster_id": "0717-132531-5opeqon1",
+    "libraries": [
+      {
+        "whl": "dbfs:/path/to/dist/mywheel.whl"
+      }
+    ],
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "my_test_code"
+    },
+    "task_key": "TestTask"
+  }
+]
+
+=== Expecting no wheels to be uploaded
+>>> errcode sh -c jq .path < out.requests.txt | grep import | grep whl
+
+Exit code: 1
