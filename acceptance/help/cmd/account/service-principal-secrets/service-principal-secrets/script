@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account service-principal-secrets create --help
+trace $CLI account service-principal-secrets delete --help
+trace $CLI account service-principal-secrets list --help

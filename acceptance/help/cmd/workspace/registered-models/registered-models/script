@@ -1,0 +1,8 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI registered-models create --help
+trace $CLI registered-models delete --help
+trace $CLI registered-models delete-alias --help
+trace $CLI registered-models get --help
+trace $CLI registered-models list --help
+trace $CLI registered-models set-alias --help
+trace $CLI registered-models update --help

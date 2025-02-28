@@ -1,0 +1,158 @@
+
+>>> $CLI volumes create --help
+Create a Volume.
+  
+  Creates a new volume.
+  
+  The user could create either an external volume or a managed volume. An
+  external volume will be created in the specified external location, while a
+  managed volume will be located in the default location which is specified by
+  the parent schema, or the parent catalog, or the Metastore.
+  
+  For the volume creation to succeed, the user must satisfy following
+  conditions: - The caller must be a metastore admin, or be the owner of the
+  parent catalog and schema, or have the **USE_CATALOG** privilege on the parent
+  catalog and the **USE_SCHEMA** privilege on the parent schema. - The caller
+  must have **CREATE VOLUME** privilege on the parent schema.
+  
+  For an external volume, following conditions also need to satisfy - The caller
+  must have **CREATE EXTERNAL VOLUME** privilege on the external location. -
+  There are no other tables, nor volumes existing in the specified storage
+  location. - The specified storage location is not under the location of other
+  tables, nor volumes, or catalogs or schemas.
+
+  Arguments:
+    CATALOG_NAME: The name of the catalog where the schema and the volume are
+    SCHEMA_NAME: The name of the schema where the volume is
+    NAME: The name of the volume
+    VOLUME_TYPE:
+
+Usage:
+  databricks volumes create CATALOG_NAME SCHEMA_NAME NAME VOLUME_TYPE [flags]
+
+Flags:
+      --comment string            The comment attached to the volume.
+  -h, --help                      help for create
+      --json JSON                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --storage-location string   The storage location on the cloud.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI volumes delete --help
+Delete a Volume.
+  
+  Deletes a volume from the specified parent catalog and schema.
+  
+  The caller must be a metastore admin or an owner of the volume. For the latter
+  case, the caller must also be the owner or have the **USE_CATALOG** privilege
+  on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    NAME: The three-level (fully qualified) name of the volume
+
+Usage:
+  databricks volumes delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI volumes list --help
+List Volumes.
+  
+  Gets an array of volumes for the current metastore under the parent catalog
+  and schema.
+  
+  The returned volumes are filtered based on the privileges of the calling user.
+  For example, the metastore admin is able to list all the volumes. A regular
+  user needs to be the owner or have the **READ VOLUME** privilege on the volume
+  to recieve the volumes in the response. For the latter case, the caller must
+  also be the owner or have the **USE_CATALOG** privilege on the parent catalog
+  and the **USE_SCHEMA** privilege on the parent schema.
+  
+  There is no guarantee of a specific ordering of the elements in the array.
+
+  Arguments:
+    CATALOG_NAME: The identifier of the catalog
+    SCHEMA_NAME: The identifier of the schema
+
+Usage:
+  databricks volumes list CATALOG_NAME SCHEMA_NAME [flags]
+
+Flags:
+  -h, --help                help for list
+      --include-browse      Whether to include volumes in the response for which the principal can only access selective metadata for.
+      --max-results int     Maximum number of volumes to return (page length).
+      --page-token string   Opaque token returned by a previous request.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI volumes read --help
+Get a Volume.
+  
+  Gets a volume from the metastore for a specific catalog and schema.
+  
+  The caller must be a metastore admin or an owner of (or have the **READ
+  VOLUME** privilege on) the volume. For the latter case, the caller must also
+  be the owner or have the **USE_CATALOG** privilege on the parent catalog and
+  the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    NAME: The three-level (fully qualified) name of the volume
+
+Usage:
+  databricks volumes read NAME [flags]
+
+Flags:
+  -h, --help             help for read
+      --include-browse   Whether to include volumes in the response for which the principal can only access selective metadata for.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI volumes update --help
+Update a Volume.
+  
+  Updates the specified volume under the specified parent catalog and schema.
+  
+  The caller must be a metastore admin or an owner of the volume. For the latter
+  case, the caller must also be the owner or have the **USE_CATALOG** privilege
+  on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
+  
+  Currently only the name, the owner or the comment of the volume could be
+  updated.
+
+  Arguments:
+    NAME: The three-level (fully qualified) name of the volume
+
+Usage:
+  databricks volumes update NAME [flags]
+
+Flags:
+      --comment string    The comment attached to the volume.
+  -h, --help              help for update
+      --json JSON         either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string   New name for the volume.
+      --owner string      The identifier of the user who owns the volume.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

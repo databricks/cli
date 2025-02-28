@@ -1,0 +1,7 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI command-execution cancel --help
+trace $CLI command-execution command-status --help
+trace $CLI command-execution context-status --help
+trace $CLI command-execution create --help
+trace $CLI command-execution destroy --help
+trace $CLI command-execution execute --help

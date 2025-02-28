@@ -1,0 +1,5 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI workspace-bindings get --help
+trace $CLI workspace-bindings get-bindings --help
+trace $CLI workspace-bindings update --help
+trace $CLI workspace-bindings update-bindings --help

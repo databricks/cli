@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI consumer-installations create --help
+trace $CLI consumer-installations delete --help
+trace $CLI consumer-installations list --help
+trace $CLI consumer-installations list-listing-installations --help
+trace $CLI consumer-installations update --help

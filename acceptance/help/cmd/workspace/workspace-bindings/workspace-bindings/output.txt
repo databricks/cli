@@ -1,0 +1,90 @@
+
+>>> $CLI workspace-bindings get --help
+Get catalog workspace bindings.
+  
+  Gets workspace bindings of the catalog. The caller must be a metastore admin
+  or an owner of the catalog.
+
+  Arguments:
+    NAME: The name of the catalog.
+
+Usage:
+  databricks workspace-bindings get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace-bindings get-bindings --help
+Get securable workspace bindings.
+  
+  Gets workspace bindings of the securable. The caller must be a metastore admin
+  or an owner of the securable.
+
+  Arguments:
+    SECURABLE_TYPE: The type of the securable to bind to a workspace.
+    SECURABLE_NAME: The name of the securable.
+
+Usage:
+  databricks workspace-bindings get-bindings SECURABLE_TYPE SECURABLE_NAME [flags]
+
+Flags:
+  -h, --help                help for get-bindings
+      --max-results int     Maximum number of workspace bindings to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace-bindings update --help
+Update catalog workspace bindings.
+  
+  Updates workspace bindings of the catalog. The caller must be a metastore
+  admin or an owner of the catalog.
+
+  Arguments:
+    NAME: The name of the catalog.
+
+Usage:
+  databricks workspace-bindings update NAME [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace-bindings update-bindings --help
+Update securable workspace bindings.
+  
+  Updates workspace bindings of the securable. The caller must be a metastore
+  admin or an owner of the securable.
+
+  Arguments:
+    SECURABLE_TYPE: The type of the securable to bind to a workspace.
+    SECURABLE_NAME: The name of the securable.
+
+Usage:
+  databricks workspace-bindings update-bindings SECURABLE_TYPE SECURABLE_NAME [flags]
+
+Flags:
+  -h, --help        help for update-bindings
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

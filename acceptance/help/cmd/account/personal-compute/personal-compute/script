@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account personal-compute delete --help
+trace $CLI account personal-compute get --help
+trace $CLI account personal-compute update --help

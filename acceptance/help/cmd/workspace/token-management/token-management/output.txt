@@ -1,0 +1,156 @@
+
+>>> $CLI token-management create-obo-token --help
+Create on-behalf token.
+  
+  Creates a token on behalf of a service principal.
+
+  Arguments:
+    APPLICATION_ID: Application ID of the service principal.
+
+Usage:
+  databricks token-management create-obo-token APPLICATION_ID [flags]
+
+Flags:
+      --comment string         Comment that describes the purpose of the token.
+  -h, --help                   help for create-obo-token
+      --json JSON              either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --lifetime-seconds int   The number of seconds before the token expires.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI token-management delete --help
+Delete a token.
+  
+  Deletes a token, specified by its ID.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to revoke.
+
+Usage:
+  databricks token-management delete TOKEN_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI token-management get --help
+Get token info.
+  
+  Gets information about a token, specified by its ID.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to get.
+
+Usage:
+  databricks token-management get TOKEN_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI token-management get-permission-levels --help
+Get token permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+Usage:
+  databricks token-management get-permission-levels [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI token-management get-permissions --help
+Get token permissions.
+  
+  Gets the permissions of all tokens. Tokens can inherit permissions from their
+  root object.
+
+Usage:
+  databricks token-management get-permissions [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI token-management list --help
+List all tokens.
+  
+  Lists all tokens associated with the specified workspace or user.
+
+Usage:
+  databricks token-management list [flags]
+
+Flags:
+      --created-by-id int            User ID of the user that created the token.
+      --created-by-username string   Username of the user that created the token.
+  -h, --help                         help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI token-management set-permissions --help
+Set token permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+Usage:
+  databricks token-management set-permissions [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI token-management update-permissions --help
+Update token permissions.
+  
+  Updates the permissions on all tokens. Tokens can inherit permissions from
+  their root object.
+
+Usage:
+  databricks token-management update-permissions [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

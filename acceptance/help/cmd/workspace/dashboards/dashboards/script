@@ -1,0 +1,7 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI dashboards create --help
+trace $CLI dashboards delete --help
+trace $CLI dashboards get --help
+trace $CLI dashboards list --help
+trace $CLI dashboards restore --help
+trace $CLI dashboards update --help

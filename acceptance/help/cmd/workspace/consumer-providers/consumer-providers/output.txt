@@ -1,0 +1,57 @@
+
+>>> $CLI consumer-providers batch-get --help
+Get one batch of providers. One may specify up to 50 IDs per request.
+  
+  Batch get a provider in the Databricks Marketplace with at least one visible
+  listing.
+
+Usage:
+  databricks consumer-providers batch-get [flags]
+
+Flags:
+  -h, --help   help for batch-get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-providers get --help
+Get a provider.
+  
+  Get a provider in the Databricks Marketplace with at least one visible
+  listing.
+
+Usage:
+  databricks consumer-providers get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-providers list --help
+List providers.
+  
+  List all providers in the Databricks Marketplace with at least one visible
+  listing.
+
+Usage:
+  databricks consumer-providers list [flags]
+
+Flags:
+  -h, --help                help for list
+      --is-featured         
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

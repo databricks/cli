@@ -1,0 +1,19 @@
+
+>>> $CLI credentials-manager exchange-token --help
+Exchange token.
+  
+  Exchange tokens with an Identity Provider to get a new access token. It allows
+  specifying scopes to determine token permissions.
+
+Usage:
+  databricks credentials-manager exchange-token [flags]
+
+Flags:
+  -h, --help        help for exchange-token
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

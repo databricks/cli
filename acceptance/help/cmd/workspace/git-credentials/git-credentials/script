@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI git-credentials create --help
+trace $CLI git-credentials delete --help
+trace $CLI git-credentials get --help
+trace $CLI git-credentials list --help
+trace $CLI git-credentials update --help

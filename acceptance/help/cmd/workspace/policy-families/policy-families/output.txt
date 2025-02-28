@@ -1,0 +1,42 @@
+
+>>> $CLI policy-families get --help
+Get policy family information.
+  
+  Retrieve the information for an policy family based on its identifier and
+  version
+
+  Arguments:
+    POLICY_FAMILY_ID: The family ID about which to retrieve information.
+
+Usage:
+  databricks policy-families get POLICY_FAMILY_ID [flags]
+
+Flags:
+  -h, --help          help for get
+      --version int   The version number for the family to fetch.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI policy-families list --help
+List policy families.
+  
+  Returns the list of policy definition types available to use at their latest
+  version. This API is paginated.
+
+Usage:
+  databricks policy-families list [flags]
+
+Flags:
+  -h, --help                help for list
+      --max-results int     Maximum number of policy families to return.
+      --page-token string   A token that can be used to get the next page of results.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
