@@ -8,4 +8,4 @@ trace jq 'select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
 title "Expecting 1 wheel to be uploaded"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
 
-rm -fr out.requests.txt build dist my_test_code.egg-info
+rm out.requests.txt
