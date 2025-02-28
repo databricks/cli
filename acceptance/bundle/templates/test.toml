@@ -1,2 +1,2 @@
-# At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
+# There are many differences across envs, so there are dedicated tests (suffixed with -cloud) for cloud envs.
 Cloud = false
