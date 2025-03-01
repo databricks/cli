@@ -46,7 +46,7 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 func TestSyncIncludeWithNegate(t *testing.T) {
 	b := loadTarget(t, "./sync/negate", "default")
 
-	diags := bundle.Apply(context.Background(), bundle.ReadOnly(b), validate.ValidateSyncPatterns())
+	diags := bundle.Apply(context.Background(), b, validate.ValidateSyncPatterns())
 	require.Empty(t, diags)
 	require.NoError(t, diags.Error())
 }
