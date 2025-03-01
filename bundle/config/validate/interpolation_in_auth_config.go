@@ -24,7 +24,10 @@ func (f *noInterpolationInAuthConfig) Name() string {
 func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	authFields := []string{
 		// Generic attributes.
-		"host", "profile", "auth_type", "metadata_service_url",
+		"host",
+		"profile",
+		"auth_type",
+		"metadata_service_url",
 
 		// OAuth specific attributes.
 		"client_id",
@@ -33,8 +36,12 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 		"google_service_account",
 
 		// Azure specific attributes.
-		"azure_resource_id", "azure_use_msi", "azure_client_id", "azure_tenant_id",
-		"azure_environment", "azure_login_app_id",
+		"azure_resource_id",
+		"azure_use_msi",
+		"azure_client_id",
+		"azure_tenant_id",
+		"azure_environment",
+		"azure_login_app_id",
 	}
 
 	diags := diag.Diagnostics{}
@@ -53,7 +60,10 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 			continue
 		}
 
-		vv := v.MustString()
+		vv, ok := v.AsString()
+		if !ok {
+			continue
+		}
 
 		// Check if the field contains interpolation.
 		if dynvar.ContainsVariableReference(vv) {
