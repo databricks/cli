@@ -23,6 +23,6 @@ func TestJobClusterKeyNotDefinedTest(t *testing.T) {
 func TestJobClusterKeyDefinedTest(t *testing.T) {
 	b := loadTarget(t, "./job_cluster_key", "development")
 
-	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), validate.JobClusterKeyDefined())
+	diags := bundle.Apply(context.Background(), b, validate.JobClusterKeyDefined())
 	require.Empty(t, diags)
 }

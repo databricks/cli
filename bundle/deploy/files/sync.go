@@ -35,12 +35,12 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 		Exclude:      b.Config.Sync.Exclude,
 
 		RemotePath: b.Config.Workspace.FilePath,
-		Host:       b.WorkspaceClient.Config.Host,
+		Host:       b.WorkspaceClient().Config.Host,
 
 		Full: false,
 
 		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  b.WorkspaceClient,
+		WorkspaceClient:  b.WorkspaceClient(),
 	}
 
 	if b.Config.Workspace.CurrentUser != nil {

@@ -92,7 +92,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	}
 
 	if opts.withExistingSnapshot {
-		opts, err := files.GetSyncOptions(ctx, bundle.ReadOnly(b))
+		opts, err := files.GetSyncOptions(ctx, b)
 		require.NoError(t, err)
 
 		snapshotPath, err := sync.SnapshotPath(opts)
@@ -134,7 +134,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	}
 
 	if opts.expects.snapshotState != nil {
-		syncOpts, err := files.GetSyncOptions(ctx, bundle.ReadOnly(b))
+		syncOpts, err := files.GetSyncOptions(ctx, b)
 		require.NoError(t, err)
 
 		snapshotPath, err := sync.SnapshotPath(syncOpts)

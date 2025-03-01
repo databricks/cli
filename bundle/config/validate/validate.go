@@ -44,6 +44,10 @@ func (v *validate) Name() string {
 	return "validate"
 }
 
+func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	return Validate(ctx, b)
+}
+
 func Validate() bundle.Mutator {
 	return &validate{}
 }

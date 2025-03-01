@@ -56,7 +56,7 @@ func TestJobClusterKeyNotDefined(t *testing.T) {
 		},
 	}
 
-	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), JobClusterKeyDefined())
+	diags := bundle.Apply(context.Background(), b, JobClusterKeyDefined())
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
 	require.Equal(t, diag.Warning, diags[0].Severity)
@@ -89,7 +89,7 @@ func TestJobClusterKeyDefinedInDifferentJob(t *testing.T) {
 		},
 	}
 
-	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), JobClusterKeyDefined())
+	diags := bundle.Apply(context.Background(), b, JobClusterKeyDefined())
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
 	require.Equal(t, diag.Warning, diags[0].Severity)
