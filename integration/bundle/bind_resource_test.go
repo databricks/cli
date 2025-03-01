@@ -65,7 +65,7 @@ func TestBindSchemaToExistingSchema(t *testing.T) {
 	// destroy the bundle:
 	destroyBundle(t, ctx, bundleRoot)
 
-	// Check that job is unbound and exists after bundle is destroyed
+	// Check that schema is unbound and exists after bundle is destroyed
 	postDestroySchema, err := w.Schemas.GetByFullName(ctx, predefinedSchema.FullName)
 	require.NoError(t, err)
 	require.Equal(t, postDestroySchema.SchemaId, predefinedSchema.SchemaId)
