@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func FilesToSync() bundle.ReadOnlyMutator {
+func FilesToSync() bundle.Mutator {
 	return &filesToSync{}
 }
 
@@ -19,7 +19,7 @@ func (v *filesToSync) Name() string {
 	return "validate:files_to_sync"
 }
 
-func (v *filesToSync) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// The user may be intentional about not synchronizing any files.
 	// In this case, we should not show any warnings.
 	if len(rb.Config().Sync.Paths) == 0 {

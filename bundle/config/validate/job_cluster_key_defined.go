@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func JobClusterKeyDefined() bundle.ReadOnlyMutator {
+func JobClusterKeyDefined() bundle.Mutator {
 	return &jobClusterKeyDefined{}
 }
 
@@ -19,7 +19,7 @@ func (v *jobClusterKeyDefined) Name() string {
 	return "validate:job_cluster_key_defined"
 }
 
-func (v *jobClusterKeyDefined) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	for k, job := range rb.Config().Resources.Jobs {

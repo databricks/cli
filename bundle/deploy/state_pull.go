@@ -85,7 +85,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 
 	// Create a new snapshot based on the deployment state file.
-	opts, err := files.GetSyncOptions(ctx, bundle.ReadOnly(b))
+	opts, err := files.GetSyncOptions(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}

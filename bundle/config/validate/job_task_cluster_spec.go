@@ -13,7 +13,7 @@ import (
 
 // JobTaskClusterSpec validates that job tasks have cluster spec defined
 // if task requires a cluster
-func JobTaskClusterSpec() bundle.ReadOnlyMutator {
+func JobTaskClusterSpec() bundle.Mutator {
 	return &jobTaskClusterSpec{}
 }
 
@@ -23,7 +23,7 @@ func (v *jobTaskClusterSpec) Name() string {
 	return "validate:job_task_cluster_spec"
 }
 
-func (v *jobTaskClusterSpec) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
