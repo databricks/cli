@@ -48,6 +48,6 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	return Validate(ctx, b)
 }
 
-func Validate() bundle.Mutator {
+func NewValidateMutator() bundle.Mutator {
 	return &validate{}
 }
