@@ -28,7 +28,7 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
-	for resourceName, job := range rb.Config().Resources.Jobs {
+	for resourceName, job := range b.Config.Resources.Jobs {
 		resourcePath := jobsPath.Append(dyn.Key(resourceName))
 
 		for taskIndex, task := range job.Tasks {
@@ -41,7 +41,7 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	return diags
 }
 
-func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
+func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	var specified []string

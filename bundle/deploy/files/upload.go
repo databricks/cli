@@ -30,7 +30,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
-	opts, err := GetSyncOptions(ctx, bundle.ReadOnly(b))
+	opts, err := GetSyncOptions(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}

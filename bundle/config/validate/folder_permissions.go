@@ -19,11 +19,11 @@ import (
 type folderPermissions struct{}
 
 func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if len(b.Config().Permissions) == 0 {
+	if len(b.Config.Permissions) == 0 {
 		return nil
 	}
 
-	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config().Workspace)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
@@ -47,7 +47,7 @@ func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	return diags
 }
 
-func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderPath string) diag.Diagnostics {
+func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath string) diag.Diagnostics {
 	// If the folder is shared, then we don't need to check permissions as it was already checked in the other mutator before.
 	if libraries.IsWorkspaceSharedPath(folderPath) {
 		return nil
@@ -101,6 +101,6 @@ func (f *folderPermissions) Name() string {
 
 // ValidateFolderPermissions validates that permissions for the folders in Workspace file system matches
 // the permissions in the top-level permissions section of the bundle.
-func ValidateFolderPermissions() bundle.ReadOnlyMutator {
+func ValidateFolderPermissions() bundle.Mutator {
 	return &folderPermissions{}
 }

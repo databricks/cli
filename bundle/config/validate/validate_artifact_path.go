@@ -18,7 +18,7 @@ import (
 
 type validateArtifactPath struct{}
 
-func ValidateArtifactPath() bundle.ReadOnlyMutator {
+func ValidateArtifactPath() bundle.Mutator {
 	return &validateArtifactPath{}
 }
 
@@ -74,7 +74,7 @@ func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName strin
 	return nil, nil, false
 }
 
-func (v *validateArtifactPath) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// We only validate UC Volumes paths right now.
 	if !libraries.IsVolumesPath(rb.Config().Workspace.ArtifactPath) {
 		return nil

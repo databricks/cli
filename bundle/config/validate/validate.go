@@ -12,15 +12,15 @@ type validate struct{}
 
 type location struct {
 	path string
-	rb   bundle.ReadOnlyBundle
+	b    *bundle.Bundle
 }
 
 func (l location) Location() dyn.Location {
-	return l.rb.Config().GetLocation(l.path)
+	return l.b.Config.GetLocation(l.path)
 }
 
 func (l location) Locations() []dyn.Location {
-	return l.rb.Config().GetLocations(l.path)
+	return l.b.Config.GetLocations(l.path)
 }
 
 func (l location) Path() dyn.Path {

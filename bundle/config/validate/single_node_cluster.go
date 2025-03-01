@@ -12,7 +12,7 @@ import (
 )
 
 // Validates that any single node clusters defined in the bundle are correctly configured.
-func SingleNodeCluster() bundle.ReadOnlyMutator {
+func SingleNodeCluster() bundle.Mutator {
 	return &singleNodeCluster{}
 }
 
@@ -98,7 +98,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 	return false
 }
 
-func (m *singleNodeCluster) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	patterns := []dyn.Pattern{
