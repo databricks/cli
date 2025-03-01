@@ -13,7 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func ValidateSyncPatterns() bundle.ReadOnlyMutator {
+func ValidateSyncPatterns() bundle.Mutator {
 	return &validateSyncPatterns{}
 }
 
@@ -23,7 +23,7 @@ func (v *validateSyncPatterns) Name() string {
 	return "validate:validate_sync_patterns"
 }
 
-func (v *validateSyncPatterns) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (v *validateSyncPatterns) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagnostics {
 	s := rb.Config().Sync
 	if len(s.Exclude) == 0 && len(s.Include) == 0 {
 		return nil
@@ -42,7 +42,7 @@ func (v *validateSyncPatterns) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 	return diags.Extend(includeDiags)
 }
 
-func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (diag.Diagnostics, error) {
+func checkPatterns(patterns []string, path string, b *bundle.Bundle) (diag.Diagnostics, error) {
 	var mu sync.Mutex
 	var errs errgroup.Group
 	var diags diag.Diagnostics
