@@ -16,7 +16,7 @@ import (
 // The full suite of validation mutators is available in the [Validate] mutator.
 type fastValidateReadonly struct{}
 
-func FastValidateReadonly() bundle.ReadOnlyMutator {
+func FastValidateReadonly() bundle.Mutator {
 	return &fastValidateReadonly{}
 }
 
@@ -24,8 +24,8 @@ func (f *fastValidateReadonly) Name() string {
 	return "fast_validate(readonly)"
 }
 
-func (f *fastValidateReadonly) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
-	return bundle.ApplyReadOnly(ctx, rb, bundle.Parallel(
+func (f *fastValidateReadonly) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagnostics {
+	return bundle.ApplySeq(ctx, rb,
 		// Fast mutators with only in-memory checks
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),
@@ -33,19 +33,5 @@ func (f *fastValidateReadonly) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
-	))
-}
-
-type fastValidate struct{}
-
-func FastValidate() bundle.Mutator {
-	return &fastValidate{}
-}
-
-func (f *fastValidate) Name() string {
-	return "fast_validate"
-}
-
-func (f *fastValidate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), FastValidateReadonly())
+	)
 }

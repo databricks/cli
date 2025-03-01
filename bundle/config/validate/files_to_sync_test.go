@@ -72,7 +72,7 @@ func setupBundleForFilesToSyncTest(t *testing.T) *bundle.Bundle {
 	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(mock.Anything, "/this/doesnt/matter").Return(&workspace.ObjectInfo{
 		ObjectType: workspace.ObjectTypeDirectory,
 	}, nil)
-	
+
 	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything).Return(&iam.User{
 		UserName: "test@example.com",
 	}, nil)

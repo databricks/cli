@@ -5,11 +5,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 )
 
 type validate struct{}
-
 
 func Validate(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return bundle.ApplySeq(ctx, b,
