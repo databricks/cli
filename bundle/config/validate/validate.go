@@ -27,9 +27,8 @@ func (l location) Path() dyn.Path {
 	return dyn.MustPathFromString(l.path)
 }
 
-// Apply implements bundle.Mutator.
-func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), bundle.Parallel(
+func Validate(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	return bundle.ApplySeq(ctx, b,
 		FastValidateReadonly(),
 
 		// Slow mutators that require network or file i/o. These are only
@@ -37,7 +36,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		FilesToSync(),
 		ValidateFolderPermissions(),
 		ValidateSyncPatterns(),
-	))
+	)
 }
 
 // Name implements bundle.Mutator.
