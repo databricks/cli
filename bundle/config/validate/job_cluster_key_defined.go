@@ -22,7 +22,7 @@ func (v *jobClusterKeyDefined) Name() string {
 func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	for k, job := range rb.Config().Resources.Jobs {
+	for k, job := range b.Config.Resources.Jobs {
 		jobClusterKeys := make(map[string]bool)
 		for _, cluster := range job.JobClusters {
 			if cluster.JobClusterKey != "" {
@@ -35,7 +35,7 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 				if _, ok := jobClusterKeys[task.JobClusterKey]; !ok {
 					loc := location{
 						path: fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index),
-						rb:   rb,
+						rb:   b,
 					}
 
 					diags = diags.Append(diag.Diagnostic{
