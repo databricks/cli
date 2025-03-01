@@ -40,7 +40,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 }
 
 func deleteSnapshotFile(ctx context.Context, b *bundle.Bundle) error {
-	opts, err := GetSyncOptions(ctx, bundle.ReadOnly(b))
+	opts, err := GetSyncOptions(ctx, b)
 	if err != nil {
 		return fmt.Errorf("cannot get sync options: %w", err)
 	}

@@ -22,29 +22,29 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}
 
-	includes, err := rb.GetSyncIncludePatterns(ctx)
+	includes, err := b.GetSyncIncludePatterns(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
 	}
 
 	opts := &sync.SyncOptions{
-		WorktreeRoot: rb.WorktreeRoot(),
-		LocalRoot:    rb.SyncRoot(),
-		Paths:        rb.Config().Sync.Paths,
+		WorktreeRoot: b.WorktreeRoot(),
+		LocalRoot:    b.SyncRoot(),
+		Paths:        b.Config().Sync.Paths,
 		Include:      includes,
-		Exclude:      rb.Config().Sync.Exclude,
+		Exclude:      b.Config().Sync.Exclude,
 
-		RemotePath: rb.Config().Workspace.FilePath,
-		Host:       rb.WorkspaceClient().Config.Host,
+		RemotePath: b.Config().Workspace.FilePath,
+		Host:       b.WorkspaceClient().Config.Host,
 
 		Full: false,
 
 		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  rb.WorkspaceClient(),
+		WorkspaceClient:  b.WorkspaceClient(),
 	}
 
-	if rb.Config().Workspace.CurrentUser != nil {
-		opts.CurrentUser = rb.Config().Workspace.CurrentUser.User
+	if b.Config().Workspace.CurrentUser != nil {
+		opts.CurrentUser = b.Config().Workspace.CurrentUser.User
 	}
 
 	return opts, nil
