@@ -10,22 +10,6 @@ import (
 
 type validate struct{}
 
-type location struct {
-	path string
-	b    *bundle.Bundle
-}
-
-func (l location) Location() dyn.Location {
-	return l.b.Config.GetLocation(l.path)
-}
-
-func (l location) Locations() []dyn.Location {
-	return l.b.Config.GetLocations(l.path)
-}
-
-func (l location) Path() dyn.Path {
-	return dyn.MustPathFromString(l.path)
-}
 
 func Validate(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return bundle.ApplySeq(ctx, b,
