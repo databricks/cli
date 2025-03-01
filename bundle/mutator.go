@@ -64,13 +64,22 @@ func ApplyParallelReadonly(ctx context.Context, b *Bundle, mutators ...Mutator) 
 	var allDiags diag.Diagnostics
 	resultsChan := make(chan diag.Diagnostics, len(mutators))
 	var wg sync.WaitGroup
-	for _, m := range mutators {
+
+	contexts := make([]context.Context, len(mutators))
+
+	for ind, m := range mutators {
+		contexts[ind] = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
+		// log right away to have deterministic logger
+		log.Debug(contexts[ind], "ApplyParallel")
+	}
+
+	for ind, m := range mutators {
 		wg.Add(1)
-		go func(m Mutator) {
+		go func() {
 			defer wg.Done()
 			// We're not using bundle.Apply here because we don't do copy between typed and dynamic values
-			resultsChan <- m.Apply(ctx, b)
-		}(m)
+			resultsChan <- m.Apply(contexts[ind], b)
+		}()
 	}
 
 	wg.Wait()
