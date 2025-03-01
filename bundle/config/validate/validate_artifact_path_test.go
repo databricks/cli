@@ -49,7 +49,7 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 	})
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), ValidateArtifactPath())
+	diags := bundle.Apply(ctx, b, ValidateArtifactPath())
 	assert.Equal(t, diag.Diagnostics{{
 		Severity: diag.Error,
 		Summary:  "volume catalogN.schemaN.volumeN does not exist",

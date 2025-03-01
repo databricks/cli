@@ -30,7 +30,7 @@ func TestFilesToSync_NoPaths(t *testing.T) {
 
 	ctx := context.Background()
 	rb := bundle.ReadOnly(b)
-	diags := bundle.ApplyReadOnly(ctx, rb, FilesToSync())
+	diags := bundle.Apply(ctx, b, FilesToSync())
 	assert.Empty(t, diags)
 }
 

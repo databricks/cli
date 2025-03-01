@@ -13,7 +13,7 @@ import (
 func TestJobClusterKeyNotDefinedTest(t *testing.T) {
 	b := loadTarget(t, "./job_cluster_key", "default")
 
-	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), validate.JobClusterKeyDefined())
+	diags := bundle.Apply(context.Background(), b, validate.JobClusterKeyDefined())
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
 	require.Equal(t, diag.Warning, diags[0].Severity)

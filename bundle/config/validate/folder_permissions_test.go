@@ -71,7 +71,7 @@ func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	rb := bundle.ReadOnly(b)
 
-	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
+	diags := bundle.Apply(context.Background(), b, ValidateFolderPermissions())
 	require.Empty(t, diags)
 }
 

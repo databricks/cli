@@ -33,7 +33,7 @@ func TestJobClusterKeyDefined(t *testing.T) {
 		},
 	}
 
-	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), JobClusterKeyDefined())
+	diags := bundle.Apply(context.Background(), b, JobClusterKeyDefined())
 	require.Empty(t, diags)
 	require.NoError(t, diags.Error())
 }
