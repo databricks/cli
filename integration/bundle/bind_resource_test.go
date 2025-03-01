@@ -15,7 +15,61 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+func TestBindSchemaToExistingSchema(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+
+	// create a pre-defined schema:
+	uniqueId := uuid.New().String()
+	predefinedSchema, err := wt.W.Schemas.Create(ctx, catalog.CreateSchema{
+		CatalogName: "main",
+		Name:        "test-schema-" + uniqueId,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := wt.W.Schemas.DeleteByFullName(ctx, predefinedSchema.FullName)
+		require.NoError(t, err)
+	})
+
+	// setup the bundle:
+	bundleRoot := initTestTemplate(t, ctx, "uc_schema", map[string]any{
+		"unique_id": uniqueId,
+	})
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+
+	// run the bind command:
+	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "bar", predefinedSchema.FullName, "--auto-approve")
+	_, _, err = c.Run()
+	require.NoError(t, err)
+
+	// deploy the bundle:
+	deployBundle(t, ctx, bundleRoot)
+
+	// Check that predefinedSchema is updated with config from bundle
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	updatedSchema, err := w.Schemas.GetByFullName(ctx, predefinedSchema.FullName)
+	require.NoError(t, err)
+	require.Equal(t, updatedSchema.SchemaId, predefinedSchema.SchemaId)
+	require.Equal(t, "This schema was created from DABs", updatedSchema.Comment)
+
+	// unbind the schema:
+	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "unbind", "bar")
+	_, _, err = c.Run()
+	require.NoError(t, err)
+
+	// destroy the bundle:
+	destroyBundle(t, ctx, bundleRoot)
+
+	// Check that schema is unbound and exists after bundle is destroyed
+	postDestroySchema, err := w.Schemas.GetByFullName(ctx, predefinedSchema.FullName)
+	require.NoError(t, err)
+	require.Equal(t, postDestroySchema.SchemaId, predefinedSchema.SchemaId)
+}
 
 func TestBindJobToExistingJob(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
