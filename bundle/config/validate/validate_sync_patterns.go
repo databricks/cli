@@ -55,7 +55,7 @@ func checkPatterns(patterns []string, path string, b *bundle.Bundle) (diag.Diagn
 		// it means: do not include these files into result set
 		p := strings.TrimPrefix(pattern, "!")
 		errs.Go(func() error {
-			fs, err := fileset.NewGlobSet(rb.BundleRoot(), []string{p})
+			fs, err := fileset.NewGlobSet(b.BundleRoot, []string{p})
 			if err != nil {
 				return err
 			}
@@ -66,13 +66,13 @@ func checkPatterns(patterns []string, path string, b *bundle.Bundle) (diag.Diagn
 			}
 
 			if len(all) == 0 {
-				loc := location{path: fmt.Sprintf("%s[%d]", path, index), rb: rb}
+				path := fmt.Sprintf("%s[%d]", path, index)
 				mu.Lock()
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
-					Locations: []dyn.Location{loc.Location()},
-					Paths:     []dyn.Path{loc.Path()},
+					Locations: b.Config.GetLocations(path),
+					Paths:     []dyn.Path{dyn.MustPathFromString(path)},
 				})
 				mu.Unlock()
 			}

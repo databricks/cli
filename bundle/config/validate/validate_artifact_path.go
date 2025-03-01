@@ -96,7 +96,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 		return wrapErrorMsg(err.Error())
 	}
 	volumeFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
-	w := b.WorkspaceClient
+	w := b.WorkspaceClient()
 	_, err = w.Volumes.ReadByName(ctx, volumeFullName)
 
 	if errors.Is(err, apierr.ErrPermissionDenied) {

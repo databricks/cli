@@ -33,10 +33,7 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 		for index, task := range job.Tasks {
 			if task.JobClusterKey != "" {
 				if _, ok := jobClusterKeys[task.JobClusterKey]; !ok {
-					loc := location{
-						path: fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index),
-						rb:   b,
-					}
+					path := fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index)
 
 					diags = diags.Append(diag.Diagnostic{
 						Severity: diag.Warning,
@@ -44,8 +41,8 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 						// Show only the location where the job_cluster_key is defined.
 						// Other associated locations are not relevant since they are
 						// overridden during merging.
-						Locations: []dyn.Location{loc.Location()},
-						Paths:     []dyn.Path{loc.Path()},
+						Locations: b.Config.GetLocations(path),
+						Paths:     []dyn.Path{dyn.MustPathFromString(path)},
 					})
 				}
 			}
