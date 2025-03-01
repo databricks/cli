@@ -18,8 +18,7 @@ import (
 
 type folderPermissions struct{}
 
-// Apply implements bundle.ReadOnlyMutator.
-func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) diag.Diagnostics {
+func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config().Permissions) == 0 {
 		return nil
 	}
