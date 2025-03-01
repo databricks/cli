@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,7 +58,7 @@ func configureStdin(t *testing.T) {
 	})
 }
 
-func TestTelemetryUploadRetries(t *testing.T) {
+func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
@@ -86,6 +87,51 @@ func TestTelemetryUploadRetries(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), resp.NumProtoSuccess)
 	assert.Equal(t, 2, count)
+}
+
+func uploadRetriesFor(t *testing.T, statusCode int) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	count := 0
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		count++
+		if count == 1 {
+			return testserver.Response{
+				StatusCode: statusCode,
+				Body: apierr.APIError{
+					StatusCode: statusCode,
+					Message:    "Some error",
+				},
+			}
+		}
+		if count == 2 {
+			return ResponseBody{
+				NumProtoSuccess: 2,
+			}
+		}
+		return nil
+	})
+
+	t.Setenv("DATABRICKS_HOST", server.URL)
+	t.Setenv("DATABRICKS_TOKEN", "token")
+
+	configureStdin(t)
+
+	resp, err := Upload(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), resp.NumProtoSuccess)
+	assert.Equal(t, 2, count)
+}
+
+// TODO: Confirm that the SDK always parses non-200 status codes as apierr.APIError.
+// Only then is this reliable.
+func TestTelemetryUploadRetriesForStatusCodes(t *testing.T) {
+	// Note: The SDK retries automatically for 429 and 503.
+	// TODO: Are there other status codes we need to retry on? Do we need custom
+	// handler for them?
+	uploadRetriesFor(t, 503)
+	uploadRetriesFor(t, 429)
 }
 
 func TestTelemetryUploadCanceled(t *testing.T) {

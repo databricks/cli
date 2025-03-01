@@ -3,7 +3,6 @@ package telemetry
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -83,49 +82,43 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 	ctx, cancel := context.WithTimeout(ctx, maxUploadTime)
 	defer cancel()
 
-	maxRetries := 3
-	count := 0
-
 	resp := &ResponseBody{}
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, errors.New("Failed to flush telemetry log due to timeout")
 
-		default:
-			// Proceed
-		}
-
-		count++
-
+	// Retry uploading logs a maximum of 3 times incase the uploads are partially successful.
+	for range 3 {
 		// Log the CLI telemetry events.
 		err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, nil, RequestBody{
 			UploadTime: time.Now().UnixMilli(),
-			Items:      []string{},
-			ProtoLogs:  protoLogs,
+			// There is a bug in the `/telemetry-ext` API which requires us to
+			// send an empty array for the `Items` field. Otherwise the API returns
+			// a 500.
+			Items:     []string{},
+			ProtoLogs: protoLogs,
 		}, resp)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to upload telemetry logs: %s\n", err)
 		}
 
+		// Skip retrying if the upload fails with an error.
 		if len(resp.Errors) > 0 {
 			return nil, fmt.Errorf("Failed to upload telemetry logs: %s\n", resp.Errors)
 		}
 
+		// All logs were uploaded successfully.
 		if resp.NumProtoSuccess == int64(len(in.Logs)) {
 			return resp, nil
 		}
 
-		// We retry if the logs were partially uploaded. Subsequent retries have
-		// a chance of uploading all logs successfully. However we limit the number
-		// of retries to avoid excessive load on the telemetry endpoint.
-		if count > maxRetries {
-			return nil, fmt.Errorf("Failed to upload all telemetry logs after 4 tries. Only %d/%d logs uploaded", resp.NumProtoSuccess, len(in.Logs))
-		}
-
 		// Add a delay of 1 second before retrying. We avoid retrying immediately
 		// to avoid overwhelming the telemetry endpoint.
+		// We only return incase of partial successful uploads. The SDK layer takes
+		// care of retrying in case of retriable status codes.
+		//
+		// TODO: I think I was wrong about the SDKs automatically doing retries.
+		// Look into this more and confirm with ankit what the 5xx status codes are.
+		// TODO: Confirm that the timeout of a request here is indeed one minute.
 		time.Sleep(1 * time.Second)
-
 	}
+
+	return nil, fmt.Errorf("Failed to upload all telemetry logs after 4 tries. Only %d/%d logs uploaded", resp.NumProtoSuccess, len(in.Logs))
 }
