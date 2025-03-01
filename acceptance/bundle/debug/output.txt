@@ -5,5 +5,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/debug/default
 
 Validation OK!
-
-Exit code: 0
