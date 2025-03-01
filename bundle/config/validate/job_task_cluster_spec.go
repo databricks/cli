@@ -74,7 +74,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 	if task.ForEachTask != nil {
 		forEachTaskPath := taskPath.Append(dyn.Key("for_each_task"), dyn.Key("task"))
 
-		diags = diags.Extend(validateJobTask(rb, task.ForEachTask.Task, forEachTaskPath))
+		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
 	}
 
 	if isComputeTask(task) && len(specified) == 0 {

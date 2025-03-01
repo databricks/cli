@@ -23,18 +23,18 @@ func (v *validateSyncPatterns) Name() string {
 	return "validate:validate_sync_patterns"
 }
 
-func (v *validateSyncPatterns) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagnostics {
-	s := rb.Config().Sync
+func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	s := b.Config.Sync
 	if len(s.Exclude) == 0 && len(s.Include) == 0 {
 		return nil
 	}
 
-	diags, err := checkPatterns(s.Exclude, "sync.exclude", rb)
+	diags, err := checkPatterns(s.Exclude, "sync.exclude", b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	includeDiags, err := checkPatterns(s.Include, "sync.include", rb)
+	includeDiags, err := checkPatterns(s.Include, "sync.include", b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
