@@ -193,9 +193,7 @@ func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {
 	})
 
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	rb := bundle.ReadOnly(b)
-
-	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
+	diags := bundle.Apply(context.Background(), b, ValidateFolderPermissions())
 	require.Len(t, diags, 1)
 	require.Equal(t, "folder / and its parent folders do not exist", diags[0].Summary)
 	require.Equal(t, diag.Error, diags[0].Severity)
