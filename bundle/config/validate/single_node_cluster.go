@@ -115,7 +115,7 @@ func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	}
 
 	for _, p := range patterns {
-		_, err := dyn.MapByPattern(rb.Config().Value(), p, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		_, err := dyn.MapByPattern(b.Config.Value(), p, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			warning := diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   singleNodeWarningSummary,

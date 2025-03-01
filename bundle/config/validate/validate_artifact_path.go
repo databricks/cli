@@ -76,7 +76,7 @@ func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName strin
 
 func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// We only validate UC Volumes paths right now.
-	if !libraries.IsVolumesPath(rb.Config().Workspace.ArtifactPath) {
+	if !libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
 		return nil
 	}
 
@@ -85,25 +85,25 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 			{
 				Summary:   s,
 				Severity:  diag.Error,
-				Locations: rb.Config().GetLocations("workspace.artifact_path"),
+				Locations: b.Config.GetLocations("workspace.artifact_path"),
 				Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
 			},
 		}
 	}
 
-	catalogName, schemaName, volumeName, err := extractVolumeFromPath(rb.Config().Workspace.ArtifactPath)
+	catalogName, schemaName, volumeName, err := extractVolumeFromPath(b.Config.Workspace.ArtifactPath)
 	if err != nil {
 		return wrapErrorMsg(err.Error())
 	}
 	volumeFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
-	w := rb.WorkspaceClient()
+	w := b.WorkspaceClient
 	_, err = w.Volumes.ReadByName(ctx, volumeFullName)
 
 	if errors.Is(err, apierr.ErrPermissionDenied) {
 		return wrapErrorMsg(fmt.Sprintf("cannot access volume %s: %s", volumeFullName, err))
 	}
 	if errors.Is(err, apierr.ErrNotFound) {
-		path, locations, ok := findVolumeInBundle(rb.Config(), catalogName, schemaName, volumeName)
+		path, locations, ok := findVolumeInBundle(b.Config, catalogName, schemaName, volumeName)
 		if !ok {
 			return wrapErrorMsg(fmt.Sprintf("volume %s does not exist", volumeFullName))
 		}
@@ -117,7 +117,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 this bundle but which has not been deployed yet. Please first deploy
 the volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.`,
-			Locations: slices.Concat(rb.Config().GetLocations("workspace.artifact_path"), locations),
+			Locations: slices.Concat(b.Config.GetLocations("workspace.artifact_path"), locations),
 			Paths:     append([]dyn.Path{dyn.MustPathFromString("workspace.artifact_path")}, path),
 		}}
 

@@ -34,7 +34,7 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		for taskIndex, task := range job.Tasks {
 			taskPath := resourcePath.Append(dyn.Key("tasks"), dyn.Index(taskIndex))
 
-			diags = diags.Extend(validateJobTask(rb, task, taskPath))
+			diags = diags.Extend(validateJobTask(b, task, taskPath))
 		}
 	}
 
@@ -92,7 +92,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 				Severity:  diag.Error,
 				Summary:   "Missing required cluster or environment settings",
 				Detail:    detail,
-				Locations: rb.Config().GetLocations(taskPath.String()),
+				Locations: b.Config.GetLocations(taskPath.String()),
 				Paths:     []dyn.Path{taskPath},
 			})
 		}

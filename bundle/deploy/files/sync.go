@@ -28,23 +28,23 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 	}
 
 	opts := &sync.SyncOptions{
-		WorktreeRoot: b.WorktreeRoot(),
-		LocalRoot:    b.SyncRoot(),
-		Paths:        b.Config().Sync.Paths,
+		WorktreeRoot: b.WorktreeRoot,
+		LocalRoot:    b.SyncRoot,
+		Paths:        b.Config.Sync.Paths,
 		Include:      includes,
-		Exclude:      b.Config().Sync.Exclude,
+		Exclude:      b.Config.Sync.Exclude,
 
-		RemotePath: b.Config().Workspace.FilePath,
-		Host:       b.WorkspaceClient().Config.Host,
+		RemotePath: b.Config.Workspace.FilePath,
+		Host:       b.WorkspaceClient.Config.Host,
 
 		Full: false,
 
 		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  b.WorkspaceClient(),
+		WorkspaceClient:  b.WorkspaceClient,
 	}
 
-	if b.Config().Workspace.CurrentUser != nil {
-		opts.CurrentUser = b.Config().Workspace.CurrentUser.User
+	if b.Config.Workspace.CurrentUser != nil {
+		opts.CurrentUser = b.Config.Workspace.CurrentUser.User
 	}
 
 	return opts, nil
