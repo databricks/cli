@@ -88,7 +88,6 @@ func TestValidateArtifactPath(t *testing.T) {
 		}}, diags)
 	}
 
-	rb := bundle.ReadOnly(b)
 	ctx := context.Background()
 
 	tcases := []struct {
@@ -123,7 +122,7 @@ func TestValidateArtifactPath(t *testing.T) {
 		api.EXPECT().ReadByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, tc.err)
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
-		diags := bundle.ApplyReadOnly(ctx, rb, ValidateArtifactPath())
+		diags := bundle.Apply(ctx, b, ValidateArtifactPath())
 		assertDiags(t, diags, tc.expectedSummary)
 	}
 }
@@ -167,7 +166,7 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 
 		bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
 
-		diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), ValidateArtifactPath())
+		diags := bundle.Apply(context.Background(), b, ValidateArtifactPath())
 		require.Equal(t, diag.Diagnostics{{
 			Severity:  diag.Error,
 			Summary:   "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got " + p,

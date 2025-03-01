@@ -116,9 +116,7 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 	}, nil)
 
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	rb := bundle.ReadOnly(b)
-
-	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
+	diags := bundle.Apply(context.Background(), b, ValidateFolderPermissions())
 	require.Len(t, diags, 1)
 	require.Equal(t, "untracked permissions apply to target workspace path", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
@@ -162,9 +160,7 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 	}, nil)
 
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	rb := bundle.ReadOnly(b)
-
-	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
+	diags := bundle.Apply(context.Background(), b, ValidateFolderPermissions())
 	require.Len(t, diags, 1)
 	require.Equal(t, "untracked permissions apply to target workspace path", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
