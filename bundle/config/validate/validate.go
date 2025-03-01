@@ -10,8 +10,7 @@ import (
 type validate struct{}
 
 func Validate(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// XXX this was Parallel
-	return bundle.ApplySeq(ctx, b,
+	return bundle.ApplyParallelReadonly(ctx, b,
 		FastValidate(),
 
 		// Slow mutators that require network or file i/o. These are only

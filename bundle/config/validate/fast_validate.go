@@ -26,7 +26,7 @@ func (f *fastValidate) Name() string {
 
 func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagnostics {
 	// XXX This used to have Parallel
-	return bundle.ApplySeq(ctx, rb,
+	return bundle.ApplyParallelReadonly(ctx, rb,
 		// Fast mutators with only in-memory checks
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),

@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"sync"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -57,6 +58,30 @@ func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnost
 		}
 	}
 	return diags
+}
+
+func ApplyParallelReadonly(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnostics {
+	var allDiags diag.Diagnostics
+	resultsChan := make(chan diag.Diagnostics, len(mutators))
+	var wg sync.WaitGroup
+	for _, m := range mutators {
+		wg.Add(1)
+		go func(m Mutator) {
+			defer wg.Done()
+			// We're not using bundle.Apply here because we don't do copy between typed and dynamic values
+			resultsChan <- m.Apply(ctx, b)
+		}(m)
+	}
+
+	wg.Wait()
+	close(resultsChan)
+
+	// Collect results into a single slice
+	for diags := range resultsChan {
+		allDiags = append(allDiags, diags...)
+	}
+
+	return allDiags
 }
 
 type funcMutator struct {
