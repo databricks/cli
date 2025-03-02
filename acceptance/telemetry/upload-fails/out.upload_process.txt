@@ -1,1 +1,1 @@
-error: upload did not succeed after three attempts. err: &retries.Err{Err:(*apierr.APIError)(0x140003a20a0), Halt:true}. response body: (*telemetry.ResponseBody)(nil)
+error: upload did not succeed after three attempts. err: &retries.Err{Err:(*apierr.APIError)(0x14000361540), Halt:true}. response body: (*telemetry.ResponseBody)(nil)

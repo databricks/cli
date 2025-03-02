@@ -1,5 +1,3 @@
-RecordRequests = true
-
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''

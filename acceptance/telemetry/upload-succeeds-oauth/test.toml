@@ -1,15 +1,3 @@
-RecordRequests = true
-
-[[Server]]
-Pattern = "POST /telemetry-ext"
-Response.Body = '''
-{
-    "errors": [],
-    "numProtoSuccess": 2
-}
-'''
-
-
 # "client_id:client_secret" in base64 is Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ=, expect to
 # see this in Authorization header
 [[Repls]]

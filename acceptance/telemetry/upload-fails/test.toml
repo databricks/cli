@@ -1,5 +1,3 @@
-RecordRequests = true
-
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''
@@ -9,3 +7,5 @@ Response.Body = '''
 }
 '''
 Response.StatusCode = 501
+
+# TODO: Validate that this and the other tests have sane outputs.
