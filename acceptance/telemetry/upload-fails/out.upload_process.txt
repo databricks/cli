@@ -1,10 +1,4 @@
-attempt 0:
-err: Endpoint not implemented.
-response body: (*telemetry.ResponseBody)(nil)
-attempt 1:
-err: Endpoint not implemented.
-response body: (*telemetry.ResponseBody)(nil)
-attempt 2:
-err: Endpoint not implemented.
-response body: (*telemetry.ResponseBody)(nil)
+Attempt 0 failed due to a server side error. Retrying status code: 501
+Attempt 1 failed due to a server side error. Retrying status code: 501
+Attempt 2 failed due to a server side error. Retrying status code: 501
 error: upload did not succeed after three attempts

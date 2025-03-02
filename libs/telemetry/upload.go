@@ -89,13 +89,9 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 			return resp, nil
 		}
 
-		// Log API output if the upload failed for debugging purposes.
-		fmt.Fprintf(os.Stderr, "attempt %d:\n", i)
-		fmt.Fprintf(os.Stderr, "err: %s\n", err)
-		fmt.Fprintf(os.Stderr, "response body: %#v\n", resp)
-
 		// Partial success. Retry.
 		if err == nil && resp.NumProtoSuccess < int64(len(logs)) {
+			fmt.Fprintf(os.Stderr, "Attempt %d was a partial success. Number of logs uploaded: %d out of %d\n", i, resp.NumProtoSuccess, len(logs))
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -105,6 +101,7 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 		// ref: https://github.com/databricks/databricks-sdk-go/blob/cdb28002afacb8b762348534a4c4040a9f19c24b/apierr/errors.go#L91
 		var apiErr *apierr.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 && apiErr.StatusCode != 503 {
+			fmt.Fprintf(os.Stderr, "Attempt %d failed due to a server side error. Retrying status code: %d\n", i, apiErr.StatusCode)
 			time.Sleep(2 * time.Second)
 			continue
 		}
