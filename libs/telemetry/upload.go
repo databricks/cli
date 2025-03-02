@@ -47,7 +47,7 @@ func readLogs(stdin io.Reader) ([]string, error) {
 	}
 
 	if len(in.Logs) == 0 {
-		return nil, fmt.Errorf("No logs to upload")
+		return nil, errors.New("No logs to upload")
 	}
 
 	protoLogs := make([]string, len(in.Logs))
