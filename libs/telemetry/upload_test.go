@@ -155,7 +155,7 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 	configureStdin(t)
 
 	_, err := Upload(context.Background())
-	assert.EqualError(t, err, "upload did not succeed after three attempts. err: <nil>. response body: &telemetry.ResponseBody{Errors:[]telemetry.LogError(nil), NumProtoSuccess:1}")
+	assert.EqualError(t, err, "upload did not succeed after three attempts")
 	assert.Equal(t, 3, count)
 }
 
@@ -193,4 +193,14 @@ func TestReadFiles(t *testing.T) {
 		`{"frontend_log_event_id":"1","entry":{"databricks_cli_log":{"cli_test_event":{"name":"DummyCliEnumValue1"}}}}`,
 		`{"frontend_log_event_id":"2","entry":{"databricks_cli_log":{"cli_test_event":{"name":"DummyCliEnumValue2"}}}}`,
 	}, logs)
+}
+
+func TestReadFilesWithNoLogs(t *testing.T) {
+	raw := `{
+	"logs": []
+}`
+
+	r := strings.NewReader(raw)
+	_, err := readLogs(r)
+	assert.EqualError(t, err, "No logs to upload")
 }

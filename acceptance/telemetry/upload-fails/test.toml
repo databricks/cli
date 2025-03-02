@@ -7,5 +7,3 @@ Response.Body = '''
 }
 '''
 Response.StatusCode = 501
-
-# TODO: Validate that this and the other tests have sane outputs.

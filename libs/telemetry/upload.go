@@ -32,27 +32,29 @@ type UploadConfig struct {
 	Logs []protos.FrontendLog `json:"logs"`
 }
 
+// The API requires the logs to be JSON encoded strings. This function reads the
+// logs from stdin and returns them as a slice of JSON encoded strings.
 func readLogs(stdin io.Reader) ([]string, error) {
 	b, err := io.ReadAll(stdin)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read from stdin: %s\n", err)
+		return nil, fmt.Errorf("failed to read from stdin: %s", err)
 	}
 
 	in := UploadConfig{}
 	err = json.Unmarshal(b, &in)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal input: %s\n", err)
+		return nil, fmt.Errorf("failed to unmarshal input: %s", err)
 	}
 
 	if len(in.Logs) == 0 {
-		return nil, fmt.Errorf("No logs to upload: %s\n", err)
+		return nil, fmt.Errorf("No logs to upload")
 	}
 
 	protoLogs := make([]string, len(in.Logs))
 	for i, log := range in.Logs {
 		b, err := json.Marshal(log)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal log: %s\n", err)
+			return nil, fmt.Errorf("failed to marshal log: %s", err)
 		}
 		protoLogs[i] = string(b)
 	}
@@ -80,7 +82,6 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 
 	// Only try uploading logs for a maximum of 3 times.
 	for i := range 3 {
-		// TODO: Confirm that the timeout of a request here is indeed one minute.
 		resp, err = attempt(ctx, apiClient, logs)
 
 		// All logs were uploaded successfully.
