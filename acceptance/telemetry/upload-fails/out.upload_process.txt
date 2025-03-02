@@ -1,1 +1,10 @@
-error: upload did not succeed after three attempts. err: &retries.Err{Err:(*apierr.APIError)(0x14000361540), Halt:true}. response body: (*telemetry.ResponseBody)(nil)
+attempt 0:
+err: Endpoint not implemented.
+response body: (*telemetry.ResponseBody)(nil)
+attempt 1:
+err: Endpoint not implemented.
+response body: (*telemetry.ResponseBody)(nil)
+attempt 2:
+err: Endpoint not implemented.
+response body: (*telemetry.ResponseBody)(nil)
+error: upload did not succeed after three attempts

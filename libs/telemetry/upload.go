@@ -79,7 +79,7 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 	var resp *ResponseBody
 
 	// Only try uploading logs for a maximum of 3 times.
-	for range 3 {
+	for i := range 3 {
 		// TODO: Confirm that the timeout of a request here is indeed one minute.
 		resp, err = attempt(ctx, apiClient, logs)
 
@@ -87,6 +87,10 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 		if err == nil && resp.NumProtoSuccess >= int64(len(logs)) {
 			return resp, nil
 		}
+
+		fmt.Fprintf(os.Stderr, "attempt %d:\n", i)
+		fmt.Fprintf(os.Stderr, "err: %s\n", err)
+		fmt.Fprintf(os.Stderr, "response body: %#v\n", resp)
 
 		// Partial success. Retry.
 		if err == nil && resp.NumProtoSuccess < int64(len(logs)) {
@@ -104,7 +108,7 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 		}
 	}
 
-	return resp, fmt.Errorf("upload did not succeed after three attempts. err: %#v. response body: %#v", err, resp)
+	return resp, errors.New("upload did not succeed after three attempts")
 }
 
 func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {
