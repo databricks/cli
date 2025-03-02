@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -124,29 +125,16 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 	assert.Equal(t, 2, count)
 }
 
-// TODO: Confirm that the SDK always parses non-200 status codes as apierr.APIError.
-// Only then is this reliable.
 func TestTelemetryUploadRetriesForStatusCodes(t *testing.T) {
-	// Note: The SDK retries automatically for 429 and 503.
-	// TODO: Are there other status codes we need to retry on? Do we need custom
-	// handler for them?
+	// These retries happen in the CLI itself since the SDK does not automatically
+	// retry for 5xx errors.
+	uploadRetriesFor(t, 500)
+	uploadRetriesFor(t, 504)
+
+	// These retries happen on the SDK layer.
+	// ref: https://github.com/databricks/databricks-sdk-go/blob/cdb28002afacb8b762348534a4c4040a9f19c24b/apierr/errors.go#L91
 	uploadRetriesFor(t, 503)
 	uploadRetriesFor(t, 429)
-}
-
-func TestTelemetryUploadCanceled(t *testing.T) {
-	server := testserver.New(t)
-	t.Cleanup(server.Close)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	configureStdin(t)
-	_, err := Upload(ctx)
-
-	// Since the context is already cancelled, upload should fail immediately
-	// with a timeout error.
-	assert.ErrorContains(t, err, "Failed to flush telemetry log due to timeout")
 }
 
 func TestTelemetryUploadMaxRetries(t *testing.T) {
@@ -167,6 +155,42 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 	configureStdin(t)
 
 	_, err := Upload(context.Background())
-	assert.EqualError(t, err, "Failed to upload all telemetry logs after 4 tries. Only 1/2 logs uploaded")
-	assert.Equal(t, 4, count)
+	assert.EqualError(t, err, "upload did not succeed after three attempts. err: <nil>. response body: &telemetry.ResponseBody{Errors:[]telemetry.LogError(nil), NumProtoSuccess:1}")
+	assert.Equal(t, 3, count)
+}
+
+func TestReadFiles(t *testing.T) {
+	raw := `{
+	"logs": [
+		{
+			"frontend_log_event_id": "1",
+			"entry": {
+				"databricks_cli_log": {
+					"cli_test_event": {
+						"name": "DummyCliEnumValue1"
+					}
+				}
+			}
+		},
+		{
+			"frontend_log_event_id": "2",
+			"entry": {
+				"databricks_cli_log": {
+					"cli_test_event": {
+						"name": "DummyCliEnumValue2"
+					}
+				}
+			}
+		}
+	]
+}`
+
+	r := strings.NewReader(raw)
+	logs, err := readLogs(r)
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{
+		`{"frontend_log_event_id":"1","entry":{"databricks_cli_log":{"cli_test_event":{"name":"DummyCliEnumValue1"}}}}`,
+		`{"frontend_log_event_id":"2","entry":{"databricks_cli_log":{"cli_test_event":{"name":"DummyCliEnumValue2"}}}}`,
+	}, logs)
 }

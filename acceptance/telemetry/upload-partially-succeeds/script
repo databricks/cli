@@ -1,10 +1,6 @@
 export DATABRICKS_CLI_TELEMETRY_PID_FILE=./telemetry.pid
 export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload_process.txt
 
-# Configure a timeout of 0 seconds. This test validates that the timeout is respected
-# and the telemetry process does not try to upload logs.
-export DATABRICKS_CLI_TELEMETRY_UPLOAD_TIMEOUT="0s"
-
 trace $CLI selftest send-telemetry
 
 echo "waiting for telemetry process to finish"
