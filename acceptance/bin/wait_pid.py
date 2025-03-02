@@ -5,11 +5,12 @@ import time
 import platform
 import subprocess
 
+
 def is_finished_windows(pid):
     assert int(pid) > 0
 
     # Run task list but filter the list by pid..
-    output = subprocess.check_output(f"tasklist /fi \"PID eq {pid}\"", text=True)
+    output = subprocess.check_output(f'tasklist /fi "PID eq {pid}"', text=True)
 
     # If tasklist does not find any process, that means the process we are
     # waiting for has terminated.
@@ -18,6 +19,7 @@ def is_finished_windows(pid):
         return True
 
     return False
+
 
 def is_finished_unix(pid):
     assert int(pid) > 0
@@ -54,9 +56,9 @@ def wait_pid(pid):
 
         time.sleep(sleep_time)
 
-
     print(f"Timeout: Process {pid} did not end within 1 minute")
     return 1
+
 
 exit_code = wait_pid(int(sys.argv[1]))
 sys.exit(exit_code)
