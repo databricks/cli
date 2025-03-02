@@ -1,5 +1,5 @@
-export DATABRICKS_CLI_TELEMETRY_PID_FILE=./telemetry.pid
-export DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE=./out.upload_process.txt
+export DATABRICKS_CLI_TELEMETRY_PIDFILE=./telemetry.pid
+export DATABRICKS_CLI_TELEMETRY_LOGFILE=./out.upload_process.txt
 
 # Unset the token which is configured by default
 # in acceptance tests

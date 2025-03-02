@@ -18,18 +18,14 @@ import (
 
 const (
 	// File containing output from the upload process.
-	UploadLogsFileEnvVar = "DATABRICKS_CLI_TELEMETRY_UPLOAD_LOGS_FILE"
+	UploadLogsFileEnvVar = "DATABRICKS_CLI_TELEMETRY_LOGFILE"
 
 	// File containing the PID of the telemetry upload process.
-	PidFileEnvVar = "DATABRICKS_CLI_TELEMETRY_PID_FILE"
+	PidFileEnvVar = "DATABRICKS_CLI_TELEMETRY_PIDFILE"
 
 	// Environment variable to disable telemetry. If this is set to any value, telemetry
 	// will be disabled.
 	DisableEnvVar = "DATABRICKS_CLI_DISABLE_TELEMETRY"
-
-	// Max time to try and upload the telemetry logs. Useful for testing.
-	// TODO: Remove the test case for this.
-	UploadTimeoutEnvVar = "DATABRICKS_CLI_TELEMETRY_UPLOAD_TIMEOUT"
 )
 
 type UploadConfig struct {
