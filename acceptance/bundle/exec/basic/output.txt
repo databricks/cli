@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] bundle exec -- echo Hello, World!
+Error: Please add a '--' separator. Usage: 'databricks bundle exec -- <command> arg1 arg2 ...'
+
+Exit code: 1
