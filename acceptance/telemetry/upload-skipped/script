@@ -1,0 +1,12 @@
+export DATABRICKS_CLI_TELEMETRY_PIDFILE=./telemetry.pid
+export DATABRICKS_CLI_TELEMETRY_LOGFILE=./out.upload_process.txt
+export DATABRICKS_CLI_DISABLE_TELEMETRY="true"
+
+trace $CLI selftest send-telemetry
+
+if [ -f ./telemetry.pid ]; then
+  echo "telemetry process was started"
+  exit 1
+else
+  echo "telemetry process not started. No pid file found"
+fi

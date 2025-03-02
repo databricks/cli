@@ -1,0 +1,26 @@
+IncludeRequestHeaders = ["Authorization"]
+RecordRequests = true
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old = '17\d{11}'
+New = '"UNIX_TIME_MILLIS"'
+
+[[Repls]]
+Old = 'darwin|linux|windows'
+New = '[OS]'
+
+[[Repls]]
+Old = 'execution_time_ms\\\":\d{1,5},'
+New = 'execution_time_ms\":\"SMALL_INT\",'
+
+[[Server]]
+Pattern = "POST /telemetry-ext"
+Response.Body = '''
+{
+    "errors": [],
+    "numProtoSuccess": 2
+}
+'''

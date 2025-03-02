@@ -2,17 +2,26 @@ package root
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"runtime/debug"
+	"slices"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/daemon"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -74,9 +83,6 @@ func New(ctx context.Context) *cobra.Command {
 		// get the context back
 		ctx = cmd.Context()
 
-		// Detect if the CLI is running on DBR and store this on the context.
-		ctx = dbr.DetectRuntime(ctx)
-
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
@@ -124,6 +130,10 @@ Stack Trace:
 %s`, version, r, string(trace))
 	}()
 
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = dbr.DetectRuntime(ctx)
+	startTime := time.Now()
+
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
@@ -150,6 +160,105 @@ Stack Trace:
 			)
 		}
 	}
+	exitCode := 0
+	if err != nil {
+		exitCode = 1
+	}
 
+	uploadTelemetry(cmd.Context(), commandString(cmd), startTime, exitCode)
 	return err
+}
+
+// We want child telemetry processes to inherit environment variables like $HOME or $HTTPS_PROXY
+// because they influence auth resolution.
+func inheritEnvVars() []string {
+	base := os.Environ()
+	out := []string{}
+	authEnvVars := auth.EnvVars()
+
+	// Remove any existing auth environment variables. This is done because
+	// the CLI offers multiple modalities of configuring authentication like
+	// `--profile` or `DATABRICKS_CONFIG_PROFILE` or `profile: <profile>` in the
+	// bundle config file.
+	//
+	// Each of these modalities have different priorities and thus we don't want
+	// any auth configuration to piggyback into the child process environment.
+	//
+	// This is a precaution to avoid conflicting auth configurations being passed
+	// to the child telemetry process.
+	for _, v := range base {
+		k, _, found := strings.Cut(v, "=")
+		if !found {
+			continue
+		}
+		if slices.Contains(authEnvVars, k) {
+			continue
+		}
+		out = append(out, v)
+	}
+
+	return out
+}
+
+func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, exitCode int) {
+	// Nothing to upload.
+	if !telemetry.HasLogs(ctx) {
+		return
+	}
+
+	// Telemetry is disabled. We don't upload logs.
+	if os.Getenv(telemetry.DisableEnvVar) != "" {
+		return
+	}
+
+	telemetry.SetExecutionContext(ctx, protos.ExecutionContext{
+		CmdExecID:       cmdExecId,
+		Version:         build.GetInfo().Version,
+		Command:         cmdStr,
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      env.Get(ctx, dbr.EnvVarName),
+		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
+		ExitCode:        int64(exitCode),
+	})
+
+	logs := telemetry.GetLogs(ctx)
+
+	in := telemetry.UploadConfig{
+		Logs: logs,
+	}
+
+	// Compute environment variables with the appropriate auth configuration.
+	env := inheritEnvVars()
+	for k, v := range auth.Env(ConfigUsed(ctx)) {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	d := daemon.Daemon{
+		Args:        []string{"telemetry", "upload"},
+		Env:         env,
+		PidFilePath: os.Getenv(telemetry.PidFileEnvVar),
+		LogFile:     os.Getenv(telemetry.UploadLogsFileEnvVar),
+	}
+
+	err := d.Start()
+	if err != nil {
+		log.Warnf(ctx, "failed to start telemetry worker: %s", err)
+		return
+	}
+
+	// If the telemetry worker is started successfully, we write the logs to its stdin.
+	b, err := json.Marshal(in)
+	if err != nil {
+		log.Warnf(ctx, "failed to marshal telemetry logs: %s", err)
+		return
+	}
+	err = d.WriteInput(b)
+	if err != nil {
+		log.Warnf(ctx, "failed to write to telemetry worker: %s", err)
+	}
+
+	err = d.Release()
+	if err != nil {
+		log.Warnf(ctx, "failed to release telemetry worker: %s", err)
+	}
 }
