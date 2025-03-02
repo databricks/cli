@@ -88,6 +88,7 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 			return resp, nil
 		}
 
+		// Log API output if the upload failed for debugging purposes.
 		fmt.Fprintf(os.Stderr, "attempt %d:\n", i)
 		fmt.Fprintf(os.Stderr, "err: %s\n", err)
 		fmt.Fprintf(os.Stderr, "response body: %#v\n", resp)
