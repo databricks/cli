@@ -65,8 +65,8 @@ func envVars() []string {
 	return out
 }
 
-// ProcessEnv generates the environment variables can be set to authenticate downstream
-// processes to use the same auth credentials as in cfg.
+// ProcessEnv generates the environment variables that should be set to authenticate
+// downstream processes to use the same auth credentials as in cfg.
 func ProcessEnv(cfg *config.Config) []string {
 	// We want child processes to inherit environment variables like $HOME or $HTTPS_PROXY
 	// because they influence auth resolution.
