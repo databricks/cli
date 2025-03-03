@@ -234,19 +234,11 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", err
 	}
 
-	version, distribution, err := parseMetadata(metadataContent)
+	// Verify the metadata version and distribution
+	metadataVersion, metadataDistribution, err := parseMetadata(metadataContent)
 	if err != nil {
 		return "", err
 	}
-
-	// If there's already a local version (after +), strip it off
-	baseVersion := strings.SplitN(version, "+", 2)[0]
-
-	// Use the wheel file's modification time for idempotency
-	dt := strings.Replace(wheelMtime.Format("20060102150405.00"), ".", "", 1)
-	dt = strings.Replace(dt, ".", "", 1)
-
-	newVersion := baseVersion + "+" + dt
 	// log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, version, newVersion, distribution)
 
 	// Patch the METADATA content.
@@ -276,9 +268,7 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", err
 	}
 
-	// Create the new wheel filename.
-	newFilename := fmt.Sprintf("%s-%s-py3-none-any.whl", distribution, newVersion)
-	outpath := filepath.Join(outputDir, newFilename)
+	// We already calculated the output path earlier
 	outFile, err := os.Create(outpath)
 	if err != nil {
 		return "", err
