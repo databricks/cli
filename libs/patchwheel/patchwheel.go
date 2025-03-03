@@ -234,12 +234,26 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", err
 	}
 
-	// Verify the metadata version and distribution
+	// Verify the metadata version and distribution match what we extracted from filename
 	metadataVersion, metadataDistribution, err := parseMetadata(metadataContent)
 	if err != nil {
 		return "", err
 	}
-	// log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, version, newVersion, distribution)
+	
+	// Verify that the distribution name in the metadata matches the one from the filename
+	if metadataDistribution != wheelInfo.Distribution {
+		return "", fmt.Errorf("distribution name mismatch: %s (metadata) vs %s (filename)", 
+			metadataDistribution, wheelInfo.Distribution)
+	}
+	
+	// Verify that the base version in the metadata matches the one from the filename
+	metadataBaseVersion := strings.SplitN(metadataVersion, "+", 2)[0]
+	if metadataBaseVersion != baseVersion {
+		return "", fmt.Errorf("version mismatch: %s (metadata) vs %s (filename)", 
+			metadataBaseVersion, baseVersion)
+	}
+	
+	// log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, metadataVersion, newVersion, metadataDistribution)
 
 	// Patch the METADATA content.
 	newMetadata, err := patchMetadata(metadataContent, newVersion)
