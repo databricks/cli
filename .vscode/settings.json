@@ -17,8 +17,5 @@
     "python.envFile": "${workspaceRoot}/.env",
     "python.analysis.stubPath": ".vscode",
     "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#\\s*%%|#\\s*\\<codecell\\>|#\\s*In\\[\\d*?\\]|#\\s*In\\[ \\])",
-    "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------",
-    "files.associations": {
-        "script": "shellscript"
-    }
+    "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------"
 }
