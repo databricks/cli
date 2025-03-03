@@ -132,7 +132,7 @@ func readFile(file *zip.File) ([]byte, error) {
 
 // PatchWheel patches a Python wheel file by updating its version in METADATA and RECORD.
 // It returns the path to the new wheel.
-func PatchWheel(path, outputDir string) (string, error) {
+func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	r, err := zip.OpenReader(path)
 	if err != nil {
 		return "", err
@@ -155,7 +155,7 @@ func PatchWheel(path, outputDir string) (string, error) {
 	}
 
 	baseVersion, distribution, err := parseMetadata(metadataContent)
-	log.Infof(ctx, "path=%s baseVersion=%s distribution=%s err=%s", path, baseVersion, distribution)
+	log.Infof(ctx, "path=%s baseVersion=%s distribution=%s", path, baseVersion, distribution)
 	if err != nil {
 		return "", err
 	}

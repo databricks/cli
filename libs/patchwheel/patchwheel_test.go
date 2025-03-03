@@ -103,7 +103,7 @@ func TestPatchWheel(t *testing.T) {
 			if err := os.Mkdir(outputDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
-			patchedWheel, err := PatchWheel(origWheel, outputDir)
+			patchedWheel, err := PatchWheel(context.Background(), origWheel, outputDir)
 			if err != nil {
 				t.Fatalf("PatchWheel failed: %v", err)
 			}
