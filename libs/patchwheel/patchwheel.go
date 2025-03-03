@@ -57,11 +57,7 @@ func parseMetadata(content []byte) (version, distribution string, err error) {
 			}
 			version = v
 		} else if strings.HasPrefix(line, "Name:") {
-			// AI TODO: apply similar approach as for Version:
-			parts := strings.SplitN(line, ":", 2)
-			if len(parts) == 2 {
-				distribution = strings.TrimSpace(parts[1])
-			}
+			distribution = strings.TrimSpace(strings.TrimPrefix(line, "Name:"))
 		}
 	}
 	if err := scanner.Err(); err != nil {
