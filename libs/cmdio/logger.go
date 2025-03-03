@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/libs/flags"
 	"github.com/manifoldco/promptui"
@@ -29,6 +30,8 @@ type Logger struct {
 	// If true, indicates no events have been printed by the logger yet. Used
 	// by inplace logging for formatting
 	isFirstEvent bool
+
+	mutex sync.Mutex
 }
 
 func NewLogger(mode flags.ProgressLogFormat) *Logger {
@@ -216,6 +219,8 @@ func (l *Logger) writeInplace(event Event) {
 }
 
 func (l *Logger) Log(event Event) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	switch l.Mode {
 	case flags.ModeInplace:
 		if event.IsInplaceSupported() {
