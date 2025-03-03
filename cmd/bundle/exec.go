@@ -39,8 +39,7 @@ Example usage:
 				return fmt.Errorf("Please add a '--' separator. Usage: 'databricks bundle exec -- %s'", strings.Join(args, " "))
 			}
 
-			// Load the bundle configuration to get the authentication credentials
-			// set in the context.
+			// Load the bundle configuration to get the authentication credentials.
 			b, diags := root.MustConfigureBundle(cmd)
 			if diags.HasError() {
 				return diags.Error()
