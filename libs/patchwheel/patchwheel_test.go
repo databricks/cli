@@ -3,8 +3,6 @@ package patchwheel
 import (
 	"bytes"
 	"context"
-	"io"
-	"os"
 	"os"
 	"os/exec"
 	"path/filepath"
