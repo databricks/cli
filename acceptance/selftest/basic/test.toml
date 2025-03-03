@@ -1,5 +1,8 @@
 # Badness = "Brief description of what's wrong with the test output, if anything"
 
+Ignore = ['ignore*']
+
+
 #[GOOS]
 # Disable on Windows
 #windows = false

@@ -390,6 +390,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if _, ok := Ignored[relPath]; ok {
 			continue
 		}
+		if config.CompiledIgnoreObject.MatchesPath(relPath) {
+			continue
+		}
 		unexpected = append(unexpected, relPath)
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
