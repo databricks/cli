@@ -2,8 +2,11 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"strings"
+
+	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
 
@@ -31,7 +34,15 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 
 	_, err := w.Schemas.GetByFullName(ctx, fullName)
 	if err != nil {
-		log.Debugf(ctx, "schema with full name %s does not exist", fullName)
+		log.Debugf(ctx, "schema with full name %s does not exist: %v", fullName, err)
+
+		var aerr *apierr.APIError
+		if errors.As(err, &aerr) {
+			if aerr.StatusCode == 404 {
+				return false, nil
+			}
+		}
+
 		return false, err
 	}
 	return true, nil
