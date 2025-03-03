@@ -106,6 +106,33 @@ func getWheel(t *testing.T, dir string) string {
 	return matches[0]
 }
 
+// TestExtractVersionFromWheelFilename tests the ExtractVersionFromWheelFilename function.
+func TestExtractVersionFromWheelFilename(t *testing.T) {
+	tests := []struct {
+		filename    string
+		wantVersion string
+		wantErr     bool
+	}{
+		{"myproj-0.1.0-py3-none-any.whl", "0.1.0", false},
+		{"myproj-0.1.0+20240303123456-py3-none-any.whl", "0.1.0+20240303123456", false},
+		{"my-proj-with-hyphens-0.1.0-py3-none-any.whl", "0.1.0", false},
+		{"invalid-filename.txt", "", true},
+		{"not-enough-parts-py3.whl", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filename, func(t *testing.T) {
+			gotVersion, err := ExtractVersionFromWheelFilename(tt.filename)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.wantVersion, gotVersion)
+			}
+		})
+	}
+}
+
 // TestPatchWheel tests PatchWheel with several Python versions.
 func TestPatchWheel(t *testing.T) {
 	pythonVersions := []string{"python3.9", "python3.10", "python3.11", "python3.12"}
@@ -131,6 +158,11 @@ func TestPatchWheel(t *testing.T) {
 			patchedWheel, err := PatchWheel(context.Background(), origWheel, distDir)
 			require.NoError(t, err)
 			// t.Logf("origWheel=%s patchedWheel=%s", origWheel, patchedWheel)
+
+			// Test idempotency - patching the same wheel again should produce the same result
+			patchedWheel2, err := PatchWheel(context.Background(), origWheel, distDir)
+			require.NoError(t, err)
+			require.Equal(t, patchedWheel, patchedWheel2, "PatchWheel is not idempotent")
 
 			runCmd(t, tempDir, "uv", "pip", "install", "-q", patchedWheel)
 

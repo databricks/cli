@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -126,9 +127,31 @@ func readFile(file *zip.File) ([]byte, error) {
 	return io.ReadAll(rc)
 }
 
+// ExtractVersionFromWheelFilename extracts the version from a wheel filename.
+// Wheel filenames follow the pattern: {distribution}-{version}-{python_tag}-{abi_tag}-{platform_tag}.whl
+func ExtractVersionFromWheelFilename(filename string) (string, error) {
+	base := filepath.Base(filename)
+	parts := strings.Split(base, "-")
+	if len(parts) < 5 || !strings.HasSuffix(parts[len(parts)-1], ".whl") {
+		return "", fmt.Errorf("invalid wheel filename format: %s", filename)
+	}
+	
+	// If there are more than 5 parts, the distribution name might contain hyphens
+	// The version is always the second element from the end minus 3 (for the tags)
+	return parts[len(parts)-4], nil
+}
+
 // PatchWheel patches a Python wheel file by updating its version in METADATA and RECORD.
 // It returns the path to the new wheel.
+// The function is idempotent: repeated calls with the same input will produce the same output.
 func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
+	// Get the modification time of the input wheel before opening it
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	wheelMtime := fileInfo.ModTime().UTC()
+	
 	r, err := zip.OpenReader(path)
 	if err != nil {
 		return "", err
@@ -158,10 +181,10 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	// If there's already a local version (after +), strip it off
 	baseVersion := strings.SplitN(version, "+", 2)[0]
 
-	dt := strings.Replace(time.Now().UTC().Format("20060102150405.00"), ".", "", 1)
+	// Use the wheel file's modification time for idempotency
+	dt := strings.Replace(wheelMtime.Format("20060102150405.00"), ".", "", 1)
 	dt = strings.Replace(dt, ".", "", 1)
 
-	// log.Warnf(ctx, "dt=%s dt1=%s\n", dt, dt1)
 	newVersion := baseVersion + "+" + dt
 	// log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, version, newVersion, distribution)
 
