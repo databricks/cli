@@ -1,5 +1,5 @@
-export DATABRICKS_HOST=""
-export DATABRICKS_TOKEN=""
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
 
 # Confirm that bundle exec works for commands that do not require authentication,
 # even if authentication is not provided.
