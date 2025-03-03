@@ -12,12 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: Confirm that quoted strings are parsed as a single argument.
 // TODO: test that -- works with flags as well.
-// TODO CONTINUE: Making the bundle exec function work.
-// TODO CONTINUE: Adding the scripts section to DABs.
-// TODO: Ensure that these multi word strings work with the exec command. Example: echo "Hello, world!"
-//       Or if it does not work, be sure why. Probably because string parsing is a part of the bash shell.
 
 func newExecCommand() *cobra.Command {
 	execCmd := &cobra.Command{
@@ -25,8 +20,6 @@ func newExecCommand() *cobra.Command {
 		Short: "Execute a command using the same authentication context as the bundle",
 		Args:  cobra.MinimumNArgs(1),
 		// TODO: format once we have all the documentation here.
-		// TODO: implement and pass the cwd environment variable. Maybe we can defer
-		// it until we have a scripts section.
 		Long: `
 Note: This command executes scripts
 
@@ -41,16 +34,24 @@ Examples:
 
 			// Load the bundle configuration to get the authentication credentials
 			// set in the context.
-			// TODO: What happens when no bundle is configured?
 			b, diags := root.MustConfigureBundle(cmd)
 			if diags.HasError() {
 				return diags.Error()
 			}
 
 			childCmd := exec.Command(args[0], args[1:]...)
+
 			childCmd.Env = auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
 
-			// Execute all scripts from the bundle root directory.
+			// Execute all scripts from the bundle root directory. This behavior can
+			// be surprising in isolation, but we do it to keep the behavior consistent
+			// for both cases:
+			// 1. One shot commands like `databricks bundle exec -- echo hello`
+			// 2. Scripts that are defined in the scripts section of the DAB.
+			//
+			// TODO(shreyas): Add a DATABRICKS_BUNDLE_INITIAL_CWD environment variable
+			// that users can read to figure out the original CWD. I'll do that when
+			// adding support for the scripts section.
 			childCmd.Dir = b.BundleRootPath
 
 			// Create pipes for stdout and stderr.
@@ -108,10 +109,8 @@ Examples:
 		},
 	}
 
-	// TODO: Is this needed to make -- work with flags?
+	// TODO: Is this needed to make -- work with flags? What does this option do?
 	// execCmd.Flags().SetInterspersed(false)
-
-	// TODO: func (c *Command) ArgsLenAtDash() int solves my problems here.
 
 	return execCmd
 }
