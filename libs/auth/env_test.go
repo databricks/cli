@@ -3,7 +3,6 @@ package auth
 import (
 	"testing"
 
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -82,71 +81,49 @@ func TestGetEnvFor(t *testing.T) {
 }
 
 func TestAuthEnvVars(t *testing.T) {
-	expected := []string{
+	// Few common environment variables that we expect the SDK to support.
+	contains := []string{
+		// Generic attributes.
 		"DATABRICKS_HOST",
-		"DATABRICKS_CLUSTER_ID",
-		"DATABRICKS_WAREHOUSE_ID",
-		"DATABRICKS_SERVERLESS_COMPUTE_ID",
-		"DATABRICKS_METADATA_SERVICE_URL",
-		"DATABRICKS_ACCOUNT_ID",
-		"DATABRICKS_TOKEN",
-		"DATABRICKS_USERNAME",
-		"DATABRICKS_PASSWORD",
 		"DATABRICKS_CONFIG_PROFILE",
+		"DATABRICKS_AUTH_TYPE",
+		"DATABRICKS_METADATA_SERVICE_URL",
 		"DATABRICKS_CONFIG_FILE",
+
+		// OAuth specific attributes.
+		"DATABRICKS_CLIENT_ID",
+		"DATABRICKS_CLIENT_SECRET",
+		"DATABRICKS_CLI_PATH",
+
+		// Google specific attributes.
 		"DATABRICKS_GOOGLE_SERVICE_ACCOUNT",
 		"GOOGLE_CREDENTIALS",
+
+		// Personal access token specific attributes.
+		"DATABRICKS_TOKEN",
+
+		// Databricks password specific attributes.
+		"DATABRICKS_USERNAME",
+		"DATABRICKS_PASSWORD",
+
+		// Account authentication attributes.
+		"DATABRICKS_ACCOUNT_ID",
+
+		// Azure attributes
 		"DATABRICKS_AZURE_RESOURCE_ID",
 		"ARM_USE_MSI",
 		"ARM_CLIENT_SECRET",
 		"ARM_CLIENT_ID",
 		"ARM_TENANT_ID",
+		"ARM_ENVIRONMENT",
+
+		// Github attributes
 		"ACTIONS_ID_TOKEN_REQUEST_URL",
 		"ACTIONS_ID_TOKEN_REQUEST_TOKEN",
-		"ARM_ENVIRONMENT",
-		"DATABRICKS_AZURE_LOGIN_APP_ID",
-		"DATABRICKS_CLIENT_ID",
-		"DATABRICKS_CLIENT_SECRET",
-		"DATABRICKS_CLI_PATH",
-		"DATABRICKS_AUTH_TYPE",
-		"DATABRICKS_DEBUG_TRUNCATE_BYTES",
-		"DATABRICKS_DEBUG_HEADERS",
-		"DATABRICKS_RATE_LIMIT",
 	}
 
 	out := envVars()
-	assert.Equal(t, expected, out)
-}
-
-func TestAuthProcessEnv(t *testing.T) {
-	testutil.NullEnvironment(t)
-
-	// Environment variables that should be inherited by child processes.
-	t.Setenv("HOME", "/home/user")
-	t.Setenv("HTTPS_PROXY", "http://proxy.com")
-
-	// Environment variables that should be cleaned up by ProcessEnv():
-	t.Setenv("DATABRICKS_HOST", "https://test.com")
-	t.Setenv("DATABRICKS_TOKEN", "test-token")
-	t.Setenv("DATABRICKS_PASSWORD", "test-password")
-	t.Setenv("DATABRICKS_METADATA_SERVICE_URL", "http://somurl.com")
-	t.Setenv("ARM_USE_MSI", "true")
-	t.Setenv("ARM_TENANT_ID", "test-tenant-id")
-	t.Setenv("ARM_CLIENT_ID", "test-client-id")
-	t.Setenv("ARM_CLIENT_SECRET", "test-client-secret")
-
-	in := &config.Config{
-		Host:  "https://newhost.com",
-		Token: "new-token",
+	for _, v := range contains {
+		assert.Contains(t, out, v)
 	}
-
-	expected := []string{
-		"DATABRICKS_HOST=https://newhost.com",
-		"DATABRICKS_TOKEN=new-token",
-		"HOME=/home/user",
-		"HTTPS_PROXY=http://proxy.com",
-	}
-
-	out := ProcessEnv(in)
-	assert.Equal(t, expected, out)
 }

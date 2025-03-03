@@ -46,6 +46,11 @@ func GetEnvFor(name string) (string, bool) {
 	return "", false
 }
 
+// EnvVars returns the list of environment variables that the SDK reads to configure
+// authentication.
+// This is useful for spawning subprocesses since you can unset all auth environment
+// variables to clean up the environment before configuring authentication for the
+// child process.
 func envVars() []string {
 	out := []string{}
 
@@ -54,7 +59,7 @@ func envVars() []string {
 			continue
 		}
 
-		out = append(out, attr.EnvVars[0])
+		out = append(out, attr.EnvVars...)
 	}
 
 	return out

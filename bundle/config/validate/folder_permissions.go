@@ -16,15 +16,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type folderPermissions struct{}
+type folderPermissions struct{ bundle.RO }
 
-// Apply implements bundle.ReadOnlyMutator.
-func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) diag.Diagnostics {
-	if len(b.Config().Permissions) == 0 {
+func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	if len(b.Config.Permissions) == 0 {
 		return nil
 	}
 
-	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config().Workspace)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
@@ -48,7 +47,7 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 	return diags
 }
 
-func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderPath string) diag.Diagnostics {
+func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath string) diag.Diagnostics {
 	// If the folder is shared, then we don't need to check permissions as it was already checked in the other mutator before.
 	if libraries.IsWorkspaceSharedPath(folderPath) {
 		return nil
@@ -69,7 +68,7 @@ func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderP
 	}
 
 	p := permissions.ObjectAclToResourcePermissions(folderPath, objPermissions.AccessControlList)
-	return p.Compare(b.Config().Permissions)
+	return p.Compare(b.Config.Permissions)
 }
 
 func getClosestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {

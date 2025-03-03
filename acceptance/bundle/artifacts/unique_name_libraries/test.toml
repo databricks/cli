@@ -1,6 +1,6 @@
-Cloud = false
+RecordRequests = false
 
 # The order in which files are uploaded can be different, so we just replace the name
 [[Repls]]
-Old="Uploading .*-0.0.1-py3-none-any.whl..."
+Old="Uploading (my_package|my_other_package)-0.0.1-py3-none-any.whl"
 New="Uploading [package name]"

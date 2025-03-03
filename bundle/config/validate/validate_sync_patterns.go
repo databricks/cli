@@ -17,24 +17,24 @@ func ValidateSyncPatterns() bundle.ReadOnlyMutator {
 	return &validateSyncPatterns{}
 }
 
-type validateSyncPatterns struct{}
+type validateSyncPatterns struct{ bundle.RO }
 
 func (v *validateSyncPatterns) Name() string {
 	return "validate:validate_sync_patterns"
 }
 
-func (v *validateSyncPatterns) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
-	s := rb.Config().Sync
+func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	s := b.Config.Sync
 	if len(s.Exclude) == 0 && len(s.Include) == 0 {
 		return nil
 	}
 
-	diags, err := checkPatterns(s.Exclude, "sync.exclude", rb)
+	diags, err := checkPatterns(s.Exclude, "sync.exclude", b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	includeDiags, err := checkPatterns(s.Include, "sync.include", rb)
+	includeDiags, err := checkPatterns(s.Include, "sync.include", b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -42,7 +42,7 @@ func (v *validateSyncPatterns) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 	return diags.Extend(includeDiags)
 }
 
-func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (diag.Diagnostics, error) {
+func checkPatterns(patterns []string, path string, b *bundle.Bundle) (diag.Diagnostics, error) {
 	var mu sync.Mutex
 	var errs errgroup.Group
 	var diags diag.Diagnostics
@@ -55,7 +55,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 		// it means: do not include these files into result set
 		p := strings.TrimPrefix(pattern, "!")
 		errs.Go(func() error {
-			fs, err := fileset.NewGlobSet(rb.BundleRoot(), []string{p})
+			fs, err := fileset.NewGlobSet(b.BundleRoot, []string{p})
 			if err != nil {
 				return err
 			}
@@ -66,13 +66,13 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 			}
 
 			if len(all) == 0 {
-				loc := location{path: fmt.Sprintf("%s[%d]", path, index), rb: rb}
+				path := fmt.Sprintf("%s[%d]", path, index)
 				mu.Lock()
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
-					Locations: []dyn.Location{loc.Location()},
-					Paths:     []dyn.Path{loc.Path()},
+					Locations: b.Config.GetLocations(path),
+					Paths:     []dyn.Path{dyn.MustPathFromString(path)},
 				})
 				mu.Unlock()
 			}
