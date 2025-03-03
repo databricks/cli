@@ -47,16 +47,35 @@ func writeProjectFiles(baseDir string, files map[string]string) error {
 	return nil
 }
 
-// runCmd runs a command in the given directory and returns its combined output.
-// AI TODO: This should accept testing.T directly and fail the test if command fails
-func runCmd(dir, name string, args ...string) (string, error) {
+// runCmd runs a command in the given directory and fails the test if it fails
+func runCmd(t *testing.T, dir, name string, args ...string) {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	var out bytes.Buffer
-	cm.Stdout = &out
+	cmd.Stdout = &out
 	cmd.Stderr = &out
 	err := cmd.Run()
-	return out.String(), err
+	if err != nil {
+		t.Logf("Command failed: %s %s", name, strings.Join(args, " "))
+		t.Logf("Output:\n%s", out.String())
+		t.Fatal(err)
+	}
+}
+
+// captureOutput runs a command and returns its output
+func captureOutput(t *testing.T, dir, name string, args ...string) string {
+	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := cmd.Run()
+	if err != nil {
+		t.Logf("Command failed: %s %s", name, strings.Join(args, " "))
+		t.Logf("Output:\n%s", out.String())
+		t.Fatal(err)
+	}
+	return out.String()
 }
 
 // TestPatchWheel tests PatchWheel with several Python versions.
@@ -74,10 +93,7 @@ func TestPatchWheel(t *testing.T) {
 			}
 
 			// Create a virtual environment using uv
-			// AI TODO: we re not us out here. So do not return out from runCmd; instead if there is stdout or stderr, log it with t.Error(). Note, in one case you need stdout below. So add separate helper captureOutpout to do that.
-			if out, err := runCmd(tempDir, "uv", "venv", "--python", py, "venv"); err != nil {
-				t.Fatalf("uv venv creation failed: %v, output: %s", err, out)
-			}
+			runCmd(t, tempDir, "uv", "venv", "--python", py, "venv")
 
 			// Determine the pip and python paths inside the venv.
 			venvBin := filepath.Join(tempDir, "venv", "bin")
@@ -85,14 +101,10 @@ func TestPatchWheel(t *testing.T) {
 			pipExec := filepath.Join(venvBin, "pip")
 
 			// Install build using uv
-			if out, err := runCmd(tempDir, pipExec, "install", "build"); err != nil {
-				t.Fatalf("uv pip install failed: %v, output: %s", err, out)
-			}
+			runCmd(t, tempDir, pipExec, "install", "build")
 
 			// Build the wheel.
-			if out, err := runCmd(tempDir, pyExec, "-m", "build", "--wheel"); err != nil {
-				t.Fatalf("wheel build failed: %v, output: %s", err, out)
-			}
+			runCmd(t, tempDir, pyExec, "-m", "build", "--wheel")
 			distDir := filepath.Join(tempDir, "dist")
 			entries, err := ioutil.ReadDir(distDir)
 			if err != nil || len(entries) == 0 {
@@ -113,15 +125,10 @@ func TestPatchWheel(t *testing.T) {
 			t.Logf("origWheel=%s patchedWheel=%s", origWheel, patchedWheel)
 
 			// Install the patched wheel using uv
-			if out, err := runCmd(tempDir, pipExec, "install", "--reinstall", patchedWheel); err != nil {
-				t.Fatalf("failed to install patched wheel with uv: %v, output: %s", err, out)
-			}
+			runCmd(t, tempDir, pipExec, "install", "--reinstall", patchedWheel)
 
 			// Run a small command to import the package and print its version.
-			cmdOut, err := runCmd(tempDir, pyExec, "-c", "import myproj; print(myproj.__version__)")
-			if err != nil {
-				t.Fatalf("importing patched package failed: %v, output: %s", err, cmdOut)
-			}
+			cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; print(myproj.__version__)")
 			version := strings.TrimSpace(cmdOut)
 			if !strings.HasPrefix(version, "0.1.0+") {
 				t.Fatalf("expected version to start with 0.1.0+, got %s", version)
