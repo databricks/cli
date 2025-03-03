@@ -26,6 +26,30 @@ import (
 
 // Variants --
 
+// verifyVersion checks that the installed package version matches the expected version
+// from the patched wheel filename.
+func verifyVersion(t *testing.T, tempDir, wheelPath string) {
+	// Extract the expected version from the wheel filename
+	wheelInfo, err := ParseWheelFilename(wheelPath)
+	require.NoError(t, err)
+	expectedVersion := wheelInfo.Version
+
+	// Get the actual installed version
+	pyExec := filepath.Join(tempDir, ".venv", "bin", "python") // Handle Windows paths appropriately
+	cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; myproj.print_version()")
+	actualVersion := strings.TrimSpace(cmdOut)
+	
+	// Verify the version matches what we expect
+	require.Equal(t, expectedVersion, actualVersion, 
+		"Installed version doesn't match expected version from wheel filename")
+	
+	// Also check that it has the expected format (starts with base version + timestamp)
+	require.True(t, strings.HasPrefix(actualVersion, "0.1.0+20"), 
+		"Version should start with 0.1.0+20, got %s", actualVersion)
+	
+	t.Logf("Verified installed version: %s", actualVersion)
+}
+
 // minimalPythonProject returns a map of file paths to their contents for a minimal Python project.
 func minimalPythonProject() map[string]string {
 	return map[string]string{
@@ -144,15 +168,8 @@ func TestPatchWheel(t *testing.T) {
 
 			runCmd(t, tempDir, "uv", "pip", "install", "-q", patchedWheel)
 
-			// AI TODO: extract this in a function, verifyVersion(t, expectedVersion) that checks the version.
-			// AI TODO you can get expetedVersion using ParseWheelFilename(patchedWheel)
-			pyExec := filepath.Join(tempDir, ".venv", "bin", "python") // XXX Windows
-			cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; myproj.print_version()")
-			version := strings.TrimSpace(cmdOut)
-			if !strings.HasPrefix(version, "0.1.0+20") {
-				t.Fatalf("expected version to start with 0.1.0+20, got %s", version)
-			}
-			// t.Logf("Tested %s: patched version = %s", py, version)
+			// Verify the installed version matches what we expect
+			verifyVersion(t, tempDir, patchedWheel)
 
 			// TODO: install one more patched wheel (add an option to PatchWheel to add extra to timestamp)
 		})
