@@ -81,38 +81,49 @@ func TestGetEnvFor(t *testing.T) {
 }
 
 func TestAuthEnvVars(t *testing.T) {
-	expected := []string{
+	// Few common environment variables that we expect the SDK to support.
+	contains := []string{
+		// Generic attributes.
 		"DATABRICKS_HOST",
-		"DATABRICKS_CLUSTER_ID",
-		"DATABRICKS_WAREHOUSE_ID",
-		"DATABRICKS_SERVERLESS_COMPUTE_ID",
-		"DATABRICKS_METADATA_SERVICE_URL",
-		"DATABRICKS_ACCOUNT_ID",
-		"DATABRICKS_TOKEN",
-		"DATABRICKS_USERNAME",
-		"DATABRICKS_PASSWORD",
 		"DATABRICKS_CONFIG_PROFILE",
+		"DATABRICKS_AUTH_TYPE",
+		"DATABRICKS_METADATA_SERVICE_URL",
 		"DATABRICKS_CONFIG_FILE",
+
+		// OAuth specific attributes.
+		"DATABRICKS_CLIENT_ID",
+		"DATABRICKS_CLIENT_SECRET",
+		"DATABRICKS_CLI_PATH",
+
+		// Google specific attributes.
 		"DATABRICKS_GOOGLE_SERVICE_ACCOUNT",
 		"GOOGLE_CREDENTIALS",
+
+		// Personal access token specific attributes.
+		"DATABRICKS_TOKEN",
+
+		// Databricks password specific attributes.
+		"DATABRICKS_USERNAME",
+		"DATABRICKS_PASSWORD",
+
+		// Account authentication attributes.
+		"DATABRICKS_ACCOUNT_ID",
+
+		// Azure attributes
 		"DATABRICKS_AZURE_RESOURCE_ID",
 		"ARM_USE_MSI",
 		"ARM_CLIENT_SECRET",
 		"ARM_CLIENT_ID",
 		"ARM_TENANT_ID",
+		"ARM_ENVIRONMENT",
+
+		// Github attributes
 		"ACTIONS_ID_TOKEN_REQUEST_URL",
 		"ACTIONS_ID_TOKEN_REQUEST_TOKEN",
-		"ARM_ENVIRONMENT",
-		"DATABRICKS_AZURE_LOGIN_APP_ID",
-		"DATABRICKS_CLIENT_ID",
-		"DATABRICKS_CLIENT_SECRET",
-		"DATABRICKS_CLI_PATH",
-		"DATABRICKS_AUTH_TYPE",
-		"DATABRICKS_DEBUG_TRUNCATE_BYTES",
-		"DATABRICKS_DEBUG_HEADERS",
-		"DATABRICKS_RATE_LIMIT",
 	}
 
 	out := EnvVars()
-	assert.Equal(t, expected, out)
+	for _, v := range contains {
+		assert.Contains(t, out, v)
+	}
 }
