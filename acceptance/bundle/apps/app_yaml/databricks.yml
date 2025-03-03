@@ -1,0 +1,8 @@
+bundle:
+  name: apps_yaml
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      source_code_path: ./app
