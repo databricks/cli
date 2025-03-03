@@ -8,5 +8,5 @@ trace $CLI bundle exec -- echo --help
 # The error message should include the exit code.
 errcode trace $CLI bundle exec -- bash -c "exit 5"
 
-# stderr should also be shown in the output.
+# stderr should also be passed through.
 trace $CLI bundle exec -- bash -c "echo hello > /dev/stderr"
