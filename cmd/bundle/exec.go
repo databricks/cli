@@ -33,7 +33,7 @@ import (
 // TODO: Add acceptance test that flags are indeed not parsed by the exec command and
 // instead are parsed by the child command.
 
-// # TODO: Table test casing the target permutations
+// # TODO: Table test casing the profile flag permutations
 
 func newExecCommand() *cobra.Command {
 	execCmd := &cobra.Command{

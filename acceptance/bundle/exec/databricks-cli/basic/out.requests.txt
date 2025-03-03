@@ -23,7 +23,7 @@
 {
   "headers": {
     "Authorization": [
-      "Basic Y2xpZW50X2lkOmNsaWVudC1zZWNyZXQ="
+      "Basic [ENCODED_AUTH]"
     ]
   },
   "method": "POST",
