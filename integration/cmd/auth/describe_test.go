@@ -2,10 +2,14 @@ package auth_test
 
 import (
 	"context"
-	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/databricks-sdk-go/config"
 
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/databricks-sdk-go"
@@ -35,20 +39,17 @@ func TestAuthDescribeSuccess(t *testing.T) {
 }
 
 func TestAuthDescribeFailure(t *testing.T) {
-	// Store the original value of env variable
-	originalProfileValue, envProfileExists := os.LookupEnv("DATABRICKS_CONFIG_PROFILE")
+	testutil.CleanupEnvironment(t)
 
-	// restore env variable after the test:
-	if envProfileExists {
-		// Unset the env variable for this test
-		err := os.Unsetenv("DATABRICKS_CONFIG_PROFILE")
-		require.NoError(t, err)
-
-		t.Cleanup(func() {
-			err := os.Setenv("DATABRICKS_CONFIG_PROFILE", originalProfileValue)
-			require.NoError(t, err)
-		})
+	// set up a custom config file:
+	home := t.TempDir()
+	cfg := &config.Config{
+		ConfigFile: filepath.Join(home, "customcfg"),
+		Profile:    "profile1",
 	}
+	err := databrickscfg.SaveToProfile(context.Background(), cfg)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
 
 	ctx := context.Background()
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent", "--log-level", "trace")
@@ -58,10 +59,5 @@ func TestAuthDescribeFailure(t *testing.T) {
 	require.Contains(t, outStr, "Unable to authenticate: resolve")
 	require.Contains(t, outStr, "has no nonexistent profile configured")
 	require.Contains(t, outStr, "Current configuration:")
-
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
-	require.NoError(t, err)
-
-	require.Contains(t, outStr, "✓ host: "+w.Config.Host)
 	require.Contains(t, outStr, "✓ profile: nonexistent (from --profile flag)")
 }
