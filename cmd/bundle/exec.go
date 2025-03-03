@@ -13,29 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: test that -- works with flags as well.
-
-// TODO: Can bundle auth be resolved twice? What about:
-// databricks bundle exec -t foo -- databricks jobs list -t bar?
-// OR
-// databricks bundle exec -- databricks jobs list -t bar?
-// OR
-// databricks bundle exec -- databricks jobs list?
-// OR
-// databricks bundle exec -t foo -- databricks jobs list?
-//
-// For the first two, undefined behavior is fine. For the latter two we need to ensure
-// that the target from exec is respected.
-//
-// Add tests for all four of these cases.
-// --> Do I need similar tests for --profile as well?
-// --> Also add test for what happens with a default target?
-
-// TODO: Add acceptance test that flags are indeed not parsed by the exec command and
-// instead are parsed by the child command.
-
-// # TODO: Table test casing the profile flag permutations
-
 func newExecCommand() *cobra.Command {
 	execCmd := &cobra.Command{
 		Use:   "exec",
@@ -149,9 +126,6 @@ Examples:
 			return nil
 		},
 	}
-
-	// TODO: Is this needed to make -- work with flags? What does this option do?
-	// execCmd.Flags().SetInterspersed(false)
 
 	return execCmd
 }

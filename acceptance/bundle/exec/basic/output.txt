@@ -4,3 +4,6 @@ hello, world
 
 >>> [CLI] bundle exec -- pwd
 [TMPDIR]
+
+>>> [CLI] bundle exec -- echo --help
+--help
