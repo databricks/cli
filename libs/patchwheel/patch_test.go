@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,20 +35,12 @@ func verifyVersion(t *testing.T, tempDir, wheelPath string) {
 	require.NoError(t, err)
 	expectedVersion := wheelInfo.Version
 
-	// Get the actual installed version
 	pyExec := filepath.Join(tempDir, ".venv", "bin", "python") // Handle Windows paths appropriately
 	cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; myproj.print_version()")
 	actualVersion := strings.TrimSpace(cmdOut)
-	
-	// Verify the version matches what we expect
-	require.Equal(t, expectedVersion, actualVersion, 
-		"Installed version doesn't match expected version from wheel filename")
-	
-	// Also check that it has the expected format (starts with base version + timestamp)
-	require.True(t, strings.HasPrefix(actualVersion, "0.1.0+20"), 
-		"Version should start with 0.1.0+20, got %s", actualVersion)
-	
 	t.Logf("Verified installed version: %s", actualVersion)
+	assert.True(t, strings.HasPrefix(actualVersion, "0.1.0+20"), "Version should start with 0.1.0+20, got %s", actualVersion)
+	assert.Equal(t, expectedVersion, actualVersion, "Installed version doesn't match expected version from wheel filename")
 }
 
 // minimalPythonProject returns a map of file paths to their contents for a minimal Python project.

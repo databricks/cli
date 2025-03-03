@@ -167,14 +167,14 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	// Target wheel doesn't exist, proceed with patching
 	// Create a temporary file in the same directory with a unique name
 	tmpFile := outpath + fmt.Sprintf(".tmp%d", os.Getpid())
-	
+
 	// Ensure the temporary file is removed if we exit early
 	defer func() {
 		if _, statErr := os.Stat(tmpFile); statErr == nil {
 			os.Remove(tmpFile)
 		}
 	}()
-	
+
 	r, err := zip.OpenReader(path)
 	if err != nil {
 		return "", err
@@ -305,10 +305,10 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	if err := zipw.Close(); err != nil {
 		return "", err
 	}
-	
+
 	// Close the file before renaming
 	outFile.Close()
-	
+
 	// Rename the temporary file to the final output path (atomic operation)
 	if err := os.Rename(tmpFile, outpath); err != nil {
 		return "", err
