@@ -14,9 +14,9 @@ import (
 // 2. The validation is blocking for bundle deployments.
 //
 // The full suite of validation mutators is available in the [Validate] mutator.
-type fastValidate struct{}
+type fastValidate struct{ bundle.RO }
 
-func FastValidate() bundle.Mutator {
+func FastValidate() bundle.ReadOnlyMutator {
 	return &fastValidate{}
 }
 
@@ -25,7 +25,7 @@ func (f *fastValidate) Name() string {
 }
 
 func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagnostics {
-	return bundle.ApplyParallelReadonly(ctx, rb,
+	return bundle.ApplyParallel(ctx, rb,
 		// Fast mutators with only in-memory checks
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),

@@ -13,11 +13,11 @@ import (
 
 // JobTaskClusterSpec validates that job tasks have cluster spec defined
 // if task requires a cluster
-func JobTaskClusterSpec() bundle.Mutator {
+func JobTaskClusterSpec() bundle.ReadOnlyMutator {
 	return &jobTaskClusterSpec{}
 }
 
-type jobTaskClusterSpec struct{}
+type jobTaskClusterSpec struct{ bundle.RO }
 
 func (v *jobTaskClusterSpec) Name() string {
 	return "validate:job_task_cluster_spec"

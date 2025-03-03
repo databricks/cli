@@ -9,11 +9,11 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func FilesToSync() bundle.Mutator {
+func FilesToSync() bundle.ReadOnlyMutator {
 	return &filesToSync{}
 }
 
-type filesToSync struct{}
+type filesToSync struct{ bundle.RO }
 
 func (v *filesToSync) Name() string {
 	return "validate:files_to_sync"

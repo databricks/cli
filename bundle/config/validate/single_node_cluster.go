@@ -12,11 +12,11 @@ import (
 )
 
 // Validates that any single node clusters defined in the bundle are correctly configured.
-func SingleNodeCluster() bundle.Mutator {
+func SingleNodeCluster() bundle.ReadOnlyMutator {
 	return &singleNodeCluster{}
 }
 
-type singleNodeCluster struct{}
+type singleNodeCluster struct{ bundle.RO }
 
 func (m *singleNodeCluster) Name() string {
 	return "validate:SingleNodeCluster"

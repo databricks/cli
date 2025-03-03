@@ -9,11 +9,11 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func JobClusterKeyDefined() bundle.Mutator {
+func JobClusterKeyDefined() bundle.ReadOnlyMutator {
 	return &jobClusterKeyDefined{}
 }
 
-type jobClusterKeyDefined struct{}
+type jobClusterKeyDefined struct{ bundle.RO }
 
 func (v *jobClusterKeyDefined) Name() string {
 	return "validate:job_cluster_key_defined"

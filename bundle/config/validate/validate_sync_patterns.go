@@ -13,11 +13,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func ValidateSyncPatterns() bundle.Mutator {
+func ValidateSyncPatterns() bundle.ReadOnlyMutator {
 	return &validateSyncPatterns{}
 }
 
-type validateSyncPatterns struct{}
+type validateSyncPatterns struct{ bundle.RO }
 
 func (v *validateSyncPatterns) Name() string {
 	return "validate:validate_sync_patterns"

@@ -16,9 +16,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
-type validateArtifactPath struct{}
+type validateArtifactPath struct{ bundle.RO }
 
-func ValidateArtifactPath() bundle.Mutator {
+func ValidateArtifactPath() bundle.ReadOnlyMutator {
 	return &validateArtifactPath{}
 }
 

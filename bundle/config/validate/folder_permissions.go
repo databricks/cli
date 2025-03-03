@@ -16,7 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type folderPermissions struct{}
+type folderPermissions struct{ bundle.RO }
 
 func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Permissions) == 0 {
@@ -101,6 +101,6 @@ func (f *folderPermissions) Name() string {
 
 // ValidateFolderPermissions validates that permissions for the folders in Workspace file system matches
 // the permissions in the top-level permissions section of the bundle.
-func ValidateFolderPermissions() bundle.Mutator {
+func ValidateFolderPermissions() bundle.ReadOnlyMutator {
 	return &folderPermissions{}
 }
