@@ -51,17 +51,16 @@ def print_version():
 	}
 }
 
-func writeProjectFiles(baseDir string, files map[string]string) error {
+func writeProjectFiles(t *testing.T, baseDir string, files map[string]string) {
 	for path, content := range files {
 		fullPath := filepath.Join(baseDir, path)
 		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
-			return err
+			t.Fatalf("Failed to create directory %s: %v", filepath.Dir(fullPath), err)
 		}
 		if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
-			return err
+			t.Fatalf("Failed to write file %s: %v", fullPath, err)
 		}
 	}
-	return nil
 }
 
 func runCmd(t *testing.T, dir, name string, args ...string) {
@@ -174,10 +173,7 @@ func TestPatchWheel(t *testing.T) {
 			tempDir := t.TempDir()
 
 			projFiles := minimalPythonProject()
-			// AI TODO: modify writeProjectFiles to accept t as first parameter and fail test on errors in internally
-			if err := writeProjectFiles(tempDir, projFiles); err != nil {
-				t.Fatal(err)
-			}
+			writeProjectFiles(t, tempDir, projFiles)
 
 			runCmd(t, tempDir, "uv", "venv", "-q", "--python", py)
 
