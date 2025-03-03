@@ -15,8 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/databricks/cli/libs/log"
 )
 
 // readMetadataAndRecord scans the zip file for files matching the patterns
@@ -159,11 +157,11 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 
 	// If there's already a local version (after +), strip it off
 	baseVersion := strings.SplitN(version, "+", 2)[0]
-	log.Infof(ctx, "path=%s baseVersion=%s distribution=%s", path, baseVersion, distribution)
 
 	// Create new version by appending the current datetime.
 	dt := time.Now().Format("20060102150405")
 	newVersion := baseVersion + "+" + dt
+	//log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, version, newVersion, distribution)
 
 	// Patch the METADATA content.
 	newMetadata, err := patchMetadata(metadataContent, newVersion)

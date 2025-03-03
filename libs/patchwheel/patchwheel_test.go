@@ -9,7 +9,23 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
+
+// Variants -- existing env
+// Clean install
+// Install unpatched first
+// Install patched then another patched
+
+// Variants -- source setup.py vs pyproject
+//    Different build backends? setuptools vs hatchling vs flit?
+
+// Different tools? e.g. test poetry? test pdm? test regular pip?
+
+// Variants -- python versions
+
+// Variants --
 
 // minimalPythonProject returns a map of file paths to their contents for a minimal Python project.
 func minimalPythonProject() map[string]string {
@@ -24,12 +40,15 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 `,
-		// A simple module with a __version__.
-		"myproj/__init__.py": `__version__ = "0.1.0"
+		"src/myproj/__init__.py": `
 def hello():
     return "Hello, world!"
+
+def print_version():
+	from importlib.metadata import version
+	print(version("myproj"))
 `,
 	}
 }
@@ -78,13 +97,34 @@ func captureOutput(t *testing.T, dir, name string, args ...string) string {
 	return out.String()
 }
 
+func getWheel(t *testing.T, dir string) string {
+	pattern := filepath.Join(dir, "*.whl")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		t.Fatalf("Error matching pattern %s: %v", pattern, err)
+	}
+
+	if len(matches) == 0 {
+		t.Fatalf("No files found matching %s", pattern)
+		return ""
+	}
+
+	if len(matches) != 1 {
+		t.Fatalf("Too many matches %s: %v", pattern, matches)
+		return ""
+	}
+
+	return matches[0]
+}
+
 // TestPatchWheel tests PatchWheel with several Python versions.
 func TestPatchWheel(t *testing.T) {
 	pythonVersions := []string{"python3.9", "python3.10", "python3.11", "python3.12"}
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
-			// Create a temporary directory for the project
 			tempDir := t.TempDir()
+			//tempDir, err := os.MkdirTemp("", "pythontestdir")
+			//t.Logf("tempDir=%s", tempDir)
 
 			// Write minimal Python project files.
 			projFiles := minimalPythonProject()
@@ -92,48 +132,26 @@ func TestPatchWheel(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Create a virtual environment using uv
-			runCmd(t, tempDir, "uv", "venv", "--python", py, "venv")
+			runCmd(t, tempDir, "uv", "venv", "--python", py)
 
-			// Determine the pip and python paths inside the venv.
-			venvBin := filepath.Join(tempDir, "venv", "bin")
-			pyExec := filepath.Join(venvBin, "python")
-			pipExec := filepath.Join(venvBin, "pip")
-
-			// Install build using uv
-			runCmd(t, tempDir, pipExec, "install", "build")
-
-			// Build the wheel.
-			runCmd(t, tempDir, pyExec, "-m", "build", "--wheel")
+			runCmd(t, tempDir, "uv", "build", "--wheel")
 			distDir := filepath.Join(tempDir, "dist")
-			entries, err := ioutil.ReadDir(distDir)
-			if err != nil || len(entries) == 0 {
-				t.Fatalf("no wheel built: %v", err)
-			}
-			// Assume the first wheel is our package.
-			origWheel := filepath.Join(distDir, entries[0].Name())
+			origWheel := getWheel(t, distDir)
+			//t.Logf("Found origWheel: %s", origWheel)
 
-			// Call our PatchWheel function.
-			outputDir := filepath.Join(tempDir, "patched")
-			if err := os.Mkdir(outputDir, 0o755); err != nil {
-				t.Fatal(err)
-			}
-			patchedWheel, err := PatchWheel(context.Background(), origWheel, outputDir)
-			if err != nil {
-				t.Fatalf("PatchWheel failed: %v", err)
-			}
-			t.Logf("origWheel=%s patchedWheel=%s", origWheel, patchedWheel)
+			patchedWheel, err := PatchWheel(context.Background(), origWheel, distDir)
+			require.NoError(t, err)
+			//t.Logf("origWheel=%s patchedWheel=%s", origWheel, patchedWheel)
 
-			// Install the patched wheel using uv
-			runCmd(t, tempDir, pipExec, "install", "--reinstall", patchedWheel)
+			runCmd(t, tempDir, "uv", "pip", "install", patchedWheel)
 
-			// Run a small command to import the package and print its version.
-			cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; print(myproj.__version__)")
+			pyExec := filepath.Join(tempDir, ".venv", "bin", "python") // XXX Windows
+			cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; myproj.print_version()")
 			version := strings.TrimSpace(cmdOut)
-			if !strings.HasPrefix(version, "0.1.0+") {
-				t.Fatalf("expected version to start with 0.1.0+, got %s", version)
+			if !strings.HasPrefix(version, "0.1.0+20") {
+				t.Fatalf("expected version to start with 0.1.0+20, got %s", version)
 			}
-			t.Logf("Tested %s: patched version = %s", py, version)
+			//t.Logf("Tested %s: patched version = %s", py, version)
 		})
 	}
 }
