@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"context"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -34,10 +35,23 @@ func TestAuthDescribeSuccess(t *testing.T) {
 }
 
 func TestAuthDescribeFailure(t *testing.T) {
-	t.Skipf("Skipping because of https://github.com/databricks/cli/issues/2010")
+	// Store the original value of env variable
+	originalProfileValue, envProfileExists := os.LookupEnv("DATABRICKS_CONFIG_PROFILE")
+
+	// restore env variable after the test:
+	if envProfileExists {
+		// Unset the env variable for this test
+		err := os.Unsetenv("DATABRICKS_CONFIG_PROFILE")
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			err := os.Setenv("DATABRICKS_CONFIG_PROFILE", originalProfileValue)
+			require.NoError(t, err)
+		})
+	}
 
 	ctx := context.Background()
-	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent")
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent", "--log-level", "trace")
 	outStr := stdout.String()
 
 	require.NotEmpty(t, outStr)
