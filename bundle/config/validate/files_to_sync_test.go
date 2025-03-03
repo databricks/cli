@@ -29,7 +29,7 @@ func TestFilesToSync_NoPaths(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	diags := bundle.Apply(ctx, b, FilesToSync())
+	diags := FilesToSync().Apply(ctx, b)
 	assert.Empty(t, diags)
 }
 
