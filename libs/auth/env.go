@@ -102,8 +102,7 @@ func ProcessEnv(cfg *config.Config) []string {
 		out = append(out, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	// Sort the environment variables so that the output is deterministic for
-	// unit tests.
+	// Sort the environment variables so that the output is deterministic.
 	sort.Slice(out, func(i, j int) bool {
 		return out[i] < out[j]
 	})
