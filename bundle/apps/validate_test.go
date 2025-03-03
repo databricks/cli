@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -19,8 +20,7 @@ import (
 
 func TestAppsValidate(t *testing.T) {
 	tmpDir := t.TempDir()
-	testutil.Touch(t, tmpDir, "app1", "app.yml")
-	testutil.Touch(t, tmpDir, "app2", "app.py")
+	testutil.Touch(t, tmpDir, "app1", "app.py")
 
 	b := &bundle.Bundle{
 		BundleRootPath: tmpDir,
@@ -37,12 +37,7 @@ func TestAppsValidate(t *testing.T) {
 							Name: "app1",
 						},
 						SourceCodePath: "./app1",
-					},
-					"app2": {
-						App: &apps.App{
-							Name: "app2",
-						},
-						SourceCodePath: "./app2",
+						Config:         map[string]any{},
 					},
 				},
 			},
@@ -53,8 +48,9 @@ func TestAppsValidate(t *testing.T) {
 
 	diags := bundle.ApplySeq(context.Background(), b, mutator.TranslatePaths(), Validate())
 	require.Len(t, diags, 1)
-	require.Equal(t, "app.yml detected", diags[0].Summary)
-	require.Contains(t, diags[0].Detail, "app.yml and use 'config' property for app resource")
+	require.Equal(t, diag.Warning, diags[0].Severity)
+	require.Equal(t, "App config section detected", diags[0].Summary)
+	require.Contains(t, diags[0].Detail, "remove 'config' from app resource 'app1' section and use app.yml file in the root of this app instead")
 }
 
 func TestAppsValidateSameSourcePath(t *testing.T) {
