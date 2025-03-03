@@ -56,10 +56,6 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 			return diag.FromErr(err)
 		}
 
-		if v.Kind() == dyn.KindInvalid || v.Kind() == dyn.KindNil {
-			continue
-		}
-
 		vv, ok := v.AsString()
 		if !ok {
 			continue
