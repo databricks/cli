@@ -239,8 +239,11 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 				return "", err
 			}
 			_, err = io.Copy(writer, rc)
-			rc.Close()
 			if err != nil {
+				rc.Close()
+				return "", err
+			}
+			if err := rc.Close(); err != nil {
 				return "", err
 			}
 		}

@@ -3,7 +3,8 @@ package patchwheel
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
+	"os"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,7 +59,7 @@ func writeProjectFiles(baseDir string, files map[string]string) error {
 		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 			return err
 		}
-		if err := ioutil.WriteFile(fullPath, []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
 			return err
 		}
 	}
