@@ -13,13 +13,13 @@ type defineDefaultTarget struct {
 	name string
 }
 
-const DefaultTargetName = "default"
+const DefaultTargetPlaceholder = "default"
 
 // DefineDefaultTarget adds a target named "default"
 // to the configuration if none have been defined.
 func DefineDefaultTarget() bundle.Mutator {
 	return &defineDefaultTarget{
-		name: DefaultTargetName,
+		name: DefaultTargetPlaceholder,
 	}
 }
 

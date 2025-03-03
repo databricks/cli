@@ -54,7 +54,7 @@ Example usage:
 			// target is the default target, we don't need to pass it explicitly since
 			// the CLI will use the default target by default.
 			// This is only useful for when the Databricks CLI is the child command.
-			if b.Config.Bundle.Target != mutator.DefaultTargetName {
+			if b.Config.Bundle.Target != mutator.DefaultTargetPlaceholder {
 				env = append(env, "DATABRICKS_BUNDLE_TARGET="+b.Config.Bundle.Target)
 			}
 
