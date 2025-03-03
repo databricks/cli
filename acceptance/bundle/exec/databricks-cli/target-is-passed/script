@@ -10,6 +10,6 @@ trace $CLI bundle exec -t pat -- $CLI current-user me
 trace errcode $CLI bundle exec -t pat -- $CLI current-user me -t oauth
 
 # Explicitly select oauth target
-export DATABRICKS_TOKEN=""
+unset DATABRICKS_TOKEN
 export DATABRICKS_CLIENT_SECRET="client_secret"
 trace $CLI bundle exec -t oauth -- $CLI current-user me
