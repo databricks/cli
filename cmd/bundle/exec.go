@@ -16,16 +16,15 @@ import (
 // TODO: test that -- works with flags as well.
 // TODO CONTINUE: Making the bundle exec function work.
 // TODO CONTINUE: Adding the scripts section to DABs.
+// TODO: Ensure that these multi word strings work with the exec command. Example: echo "Hello, world!"
+//       Or if it does not work, be sure why. Probably because string parsing is a part of the bash shell.
 
 func newExecCommand() *cobra.Command {
-	variadicArgs := []string{}
-
 	execCmd := &cobra.Command{
 		Use:   "exec",
 		Short: "Execute a command using the same authentication context as the bundle",
 		Args:  cobra.MinimumNArgs(1),
 		Long: `Examples:
-		// TODO: Ensure that these multi work strings work with the exec command.
 1. databricks bundle exec -- echo "Hello, world!"
 2. databricks bundle exec -- /bin/bash -c "echo 'Hello, world!'"
 3. databricks bundle exec -- uv run pytest"`,
