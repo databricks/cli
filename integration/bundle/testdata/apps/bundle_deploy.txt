@@ -2,3 +2,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/$UNIQUE_PRJ/files.
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Warning: App config section detected
+
+remove 'config' from app resource 'app-e3dfea6b' section and use app.yml file in the root of this app instead
+
