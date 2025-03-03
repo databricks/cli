@@ -116,7 +116,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 			bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
 				return dyn.Set(v, "resources.clusters.foo.num_workers", dyn.V(0))
 			})
-			diags := bundle.Apply(ctx, b, SingleNodeCluster())
+			diags := SingleNodeCluster().Apply(ctx, b)
 			assert.Equal(t, diag.Diagnostics{
 				{
 					Severity:  diag.Warning,
