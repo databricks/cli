@@ -12,3 +12,6 @@ hello, world
 Error: Running "bash -c exit 5" failed with exit code: 5
 
 Exit code: 1
+
+>>> [CLI] bundle exec -- bash -c echo hello > /dev/stderr
+hello

@@ -27,11 +27,12 @@ func newExecCommand() *cobra.Command {
 		Use:   "exec",
 		Short: "Execute a command using the same authentication context as the bundle",
 		Args:  cobra.MinimumNArgs(1),
-		// TODO: format once we have all the documentation here.
-		Long: `
-Note: This command executes scripts
+		Long: `Execute a command using the same authentication context as the bundle
 
-Examples:
+The current working directory of the provided command will be set to the root
+of the bundle.
+
+Example usage:
 1. databricks bundle exec -- echo hello
 2. databricks bundle exec -- /bin/bash -c "echo hello""
 3. databricks bundle exec -- uv run pytest"`,
@@ -81,8 +82,8 @@ Examples:
 			// adding support for the scripts section.
 			childCmd.Dir = b.BundleRootPath
 
-			// Create pipes for stdout and stderr.
-			// TODO: Test streaming of this? Is there a way?
+			// Create pipes to stream the stdout and stderr output from the child
+			// process.
 			stdout, err := childCmd.StdoutPipe()
 			if err != nil {
 				return fmt.Errorf("Error creating stdout pipe: %w", err)
@@ -98,15 +99,21 @@ Examples:
 				return fmt.Errorf("Error starting command: %s\n", err)
 			}
 
-			// Stream both stdout and stderr to the user.
+			// Stream both stdout and stderr to the user. We do this so that the user
+			// does not have to wait for the command to finish before seeing the output.
 			var wg sync.WaitGroup
+			var stdoutErr, stderrErr error
 			wg.Add(2)
 
 			go func() {
 				defer wg.Done()
 				scanner := bufio.NewScanner(stdout)
 				for scanner.Scan() {
-					fmt.Println(scanner.Text())
+					_, err = cmd.OutOrStdout().Write([]byte(scanner.Text() + "\n"))
+					if err != nil {
+						stdoutErr = fmt.Errorf("Error writing to stdout: %w", err)
+						return
+					}
 				}
 			}()
 
@@ -114,9 +121,21 @@ Examples:
 				defer wg.Done()
 				scanner := bufio.NewScanner(stderr)
 				for scanner.Scan() {
-					fmt.Println(scanner.Text())
+					_, err := cmd.ErrOrStderr().Write([]byte(scanner.Text() + "\n"))
+					if err != nil {
+						stderrErr = fmt.Errorf("Error writing to stderr: %w", err)
+						return
+					}
 				}
 			}()
+
+			if stdoutErr != nil {
+				return stdoutErr
+			}
+
+			if stderrErr != nil {
+				return stderrErr
+			}
 
 			// Wait for the command to finish.
 			err = childCmd.Wait()
