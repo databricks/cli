@@ -74,7 +74,7 @@ func ApplyParallelReadonly(ctx context.Context, b *Bundle, mutators ...Mutator) 
 
 	for ind, m := range mutators {
 		contexts[ind] = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
-		// log right away to have deterministic logger
+		// log right away to have deterministic order of log messages
 		log.Debug(contexts[ind], "ApplyParallel")
 	}
 
