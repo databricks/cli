@@ -29,7 +29,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  "App config section detected",
-				Detail:   fmt.Sprintf("remove 'config' from app resource '%s' section and use app.yml file in the root of this app instead", app.Name),
+				Detail:   fmt.Sprintf("remove 'config' from app resource '%s' section and use app.yml file in the root of this app instead", key),
 			})
 		}
 	}
