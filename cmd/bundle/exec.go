@@ -68,6 +68,14 @@ Examples:
 			// TODO: TODO: What happens here if a default target is resolved? When
 			// no targets are defined?
 			env = append(env, "DATABRICKS_BUNDLE_TARGET="+b.Config.Bundle.Target)
+
+			// If the bundle has a profile, explicitly pass it to the child command.
+			// This is unnecessary for tools that follow the unified authentication spec.
+			// However, because the CLI can read the profile from the bundle itself, we
+			// need to pass it explicitly.
+			if b.Config.Workspace.Profile != "" {
+				env = append(env, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+			}
 			childCmd.Env = env
 
 			// Execute all scripts from the bundle root directory. This behavior can
