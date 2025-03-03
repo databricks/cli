@@ -222,7 +222,9 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCl
 
 	// This stat call serves two purposes:
 	// 1. Checks file at path exists, and throws an error if it does not
-	// 2. Allows us to error out if the path is a directory.
+	// 2. Allows us to error out if the path is a directory. This is needed
+	// because the /workspace/export API does not error out, and returns the directory
+	// as a DBC archive even if format "SOURCE" is specified
 	stat, err := w.Stat(ctx, name)
 	if err != nil {
 		return nil, err
@@ -231,14 +233,9 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCl
 		return nil, NotAFile{absPath}
 	}
 
-	var buf bytes.Buffer
-	urlPath := "/api/2.0/workspace-files/" + url.PathEscape(strings.TrimLeft(absPath, "/"))
-	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, nil, &buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return io.NopCloser(&buf), nil
+	// Export file contents. Note the /workspace/export API has a limit of 10MBs
+	// for the file size
+	return w.workspaceClient.Workspace.Download(ctx, absPath)
 }
 
 func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
