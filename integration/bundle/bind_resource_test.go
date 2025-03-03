@@ -35,13 +35,13 @@ func TestBindSchemaToExistingSchema(t *testing.T) {
 	})
 
 	// setup the bundle:
-	bundleRoot := initTestTemplate(t, ctx, "uc_schema", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "uc_schema_only", map[string]any{
 		"unique_id": uniqueId,
 	})
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 
 	// run the bind command:
-	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "bar", predefinedSchema.FullName, "--auto-approve")
+	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "schema1", predefinedSchema.FullName, "--auto-approve")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
@@ -58,7 +58,7 @@ func TestBindSchemaToExistingSchema(t *testing.T) {
 	require.Equal(t, "This schema was created from DABs", updatedSchema.Comment)
 
 	// unbind the schema:
-	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "unbind", "bar")
+	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "unbind", "schema1")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
