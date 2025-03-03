@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/spf13/cobra"
@@ -63,19 +64,24 @@ Examples:
 			childCmd := exec.Command(args[0], args[1:]...)
 
 			env := auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
-			// TODO: Test that this works correctly for all permutations.
-			// TODO: Do the same for profile flag.
-			// TODO: TODO: What happens here if a default target is resolved? When
-			// no targets are defined?
-			env = append(env, "DATABRICKS_BUNDLE_TARGET="+b.Config.Bundle.Target)
+
+			// If user has specified a target, pass it to the child command. If the
+			// target is the default target, we don't need to pass it explicitly since
+			// the CLI will use the default target by default.
+			// This is only useful for when the Databricks CLI is the child command.
+			if b.Config.Bundle.Target != mutator.DefaultTargetName {
+				env = append(env, "DATABRICKS_BUNDLE_TARGET="+b.Config.Bundle.Target)
+			}
 
 			// If the bundle has a profile, explicitly pass it to the child command.
 			// This is unnecessary for tools that follow the unified authentication spec.
 			// However, because the CLI can read the profile from the bundle itself, we
 			// need to pass it explicitly.
+			// This is only useful for when the Databricks CLI is the child command.
 			if b.Config.Workspace.Profile != "" {
 				env = append(env, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 			}
+
 			childCmd.Env = env
 
 			// Execute all scripts from the bundle root directory. This behavior can
