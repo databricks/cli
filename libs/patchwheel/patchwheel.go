@@ -125,30 +125,94 @@ func readFile(file *zip.File) ([]byte, error) {
 	return io.ReadAll(rc)
 }
 
+// WheelInfo contains information extracted from a wheel filename
+type WheelInfo struct {
+	Distribution string   // Package distribution name
+	Version      string   // Package version
+	Tags         []string // Python tags (python_tag, abi_tag, platform_tag)
+}
+
 // ExtractVersionFromWheelFilename extracts the version from a wheel filename.
 // Wheel filenames follow the pattern: {distribution}-{version}-{python_tag}-{abi_tag}-{platform_tag}.whl
 func ExtractVersionFromWheelFilename(filename string) (string, error) {
+	info, err := ParseWheelFilename(filename)
+	if err != nil {
+		return "", err
+	}
+	return info.Version, nil
+}
+
+// ParseWheelFilename parses a wheel filename and extracts its components.
+// Wheel filenames follow the pattern: {distribution}-{version}-{python_tag}-{abi_tag}-{platform_tag}.whl
+func ParseWheelFilename(filename string) (*WheelInfo, error) {
 	base := filepath.Base(filename)
 	parts := strings.Split(base, "-")
 	if len(parts) < 5 || !strings.HasSuffix(parts[len(parts)-1], ".whl") {
-		return "", fmt.Errorf("invalid wheel filename format: %s", filename)
+		return nil, fmt.Errorf("invalid wheel filename format: %s", filename)
 	}
-
-	// If there are more than 5 parts, the distribution name might contain hyphens
-	// The version is always the second element from the end minus 3 (for the tags)
-	return parts[len(parts)-4], nil
+	
+	// The last three parts are always tags
+	tagStartIdx := len(parts) - 3
+	
+	// Everything before the tags except the version is the distribution
+	versionIdx := tagStartIdx - 1
+	
+	// Distribution may contain hyphens, so join all parts before the version
+	distribution := strings.Join(parts[:versionIdx], "-")
+	version := parts[versionIdx]
+	
+	// Extract tags (remove .whl from the last one)
+	tags := make([]string, 3)
+	copy(tags, parts[tagStartIdx:])
+	tags[2] = strings.TrimSuffix(tags[2], ".whl")
+	
+	return &WheelInfo{
+		Distribution: distribution,
+		Version:      version,
+		Tags:         tags,
+	}, nil
 }
 
 // PatchWheel patches a Python wheel file by updating its version in METADATA and RECORD.
 // It returns the path to the new wheel.
 // The function is idempotent: repeated calls with the same input will produce the same output.
+// If the target wheel already exists, it returns the path to the existing wheel without processing.
 func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
+	// Get the modification time of the input wheel
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return "", err
 	}
 	wheelMtime := fileInfo.ModTime().UTC()
-
+	
+	// Parse the wheel filename to extract components
+	wheelInfo, err := ParseWheelFilename(path)
+	if err != nil {
+		return "", err
+	}
+	
+	// Get the base version without any local version
+	baseVersion := strings.SplitN(wheelInfo.Version, "+", 2)[0]
+	
+	// Calculate the timestamp suffix for the new version
+	dt := strings.Replace(wheelMtime.Format("20060102150405.00"), ".", "", 1)
+	dt = strings.Replace(dt, ".", "", 1)
+	newVersion := baseVersion + "+" + dt
+	
+	// Create the new wheel filename
+	newFilename := fmt.Sprintf("%s-%s-%s.whl", 
+		wheelInfo.Distribution, 
+		newVersion, 
+		strings.Join(wheelInfo.Tags, "-"))
+	outpath := filepath.Join(outputDir, newFilename)
+	
+	// Check if the target wheel already exists
+	if _, err := os.Stat(outpath); err == nil {
+		// Target wheel already exists, return its path
+		return outpath, nil
+	}
+	
+	// Target wheel doesn't exist, proceed with patching
 	r, err := zip.OpenReader(path)
 	if err != nil {
 		return "", err
