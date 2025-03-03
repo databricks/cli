@@ -48,11 +48,12 @@ func writeProjectFiles(baseDir string, files map[string]string) error {
 }
 
 // runCmd runs a command in the given directory and returns its combined output.
+// AI TODO: This should accept testing.T directly and fail the test if command fails
 func runCmd(dir, name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	var out bytes.Buffer
-	cmd.Stdout = &out
+	cm.Stdout = &out
 	cmd.Stderr = &out
 	err := cmd.Run()
 	return out.String(), err
@@ -73,12 +74,13 @@ func TestPatchWheel(t *testing.T) {
 			}
 
 			// Create a virtual environment using uv
+			// AI TODO: we re not us out here. So do not return out from runCmd; instead if there is stdout or stderr, log it with t.Error(). Note, in one case you need stdout below. So add separate helper captureOutpout to do that.
 			if out, err := runCmd(tempDir, "uv", "venv", "--python", py, "venv"); err != nil {
 				t.Fatalf("uv venv creation failed: %v, output: %s", err, out)
 			}
 
 			// Determine the pip and python paths inside the venv.
-			venvBin := filepath.Join(venvDir, "bin")
+			venvBin := filepath.Join(tempDir, "venv", "bin")
 			pyExec := filepath.Join(venvBin, "python")
 			pipExec := filepath.Join(venvBin, "pip")
 
