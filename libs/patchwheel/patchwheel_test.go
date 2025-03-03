@@ -13,15 +13,19 @@ import (
 
 // minimalPythonProject returns a map of file paths to their contents for a minimal Python project.
 func minimalPythonProject() map[string]string {
-	// AI TODO: switch to pyproject.toml here
 	return map[string]string{
-		// A simple setup.py that uses setuptools.
-		"setup.py": `from setuptools import setup, find_packages
-setup(
-    name="myproj",
-    version="0.1.0",
-    packages=find_packages(),
-)`,
+		// pyproject.toml using modern Python packaging
+		"pyproject.toml": `[project]
+name = "myproj"
+version = "0.1.0"
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+`,
 		// A simple module with a __version__.
 		"myproj/__init__.py": `__version__ = "0.1.0"
 def hello():
@@ -59,13 +63,8 @@ func TestPatchWheel(t *testing.T) {
 	pythonVersions := []string{"python3.9", "python3.10", "python3.11", "python3.12"}
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
-			// Create a temporary directory for the project.
-			// AI TODO: use t.TempDir() instead
-			tempDir, err := ioutil.TempDir("", "myproj")
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer os.RemoveAll(tempDir)
+			// Create a temporary directory for the project
+			tempDir := t.TempDir()
 
 			// Write minimal Python project files.
 			projFiles := minimalPythonProject()
@@ -73,11 +72,9 @@ func TestPatchWheel(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Create a virtual environment.
-			venvDir := filepath.Join(tempDir, "venv")
-			// AI TODO: use "uv init --python <python>" to create venv
-			if out, err := runCmd(tempDir, py, "-m", "venv", "venv"); err != nil {
-				t.Fatalf("venv creation failed: %v, output: %s", err, out)
+			// Create a virtual environment using uv
+			if out, err := runCmd(tempDir, "uv", "venv", "--python", py, "venv"); err != nil {
+				t.Fatalf("uv venv creation failed: %v, output: %s", err, out)
 			}
 
 			// Determine the pip and python paths inside the venv.
@@ -85,9 +82,9 @@ func TestPatchWheel(t *testing.T) {
 			pyExec := filepath.Join(venvBin, "python")
 			pipExec := filepath.Join(venvBin, "pip")
 
-			// Upgrade pip and install build.
-			if out, err := runCmd(tempDir, pipExec, "install", "--upgrade", "pip", "build"); err != nil {
-				t.Fatalf("pip install failed: %v, output: %s", err, out)
+			// Install build using uv
+			if out, err := runCmd(tempDir, pipExec, "install", "build"); err != nil {
+				t.Fatalf("uv pip install failed: %v, output: %s", err, out)
 			}
 
 			// Build the wheel.
@@ -113,10 +110,9 @@ func TestPatchWheel(t *testing.T) {
 			}
 			t.Logf("origWheel=%s patchedWheel=%s", origWheel, patchedWheel)
 
-			// Install the patched wheel.
-			// AI TODO: use uv
-			if out, err := runCmd(tempDir, pipExec, "install", "--force-reinstall", patchedWheel); err != nil {
-				t.Fatalf("failed to install patched wheel: %v, output: %s", err, out)
+			// Install the patched wheel using uv
+			if out, err := runCmd(tempDir, pipExec, "install", "--reinstall", patchedWheel); err != nil {
+				t.Fatalf("failed to install patched wheel with uv: %v, output: %s", err, out)
 			}
 
 			// Run a small command to import the package and print its version.
