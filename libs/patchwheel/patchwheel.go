@@ -12,10 +12,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // readMetadataAndRecord scans the zip file for files matching the patterns
@@ -135,7 +133,7 @@ func ExtractVersionFromWheelFilename(filename string) (string, error) {
 	if len(parts) < 5 || !strings.HasSuffix(parts[len(parts)-1], ".whl") {
 		return "", fmt.Errorf("invalid wheel filename format: %s", filename)
 	}
-	
+
 	// If there are more than 5 parts, the distribution name might contain hyphens
 	// The version is always the second element from the end minus 3 (for the tags)
 	return parts[len(parts)-4], nil
@@ -145,13 +143,12 @@ func ExtractVersionFromWheelFilename(filename string) (string, error) {
 // It returns the path to the new wheel.
 // The function is idempotent: repeated calls with the same input will produce the same output.
 func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
-	// Get the modification time of the input wheel before opening it
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return "", err
 	}
 	wheelMtime := fileInfo.ModTime().UTC()
-	
+
 	r, err := zip.OpenReader(path)
 	if err != nil {
 		return "", err
