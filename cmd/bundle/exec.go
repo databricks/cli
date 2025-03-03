@@ -129,14 +129,6 @@ Example usage:
 				}
 			}()
 
-			if stdoutErr != nil {
-				return stdoutErr
-			}
-
-			if stderrErr != nil {
-				return stderrErr
-			}
-
 			// Wait for the command to finish.
 			err = childCmd.Wait()
 			if exitErr, ok := err.(*exec.ExitError); ok {
@@ -155,6 +147,14 @@ Example usage:
 
 			// Wait for the goroutines to finish printing to stdout and stderr.
 			wg.Wait()
+
+			if stdoutErr != nil {
+				return stdoutErr
+			}
+
+			if stderrErr != nil {
+				return stderrErr
+			}
 
 			return nil
 		},
