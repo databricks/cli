@@ -20,6 +20,15 @@ func (e *exitCodeErr) Error() string {
 	return fmt.Sprintf("Running %q failed with exit code: %d", strings.Join(e.args, " "), e.exitCode)
 }
 
+type runErr struct {
+	err  error
+	args []string
+}
+
+func (e *runErr) Error() string {
+	return fmt.Sprintf("Running %q failed: %s", strings.Join(e.args, " "), e.err)
+}
+
 func newExecCommand() *cobra.Command {
 	execCmd := &cobra.Command{
 		Use:   "exec",
@@ -84,13 +93,8 @@ Example usage:
 			childCmd.Stdout = cmd.OutOrStdout()
 			childCmd.Stderr = cmd.ErrOrStderr()
 
-			// Start the command
-			if err := childCmd.Start(); err != nil {
-				return fmt.Errorf("Error starting command: %s\n", err)
-			}
-
-			// Wait for the command to finish.
-			err := childCmd.Wait()
+			// Run the command.
+			err := childCmd.Run()
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				// We don't make the parent CLI process exit with the same exit code
 				// as the child process because the exit codes for the CLI have not
@@ -104,7 +108,10 @@ Example usage:
 				}
 			}
 			if err != nil {
-				return fmt.Errorf("Error waiting for command: %w", err)
+				return &runErr{
+					err:  err,
+					args: args,
+				}
 			}
 
 			return nil
