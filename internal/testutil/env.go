@@ -13,27 +13,6 @@ import (
 // The original environment is restored upon test completion.
 // Note: use of this function is incompatible with parallel execution.
 func CleanupEnvironment(t TestingT) {
-	path := os.Getenv("PATH")
-	pwd := os.Getenv("PWD")
-
-	// Clear all environment variables.
-	ClearEnvironment(t)
-
-	// We use t.Setenv instead of os.Setenv because the former actively
-	// prevents a test being run with t.Parallel. Modifying the environment
-	// within a test is not compatible with running tests in parallel
-	// because of isolation; the environment is scoped to the process.
-	t.Setenv("PATH", path)
-	t.Setenv("HOME", pwd)
-	if runtime.GOOS == "windows" {
-		t.Setenv("USERPROFILE", pwd)
-	}
-}
-
-// ClearEnvironment sets up an empty environment with no environment variables set.
-// The original environment is restored upon test completion.
-// Note: use of this function is incompatible with parallel execution
-func ClearEnvironment(t TestingT) {
 	// Restore environment when test finishes.
 	environ := os.Environ()
 	t.Cleanup(func() {
@@ -44,7 +23,19 @@ func ClearEnvironment(t TestingT) {
 		}
 	})
 
+	path := os.Getenv("PATH")
+	pwd := os.Getenv("PWD")
 	os.Clearenv()
+
+	// We use t.Setenv instead of os.Setenv because the former actively
+	// prevents a test being run with t.Parallel. Modifying the environment
+	// within a test is not compatible with running tests in parallel
+	// because of isolation; the environment is scoped to the process.
+	t.Setenv("PATH", path)
+	t.Setenv("HOME", pwd)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", pwd)
+	}
 }
 
 // Changes into specified directory for the duration of the test.

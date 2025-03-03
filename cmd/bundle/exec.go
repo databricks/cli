@@ -31,9 +31,9 @@ The current working directory of the provided command will be set to the root
 of the bundle.
 
 Example usage:
-1. databricks bundle exec -- echo hello
-2. databricks bundle exec -- /bin/bash -c "echo hello""
-3. databricks bundle exec -- uv run pytest"`,
+1. databricks bundle exec -- echo "hello, world"
+2. databricks bundle exec -- /bin/bash -c "echo hello"
+3. databricks bundle exec -- uv run pytest`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.ArgsLenAtDash() != 0 {
 				return fmt.Errorf("Please add a '--' separator. Usage: 'databricks bundle exec -- %s'", strings.Join(args, " "))
@@ -50,19 +50,20 @@ Example usage:
 
 			env := auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
 
-			// If user has specified a target, pass it to the child command. If the
-			// target is the default target, we don't need to pass it explicitly since
-			// the CLI will use the default target by default.
+			// If user has specified a target, pass it to the child command. DABs
+			// defines a "default" target which is a placeholder if no target is defined.
+			// If that's the case, i.e. no targets are defined, then do not pass the target.
+			//
 			// This is only useful for when the Databricks CLI is the child command.
 			if b.Config.Bundle.Target != mutator.DefaultTargetPlaceholder {
 				env = append(env, "DATABRICKS_BUNDLE_TARGET="+b.Config.Bundle.Target)
 			}
 
-			// If the bundle has a profile, explicitly pass it to the child command.
-			// This is unnecessary for tools that follow the unified authentication spec.
-			// However, because the CLI can read the profile from the bundle itself, we
-			// need to pass it explicitly.
-			// This is only useful for when the Databricks CLI is the child command.
+			// If the bundle has a profile configured, explicitly pass it to the child command.
+			//
+			// This is only useful for when the Databricks CLI is the child command,
+			// since if we do not explicitly pass the profile, the CLI will use the
+			// profile configured in the bundle YAML configuration (if any).We don't propagate the exit code as is because exit codes
 			if b.Config.Workspace.Profile != "" {
 				env = append(env, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 			}
@@ -92,10 +93,12 @@ Example usage:
 			// Wait for the command to finish.
 			err := childCmd.Wait()
 			if exitErr, ok := err.(*exec.ExitError); ok {
-				// We don't propagate the exit code as is because exit codes for
-				// the CLI have not been standardized yet. At some point in the
-				// future we might want to associate specific exit codes with
-				// specific classes of errors.
+				// We don't make the parent CLI process exit with the same exit code
+				// as the child process because the exit codes for the CLI have not
+				// been standardized yet.
+				//
+				// This keeps the door open for us to associate specific exit codes
+				// with specific classes of errors in the future.
 				return &exitCodeErr{
 					exitCode: exitErr.ExitCode(),
 					args:     args,
