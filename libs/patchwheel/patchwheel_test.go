@@ -167,17 +167,14 @@ func TestParseWheelFilename(t *testing.T) {
 	}
 }
 
-// TestPatchWheel tests PatchWheel with several Python versions.
 func TestPatchWheel(t *testing.T) {
 	pythonVersions := []string{"python3.9", "python3.10", "python3.11", "python3.12"}
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
 			tempDir := t.TempDir()
-			// tempDir, err := os.MkdirTemp("", "pythontestdir")
-			// t.Logf("tempDir=%s", tempDir)
 
-			// Write minimal Python project files.
 			projFiles := minimalPythonProject()
+			// AI TODO: modify writeProjectFiles to accept t as first parameter and fail test on errors in internally
 			if err := writeProjectFiles(tempDir, projFiles); err != nil {
 				t.Fatal(err)
 			}
