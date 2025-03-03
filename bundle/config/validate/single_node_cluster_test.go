@@ -165,7 +165,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 				return dyn.Set(v, "resources.jobs.foo.job_clusters[0].new_cluster.num_workers", dyn.V(0))
 			})
 
-			diags := bundle.Apply(ctx, b, SingleNodeCluster())
+			diags := SingleNodeCluster().Apply(ctx, b)
 			assert.Equal(t, diag.Diagnostics{
 				{
 					Severity:  diag.Warning,
