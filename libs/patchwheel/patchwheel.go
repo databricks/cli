@@ -158,10 +158,12 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	// If there's already a local version (after +), strip it off
 	baseVersion := strings.SplitN(version, "+", 2)[0]
 
-	// Create new version by appending the current datetime.
-	dt := time.Now().Format("20060102150405")
+	dt := strings.Replace(time.Now().UTC().Format("20060102150405.00"), ".", "", 1)
+	dt = strings.Replace(dt, ".", "", 1)
+
+	// log.Warnf(ctx, "dt=%s dt1=%s\n", dt, dt1)
 	newVersion := baseVersion + "+" + dt
-	//log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, version, newVersion, distribution)
+	// log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, version, newVersion, distribution)
 
 	// Patch the METADATA content.
 	newMetadata, err := patchMetadata(metadataContent, newVersion)
