@@ -12,9 +12,7 @@ type ReadOnlyMutator interface {
 	Mutator
 
 	// This is just tag, to differentiate this interface from bundle.Mutator
-	// This prevents arbitatry mutators being passed to ApplyParallel() and instead makes
-	// a concious choice (when you change the type of the mutator, you will also review
-	// whether it's readonly).
+	// This prevents non-readonly mutators being passed to ApplyParallel().
 	IsRO()
 }
 
