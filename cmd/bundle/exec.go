@@ -1,11 +1,9 @@
 package bundle
 
 import (
-	"bufio"
 	"fmt"
 	"os/exec"
 	"strings"
-	"sync"
 
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/cmd/root"
@@ -82,55 +80,17 @@ Example usage:
 			// adding support for the scripts section.
 			childCmd.Dir = b.BundleRootPath
 
-			// Create pipes to stream the stdout and stderr output from the child
-			// process.
-			stdout, err := childCmd.StdoutPipe()
-			if err != nil {
-				return fmt.Errorf("Error creating stdout pipe: %w", err)
-			}
-
-			stderr, err := childCmd.StderrPipe()
-			if err != nil {
-				return fmt.Errorf("Error creating stderr pipe: %w", err)
-			}
+			// Stream the stdout and stderr of the child process directly.
+			childCmd.Stdout = cmd.OutOrStdout()
+			childCmd.Stderr = cmd.ErrOrStderr()
 
 			// Start the command
 			if err := childCmd.Start(); err != nil {
 				return fmt.Errorf("Error starting command: %s\n", err)
 			}
 
-			// Stream both stdout and stderr to the user. We do this so that the user
-			// does not have to wait for the command to finish before seeing the output.
-			var wg sync.WaitGroup
-			var stdoutErr, stderrErr error
-			wg.Add(2)
-
-			go func() {
-				defer wg.Done()
-				scanner := bufio.NewScanner(stdout)
-				for scanner.Scan() {
-					_, err = cmd.OutOrStdout().Write([]byte(scanner.Text() + "\n"))
-					if err != nil {
-						stdoutErr = fmt.Errorf("Error writing to stdout: %w", err)
-						return
-					}
-				}
-			}()
-
-			go func() {
-				defer wg.Done()
-				scanner := bufio.NewScanner(stderr)
-				for scanner.Scan() {
-					_, err := cmd.ErrOrStderr().Write([]byte(scanner.Text() + "\n"))
-					if err != nil {
-						stderrErr = fmt.Errorf("Error writing to stderr: %w", err)
-						return
-					}
-				}
-			}()
-
 			// Wait for the command to finish.
-			err = childCmd.Wait()
+			err := childCmd.Wait()
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				// We don't propagate the exit code as is because exit codes for
 				// the CLI have not been standardized yet. At some point in the
@@ -143,17 +103,6 @@ Example usage:
 			}
 			if err != nil {
 				return fmt.Errorf("Error waiting for command: %w", err)
-			}
-
-			// Wait for the goroutines to finish printing to stdout and stderr.
-			wg.Wait()
-
-			if stdoutErr != nil {
-				return stdoutErr
-			}
-
-			if stderrErr != nil {
-				return stderrErr
 			}
 
 			return nil
