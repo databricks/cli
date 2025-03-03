@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -56,6 +57,7 @@ func parseMetadata(content []byte) (version, distribution string, err error) {
 		line := scanner.Text()
 		if strings.HasPrefix(line, versionKey) {
 			v := strings.TrimSpace(strings.TrimPrefix(line, versionKey))
+			// AI TODO: return full version here; make caller do the parsing instead.
 			// If there's a '+' in the version, strip it off.
 			v = strings.SplitN(v, "+", 2)[0]
 			version = v
