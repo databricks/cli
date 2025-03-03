@@ -52,7 +52,7 @@ func EnvVars() []string {
 			continue
 		}
 
-		out = append(out, attr.EnvVars[0])
+		out = append(out, attr.EnvVars...)
 	}
 
 	return out
