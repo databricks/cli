@@ -2,6 +2,7 @@ package patchwheel
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -12,6 +13,7 @@ import (
 
 // minimalPythonProject returns a map of file paths to their contents for a minimal Python project.
 func minimalPythonProject() map[string]string {
+	// AI TODO: switch to pyproject.toml here
 	return map[string]string{
 		// A simple setup.py that uses setuptools.
 		"setup.py": `from setuptools import setup, find_packages
@@ -58,6 +60,7 @@ func TestPatchWheel(t *testing.T) {
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
 			// Create a temporary directory for the project.
+			// AI TODO: use t.TempDir() instead
 			tempDir, err := ioutil.TempDir("", "myproj")
 			if err != nil {
 				t.Fatal(err)
@@ -72,6 +75,7 @@ func TestPatchWheel(t *testing.T) {
 
 			// Create a virtual environment.
 			venvDir := filepath.Join(tempDir, "venv")
+			// AI TODO: use "uv init --python <python>" to create venv
 			if out, err := runCmd(tempDir, py, "-m", "venv", "venv"); err != nil {
 				t.Fatalf("venv creation failed: %v, output: %s", err, out)
 			}
@@ -107,8 +111,10 @@ func TestPatchWheel(t *testing.T) {
 			if err != nil {
 				t.Fatalf("PatchWheel failed: %v", err)
 			}
+			t.Logf("origWheel=%s patchedWheel=%s", origWheel, patchedWheel)
 
 			// Install the patched wheel.
+			// AI TODO: use uv
 			if out, err := runCmd(tempDir, pipExec, "install", "--force-reinstall", patchedWheel); err != nil {
 				t.Fatalf("failed to install patched wheel: %v, output: %s", err, out)
 			}
