@@ -42,19 +42,22 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 	return metadataFile, recordFile, oldDistInfoPrefix, nil
 }
 
+const versionKey = "Version:"
+
 // parseMetadata scans the METADATA content for the "Version:" and "Name:" fields.
 func parseMetadata(content []byte) (version, distribution string, err error) {
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "Version:") {
-			v := strings.TrimSpace(strings.TrimPrefix(line, "Version:"))
+		if strings.HasPrefix(line, versionKey) {
+			v := strings.TrimSpace(strings.TrimPrefix(line, versionKey))
 			// If there's a '+' in the version, strip it off.
 			if strings.Contains(v, "+") {
 				v = strings.SplitN(v, "+", 2)[0]
 			}
 			version = v
 		} else if strings.HasPrefix(line, "Name:") {
+			// AI TODO: apply similar approach as for Version:
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
 				distribution = strings.TrimSpace(parts[1])
