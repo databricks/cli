@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 // readMetadataAndRecord scans the zip file for files matching the patterns
@@ -55,9 +57,7 @@ func parseMetadata(content []byte) (version, distribution string, err error) {
 		if strings.HasPrefix(line, versionKey) {
 			v := strings.TrimSpace(strings.TrimPrefix(line, versionKey))
 			// If there's a '+' in the version, strip it off.
-			if strings.Contains(v, "+") {
-				v = strings.SplitN(v, "+", 2)[0]
-			}
+			v = strings.SplitN(v, "+", 2)[0]
 			version = v
 		} else if strings.HasPrefix(line, nameKey) {
 			distribution = strings.TrimSpace(strings.TrimPrefix(line, nameKey))
@@ -155,6 +155,7 @@ func PatchWheel(path, outputDir string) (string, error) {
 	}
 
 	baseVersion, distribution, err := parseMetadata(metadataContent)
+	log.Infof(ctx, "path=%s baseVersion=%s distribution=%s err=%s", path, baseVersion, distribution)
 	if err != nil {
 		return "", err
 	}
