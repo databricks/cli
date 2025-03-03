@@ -73,10 +73,6 @@ func setupBundleForFilesToSyncTest(t *testing.T) *bundle.Bundle {
 		ObjectType: workspace.ObjectTypeDirectory,
 	}, nil)
 
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything).Return(&iam.User{
-		UserName: "test@example.com",
-	}, nil)
-
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	return b
 }
@@ -88,7 +84,7 @@ func TestFilesToSync_EverythingIgnored(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, ".gitignore"), "*\n.*\n")
 
 	ctx := context.Background()
-	diags := bundle.Apply(ctx, b, FilesToSync())
+	diags := FilesToSync().Apply(ctx, b)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Equal(t, "There are no files to sync, please check your .gitignore", diags[0].Summary)
@@ -101,7 +97,7 @@ func TestFilesToSync_EverythingExcluded(t *testing.T) {
 	b.Config.Sync.Exclude = []string{"*"}
 
 	ctx := context.Background()
-	diags := bundle.Apply(ctx, b, FilesToSync())
+	diags := FilesToSync().Apply(ctx, b)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Equal(t, "There are no files to sync, please check your .gitignore and sync.exclude configuration", diags[0].Summary)
