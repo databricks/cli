@@ -111,6 +111,11 @@ func AddHandlers(server *testserver.Server) {
 		return ""
 	})
 
+	server.Handle("GET", "/api/2.0/workspace-files/{path:.*}", func(req testserver.Request) any {
+		path := req.Vars["path"]
+		return req.Workspace.WorkspaceFilesExportFile(path)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
 		return testMetastore
 	})
