@@ -48,16 +48,12 @@ func parseMetadata(content []byte) (version, distribution string, err error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "Version:") {
-			// AI TODO: instead of splitting here, simply cut of prefix "Version:" and trim whitespace
-			parts := strings.SplitN(line, ":", 2)
-			if len(parts) == 2 {
-				v := strings.TrimSpace(parts[1])
-				// If there's a '+' in the version, strip it off.
-				if strings.Contains(v, "+") {
-					v = strings.SplitN(v, "+", 2)[0]
-				}
-				version = v
+			v := strings.TrimSpace(strings.TrimPrefix(line, "Version:"))
+			// If there's a '+' in the version, strip it off.
+			if strings.Contains(v, "+") {
+				v = strings.SplitN(v, "+", 2)[0]
 			}
+			version = v
 		} else if strings.HasPrefix(line, "Name:") {
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
