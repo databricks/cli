@@ -1,11 +1,11 @@
 
->>> [CLI] bundle exec -- databricks current-user me
+>>> [CLI] bundle exec -- [CLI] current-user me
 {
   "id":"[USERID]",
   "userName":"[USERNAME]"
 }
 
->>> [CLI] bundle exec --profile myprofile -- databricks current-user me
+>>> [CLI] bundle exec --profile myprofile -- [CLI] current-user me
 {
   "id":"[USERID]",
   "userName":"[USERNAME]"
