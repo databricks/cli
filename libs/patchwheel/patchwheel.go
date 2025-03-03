@@ -213,7 +213,7 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 			Name:   newName,
 			Method: f.Method,
 		}
-		header.SetModTime(f.ModTime())
+		header.Modified = f.ModTime()
 		header.Comment = f.Comment
 		if f.FileInfo().IsDir() && !strings.HasSuffix(header.Name, "/") {
 			header.Name += "/"
