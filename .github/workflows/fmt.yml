@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Run ruff
-        uses: astral-sh/ruff-action@31a518504640beb4897d0b9f9e50a2a9196e75ba # v3.0.1
+        uses: astral-sh/ruff-action@39f75e526a505e26a302f8796977b50c13720edf # v3.2.1
         with:
           version: "0.9.1"
           args: "format --check"
