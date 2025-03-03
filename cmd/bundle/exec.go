@@ -13,6 +13,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type exitCodeErr struct {
+	exitCode int
+	args     []string
+}
+
+func (e *exitCodeErr) Error() string {
+	return fmt.Sprintf("Running %q failed with exit code: %d", strings.Join(e.args, " "), e.exitCode)
+}
+
 func newExecCommand() *cobra.Command {
 	execCmd := &cobra.Command{
 		Use:   "exec",
@@ -110,11 +119,16 @@ Examples:
 			}()
 
 			// Wait for the command to finish.
-			// TODO: Pretty exit codes?
-			// TODO: Make CLI return the same exit codes? It has to, that's a requirement.
 			err = childCmd.Wait()
 			if exitErr, ok := err.(*exec.ExitError); ok {
-				return fmt.Errorf("Command exited with code: %d", exitErr.ExitCode())
+				// We don't propagate the exit code as is because exit codes for
+				// the CLI have not been standardized yet. At some point in the
+				// future we might want to associate specific exit codes with
+				// specific classes of errors.
+				return &exitCodeErr{
+					exitCode: exitErr.ExitCode(),
+					args:     args,
+				}
 			}
 			if err != nil {
 				return fmt.Errorf("Error waiting for command: %w", err)
