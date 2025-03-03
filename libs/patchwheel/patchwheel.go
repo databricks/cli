@@ -42,7 +42,10 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 	return metadataFile, recordFile, oldDistInfoPrefix, nil
 }
 
-const versionKey = "Version:"
+const (
+	versionKey = "Version:"
+	nameKey    = "Name:"
+)
 
 // parseMetadata scans the METADATA content for the "Version:" and "Name:" fields.
 func parseMetadata(content []byte) (version, distribution string, err error) {
@@ -56,8 +59,8 @@ func parseMetadata(content []byte) (version, distribution string, err error) {
 				v = strings.SplitN(v, "+", 2)[0]
 			}
 			version = v
-		} else if strings.HasPrefix(line, "Name:") {
-			distribution = strings.TrimSpace(strings.TrimPrefix(line, "Name:"))
+		} else if strings.HasPrefix(line, nameKey) {
+			distribution = strings.TrimSpace(strings.TrimPrefix(line, nameKey))
 		}
 	}
 	if err := scanner.Err(); err != nil {
