@@ -119,7 +119,7 @@ func TestAuthEnvVars(t *testing.T) {
 }
 
 func TestAuthProcessEnv(t *testing.T) {
-	testutil.ClearEnvironment(t)
+	testutil.NullEnvironment(t)
 
 	// Environment variables that should be inherited by child processes.
 	t.Setenv("HOME", "/home/user")

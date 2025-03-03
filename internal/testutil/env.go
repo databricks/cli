@@ -17,7 +17,7 @@ func CleanupEnvironment(t TestingT) {
 	pwd := os.Getenv("PWD")
 
 	// Clear all environment variables.
-	ClearEnvironment(t)
+	NullEnvironment(t)
 
 	// We use t.Setenv instead of os.Setenv because the former actively
 	// prevents a test being run with t.Parallel. Modifying the environment
@@ -30,10 +30,10 @@ func CleanupEnvironment(t TestingT) {
 	}
 }
 
-// ClearEnvironment sets up an empty environment with no environment variables set.
+// NullEnvironment sets up an empty environment with absolutely no environment variables set.
 // The original environment is restored upon test completion.
 // Note: use of this function is incompatible with parallel execution
-func ClearEnvironment(t TestingT) {
+func NullEnvironment(t TestingT) {
 	// Restore environment when test finishes.
 	environ := os.Environ()
 	t.Cleanup(func() {
