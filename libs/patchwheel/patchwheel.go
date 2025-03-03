@@ -56,11 +56,7 @@ func parseMetadata(content []byte) (version, distribution string, err error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, versionKey) {
-			v := strings.TrimSpace(strings.TrimPrefix(line, versionKey))
-			// AI TODO: return full version here; make caller do the parsing instead.
-			// If there's a '+' in the version, strip it off.
-			v = strings.SplitN(v, "+", 2)[0]
-			version = v
+			version = strings.TrimSpace(strings.TrimPrefix(line, versionKey))
 		} else if strings.HasPrefix(line, nameKey) {
 			distribution = strings.TrimSpace(strings.TrimPrefix(line, nameKey))
 		}
@@ -156,11 +152,14 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", err
 	}
 
-	baseVersion, distribution, err := parseMetadata(metadataContent)
-	log.Infof(ctx, "path=%s baseVersion=%s distribution=%s", path, baseVersion, distribution)
+	version, distribution, err := parseMetadata(metadataContent)
 	if err != nil {
 		return "", err
 	}
+
+	// If there's already a local version (after +), strip it off
+	baseVersion := strings.SplitN(version, "+", 2)[0]
+	log.Infof(ctx, "path=%s baseVersion=%s distribution=%s", path, baseVersion, distribution)
 
 	// Create new version by appending the current datetime.
 	dt := time.Now().Format("20060102150405")
