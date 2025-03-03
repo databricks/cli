@@ -1,0 +1,12 @@
+trace $CLI bundle deploy
+
+title "Expecting to find no wheels"
+trace errcode find.py --expect 0 whl
+
+title "Expecting 1 wheel in libraries section in /jobs/create"
+trace jq -s '.[] | select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
+
+title "Expecting no wheels to be uploaded"
+trace errcode sh -c 'jq .path < out.requests.txt | grep import | grep whl'
+
+rm out.requests.txt

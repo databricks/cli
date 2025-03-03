@@ -1,26 +1,22 @@
 bundle:
-  name: environment_key
+  name: python-wheel
 
 artifacts:
     my_test_code:
       type: whl
       path: "./my_test_code"
-      build: "python3 setup.py bdist_wheel"
+      # using 'python' there because 'python3' does not exist in virtualenv on windows
+      build: python setup.py bdist_wheel
 
 resources:
   jobs:
     test_job:
-      name: "My Wheel Job"
+      name: "[${bundle.target}] My Wheel Job"
       tasks:
         - task_key: TestTask
           existing_cluster_id: "0717-132531-5opeqon1"
           python_wheel_task:
             package_name: "my_test_code"
             entry_point: "run"
-          environment_key:  "test_env"
-      environments:
-        - environment_key:  "test_env"
-          spec:
-            client: "1"
-            dependencies:
-              - ./my_test_code/dist/*.whl
+          libraries:
+          - whl: ./my_test_code/dist/*.whl

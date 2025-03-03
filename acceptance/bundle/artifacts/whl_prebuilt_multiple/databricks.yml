@@ -1,16 +1,6 @@
 bundle:
   name: python-wheel
 
-artifacts:
-    my_test_code:
-      type: whl
-      path: "./my_test_code"
-      build: "python3 setup.py bdist_wheel"
-    my_test_code_2:
-      type: whl
-      path: "./my_test_code"
-      build: "python3 setup2.py bdist_wheel"
-
 resources:
   jobs:
     test_job:
@@ -22,4 +12,5 @@ resources:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: ./my_test_code/dist/*.whl
+          - whl: ./dist/*.whl
+          - whl: ./dist/lib/other_test_code-0.0.1-py3-none-any.whl

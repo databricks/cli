@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel-notebook/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> find.py --expect 1 whl
+dist/my_test_code-0.0.1-py3-none-any.whl
+
+=== Expecting 1 wheel in libraries section in /jobs/create
+>>> jq -s .[] | select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
+[
+  {
+    "existing_cluster_id": "0717-aaaaa-bbbbbb",
+    "libraries": [
+      {
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel-notebook/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+      }
+    ],
+    "notebook_task": {
+      "notebook_path": "/notebook.py"
+    },
+    "task_key": "TestTask"
+  }
+]
+
+=== Expecting 1 wheel to be uploaded
+>>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel-notebook/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel-notebook/default/files/dist/my_test_code-0.0.1-py3-none-any.whl"
