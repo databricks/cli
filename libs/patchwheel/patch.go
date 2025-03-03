@@ -16,6 +16,11 @@ import (
 	"strings"
 )
 
+const (
+	versionKey = "Version:"
+	nameKey    = "Name:"
+)
+
 // readMetadataAndRecord scans the zip file for files matching the patterns
 // "*.dist-info/METADATA" and "*.dist-info/RECORD". If multiple are found, it picks
 // the first one encountered.
@@ -41,11 +46,6 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 	}
 	return metadataFile, recordFile, oldDistInfoPrefix, nil
 }
-
-const (
-	versionKey = "Version:"
-	nameKey    = "Name:"
-)
 
 // parseMetadata scans the METADATA content for the "Version:" and "Name:" fields.
 func parseMetadata(content []byte) (version, distribution string, err error) {
@@ -165,6 +165,7 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 
 	// Target wheel doesn't exist, proceed with patching
+	// AI TODO: write to a temporary file in the same location. Then do rename atomically. Use .tmp<pid> suffix for temp file. Use defer to ensure .tmp<pid> is removed if this function exits early.
 	r, err := zip.OpenReader(path)
 	if err != nil {
 		return "", err
@@ -253,15 +254,18 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 			Name:   newName,
 			Method: f.Method,
 		}
+
 		header.Modified = f.ModTime()
 		header.Comment = f.Comment
 		if f.FileInfo().IsDir() && !strings.HasSuffix(header.Name, "/") {
 			header.Name += "/"
 		}
+
 		writer, err := zipw.CreateHeader(header)
 		if err != nil {
 			return "", err
 		}
+
 		// For METADATA and RECORD files, write the modified content.
 		if strings.HasSuffix(f.Name, "METADATA") && strings.HasPrefix(f.Name, oldDistInfoPrefix) {
 			_, err = writer.Write(newMetadata)
@@ -288,8 +292,10 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 			}
 		}
 	}
+
 	if err := zipw.Close(); err != nil {
 		return "", err
 	}
+
 	return outpath, nil
 }
