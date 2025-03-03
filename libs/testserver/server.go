@@ -2,12 +2,12 @@ package testserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"reflect"
-	"slices"
 	"strings"
 	"sync"
 
@@ -26,18 +26,7 @@ type Server struct {
 	fakeWorkspaces map[string]*FakeWorkspace
 	mu             *sync.Mutex
 
-	RecordRequests        bool
-	IncludeRequestHeaders []string
-
-	Requests []LoggedRequest
-}
-
-type LoggedRequest struct {
-	Headers http.Header `json:"headers,omitempty"`
-	Method  string      `json:"method"`
-	Path    string      `json:"path"`
-	Body    any         `json:"body,omitempty"`
-	RawBody string      `json:"raw_body,omitempty"`
+	RecordRequestsCallback func(request *Request)
 }
 
 type Request struct {
@@ -203,24 +192,23 @@ func New(t testutil.TestingT) *Server {
 	// Set up the not found handler as fallback
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := r.Method + " " + r.URL.Path
+		bodyBytes, err := io.ReadAll(r.Body)
+		var body string
+		if err != nil {
+			body = fmt.Sprintf("failed to read the body: %s", err)
+		} else {
+			body = fmt.Sprintf("[%d bytes] %s", len(bodyBytes), bodyBytes)
+		}
 
-		t.Errorf(`
+		t.Errorf(`No handler for URL: %s
+Body: %s
 
-----------------------------------------
-No stub found for pattern: %s
-
-To stub a response for this request, you can add
-the following to test.toml:
+For acceptance tests, add this to test.toml:
 [[Server]]
 Pattern = %q
-Response.Body = '''
-<response body here>
-'''
-Response.StatusCode = <response status-code here>
-----------------------------------------
-
-
-`, pattern, pattern)
+Response.Body = '<response body here>'
+# Response.StatusCode = <response code if not 200>
+`, r.URL, body, pattern)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)
@@ -265,10 +253,9 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 		}
 
 		request := NewRequest(s.t, r, fakeWorkspace)
-		if s.RecordRequests {
-			s.Requests = append(s.Requests, getLoggedRequest(request, s.IncludeRequestHeaders))
+		if s.RecordRequestsCallback != nil {
+			s.RecordRequestsCallback(&request)
 		}
-
 		respAny := handler(request)
 		resp := normalizeResponse(s.t, respAny)
 
@@ -294,33 +281,6 @@ func getToken(r *http.Request) string {
 	}
 
 	return header[len(prefix):]
-}
-
-func getLoggedRequest(req Request, includedHeaders []string) LoggedRequest {
-	result := LoggedRequest{
-		Method:  req.Method,
-		Path:    req.URL.Path,
-		Headers: filterHeaders(req.Headers, includedHeaders),
-	}
-
-	if json.Valid(req.Body) {
-		result.Body = json.RawMessage(req.Body)
-	} else {
-		result.RawBody = string(req.Body)
-	}
-
-	return result
-}
-
-func filterHeaders(h http.Header, includedHeaders []string) http.Header {
-	headers := make(http.Header)
-	for k, v := range h {
-		if !slices.Contains(includedHeaders, k) {
-			continue
-		}
-		headers[k] = v
-	}
-	return headers
 }
 
 func isNil(i any) bool {

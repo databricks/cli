@@ -1,16 +1,19 @@
 package mutator
 
 import (
+	"context"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/loader"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/libs/diag"
 )
 
-func DefaultMutators() []bundle.Mutator {
-	return []bundle.Mutator{
+func DefaultMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	return bundle.ApplySeq(ctx, b,
 		loader.EntryPoint(),
 
 		// Execute preinit script before processing includes.
@@ -31,5 +34,5 @@ func DefaultMutators() []bundle.Mutator {
 		// Note: This mutator must run before the target overrides are merged.
 		// See the mutator for more details.
 		validate.UniqueResourceKeys(),
-	}
+	)
 }

@@ -13,11 +13,10 @@ func TestApps(t *testing.T) {
 	b := load(t, "./apps")
 	assert.Equal(t, "apps", b.Config.Bundle.Name)
 
-	diags := bundle.Apply(context.Background(), b,
-		bundle.Seq(
-			mutator.SetVariables(),
-			mutator.ResolveVariableReferences("variables"),
-		))
+	diags := bundle.ApplySeq(context.Background(), b,
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferences("variables"),
+	)
 	assert.Empty(t, diags)
 
 	app := b.Config.Resources.Apps["my_app"]
@@ -37,11 +36,10 @@ func TestAppsOverride(t *testing.T) {
 	b := loadTarget(t, "./apps", "development")
 	assert.Equal(t, "apps", b.Config.Bundle.Name)
 
-	diags := bundle.Apply(context.Background(), b,
-		bundle.Seq(
-			mutator.SetVariables(),
-			mutator.ResolveVariableReferences("variables"),
-		))
+	diags := bundle.ApplySeq(context.Background(), b,
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferences("variables"),
+	)
 	assert.Empty(t, diags)
 	app := b.Config.Resources.Apps["my_app"]
 	assert.Equal(t, "my-app", app.Name)

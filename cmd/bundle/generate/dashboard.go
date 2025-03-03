@@ -345,8 +345,12 @@ func (d *dashboard) initialize(b *bundle.Bundle) diag.Diagnostics {
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := bundle.Apply(ctx, b, bundle.Seq(
-		phases.Initialize(),
+	diags := phases.Initialize(ctx, b)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.StatePull(),

@@ -3,8 +3,6 @@
 package budget_policy
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -305,6 +303,8 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: limit_config
+
 	// TODO: array: custom_tags
 	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
 
@@ -321,13 +321,6 @@ func newUpdate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'policy_id' in your JSON input")
-			}
-			return nil
-		}
 		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
