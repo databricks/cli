@@ -1,5 +1,6 @@
 
->>> errcode [CLI] bundle exec -- echo Hello, World!
-Error: Please add a '--' separator. Usage: 'databricks bundle exec -- <command> arg1 arg2 ...'
+>>> errcode [CLI] bundle exec -- echo hello
+hello
+Error: Error waiting for command: exec: Wait was already called
 
 Exit code: 1

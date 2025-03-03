@@ -1,1 +1,1 @@
-trace errcode $CLI bundle exec  echo "Hello,\ World"
+trace errcode $CLI bundle exec -- echo hello

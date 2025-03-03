@@ -25,8 +25,8 @@ func newExecCommand() *cobra.Command {
 		Short: "Execute a command using the same authentication context as the bundle",
 		Args:  cobra.MinimumNArgs(1),
 		Long: `Examples:
-1. databricks bundle exec -- echo "Hello, world!"
-2. databricks bundle exec -- /bin/bash -c "echo 'Hello, world!'"
+1. databricks bundle exec -- echo hello
+2. databricks bundle exec -- /bin/bash -c "echo hello""
 3. databricks bundle exec -- uv run pytest"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.ArgsLenAtDash() != 0 {
@@ -41,7 +41,7 @@ func newExecCommand() *cobra.Command {
 				return diags.Error()
 			}
 
-			childCmd := exec.Command(args[1], args[2:]...)
+			childCmd := exec.Command(args[0], args[1:]...)
 			childCmd.Env = auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
 
 			// Create pipes for stdout and stderr
@@ -82,7 +82,7 @@ func newExecCommand() *cobra.Command {
 
 			// Wait for the command to finish.
 			// TODO: Pretty exit codes?
-			// TODO: Make CLI return the same exit codes?
+			// TODO: Make CLI return the same exit codes? It has to, that's a requirement.
 			err = childCmd.Wait()
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				return fmt.Errorf("Command exited with code: %d", exitErr.ExitCode())
