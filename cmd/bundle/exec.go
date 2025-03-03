@@ -50,7 +50,7 @@ Example usage:
 			env := auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
 
 			// If user has specified a target, pass it to the child command. DABs
-			// defines a "default" target which is a placeholder if no target is defined.
+			// defines a "default" target which is a placeholder for when no target is defined.
 			// If that's the case, i.e. no targets are defined, then do not pass the target.
 			//
 			// This is only useful for when the Databricks CLI is the child command.
