@@ -1,0 +1,15 @@
+# Default target
+trace $CLI bundle exec -- databricks current-user me
+
+# Explicitly select default target
+trace $CLI bundle exec -t pat -- databricks current-user me
+
+# Conflicting targets selected. This should fail because for the child command
+# pat would be configured via environment variables and oauth via the CLI resulting
+# in more than one authorization method configured.
+trace errcode $CLI bundle exec -t pat -- databricks current-user me -t oauth
+
+# Explicitly select oauth target
+export DATABRICKS_TOKEN=""
+export DATABRICKS_CLIENT_SECRET="client-secret"
+trace $CLI bundle exec -t oauth -- databricks current-user me

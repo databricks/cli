@@ -1,0 +1,2 @@
+RecordRequests = true
+IncludeRequestHeaders = ["Authorization"]

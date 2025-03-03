@@ -14,6 +14,27 @@ import (
 
 // TODO: test that -- works with flags as well.
 
+// TODO: Can bundle auth be resolved twice? What about:
+// databricks bundle exec -t foo -- databricks jobs list -t bar?
+// OR
+// databricks bundle exec -- databricks jobs list -t bar?
+// OR
+// databricks bundle exec -- databricks jobs list?
+// OR
+// databricks bundle exec -t foo -- databricks jobs list?
+//
+// For the first two, undefined behavior is fine. For the latter two we need to ensure
+// that the target from exec is respected.
+//
+// Add tests for all four of these cases.
+// --> Do I need similar tests for --profile as well?
+// --> Also add test for what happens with a default target?
+
+// TODO: Add acceptance test that flags are indeed not parsed by the exec command and
+// instead are parsed by the child command.
+
+// # TODO: Table test casing the target permutations
+
 func newExecCommand() *cobra.Command {
 	execCmd := &cobra.Command{
 		Use:   "exec",
@@ -41,7 +62,13 @@ Examples:
 
 			childCmd := exec.Command(args[0], args[1:]...)
 
-			childCmd.Env = auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
+			env := auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
+			// TODO: Test that this works correctly for all permutations.
+			// TODO: Do the same for profile flag.
+			// TODO: TODO: What happens here if a default target is resolved? When
+			// no targets are defined?
+			env = append(env, "DATABRICKS_BUNDLE_TARGET="+b.Config.Bundle.Target)
+			childCmd.Env = env
 
 			// Execute all scripts from the bundle root directory. This behavior can
 			// be surprising in isolation, but we do it to keep the behavior consistent
