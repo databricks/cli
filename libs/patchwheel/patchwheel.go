@@ -132,16 +132,6 @@ type WheelInfo struct {
 	Tags         []string // Python tags (python_tag, abi_tag, platform_tag)
 }
 
-// ExtractVersionFromWheelFilename extracts the version from a wheel filename.
-// Wheel filenames follow the pattern: {distribution}-{version}-{python_tag}-{abi_tag}-{platform_tag}.whl
-func ExtractVersionFromWheelFilename(filename string) (string, error) {
-	info, err := ParseWheelFilename(filename)
-	if err != nil {
-		return "", err
-	}
-	return info.Version, nil
-}
-
 // ParseWheelFilename parses a wheel filename and extracts its components.
 // Wheel filenames follow the pattern: {distribution}-{version}-{python_tag}-{abi_tag}-{platform_tag}.whl
 func ParseWheelFilename(filename string) (*WheelInfo, error) {
@@ -150,22 +140,22 @@ func ParseWheelFilename(filename string) (*WheelInfo, error) {
 	if len(parts) < 5 || !strings.HasSuffix(parts[len(parts)-1], ".whl") {
 		return nil, fmt.Errorf("invalid wheel filename format: %s", filename)
 	}
-	
+
 	// The last three parts are always tags
 	tagStartIdx := len(parts) - 3
-	
+
 	// Everything before the tags except the version is the distribution
 	versionIdx := tagStartIdx - 1
-	
+
 	// Distribution may contain hyphens, so join all parts before the version
 	distribution := strings.Join(parts[:versionIdx], "-")
 	version := parts[versionIdx]
-	
+
 	// Extract tags (remove .whl from the last one)
 	tags := make([]string, 3)
 	copy(tags, parts[tagStartIdx:])
 	tags[2] = strings.TrimSuffix(tags[2], ".whl")
-	
+
 	return &WheelInfo{
 		Distribution: distribution,
 		Version:      version,
@@ -184,34 +174,34 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", err
 	}
 	wheelMtime := fileInfo.ModTime().UTC()
-	
+
 	// Parse the wheel filename to extract components
 	wheelInfo, err := ParseWheelFilename(path)
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Get the base version without any local version
 	baseVersion := strings.SplitN(wheelInfo.Version, "+", 2)[0]
-	
+
 	// Calculate the timestamp suffix for the new version
 	dt := strings.Replace(wheelMtime.Format("20060102150405.00"), ".", "", 1)
 	dt = strings.Replace(dt, ".", "", 1)
 	newVersion := baseVersion + "+" + dt
-	
+
 	// Create the new wheel filename
-	newFilename := fmt.Sprintf("%s-%s-%s.whl", 
-		wheelInfo.Distribution, 
-		newVersion, 
+	newFilename := fmt.Sprintf("%s-%s-%s.whl",
+		wheelInfo.Distribution,
+		newVersion,
 		strings.Join(wheelInfo.Tags, "-"))
 	outpath := filepath.Join(outputDir, newFilename)
-	
+
 	// Check if the target wheel already exists
 	if _, err := os.Stat(outpath); err == nil {
 		// Target wheel already exists, return its path
 		return outpath, nil
 	}
-	
+
 	// Target wheel doesn't exist, proceed with patching
 	r, err := zip.OpenReader(path)
 	if err != nil {
@@ -239,20 +229,20 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Verify that the distribution name in the metadata matches the one from the filename
 	if metadataDistribution != wheelInfo.Distribution {
-		return "", fmt.Errorf("distribution name mismatch: %s (metadata) vs %s (filename)", 
+		return "", fmt.Errorf("distribution name mismatch: %s (metadata) vs %s (filename)",
 			metadataDistribution, wheelInfo.Distribution)
 	}
-	
+
 	// Verify that the base version in the metadata matches the one from the filename
 	metadataBaseVersion := strings.SplitN(metadataVersion, "+", 2)[0]
 	if metadataBaseVersion != baseVersion {
-		return "", fmt.Errorf("version mismatch: %s (metadata) vs %s (filename)", 
+		return "", fmt.Errorf("version mismatch: %s (metadata) vs %s (filename)",
 			metadataBaseVersion, baseVersion)
 	}
-	
+
 	// log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, metadataVersion, newVersion, metadataDistribution)
 
 	// Patch the METADATA content.

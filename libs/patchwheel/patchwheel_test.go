@@ -109,46 +109,46 @@ func getWheel(t *testing.T, dir string) string {
 // TestParseWheelFilename tests the ParseWheelFilename function.
 func TestParseWheelFilename(t *testing.T) {
 	tests := []struct {
-		filename        string
+		filename         string
 		wantDistribution string
-		wantVersion     string
-		wantTags        []string
-		wantErr         bool
+		wantVersion      string
+		wantTags         []string
+		wantErr          bool
 	}{
 		{
-			filename:        "myproj-0.1.0-py3-none-any.whl",
+			filename:         "myproj-0.1.0-py3-none-any.whl",
 			wantDistribution: "myproj",
-			wantVersion:     "0.1.0",
-			wantTags:        []string{"py3", "none", "any"},
-			wantErr:         false,
+			wantVersion:      "0.1.0",
+			wantTags:         []string{"py3", "none", "any"},
+			wantErr:          false,
 		},
 		{
-			filename:        "myproj-0.1.0+20240303123456-py3-none-any.whl",
+			filename:         "myproj-0.1.0+20240303123456-py3-none-any.whl",
 			wantDistribution: "myproj",
-			wantVersion:     "0.1.0+20240303123456",
-			wantTags:        []string{"py3", "none", "any"},
-			wantErr:         false,
+			wantVersion:      "0.1.0+20240303123456",
+			wantTags:         []string{"py3", "none", "any"},
+			wantErr:          false,
 		},
 		{
-			filename:        "my-proj-with-hyphens-0.1.0-py3-none-any.whl",
+			filename:         "my-proj-with-hyphens-0.1.0-py3-none-any.whl",
 			wantDistribution: "my-proj-with-hyphens",
-			wantVersion:     "0.1.0",
-			wantTags:        []string{"py3", "none", "any"},
-			wantErr:         false,
+			wantVersion:      "0.1.0",
+			wantTags:         []string{"py3", "none", "any"},
+			wantErr:          false,
 		},
 		{
-			filename:        "invalid-filename.txt",
+			filename:         "invalid-filename.txt",
 			wantDistribution: "",
-			wantVersion:     "",
-			wantTags:        nil,
-			wantErr:         true,
+			wantVersion:      "",
+			wantTags:         nil,
+			wantErr:          true,
 		},
 		{
-			filename:        "not-enough-parts-py3.whl",
+			filename:         "not-enough-parts-py3.whl",
 			wantDistribution: "",
-			wantVersion:     "",
-			wantTags:        nil,
-			wantErr:         true,
+			wantVersion:      "",
+			wantTags:         nil,
+			wantErr:          true,
 		},
 	}
 
@@ -162,11 +162,6 @@ func TestParseWheelFilename(t *testing.T) {
 				require.Equal(t, tt.wantDistribution, info.Distribution)
 				require.Equal(t, tt.wantVersion, info.Version)
 				require.Equal(t, tt.wantTags, info.Tags)
-				
-				// Also test that ExtractVersionFromWheelFilename returns the same version
-				version, err := ExtractVersionFromWheelFilename(tt.filename)
-				require.NoError(t, err)
-				require.Equal(t, tt.wantVersion, version)
 			}
 		})
 	}
@@ -198,18 +193,18 @@ func TestPatchWheel(t *testing.T) {
 			patchedWheel, err := PatchWheel(context.Background(), origWheel, distDir)
 			require.NoError(t, err)
 			// t.Logf("origWheel=%s patchedWheel=%s", origWheel, patchedWheel)
-			
+
 			// Get file info of the patched wheel
 			patchedInfo, err := os.Stat(patchedWheel)
 			require.NoError(t, err)
 			patchedTime := patchedInfo.ModTime()
-			
+
 			// Test idempotency - patching the same wheel again should produce the same result
 			// and should not recreate the file (file modification time should remain the same)
 			patchedWheel2, err := PatchWheel(context.Background(), origWheel, distDir)
 			require.NoError(t, err)
 			require.Equal(t, patchedWheel, patchedWheel2, "PatchWheel is not idempotent")
-			
+
 			// Check that the file wasn't recreated
 			patchedInfo2, err := os.Stat(patchedWheel2)
 			require.NoError(t, err)
