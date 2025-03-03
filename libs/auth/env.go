@@ -64,7 +64,7 @@ func envVars() []string {
 // ProcessEnv generates the environment variables can be set to authenticate downstream
 // processes to use the same auth credentials as in cfg.
 func ProcessEnv(cfg *config.Config) []string {
-	// We want child telemetry processes to inherit environment variables like $HOME or $HTTPS_PROXY
+	// We want child processes to inherit environment variables like $HOME or $HTTPS_PROXY
 	// because they influence auth resolution.
 	base := os.Environ()
 
@@ -102,7 +102,8 @@ func ProcessEnv(cfg *config.Config) []string {
 		out = append(out, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	// Sort the environment variables so that the output is deterministic.
+	// Sort the environment variables so that the output is deterministic for
+	// unit tests.
 	sort.Slice(out, func(i, j int) bool {
 		return out[i] < out[j]
 	})
