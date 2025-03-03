@@ -51,8 +51,9 @@ func TestAuthDescribeFailure(t *testing.T) {
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
 
+	// run the command:
 	ctx := context.Background()
-	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent", "--log-level", "trace")
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent")
 	outStr := stdout.String()
 
 	require.NotEmpty(t, outStr)
