@@ -1,0 +1,8 @@
+export DATABRICKS_HOST=""
+export DATABRICKS_TOKEN=""
+
+# Confirm that bundle exec works for commands that do not require authentication,
+# even if authentication is not provided.
+trace $CLI bundle exec -- echo hello
+
+trace $CLI bundle exec -- pwd

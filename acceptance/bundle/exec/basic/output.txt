@@ -1,6 +1,6 @@
 
->>> errcode [CLI] bundle exec -- echo hello
-hello
-Error: Error waiting for command: exec: Wait was already called
+>>> [CLI] bundle exec -- echo hello, world
+hello, world
 
-Exit code: 1
+>>> [CLI] bundle exec -- pwd
+[TMPDIR]

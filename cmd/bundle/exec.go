@@ -24,7 +24,13 @@ func newExecCommand() *cobra.Command {
 		Use:   "exec",
 		Short: "Execute a command using the same authentication context as the bundle",
 		Args:  cobra.MinimumNArgs(1),
-		Long: `Examples:
+		// TODO: format once we have all the documentation here.
+		// TODO: implement and pass the cwd environment variable. Maybe we can defer
+		// it until we have a scripts section.
+		Long: `
+Note: This command executes scripts
+
+Examples:
 1. databricks bundle exec -- echo hello
 2. databricks bundle exec -- /bin/bash -c "echo hello""
 3. databricks bundle exec -- uv run pytest"`,
@@ -36,7 +42,7 @@ func newExecCommand() *cobra.Command {
 			// Load the bundle configuration to get the authentication credentials
 			// set in the context.
 			// TODO: What happens when no bundle is configured?
-			_, diags := root.MustConfigureBundle(cmd)
+			b, diags := root.MustConfigureBundle(cmd)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -44,7 +50,11 @@ func newExecCommand() *cobra.Command {
 			childCmd := exec.Command(args[0], args[1:]...)
 			childCmd.Env = auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
 
-			// Create pipes for stdout and stderr
+			// Execute all scripts from the bundle root directory.
+			childCmd.Dir = b.BundleRootPath
+
+			// Create pipes for stdout and stderr.
+			// TODO: Test streaming of this? Is there a way?
 			stdout, err := childCmd.StdoutPipe()
 			if err != nil {
 				return fmt.Errorf("Error creating stdout pipe: %w", err)
@@ -87,8 +97,7 @@ func newExecCommand() *cobra.Command {
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				return fmt.Errorf("Command exited with code: %d", exitErr.ExitCode())
 			}
-
-			if err := childCmd.Wait(); err != nil {
+			if err != nil {
 				return fmt.Errorf("Error waiting for command: %w", err)
 			}
 

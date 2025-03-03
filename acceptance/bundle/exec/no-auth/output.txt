@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle exec -- echo hello
+hello
+
+>>> [CLI] bundle exec -- pwd
+[TMPDIR]

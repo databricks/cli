@@ -1,1 +1,3 @@
-trace errcode $CLI bundle exec -- echo hello
+trace $CLI bundle exec -- echo "hello, world"
+
+trace $CLI bundle exec -- pwd
