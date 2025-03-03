@@ -60,6 +60,11 @@ func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnost
 	return diags
 }
 
+// Run mutators in parallel. Unlike Apply and ApplySeq, this does not perform sync between
+// dynamic and static configuration.
+// Warning: none of the mutators involved must modify bundle directly or indirectly. In particular,
+// the must not call bundle.Apply or bundle.ApplySeq because those include writes to config even if mutator does not.
+// Deprecated: do not use for new use cases. Refactor your parallel task not to depend on bundle at all.
 func ApplyParallelReadonly(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnostics {
 	var allDiags diag.Diagnostics
 	resultsChan := make(chan diag.Diagnostics, len(mutators))
