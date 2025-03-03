@@ -71,9 +71,9 @@ Example usage:
 
 			// Execute all scripts from the bundle root directory. This behavior can
 			// be surprising in isolation, but we do it to keep the behavior consistent
-			// for both cases:
+			// for both these cases:
 			// 1. One shot commands like `databricks bundle exec -- echo hello`
-			// 2. Scripts that are defined in the scripts section of the DAB.
+			// 2. (upcoming) Scripts that are defined in the scripts section of the DAB.
 			//
 			// TODO(shreyas): Add a DATABRICKS_BUNDLE_INITIAL_CWD environment variable
 			// that users can read to figure out the original CWD. I'll do that when
