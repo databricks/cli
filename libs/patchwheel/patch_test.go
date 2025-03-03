@@ -144,6 +144,8 @@ func TestPatchWheel(t *testing.T) {
 
 			runCmd(t, tempDir, "uv", "pip", "install", "-q", patchedWheel)
 
+			// AI TODO: extract this in a function, verifyVersion() that checks the version.
+			// AI TODO check both for prefix but also for exact version that you can get using ParseWheelFilename(patchedWheel)
 			pyExec := filepath.Join(tempDir, ".venv", "bin", "python") // XXX Windows
 			cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; myproj.print_version()")
 			version := strings.TrimSpace(cmdOut)
