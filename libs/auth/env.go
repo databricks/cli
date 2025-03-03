@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -105,9 +104,7 @@ func ProcessEnv(cfg *config.Config) []string {
 	// Sort the environment variables so that the output is deterministic.
 	// Keeping the output deterministic helps with reproducibility and keeping the
 	// behavior consistent incase there are any issues.
-	sort.Slice(out, func(i, j int) bool {
-		return out[i] < out[j]
-	})
+	slices.Sort(out)
 
 	return out
 }
