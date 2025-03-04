@@ -11,17 +11,17 @@ import (
 
 func TestFromTypeBasic(t *testing.T) {
 	type myStruct struct {
-		S             string `json:"s"`
-		I             *int   `json:"i,omitempty"`
-		V             any    `json:"v,omitempty"`
-		TriplePointer ***int `json:"triple_pointer,omitempty"`
+		S                string `json:"s"`
+		I                *int   `json:"i,omitempty"`
+		V                any    `json:"v,omitempty"`
+		TriplePointer    ***int `json:"triple_pointer,omitempty"`
+		DeprecatedTagged string `json:"deprecated_tagged,omitempty" bundle:"deprecated"`
 
 		// These fields should be ignored in the resulting schema.
-		NotAnnotated     string
-		DashedTag        string `json:"-"`
-		InternalTagged   string `json:"internal_tagged" bundle:"internal"`
-		DeprecatedTagged string `json:"deprecated_tagged" bundle:"deprecated"`
-		ReadOnlyTagged   string `json:"readonly_tagged" bundle:"readonly"`
+		NotAnnotated   string
+		DashedTag      string `json:"-"`
+		InternalTagged string `json:"internal_tagged" bundle:"internal"`
+		ReadOnlyTagged string `json:"readonly_tagged" bundle:"readonly"`
 	}
 
 	strRef := "#/$defs/string"
@@ -88,6 +88,9 @@ func TestFromTypeBasic(t *testing.T) {
 					},
 					"triple_pointer": {
 						Reference: &intRef,
+					},
+					"deprecated_tagged": {
+						Reference: &strRef,
 					},
 				},
 				AdditionalProperties: false,
