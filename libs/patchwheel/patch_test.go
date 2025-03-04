@@ -15,13 +15,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var scriptsDir = getPythonScriptsDir()
+var (
+	scriptsDir    = getPythonScriptsDir()
+	prebuiltWheel = "testdata/my_test_code-0.0.1-py3-none-any.whl"
+	emptyZip      = "testdata/empty.zip"
+)
 
 func getPythonScriptsDir() string {
 	if runtime.GOOS == "windows" {
 		return "Scripts"
 	}
 	return "bin"
+}
+
+func getPythonVersions() []string {
+	if testing.Short() {
+		return []string{
+			"python3.9",
+			"python3.12",
+		}
+	} else {
+		return []string{
+			"python3.9",
+			"python3.10",
+			"python3.11",
+			"python3.12",
+			"python3.13",
+		}
+	}
 }
 
 func verifyVersion(t *testing.T, tempDir, wheelPath string) {
@@ -116,9 +137,10 @@ func getWheel(t *testing.T, dir string) string {
 }
 
 func TestPatchWheel(t *testing.T) {
-	pythonVersions := []string{"python3.9", "python3.10", "python3.11", "python3.12"}
+	pythonVersions := getPythonVersions()
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
+			t.Parallel()
 			tempDir := t.TempDir()
 
 			projFiles := minimalPythonProject()
@@ -164,11 +186,6 @@ func TestPatchWheel(t *testing.T) {
 		})
 	}
 }
-
-var (
-	prebuiltWheel = "testdata/my_test_code-0.0.1-py3-none-any.whl"
-	emptyZip      = "testdata/empty.zip"
-)
 
 func TestPrebuilt(t *testing.T) {
 	tempDir := t.TempDir()
