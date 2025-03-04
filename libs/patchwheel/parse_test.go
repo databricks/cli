@@ -23,9 +23,9 @@ func TestCalculateNewVersion(t *testing.T) {
 				Version:      "1.2.3",
 				Tags:         []string{"py3", "none", "any"},
 			},
-			mtime:            time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
-			expectedVersion:  "1.2.3+20250304123456",
-			expectedFilename: "mypkg-1.2.3+20250304123456-py3-none-any.whl",
+			mtime:            time.Date(2025, 3, 4, 12, 34, 56, 780_000_000, time.UTC),
+			expectedVersion:  "1.2.3+2025030412345678",
+			expectedFilename: "mypkg-1.2.3+2025030412345678-py3-none-any.whl",
 		},
 		{
 			name: "existing plus version",
@@ -34,9 +34,9 @@ func TestCalculateNewVersion(t *testing.T) {
 				Version:      "1.2.3+local",
 				Tags:         []string{"py3", "none", "any"},
 			},
-			mtime:            time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
-			expectedVersion:  "1.2.3+20250304123456",
-			expectedFilename: "mypkg-1.2.3+20250304123456-py3-none-any.whl",
+			mtime:            time.Date(2025, 3, 4, 12, 34, 56, 100_000_000, time.UTC),
+			expectedVersion:  "1.2.3+2025030412345610",
+			expectedFilename: "mypkg-1.2.3+2025030412345610-py3-none-any.whl",
 		},
 		{
 			name: "complex distribution name",
@@ -46,8 +46,8 @@ func TestCalculateNewVersion(t *testing.T) {
 				Tags:         []string{"py3", "none", "any"},
 			},
 			mtime:            time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
-			expectedVersion:  "1.2.3+20250304123456",
-			expectedFilename: "my-pkg-name-1.2.3+20250304123456-py3-none-any.whl",
+			expectedVersion:  "1.2.3+2025030412345600",
+			expectedFilename: "my-pkg-name-1.2.3+2025030412345600-py3-none-any.whl",
 		},
 	}
 
