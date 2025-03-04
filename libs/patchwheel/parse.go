@@ -33,7 +33,7 @@ func CalculateNewVersion(info *WheelInfo, mtime time.Time) (newVersion, newFilen
 }
 
 // ParseWheelFilename parses a wheel filename and extracts its components.
-// Wheel filenames follow the pattern: {distribution}-{version}-{python_tag}-{abi_tag}-{platform_tag}.whl
+// Wheel filenames follow the pattern: {distribution}-{version}(-{build tag})?-{python_tag}-{abi_tag}-{platform_tag}.whl
 func ParseWheelFilename(filename string) (*WheelInfo, error) {
 	parts := strings.Split(filename, "-")
 	if len(parts) < 5 {
@@ -48,12 +48,18 @@ func ParseWheelFilename(filename string) (*WheelInfo, error) {
 	tags := parts[tagStartIdx:]
 	tags[2] = strings.TrimSuffix(tags[2], ".whl")
 
-	// Everything before the tags except the version is the distribution
-	versionIdx := tagStartIdx - 1
+	// The version is the second part
+	version := parts[1]
+	
+	// If there are build tags, they are between the version and the python tag
+	// Include them in the version
+	if tagStartIdx > 2 {
+		buildTags := parts[2:tagStartIdx]
+		version = version + "-" + strings.Join(buildTags, "-")
+	}
 
-	// Distribution may contain hyphens, so join all parts before the version
-	distribution := strings.Join(parts[:versionIdx], "-")
-	version := parts[versionIdx]
+	// The distribution is always the first part
+	distribution := parts[0]
 
 	return &WheelInfo{
 		Distribution: distribution,
