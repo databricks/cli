@@ -13,22 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Variants -- existing env
-// Clean install
-// Install unpatched first
-// Install patched then another patched
-
-// Variants -- source setup.py vs pyproject
-//    Different build backends? setuptools vs hatchling vs flit?
-
-// Different tools? e.g. test poetry? test pdm? test regular pip?
-
-// Variants -- python versions
-
-// Variants --
-
-// verifyVersion checks that the installed package version matches the expected version
-// from the patched wheel filename.
 func verifyVersion(t *testing.T, tempDir, wheelPath string) {
 	// Extract the expected version from the wheel filename
 	wheelInfo, err := ParseWheelFilename(wheelPath)
@@ -43,7 +27,6 @@ func verifyVersion(t *testing.T, tempDir, wheelPath string) {
 	assert.Equal(t, expectedVersion, actualVersion, "Installed version doesn't match expected version from wheel filename")
 }
 
-// minimalPythonProject returns a map of file paths to their contents for a minimal Python project.
 func minimalPythonProject() map[string]string {
 	return map[string]string{
 		"pyproject.toml": `[project]
@@ -136,12 +119,10 @@ func TestPatchWheel(t *testing.T) {
 			runCmd(t, tempDir, "uv", "build", "-q", "--wheel")
 			distDir := filepath.Join(tempDir, "dist")
 			origWheel := getWheel(t, distDir)
-			// t.Logf("Found origWheel: %s", origWheel)
 
 			// First patch
 			patchedWheel, err := PatchWheel(context.Background(), origWheel, distDir)
 			require.NoError(t, err)
-			// t.Logf("origWheel=%s patchedWheel=%s", origWheel, patchedWheel)
 
 			// Get file info of the patched wheel
 			patchedInfo, err := os.Stat(patchedWheel)
