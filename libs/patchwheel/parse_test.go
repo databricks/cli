@@ -2,6 +2,7 @@ package patchwheel
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -9,9 +10,9 @@ import (
 // TestCalculateNewVersion tests the CalculateNewVersion function.
 func TestCalculateNewVersion(t *testing.T) {
 	tests := []struct {
-		name     string
-		info     *WheelInfo
-		mtime    time.Time
+		name             string
+		info             *WheelInfo
+		mtime            time.Time
 		expectedVersion  string
 		expectedFilename string
 	}{
@@ -22,7 +23,7 @@ func TestCalculateNewVersion(t *testing.T) {
 				Version:      "1.2.3",
 				Tags:         []string{"py3", "none", "any"},
 			},
-			mtime:    time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
+			mtime:            time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
 			expectedVersion:  "1.2.3+20250304123456",
 			expectedFilename: "mypkg-1.2.3+20250304123456-py3-none-any.whl",
 		},
@@ -33,7 +34,7 @@ func TestCalculateNewVersion(t *testing.T) {
 				Version:      "1.2.3+local",
 				Tags:         []string{"py3", "none", "any"},
 			},
-			mtime:    time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
+			mtime:            time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
 			expectedVersion:  "1.2.3+20250304123456",
 			expectedFilename: "mypkg-1.2.3+20250304123456-py3-none-any.whl",
 		},
@@ -44,7 +45,7 @@ func TestCalculateNewVersion(t *testing.T) {
 				Version:      "1.2.3",
 				Tags:         []string{"py3", "none", "any"},
 			},
-			mtime:    time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
+			mtime:            time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
 			expectedVersion:  "1.2.3+20250304123456",
 			expectedFilename: "my-pkg-name-1.2.3+20250304123456-py3-none-any.whl",
 		},

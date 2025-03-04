@@ -3,6 +3,7 @@ package patchwheel
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 // WheelInfo contains information extracted from a wheel filename
@@ -18,16 +19,16 @@ type WheelInfo struct {
 //   - append +<mtime of the original wheel> to version
 func CalculateNewVersion(info *WheelInfo, mtime time.Time) (newVersion, newFilename string) {
 	baseVersion := strings.SplitN(info.Version, "+", 2)[0]
-	
+
 	dt := strings.Replace(mtime.Format("20060102150405.00"), ".", "", 1)
 	dt = strings.Replace(dt, ".", "", 1)
 	newVersion = baseVersion + "+" + dt
-	
+
 	newFilename = fmt.Sprintf("%s-%s-%s.whl",
 		info.Distribution,
 		newVersion,
 		strings.Join(info.Tags, "-"))
-		
+
 	return newVersion, newFilename
 }
 
