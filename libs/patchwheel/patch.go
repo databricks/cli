@@ -85,8 +85,8 @@ func patchMetadata(r io.Reader, newVersion string) ([]byte, error) {
 
 // patchRecord updates RECORD content: it replaces the old dist-info prefix with the new one
 // in all file paths and, for the METADATA entry, updates the hash and size.
-func patchRecord(recordContent []byte, oldDistInfoPrefix, newDistInfoPrefix, metadataHash string, metadataSize int) ([]byte, error) {
-	scanner := bufio.NewScanner(bytes.NewReader(recordContent))
+func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash string, metadataSize int) ([]byte, error) {
+	scanner := bufio.NewScanner(r)
 	var newLines []string
 	for scanner.Scan() {
 		line := scanner.Text()
