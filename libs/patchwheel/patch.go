@@ -26,23 +26,33 @@ const (
 // the first one encountered.
 func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.File, oldDistInfoPrefix string) {
 	for _, f := range r.File {
-		matched, _ := filepath.Match("*.dist-info/METADATA", f.Name)
-		if matched {
-			if metadataFile == nil {
+		if metadataFile == nil {
+			matched, _ := filepath.Match("*.dist-info/METADATA", f.Name)
+			if matched {
 				metadataFile = f
 				// Determine the old dist-info directory prefix.
 				if i := strings.LastIndex(f.Name, "/"); i != -1 {
 					oldDistInfoPrefix = f.Name[:i+1]
 				}
+
+				if recordFile != nil {
+					break
+				}
+				continue
 			}
-			continue
 		}
 
-		matched, _ = filepath.Match("*.dist-info/RECORD", f.Name)
-		if matched && recordFile == nil {
-			recordFile = f
-		}
+		if recordFile == nil {
+			matched, _ = filepath.Match("*.dist-info/RECORD", f.Name)
+			if matched {
+				recordFile = f
+
+				if metadataFile != nil {
+					break
+				}
+			}
 	}
+
 	return metadataFile, recordFile, oldDistInfoPrefix
 }
 
@@ -115,7 +125,6 @@ func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash
 	}
 	return []byte(strings.Join(newLines, "\n") + "\n"), nil
 }
-
 
 // PatchWheel patches a Python wheel file by updating its version in METADATA and RECORD.
 // It returns the path to the new wheel.
