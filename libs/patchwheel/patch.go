@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -58,38 +57,18 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 	return metadataFile, recordFile, oldDistInfoPrefix
 }
 
-// parseMetadata scans the METADATA content for the "Version:" and "Name:" fields.
-func parseMetadata(r io.Reader) (version, distribution string, err error) {
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, versionKey) {
-			version = strings.TrimSpace(strings.TrimPrefix(line, versionKey))
-		} else if strings.HasPrefix(line, nameKey) {
-			distribution = strings.TrimSpace(strings.TrimPrefix(line, nameKey))
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return "", "", err
-	}
-	if version == "" {
-		return "", "", errors.New("could not parse version from METADATA")
-	}
-	if distribution == "" {
-		return "", "", errors.New("could not parse distribution from METADATA")
-	}
-
-	return version, distribution, nil
-}
-
-// patchMetadata returns new METADATA content with an updated "Version:" field.
-func patchMetadata(r io.Reader, newVersion string) ([]byte, error) {
+// patchMetadata returns new METADATA content with an updated "Version:" field and validates that previous version matches oldVersion
+func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 	scanner := bufio.NewScanner(r)
 	var buf bytes.Buffer
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "Version:") {
-			line = "Version: " + newVersion
+		if strings.HasPrefix(line, versionKey) {
+			foundVersion := strings.TrimSpace(line[len(versionKey):])
+			if foundVersion != oldVersion {
+				return nil, fmt.Errorf("Unexpected version in METADATA: %s (expected %s)", strings.TrimSpace(line), oldVersion)
+			}
+			line = versionKey + newVersion
 		}
 		buf.WriteString(line + "\n")
 	}
@@ -205,39 +184,11 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 	defer recordReader.Close()
 
-	// Verify the metadata version and distribution match what we extracted from filename
-	metadataVersion, metadataDistribution, err := parseMetadata(metadataReader)
+	newMetadata, err := patchMetadata(metadataReader, wheelInfo.Version, newVersion)
 	if err != nil {
 		return "", err
 	}
 
-	// Verify that the distribution name in the metadata matches the one from the filename
-	if metadataDistribution != wheelInfo.Distribution {
-		return "", fmt.Errorf("distribution name mismatch: %s (metadata) vs %s (filename)",
-			metadataDistribution, wheelInfo.Distribution)
-	}
-
-	// Verify that the base version in the metadata matches the one from the filename
-	metadataBaseVersion := strings.SplitN(metadataVersion, "+", 2)[0]
-	if metadataBaseVersion != baseVersion {
-		return "", fmt.Errorf("version mismatch: %s (metadata) vs %s (filename)",
-			metadataBaseVersion, baseVersion)
-	}
-
-	// Reset metadata reader to start by reopening it
-	metadataReader.Close()
-	metadataReader, err = metadataFile.Open()
-	if err != nil {
-		return "", fmt.Errorf("failed to reopen metadata reader: %w", err)
-	}
-
-	// Patch the METADATA content.
-	newMetadata, err := patchMetadata(metadataReader, newVersion)
-	if err != nil {
-		return "", err
-	}
-
-	// Compute the new hash for METADATA.
 	h := sha256.New()
 	h.Write(newMetadata)
 	metadataHash := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(h.Sum(nil))
