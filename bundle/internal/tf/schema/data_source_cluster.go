@@ -46,9 +46,14 @@ type DataSourceClusterClusterInfoClusterLogConfS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceClusterClusterInfoClusterLogConfVolumes struct {
+	Destination string `json:"destination"`
+}
+
 type DataSourceClusterClusterInfoClusterLogConf struct {
-	Dbfs *DataSourceClusterClusterInfoClusterLogConfDbfs `json:"dbfs,omitempty"`
-	S3   *DataSourceClusterClusterInfoClusterLogConfS3   `json:"s3,omitempty"`
+	Dbfs    *DataSourceClusterClusterInfoClusterLogConfDbfs    `json:"dbfs,omitempty"`
+	S3      *DataSourceClusterClusterInfoClusterLogConfS3      `json:"s3,omitempty"`
+	Volumes *DataSourceClusterClusterInfoClusterLogConfVolumes `json:"volumes,omitempty"`
 }
 
 type DataSourceClusterClusterInfoClusterLogStatus struct {
@@ -191,9 +196,14 @@ type DataSourceClusterClusterInfoSpecClusterLogConfS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceClusterClusterInfoSpecClusterLogConfVolumes struct {
+	Destination string `json:"destination"`
+}
+
 type DataSourceClusterClusterInfoSpecClusterLogConf struct {
-	Dbfs *DataSourceClusterClusterInfoSpecClusterLogConfDbfs `json:"dbfs,omitempty"`
-	S3   *DataSourceClusterClusterInfoSpecClusterLogConfS3   `json:"s3,omitempty"`
+	Dbfs    *DataSourceClusterClusterInfoSpecClusterLogConfDbfs    `json:"dbfs,omitempty"`
+	S3      *DataSourceClusterClusterInfoSpecClusterLogConfS3      `json:"s3,omitempty"`
+	Volumes *DataSourceClusterClusterInfoSpecClusterLogConfVolumes `json:"volumes,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecClusterMountInfoNetworkFilesystemInfo struct {
