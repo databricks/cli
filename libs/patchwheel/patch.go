@@ -235,7 +235,7 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 
 	// Reset record reader to start
-	seeker := recordReader.(io.Seeker)
+	seeker = recordReader.(io.Seeker)
 	seeker.Seek(0, io.SeekStart)
 
 	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
