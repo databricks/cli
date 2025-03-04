@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -191,24 +192,23 @@ func New(t testutil.TestingT) *Server {
 	// Set up the not found handler as fallback
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := r.Method + " " + r.URL.Path
+		bodyBytes, err := io.ReadAll(r.Body)
+		var body string
+		if err != nil {
+			body = fmt.Sprintf("failed to read the body: %s", err)
+		} else {
+			body = fmt.Sprintf("[%d bytes] %s", len(bodyBytes), bodyBytes)
+		}
 
-		t.Errorf(`
+		t.Errorf(`No handler for URL: %s
+Body: %s
 
-----------------------------------------
-No stub found for pattern: %s
-
-To stub a response for this request, you can add
-the following to test.toml:
+For acceptance tests, add this to test.toml:
 [[Server]]
 Pattern = %q
-Response.Body = '''
-<response body here>
-'''
-Response.StatusCode = <response status-code here>
-----------------------------------------
-
-
-`, pattern, pattern)
+Response.Body = '<response body here>'
+# Response.StatusCode = <response code if not 200>
+`, r.URL, body, pattern)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)

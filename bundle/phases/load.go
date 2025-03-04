@@ -1,29 +1,40 @@
 package phases
 
 import (
+	"context"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/log"
 )
 
 // The load phase loads configuration from disk and performs
 // lightweight preprocessing (anything that can be done without network I/O).
-func Load() bundle.Mutator {
-	return newPhase(
-		"load",
-		mutator.DefaultMutators(),
-	)
+func Load(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	log.Info(ctx, "Phase: load")
+
+	return mutator.DefaultMutators(ctx, b)
 }
 
-func LoadDefaultTarget() bundle.Mutator {
-	return newPhase(
-		"load",
-		append(mutator.DefaultMutators(), mutator.SelectDefaultTarget()),
-	)
+func LoadDefaultTarget(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	log.Info(ctx, "Phase: load")
+
+	diags := mutator.DefaultMutators(ctx, b)
+	if diags.HasError() {
+		return diags
+	}
+
+	return diags.Extend(bundle.Apply(ctx, b, mutator.SelectDefaultTarget()))
 }
 
-func LoadNamedTarget(target string) bundle.Mutator {
-	return newPhase(
-		"load",
-		append(mutator.DefaultMutators(), mutator.SelectTarget(target)),
-	)
+func LoadNamedTarget(ctx context.Context, b *bundle.Bundle, target string) diag.Diagnostics {
+	log.Info(ctx, "Phase: load")
+
+	diags := mutator.DefaultMutators(ctx, b)
+	if diags.HasError() {
+		return diags
+	}
+
+	return diags.Extend(bundle.Apply(ctx, b, mutator.SelectTarget(target)))
 }

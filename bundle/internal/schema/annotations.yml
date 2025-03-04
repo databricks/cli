@@ -1,25 +1,25 @@
 github.com/databricks/cli/bundle/config.Artifact:
   "build":
     "description": |-
-      An optional set of non-default build commands to run locally before deployment.
+      An optional set of build commands to run locally before deployment.
   "executable":
     "description": |-
       The executable type. Valid values are `bash`, `sh`, and `cmd`.
   "files":
     "description": |-
-      The source files for the artifact.
+      The relative or absolute path to the built artifact files.
   "path":
     "description": |-
-      The location where the built artifact will be saved.
+      The local path of the directory for the artifact.
   "type":
     "description": |-
-      Required. The type of the artifact.
+      Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
     "markdown_description": |-
-      Required. The type of the artifact. Valid values are `whl`.
+      Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
 github.com/databricks/cli/bundle/config.ArtifactFile:
   "source":
     "description": |-
-      Required. The path of the files used to build the artifact.
+      Required. The artifact source file.
 github.com/databricks/cli/bundle/config.Bundle:
   "cluster_id":
     "description": |-
@@ -28,7 +28,7 @@ github.com/databricks/cli/bundle/config.Bundle:
       The ID of a cluster to use to run the bundle. See [_](/dev-tools/bundles/settings.md#cluster_id).
   "compute_id":
     "description": |-
-      PLACEHOLDER
+      Deprecated. The ID of the compute to use to run the bundle.
   "databricks_cli_version":
     "description": |-
       The Databricks CLI version to use for the bundle.
@@ -141,47 +141,49 @@ github.com/databricks/cli/bundle/config.Python:
 github.com/databricks/cli/bundle/config.Resources:
   "apps":
     "description": |-
-      PLACEHOLDER
+      The app resource defines a Databricks app.
+    "markdown_description": |-
+      The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [_](/dev-tools/databricks-apps/index.md).
   "clusters":
     "description": |-
       The cluster definitions for the bundle, where each key is the name of a cluster.
     "markdown_description": |-
-      The cluster definitions for the bundle, where each key is the name of a cluster. See [_](/dev-tools/bundles/resources.md#clusters)
+      The cluster definitions for the bundle, where each key is the name of a cluster. See [_](/dev-tools/bundles/resources.md#clusters).
   "dashboards":
     "description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
-      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [_](/dev-tools/bundles/resources.md#dashboards)
+      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [_](/dev-tools/bundles/resources.md#dashboards).
   "experiments":
     "description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
-      The experiment definitions for the bundle, where each key is the name of the experiment. See [_](/dev-tools/bundles/resources.md#experiments)
+      The experiment definitions for the bundle, where each key is the name of the experiment. See [_](/dev-tools/bundles/resources.md#experiments).
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
     "markdown_description": |-
-      The job definitions for the bundle, where each key is the name of the job. See [_](/dev-tools/bundles/resources.md#jobs)
+      The job definitions for the bundle, where each key is the name of the job. See [_](/dev-tools/bundles/resources.md#jobs).
   "model_serving_endpoints":
     "description": |-
       The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
     "markdown_description": |-
-      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [_](/dev-tools/bundles/resources.md#model_serving_endpoints)
+      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [_](/dev-tools/bundles/resources.md#model_serving_endpoints).
   "models":
     "description": |-
       The model definitions for the bundle, where each key is the name of the model.
     "markdown_description": |-
-      The model definitions for the bundle, where each key is the name of the model. See [_](/dev-tools/bundles/resources.md#models)
+      The model definitions for the bundle, where each key is the name of the model. See [_](/dev-tools/bundles/resources.md#models).
   "pipelines":
     "description": |-
       The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
-      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [_](/dev-tools/bundles/resources.md#pipelines)
+      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [_](/dev-tools/bundles/resources.md#pipelines).
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
     "markdown_description": |-
-      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality_monitors)
+      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality_monitors).
   "registered_models":
     "description": |-
       The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.
@@ -191,12 +193,12 @@ github.com/databricks/cli/bundle/config.Resources:
     "description": |-
       The schema definitions for the bundle, where each key is the name of the schema.
     "markdown_description": |-
-      The schema definitions for the bundle, where each key is the name of the schema. See [_](/dev-tools/bundles/resources.md#schemas)
+      The schema definitions for the bundle, where each key is the name of the schema. See [_](/dev-tools/bundles/resources.md#schemas).
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
     "markdown_description": |-
-      The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volumes)
+      The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volumes).
 github.com/databricks/cli/bundle/config.Root:
   "artifacts":
     "description": |-
@@ -225,7 +227,7 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       Specifies a list of path globs that contain configuration files to include within the bundle.
     "markdown_description": |-
-      Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
+      Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include).
   "permissions":
     "description": |-
       Defines a permission for a specific entity.
@@ -417,44 +419,44 @@ github.com/databricks/cli/bundle/config/resources.Permission:
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-
-      PLACEHOLDER
+      The name of the alert for which to retrieve an ID.
   "cluster":
     "description": |-
-      PLACEHOLDER
+      The name of the cluster for which to retrieve an ID.
   "cluster_policy":
     "description": |-
-      PLACEHOLDER
+      The name of the cluster_policy for which to retrieve an ID.
   "dashboard":
     "description": |-
-      PLACEHOLDER
+      The name of the dashboard for which to retrieve an ID.
   "instance_pool":
     "description": |-
-      PLACEHOLDER
+      The name of the instance_pool for which to retrieve an ID.
   "job":
     "description": |-
-      PLACEHOLDER
+      The name of the job for which to retrieve an ID.
   "metastore":
     "description": |-
-      PLACEHOLDER
+      The name of the metastore for which to retrieve an ID.
   "notification_destination":
     "description": |-
-      PLACEHOLDER
+      The name of the notification_destination for which to retrieve an ID.
   "pipeline":
     "description": |-
-      PLACEHOLDER
+      The name of the pipeline for which to retrieve an ID.
   "query":
     "description": |-
-      PLACEHOLDER
+      The name of the query for which to retrieve an ID.
   "service_principal":
     "description": |-
-      PLACEHOLDER
+      The name of the service_principal for which to retrieve an ID.
   "warehouse":
     "description": |-
-      PLACEHOLDER
+      The name of the warehouse for which to retrieve an ID.
 github.com/databricks/cli/bundle/config/variable.TargetVariable:
   "default":
     "description": |-
-      PLACEHOLDER
+      The default value for the variable.
   "description":
     "description": |-
       The description of the variable.
@@ -475,7 +477,7 @@ github.com/databricks/cli/bundle/config/variable.Variable:
       Defines a custom variable for the bundle. See [_](/dev-tools/bundles/settings.md#variables).
   "default":
     "description": |-
-      PLACEHOLDER
+      The default value for the variable.
   "description":
     "description": |-
       The description of the variable

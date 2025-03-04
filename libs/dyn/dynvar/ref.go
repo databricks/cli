@@ -76,6 +76,10 @@ func IsPureVariableReference(s string) bool {
 	return len(s) > 0 && re.FindString(s) == s
 }
 
+func ContainsVariableReference(s string) bool {
+	return re.MatchString(s)
+}
+
 // If s is a pure variable reference, this function returns the corresponding
 // dyn.Path. Otherwise, it returns false.
 func PureReferenceToPath(s string) (dyn.Path, bool) {

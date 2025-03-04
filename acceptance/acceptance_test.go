@@ -217,8 +217,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
-	if config.LocalOnly && cloudEnv != "" {
-		t.Skipf("Disabled via LocalOnly setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	if !isTruePtr(config.Local) && cloudEnv == "" {
+		t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	}
+
+	if !isTruePtr(config.Cloud) && cloudEnv != "" {
+		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 	}
 
 	var tmpDir string
@@ -263,9 +267,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		databricksLocalHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
 
-		if len(config.Server) > 0 || config.RecordRequests {
+		if len(config.Server) > 0 || isTruePtr(config.RecordRequests) {
 			server = testserver.New(t)
-			if config.RecordRequests {
+			if isTruePtr(config.RecordRequests) {
 				requestsPath := filepath.Join(tmpDir, "out.requests.txt")
 				server.RecordRequestsCallback = func(request *testserver.Request) {
 					req := getLoggedRequest(request, config.IncludeRequestHeaders)
@@ -384,6 +388,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			continue
 		}
 		if _, ok := Ignored[relPath]; ok {
+			continue
+		}
+		if config.CompiledIgnoreObject.MatchesPath(relPath) {
 			continue
 		}
 		unexpected = append(unexpected, relPath)
@@ -702,4 +709,8 @@ func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 		headers[k] = v
 	}
 	return headers
+}
+
+func isTruePtr(value *bool) bool {
+	return value != nil && *value
 }

@@ -1,5 +1,29 @@
 # Version changelog
 
+## [Release] Release v0.242.0
+
+Notable changes:
+Starting this version CLI does not load bundle auth information when CLI command is executed inside the bundle directory with explicitly provided via `-p` flag profile.
+For more details see the related GitHub issue https://github.com/databricks/cli/issues/1358
+
+CLI:
+ * Do not load host from bundle for CLI commands when profile flag is used ([#2335](https://github.com/databricks/cli/pull/2335)).
+ * Fixed accessing required path parameters in CLI generation when --json flag ([#2373](https://github.com/databricks/cli/pull/2373)).
+
+Bundles:
+ * Provide instructions for testing in the default-python template ([#2355](https://github.com/databricks/cli/pull/2355)).
+ * Remove `run_as` from the built-in templates ([#2044](https://github.com/databricks/cli/pull/2044)).
+ * Change warning about incomplete permissions section into a recommendation ([#2043](https://github.com/databricks/cli/pull/2043)).
+ * Refine `mode: production` diagnostic output ([#2236](https://github.com/databricks/cli/pull/2236)).
+ * Support serverless mode in default-python template (explicit prompt) ([#2377](https://github.com/databricks/cli/pull/2377)).
+ * Set default data_security_mode to "SINGLE_USER" in bundle templates ([#2372](https://github.com/databricks/cli/pull/2372)).
+ * Fixed spark version check for clusters defined in the same bundle ([#2374](https://github.com/databricks/cli/pull/2374)).
+
+API Changes:
+ * Added `databricks genie get-message-query-result-by-attachment` command.
+
+OpenAPI commit 99f644e72261ef5ecf8d74db20f4b7a1e09723cc (2025-02-11)
+
 ## [Release] Release v0.241.2
 
 This is a bugfix release to address an issue where jobs with tasks with a

@@ -40,6 +40,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGetMessage())
 	cmd.AddCommand(newGetMessageQueryResult())
+	cmd.AddCommand(newGetMessageQueryResultByAttachment())
 	cmd.AddCommand(newStartConversation())
 
 	// Apply optional overrides to this command.
@@ -339,6 +340,71 @@ func newGetMessageQueryResult() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getMessageQueryResultOverrides {
 		fn(cmd, &getMessageQueryResultReq)
+	}
+
+	return cmd
+}
+
+// start get-message-query-result-by-attachment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMessageQueryResultByAttachmentOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetQueryResultByAttachmentRequest,
+)
+
+func newGetMessageQueryResultByAttachment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMessageQueryResultByAttachmentReq dashboards.GenieGetQueryResultByAttachmentRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-message-query-result-by-attachment SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
+	cmd.Short = `Get conversation message SQL query result by attachment id.`
+	cmd.Long = `Get conversation message SQL query result by attachment id.
+  
+  Get the result of SQL query by attachment id This is only available if a
+  message has a query attachment and the message status is EXECUTING_QUERY.
+
+  Arguments:
+    SPACE_ID: Genie space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+    ATTACHMENT_ID: Attachment ID`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getMessageQueryResultByAttachmentReq.SpaceId = args[0]
+		getMessageQueryResultByAttachmentReq.ConversationId = args[1]
+		getMessageQueryResultByAttachmentReq.MessageId = args[2]
+		getMessageQueryResultByAttachmentReq.AttachmentId = args[3]
+
+		response, err := w.Genie.GetMessageQueryResultByAttachment(ctx, getMessageQueryResultByAttachmentReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMessageQueryResultByAttachmentOverrides {
+		fn(cmd, &getMessageQueryResultByAttachmentReq)
 	}
 
 	return cmd

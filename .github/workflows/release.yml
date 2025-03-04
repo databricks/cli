@@ -46,7 +46,7 @@ jobs:
       # QEMU is required to build cross platform docker images using buildx.
       # It allows virtualization of the CPU architecture at the application level.
       - name: Set up QEMU dependency
-        uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
       - name: Run GoReleaser
         id: releaser

@@ -16,7 +16,7 @@ func SingleNodeCluster() bundle.ReadOnlyMutator {
 	return &singleNodeCluster{}
 }
 
-type singleNodeCluster struct{}
+type singleNodeCluster struct{ bundle.RO }
 
 func (m *singleNodeCluster) Name() string {
 	return "validate:SingleNodeCluster"
@@ -98,7 +98,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 	return false
 }
 
-func (m *singleNodeCluster) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	patterns := []dyn.Pattern{
@@ -115,7 +115,7 @@ func (m *singleNodeCluster) Apply(ctx context.Context, rb bundle.ReadOnlyBundle)
 	}
 
 	for _, p := range patterns {
-		_, err := dyn.MapByPattern(rb.Config().Value(), p, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		_, err := dyn.MapByPattern(b.Config.Value(), p, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			warning := diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   singleNodeWarningSummary,

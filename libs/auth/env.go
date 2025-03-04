@@ -24,3 +24,36 @@ func Env(cfg *config.Config) map[string]string {
 
 	return out
 }
+
+func GetEnvFor(name string) (string, bool) {
+	for _, attr := range config.ConfigAttributes {
+		if attr.Name != name {
+			continue
+		}
+		if len(attr.EnvVars) == 0 {
+			return "", false
+		}
+		return attr.EnvVars[0], true
+	}
+
+	return "", false
+}
+
+// EnvVars returns the list of environment variables that the SDK reads to configure
+// authentication.
+// This is useful for spawning subprocesses since you can unset all auth environment
+// variables to clean up the environment before configuring authentication for the
+// child process.
+func EnvVars() []string {
+	out := []string{}
+
+	for _, attr := range config.ConfigAttributes {
+		if len(attr.EnvVars) == 0 {
+			continue
+		}
+
+		out = append(out, attr.EnvVars...)
+	}
+
+	return out
+}
