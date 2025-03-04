@@ -43,7 +43,7 @@ func ParseWheelFilename(filename string) (*WheelInfo, error) {
 		return nil, fmt.Errorf("invalid wheel filename format: missing .whl extension in %s", filename)
 	}
 
-	// The last three parts are always tags
+	// The last three parts are always the python, abi and platform tags
 	tagStartIdx := len(parts) - 3
 	tags := parts[tagStartIdx:]
 	tags[2] = strings.TrimSuffix(tags[2], ".whl")
@@ -53,6 +53,12 @@ func ParseWheelFilename(filename string) (*WheelInfo, error) {
 	
 	// The version is the second part - don't include build tags
 	version := parts[1]
+
+	// If there are build tags between version and python tag, include them in tags
+	if tagStartIdx > 2 {
+		buildTags := parts[2:tagStartIdx]
+		tags = append(buildTags, tags...)
+	}
 
 	return &WheelInfo{
 		Distribution: distribution,
