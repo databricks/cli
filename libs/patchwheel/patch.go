@@ -130,35 +130,29 @@ func readFile(file *zip.File) ([]byte, error) {
 // The function is idempotent: repeated calls with the same input will produce the same output.
 // If the target wheel already exists, it returns the path to the existing wheel without processing.
 func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
-	// Get the modification time of the input wheel
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return "", err
 	}
 	wheelMtime := fileInfo.ModTime().UTC()
 
-	// Parse the wheel filename to extract components
 	wheelInfo, err := ParseWheelFilename(path)
 	if err != nil {
 		return "", err
 	}
 
-	// Get the base version without any local version
 	baseVersion := strings.SplitN(wheelInfo.Version, "+", 2)[0]
 
-	// Calculate the timestamp suffix for the new version
 	dt := strings.Replace(wheelMtime.Format("20060102150405.00"), ".", "", 1)
 	dt = strings.Replace(dt, ".", "", 1)
 	newVersion := baseVersion + "+" + dt
 
-	// Create the new wheel filename
 	newFilename := fmt.Sprintf("%s-%s-%s.whl",
 		wheelInfo.Distribution,
 		newVersion,
 		strings.Join(wheelInfo.Tags, "-"))
 	outpath := filepath.Join(outputDir, newFilename)
 
-	// Check if the target wheel already exists
 	if _, err := os.Stat(outpath); err == nil {
 		// Target wheel already exists, return its path
 		return outpath, nil
