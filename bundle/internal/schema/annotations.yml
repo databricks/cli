@@ -61,6 +61,8 @@ github.com/databricks/cli/bundle/config.Experimental:
   "pydabs":
     "description": |-
       The PyDABs configuration.
+    "deprecation_message": |-
+      Deprecated: please use python instead
   "python":
     "description": |-
       Configures loading of Python code defined with 'databricks-bundles' package.
@@ -220,6 +222,11 @@ github.com/databricks/cli/bundle/config.Root:
       The bundle attributes when deploying to this target.
     "markdown_description": |-
       The bundle attributes when deploying to this target,
+  "environments":
+    "description": |-
+      PLACEHOLDER
+    "deprecation_message": |-
+      Deprecated: please use targets instead
   "experimental":
     "description": |-
       Defines attributes for experimental features.
@@ -308,6 +315,8 @@ github.com/databricks/cli/bundle/config.Target:
   "compute_id":
     "description": |-
       Deprecated. The ID of the compute to use for this target.
+    "deprecation_message": |-
+      Deprecated: please use cluster_id instead
   "default":
     "description": |-
       Whether this target is the default target.

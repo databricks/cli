@@ -52,7 +52,7 @@ type Root struct {
 	Targets map[string]*Target `json:"targets,omitempty"`
 
 	// DEPRECATED. Left for backward compatibility with Targets
-	Environments map[string]*Target `json:"environments,omitempty" bundle:"deprecated"`
+	Environments map[string]*Target `json:"environments,omitempty"`
 
 	// Sync section specifies options for files synchronization
 	Sync Sync `json:"sync,omitempty"`
