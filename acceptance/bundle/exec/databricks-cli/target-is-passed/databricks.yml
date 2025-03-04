@@ -1,0 +1,10 @@
+bundle:
+  name: foobar
+
+targets:
+  pat:
+    default: true
+
+  oauth:
+    workspace:
+      client_id: client_id
