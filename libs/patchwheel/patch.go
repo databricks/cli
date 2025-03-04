@@ -47,8 +47,8 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 }
 
 // parseMetadata scans the METADATA content for the "Version:" and "Name:" fields.
-func parseMetadata(content []byte) (version, distribution string, err error) {
-	scanner := bufio.NewScanner(bytes.NewReader(content))
+func parseMetadata(r io.Reader) (version, distribution string, err error) {
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, versionKey) {
@@ -67,8 +67,8 @@ func parseMetadata(content []byte) (version, distribution string, err error) {
 }
 
 // patchMetadata returns new METADATA content with an updated "Version:" field.
-func patchMetadata(content []byte, newVersion string) ([]byte, error) {
-	scanner := bufio.NewScanner(bytes.NewReader(content))
+func patchMetadata(r io.Reader, newVersion string) ([]byte, error) {
+	scanner := bufio.NewScanner(r)
 	var buf bytes.Buffer
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -115,14 +115,6 @@ func patchRecord(recordContent []byte, oldDistInfoPrefix, newDistInfoPrefix, met
 	return []byte(strings.Join(newLines, "\n") + "\n"), nil
 }
 
-func readFile(file *zip.File) ([]byte, error) {
-	rc, err := file.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer rc.Close()
-	return io.ReadAll(rc)
-}
 
 // PatchWheel patches a Python wheel file by updating its version in METADATA and RECORD.
 // It returns the path to the new wheel.
@@ -186,18 +178,20 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", fmt.Errorf("wheel %s missing RECORD file", path)
 	}
 
-	metadataContent, err := readFile(metadataFile)
+	metadataReader, err := metadataFile.Open()
 	if err != nil {
 		return "", err
 	}
+	defer metadataReader.Close()
 
-	recordContent, err := readFile(recordFile)
+	recordReader, err := recordFile.Open()
 	if err != nil {
 		return "", err
 	}
+	defer recordReader.Close()
 
 	// Verify the metadata version and distribution match what we extracted from filename
-	metadataVersion, metadataDistribution, err := parseMetadata(metadataContent)
+	metadataVersion, metadataDistribution, err := parseMetadata(metadataReader)
 	if err != nil {
 		return "", err
 	}
@@ -215,8 +209,21 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 			metadataBaseVersion, baseVersion)
 	}
 
+	// Reset metadata reader to start
+	if seeker, ok := metadataReader.(io.Seeker); ok {
+		seeker.Seek(0, io.SeekStart)
+	} else {
+		// If not seekable, reopen
+		metadataReader.Close()
+		metadataReader, err = metadataFile.Open()
+		if err != nil {
+			return "", err
+		}
+		defer metadataReader.Close()
+	}
+
 	// Patch the METADATA content.
-	newMetadata, err := patchMetadata(metadataContent, newVersion)
+	newMetadata, err := patchMetadata(metadataReader, newVersion)
 	if err != nil {
 		return "", err
 	}
@@ -236,7 +243,20 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", fmt.Errorf("unexpected dist-info directory format: %s", oldDistInfoPrefix)
 	}
 
-	newRecord, err := patchRecord(recordContent, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
+	// Reset record reader to start
+	if seeker, ok := recordReader.(io.Seeker); ok {
+		seeker.Seek(0, io.SeekStart)
+	} else {
+		// If not seekable, reopen
+		recordReader.Close()
+		recordReader, err = recordFile.Open()
+		if err != nil {
+			return "", err
+		}
+		defer recordReader.Close()
+	}
+
+	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
 	if err != nil {
 		return "", err
 	}
