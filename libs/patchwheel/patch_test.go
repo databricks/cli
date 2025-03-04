@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -14,13 +15,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var scriptsDir = getPythonScriptsDir()
+
+func getPythonScriptsDir() string {
+	if runtime.GOOS == "windows" {
+		return "Scripts"
+	}
+	return "bin"
+}
+
 func verifyVersion(t *testing.T, tempDir, wheelPath string) {
 	// Extract the expected version from the wheel filename
 	wheelInfo, err := ParseWheelFilename(wheelPath)
 	require.NoError(t, err)
 	expectedVersion := wheelInfo.Version
 
-	pyExec := filepath.Join(tempDir, ".venv", "bin", "python") // Handle Windows paths appropriately
+	pyExec := filepath.Join(tempDir, ".venv", scriptsDir, "python")
 	cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; myproj.print_version()")
 	actualVersion := strings.TrimSpace(cmdOut)
 	t.Logf("Verified installed version: %s", actualVersion)
