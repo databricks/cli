@@ -218,7 +218,7 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
 github.com/databricks/cli/bundle/config/resources.Pipeline:
   "_":
     "markdown_description": |-
-      The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/delta-live-tables/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+      The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
     "markdown_examples": |-
       The following example defines a pipeline with the resource key `hello-pipeline`:
 

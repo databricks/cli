@@ -6520,7 +6520,7 @@ Tags: Additional metadata key-value pairs for this `registered_model`.
   
 **`Type: Map`**
   
-The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/delta-live-tables/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
   
 ```yaml
 pipelines:
