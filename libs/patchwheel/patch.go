@@ -210,14 +210,11 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 			metadataBaseVersion, baseVersion)
 	}
 
-	// Reset metadata reader to start
-	seeker, ok := metadataReader.(io.Seeker)
-	if !ok {
-		return "", fmt.Errorf("metadata reader does not support seeking")
-	}
-	_, err = seeker.Seek(0, io.SeekStart)
+	// Reset metadata reader to start by reopening it
+	metadataReader.Close()
+	metadataReader, err = metadataFile.Open()
 	if err != nil {
-		return "", fmt.Errorf("failed to seek metadata reader: %w", err)
+		return "", fmt.Errorf("failed to reopen metadata reader: %w", err)
 	}
 
 	// Patch the METADATA content.
@@ -241,14 +238,11 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", fmt.Errorf("unexpected dist-info directory format: %s", oldDistInfoPrefix)
 	}
 
-	// Reset record reader to start
-	seeker, ok = recordReader.(io.Seeker)
-	if !ok {
-		return "", fmt.Errorf("record reader does not support seeking")
-	}
-	_, err = seeker.Seek(0, io.SeekStart)
+	// Reset record reader to start by reopening it
+	recordReader.Close()
+	recordReader, err = recordFile.Open()
 	if err != nil {
-		return "", fmt.Errorf("failed to seek record reader: %w", err)
+		return "", fmt.Errorf("failed to reopen record reader: %w", err)
 	}
 
 	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
