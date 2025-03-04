@@ -51,6 +51,7 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 					break
 				}
 			}
+		}
 	}
 
 	return metadataFile, recordFile, oldDistInfoPrefix
