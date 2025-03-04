@@ -21,7 +21,7 @@ This is a description
 :::
   
   
-### some_field.\<name\>.my_attribute
+### some_field._name_.my_attribute
   
 **`Type: Boolean`**
   

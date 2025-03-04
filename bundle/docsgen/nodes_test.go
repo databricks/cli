@@ -93,11 +93,11 @@ func TestBuildNodes_ChildExpansion(t *testing.T) {
 					TopLevel: true,
 					Type:     "Map",
 					ObjectKeyAttributes: []attributeNode{
-						{Title: "mapSub", Type: "Map", Link: "myMap.<name>.mapSub"},
+						{Title: "mapSub", Type: "Map", Link: "myMap._name_.mapSub"},
 					},
 				},
 				{
-					Title: "myMap.<name>.mapSub",
+					Title: "myMap._name_.mapSub",
 					Type:  "Map",
 					Attributes: []attributeNode{
 						{Title: "deepSub", Type: "Boolean"},
