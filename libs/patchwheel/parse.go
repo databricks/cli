@@ -24,6 +24,8 @@ func ParseWheelFilename(filename string) (*WheelInfo, error) {
 
 	// The last three parts are always tags
 	tagStartIdx := len(parts) - 3
+	tags := parts[tagStartIdx:]
+	tags[2] = strings.TrimSuffix(tags[2], ".whl")
 
 	// Everything before the tags except the version is the distribution
 	versionIdx := tagStartIdx - 1
@@ -31,11 +33,6 @@ func ParseWheelFilename(filename string) (*WheelInfo, error) {
 	// Distribution may contain hyphens, so join all parts before the version
 	distribution := strings.Join(parts[:versionIdx], "-")
 	version := parts[versionIdx]
-
-	// Extract tags (remove .whl from the last one)
-	tags := make([]string, 3)
-	copy(tags, parts[tagStartIdx:])
-	tags[2] = strings.TrimSuffix(tags[2], ".whl")
 
 	return &WheelInfo{
 		Distribution: distribution,
