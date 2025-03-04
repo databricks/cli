@@ -17,7 +17,8 @@ object Main {
     spark.range(3).show()
 
     println("Showing nyctaxi trips ...")
-    val df = spark.read.table("samples.nyctaxi.trips").limit(10)
+    val nycTaxi = new NycTaxi(spark)
+    val df = nycTaxi.trips()
 
     // Define a simple UDF that formats the passenger count as a string
     val testudf = udf((count: String) => s"test: $count")

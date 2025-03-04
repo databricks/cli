@@ -9,6 +9,8 @@ version := "{{template `version` .}}"
 libraryDependencies += "com.databricks" % "databricks-connect" % "{{template `dbr_version` .}}.+"
 libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.16"
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % Test
+
 assembly / assemblyOption ~= { _.withIncludeScala(false) }
 assembly / assemblyExcludedJars := {
   val cp = (assembly / fullClasspath).value
@@ -22,3 +24,6 @@ assemblyMergeStrategy := {
 // to run with new jvm options, a fork is required otherwise it uses same options as sbt process
 run / fork := true
 run / javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
+
+test / fork := true
+test / javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
