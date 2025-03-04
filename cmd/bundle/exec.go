@@ -1,9 +1,11 @@
 package bundle
 
 import (
+	"bufio"
 	"fmt"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/cmd/root"
@@ -89,12 +91,71 @@ Example usage:
 			// adding support for the scripts section.
 			childCmd.Dir = b.BundleRootPath
 
-			// Stream the stdout and stderr of the child process directly.
-			childCmd.Stdout = cmd.OutOrStdout()
-			childCmd.Stderr = cmd.ErrOrStderr()
+			stdout, err := childCmd.StdoutPipe()
+			if err != nil {
+				return fmt.Errorf("creating stdout pipe failed: %w", err)
+			}
 
-			// Run the command.
-			err := childCmd.Run()
+			stderr, err := childCmd.StderrPipe()
+			if err != nil {
+				return fmt.Errorf("creating stderr pipe failed: %w", err)
+			}
+
+			// Start the child command.
+			err = childCmd.Start()
+			if err != nil {
+				return fmt.Errorf("starting %q failed: %w", strings.Join(args, " "), err)
+			}
+
+			var wg sync.WaitGroup
+			wg.Add(2)
+
+			var stdoutErr error
+			go func() {
+				reader := bufio.NewReader(stdout)
+				line, err := reader.ReadString('\n')
+				for err == nil {
+					_, err = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", strings.TrimSpace(line))
+					if err != nil {
+						stdoutErr = err
+						break
+					}
+					line, err = reader.ReadString('\n')
+				}
+
+				wg.Done()
+			}()
+
+			var stderrErr error
+			go func() {
+				reader := bufio.NewReader(stderr)
+				// TODO CONTINUE: The formatting is messed u[] because of the new line business
+				// here.
+				// Fix that.
+				line, err := reader.ReadString('\n')
+				for err == nil {
+					_, err = fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", strings.TrimSpace(line))
+					if err != nil {
+						stderrErr = err
+						break
+					}
+					line, err = reader.ReadString('\n')
+				}
+
+				wg.Done()
+			}()
+
+			wg.Wait()
+
+			if stdoutErr != nil {
+				return fmt.Errorf("writing stdout failed: %w", stdoutErr)
+			}
+
+			if stderrErr != nil {
+				return fmt.Errorf("writing stderr failed: %w", stderrErr)
+			}
+
+			err = childCmd.Wait()
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				// We don't make the parent CLI process exit with the same exit code
 				// as the child process because the exit codes for the CLI have not
@@ -108,10 +169,7 @@ Example usage:
 				}
 			}
 			if err != nil {
-				return &runErr{
-					err:  err,
-					args: args,
-				}
+				return fmt.Errorf("running %q failed: %w", strings.Join(args, " "), err)
 			}
 
 			return nil

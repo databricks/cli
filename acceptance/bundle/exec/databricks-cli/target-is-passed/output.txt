@@ -1,14 +1,14 @@
 
 >>> [CLI] bundle exec -- [CLI] current-user me
 {
-  "id":"[USERID]",
-  "userName":"[USERNAME]"
+"id":"[USERID]",
+"userName":"[USERNAME]"
 }
 
 >>> [CLI] bundle exec -t pat -- [CLI] current-user me
 {
-  "id":"[USERID]",
-  "userName":"[USERNAME]"
+"id":"[USERID]",
+"userName":"[USERNAME]"
 }
 
 >>> errcode [CLI] bundle exec -t pat -- [CLI] current-user me -t oauth
@@ -19,6 +19,6 @@ Exit code: 1
 
 >>> [CLI] bundle exec -t oauth -- [CLI] current-user me
 {
-  "id":"[USERID]",
-  "userName":"[USERNAME]"
+"id":"[USERID]",
+"userName":"[USERNAME]"
 }
