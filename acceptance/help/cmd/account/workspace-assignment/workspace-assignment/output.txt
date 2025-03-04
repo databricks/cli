@@ -1,0 +1,86 @@
+
+>>> $CLI account workspace-assignment delete --help
+Delete permissions assignment.
+  
+  Deletes the workspace permissions assignment in a given account and workspace
+  for the specified principal.
+
+  Arguments:
+    WORKSPACE_ID: The workspace ID for the account.
+    PRINCIPAL_ID: The ID of the user, service principal, or group.
+
+Usage:
+  databricks account workspace-assignment delete WORKSPACE_ID PRINCIPAL_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account workspace-assignment get --help
+List workspace permissions.
+  
+  Get an array of workspace permissions for the specified account and workspace.
+
+  Arguments:
+    WORKSPACE_ID: The workspace ID.
+
+Usage:
+  databricks account workspace-assignment get WORKSPACE_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account workspace-assignment list --help
+Get permission assignments.
+  
+  Get the permission assignments for the specified Databricks account and
+  Databricks workspace.
+
+  Arguments:
+    WORKSPACE_ID: The workspace ID for the account.
+
+Usage:
+  databricks account workspace-assignment list WORKSPACE_ID [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account workspace-assignment update --help
+Create or update permissions assignment.
+  
+  Creates or updates the workspace permissions assignment in a given account and
+  workspace for the specified principal.
+
+  Arguments:
+    WORKSPACE_ID: The workspace ID.
+    PRINCIPAL_ID: The ID of the user, service principal, or group.
+
+Usage:
+  databricks account workspace-assignment update WORKSPACE_ID PRINCIPAL_ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

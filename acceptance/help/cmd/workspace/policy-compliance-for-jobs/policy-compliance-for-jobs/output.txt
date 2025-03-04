@@ -1,0 +1,72 @@
+
+>>> $CLI policy-compliance-for-jobs enforce-compliance --help
+Enforce job policy compliance.
+  
+  Updates a job so the job clusters that are created when running the job
+  (specified in new_cluster) are compliant with the current versions of their
+  respective cluster policies. All-purpose clusters used in the job will not be
+  updated.
+
+  Arguments:
+    JOB_ID: The ID of the job you want to enforce policy compliance on.
+
+Usage:
+  databricks policy-compliance-for-jobs enforce-compliance JOB_ID [flags]
+
+Flags:
+  -h, --help            help for enforce-compliance
+      --json JSON       either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --validate-only   If set, previews changes made to the job to comply with its policy, but does not update the job.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI policy-compliance-for-jobs get-compliance --help
+Get job policy compliance.
+  
+  Returns the policy compliance status of a job. Jobs could be out of compliance
+  if a cluster policy they use was updated after the job was last edited and
+  some of its job clusters no longer comply with their updated policies.
+
+  Arguments:
+    JOB_ID: The ID of the job whose compliance status you are requesting.
+
+Usage:
+  databricks policy-compliance-for-jobs get-compliance JOB_ID [flags]
+
+Flags:
+  -h, --help   help for get-compliance
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI policy-compliance-for-jobs list-compliance --help
+List job policy compliance.
+  
+  Returns the policy compliance status of all jobs that use a given policy. Jobs
+  could be out of compliance if a cluster policy they use was updated after the
+  job was last edited and its job clusters no longer comply with the updated
+  policy.
+
+  Arguments:
+    POLICY_ID: Canonical unique identifier for the cluster policy.
+
+Usage:
+  databricks policy-compliance-for-jobs list-compliance POLICY_ID [flags]
+
+Flags:
+  -h, --help                help for list-compliance
+      --page-size int       Use this field to specify the maximum number of results to be returned by the server.
+      --page-token string   A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

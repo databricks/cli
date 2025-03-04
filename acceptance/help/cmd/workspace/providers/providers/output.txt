@@ -1,0 +1,143 @@
+
+>>> $CLI providers create --help
+Create an auth provider.
+  
+  Creates a new authentication provider minimally based on a name and
+  authentication type. The caller must be an admin on the metastore.
+
+  Arguments:
+    NAME: The name of the Provider.
+    AUTHENTICATION_TYPE: The delta sharing authentication type.
+
+Usage:
+  databricks providers create NAME AUTHENTICATION_TYPE [flags]
+
+Flags:
+      --comment string                 Description about the provider.
+  -h, --help                           help for create
+      --json JSON                      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --recipient-profile-str string   This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI providers delete --help
+Delete a provider.
+  
+  Deletes an authentication provider, if the caller is a metastore admin or is
+  the owner of the provider.
+
+  Arguments:
+    NAME: Name of the provider.
+
+Usage:
+  databricks providers delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI providers get --help
+Get a provider.
+  
+  Gets a specific authentication provider. The caller must supply the name of
+  the provider, and must either be a metastore admin or the owner of the
+  provider.
+
+  Arguments:
+    NAME: Name of the provider.
+
+Usage:
+  databricks providers get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI providers list --help
+List providers.
+  
+  Gets an array of available authentication providers. The caller must either be
+  a metastore admin or the owner of the providers. Providers not owned by the
+  caller are not included in the response. There is no guarantee of a specific
+  ordering of the elements in the array.
+
+Usage:
+  databricks providers list [flags]
+
+Flags:
+      --data-provider-global-metastore-id string   If not provided, all providers will be returned.
+  -h, --help                                       help for list
+      --max-results int                            Maximum number of providers to return.
+      --page-token string                          Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI providers list-shares --help
+List shares by Provider.
+  
+  Gets an array of a specified provider's shares within the metastore where:
+  
+  * the caller is a metastore admin, or * the caller is the owner.
+
+  Arguments:
+    NAME: Name of the provider in which to list shares.
+
+Usage:
+  databricks providers list-shares NAME [flags]
+
+Flags:
+  -h, --help                help for list-shares
+      --max-results int     Maximum number of shares to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI providers update --help
+Update a provider.
+  
+  Updates the information for an authentication provider, if the caller is a
+  metastore admin or is the owner of the provider. If the update changes the
+  provider name, the caller must be both a metastore admin and the owner of the
+  provider.
+
+  Arguments:
+    NAME: Name of the provider.
+
+Usage:
+  databricks providers update NAME [flags]
+
+Flags:
+      --comment string                 Description about the provider.
+  -h, --help                           help for update
+      --json JSON                      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string                New name for the provider.
+      --owner string                   Username of Provider owner.
+      --recipient-profile-str string   This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

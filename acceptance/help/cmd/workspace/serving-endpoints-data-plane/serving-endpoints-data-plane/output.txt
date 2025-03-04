@@ -1,0 +1,5 @@
+
+>>> $CLI serving-endpoints-data-plane query --help
+Error: unknown command "serving-endpoints-data-plane" for "databricks"
+
+Exit code: 1

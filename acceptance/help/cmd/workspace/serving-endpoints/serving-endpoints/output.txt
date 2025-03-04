@@ -1,0 +1,394 @@
+
+>>> $CLI serving-endpoints build-logs --help
+Get build logs for a served model.
+  
+  Retrieves the build logs associated with the provided served model.
+
+  Arguments:
+    NAME: The name of the serving endpoint that the served model belongs to. This
+      field is required.
+    SERVED_MODEL_NAME: The name of the served model that build logs will be retrieved for. This
+      field is required.
+
+Usage:
+  databricks serving-endpoints build-logs NAME SERVED_MODEL_NAME [flags]
+
+Flags:
+  -h, --help   help for build-logs
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints create --help
+Create a new serving endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint. This field is required and must be
+      unique across a Databricks workspace. An endpoint name can consist of
+      alphanumeric characters, dashes, and underscores.
+
+Usage:
+  databricks serving-endpoints create NAME [flags]
+
+Flags:
+  -h, --help               help for create
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach NOT_UPDATING state
+      --route-optimized    Enable route optimization for the serving endpoint.
+      --timeout duration   maximum amount of time to reach NOT_UPDATING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints delete --help
+Delete a serving endpoint.
+
+Usage:
+  databricks serving-endpoints delete NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints export-metrics --help
+Get metrics of a serving endpoint.
+  
+  Retrieves the metrics associated with the provided serving endpoint in either
+  Prometheus or OpenMetrics exposition format.
+
+  Arguments:
+    NAME: The name of the serving endpoint to retrieve metrics for. This field is
+      required.
+
+Usage:
+  databricks serving-endpoints export-metrics NAME [flags]
+
+Flags:
+  -h, --help   help for export-metrics
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints get --help
+Get a single serving endpoint.
+  
+  Retrieves the details for a single serving endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint. This field is required.
+
+Usage:
+  databricks serving-endpoints get NAME [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints get-open-api --help
+Get the schema for a serving endpoint.
+  
+  Get the query schema of the serving endpoint in OpenAPI format. The schema
+  contains information for the supported paths, input and output format and
+  datatypes.
+
+  Arguments:
+    NAME: The name of the serving endpoint that the served model belongs to. This
+      field is required.
+
+Usage:
+  databricks serving-endpoints get-open-api NAME [flags]
+
+Flags:
+  -h, --help   help for get-open-api
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints get-permission-levels --help
+Get serving endpoint permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.
+
+Usage:
+  databricks serving-endpoints get-permission-levels SERVING_ENDPOINT_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints get-permissions --help
+Get serving endpoint permissions.
+  
+  Gets the permissions of a serving endpoint. Serving endpoints can inherit
+  permissions from their root object.
+
+  Arguments:
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.
+
+Usage:
+  databricks serving-endpoints get-permissions SERVING_ENDPOINT_ID [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints http-request --help
+Make external services call using the credentials stored in UC Connection.
+
+  Arguments:
+    CONNECTION_NAME: The connection name to use. This is required to identify the external
+      connection.
+    METHOD: The HTTP method to use (e.g., 'GET', 'POST').
+    PATH: The relative path for the API endpoint. This is required.
+
+Usage:
+  databricks serving-endpoints http-request CONNECTION_NAME METHOD PATH [flags]
+
+Flags:
+      --headers string   Additional headers for the request.
+  -h, --help             help for http-request
+      --json string      The JSON payload to send in the request body.
+      --params string    Query parameters for the request.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints list --help
+Get all serving endpoints.
+
+Usage:
+  databricks serving-endpoints list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints logs --help
+Get the latest logs for a served model.
+  
+  Retrieves the service logs associated with the provided served model.
+
+  Arguments:
+    NAME: The name of the serving endpoint that the served model belongs to. This
+      field is required.
+    SERVED_MODEL_NAME: The name of the served model that logs will be retrieved for. This field
+      is required.
+
+Usage:
+  databricks serving-endpoints logs NAME SERVED_MODEL_NAME [flags]
+
+Flags:
+  -h, --help   help for logs
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints patch --help
+Update tags of a serving endpoint.
+  
+  Used to batch add and delete tags from a serving endpoint with a single API
+  call.
+
+  Arguments:
+    NAME: The name of the serving endpoint who's tags to patch. This field is
+      required.
+
+Usage:
+  databricks serving-endpoints patch NAME [flags]
+
+Flags:
+  -h, --help        help for patch
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints put --help
+Update rate limits of a serving endpoint.
+  
+  Used to update the rate limits of a serving endpoint. NOTE: Only foundation
+  model endpoints are currently supported. For external models, use AI Gateway
+  to manage rate limits.
+
+  Arguments:
+    NAME: The name of the serving endpoint whose rate limits are being updated. This
+      field is required.
+
+Usage:
+  databricks serving-endpoints put NAME [flags]
+
+Flags:
+  -h, --help        help for put
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints put-ai-gateway --help
+Update AI Gateway of a serving endpoint.
+  
+  Used to update the AI Gateway of a serving endpoint. NOTE: Only external model
+  and provisioned throughput endpoints are currently supported.
+
+  Arguments:
+    NAME: The name of the serving endpoint whose AI Gateway is being updated. This
+      field is required.
+
+Usage:
+  databricks serving-endpoints put-ai-gateway NAME [flags]
+
+Flags:
+  -h, --help        help for put-ai-gateway
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints query --help
+Query a serving endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint. This field is required.
+
+Usage:
+  databricks serving-endpoints query NAME [flags]
+
+Flags:
+  -h, --help                help for query
+      --json JSON           either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --max-tokens int      The max tokens field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.
+      --n int               The n (number of candidates) field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.
+      --stream              The stream field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.
+      --temperature float   The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints set-permissions --help
+Set serving endpoint permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.
+
+Usage:
+  databricks serving-endpoints set-permissions SERVING_ENDPOINT_ID [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints update-config --help
+Update config of a serving endpoint.
+  
+  Updates any combination of the serving endpoint's served entities, the compute
+  configuration of those served entities, and the endpoint's traffic config. An
+  endpoint that already has an update in progress can not be updated until the
+  current update completes or fails.
+
+  Arguments:
+    NAME: The name of the serving endpoint to update. This field is required.
+
+Usage:
+  databricks serving-endpoints update-config NAME [flags]
+
+Flags:
+  -h, --help               help for update-config
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach NOT_UPDATING state
+      --timeout duration   maximum amount of time to reach NOT_UPDATING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI serving-endpoints update-permissions --help
+Update serving endpoint permissions.
+  
+  Updates the permissions on a serving endpoint. Serving endpoints can inherit
+  permissions from their root object.
+
+  Arguments:
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.
+
+Usage:
+  databricks serving-endpoints update-permissions SERVING_ENDPOINT_ID [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

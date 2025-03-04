@@ -1,0 +1,121 @@
+
+>>> $CLI genie create-message --help
+Create conversation message.
+  
+  Create new message in [conversation](:method:genie/startconversation). The AI
+  response uses all previously created messages in the conversation to respond.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the conversation is started.
+    CONVERSATION_ID: The ID associated with the conversation.
+    CONTENT: User message content.
+
+Usage:
+  databricks genie create-message SPACE_ID CONVERSATION_ID CONTENT [flags]
+
+Flags:
+  -h, --help               help for create-message
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach COMPLETED state
+      --timeout duration   maximum amount of time to reach COMPLETED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI genie execute-message-query --help
+Execute SQL query in a conversation message.
+  
+  Execute the SQL query in the message.
+
+  Arguments:
+    SPACE_ID: Genie space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+
+Usage:
+  databricks genie execute-message-query SPACE_ID CONVERSATION_ID MESSAGE_ID [flags]
+
+Flags:
+  -h, --help   help for execute-message-query
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI genie get-message --help
+Get conversation message.
+  
+  Get message from conversation.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the target conversation is
+      located.
+    CONVERSATION_ID: The ID associated with the target conversation.
+    MESSAGE_ID: The ID associated with the target message from the identified
+      conversation.
+
+Usage:
+  databricks genie get-message SPACE_ID CONVERSATION_ID MESSAGE_ID [flags]
+
+Flags:
+  -h, --help   help for get-message
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI genie get-message-query-result --help
+Get conversation message SQL query result.
+  
+  Get the result of SQL query if the message has a query attachment. This is
+  only available if a message has a query attachment and the message status is
+  EXECUTING_QUERY.
+
+  Arguments:
+    SPACE_ID: Genie space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+
+Usage:
+  databricks genie get-message-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID [flags]
+
+Flags:
+  -h, --help   help for get-message-query-result
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI genie start-conversation --help
+Start conversation.
+  
+  Start a new conversation.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where you want to start a
+      conversation.
+    CONTENT: The text of the message that starts the conversation.
+
+Usage:
+  databricks genie start-conversation SPACE_ID CONTENT [flags]
+
+Flags:
+  -h, --help               help for start-conversation
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach COMPLETED state
+      --timeout duration   maximum amount of time to reach COMPLETED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

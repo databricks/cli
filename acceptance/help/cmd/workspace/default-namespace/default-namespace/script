@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI default-namespace delete --help
+trace $CLI default-namespace get --help
+trace $CLI default-namespace update --help

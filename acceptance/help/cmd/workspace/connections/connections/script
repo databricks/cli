@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI connections create --help
+trace $CLI connections delete --help
+trace $CLI connections get --help
+trace $CLI connections list --help
+trace $CLI connections update --help

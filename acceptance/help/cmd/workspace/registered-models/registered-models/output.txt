@@ -1,0 +1,208 @@
+
+>>> $CLI registered-models create --help
+Create a Registered Model.
+  
+  Creates a new registered model in Unity Catalog.
+  
+  File storage for model versions in the registered model will be located in the
+  default location which is specified by the parent schema, or the parent
+  catalog, or the Metastore.
+  
+  For registered model creation to succeed, the user must satisfy the following
+  conditions: - The caller must be a metastore admin, or be the owner of the
+  parent catalog and schema, or have the **USE_CATALOG** privilege on the parent
+  catalog and the **USE_SCHEMA** privilege on the parent schema. - The caller
+  must have the **CREATE MODEL** or **CREATE FUNCTION** privilege on the parent
+  schema.
+
+  Arguments:
+    CATALOG_NAME: The name of the catalog where the schema and the registered model reside
+    SCHEMA_NAME: The name of the schema where the registered model resides
+    NAME: The name of the registered model
+
+Usage:
+  databricks registered-models create CATALOG_NAME SCHEMA_NAME NAME [flags]
+
+Flags:
+      --comment string            The comment attached to the registered model.
+  -h, --help                      help for create
+      --json JSON                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --storage-location string   The storage location on the cloud under which model version data files are stored.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI registered-models delete --help
+Delete a Registered Model.
+  
+  Deletes a registered model and all its model versions from the specified
+  parent catalog and schema.
+  
+  The caller must be a metastore admin or an owner of the registered model. For
+  the latter case, the caller must also be the owner or have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model
+
+Usage:
+  databricks registered-models delete FULL_NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI registered-models delete-alias --help
+Delete a Registered Model Alias.
+  
+  Deletes a registered model alias.
+  
+  The caller must be a metastore admin or an owner of the registered model. For
+  the latter case, the caller must also be the owner or have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model
+    ALIAS: The name of the alias
+
+Usage:
+  databricks registered-models delete-alias FULL_NAME ALIAS [flags]
+
+Flags:
+  -h, --help   help for delete-alias
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI registered-models get --help
+Get a Registered Model.
+  
+  Get a registered model.
+  
+  The caller must be a metastore admin or an owner of (or have the **EXECUTE**
+  privilege on) the registered model. For the latter case, the caller must also
+  be the owner or have the **USE_CATALOG** privilege on the parent catalog and
+  the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model
+
+Usage:
+  databricks registered-models get FULL_NAME [flags]
+
+Flags:
+  -h, --help              help for get
+      --include-aliases   Whether to include registered model aliases in the response.
+      --include-browse    Whether to include registered models in the response for which the principal can only access selective metadata for.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI registered-models list --help
+List Registered Models.
+  
+  List registered models. You can list registered models under a particular
+  schema, or list all registered models in the current metastore.
+  
+  The returned models are filtered based on the privileges of the calling user.
+  For example, the metastore admin is able to list all the registered models. A
+  regular user needs to be the owner or have the **EXECUTE** privilege on the
+  registered model to recieve the registered models in the response. For the
+  latter case, the caller must also be the owner or have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema.
+  
+  There is no guarantee of a specific ordering of the elements in the response.
+
+Usage:
+  databricks registered-models list [flags]
+
+Flags:
+      --catalog-name string   The identifier of the catalog under which to list registered models.
+  -h, --help                  help for list
+      --include-browse        Whether to include registered models in the response for which the principal can only access selective metadata for.
+      --max-results int       Max number of registered models to return.
+      --page-token string     Opaque token to send for the next page of results (pagination).
+      --schema-name string    The identifier of the schema under which to list registered models.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI registered-models set-alias --help
+Set a Registered Model Alias.
+  
+  Set an alias on the specified registered model.
+  
+  The caller must be a metastore admin or an owner of the registered model. For
+  the latter case, the caller must also be the owner or have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema.
+
+  Arguments:
+    FULL_NAME: Full name of the registered model
+    ALIAS: The name of the alias
+    VERSION_NUM: The version number of the model version to which the alias points
+
+Usage:
+  databricks registered-models set-alias FULL_NAME ALIAS VERSION_NUM [flags]
+
+Flags:
+  -h, --help        help for set-alias
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI registered-models update --help
+Update a Registered Model.
+  
+  Updates the specified registered model.
+  
+  The caller must be a metastore admin or an owner of the registered model. For
+  the latter case, the caller must also be the owner or have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema.
+  
+  Currently only the name, the owner or the comment of the registered model can
+  be updated.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model
+
+Usage:
+  databricks registered-models update FULL_NAME [flags]
+
+Flags:
+      --comment string    The comment attached to the registered model.
+  -h, --help              help for update
+      --json JSON         either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string   New name for the registered model.
+      --owner string      The identifier of the user who owns the registered model.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

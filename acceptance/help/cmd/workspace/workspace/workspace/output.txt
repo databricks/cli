@@ -1,0 +1,268 @@
+
+>>> $CLI workspace delete --help
+Delete a workspace object.
+  
+  Deletes an object or a directory (and optionally recursively deletes all
+  objects in the directory). * If path does not exist, this call returns an
+  error RESOURCE_DOES_NOT_EXIST. * If path is a non-empty directory and
+  recursive is set to false, this call returns an error
+  DIRECTORY_NOT_EMPTY.
+  
+  Object deletion cannot be undone and deleting a directory recursively is not
+  atomic.
+
+  Arguments:
+    PATH: The absolute path of the notebook or directory.
+
+Usage:
+  databricks workspace delete PATH [flags]
+
+Flags:
+  -h, --help        help for delete
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --recursive   The flag that specifies whether to delete the object recursively.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace export --help
+Export a workspace object.
+  
+  Exports an object or the contents of an entire directory.
+  
+  If path does not exist, this call returns an error
+  RESOURCE_DOES_NOT_EXIST.
+  
+  If the exported data would exceed size limit, this call returns
+  MAX_NOTEBOOK_SIZE_EXCEEDED. Currently, this API does not support exporting a
+  library.
+
+  Arguments:
+    PATH: The absolute path of the object or directory. Exporting a directory is
+      only supported for the DBC, SOURCE, and AUTO format.
+
+Usage:
+  databricks workspace export SOURCE_PATH [flags]
+
+Flags:
+      --file string           Path on the local file system to save exported file at.
+      --format ExportFormat   This specifies the format of the exported file. Supported values: [
+                                AUTO,
+                                DBC,
+                                HTML,
+                                JUPYTER,
+                                R_MARKDOWN,
+                                SOURCE,
+                              ]
+  -h, --help                  help for export
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace get-permission-levels --help
+Get workspace object permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.
+
+Usage:
+  databricks workspace get-permission-levels WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace get-permissions --help
+Get workspace object permissions.
+  
+  Gets the permissions of a workspace object. Workspace objects can inherit
+  permissions from their parent objects or root object.
+
+  Arguments:
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.
+
+Usage:
+  databricks workspace get-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace get-status --help
+Get status.
+  
+  Gets the status of an object or a directory. If path does not exist, this
+  call returns an error RESOURCE_DOES_NOT_EXIST.
+
+  Arguments:
+    PATH: The absolute path of the notebook or directory.
+
+Usage:
+  databricks workspace get-status PATH [flags]
+
+Flags:
+  -h, --help   help for get-status
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace import --help
+Import a workspace object.
+  
+  Imports a workspace object (for example, a notebook or file) or the contents
+  of an entire directory. If path already exists and overwrite is set to
+  false, this call returns an error RESOURCE_ALREADY_EXISTS. To import a
+  directory, you can use either the DBC format or the SOURCE format with the
+  language field unset. To import a single file as SOURCE, you must set the
+  language field.
+
+  Arguments:
+    PATH: The absolute path of the object or directory. Importing a directory is
+      only supported for the DBC and SOURCE formats.
+
+Usage:
+  databricks workspace import TARGET_PATH [flags]
+
+Flags:
+      --content string        The base64-encoded content.
+      --file string           Path of local file to import
+      --format ImportFormat   This specifies the format of the file to be imported. Supported values: [
+                                AUTO,
+                                DBC,
+                                HTML,
+                                JUPYTER,
+                                RAW,
+                                R_MARKDOWN,
+                                SOURCE,
+                              ]
+  -h, --help                  help for import
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --language Language     The language of the object. Supported values: [PYTHON, R, SCALA, SQL]
+      --overwrite             The flag that specifies whether to overwrite existing object.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace list --help
+List contents.
+  
+  Lists the contents of a directory, or the object if it is not a directory. If
+  the input path does not exist, this call returns an error
+  RESOURCE_DOES_NOT_EXIST.
+
+  Arguments:
+    PATH: The absolute path of the notebook or directory.
+
+Usage:
+  databricks workspace list PATH [flags]
+
+Flags:
+  -h, --help                           help for list
+      --notebooks-modified-after int   UTC timestamp in milliseconds.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace mkdirs --help
+Create a directory.
+  
+  Creates the specified directory (and necessary parent directories if they do
+  not exist). If there is an object (not a directory) at any prefix of the input
+  path, this call returns an error RESOURCE_ALREADY_EXISTS.
+  
+  Note that if this operation fails it may have succeeded in creating some of
+  the necessary parent directories.
+
+  Arguments:
+    PATH: The absolute path of the directory. If the parent directories do not
+      exist, it will also create them. If the directory already exists, this
+      command will do nothing and succeed.
+
+Usage:
+  databricks workspace mkdirs PATH [flags]
+
+Flags:
+  -h, --help        help for mkdirs
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace set-permissions --help
+Set workspace object permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their parent objects or root object.
+
+  Arguments:
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.
+
+Usage:
+  databricks workspace set-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI workspace update-permissions --help
+Update workspace object permissions.
+  
+  Updates the permissions on a workspace object. Workspace objects can inherit
+  permissions from their parent objects or root object.
+
+  Arguments:
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.
+
+Usage:
+  databricks workspace update-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

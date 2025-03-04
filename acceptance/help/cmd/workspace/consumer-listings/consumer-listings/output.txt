@@ -1,0 +1,85 @@
+
+>>> $CLI consumer-listings batch-get --help
+Get one batch of listings. One may specify up to 50 IDs per request.
+  
+  Batch get a published listing in the Databricks Marketplace that the consumer
+  has access to.
+
+Usage:
+  databricks consumer-listings batch-get [flags]
+
+Flags:
+  -h, --help   help for batch-get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-listings get --help
+Get listing.
+  
+  Get a published listing in the Databricks Marketplace that the consumer has
+  access to.
+
+Usage:
+  databricks consumer-listings get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-listings list --help
+List listings.
+  
+  List all published listings in the Databricks Marketplace that the consumer
+  has access to.
+
+Usage:
+  databricks consumer-listings list [flags]
+
+Flags:
+  -h, --help                  help for list
+      --is-free               Filters each listing based on if it is free.
+      --is-private-exchange   Filters each listing based on if it is a private exchange.
+      --is-staff-pick         Filters each listing based on whether it is a staff pick.
+      --page-size int         
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-listings search --help
+Search listings.
+  
+  Search published listings in the Databricks Marketplace that the consumer has
+  access to. This query supports a variety of different search parameters and
+  performs fuzzy matching.
+
+  Arguments:
+    QUERY: Fuzzy matches query
+
+Usage:
+  databricks consumer-listings search QUERY [flags]
+
+Flags:
+  -h, --help                  help for search
+      --is-free               
+      --is-private-exchange   
+      --page-size int         
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,25 @@
+
+>>> $CLI query-history list --help
+List Queries.
+  
+  List the history of queries through SQL warehouses, and serverless compute.
+  
+  You can filter by user ID, warehouse ID, status, and time range. Most recently
+  started queries are returned first (up to max_results in request). The
+  pagination token returned in response can be used to list subsequent query
+  statuses.
+
+Usage:
+  databricks query-history list [flags]
+
+Flags:
+  -h, --help                help for list
+      --include-metrics     Whether to include the query metrics with each query.
+      --max-results int     Limit the number of results returned in one page.
+      --page-token string   A token that can be used to get the next page of results.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

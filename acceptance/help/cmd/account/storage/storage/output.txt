@@ -1,0 +1,86 @@
+
+>>> $CLI account storage create --help
+Create new storage configuration.
+  
+  Creates new storage configuration for an account, specified by ID. Uploads a
+  storage configuration object that represents the root AWS S3 bucket in your
+  account. Databricks stores related workspace assets including DBFS, cluster
+  logs, and job results. For the AWS S3 bucket, you need to configure the
+  required bucket policy.
+  
+  For information about how to create a new workspace with this API, see [Create
+  a new workspace using the Account API]
+  
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
+
+Usage:
+  databricks account storage create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account storage delete --help
+Delete storage configuration.
+  
+  Deletes a Databricks storage configuration. You cannot delete a storage
+  configuration that is associated with any workspace.
+
+  Arguments:
+    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.
+
+Usage:
+  databricks account storage delete STORAGE_CONFIGURATION_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account storage get --help
+Get storage configuration.
+  
+  Gets a Databricks storage configuration for an account, both specified by ID.
+
+  Arguments:
+    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.
+
+Usage:
+  databricks account storage get STORAGE_CONFIGURATION_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account storage list --help
+Get all storage configurations.
+  
+  Gets a list of all Databricks storage configurations for your account,
+  specified by ID.
+
+Usage:
+  databricks account storage list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

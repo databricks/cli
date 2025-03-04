@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI dashboard-widgets create --help
+trace $CLI dashboard-widgets delete --help
+trace $CLI dashboard-widgets update --help

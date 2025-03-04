@@ -1,0 +1,66 @@
+
+>>> $CLI grants get --help
+Get permissions.
+  
+  Gets the permissions for a securable.
+
+  Arguments:
+    SECURABLE_TYPE: Type of securable.
+    FULL_NAME: Full name of securable.
+
+Usage:
+  databricks grants get SECURABLE_TYPE FULL_NAME [flags]
+
+Flags:
+  -h, --help               help for get
+      --principal string   If provided, only the permissions for the specified principal (user or group) are returned.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI grants get-effective --help
+Get effective permissions.
+  
+  Gets the effective permissions for a securable.
+
+  Arguments:
+    SECURABLE_TYPE: Type of securable.
+    FULL_NAME: Full name of securable.
+
+Usage:
+  databricks grants get-effective SECURABLE_TYPE FULL_NAME [flags]
+
+Flags:
+  -h, --help               help for get-effective
+      --principal string   If provided, only the effective permissions for the specified principal (user or group) are returned.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI grants update --help
+Update permissions.
+  
+  Updates the permissions for a securable.
+
+  Arguments:
+    SECURABLE_TYPE: Type of securable.
+    FULL_NAME: Full name of securable.
+
+Usage:
+  databricks grants update SECURABLE_TYPE FULL_NAME [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

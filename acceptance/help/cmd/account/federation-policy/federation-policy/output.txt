@@ -1,0 +1,94 @@
+
+>>> $CLI account federation-policy create --help
+Create account federation policy.
+
+Usage:
+  databricks account federation-policy create [flags]
+
+Flags:
+      --description string   Description of the federation policy.
+  -h, --help                 help for create
+      --json JSON            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string          Resource name for the federation policy.
+      --policy-id string     The identifier for the federation policy.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account federation-policy delete --help
+Delete account federation policy.
+
+  Arguments:
+    POLICY_ID: The identifier for the federation policy.
+
+Usage:
+  databricks account federation-policy delete POLICY_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account federation-policy get --help
+Get account federation policy.
+
+  Arguments:
+    POLICY_ID: The identifier for the federation policy.
+
+Usage:
+  databricks account federation-policy get POLICY_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account federation-policy list --help
+List account federation policies.
+
+Usage:
+  databricks account federation-policy list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account federation-policy update --help
+Update account federation policy.
+
+  Arguments:
+    POLICY_ID: The identifier for the federation policy.
+
+Usage:
+  databricks account federation-policy update POLICY_ID [flags]
+
+Flags:
+      --description string   Description of the federation policy.
+  -h, --help                 help for update
+      --json JSON            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string          Resource name for the federation policy.
+      --update-mask string   The field mask specifies which fields of the policy to update.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

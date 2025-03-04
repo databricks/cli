@@ -1,0 +1,161 @@
+
+>>> $CLI queries-legacy create --help
+Create a new query definition.
+  
+  Creates a new query definition. Queries created with this endpoint belong to
+  the authenticated user making the request.
+  
+  The data_source_id field specifies the ID of the SQL warehouse to run this
+  query against. You can use the Data Sources API to see a complete list of
+  available SQL warehouses. Or you can copy the data_source_id from an
+  existing query.
+  
+  **Note**: You cannot add a visualization until you create the query.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queries/create instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks queries-legacy create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries-legacy delete --help
+Delete a query.
+  
+  Moves a query to the trash. Trashed queries immediately disappear from
+  searches and list views, and they cannot be used for alerts. The trash is
+  deleted after 30 days.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queries/delete instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks queries-legacy delete QUERY_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries-legacy get --help
+Get a query definition.
+  
+  Retrieve a query object definition along with contextual permissions
+  information about the currently authenticated user.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queries/get instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks queries-legacy get QUERY_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries-legacy list --help
+Get a list of queries.
+  
+  Gets a list of queries. Optionally, this list can be filtered by a search
+  term.
+  
+  **Warning**: Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queries/list instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks queries-legacy list [flags]
+
+Flags:
+  -h, --help            help for list
+      --order string    Name of query attribute to order by.
+      --page int        Page number to retrieve.
+      --page-size int   Number of queries to return per page.
+      --q string        Full text search term.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries-legacy restore --help
+Restore a query.
+  
+  Restore a query that has been moved to the trash. A restored query appears in
+  list views and searches. You can use restored queries for alerts.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please see
+  the latest version. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks queries-legacy restore QUERY_ID [flags]
+
+Flags:
+  -h, --help   help for restore
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI queries-legacy update --help
+Change a query definition.
+  
+  Modify this query definition.
+  
+  **Note**: You cannot undo this operation.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queries/update instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+Usage:
+  databricks queries-legacy update QUERY_ID [flags]
+
+Flags:
+      --data-source-id string   Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.
+      --description string      General description that conveys additional information about this query such as usage notes.
+  -h, --help                    help for update
+      --json JSON               either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string             The title of this query that appears in list views, widget headings, and on the query page.
+      --query string            The text of the query to be run.
+      --run-as-role RunAsRole   Sets the **Run as** role for the object. Supported values: [owner, viewer]
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

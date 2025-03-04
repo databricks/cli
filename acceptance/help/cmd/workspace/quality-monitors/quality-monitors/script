@@ -1,0 +1,10 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI quality-monitors cancel-refresh --help
+trace $CLI quality-monitors create --help
+trace $CLI quality-monitors delete --help
+trace $CLI quality-monitors get --help
+trace $CLI quality-monitors get-refresh --help
+trace $CLI quality-monitors list-refreshes --help
+trace $CLI quality-monitors regenerate-dashboard --help
+trace $CLI quality-monitors run-refresh --help
+trace $CLI quality-monitors update --help

@@ -1,0 +1,116 @@
+
+>>> $CLI dashboards create --help
+Create a dashboard object.
+
+Usage:
+  databricks dashboards create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI dashboards delete --help
+Remove a dashboard.
+  
+  Moves a dashboard to the trash. Trashed dashboards do not appear in list views
+  or searches, and cannot be shared.
+
+Usage:
+  databricks dashboards delete DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI dashboards get --help
+Retrieve a definition.
+  
+  Returns a JSON representation of a dashboard object, including its
+  visualization and query objects.
+
+Usage:
+  databricks dashboards get DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI dashboards list --help
+Get dashboard objects.
+  
+  Fetch a paginated list of dashboard objects.
+  
+  **Warning**: Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.
+
+Usage:
+  databricks dashboards list [flags]
+
+Flags:
+  -h, --help              help for list
+      --order ListOrder   Name of dashboard attribute to order by. Supported values: [created_at, name]
+      --page int          Page number to retrieve.
+      --page-size int     Number of dashboards to return per page.
+      --q string          Full text search term.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI dashboards restore --help
+Restore a dashboard.
+  
+  A restored dashboard appears in list views and searches and can be shared.
+
+Usage:
+  databricks dashboards restore DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help   help for restore
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI dashboards update --help
+Change a dashboard definition.
+  
+  Modify this dashboard definition. This operation only affects attributes of
+  the dashboard object. It does not add, modify, or remove widgets.
+  
+  **Note**: You cannot undo this operation.
+
+Usage:
+  databricks dashboards update DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help                    help for update
+      --json JSON               either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --name string             The title of this dashboard that appears in list views and at the top of the dashboard page.
+      --run-as-role RunAsRole   Sets the **Run as** role for the object. Supported values: [owner, viewer]
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,5 @@
+
+>>> $CLI aibi-dashboard-embedding-access-policy delete --help
+Error: unknown command "aibi-dashboard-embedding-access-policy" for "databricks"
+
+Exit code: 1

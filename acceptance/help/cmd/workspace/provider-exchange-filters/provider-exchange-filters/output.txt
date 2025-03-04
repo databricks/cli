@@ -1,0 +1,72 @@
+
+>>> $CLI provider-exchange-filters create --help
+Create a new exchange filter.
+  
+  Add an exchange filter.
+
+Usage:
+  databricks provider-exchange-filters create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchange-filters delete --help
+Delete an exchange filter.
+  
+  Delete an exchange filter
+
+Usage:
+  databricks provider-exchange-filters delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchange-filters list --help
+List exchange filters.
+  
+  List exchange filter
+
+Usage:
+  databricks provider-exchange-filters list EXCHANGE_ID [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-exchange-filters update --help
+Update exchange filter.
+  
+  Update an exchange filter.
+
+Usage:
+  databricks provider-exchange-filters update ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

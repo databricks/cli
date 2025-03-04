@@ -1,0 +1,138 @@
+
+>>> $CLI service-principals create --help
+Create a service principal.
+  
+  Creates a new service principal in the Databricks workspace.
+
+Usage:
+  databricks service-principals create [flags]
+
+Flags:
+      --active                  If this user is active.
+      --application-id string   UUID relating to the service principal.
+      --display-name string     String that represents a concatenation of given and family names.
+      --external-id string      
+  -h, --help                    help for create
+      --id string               Databricks service principal ID.
+      --json JSON               either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI service-principals delete --help
+Delete a service principal.
+  
+  Delete a single service principal in the Databricks workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.
+
+Usage:
+  databricks service-principals delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI service-principals get --help
+Get service principal details.
+  
+  Gets the details for a single service principal define in the Databricks
+  workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.
+
+Usage:
+  databricks service-principals get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI service-principals list --help
+List service principals.
+  
+  Gets the set of service principals associated with a Databricks workspace.
+
+Usage:
+  databricks service-principals list [flags]
+
+Flags:
+      --attributes string            Comma-separated list of attributes to return in response.
+      --count int                    Desired number of results per page.
+      --excluded-attributes string   Comma-separated list of attributes to exclude in response.
+      --filter string                Query by which the results have to be filtered.
+  -h, --help                         help for list
+      --sort-by string               Attribute to sort the results.
+      --sort-order ListSortOrder     The order to sort the results. Supported values: [ascending, descending]
+      --start-index int              Specifies the index of the first result.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI service-principals patch --help
+Update service principal details.
+  
+  Partially updates the details of a single service principal in the Databricks
+  workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.
+
+Usage:
+  databricks service-principals patch ID [flags]
+
+Flags:
+  -h, --help        help for patch
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI service-principals update --help
+Replace service principal.
+  
+  Updates the details of a single service principal.
+  
+  This action replaces the existing service principal with the same name.
+
+  Arguments:
+    ID: Databricks service principal ID.
+
+Usage:
+  databricks service-principals update ID [flags]
+
+Flags:
+      --active                  If this user is active.
+      --application-id string   UUID relating to the service principal.
+      --display-name string     String that represents a concatenation of given and family names.
+      --external-id string      
+  -h, --help                    help for update
+      --id string               Databricks service principal ID.
+      --json JSON               either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,8 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI recipients create --help
+trace $CLI recipients delete --help
+trace $CLI recipients get --help
+trace $CLI recipients list --help
+trace $CLI recipients rotate-token --help
+trace $CLI recipients share-permissions --help
+trace $CLI recipients update --help

@@ -1,0 +1,16 @@
+
+>>> $CLI access-control check-policy --help
+Check access policy to a resource.
+
+Usage:
+  databricks access-control check-policy [flags]
+
+Flags:
+  -h, --help        help for check-policy
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

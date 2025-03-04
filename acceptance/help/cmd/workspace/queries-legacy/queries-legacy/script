@@ -1,0 +1,7 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI queries-legacy create --help
+trace $CLI queries-legacy delete --help
+trace $CLI queries-legacy get --help
+trace $CLI queries-legacy list --help
+trace $CLI queries-legacy restore --help
+trace $CLI queries-legacy update --help

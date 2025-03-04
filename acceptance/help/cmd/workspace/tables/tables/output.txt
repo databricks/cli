@@ -1,0 +1,175 @@
+
+>>> $CLI tables delete --help
+Delete a table.
+  
+  Deletes a table from the specified parent catalog and schema. The caller must
+  be the owner of the parent catalog, have the **USE_CATALOG** privilege on the
+  parent catalog and be the owner of the parent schema, or be the owner of the
+  table and have the **USE_CATALOG** privilege on the parent catalog and the
+  **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+
+Usage:
+  databricks tables delete FULL_NAME [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI tables exists --help
+Get boolean reflecting if table exists.
+  
+  Gets if a table exists in the metastore for a specific catalog and schema. The
+  caller must satisfy one of the following requirements: * Be a metastore admin
+  * Be the owner of the parent catalog * Be the owner of the parent schema and
+  have the USE_CATALOG privilege on the parent catalog * Have the
+  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
+  privilege on the parent schema, and either be the table owner or have the
+  SELECT privilege on the table. * Have BROWSE privilege on the parent catalog *
+  Have BROWSE privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+
+Usage:
+  databricks tables exists FULL_NAME [flags]
+
+Flags:
+  -h, --help   help for exists
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI tables get --help
+Get a table.
+  
+  Gets a table from the metastore for a specific catalog and schema. The caller
+  must satisfy one of the following requirements: * Be a metastore admin * Be
+  the owner of the parent catalog * Be the owner of the parent schema and have
+  the USE_CATALOG privilege on the parent catalog * Have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema, and either be the table owner or have the SELECT privilege on the
+  table.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+
+Usage:
+  databricks tables get FULL_NAME [flags]
+
+Flags:
+  -h, --help                            help for get
+      --include-browse                  Whether to include tables in the response for which the principal can only access selective metadata for.
+      --include-delta-metadata          Whether delta metadata should be included in the response.
+      --include-manifest-capabilities   Whether to include a manifest containing capabilities the table has.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI tables list --help
+List tables.
+  
+  Gets an array of all tables for the current metastore under the parent catalog
+  and schema. The caller must be a metastore admin or an owner of (or have the
+  **SELECT** privilege on) the table. For the latter case, the caller must also
+  be the owner or have the **USE_CATALOG** privilege on the parent catalog and
+  the **USE_SCHEMA** privilege on the parent schema. There is no guarantee of a
+  specific ordering of the elements in the array.
+
+  Arguments:
+    CATALOG_NAME: Name of parent catalog for tables of interest.
+    SCHEMA_NAME: Parent schema of tables.
+
+Usage:
+  databricks tables list CATALOG_NAME SCHEMA_NAME [flags]
+
+Flags:
+  -h, --help                            help for list
+      --include-browse                  Whether to include tables in the response for which the principal can only access selective metadata for.
+      --include-delta-metadata          Whether delta metadata should be included in the response.
+      --include-manifest-capabilities   Whether to include a manifest containing capabilities the table has.
+      --max-results int                 Maximum number of tables to return.
+      --omit-columns                    Whether to omit the columns of the table from the response or not.
+      --omit-properties                 Whether to omit the properties of the table from the response or not.
+      --omit-username                   Whether to omit the username of the table (e.g.
+      --page-token string               Opaque token to send for the next page of results (pagination).
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI tables list-summaries --help
+List table summaries.
+  
+  Gets an array of summaries for tables for a schema and catalog within the
+  metastore. The table summaries returned are either:
+  
+  * summaries for tables (within the current metastore and parent catalog and
+  schema), when the user is a metastore admin, or: * summaries for tables and
+  schemas (within the current metastore and parent catalog) for which the user
+  has ownership or the **SELECT** privilege on the table and ownership or
+  **USE_SCHEMA** privilege on the schema, provided that the user also has
+  ownership or the **USE_CATALOG** privilege on the parent catalog.
+  
+  There is no guarantee of a specific ordering of the elements in the array.
+
+  Arguments:
+    CATALOG_NAME: Name of parent catalog for tables of interest.
+
+Usage:
+  databricks tables list-summaries CATALOG_NAME [flags]
+
+Flags:
+  -h, --help                            help for list-summaries
+      --include-manifest-capabilities   Whether to include a manifest containing capabilities the table has.
+      --max-results int                 Maximum number of summaries for tables to return.
+      --page-token string               Opaque pagination token to go to next page based on previous query.
+      --schema-name-pattern string      A sql LIKE pattern (% and _) for schema names.
+      --table-name-pattern string       A sql LIKE pattern (% and _) for table names.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI tables update --help
+Update a table owner.
+  
+  Change the owner of the table. The caller must be the owner of the parent
+  catalog, have the **USE_CATALOG** privilege on the parent catalog and be the
+  owner of the parent schema, or be the owner of the table and have the
+  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
+  privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+
+Usage:
+  databricks tables update FULL_NAME [flags]
+
+Flags:
+  -h, --help           help for update
+      --json JSON      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --owner string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

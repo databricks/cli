@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account published-app-integration create --help
+trace $CLI account published-app-integration delete --help
+trace $CLI account published-app-integration get --help
+trace $CLI account published-app-integration list --help
+trace $CLI account published-app-integration update --help
