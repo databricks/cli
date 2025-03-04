@@ -168,10 +168,12 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	// Create a temporary file in the same directory with a unique name
 	tmpFile := outpath + fmt.Sprintf(".tmp%d", os.Getpid())
 
+	needRemoval := true
+
 	// Ensure the temporary file is removed if we exit early
 	defer func() {
-		if _, statErr := os.Stat(tmpFile); statErr == nil {
-			os.Remove(tmpFile)
+		if needRemoval {
+			_ = os.Remove(tmpFile)
 		}
 	}()
 
@@ -214,8 +216,6 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", fmt.Errorf("version mismatch: %s (metadata) vs %s (filename)",
 			metadataBaseVersion, baseVersion)
 	}
-
-	// log.Infof(ctx, "path=%s version=%s newVersion=%s distribution=%s", path, metadataVersion, newVersion, metadataDistribution)
 
 	// Patch the METADATA content.
 	newMetadata, err := patchMetadata(metadataContent, newVersion)
@@ -306,13 +306,13 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", err
 	}
 
-	// Close the file before renaming
 	outFile.Close()
 
-	// Rename the temporary file to the final output path (atomic operation)
 	if err := os.Rename(tmpFile, outpath); err != nil {
 		return "", err
 	}
+
+	needRemoval = false
 
 	return outpath, nil
 }
