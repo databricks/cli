@@ -47,17 +47,6 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 	defer local.Close()
 
-	if !b.Config.Bundle.Force {
-		state, err := local.Stat()
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		if state.Size() > deploy.MaxStateFileSize {
-			return diag.Errorf("Terraform state file size exceeds the maximum allowed size of %d bytes. Please reduce the number of resources in your bundle, split your bundle into multiple or re-run the command with --force flag", deploy.MaxStateFileSize)
-		}
-	}
-
 	// Upload state file from local cache directory to filer.
 	cmdio.LogString(ctx, "Updating deployment state...")
 	log.Infof(ctx, "Writing local state file to remote state directory")
