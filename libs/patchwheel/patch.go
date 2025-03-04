@@ -95,6 +95,7 @@ func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash
 		}
 		parts := strings.Split(line, ",")
 		if len(parts) < 3 {
+			// If the line doesn't have enough parts, preserve it as-is
 			newLines = append(newLines, line)
 			continue
 		}
@@ -210,8 +211,14 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 
 	// Reset metadata reader to start
-	seeker := metadataReader.(io.Seeker)
-	seeker.Seek(0, io.SeekStart)
+	seeker, ok := metadataReader.(io.Seeker)
+	if !ok {
+		return "", fmt.Errorf("metadata reader does not support seeking")
+	}
+	_, err = seeker.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", fmt.Errorf("failed to seek metadata reader: %w", err)
+	}
 
 	// Patch the METADATA content.
 	newMetadata, err := patchMetadata(metadataReader, newVersion)
@@ -235,8 +242,14 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 
 	// Reset record reader to start
-	seeker = recordReader.(io.Seeker)
-	seeker.Seek(0, io.SeekStart)
+	seeker, ok = recordReader.(io.Seeker)
+	if !ok {
+		return "", fmt.Errorf("record reader does not support seeking")
+	}
+	_, err = seeker.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", fmt.Errorf("failed to seek record reader: %w", err)
+	}
 
 	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
 	if err != nil {
