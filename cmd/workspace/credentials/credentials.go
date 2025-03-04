@@ -522,6 +522,7 @@ func newValidateCredential() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	cmd.Flags().StringVar(&validateCredentialReq.CredentialName, "credential-name", validateCredentialReq.CredentialName, `Required.`)
+	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().StringVar(&validateCredentialReq.ExternalLocationName, "external-location-name", validateCredentialReq.ExternalLocationName, `The name of an existing external location to validate.`)
 	cmd.Flags().Var(&validateCredentialReq.Purpose, "purpose", `The purpose of the credential. Supported values: [SERVICE, STORAGE]`)
 	cmd.Flags().BoolVar(&validateCredentialReq.ReadOnly, "read-only", validateCredentialReq.ReadOnly, `Whether the credential is only usable for read operations.`)

@@ -223,7 +223,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: gcp_attributes
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
-	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used with kind.`)
+	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	cmd.Flags().Var(&createReq.Kind, "kind", `The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
@@ -233,7 +233,7 @@ func newCreate() *cobra.Command {
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
-	cmd.Flags().BoolVar(&createReq.UseMlRuntime, "use-ml-runtime", createReq.UseMlRuntime, `This field can only be used with kind.`)
+	cmd.Flags().BoolVar(&createReq.UseMlRuntime, "use-ml-runtime", createReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	// TODO: complex arg: workload_type
 
 	cmd.Use = "create SPARK_VERSION"
@@ -493,7 +493,7 @@ func newEdit() *cobra.Command {
 	// TODO: complex arg: gcp_attributes
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
-	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used with kind.`)
+	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	cmd.Flags().Var(&editReq.Kind, "kind", `The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
@@ -503,7 +503,7 @@ func newEdit() *cobra.Command {
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
-	cmd.Flags().BoolVar(&editReq.UseMlRuntime, "use-ml-runtime", editReq.UseMlRuntime, `This field can only be used with kind.`)
+	cmd.Flags().BoolVar(&editReq.UseMlRuntime, "use-ml-runtime", editReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	// TODO: complex arg: workload_type
 
 	cmd.Use = "edit CLUSTER_ID SPARK_VERSION"

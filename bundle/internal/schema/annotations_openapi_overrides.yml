@@ -5,6 +5,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "app_status":
     "description": |-
       PLACEHOLDER
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
   "compute_status":
     "description": |-
       PLACEHOLDER
@@ -21,6 +24,9 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       PLACEHOLDER
   "description":
+    "description": |-
+      PLACEHOLDER
+  "effective_budget_policy_id":
     "description": |-
       PLACEHOLDER
   "name":
@@ -506,6 +512,10 @@ github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "availability":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
+  "compute":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
   "git_snapshot":
     "description": |-
@@ -530,6 +540,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "gen_ai_compute_task":
+    "description": |-
+      PLACEHOLDER
   "health":
     "description": |-
       PLACEHOLDER

@@ -177,6 +177,7 @@ func newExport() *cobra.Command {
   DBC,
   HTML,
   JUPYTER,
+  RAW,
   R_MARKDOWN,
   SOURCE,
 ]`)
@@ -539,7 +540,7 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
+	cmd.Flags().Int64Var(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
 
 	cmd.Use = "list PATH"
 	cmd.Short = `List contents.`
