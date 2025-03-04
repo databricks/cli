@@ -114,8 +114,12 @@ func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash
 
 // PatchWheel patches a Python wheel file by updating its version in METADATA and RECORD.
 // It returns the path to the new wheel.
+// The version is updated according to the following rules:
+//   - if there is an existing part after + it is dropped
+//   - append +<mtime of the original wheel> to version
+//
 // The function is idempotent: repeated calls with the same input will produce the same output.
-// If the target wheel already exists, it returns the path to the existing wheel without processing.
+// If the target wheel already exists, it returns the path to the existing wheel without redoing the patching.
 func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
