@@ -1,0 +1,24 @@
+{
+    "logs": [
+        {
+            "frontend_log_event_id": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+            "entry": {
+                "databricks_cli_log": {
+                    "cli_test_event": {
+                        "name": "VALUE1"
+                    }
+                }
+            }
+        },
+        {
+            "frontend_log_event_id": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
+            "entry": {
+                "databricks_cli_log": {
+                    "cli_test_event": {
+                        "name": "VALUE2"
+                    }
+                }
+            }
+        }
+    ]
+}
