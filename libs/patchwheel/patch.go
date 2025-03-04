@@ -38,12 +38,13 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 				if recordFile != nil {
 					break
 				}
+
 				continue
 			}
 		}
 
 		if recordFile == nil {
-			matched, _ = filepath.Match("*.dist-info/RECORD", f.Name)
+			matched, _ := filepath.Match("*.dist-info/RECORD", f.Name)
 			if matched {
 				recordFile = f
 
@@ -71,9 +72,13 @@ func parseMetadata(r io.Reader) (version, distribution string, err error) {
 	if err := scanner.Err(); err != nil {
 		return "", "", err
 	}
-	if version == "" || distribution == "" {
-		return "", "", errors.New("could not parse METADATA for version or distribution")
+	if version == "" {
+		return "", "", errors.New("could not parse version from METADATA")
 	}
+	if distribution == "" {
+		return "", "", errors.New("could not parse distribution from METADATA")
+	}
+
 	return version, distribution, nil
 }
 
@@ -167,7 +172,6 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 
 	needRemoval := true
 
-	// Ensure the temporary file is removed if we exit early
 	defer func() {
 		if needRemoval {
 			_ = os.Remove(tmpFile)
