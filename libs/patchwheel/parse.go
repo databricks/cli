@@ -48,18 +48,11 @@ func ParseWheelFilename(filename string) (*WheelInfo, error) {
 	tags := parts[tagStartIdx:]
 	tags[2] = strings.TrimSuffix(tags[2], ".whl")
 
-	// The version is the second part
-	version := parts[1]
-	
-	// If there are build tags, they are between the version and the python tag
-	// Include them in the version
-	if tagStartIdx > 2 {
-		buildTags := parts[2:tagStartIdx]
-		version = version + "-" + strings.Join(buildTags, "-")
-	}
-
 	// The distribution is always the first part
 	distribution := parts[0]
+	
+	// The version is the second part - don't include build tags
+	version := parts[1]
 
 	return &WheelInfo{
 		Distribution: distribution,
