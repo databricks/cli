@@ -1,5 +1,5 @@
 ---
-description: 'Learn about resources supported by Databricks Asset Bundles and how to configure them.'
+description: "Learn about resources supported by Databricks Asset Bundles and how to configure them."
 last_update:
   date: 2025-02-14
 ---

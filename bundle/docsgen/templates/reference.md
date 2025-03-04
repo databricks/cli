@@ -1,5 +1,5 @@
 ---
-description: 'Configuration reference for databricks.yml'
+description: "Configuration reference for databricks.yml"
 last_update:
   date: 2025-02-14
 ---
