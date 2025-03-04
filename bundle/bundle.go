@@ -198,6 +198,20 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 		return "", err
 	}
 
+	gitignorePath := filepath.Join(b.BundleRootPath, ".databricks", ".gitignore")
+	file, err := os.OpenFile(gitignorePath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err == nil {
+		defer file.Close()
+		_, err = file.WriteString("*\n")
+		if err != nil {
+			log.Debugf(ctx, "Error writing to %s: %s", gitignorePath, err)
+		}
+	} else {
+		if !os.IsExist(err) {
+			log.Debugf(ctx, "Failed to create %s: %s", gitignorePath, err)
+		}
+	}
+
 	return dir, nil
 }
 

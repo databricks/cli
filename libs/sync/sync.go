@@ -69,11 +69,6 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
-	err = fileSet.EnsureValidGitIgnoreExists()
-	if err != nil {
-		return nil, err
-	}
-
 	includeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Include)
 	if err != nil {
 		return nil, err
