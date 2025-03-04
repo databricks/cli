@@ -10,6 +10,7 @@ Please refer to the README.md file for "getting started" instructions.
 See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
 >>> diff.py [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output output/
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/out.gitignore
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python.pipeline.yml
 +++ output/my_default_python/resources/my_default_python.pipeline.yml
 @@ -4,6 +4,5 @@
