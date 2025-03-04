@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCalculateNewVersion tests the CalculateNewVersion function.
 func TestCalculateNewVersion(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -64,7 +63,6 @@ func TestCalculateNewVersion(t *testing.T) {
 	}
 }
 
-// TestParseWheelFilename tests the ParseWheelFilename function.
 func TestParseWheelFilename(t *testing.T) {
 	tests := []struct {
 		filename         string
