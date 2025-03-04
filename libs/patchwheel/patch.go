@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -27,13 +28,10 @@ const (
 func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.File, oldDistInfoPrefix string) {
 	for _, f := range r.File {
 		if metadataFile == nil {
-			matched, _ := filepath.Match("*.dist-info/METADATA", f.Name)
+			matched, _ := path.Match("*.dist-info/METADATA", f.Name)
 			if matched {
 				metadataFile = f
-				// Determine the old dist-info directory prefix.
-				if i := strings.LastIndex(f.Name, "/"); i != -1 {
-					oldDistInfoPrefix = f.Name[:i+1]
-				}
+				oldDistInfoPrefix = path.Dir(f.Name) + "/"
 
 				if recordFile != nil {
 					break
@@ -44,7 +42,7 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 		}
 
 		if recordFile == nil {
-			matched, _ := filepath.Match("*.dist-info/RECORD", f.Name)
+			matched, _ := path.Match("*.dist-info/RECORD", f.Name)
 			if matched {
 				recordFile = f
 
