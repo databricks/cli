@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -147,13 +148,13 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 
 	// Target wheel doesn't exist, proceed with patching
 	// Create a temporary file in the same directory with a unique name
-	tmpFile := outpath + fmt.Sprintf(".tmp%d", os.Getpid())
+	tmpFilename := outpath + fmt.Sprintf(".tmp%d", os.Getpid())
 
 	needRemoval := true
 
 	defer func() {
 		if needRemoval {
-			_ = os.Remove(tmpFile)
+			_ = os.Remove(tmpFilename)
 		}
 	}()
 
@@ -178,12 +179,6 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 	defer metadataReader.Close()
 
-	recordReader, err := recordFile.Open()
-	if err != nil {
-		return "", err
-	}
-	defer recordReader.Close()
-
 	newMetadata, err := patchMetadata(metadataReader, wheelInfo.Version, newVersion)
 	if err != nil {
 		return "", err
@@ -203,16 +198,25 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", fmt.Errorf("unexpected dist-info directory format: %s", oldDistInfoPrefix)
 	}
 
+	recordReader, err := recordFile.Open()
+	if err != nil {
+		return "", err
+	}
+	defer recordReader.Close()
+
 	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
 	if err != nil {
 		return "", err
 	}
 
-	outFile, err := os.Create(tmpFile)
+	outFile, err := os.Create(tmpFilename)
 	if err != nil {
 		return "", err
 	}
 	defer outFile.Close()
+
+	metadataUpdated := 0
+	recordUpdated := 0
 
 	zipw := zip.NewWriter(outFile)
 	for _, f := range r.File {
@@ -237,17 +241,18 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 			return "", err
 		}
 
-		// For METADATA and RECORD files, write the modified content.
-		if strings.HasSuffix(f.Name, "METADATA") && strings.HasPrefix(f.Name, oldDistInfoPrefix) {
+		if f.Name == metadataFile.Name {
 			_, err = writer.Write(newMetadata)
 			if err != nil {
 				return "", err
 			}
-		} else if strings.HasSuffix(f.Name, "RECORD") && strings.HasPrefix(f.Name, oldDistInfoPrefix) {
+			metadataUpdated += 1
+		} else if f.Name == recordFile.Name {
 			_, err = writer.Write(newRecord)
 			if err != nil {
 				return "", err
 			}
+			recordUpdated += 1
 		} else {
 			rc, err := f.Open()
 			if err != nil {
@@ -270,10 +275,18 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 
 	outFile.Close()
 
-	if err := os.Rename(tmpFile, outpath); err != nil {
-		return "", err
+	if metadataUpdated != 1 {
+		return "", errors.New("Could not update METADATA")
 	}
 
+	if recordUpdated != 1 {
+		return "", errors.New("Could not update RECORD")
+	}
+
+	if err := os.Rename(tmpFilename, outpath); err != nil {
+		return "", err
+	}
 	needRemoval = false
+
 	return outpath, nil
 }
