@@ -164,3 +164,52 @@ func TestPatchWheel(t *testing.T) {
 		})
 	}
 }
+
+var (
+	prebuiltWheel = "testdata/my_test_code-0.0.1-py3-none-any.whl"
+	emptyZip      = "testdata/empty.zip"
+)
+
+func TestPrebuilt(t *testing.T) {
+	tempDir := t.TempDir()
+	ctx := context.Background()
+	outname, err := PatchWheel(ctx, prebuiltWheel, tempDir)
+	require.NoError(t, err)
+
+	_, err = os.Stat(outname)
+	require.NoError(t, err)
+}
+
+func errPatchWheel(t *testing.T, name, out string) {
+	ctx := context.Background()
+	outname, err := PatchWheel(ctx, name, out)
+	assert.Error(t, err, "PatchWheel(%s, %s) expected to error", name, out)
+	assert.Empty(t, outname)
+}
+
+func TestError(t *testing.T) {
+	// empty name and dir
+	errPatchWheel(t, "", "")
+
+	// empty name
+	errPatchWheel(t, "", ".")
+
+	// file not found
+	errPatchWheel(t, "not-found.txt", ".")
+
+	// output directory not found
+	errPatchWheel(t, prebuiltWheel, "not-found/a/b/c")
+}
+
+func TestEmptyZip(t *testing.T) {
+	tempDir := t.TempDir()
+	errPatchWheel(t, emptyZip, tempDir)
+}
+
+func TestNonZip(t *testing.T) {
+	tempDir := t.TempDir()
+
+	_, err := os.Stat("patch.go")
+	require.NoError(t, err, "file must exist for this test")
+	errPatchWheel(t, "patch.go", tempDir)
+}
