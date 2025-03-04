@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -120,11 +121,9 @@ func TestPatchWheel(t *testing.T) {
 			distDir := filepath.Join(tempDir, "dist")
 			origWheel := getWheel(t, distDir)
 
-			// First patch
 			patchedWheel, err := PatchWheel(context.Background(), origWheel, distDir)
 			require.NoError(t, err)
 
-			// Get file info of the patched wheel
 			patchedInfo, err := os.Stat(patchedWheel)
 			require.NoError(t, err)
 			patchedTime := patchedInfo.ModTime()
@@ -141,11 +140,19 @@ func TestPatchWheel(t *testing.T) {
 			require.Equal(t, patchedTime, patchedInfo2.ModTime(), "File was recreated when it shouldn't have been")
 
 			runCmd(t, tempDir, "uv", "pip", "install", "-q", patchedWheel)
-
-			// Verify the installed version matches what we expect
 			verifyVersion(t, tempDir, patchedWheel)
 
-			// TODO: install one more patched wheel (add an option to PatchWheel to add extra to timestamp)
+			newTime := patchedInfo.ModTime().Add(10 * time.Millisecond)
+
+			err = os.Chtimes(origWheel, newTime, newTime)
+			require.NoError(t, err)
+
+			patchedWheel3, err := PatchWheel(context.Background(), origWheel, distDir)
+			require.NoError(t, err)
+			require.Greater(t, patchedWheel3, patchedWheel)
+
+			runCmd(t, tempDir, "uv", "pip", "install", "-q", patchedWheel3)
+			verifyVersion(t, tempDir, patchedWheel3)
 		})
 	}
 }

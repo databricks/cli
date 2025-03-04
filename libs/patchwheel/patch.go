@@ -185,12 +185,9 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	metadataSize := len(newMetadata)
 
 	// Compute the new dist-info directory prefix.
-	newDistInfoPrefix := ""
-	if idx := strings.LastIndex(oldDistInfoPrefix, "-"); idx != -1 {
-		base := oldDistInfoPrefix[:idx]
-		newDistInfoPrefix = base + "-" + newVersion + ".dist-info/"
-	} else {
-		return "", fmt.Errorf("unexpected dist-info directory format: %s", oldDistInfoPrefix)
+	newDistInfoPrefix := strings.Replace(oldDistInfoPrefix, wheelInfo.Version, newVersion, 1)
+	if newDistInfoPrefix == oldDistInfoPrefix {
+		return "", fmt.Errorf("unexpected dist-info directory format: %s (version=%s)", oldDistInfoPrefix, wheelInfo.Version)
 	}
 
 	recordReader, err := recordFile.Open()
