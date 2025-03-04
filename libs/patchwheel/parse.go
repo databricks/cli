@@ -39,30 +39,20 @@ func ParseWheelFilename(filename string) (*WheelInfo, error) {
 	if len(parts) < 5 {
 		return nil, fmt.Errorf("invalid wheel filename format: not enough parts in %s", filename)
 	}
+
+	if len(parts) > 6 {
+		return nil, fmt.Errorf("invalid wheel filename format: too many parts in %s", filename)
+	}
+
 	if !strings.HasSuffix(parts[len(parts)-1], ".whl") {
 		return nil, fmt.Errorf("invalid wheel filename format: missing .whl extension in %s", filename)
 	}
 
-	// The last three parts are always the python, abi and platform tags
-	tagStartIdx := len(parts) - 3
-	tags := parts[tagStartIdx:]
-	tags[2] = strings.TrimSuffix(tags[2], ".whl")
-
-	// The distribution is always the first part
-	distribution := parts[0]
-	
-	// The version is the second part - don't include build tags
-	version := parts[1]
-
-	// If there are build tags between version and python tag, include them in tags
-	if tagStartIdx > 2 {
-		buildTags := parts[2:tagStartIdx]
-		tags = append(buildTags, tags...)
-	}
+	parts[len(parts)-1] = strings.TrimSuffix(parts[len(parts)-1], ".whl")
 
 	return &WheelInfo{
-		Distribution: distribution,
-		Version:      version,
-		Tags:         tags,
+		Distribution: parts[0],
+		Version:      parts[1],
+		Tags:         parts[2:],
 	}, nil
 }
