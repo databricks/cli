@@ -307,7 +307,7 @@ func (p *Project) checkUpdates(cmd *cobra.Command) error {
 		// might not be installed yet
 		return nil
 	}
-	r := github.NewReleaseCache("databrickslabs", p.Name, p.CacheDir())
+	r := github.NewReleaseCache("databrickslabs", p.Name, p.CacheDir(), false)
 	versions, err := r.Load(ctx)
 	if err != nil {
 		return err

@@ -26,7 +26,7 @@ func TestLoadsReleasesForCLI(t *testing.T) {
 	ctx := context.Background()
 	ctx = WithApiOverride(ctx, server.URL)
 
-	r := NewReleaseCache("databricks", "cli", t.TempDir())
+	r := NewReleaseCache("databricks", "cli", t.TempDir(), false)
 	all, err := r.Load(ctx)
 	assert.NoError(t, err)
 	assert.Len(t, all, 2)

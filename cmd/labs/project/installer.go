@@ -76,7 +76,8 @@ type installer struct {
 	// command instance is used for:
 	// - auth profile flag override
 	// - standard input, output, and error streams
-	cmd *cobra.Command
+	cmd            *cobra.Command
+	offlineInstall bool
 }
 
 func (i *installer) Install(ctx context.Context) error {
@@ -101,9 +102,15 @@ func (i *installer) Install(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("login: %w", err)
 	}
-	err = i.downloadLibrary(ctx)
-	if err != nil {
-		return fmt.Errorf("lib: %w", err)
+	if !i.offlineInstall {
+		err = i.downloadLibrary(ctx)
+		if err != nil {
+			return fmt.Errorf("lib: %w", err)
+		}
+	}
+
+	if _, err := os.Stat(i.LibDir()); os.IsNotExist(err) {
+		return fmt.Errorf("no local installation found: %w", err)
 	}
 	err = i.setupPythonVirtualEnvironment(ctx, w)
 	if err != nil {
