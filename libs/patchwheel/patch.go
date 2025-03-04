@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 const (
@@ -118,7 +120,7 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	outpath := filepath.Join(outputDir, newFilename)
 
 	if _, err := os.Stat(outpath); err == nil {
-		// Target wheel already exists, return its path
+		log.Debugf(ctx, "Skipping patching of %s, already exists: %s", path, outpath)
 		return outpath, nil
 	}
 
