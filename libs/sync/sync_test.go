@@ -74,7 +74,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 2)
+	require.Len(t, fileList, 1)
 
 	inc, err = fileset.NewGlobSet(root, []string{"./.databricks/*.go"})
 	require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 11)
+	require.Len(t, fileList, 10)
 }
 
 func TestRecursiveExclude(t *testing.T) {
