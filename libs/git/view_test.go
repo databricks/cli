@@ -209,99 +209,11 @@ func TestViewABInTempDir(t *testing.T) {
 	assert.False(t, tv.Ignore("newfile"))
 }
 
-func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredAtRoot(t *testing.T) {
-	expected, err := os.ReadFile("./testdata_view_ignore/.gitignore")
-	require.NoError(t, err)
-
-	repoPath := createFakeRepo(t, "testdata_view_ignore")
-
-	// Since root .gitignore already has .databricks, there should be no edits
-	// to root .gitignore
-	v, err := NewViewAtRoot(vfs.MustNew(repoPath))
-	require.NoError(t, err)
-
-	err = v.EnsureValidGitIgnoreExists()
-	require.NoError(t, err)
-
-	actual, err := os.ReadFile(filepath.Join(repoPath, ".gitignore"))
-	require.NoError(t, err)
-
-	assert.Equal(t, string(expected), string(actual))
-}
-
-func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredInSubdir(t *testing.T) {
-	expected, err := os.ReadFile("./testdata_view_ignore/a/.gitignore")
-	require.NoError(t, err)
-
-	repoPath := createFakeRepo(t, "testdata_view_ignore")
-
-	// Since root .gitignore already has .databricks, there should be no edits
-	// to a/.gitignore
-	v, err := NewView(vfs.MustNew(repoPath), vfs.MustNew(filepath.Join(repoPath, "a")))
-	require.NoError(t, err)
-
-	err = v.EnsureValidGitIgnoreExists()
-	require.NoError(t, err)
-
-	actual, err := os.ReadFile(filepath.Join(repoPath, v.targetPath, ".gitignore"))
-	require.NoError(t, err)
-
-	assert.Equal(t, string(expected), string(actual))
-}
-
-func TestViewAddsGitignoreWithCacheDir(t *testing.T) {
-	repoPath := createFakeRepo(t, "testdata")
-	err := os.Remove(filepath.Join(repoPath, ".gitignore"))
-	assert.NoError(t, err)
-
-	// Since root .gitignore was deleted, new view adds .databricks to root .gitignore
-	v, err := NewViewAtRoot(vfs.MustNew(repoPath))
-	require.NoError(t, err)
-
-	err = v.EnsureValidGitIgnoreExists()
-	require.NoError(t, err)
-
-	actual, err := os.ReadFile(filepath.Join(repoPath, ".gitignore"))
-	require.NoError(t, err)
-
-	assert.Contains(t, string(actual), "\n.databricks\n")
-}
-
-func TestViewAddsGitignoreWithCacheDirAtSubdir(t *testing.T) {
-	repoPath := createFakeRepo(t, "testdata")
-	err := os.Remove(filepath.Join(repoPath, ".gitignore"))
-	require.NoError(t, err)
-
-	// Since root .gitignore was deleted, new view adds .databricks to a/.gitignore
-	v, err := NewView(vfs.MustNew(repoPath), vfs.MustNew(filepath.Join(repoPath, "a")))
-	require.NoError(t, err)
-
-	err = v.EnsureValidGitIgnoreExists()
-	require.NoError(t, err)
-
-	actual, err := os.ReadFile(filepath.Join(repoPath, v.targetPath, ".gitignore"))
-	require.NoError(t, err)
-
-	// created .gitignore has cache dir listed
-	assert.Contains(t, string(actual), "\n.databricks\n")
-	assert.NoFileExists(t, filepath.Join(repoPath, ".gitignore"))
-}
-
 func TestViewAlwaysIgnoresCacheDir(t *testing.T) {
 	repoPath := createFakeRepo(t, "testdata")
 
 	v, err := NewViewAtRoot(vfs.MustNew(repoPath))
 	require.NoError(t, err)
-
-	err = v.EnsureValidGitIgnoreExists()
-	require.NoError(t, err)
-
-	// Delete root .gitignore which contains .databricks entry
-	err = os.Remove(filepath.Join(repoPath, ".gitignore"))
-	require.NoError(t, err)
-
-	// taint rules to reload .gitignore
-	v.repo.taintIgnoreRules()
 
 	// assert .databricks is still being ignored
 	ign1, err := v.IgnoreDirectory(".databricks")

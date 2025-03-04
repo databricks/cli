@@ -43,7 +43,3 @@ func (f *FileSet) Files() ([]fileset.File, error) {
 	f.view.repo.taintIgnoreRules()
 	return f.fileset.Files()
 }
-
-func (f *FileSet) EnsureValidGitIgnoreExists() error {
-	return f.view.EnsureValidGitIgnoreExists()
-}
