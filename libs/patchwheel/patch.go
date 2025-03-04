@@ -236,20 +236,17 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", fmt.Errorf("unexpected dist-info directory format: %s", oldDistInfoPrefix)
 	}
 
-	// Patch the RECORD content.
 	newRecord, err := patchRecord(recordContent, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
 	if err != nil {
 		return "", err
 	}
 
-	// Write to the temporary file first
 	outFile, err := os.Create(tmpFile)
 	if err != nil {
 		return "", err
 	}
 	defer outFile.Close()
 
-	// Write a new wheel (zip archive) with the patched files.
 	zipw := zip.NewWriter(outFile)
 	for _, f := range r.File {
 		// If the file is inside the old dist-info directory, update its name.
@@ -311,6 +308,5 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 
 	needRemoval = false
-
 	return outpath, nil
 }
