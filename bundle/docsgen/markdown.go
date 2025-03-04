@@ -12,7 +12,7 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 	m = m.PlainText(header)
 	for _, node := range nodes {
 		m = m.LF()
-		title := escapeBrackets(node.Title)
+		title := node.Title
 		if node.TopLevel {
 			m = m.H2(title)
 		} else {
@@ -105,15 +105,7 @@ func formatDescription(a attributeNode) string {
 // Docs framework does not allow special characters in anchor links and strip them out by default
 // We need to clean them up to make sure the links pass the validation
 func cleanAnchor(s string) string {
-	s = strings.ReplaceAll(s, "<", "")
-	s = strings.ReplaceAll(s, ">", "")
 	s = strings.ReplaceAll(s, ".", "")
-
-	return s
-}
-
-func escapeBrackets(s string) string {
-	s = strings.ReplaceAll(s, "<", "\\<")
-	s = strings.ReplaceAll(s, ">", "\\>")
+	s = strings.ReplaceAll(s, nameFieldWithFormat, nameField)
 	return s
 }

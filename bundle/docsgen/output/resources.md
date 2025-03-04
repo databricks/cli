@@ -173,7 +173,7 @@ apps:
 :::
   
   
-### apps.\<name\>.active_deployment
+### apps._name_.active_deployment
   
 **`Type: Map`**
   
@@ -222,7 +222,7 @@ apps:
 :::
   
   
-### apps.\<name\>.active_deployment.deployment_artifacts
+### apps._name_.active_deployment.deployment_artifacts
   
 **`Type: Map`**
   
@@ -243,7 +243,7 @@ apps:
 :::
   
   
-### apps.\<name\>.active_deployment.status
+### apps._name_.active_deployment.status
   
 **`Type: Map`**
   
@@ -268,7 +268,7 @@ apps:
 :::
   
   
-### apps.\<name\>.app_status
+### apps._name_.app_status
   
 **`Type: Map`**
   
@@ -293,7 +293,7 @@ apps:
 :::
   
   
-### apps.\<name\>.compute_status
+### apps._name_.compute_status
   
 **`Type: Map`**
   
@@ -318,7 +318,7 @@ apps:
 :::
   
   
-### apps.\<name\>.pending_deployment
+### apps._name_.pending_deployment
   
 **`Type: Map`**
   
@@ -367,7 +367,7 @@ apps:
 :::
   
   
-### apps.\<name\>.pending_deployment.deployment_artifacts
+### apps._name_.pending_deployment.deployment_artifacts
   
 **`Type: Map`**
   
@@ -388,7 +388,7 @@ apps:
 :::
   
   
-### apps.\<name\>.pending_deployment.status
+### apps._name_.pending_deployment.status
   
 **`Type: Map`**
   
@@ -413,7 +413,7 @@ apps:
 :::
   
   
-### apps.\<name\>.permissions
+### apps._name_.permissions
   
 **`Type: Sequence`**
   
@@ -446,7 +446,7 @@ apps:
 :::
   
   
-### apps.\<name\>.resources
+### apps._name_.resources
   
 **`Type: Sequence`**
   
@@ -487,7 +487,7 @@ apps:
 :::
   
   
-### apps.\<name\>.resources.job
+### apps._name_.resources.job
   
 **`Type: Map`**
   
@@ -512,7 +512,7 @@ apps:
 :::
   
   
-### apps.\<name\>.resources.secret
+### apps._name_.resources.secret
   
 **`Type: Map`**
   
@@ -541,7 +541,7 @@ apps:
 :::
   
   
-### apps.\<name\>.resources.serving_endpoint
+### apps._name_.resources.serving_endpoint
   
 **`Type: Map`**
   
@@ -566,7 +566,7 @@ apps:
 :::
   
   
-### apps.\<name\>.resources.sql_warehouse
+### apps._name_.resources.sql_warehouse
   
 **`Type: Map`**
   
@@ -765,7 +765,7 @@ resources:
             notebook_path: "./src/my_notebook.py"
 ```
   
-### clusters.\<name\>.autoscale
+### clusters._name_.autoscale
   
 **`Type: Map`**
   
@@ -791,7 +791,7 @@ Note: autoscaling works best with DB runtime versions 3.0 or later.
 :::
   
   
-### clusters.\<name\>.aws_attributes
+### clusters._name_.aws_attributes
   
 **`Type: Map`**
   
@@ -849,7 +849,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### clusters.\<name\>.azure_attributes
+### clusters._name_.azure_attributes
   
 **`Type: Map`**
   
@@ -883,7 +883,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### clusters.\<name\>.azure_attributes.log_analytics_info
+### clusters._name_.azure_attributes.log_analytics_info
   
 **`Type: Map`**
   
@@ -908,7 +908,7 @@ Defines values necessary to configure and run Azure Log Analytics agent
 :::
   
   
-### clusters.\<name\>.cluster_log_conf
+### clusters._name_.cluster_log_conf
   
 **`Type: Map`**
   
@@ -937,7 +937,7 @@ the destination of executor logs is `$destination/$clusterId/executor`.
 :::
   
   
-### clusters.\<name\>.cluster_log_conf.dbfs
+### clusters._name_.cluster_log_conf.dbfs
   
 **`Type: Map`**
   
@@ -959,7 +959,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### clusters.\<name\>.cluster_log_conf.s3
+### clusters._name_.cluster_log_conf.s3
   
 **`Type: Map`**
   
@@ -1007,7 +1007,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### clusters.\<name\>.docker_image
+### clusters._name_.docker_image
   
 **`Type: Map`**
   
@@ -1032,7 +1032,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### clusters.\<name\>.docker_image.basic_auth
+### clusters._name_.docker_image.basic_auth
   
 **`Type: Map`**
   
@@ -1057,7 +1057,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### clusters.\<name\>.gcp_attributes
+### clusters._name_.gcp_attributes
   
 **`Type: Map`**
   
@@ -1099,7 +1099,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### clusters.\<name\>.init_scripts
+### clusters._name_.init_scripts
   
 **`Type: Sequence`**
   
@@ -1144,7 +1144,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
 :::
   
   
-### clusters.\<name\>.init_scripts.abfss
+### clusters._name_.init_scripts.abfss
   
 **`Type: Map`**
   
@@ -1165,7 +1165,7 @@ Contains the Azure Data Lake Storage destination path
 :::
   
   
-### clusters.\<name\>.init_scripts.dbfs
+### clusters._name_.init_scripts.dbfs
   
 **`Type: Map`**
   
@@ -1187,7 +1187,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### clusters.\<name\>.init_scripts.file
+### clusters._name_.init_scripts.file
   
 **`Type: Map`**
   
@@ -1209,7 +1209,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### clusters.\<name\>.init_scripts.gcs
+### clusters._name_.init_scripts.gcs
   
 **`Type: Map`**
   
@@ -1231,7 +1231,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### clusters.\<name\>.init_scripts.s3
+### clusters._name_.init_scripts.s3
   
 **`Type: Map`**
   
@@ -1279,7 +1279,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### clusters.\<name\>.init_scripts.volumes
+### clusters._name_.init_scripts.volumes
   
 **`Type: Map`**
   
@@ -1301,7 +1301,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### clusters.\<name\>.init_scripts.workspace
+### clusters._name_.init_scripts.workspace
   
 **`Type: Map`**
   
@@ -1323,7 +1323,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### clusters.\<name\>.permissions
+### clusters._name_.permissions
   
 **`Type: Sequence`**
   
@@ -1356,7 +1356,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### clusters.\<name\>.workload_type
+### clusters._name_.workload_type
   
 **`Type: Map`**
   
@@ -1377,7 +1377,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### clusters.\<name\>.workload_type.clients
+### clusters._name_.workload_type.clients
   
 **`Type: Map`**
   
@@ -1492,7 +1492,7 @@ If you use the UI to modify the dashboard, modifications made through the UI are
 
 In addition, if you attempt to deploy a bundle that contains a dashboard JSON file that is different than the one in the remote workspace, an error will occur. To force the deploy and overwrite the dashboard in the remote workspace with the local one, use the `--force` option. See [_](/dev-tools/cli/bundle-commands.md#deploy).
   
-### dashboards.\<name\>.permissions
+### dashboards._name_.permissions
   
 **`Type: Sequence`**
   
@@ -1594,7 +1594,7 @@ resources:
       description: MLflow experiment used to track runs
 ```
   
-### experiments.\<name\>.permissions
+### experiments._name_.permissions
   
 **`Type: Sequence`**
   
@@ -1627,7 +1627,7 @@ resources:
 :::
   
   
-### experiments.\<name\>.tags
+### experiments._name_.tags
   
 **`Type: Sequence`**
   
@@ -1791,7 +1791,7 @@ resources:
 
 For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
   
-### jobs.\<name\>.continuous
+### jobs._name_.continuous
   
 **`Type: Map`**
   
@@ -1812,7 +1812,7 @@ An optional continuous property for this job. The continuous property will ensur
 :::
   
   
-### jobs.\<name\>.deployment
+### jobs._name_.deployment
   
 **`Type: Map`**
   
@@ -1837,7 +1837,7 @@ Deployment information for jobs managed by external sources.
 :::
   
   
-### jobs.\<name\>.email_notifications
+### jobs._name_.email_notifications
   
 **`Type: Map`**
   
@@ -1878,7 +1878,7 @@ An optional set of email addresses that is notified when runs of this job begin 
 :::
   
   
-### jobs.\<name\>.environments
+### jobs._name_.environments
   
 **`Type: Sequence`**
   
@@ -1906,7 +1906,7 @@ For other serverless tasks, the task environment is required to be specified usi
 :::
   
   
-### jobs.\<name\>.environments.spec
+### jobs._name_.environments.spec
   
 **`Type: Map`**
   
@@ -1932,7 +1932,7 @@ In this minimal environment spec, only pip dependencies are supported.
 :::
   
   
-### jobs.\<name\>.git_source
+### jobs._name_.git_source
   
 **`Type: Map`**
   
@@ -1981,7 +1981,7 @@ Note: dbt and SQL File tasks support only version-controlled sources. If dbt or 
 :::
   
   
-### jobs.\<name\>.git_source.git_snapshot
+### jobs._name_.git_source.git_snapshot
   
 **`Type: Map`**
   
@@ -2002,7 +2002,7 @@ Read-only state of the remote repository at the time the job was run. This field
 :::
   
   
-### jobs.\<name\>.git_source.job_source
+### jobs._name_.git_source.job_source
   
 **`Type: Map`**
   
@@ -2031,7 +2031,7 @@ The source of the job specification in the remote repository when the job is sou
 :::
   
   
-### jobs.\<name\>.health
+### jobs._name_.health
   
 **`Type: Map`**
   
@@ -2052,7 +2052,7 @@ An optional set of health rules that can be defined for this job.
 :::
   
   
-### jobs.\<name\>.health.rules
+### jobs._name_.health.rules
   
 **`Type: Sequence`**
   
@@ -2081,7 +2081,7 @@ An optional set of health rules that can be defined for this job.
 :::
   
   
-### jobs.\<name\>.job_clusters
+### jobs._name_.job_clusters
   
 **`Type: Sequence`**
   
@@ -2107,7 +2107,7 @@ If more than 100 job clusters are available, you can paginate through them using
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster
+### jobs._name_.job_clusters.new_cluster
   
 **`Type: Map`**
   
@@ -2244,7 +2244,7 @@ If new_cluster, a description of a cluster that is created for each task.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.autoscale
+### jobs._name_.job_clusters.new_cluster.autoscale
   
 **`Type: Map`**
   
@@ -2270,7 +2270,7 @@ Note: autoscaling works best with DB runtime versions 3.0 or later.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.aws_attributes
+### jobs._name_.job_clusters.new_cluster.aws_attributes
   
 **`Type: Map`**
   
@@ -2328,7 +2328,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.azure_attributes
+### jobs._name_.job_clusters.new_cluster.azure_attributes
   
 **`Type: Map`**
   
@@ -2362,7 +2362,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.azure_attributes.log_analytics_info
+### jobs._name_.job_clusters.new_cluster.azure_attributes.log_analytics_info
   
 **`Type: Map`**
   
@@ -2387,7 +2387,7 @@ Defines values necessary to configure and run Azure Log Analytics agent
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.cluster_log_conf
+### jobs._name_.job_clusters.new_cluster.cluster_log_conf
   
 **`Type: Map`**
   
@@ -2416,7 +2416,7 @@ the destination of executor logs is `$destination/$clusterId/executor`.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.cluster_log_conf.dbfs
+### jobs._name_.job_clusters.new_cluster.cluster_log_conf.dbfs
   
 **`Type: Map`**
   
@@ -2438,7 +2438,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.cluster_log_conf.s3
+### jobs._name_.job_clusters.new_cluster.cluster_log_conf.s3
   
 **`Type: Map`**
   
@@ -2486,7 +2486,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.docker_image
+### jobs._name_.job_clusters.new_cluster.docker_image
   
 **`Type: Map`**
   
@@ -2511,7 +2511,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.docker_image.basic_auth
+### jobs._name_.job_clusters.new_cluster.docker_image.basic_auth
   
 **`Type: Map`**
   
@@ -2536,7 +2536,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.gcp_attributes
+### jobs._name_.job_clusters.new_cluster.gcp_attributes
   
 **`Type: Map`**
   
@@ -2578,7 +2578,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.init_scripts
+### jobs._name_.job_clusters.new_cluster.init_scripts
   
 **`Type: Sequence`**
   
@@ -2623,7 +2623,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.init_scripts.abfss
+### jobs._name_.job_clusters.new_cluster.init_scripts.abfss
   
 **`Type: Map`**
   
@@ -2644,7 +2644,7 @@ Contains the Azure Data Lake Storage destination path
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.init_scripts.dbfs
+### jobs._name_.job_clusters.new_cluster.init_scripts.dbfs
   
 **`Type: Map`**
   
@@ -2666,7 +2666,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.init_scripts.file
+### jobs._name_.job_clusters.new_cluster.init_scripts.file
   
 **`Type: Map`**
   
@@ -2688,7 +2688,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.init_scripts.gcs
+### jobs._name_.job_clusters.new_cluster.init_scripts.gcs
   
 **`Type: Map`**
   
@@ -2710,7 +2710,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.init_scripts.s3
+### jobs._name_.job_clusters.new_cluster.init_scripts.s3
   
 **`Type: Map`**
   
@@ -2758,7 +2758,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.init_scripts.volumes
+### jobs._name_.job_clusters.new_cluster.init_scripts.volumes
   
 **`Type: Map`**
   
@@ -2780,7 +2780,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.init_scripts.workspace
+### jobs._name_.job_clusters.new_cluster.init_scripts.workspace
   
 **`Type: Map`**
   
@@ -2802,7 +2802,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.workload_type
+### jobs._name_.job_clusters.new_cluster.workload_type
   
 **`Type: Map`**
   
@@ -2823,7 +2823,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.job_clusters.new_cluster.workload_type.clients
+### jobs._name_.job_clusters.new_cluster.workload_type.clients
   
 **`Type: Map`**
   
@@ -2848,7 +2848,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.notification_settings
+### jobs._name_.notification_settings
   
 **`Type: Map`**
   
@@ -2873,7 +2873,7 @@ Optional notification settings that are used when sending notifications to each 
 :::
   
   
-### jobs.\<name\>.parameters
+### jobs._name_.parameters
   
 **`Type: Sequence`**
   
@@ -2898,7 +2898,7 @@ Job-level parameter definitions
 :::
   
   
-### jobs.\<name\>.permissions
+### jobs._name_.permissions
   
 **`Type: Sequence`**
   
@@ -2931,7 +2931,7 @@ Job-level parameter definitions
 :::
   
   
-### jobs.\<name\>.queue
+### jobs._name_.queue
   
 **`Type: Map`**
   
@@ -2952,7 +2952,7 @@ The queue settings of the job.
 :::
   
   
-### jobs.\<name\>.run_as
+### jobs._name_.run_as
   
 **`Type: Map`**
   
@@ -2979,7 +2979,7 @@ Either `user_name` or `service_principal_name` should be specified. If not, an e
 :::
   
   
-### jobs.\<name\>.schedule
+### jobs._name_.schedule
   
 **`Type: Map`**
   
@@ -3008,7 +3008,7 @@ An optional periodic schedule for this job. The default behavior is that the job
 :::
   
   
-### jobs.\<name\>.tasks
+### jobs._name_.tasks
   
 **`Type: Sequence`**
   
@@ -3146,7 +3146,7 @@ If more than 100 tasks are available, you can paginate through them using :metho
 :::
   
   
-### jobs.\<name\>.tasks.clean_rooms_notebook_task
+### jobs._name_.tasks.clean_rooms_notebook_task
   
 **`Type: Map`**
   
@@ -3180,7 +3180,7 @@ when the `clean_rooms_notebook_task` field is present.
 :::
   
   
-### jobs.\<name\>.tasks.condition_task
+### jobs._name_.tasks.condition_task
   
 **`Type: Map`**
   
@@ -3210,7 +3210,7 @@ The condition task does not require a cluster to execute and does not support re
 :::
   
   
-### jobs.\<name\>.tasks.dbt_task
+### jobs._name_.tasks.dbt_task
   
 **`Type: Map`**
   
@@ -3255,7 +3255,7 @@ The task runs one or more dbt commands when the `dbt_task` field is present. The
 :::
   
   
-### jobs.\<name\>.tasks.depends_on
+### jobs._name_.tasks.depends_on
   
 **`Type: Sequence`**
   
@@ -3281,7 +3281,7 @@ The key is `task_key`, and the value is the name assigned to the dependent task.
 :::
   
   
-### jobs.\<name\>.tasks.email_notifications
+### jobs._name_.tasks.email_notifications
   
 **`Type: Map`**
   
@@ -3322,7 +3322,7 @@ An optional set of email addresses that is notified when runs of this task begin
 :::
   
   
-### jobs.\<name\>.tasks.for_each_task
+### jobs._name_.tasks.for_each_task
   
 **`Type: Map`**
   
@@ -3351,7 +3351,7 @@ The task executes a nested task for every input provided when the `for_each_task
 :::
   
   
-### jobs.\<name\>.tasks.health
+### jobs._name_.tasks.health
   
 **`Type: Map`**
   
@@ -3372,7 +3372,7 @@ An optional set of health rules that can be defined for this job.
 :::
   
   
-### jobs.\<name\>.tasks.health.rules
+### jobs._name_.tasks.health.rules
   
 **`Type: Sequence`**
   
@@ -3401,7 +3401,7 @@ An optional set of health rules that can be defined for this job.
 :::
   
   
-### jobs.\<name\>.tasks.libraries
+### jobs._name_.tasks.libraries
   
 **`Type: Sequence`**
   
@@ -3447,7 +3447,7 @@ The default value is an empty list.
 :::
   
   
-### jobs.\<name\>.tasks.libraries.cran
+### jobs._name_.tasks.libraries.cran
   
 **`Type: Map`**
   
@@ -3472,7 +3472,7 @@ Specification of a CRAN library to be installed as part of the library
 :::
   
   
-### jobs.\<name\>.tasks.libraries.maven
+### jobs._name_.tasks.libraries.maven
   
 **`Type: Map`**
   
@@ -3502,7 +3502,7 @@ Specification of a maven library to be installed. For example:
 :::
   
   
-### jobs.\<name\>.tasks.libraries.pypi
+### jobs._name_.tasks.libraries.pypi
   
 **`Type: Map`**
   
@@ -3528,7 +3528,7 @@ Specification of a PyPi library to be installed. For example:
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster
+### jobs._name_.tasks.new_cluster
   
 **`Type: Map`**
   
@@ -3665,7 +3665,7 @@ If new_cluster, a description of a new cluster that is created for each run.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.autoscale
+### jobs._name_.tasks.new_cluster.autoscale
   
 **`Type: Map`**
   
@@ -3691,7 +3691,7 @@ Note: autoscaling works best with DB runtime versions 3.0 or later.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.aws_attributes
+### jobs._name_.tasks.new_cluster.aws_attributes
   
 **`Type: Map`**
   
@@ -3749,7 +3749,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.azure_attributes
+### jobs._name_.tasks.new_cluster.azure_attributes
   
 **`Type: Map`**
   
@@ -3783,7 +3783,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.azure_attributes.log_analytics_info
+### jobs._name_.tasks.new_cluster.azure_attributes.log_analytics_info
   
 **`Type: Map`**
   
@@ -3808,7 +3808,7 @@ Defines values necessary to configure and run Azure Log Analytics agent
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.cluster_log_conf
+### jobs._name_.tasks.new_cluster.cluster_log_conf
   
 **`Type: Map`**
   
@@ -3837,7 +3837,7 @@ the destination of executor logs is `$destination/$clusterId/executor`.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.cluster_log_conf.dbfs
+### jobs._name_.tasks.new_cluster.cluster_log_conf.dbfs
   
 **`Type: Map`**
   
@@ -3859,7 +3859,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.cluster_log_conf.s3
+### jobs._name_.tasks.new_cluster.cluster_log_conf.s3
   
 **`Type: Map`**
   
@@ -3907,7 +3907,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.docker_image
+### jobs._name_.tasks.new_cluster.docker_image
   
 **`Type: Map`**
   
@@ -3932,7 +3932,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.docker_image.basic_auth
+### jobs._name_.tasks.new_cluster.docker_image.basic_auth
   
 **`Type: Map`**
   
@@ -3957,7 +3957,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.gcp_attributes
+### jobs._name_.tasks.new_cluster.gcp_attributes
   
 **`Type: Map`**
   
@@ -3999,7 +3999,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.init_scripts
+### jobs._name_.tasks.new_cluster.init_scripts
   
 **`Type: Sequence`**
   
@@ -4044,7 +4044,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.init_scripts.abfss
+### jobs._name_.tasks.new_cluster.init_scripts.abfss
   
 **`Type: Map`**
   
@@ -4065,7 +4065,7 @@ Contains the Azure Data Lake Storage destination path
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.init_scripts.dbfs
+### jobs._name_.tasks.new_cluster.init_scripts.dbfs
   
 **`Type: Map`**
   
@@ -4087,7 +4087,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.init_scripts.file
+### jobs._name_.tasks.new_cluster.init_scripts.file
   
 **`Type: Map`**
   
@@ -4109,7 +4109,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.init_scripts.gcs
+### jobs._name_.tasks.new_cluster.init_scripts.gcs
   
 **`Type: Map`**
   
@@ -4131,7 +4131,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.init_scripts.s3
+### jobs._name_.tasks.new_cluster.init_scripts.s3
   
 **`Type: Map`**
   
@@ -4179,7 +4179,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.init_scripts.volumes
+### jobs._name_.tasks.new_cluster.init_scripts.volumes
   
 **`Type: Map`**
   
@@ -4201,7 +4201,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.init_scripts.workspace
+### jobs._name_.tasks.new_cluster.init_scripts.workspace
   
 **`Type: Map`**
   
@@ -4223,7 +4223,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.workload_type
+### jobs._name_.tasks.new_cluster.workload_type
   
 **`Type: Map`**
   
@@ -4244,7 +4244,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.tasks.new_cluster.workload_type.clients
+### jobs._name_.tasks.new_cluster.workload_type.clients
   
 **`Type: Map`**
   
@@ -4269,7 +4269,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### jobs.\<name\>.tasks.notebook_task
+### jobs._name_.tasks.notebook_task
   
 **`Type: Map`**
   
@@ -4302,7 +4302,7 @@ The task runs a notebook when the `notebook_task` field is present.
 :::
   
   
-### jobs.\<name\>.tasks.notification_settings
+### jobs._name_.tasks.notification_settings
   
 **`Type: Map`**
   
@@ -4331,7 +4331,7 @@ Optional notification settings that are used when sending notifications to each 
 :::
   
   
-### jobs.\<name\>.tasks.pipeline_task
+### jobs._name_.tasks.pipeline_task
   
 **`Type: Map`**
   
@@ -4356,7 +4356,7 @@ The task triggers a pipeline update when the `pipeline_task` field is present. O
 :::
   
   
-### jobs.\<name\>.tasks.python_wheel_task
+### jobs._name_.tasks.python_wheel_task
   
 **`Type: Map`**
   
@@ -4389,7 +4389,7 @@ The task runs a Python wheel when the `python_wheel_task` field is present.
 :::
   
   
-### jobs.\<name\>.tasks.run_job_task
+### jobs._name_.tasks.run_job_task
   
 **`Type: Map`**
   
@@ -4446,7 +4446,7 @@ The task triggers another job when the `run_job_task` field is present.
 :::
   
   
-### jobs.\<name\>.tasks.run_job_task.pipeline_params
+### jobs._name_.tasks.run_job_task.pipeline_params
   
 **`Type: Map`**
   
@@ -4467,7 +4467,7 @@ Controls whether the pipeline should perform a full refresh
 :::
   
   
-### jobs.\<name\>.tasks.spark_jar_task
+### jobs._name_.tasks.spark_jar_task
   
 **`Type: Map`**
   
@@ -4500,7 +4500,7 @@ The task runs a JAR when the `spark_jar_task` field is present.
 :::
   
   
-### jobs.\<name\>.tasks.spark_python_task
+### jobs._name_.tasks.spark_python_task
   
 **`Type: Map`**
   
@@ -4529,7 +4529,7 @@ The task runs a Python file when the `spark_python_task` field is present.
 :::
   
   
-### jobs.\<name\>.tasks.spark_submit_task
+### jobs._name_.tasks.spark_submit_task
   
 **`Type: Map`**
   
@@ -4558,7 +4558,7 @@ The `--jars`, `--py-files`, `--files` arguments support DBFS and S3 paths.
 :::
   
   
-### jobs.\<name\>.tasks.sql_task
+### jobs._name_.tasks.sql_task
   
 **`Type: Map`**
   
@@ -4599,7 +4599,7 @@ The task runs a SQL query or file, or it refreshes a SQL alert or a legacy SQL d
 :::
   
   
-### jobs.\<name\>.tasks.sql_task.alert
+### jobs._name_.tasks.sql_task.alert
   
 **`Type: Map`**
   
@@ -4628,7 +4628,7 @@ If alert, indicates that this job must refresh a SQL alert.
 :::
   
   
-### jobs.\<name\>.tasks.sql_task.alert.subscriptions
+### jobs._name_.tasks.sql_task.alert.subscriptions
   
 **`Type: Sequence`**
   
@@ -4653,7 +4653,7 @@ If specified, alert notifications are sent to subscribers.
 :::
   
   
-### jobs.\<name\>.tasks.sql_task.dashboard
+### jobs._name_.tasks.sql_task.dashboard
   
 **`Type: Map`**
   
@@ -4686,7 +4686,7 @@ If dashboard, indicates that this job must refresh a SQL dashboard.
 :::
   
   
-### jobs.\<name\>.tasks.sql_task.dashboard.subscriptions
+### jobs._name_.tasks.sql_task.dashboard.subscriptions
   
 **`Type: Sequence`**
   
@@ -4711,7 +4711,7 @@ If specified, dashboard snapshots are sent to subscriptions.
 :::
   
   
-### jobs.\<name\>.tasks.sql_task.file
+### jobs._name_.tasks.sql_task.file
   
 **`Type: Map`**
   
@@ -4736,7 +4736,7 @@ If file, indicates that this job runs a SQL file in a remote Git repository.
 :::
   
   
-### jobs.\<name\>.tasks.sql_task.query
+### jobs._name_.tasks.sql_task.query
   
 **`Type: Map`**
   
@@ -4757,7 +4757,7 @@ If query, indicates that this job must execute a SQL query.
 :::
   
   
-### jobs.\<name\>.tasks.webhook_notifications
+### jobs._name_.tasks.webhook_notifications
   
 **`Type: Map`**
   
@@ -4794,7 +4794,7 @@ A collection of system notification IDs to notify when runs of this task begin o
 :::
   
   
-### jobs.\<name\>.tasks.webhook_notifications.on_duration_warning_threshold_exceeded
+### jobs._name_.tasks.webhook_notifications.on_duration_warning_threshold_exceeded
   
 **`Type: Sequence`**
   
@@ -4815,7 +4815,7 @@ An optional list of system notification IDs to call when the duration of a run e
 :::
   
   
-### jobs.\<name\>.tasks.webhook_notifications.on_failure
+### jobs._name_.tasks.webhook_notifications.on_failure
   
 **`Type: Sequence`**
   
@@ -4836,7 +4836,7 @@ An optional list of system notification IDs to call when the run fails. A maximu
 :::
   
   
-### jobs.\<name\>.tasks.webhook_notifications.on_start
+### jobs._name_.tasks.webhook_notifications.on_start
   
 **`Type: Sequence`**
   
@@ -4857,7 +4857,7 @@ An optional list of system notification IDs to call when the run starts. A maxim
 :::
   
   
-### jobs.\<name\>.tasks.webhook_notifications.on_streaming_backlog_exceeded
+### jobs._name_.tasks.webhook_notifications.on_streaming_backlog_exceeded
   
 **`Type: Sequence`**
   
@@ -4881,7 +4881,7 @@ A maximum of 3 destinations can be specified for the `on_streaming_backlog_excee
 :::
   
   
-### jobs.\<name\>.tasks.webhook_notifications.on_success
+### jobs._name_.tasks.webhook_notifications.on_success
   
 **`Type: Sequence`**
   
@@ -4902,7 +4902,7 @@ An optional list of system notification IDs to call when the run completes succe
 :::
   
   
-### jobs.\<name\>.trigger
+### jobs._name_.trigger
   
 **`Type: Map`**
   
@@ -4939,7 +4939,7 @@ A configuration to trigger a run when certain conditions are met. The default be
 :::
   
   
-### jobs.\<name\>.trigger.file_arrival
+### jobs._name_.trigger.file_arrival
   
 **`Type: Map`**
   
@@ -4968,7 +4968,7 @@ File arrival trigger settings.
 :::
   
   
-### jobs.\<name\>.trigger.periodic
+### jobs._name_.trigger.periodic
   
 **`Type: Map`**
   
@@ -4993,7 +4993,7 @@ Periodic trigger settings.
 :::
   
   
-### jobs.\<name\>.trigger.table
+### jobs._name_.trigger.table
   
 **`Type: Map`**
   
@@ -5026,7 +5026,7 @@ Old table trigger settings name. Deprecated in favor of `table_update`.
 :::
   
   
-### jobs.\<name\>.trigger.table_update
+### jobs._name_.trigger.table_update
   
 **`Type: Map`**
   
@@ -5059,7 +5059,7 @@ Old table trigger settings name. Deprecated in favor of `table_update`.
 :::
   
   
-### jobs.\<name\>.webhook_notifications
+### jobs._name_.webhook_notifications
   
 **`Type: Map`**
   
@@ -5096,7 +5096,7 @@ A collection of system notification IDs to notify when runs of this job begin or
 :::
   
   
-### jobs.\<name\>.webhook_notifications.on_duration_warning_threshold_exceeded
+### jobs._name_.webhook_notifications.on_duration_warning_threshold_exceeded
   
 **`Type: Sequence`**
   
@@ -5117,7 +5117,7 @@ An optional list of system notification IDs to call when the duration of a run e
 :::
   
   
-### jobs.\<name\>.webhook_notifications.on_failure
+### jobs._name_.webhook_notifications.on_failure
   
 **`Type: Sequence`**
   
@@ -5138,7 +5138,7 @@ An optional list of system notification IDs to call when the run fails. A maximu
 :::
   
   
-### jobs.\<name\>.webhook_notifications.on_start
+### jobs._name_.webhook_notifications.on_start
   
 **`Type: Sequence`**
   
@@ -5159,7 +5159,7 @@ An optional list of system notification IDs to call when the run starts. A maxim
 :::
   
   
-### jobs.\<name\>.webhook_notifications.on_streaming_backlog_exceeded
+### jobs._name_.webhook_notifications.on_streaming_backlog_exceeded
   
 **`Type: Sequence`**
   
@@ -5183,7 +5183,7 @@ A maximum of 3 destinations can be specified for the `on_streaming_backlog_excee
 :::
   
   
-### jobs.\<name\>.webhook_notifications.on_success
+### jobs._name_.webhook_notifications.on_success
   
 **`Type: Sequence`**
   
@@ -5278,7 +5278,7 @@ resources:
         value: "data science"
 ```
   
-### model_serving_endpoints.\<name\>.ai_gateway
+### model_serving_endpoints._name_.ai_gateway
   
 **`Type: Map`**
   
@@ -5311,7 +5311,7 @@ The AI Gateway configuration for the serving endpoint. NOTE: Only external model
 :::
   
   
-### model_serving_endpoints.\<name\>.ai_gateway.guardrails
+### model_serving_endpoints._name_.ai_gateway.guardrails
   
 **`Type: Map`**
   
@@ -5336,7 +5336,7 @@ Configuration for AI Guardrails to prevent unwanted data and unsafe data in requ
 :::
   
   
-### model_serving_endpoints.\<name\>.ai_gateway.guardrails.input
+### model_serving_endpoints._name_.ai_gateway.guardrails.input
   
 **`Type: Map`**
   
@@ -5369,7 +5369,7 @@ Configuration for input guardrail filters.
 :::
   
   
-### model_serving_endpoints.\<name\>.ai_gateway.guardrails.input.pii
+### model_serving_endpoints._name_.ai_gateway.guardrails.input.pii
   
 **`Type: Map`**
   
@@ -5390,7 +5390,7 @@ Configuration for guardrail PII filter.
 :::
   
   
-### model_serving_endpoints.\<name\>.ai_gateway.guardrails.output
+### model_serving_endpoints._name_.ai_gateway.guardrails.output
   
 **`Type: Map`**
   
@@ -5423,7 +5423,7 @@ Configuration for output guardrail filters.
 :::
   
   
-### model_serving_endpoints.\<name\>.ai_gateway.guardrails.output.pii
+### model_serving_endpoints._name_.ai_gateway.guardrails.output.pii
   
 **`Type: Map`**
   
@@ -5444,7 +5444,7 @@ Configuration for guardrail PII filter.
 :::
   
   
-### model_serving_endpoints.\<name\>.ai_gateway.inference_table_config
+### model_serving_endpoints._name_.ai_gateway.inference_table_config
   
 **`Type: Map`**
   
@@ -5478,7 +5478,7 @@ Use these tables to monitor and audit data being sent to and received from model
 :::
   
   
-### model_serving_endpoints.\<name\>.ai_gateway.rate_limits
+### model_serving_endpoints._name_.ai_gateway.rate_limits
   
 **`Type: Sequence`**
   
@@ -5507,7 +5507,7 @@ Configuration for rate limits which can be set to limit endpoint traffic.
 :::
   
   
-### model_serving_endpoints.\<name\>.ai_gateway.usage_tracking_config
+### model_serving_endpoints._name_.ai_gateway.usage_tracking_config
   
 **`Type: Map`**
   
@@ -5529,7 +5529,7 @@ These tables allow you to monitor operational usage on endpoints and their assoc
 :::
   
   
-### model_serving_endpoints.\<name\>.config
+### model_serving_endpoints._name_.config
   
 **`Type: Map`**
   
@@ -5562,7 +5562,7 @@ The core config of the serving endpoint.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.auto_capture_config
+### model_serving_endpoints._name_.config.auto_capture_config
   
 **`Type: Map`**
   
@@ -5598,7 +5598,7 @@ in these cases please use AI Gateway to manage inference tables.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities
+### model_serving_endpoints._name_.config.served_entities
   
 **`Type: Sequence`**
   
@@ -5659,7 +5659,7 @@ The list of served entities under the serving endpoint config.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model
+### model_serving_endpoints._name_.config.served_entities.external_model
   
 **`Type: Map`**
   
@@ -5720,7 +5720,7 @@ The external model to be served. NOTE: Only one of external_model and (entity_na
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model.ai21labs_config
+### model_serving_endpoints._name_.config.served_entities.external_model.ai21labs_config
   
 **`Type: Map`**
   
@@ -5745,7 +5745,7 @@ AI21Labs Config. Only required if the provider is 'ai21labs'.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model.amazon_bedrock_config
+### model_serving_endpoints._name_.config.served_entities.external_model.amazon_bedrock_config
   
 **`Type: Map`**
   
@@ -5786,7 +5786,7 @@ Amazon Bedrock Config. Only required if the provider is 'amazon-bedrock'.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model.anthropic_config
+### model_serving_endpoints._name_.config.served_entities.external_model.anthropic_config
   
 **`Type: Map`**
   
@@ -5811,7 +5811,7 @@ Anthropic Config. Only required if the provider is 'anthropic'.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model.cohere_config
+### model_serving_endpoints._name_.config.served_entities.external_model.cohere_config
   
 **`Type: Map`**
   
@@ -5840,7 +5840,7 @@ Cohere Config. Only required if the provider is 'cohere'.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model.databricks_model_serving_config
+### model_serving_endpoints._name_.config.served_entities.external_model.databricks_model_serving_config
   
 **`Type: Map`**
   
@@ -5869,7 +5869,7 @@ Databricks Model Serving Config. Only required if the provider is 'databricks-mo
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model.google_cloud_vertex_ai_config
+### model_serving_endpoints._name_.config.served_entities.external_model.google_cloud_vertex_ai_config
   
 **`Type: Map`**
   
@@ -5902,7 +5902,7 @@ Google Cloud Vertex AI Config. Only required if the provider is 'google-cloud-ve
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model.openai_config
+### model_serving_endpoints._name_.config.served_entities.external_model.openai_config
   
 **`Type: Map`**
   
@@ -5963,7 +5963,7 @@ OpenAI Config. Only required if the provider is 'openai'.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_entities.external_model.palm_config
+### model_serving_endpoints._name_.config.served_entities.external_model.palm_config
   
 **`Type: Map`**
   
@@ -5988,7 +5988,7 @@ PaLM Config. Only required if the provider is 'palm'.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.served_models
+### model_serving_endpoints._name_.config.served_models
   
 **`Type: Sequence`**
   
@@ -6045,7 +6045,7 @@ PaLM Config. Only required if the provider is 'palm'.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.traffic_config
+### model_serving_endpoints._name_.config.traffic_config
   
 **`Type: Map`**
   
@@ -6066,7 +6066,7 @@ The traffic configuration associated with the serving endpoint config.
 :::
   
   
-### model_serving_endpoints.\<name\>.config.traffic_config.routes
+### model_serving_endpoints._name_.config.traffic_config.routes
   
 **`Type: Sequence`**
   
@@ -6091,7 +6091,7 @@ The list of routes that define traffic to each served entity.
 :::
   
   
-### model_serving_endpoints.\<name\>.permissions
+### model_serving_endpoints._name_.permissions
   
 **`Type: Sequence`**
   
@@ -6124,7 +6124,7 @@ The list of routes that define traffic to each served entity.
 :::
   
   
-### model_serving_endpoints.\<name\>.rate_limits
+### model_serving_endpoints._name_.rate_limits
   
 **`Type: Sequence`**
   
@@ -6153,7 +6153,7 @@ Rate limits to be applied to the serving endpoint. NOTE: this field is deprecate
 :::
   
   
-### model_serving_endpoints.\<name\>.tags
+### model_serving_endpoints._name_.tags
   
 **`Type: Sequence`**
   
@@ -6232,7 +6232,7 @@ models:
 :::
   
   
-### models.\<name\>.latest_versions
+### models._name_.latest_versions
   
 **`Type: Sequence`**
   
@@ -6302,7 +6302,7 @@ Only contains models with current `READY` status.
 :::
   
   
-### models.\<name\>.latest_versions.tags
+### models._name_.latest_versions.tags
   
 **`Type: Sequence`**
   
@@ -6327,7 +6327,7 @@ Tags: Additional metadata key-value pairs for this `model_version`.
 :::
   
   
-### models.\<name\>.permissions
+### models._name_.permissions
   
 **`Type: Sequence`**
   
@@ -6360,7 +6360,7 @@ Tags: Additional metadata key-value pairs for this `model_version`.
 :::
   
   
-### models.\<name\>.tags
+### models._name_.tags
   
 **`Type: Sequence`**
   
@@ -6537,7 +6537,7 @@ resources:
             path: ./pipeline.py
 ```
   
-### pipelines.\<name\>.clusters
+### pipelines._name_.clusters
   
 **`Type: Sequence`**
   
@@ -6630,7 +6630,7 @@ Cluster settings for this pipeline deployment.
 :::
   
   
-### pipelines.\<name\>.clusters.autoscale
+### pipelines._name_.clusters.autoscale
   
 **`Type: Map`**
   
@@ -6660,7 +6660,7 @@ Note: autoscaling works best with DB runtime versions 3.0 or later.
 :::
   
   
-### pipelines.\<name\>.clusters.aws_attributes
+### pipelines._name_.clusters.aws_attributes
   
 **`Type: Map`**
   
@@ -6718,7 +6718,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### pipelines.\<name\>.clusters.azure_attributes
+### pipelines._name_.clusters.azure_attributes
   
 **`Type: Map`**
   
@@ -6752,7 +6752,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### pipelines.\<name\>.clusters.azure_attributes.log_analytics_info
+### pipelines._name_.clusters.azure_attributes.log_analytics_info
   
 **`Type: Map`**
   
@@ -6777,7 +6777,7 @@ Defines values necessary to configure and run Azure Log Analytics agent
 :::
   
   
-### pipelines.\<name\>.clusters.cluster_log_conf
+### pipelines._name_.clusters.cluster_log_conf
   
 **`Type: Map`**
   
@@ -6807,7 +6807,7 @@ the destination of executor logs is `$destination/$clusterId/executor`.
 :::
   
   
-### pipelines.\<name\>.clusters.cluster_log_conf.dbfs
+### pipelines._name_.clusters.cluster_log_conf.dbfs
   
 **`Type: Map`**
   
@@ -6829,7 +6829,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### pipelines.\<name\>.clusters.cluster_log_conf.s3
+### pipelines._name_.clusters.cluster_log_conf.s3
   
 **`Type: Map`**
   
@@ -6877,7 +6877,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### pipelines.\<name\>.clusters.gcp_attributes
+### pipelines._name_.clusters.gcp_attributes
   
 **`Type: Map`**
   
@@ -6919,7 +6919,7 @@ If not specified at cluster creation, a set of default values will be used.
 :::
   
   
-### pipelines.\<name\>.clusters.init_scripts
+### pipelines._name_.clusters.init_scripts
   
 **`Type: Sequence`**
   
@@ -6964,7 +6964,7 @@ The configuration for storing init scripts. Any number of destinations can be sp
 :::
   
   
-### pipelines.\<name\>.clusters.init_scripts.abfss
+### pipelines._name_.clusters.init_scripts.abfss
   
 **`Type: Map`**
   
@@ -6985,7 +6985,7 @@ Contains the Azure Data Lake Storage destination path
 :::
   
   
-### pipelines.\<name\>.clusters.init_scripts.dbfs
+### pipelines._name_.clusters.init_scripts.dbfs
   
 **`Type: Map`**
   
@@ -7007,7 +7007,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### pipelines.\<name\>.clusters.init_scripts.file
+### pipelines._name_.clusters.init_scripts.file
   
 **`Type: Map`**
   
@@ -7029,7 +7029,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### pipelines.\<name\>.clusters.init_scripts.gcs
+### pipelines._name_.clusters.init_scripts.gcs
   
 **`Type: Map`**
   
@@ -7051,7 +7051,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### pipelines.\<name\>.clusters.init_scripts.s3
+### pipelines._name_.clusters.init_scripts.s3
   
 **`Type: Map`**
   
@@ -7099,7 +7099,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 :::
   
   
-### pipelines.\<name\>.clusters.init_scripts.volumes
+### pipelines._name_.clusters.init_scripts.volumes
   
 **`Type: Map`**
   
@@ -7121,7 +7121,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### pipelines.\<name\>.clusters.init_scripts.workspace
+### pipelines._name_.clusters.init_scripts.workspace
   
 **`Type: Map`**
   
@@ -7143,7 +7143,7 @@ destination needs to be provided. e.g.
 :::
   
   
-### pipelines.\<name\>.deployment
+### pipelines._name_.deployment
   
 **`Type: Map`**
   
@@ -7168,7 +7168,7 @@ Deployment type of this pipeline.
 :::
   
   
-### pipelines.\<name\>.filters
+### pipelines._name_.filters
   
 **`Type: Map`**
   
@@ -7193,7 +7193,7 @@ Filters on which Pipeline packages to include in the deployed graph.
 :::
   
   
-### pipelines.\<name\>.gateway_definition
+### pipelines._name_.gateway_definition
   
 **`Type: Map`**
   
@@ -7230,7 +7230,7 @@ The definition of a gateway pipeline to support change data capture.
 :::
   
   
-### pipelines.\<name\>.ingestion_definition
+### pipelines._name_.ingestion_definition
   
 **`Type: Map`**
   
@@ -7263,7 +7263,7 @@ The configuration for a managed ingestion pipeline. These settings cannot be use
 :::
   
   
-### pipelines.\<name\>.ingestion_definition.objects
+### pipelines._name_.ingestion_definition.objects
   
 **`Type: Sequence`**
   
@@ -7292,7 +7292,7 @@ Required. Settings specifying tables to replicate and the destination for the re
 :::
   
   
-### pipelines.\<name\>.ingestion_definition.objects.report
+### pipelines._name_.ingestion_definition.objects.report
   
 **`Type: Map`**
   
@@ -7329,7 +7329,7 @@ Select a specific source report.
 :::
   
   
-### pipelines.\<name\>.ingestion_definition.objects.report.table_configuration
+### pipelines._name_.ingestion_definition.objects.report.table_configuration
   
 **`Type: Map`**
   
@@ -7362,7 +7362,7 @@ Configuration settings to control the ingestion of tables. These settings overri
 :::
   
   
-### pipelines.\<name\>.ingestion_definition.objects.schema
+### pipelines._name_.ingestion_definition.objects.schema
   
 **`Type: Map`**
   
@@ -7399,7 +7399,7 @@ Select all tables from a specific source schema.
 :::
   
   
-### pipelines.\<name\>.ingestion_definition.objects.schema.table_configuration
+### pipelines._name_.ingestion_definition.objects.schema.table_configuration
   
 **`Type: Map`**
   
@@ -7432,7 +7432,7 @@ Configuration settings to control the ingestion of tables. These settings are ap
 :::
   
   
-### pipelines.\<name\>.ingestion_definition.objects.table
+### pipelines._name_.ingestion_definition.objects.table
   
 **`Type: Map`**
   
@@ -7477,7 +7477,7 @@ Select a specific source table.
 :::
   
   
-### pipelines.\<name\>.ingestion_definition.objects.table.table_configuration
+### pipelines._name_.ingestion_definition.objects.table.table_configuration
   
 **`Type: Map`**
   
@@ -7510,7 +7510,7 @@ Configuration settings to control the ingestion of tables. These settings overri
 :::
   
   
-### pipelines.\<name\>.ingestion_definition.table_configuration
+### pipelines._name_.ingestion_definition.table_configuration
   
 **`Type: Map`**
   
@@ -7543,7 +7543,7 @@ Configuration settings to control the ingestion of tables. These settings are ap
 :::
   
   
-### pipelines.\<name\>.libraries
+### pipelines._name_.libraries
   
 **`Type: Sequence`**
   
@@ -7580,7 +7580,7 @@ Libraries or code needed by this deployment.
 :::
   
   
-### pipelines.\<name\>.libraries.file
+### pipelines._name_.libraries.file
   
 **`Type: Map`**
   
@@ -7602,7 +7602,7 @@ The path to a file that defines a pipeline and is stored in the Databricks Repos
 :::
   
   
-### pipelines.\<name\>.libraries.maven
+### pipelines._name_.libraries.maven
   
 **`Type: Map`**
   
@@ -7632,7 +7632,7 @@ Specification of a maven library to be installed.
 :::
   
   
-### pipelines.\<name\>.libraries.notebook
+### pipelines._name_.libraries.notebook
   
 **`Type: Map`**
   
@@ -7654,7 +7654,7 @@ The path to a notebook that defines a pipeline and is stored in the Databricks w
 :::
   
   
-### pipelines.\<name\>.notifications
+### pipelines._name_.notifications
   
 **`Type: Sequence`**
   
@@ -7679,7 +7679,7 @@ List of notification settings for this pipeline.
 :::
   
   
-### pipelines.\<name\>.permissions
+### pipelines._name_.permissions
   
 **`Type: Sequence`**
   
@@ -7712,7 +7712,7 @@ List of notification settings for this pipeline.
 :::
   
   
-### pipelines.\<name\>.restart_window
+### pipelines._name_.restart_window
   
 **`Type: Map`**
   
@@ -7741,7 +7741,7 @@ Restart window of this pipeline.
 :::
   
   
-### pipelines.\<name\>.restart_window.days_of_week
+### pipelines._name_.restart_window.days_of_week
   
 **`Type: Sequence`**
   
@@ -7749,7 +7749,7 @@ Days of week in which the restart is allowed to happen (within a five-hour windo
 If not specified all days of the week will be used.
   
   
-### pipelines.\<name\>.run_as
+### pipelines._name_.run_as
   
 **`Type: Map`**
   
@@ -7776,7 +7776,7 @@ Only `user_name` or `service_principal_name` can be specified. If both are speci
 :::
   
   
-### pipelines.\<name\>.trigger
+### pipelines._name_.trigger
   
 **`Type: Map`**
   
@@ -7801,7 +7801,7 @@ Which pipeline trigger to use. Deprecated: Use `continuous` instead.
 :::
   
   
-### pipelines.\<name\>.trigger.cron
+### pipelines._name_.trigger.cron
   
 **`Type: Map`**
   
@@ -7826,7 +7826,7 @@ Which pipeline trigger to use. Deprecated: Use `continuous` instead.
 :::
   
   
-### pipelines.\<name\>.trigger.manual
+### pipelines._name_.trigger.manual
   
 **`Type: Map`**
   
@@ -7934,7 +7934,7 @@ resources:
         timezone_id: UTC
 ```
   
-### quality_monitors.\<name\>.custom_metrics
+### quality_monitors._name_.custom_metrics
   
 **`Type: Sequence`**
   
@@ -7974,7 +7974,7 @@ windows).
 :::
   
   
-### quality_monitors.\<name\>.data_classification_config
+### quality_monitors._name_.data_classification_config
   
 **`Type: Map`**
   
@@ -7995,7 +7995,7 @@ The data classification config for the monitor.
 :::
   
   
-### quality_monitors.\<name\>.inference_log
+### quality_monitors._name_.inference_log
   
 **`Type: Map`**
   
@@ -8040,7 +8040,7 @@ Configuration for monitoring inference logs.
 :::
   
   
-### quality_monitors.\<name\>.notifications
+### quality_monitors._name_.notifications
   
 **`Type: Map`**
   
@@ -8065,7 +8065,7 @@ The notification settings for the monitor.
 :::
   
   
-### quality_monitors.\<name\>.notifications.on_failure
+### quality_monitors._name_.notifications.on_failure
   
 **`Type: Map`**
   
@@ -8086,7 +8086,7 @@ Who to send notifications to on monitor failure.
 :::
   
   
-### quality_monitors.\<name\>.notifications.on_new_classification_tag_detected
+### quality_monitors._name_.notifications.on_new_classification_tag_detected
   
 **`Type: Map`**
   
@@ -8107,7 +8107,7 @@ Who to send notifications to when new data classification tags are detected.
 :::
   
   
-### quality_monitors.\<name\>.schedule
+### quality_monitors._name_.schedule
   
 **`Type: Map`**
   
@@ -8136,14 +8136,14 @@ The schedule for automatically updating and refreshing metric tables.
 :::
   
   
-### quality_monitors.\<name\>.snapshot
+### quality_monitors._name_.snapshot
   
 **`Type: Map`**
   
 Configuration for monitoring snapshot tables.
   
   
-### quality_monitors.\<name\>.time_series
+### quality_monitors._name_.time_series
   
 **`Type: Map`**
   
@@ -8232,7 +8232,7 @@ resources:
             principal: account users
 ```
   
-### registered_models.\<name\>.grants
+### registered_models._name_.grants
   
 **`Type: Sequence`**
   
@@ -8348,7 +8348,7 @@ resources:
       catalog_name: main
   ```
   
-### schemas.\<name\>.grants
+### schemas._name_.grants
   
 **`Type: Sequence`**
   
@@ -8442,7 +8442,7 @@ resources:
 
 For an example bundle that runs a job that writes to a file in Unity Catalog volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
   
-### volumes.\<name\>.grants
+### volumes._name_.grants
   
 **`Type: Sequence`**
   

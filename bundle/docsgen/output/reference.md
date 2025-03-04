@@ -65,7 +65,7 @@ artifacts:
     path: .
 ```
   
-### artifacts.\<name\>.files
+### artifacts._name_.files
   
 **`Type: Sequence`**
   
@@ -600,7 +600,7 @@ targets:
 :::
   
   
-### targets.\<name\>.artifacts
+### targets._name_.artifacts
   
 **`Type: Map`**
   
@@ -642,7 +642,7 @@ artifacts:
 :::
   
   
-### targets.\<name\>.artifacts.\<name\>.files
+### targets._name_.artifacts._name_.files
   
 **`Type: Sequence`**
   
@@ -663,7 +663,7 @@ The source files for the artifact.
 :::
   
   
-### targets.\<name\>.bundle
+### targets._name_.bundle
   
 **`Type: Map`**
   
@@ -708,7 +708,7 @@ The bundle attributes when deploying to this target.
 :::
   
   
-### targets.\<name\>.bundle.deployment
+### targets._name_.bundle.deployment
   
 **`Type: Map`**
   
@@ -733,7 +733,7 @@ The definition of the bundle deployment. For supported attributes see [_](/dev-t
 :::
   
   
-### targets.\<name\>.bundle.deployment.lock
+### targets._name_.bundle.deployment.lock
   
 **`Type: Map`**
   
@@ -758,7 +758,7 @@ The deployment lock attributes.
 :::
   
   
-### targets.\<name\>.bundle.git
+### targets._name_.bundle.git
   
 **`Type: Map`**
   
@@ -783,7 +783,7 @@ The Git version control details that are associated with your bundle. For suppor
 :::
   
   
-### targets.\<name\>.git
+### targets._name_.git
   
 **`Type: Map`**
   
@@ -808,7 +808,7 @@ The Git version control settings for the target.
 :::
   
   
-### targets.\<name\>.permissions
+### targets._name_.permissions
   
 **`Type: Sequence`**
   
@@ -841,7 +841,7 @@ The permissions for deploying and running the bundle in the target.
 :::
   
   
-### targets.\<name\>.presets
+### targets._name_.presets
   
 **`Type: Map`**
   
@@ -882,7 +882,7 @@ The deployment presets for the target.
 :::
   
   
-### targets.\<name\>.resources
+### targets._name_.resources
   
 **`Type: Map`**
   
@@ -947,7 +947,7 @@ The resource definitions for the target.
 :::
   
   
-### targets.\<name\>.run_as
+### targets._name_.run_as
   
 **`Type: Map`**
   
@@ -972,7 +972,7 @@ The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md).
 :::
   
   
-### targets.\<name\>.sync
+### targets._name_.sync
   
 **`Type: Map`**
   
@@ -1001,7 +1001,7 @@ The local paths to sync to the target workspace when a bundle is run or deployed
 :::
   
   
-### targets.\<name\>.variables
+### targets._name_.variables
   
 **`Type: Map`**
   
@@ -1039,7 +1039,7 @@ variables:
 :::
   
   
-### targets.\<name\>.variables.\<name\>.lookup
+### targets._name_.variables._name_.lookup
   
 **`Type: Map`**
   
@@ -1104,7 +1104,7 @@ The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, m
 :::
   
   
-### targets.\<name\>.workspace
+### targets._name_.workspace
   
 **`Type: Map`**
   
@@ -1223,7 +1223,7 @@ variables:
 :::
   
   
-### variables.\<name\>.lookup
+### variables._name_.lookup
   
 **`Type: Map`**
   
