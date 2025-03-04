@@ -203,13 +203,6 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", fmt.Errorf("unexpected dist-info directory format: %s", oldDistInfoPrefix)
 	}
 
-	// Reset record reader to start by reopening it
-	recordReader.Close()
-	recordReader, err = recordFile.Open()
-	if err != nil {
-		return "", fmt.Errorf("failed to reopen record reader: %w", err)
-	}
-
 	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
 	if err != nil {
 		return "", err
