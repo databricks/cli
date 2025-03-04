@@ -79,3 +79,51 @@ func TestGetEnvFor(t *testing.T) {
 	assert.False(t, ok)
 	assert.Empty(t, out)
 }
+
+func TestAuthEnvVars(t *testing.T) {
+	// Few common environment variables that we expect the SDK to support.
+	contains := []string{
+		// Generic attributes.
+		"DATABRICKS_HOST",
+		"DATABRICKS_CONFIG_PROFILE",
+		"DATABRICKS_AUTH_TYPE",
+		"DATABRICKS_METADATA_SERVICE_URL",
+		"DATABRICKS_CONFIG_FILE",
+
+		// OAuth specific attributes.
+		"DATABRICKS_CLIENT_ID",
+		"DATABRICKS_CLIENT_SECRET",
+		"DATABRICKS_CLI_PATH",
+
+		// Google specific attributes.
+		"DATABRICKS_GOOGLE_SERVICE_ACCOUNT",
+		"GOOGLE_CREDENTIALS",
+
+		// Personal access token specific attributes.
+		"DATABRICKS_TOKEN",
+
+		// Databricks password specific attributes.
+		"DATABRICKS_USERNAME",
+		"DATABRICKS_PASSWORD",
+
+		// Account authentication attributes.
+		"DATABRICKS_ACCOUNT_ID",
+
+		// Azure attributes
+		"DATABRICKS_AZURE_RESOURCE_ID",
+		"ARM_USE_MSI",
+		"ARM_CLIENT_SECRET",
+		"ARM_CLIENT_ID",
+		"ARM_TENANT_ID",
+		"ARM_ENVIRONMENT",
+
+		// Github attributes
+		"ACTIONS_ID_TOKEN_REQUEST_URL",
+		"ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+	}
+
+	out := envVars()
+	for _, v := range contains {
+		assert.Contains(t, out, v)
+	}
+}

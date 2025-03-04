@@ -1,0 +1,12 @@
+bundle:
+  name: apps_config_section
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      source_code_path: ./app
+      config:
+        command:
+          - python
+          - app.py

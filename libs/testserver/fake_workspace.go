@@ -83,6 +83,13 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) {
 	s.files[path] = body
 }
 
+func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return s.files[path]
+}
+
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 	jobId := s.nextJobId
 	s.nextJobId++
