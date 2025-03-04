@@ -91,6 +91,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)
+	b.SetWorkpaceClient(w)
 	b.WorkspaceClient()
 
 	diags = phases.Initialize(ctx, b)
