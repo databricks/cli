@@ -6,6 +6,63 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestCalculateNewVersion tests the CalculateNewVersion function.
+func TestCalculateNewVersion(t *testing.T) {
+	tests := []struct {
+		name     string
+		info     *WheelInfo
+		mtime    time.Time
+		expectedVersion  string
+		expectedFilename string
+	}{
+		{
+			name: "basic version",
+			info: &WheelInfo{
+				Distribution: "mypkg",
+				Version:      "1.2.3",
+				Tags:         []string{"py3", "none", "any"},
+			},
+			mtime:    time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
+			expectedVersion:  "1.2.3+20250304123456",
+			expectedFilename: "mypkg-1.2.3+20250304123456-py3-none-any.whl",
+		},
+		{
+			name: "existing plus version",
+			info: &WheelInfo{
+				Distribution: "mypkg",
+				Version:      "1.2.3+local",
+				Tags:         []string{"py3", "none", "any"},
+			},
+			mtime:    time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
+			expectedVersion:  "1.2.3+20250304123456",
+			expectedFilename: "mypkg-1.2.3+20250304123456-py3-none-any.whl",
+		},
+		{
+			name: "complex distribution name",
+			info: &WheelInfo{
+				Distribution: "my-pkg-name",
+				Version:      "1.2.3",
+				Tags:         []string{"py3", "none", "any"},
+			},
+			mtime:    time.Date(2025, 3, 4, 12, 34, 56, 0, time.UTC),
+			expectedVersion:  "1.2.3+20250304123456",
+			expectedFilename: "my-pkg-name-1.2.3+20250304123456-py3-none-any.whl",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newVersion, newFilename := CalculateNewVersion(tt.info, tt.mtime)
+			if newVersion != tt.expectedVersion {
+				t.Errorf("expected version %s, got %s", tt.expectedVersion, newVersion)
+			}
+			if newFilename != tt.expectedFilename {
+				t.Errorf("expected filename %s, got %s", tt.expectedFilename, newFilename)
+			}
+		})
+	}
+}
+
 // TestParseWheelFilename tests the ParseWheelFilename function.
 func TestParseWheelFilename(t *testing.T) {
 	tests := []struct {

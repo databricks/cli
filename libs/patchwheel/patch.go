@@ -133,16 +133,7 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", err
 	}
 
-	baseVersion := strings.SplitN(wheelInfo.Version, "+", 2)[0]
-
-	dt := strings.Replace(wheelMtime.Format("20060102150405.00"), ".", "", 1)
-	dt = strings.Replace(dt, ".", "", 1)
-	newVersion := baseVersion + "+" + dt
-
-	newFilename := fmt.Sprintf("%s-%s-%s.whl",
-		wheelInfo.Distribution,
-		newVersion,
-		strings.Join(wheelInfo.Tags, "-"))
+	newVersion, newFilename := CalculateNewVersion(wheelInfo, wheelMtime)
 	outpath := filepath.Join(outputDir, newFilename)
 
 	if _, err := os.Stat(outpath); err == nil {

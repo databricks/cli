@@ -12,6 +12,25 @@ type WheelInfo struct {
 	Tags         []string // Python tags (python_tag, abi_tag, platform_tag)
 }
 
+// CalculateNewVersion generates a new version string and filename based on the wheel info and modification time.
+// The version is updated according to the following rules:
+//   - if there is an existing part after + it is dropped
+//   - append +<mtime of the original wheel> to version
+func CalculateNewVersion(info *WheelInfo, mtime time.Time) (newVersion, newFilename string) {
+	baseVersion := strings.SplitN(info.Version, "+", 2)[0]
+	
+	dt := strings.Replace(mtime.Format("20060102150405.00"), ".", "", 1)
+	dt = strings.Replace(dt, ".", "", 1)
+	newVersion = baseVersion + "+" + dt
+	
+	newFilename = fmt.Sprintf("%s-%s-%s.whl",
+		info.Distribution,
+		newVersion,
+		strings.Join(info.Tags, "-"))
+		
+	return newVersion, newFilename
+}
+
 // ParseWheelFilename parses a wheel filename and extracts its components.
 // Wheel filenames follow the pattern: {distribution}-{version}-{python_tag}-{abi_tag}-{platform_tag}.whl
 func ParseWheelFilename(filename string) (*WheelInfo, error) {
