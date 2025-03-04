@@ -18,5 +18,5 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
 -      ## Catalog is required for serverless compute
 -      catalog: main
 +      catalog: customcatalog
-       target: my_default_python_${bundle.target}
+       schema: my_default_python_${bundle.target}
        serverless: true

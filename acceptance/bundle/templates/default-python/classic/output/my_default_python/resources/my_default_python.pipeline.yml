@@ -5,7 +5,7 @@ resources:
       name: my_default_python_pipeline
       ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
       # catalog: catalog_name
-      target: my_default_python_${bundle.target}
+      schema: my_default_python_${bundle.target}
       libraries:
         - notebook:
             path: ../src/dlt_pipeline.ipynb
