@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -22,38 +21,22 @@ const (
 	nameKey    = "Name:"
 )
 
-// readMetadataAndRecord scans the zip file for files matching the patterns
-// "*.dist-info/METADATA" and "*.dist-info/RECORD". If multiple are found, it picks
-// the first one encountered.
-func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.File, oldDistInfoPrefix string) {
+func findMetadataAndRecord(r *zip.ReadCloser, oldDistInfoPrefix string) (metadataFile, recordFile *zip.File) {
 	for _, f := range r.File {
-		if metadataFile == nil {
-			matched, _ := path.Match("*.dist-info/METADATA", f.Name)
-			if matched {
-				metadataFile = f
-				oldDistInfoPrefix = path.Dir(f.Name) + "/"
-
-				if recordFile != nil {
-					break
-				}
-
-				continue
-			}
+		if metadataFile == nil && f.Name == oldDistInfoPrefix+"METADATA" {
+			metadataFile = f
 		}
 
-		if recordFile == nil {
-			matched, _ := path.Match("*.dist-info/RECORD", f.Name)
-			if matched {
-				recordFile = f
+		if recordFile == nil && f.Name == oldDistInfoPrefix+"RECORD" {
+			recordFile = f
 
-				if metadataFile != nil {
-					break
-				}
+			if metadataFile != nil {
+				break
 			}
 		}
 	}
 
-	return metadataFile, recordFile, oldDistInfoPrefix
+	return metadataFile, recordFile
 }
 
 // patchMetadata returns new METADATA content with an updated "Version:" field and validates that previous version matches oldVersion
@@ -155,7 +138,8 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 	defer r.Close()
 
-	metadataFile, recordFile, oldDistInfoPrefix := readMetadataAndRecord(r)
+	oldDistInfoPrefix := wheelInfo.Distribution + "-" + wheelInfo.Version + ".dist-info/"
+	metadataFile, recordFile := findMetadataAndRecord(r, oldDistInfoPrefix)
 	if metadataFile == nil {
 		return "", fmt.Errorf("wheel %s missing METADATA file", path)
 	}
