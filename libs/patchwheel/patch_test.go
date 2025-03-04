@@ -25,7 +25,6 @@ func getPythonScriptsDir() string {
 }
 
 func verifyVersion(t *testing.T, tempDir, wheelPath string) {
-	// Extract the expected version from the wheel filename
 	wheelInfo, err := ParseWheelFilename(wheelPath)
 	require.NoError(t, err)
 	expectedVersion := wheelInfo.Version
@@ -144,7 +143,6 @@ func TestPatchWheel(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, patchedWheel, patchedWheel2, "PatchWheel is not idempotent")
 
-			// Check that the file wasn't recreated
 			patchedInfo2, err := os.Stat(patchedWheel2)
 			require.NoError(t, err)
 			require.Equal(t, patchedTime, patchedInfo2.ModTime(), "File was recreated when it shouldn't have been")

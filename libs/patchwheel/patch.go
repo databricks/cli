@@ -141,8 +141,6 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return outpath, nil
 	}
 
-	// Target wheel doesn't exist, proceed with patching
-	// Create a temporary file in the same directory with a unique name
 	tmpFilename := outpath + fmt.Sprintf(".tmp%d", os.Getpid())
 
 	needRemoval := true
