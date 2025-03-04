@@ -24,10 +24,10 @@ const (
 // readMetadataAndRecord scans the zip file for files matching the patterns
 // "*.dist-info/METADATA" and "*.dist-info/RECORD". If multiple are found, it picks
 // the first one encountered.
-func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.File, oldDistInfoPrefix string, err error) {
+func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.File, oldDistInfoPrefix string) {
 	for _, f := range r.File {
-		// Use filepath.Match to filter files in a .dist-info directory.
-		if matched, _ := filepath.Match("*.dist-info/METADATA", f.Name); matched {
+		matched, _ := filepath.Match("*.dist-info/METADATA", f.Name)
+		if matched {
 			if metadataFile == nil {
 				metadataFile = f
 				// Determine the old dist-info directory prefix.
@@ -35,16 +35,15 @@ func readMetadataAndRecord(r *zip.ReadCloser) (metadataFile, recordFile *zip.Fil
 					oldDistInfoPrefix = f.Name[:i+1]
 				}
 			}
-		} else if matched, _ := filepath.Match("*.dist-info/RECORD", f.Name); matched {
-			if recordFile == nil {
-				recordFile = f
-			}
+			continue
+		}
+
+		matched, _ = filepath.Match("*.dist-info/RECORD", f.Name)
+		if matched && recordFile == nil {
+			recordFile = f
 		}
 	}
-	if metadataFile == nil || recordFile == nil {
-		return nil, nil, "", errors.New("wheel missing required METADATA or RECORD")
-	}
-	return metadataFile, recordFile, oldDistInfoPrefix, nil
+	return metadataFile, recordFile, oldDistInfoPrefix
 }
 
 // parseMetadata scans the METADATA content for the "Version:" and "Name:" fields.
@@ -136,7 +135,8 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 	wheelMtime := fileInfo.ModTime().UTC()
 
-	wheelInfo, err := ParseWheelFilename(path)
+	filename := filepath.Base(path)
+	wheelInfo, err := ParseWheelFilename(filename)
 	if err != nil {
 		return "", err
 	}
@@ -177,9 +177,13 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 	defer r.Close()
 
-	metadataFile, recordFile, oldDistInfoPrefix, err := readMetadataAndRecord(r)
-	if err != nil {
-		return "", err
+	metadataFile, recordFile, oldDistInfoPrefix := readMetadataAndRecord(r)
+	if metadataFile == nil {
+		return "", fmt.Errorf("wheel %s missing METADATA file", path)
+	}
+
+	if recordFile == nil {
+		return "", fmt.Errorf("wheel %s missing RECORD file", path)
 	}
 
 	metadataContent, err := readFile(metadataFile)

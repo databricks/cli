@@ -2,7 +2,6 @@ package patchwheel
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 )
 
@@ -16,8 +15,7 @@ type WheelInfo struct {
 // ParseWheelFilename parses a wheel filename and extracts its components.
 // Wheel filenames follow the pattern: {distribution}-{version}-{python_tag}-{abi_tag}-{platform_tag}.whl
 func ParseWheelFilename(filename string) (*WheelInfo, error) {
-	base := filepath.Base(filename)
-	parts := strings.Split(base, "-")
+	parts := strings.Split(filename, "-")
 	if len(parts) < 5 || !strings.HasSuffix(parts[len(parts)-1], ".whl") {
 		return nil, fmt.Errorf("invalid wheel filename format: %s", filename)
 	}
