@@ -17,7 +17,7 @@ type WheelInfo struct {
 // The version is updated according to the following rules:
 //   - if there is an existing part after + it is dropped
 //   - append +<mtime of the original wheel> to version
-func CalculateNewVersion(info *WheelInfo, mtime time.Time) (newVersion, newFilename string) {
+func CalculateNewVersion(info WheelInfo, mtime time.Time) (newVersion, newFilename string) {
 	baseVersion := strings.SplitN(info.Version, "+", 2)[0]
 
 	dt := strings.Replace(mtime.Format("20060102150405.00"), ".", "", 1)
@@ -34,23 +34,23 @@ func CalculateNewVersion(info *WheelInfo, mtime time.Time) (newVersion, newFilen
 
 // ParseWheelFilename parses a wheel filename and extracts its components.
 // Wheel filenames follow the pattern: {distribution}-{version}(-{build tag})?-{python_tag}-{abi_tag}-{platform_tag}.whl
-func ParseWheelFilename(filename string) (*WheelInfo, error) {
+func ParseWheelFilename(filename string) (WheelInfo, error) {
 	parts := strings.Split(filename, "-")
 	if len(parts) < 5 {
-		return nil, fmt.Errorf("invalid wheel filename format: not enough parts in %s", filename)
+		return WheelInfo{}, fmt.Errorf("invalid wheel filename format: not enough parts in %s", filename)
 	}
 
 	if len(parts) > 6 {
-		return nil, fmt.Errorf("invalid wheel filename format: too many parts in %s", filename)
+		return WheelInfo{}, fmt.Errorf("invalid wheel filename format: too many parts in %s", filename)
 	}
 
 	if !strings.HasSuffix(parts[len(parts)-1], ".whl") {
-		return nil, fmt.Errorf("invalid wheel filename format: missing .whl extension in %s", filename)
+		return WheelInfo{}, fmt.Errorf("invalid wheel filename format: missing .whl extension in %s", filename)
 	}
 
 	parts[len(parts)-1] = strings.TrimSuffix(parts[len(parts)-1], ".whl")
 
-	return &WheelInfo{
+	return WheelInfo{
 		Distribution: parts[0],
 		Version:      parts[1],
 		Tags:         parts[2:],

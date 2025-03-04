@@ -10,14 +10,14 @@ import (
 func TestCalculateNewVersion(t *testing.T) {
 	tests := []struct {
 		name             string
-		info             *WheelInfo
+		info             WheelInfo
 		mtime            time.Time
 		expectedVersion  string
 		expectedFilename string
 	}{
 		{
 			name: "basic version",
-			info: &WheelInfo{
+			info: WheelInfo{
 				Distribution: "mypkg",
 				Version:      "1.2.3",
 				Tags:         []string{"py3", "none", "any"},
@@ -28,7 +28,7 @@ func TestCalculateNewVersion(t *testing.T) {
 		},
 		{
 			name: "existing plus version",
-			info: &WheelInfo{
+			info: WheelInfo{
 				Distribution: "mypkg",
 				Version:      "1.2.3+local",
 				Tags:         []string{"py3", "none", "any"},
@@ -39,7 +39,7 @@ func TestCalculateNewVersion(t *testing.T) {
 		},
 		{
 			name: "complex distribution name",
-			info: &WheelInfo{
+			info: WheelInfo{
 				Distribution: "my-pkg-name",
 				Version:      "1.2.3",
 				Tags:         []string{"py3", "none", "any"},
