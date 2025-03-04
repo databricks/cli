@@ -210,17 +210,8 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 
 	// Reset metadata reader to start
-	if seeker, ok := metadataReader.(io.Seeker); ok {
-		seeker.Seek(0, io.SeekStart)
-	} else {
-		// If not seekable, reopen
-		metadataReader.Close()
-		metadataReader, err = metadataFile.Open()
-		if err != nil {
-			return "", err
-		}
-		defer metadataReader.Close()
-	}
+	seeker := metadataReader.(io.Seeker)
+	seeker.Seek(0, io.SeekStart)
 
 	// Patch the METADATA content.
 	newMetadata, err := patchMetadata(metadataReader, newVersion)
@@ -244,17 +235,8 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	}
 
 	// Reset record reader to start
-	if seeker, ok := recordReader.(io.Seeker); ok {
-		seeker.Seek(0, io.SeekStart)
-	} else {
-		// If not seekable, reopen
-		recordReader.Close()
-		recordReader, err = recordFile.Open()
-		if err != nil {
-			return "", err
-		}
-		defer recordReader.Close()
-	}
+	seeker := recordReader.(io.Seeker)
+	seeker.Seek(0, io.SeekStart)
 
 	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
 	if err != nil {
