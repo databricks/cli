@@ -372,13 +372,14 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	printedRepls := false
 
+	files := ProcessOutputDir(t, tmpDir)
+
 	// Compare expected outputs
 	for relPath := range outputs {
 		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
-	files := ListDir(t, tmpDir)
 	unexpected := []string{}
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
@@ -404,6 +405,26 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	if len(unexpected) > 0 {
 		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
+}
+
+func renameIfNeeded(t *testing.T, root, path string) string {
+	newPath := calculateNewPath(path)
+	if newPath != path {
+		err := os.Rename(filepath.Join(root, path), filepath.Join(root, newPath))
+		if err != nil {
+			t.Errorf("Failed to rename %s -> %s: %s", path, newPath, err)
+		}
+	}
+	return newPath
+}
+
+func calculateNewPath(path string) string {
+	base := filepath.Base(path)
+	// we don't want to have .gitignore committed into repo that are part of the test output and not the repo #2318
+	if base == ".gitignore" {
+		return filepath.Join(filepath.Dir(path), "out.gitignore")
+	}
+	return path
 }
 
 func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
@@ -620,7 +641,8 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 	})
 }
 
-func ListDir(t *testing.T, src string) []string {
+// List files in the output directory and apply predefined renames (e.g. .gitignore -> out.gitignore)
+func ProcessOutputDir(t *testing.T, src string) []string {
 	var files []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -639,6 +661,8 @@ func ListDir(t *testing.T, src string) []string {
 		if err != nil {
 			return err
 		}
+
+		relPath = renameIfNeeded(t, src, relPath)
 
 		files = append(files, relPath)
 		return nil
