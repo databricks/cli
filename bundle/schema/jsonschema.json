@@ -127,7 +127,10 @@
                       }
                     },
                     "additionalProperties": false,
-                    "required": ["source_code_path", "name"]
+                    "required": [
+                      "source_code_path",
+                      "name"
+                    ]
                   },
                   {
                     "type": "string",
@@ -347,7 +350,10 @@
                       }
                     },
                     "additionalProperties": false,
-                    "required": ["privileges", "principal"]
+                    "required": [
+                      "privileges",
+                      "principal"
+                    ]
                   },
                   {
                     "type": "string",
@@ -581,7 +587,9 @@
                       }
                     },
                     "additionalProperties": false,
-                    "required": ["name"],
+                    "required": [
+                      "name"
+                    ],
                     "markdownDescription": "The model_serving_endpoint resource allows you to define [model serving endpoints](https://docs.databricks.com/api/workspace/servingendpoints/create). See [link](https://docs.databricks.com/machine-learning/model-serving/manage-serving-endpoints.html)."
                   },
                   {
@@ -613,7 +621,9 @@
                       }
                     },
                     "additionalProperties": false,
-                    "required": ["level"]
+                    "required": [
+                      "level"
+                    ]
                   },
                   {
                     "type": "string",
@@ -839,7 +849,11 @@
                       }
                     },
                     "additionalProperties": false,
-                    "required": ["catalog_name", "name", "schema_name"],
+                    "required": [
+                      "catalog_name",
+                      "name",
+                      "schema_name"
+                    ],
                     "markdownDescription": "The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](https://docs.databricks.com/api/workspace/registeredmodels/create), see [link](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html)."
                   },
                   {
@@ -877,7 +891,10 @@
                       }
                     },
                     "additionalProperties": false,
-                    "required": ["catalog_name", "name"],
+                    "required": [
+                      "catalog_name",
+                      "name"
+                    ],
                     "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
                   },
                   {
@@ -919,7 +936,11 @@
                       }
                     },
                     "additionalProperties": false,
-                    "required": ["catalog_name", "name", "schema_name"],
+                    "required": [
+                      "catalog_name",
+                      "name",
+                      "schema_name"
+                    ],
                     "markdownDescription": "The volume resource type allows you to define and create Unity Catalog [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.\n\n- Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)."
                   },
                   {
@@ -1074,7 +1095,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["type"]
+                  "required": [
+                    "type"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1093,7 +1116,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["source"]
+                  "required": [
+                    "source"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1143,7 +1168,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["name"]
+                  "required": [
+                    "name"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1342,7 +1369,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["resources", "mutators"]
+                  "required": [
+                    "resources",
+                    "mutators"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1668,7 +1698,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["SNAPSHOT", "AUTO_SYNC"]
+                  "enum": [
+                    "SNAPSHOT",
+                    "AUTO_SYNC"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1680,7 +1713,12 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["SUCCEEDED", "FAILED", "IN_PROGRESS", "CANCELLED"]
+                  "enum": [
+                    "SUCCEEDED",
+                    "FAILED",
+                    "IN_PROGRESS",
+                    "CANCELLED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1735,7 +1773,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["name"]
+                  "required": [
+                    "name"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1756,7 +1796,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["id", "permission"]
+                  "required": [
+                    "id",
+                    "permission"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1797,7 +1840,11 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["key", "permission", "scope"]
+                  "required": [
+                    "key",
+                    "permission",
+                    "scope"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1810,7 +1857,11 @@
                 {
                   "type": "string",
                   "description": "Permission to grant on the secret scope. Supported permissions are: \"READ\", \"WRITE\", \"MANAGE\".",
-                  "enum": ["READ", "WRITE", "MANAGE"]
+                  "enum": [
+                    "READ",
+                    "WRITE",
+                    "MANAGE"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1831,7 +1882,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["name", "permission"]
+                  "required": [
+                    "name",
+                    "permission"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1843,7 +1897,11 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"]
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_QUERY",
+                    "CAN_VIEW"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1864,7 +1922,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["id", "permission"]
+                  "required": [
+                    "id",
+                    "permission"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1876,7 +1937,11 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["CAN_MANAGE", "CAN_USE", "IS_OWNER"]
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_USE",
+                    "IS_OWNER"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1888,7 +1953,12 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["DEPLOYING", "RUNNING", "CRASHED", "UNAVAILABLE"]
+                  "enum": [
+                    "DEPLOYING",
+                    "RUNNING",
+                    "CRASHED",
+                    "UNAVAILABLE"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1976,7 +2046,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["quartz_cron_expression", "timezone_id"]
+                  "required": [
+                    "quartz_cron_expression",
+                    "timezone_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -1989,7 +2062,10 @@
                 {
                   "type": "string",
                   "description": "Read only field that indicates whether a schedule is paused or not.",
-                  "enum": ["UNPAUSED", "PAUSED"]
+                  "enum": [
+                    "UNPAUSED",
+                    "PAUSED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2205,7 +2281,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["granularities", "timestamp_col"]
+                  "required": [
+                    "granularities",
+                    "timestamp_col"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2217,7 +2296,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["EXTERNAL", "MANAGED"]
+                  "enum": [
+                    "EXTERNAL",
+                    "MANAGED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2236,7 +2318,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["destination"]
+                  "required": [
+                    "destination"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2323,7 +2407,11 @@
                 {
                   "type": "string",
                   "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.\n",
-                  "enum": ["SPOT", "ON_DEMAND", "SPOT_WITH_FALLBACK"]
+                  "enum": [
+                    "SPOT",
+                    "ON_DEMAND",
+                    "SPOT_WITH_FALLBACK"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2589,7 +2677,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["destination"]
+                  "required": [
+                    "destination"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2645,7 +2735,10 @@
                 {
                   "type": "string",
                   "description": "The type of EBS volumes that will be launched with this cluster.",
-                  "enum": ["GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"]
+                  "enum": [
+                    "GENERAL_PURPOSE_SSD",
+                    "THROUGHPUT_OPTIMIZED_HDD"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2669,7 +2762,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["client"]
+                  "required": [
+                    "client"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2742,7 +2837,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["destination"]
+                  "required": [
+                    "destination"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2848,7 +2945,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["destination"]
+                  "required": [
+                    "destination"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2897,7 +2996,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["coordinates"]
+                  "required": [
+                    "coordinates"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2920,7 +3021,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["package"]
+                  "required": [
+                    "package"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2943,7 +3046,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["package"]
+                  "required": [
+                    "package"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2956,7 +3061,11 @@
                 {
                   "type": "string",
                   "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.\n",
-                  "enum": ["NULL", "STANDARD", "PHOTON"]
+                  "enum": [
+                    "NULL",
+                    "STANDARD",
+                    "PHOTON"
+                  ]
                 },
                 {
                   "type": "string",
@@ -2999,7 +3108,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["destination"]
+                  "required": [
+                    "destination"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3018,7 +3129,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["destination"]
+                  "required": [
+                    "destination"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3037,7 +3150,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["clients"]
+                  "required": [
+                    "clients"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3056,7 +3171,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["destination"]
+                  "required": [
+                    "destination"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3068,7 +3185,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["ACTIVE", "TRASHED"]
+                  "enum": [
+                    "ACTIVE",
+                    "TRASHED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3099,7 +3219,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["clean_room_name", "notebook_name"]
+                  "required": [
+                    "clean_room_name",
+                    "notebook_name"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3111,7 +3234,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["ANY_UPDATED", "ALL_UPDATED"]
+                  "enum": [
+                    "ANY_UPDATED",
+                    "ALL_UPDATED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3138,7 +3264,11 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["left", "op", "right"]
+                  "required": [
+                    "left",
+                    "op",
+                    "right"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3203,7 +3333,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["quartz_cron_expression", "timezone_id"]
+                  "required": [
+                    "quartz_cron_expression",
+                    "timezone_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3246,7 +3379,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["commands"]
+                  "required": [
+                    "commands"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3273,7 +3408,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["url"]
+                  "required": [
+                    "url"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3300,7 +3437,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["inputs", "task"]
+                  "required": [
+                    "inputs",
+                    "task"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3312,7 +3452,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["SINGLE_TASK", "MULTI_TASK"]
+                  "enum": [
+                    "SINGLE_TASK",
+                    "MULTI_TASK"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3388,7 +3531,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["git_provider", "git_url"]
+                  "required": [
+                    "git_provider",
+                    "git_url"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3411,7 +3557,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["job_cluster_key", "new_cluster"]
+                  "required": [
+                    "job_cluster_key",
+                    "new_cluster"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3434,7 +3583,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["kind"]
+                  "required": [
+                    "kind"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3447,7 +3598,9 @@
                 {
                   "type": "string",
                   "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
-                  "enum": ["BUNDLE"]
+                  "enum": [
+                    "BUNDLE"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3460,7 +3613,10 @@
                 {
                   "type": "string",
                   "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
-                  "enum": ["UI_LOCKED", "EDITABLE"]
+                  "enum": [
+                    "UI_LOCKED",
+                    "EDITABLE"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3520,7 +3676,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["environment_key"]
+                  "required": [
+                    "environment_key"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3565,7 +3723,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["default", "name"]
+                  "required": [
+                    "default",
+                    "name"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3616,7 +3777,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["import_from_git_branch", "job_config_path"]
+                  "required": [
+                    "import_from_git_branch",
+                    "job_config_path"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3629,7 +3793,10 @@
                 {
                   "type": "string",
                   "description": "Dirty state indicates the job is not fully synced with the job specification\nin the remote repository.\n\nPossible values are:\n* `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.\n* `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.",
-                  "enum": ["NOT_SYNCED", "DISCONNECTED"]
+                  "enum": [
+                    "NOT_SYNCED",
+                    "DISCONNECTED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3661,7 +3828,9 @@
                 {
                   "type": "string",
                   "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
-                  "enum": ["GREATER_THAN"]
+                  "enum": [
+                    "GREATER_THAN"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3686,7 +3855,11 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["metric", "op", "value"]
+                  "required": [
+                    "metric",
+                    "op",
+                    "value"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3735,7 +3908,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["notebook_path"]
+                  "required": [
+                    "notebook_path"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3747,7 +3922,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["UNPAUSED", "PAUSED"]
+                  "enum": [
+                    "UNPAUSED",
+                    "PAUSED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3760,7 +3938,10 @@
                 {
                   "type": "string",
                   "description": "PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.\nThe performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager\n(see cluster-common PerformanceTarget).",
-                  "enum": ["PERFORMANCE_OPTIMIZED", "COST_OPTIMIZED"]
+                  "enum": [
+                    "PERFORMANCE_OPTIMIZED",
+                    "COST_OPTIMIZED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3783,7 +3964,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["interval", "unit"]
+                  "required": [
+                    "interval",
+                    "unit"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3795,7 +3979,11 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["HOURS", "DAYS", "WEEKS"]
+                  "enum": [
+                    "HOURS",
+                    "DAYS",
+                    "WEEKS"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3836,7 +4024,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["pipeline_id"]
+                  "required": [
+                    "pipeline_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3867,7 +4057,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["entry_point", "package_name"]
+                  "required": [
+                    "entry_point",
+                    "package_name"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3886,7 +4079,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["enabled"]
+                  "required": [
+                    "enabled"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3960,7 +4155,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["job_id"]
+                  "required": [
+                    "job_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3973,7 +4170,10 @@
                 {
                   "type": "string",
                   "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\\\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider.",
-                  "enum": ["WORKSPACE", "GIT"]
+                  "enum": [
+                    "WORKSPACE",
+                    "GIT"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4030,7 +4230,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["python_file"]
+                  "required": [
+                    "python_file"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4087,7 +4289,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["warehouse_id"]
+                  "required": [
+                    "warehouse_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4114,7 +4318,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["alert_id"]
+                  "required": [
+                    "alert_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4145,7 +4351,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["dashboard_id"]
+                  "required": [
+                    "dashboard_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4168,7 +4376,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["path"]
+                  "required": [
+                    "path"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4187,7 +4397,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["query_id"]
+                  "required": [
+                    "query_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4373,7 +4585,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["task_key"]
+                  "required": [
+                    "task_key"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4396,7 +4610,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["task_key"]
+                  "required": [
+                    "task_key"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4511,7 +4727,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["id"]
+                  "required": [
+                    "id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4748,7 +4966,9 @@
                 {
                   "type": "string",
                   "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
-                  "enum": ["BUNDLE"]
+                  "enum": [
+                    "BUNDLE"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5047,7 +5267,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["max_workers", "min_workers"]
+                  "required": [
+                    "max_workers",
+                    "min_workers"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5060,7 +5283,10 @@
                 {
                   "type": "string",
                   "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n",
-                  "enum": ["ENHANCED", "LEGACY"]
+                  "enum": [
+                    "ENHANCED",
+                    "LEGACY"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5197,7 +5423,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["start_hour"]
+                  "required": [
+                    "start_hour"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5339,7 +5567,10 @@
                 {
                   "type": "string",
                   "description": "The SCD type to use to ingest the table.",
-                  "enum": ["SCD_TYPE_1", "SCD_TYPE_2"]
+                  "enum": [
+                    "SCD_TYPE_1",
+                    "SCD_TYPE_2"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5451,7 +5682,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["NONE", "BLOCK"]
+                  "enum": [
+                    "NONE",
+                    "BLOCK"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5530,7 +5764,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["calls", "renewal_period"]
+                  "required": [
+                    "calls",
+                    "renewal_period"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5542,7 +5779,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["user", "endpoint"]
+                  "enum": [
+                    "user",
+                    "endpoint"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5554,7 +5794,9 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["minute"]
+                  "enum": [
+                    "minute"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5611,7 +5853,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["aws_region", "bedrock_provider"]
+                  "required": [
+                    "aws_region",
+                    "bedrock_provider"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5623,7 +5868,12 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["anthropic", "cohere", "ai21labs", "amazon"]
+                  "enum": [
+                    "anthropic",
+                    "cohere",
+                    "ai21labs",
+                    "amazon"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5728,7 +5978,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["databricks_workspace_url"]
+                  "required": [
+                    "databricks_workspace_url"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5781,7 +6033,9 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["key"]
+                  "required": [
+                    "key"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5840,7 +6094,11 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["name", "provider", "task"]
+                  "required": [
+                    "name",
+                    "provider",
+                    "task"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5892,7 +6150,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["project_id", "region"]
+                  "required": [
+                    "project_id",
+                    "region"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6000,7 +6261,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["calls", "renewal_period"]
+                  "required": [
+                    "calls",
+                    "renewal_period"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6012,7 +6276,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["user", "endpoint"]
+                  "enum": [
+                    "user",
+                    "endpoint"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6024,7 +6291,9 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["minute"]
+                  "enum": [
+                    "minute"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6047,7 +6316,10 @@
                     }
                   },
                   "additionalProperties": false,
-                  "required": ["served_model_name", "traffic_percentage"]
+                  "required": [
+                    "served_model_name",
+                    "traffic_percentage"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6173,7 +6445,11 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["Small", "Medium", "Large"]
+                  "enum": [
+                    "Small",
+                    "Medium",
+                    "Large"
+                  ]
                 },
                 {
                   "type": "string",
