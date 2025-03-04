@@ -122,7 +122,7 @@ func TestAuthEnvVars(t *testing.T) {
 		"ACTIONS_ID_TOKEN_REQUEST_TOKEN",
 	}
 
-	out := EnvVars()
+	out := envVars()
 	for _, v := range contains {
 		assert.Contains(t, out, v)
 	}
