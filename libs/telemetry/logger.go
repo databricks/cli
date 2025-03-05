@@ -58,8 +58,6 @@ func (l *logger) setExecutionContext(ec protos.ExecutionContext) {
 	}
 }
 
-// TODO: Test that the max timeout here is indeed 3 seconds.
-
 func Upload(ctx context.Context, cfg *config.Config) error {
 	l := fromContext(ctx)
 	if len(l.logs) == 0 {
