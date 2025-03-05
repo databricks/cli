@@ -3,7 +3,10 @@ title "Test prebuilt wheel:"
 trace setmtime.py "2025-03-05 15:07:33.123456789" my_test_code-0.0.1-py3-none-any.whl
 trace $CLI selftest patchwhl my_test_code-0.0.1-py3-none-any.whl
 
-mkdir output
-cd output
-unzip -q ../my_test_code-0.0.1+2025030514073312-py3-none-any.whl
-rm ../my_test_code-0.0.1+2025030514073312-py3-none-any.whl
+mkdir output original
+unzip -q my_test_code-0.0.1+2025030514073312-py3-none-any.whl -d output
+unzip -q my_test_code-0.0.1-py3-none-any.whl -d original
+
+# rename directory to match so that we can compare contents
+mv original/my_test_code-0.0.1.dist-info original/my_test_code-0.0.1+2025030514073312.dist-info
+trace diff.py original output
