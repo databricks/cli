@@ -2,9 +2,6 @@
 >>> [CLI] bundle exec -- echo hello, world
 hello, world
 
->>> [CLI] bundle exec -- pwd
-[TMPDIR]
-
 >>> [CLI] bundle exec -- --help
 Error: starting "--help" failed: exec: "--help": executable file not found in $PATH
 

@@ -2,5 +2,5 @@
 >>> [CLI] bundle exec -- echo hello
 hello
 
->>> [CLI] bundle exec -- pwd
+>>> [CLI] bundle exec -- python3 -c import os; print(os.getcwd())
 [TMPDIR]

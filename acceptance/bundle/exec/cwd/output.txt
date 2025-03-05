@@ -1,8 +1,8 @@
 
 >>> cd a/b/c
 
->>> pwd
+>>> python3 -c import os; print(os.getcwd())
 [TMPDIR]/a/b/c
 
->>> [CLI] bundle exec -- pwd
+>>> [CLI] bundle exec -- python3 -c import os; print(os.getcwd())
 [TMPDIR]

@@ -1,7 +1,5 @@
 trace $CLI bundle exec -- echo "hello, world"
 
-trace $CLI bundle exec -- pwd
-
 # The CLI should not parse the --help flag and should try to run it as an executable
 # instead.
 trace $CLI bundle exec -- --help
