@@ -32,20 +32,6 @@ func Env(cfg *config.Config) map[string]string {
 	return out
 }
 
-func EnvVars() []string {
-	out := []string{}
-
-	for _, attr := range config.ConfigAttributes {
-		if len(attr.EnvVars) == 0 {
-			continue
-		}
-
-		out = append(out, attr.EnvVars[0])
-	}
-
-	return out
-}
-
 func GetEnvFor(name string) (string, bool) {
 	for _, attr := range config.ConfigAttributes {
 		if attr.Name != name {

@@ -9,7 +9,6 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
-	"slices"
 	"strings"
 	"time"
 
@@ -170,37 +169,6 @@ Stack Trace:
 	return err
 }
 
-// We want child telemetry processes to inherit environment variables like $HOME or $HTTPS_PROXY
-// because they influence auth resolution.
-func inheritEnvVars() []string {
-	base := os.Environ()
-	out := []string{}
-	authEnvVars := auth.EnvVars()
-
-	// Remove any existing auth environment variables. This is done because
-	// the CLI offers multiple modalities of configuring authentication like
-	// `--profile` or `DATABRICKS_CONFIG_PROFILE` or `profile: <profile>` in the
-	// bundle config file.
-	//
-	// Each of these modalities have different priorities and thus we don't want
-	// any auth configuration to piggyback into the child process environment.
-	//
-	// This is a precaution to avoid conflicting auth configurations being passed
-	// to the child telemetry process.
-	for _, v := range base {
-		k, _, found := strings.Cut(v, "=")
-		if !found {
-			continue
-		}
-		if slices.Contains(authEnvVars, k) {
-			continue
-		}
-		out = append(out, v)
-	}
-
-	return out
-}
-
 func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, exitCode int) {
 	// Nothing to upload.
 	if !telemetry.HasLogs(ctx) {
@@ -228,12 +196,6 @@ func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, ex
 		Logs: logs,
 	}
 
-	// Compute environment variables with the appropriate auth configuration.
-	env := inheritEnvVars()
-	for k, v := range auth.Env(ConfigUsed(ctx)) {
-		env = append(env, fmt.Sprintf("%s=%s", k, v))
-	}
-
 	// Default to warn log level. If debug is enabled in the parent process, we set
 	// the log level to debug for the telemetry worker as well.
 	logLevel := "warn"
@@ -243,7 +205,7 @@ func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, ex
 
 	d := daemon.Daemon{
 		Args:        []string{"telemetry", "upload", fmt.Sprintf("--log-level=%s", logLevel)},
-		Env:         env,
+		Env:         auth.ProcessEnv(ConfigUsed(ctx)),
 		PidFilePath: os.Getenv(telemetry.PidFileEnvVar),
 		LogFile:     os.Getenv(telemetry.UploadLogsFileEnvVar),
 	}
