@@ -6,3 +6,11 @@ hello, world
 Error: starting "--help" failed: exec: "--help": executable file not found in $PATH
 
 Exit code: 1
+
+>>> [CLI] bundle exec -- bash -c exit 5
+Error: running "bash -c exit 5" failed with exit code: 5
+
+Exit code: 1
+
+>>> [CLI] bundle exec -- bash -c echo hello > /dev/stderr
+hello
