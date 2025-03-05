@@ -255,3 +255,7 @@ func NewRepository(rootDir vfs.Path) (*Repository, error) {
 
 	return repo, nil
 }
+
+func (r *Repository) addIgnoreRule(rule ignoreRules) {
+	r.ignore["."] = append(r.ignore["."], rule)
+}

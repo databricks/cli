@@ -90,12 +90,25 @@ func NewView(worktreeRoot, root vfs.Path) (*View, error) {
 	target = strings.TrimPrefix(target, string(os.PathSeparator))
 	target = path.Clean(filepath.ToSlash(target))
 
-	return &View{
+	result := &View{
 		repo:       repo,
 		targetPath: target,
-	}, nil
+	}
+
+	result.SetupDefaults()
+	return result, nil
 }
 
 func NewViewAtRoot(root vfs.Path) (*View, error) {
 	return NewView(root, root)
+}
+
+func (v *View) SetupDefaults() {
+	// Hard code .databricks ignore pattern so that we never sync it (irrespective)
+	// of .gitignore patterns
+	v.repo.addIgnoreRule(newStringIgnoreRules([]string{
+		".databricks",
+	}))
+
+	v.repo.taintIgnoreRules()
 }

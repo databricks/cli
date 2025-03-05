@@ -56,7 +56,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 10)
+	require.Len(t, fileList, 9)
 
 	inc, err = fileset.NewGlobSet(root, []string{})
 	require.NoError(t, err)
@@ -119,7 +119,7 @@ func TestRecursiveExclude(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 7)
+	require.Len(t, fileList, 6)
 }
 
 func TestNegateExclude(t *testing.T) {
