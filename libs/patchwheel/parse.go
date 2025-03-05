@@ -36,6 +36,7 @@ func calculateNewVersion(info WheelInfo, mtime time.Time) (newVersion, newFilena
 
 // ParseWheelFilename parses a wheel filename and extracts its components.
 // Wheel filenames follow the pattern: {distribution}-{version}(-{build tag})?-{python_tag}-{abi_tag}-{platform_tag}.whl
+// https://peps.python.org/pep-0491
 func ParseWheelFilename(filename string) (WheelInfo, error) {
 	parts := strings.Split(filename, "-")
 	if len(parts) < 5 {
@@ -46,11 +47,13 @@ func ParseWheelFilename(filename string) (WheelInfo, error) {
 		return WheelInfo{}, fmt.Errorf("invalid wheel filename format: too many parts in %s", filename)
 	}
 
-	if !strings.HasSuffix(parts[len(parts)-1], ".whl") {
+	trimmedLastTag, foundWhl := strings.CutSuffix(parts[len(parts)-1], ".whl")
+
+	if !foundWhl {
 		return WheelInfo{}, fmt.Errorf("invalid wheel filename format: missing .whl extension in %s", filename)
 	}
 
-	parts[len(parts)-1] = strings.TrimSuffix(parts[len(parts)-1], ".whl")
+	parts[len(parts)-1] = trimmedLastTag
 
 	return WheelInfo{
 		Distribution: parts[0],
