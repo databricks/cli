@@ -1,0 +1,5 @@
+
+>>> [CLI] selftest send-telemetry --debug
+HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
+HH:MM:SS Info: completed execution pid=PID exit_code=0
+HH:MM:SS Debug: telemetry upload is disabled. Not uploading any logs. pid=PID
