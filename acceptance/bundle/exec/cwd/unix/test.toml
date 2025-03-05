@@ -1,0 +1,4 @@
+[GOOS]
+windows = false
+linux = true
+darwin = true
