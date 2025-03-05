@@ -459,7 +459,7 @@
                       }
                     },
                     "additionalProperties": false,
-                    "markdownDescription": "The job resource allows you to define [jobs and their corresponding tasks](https://docs.databricks.com/api/workspace/jobs/create) in your bundle. For information about jobs, see [link](https://docs.databricks.com/jobs/index.html). For a tutorial that uses a \u003cDABS\u003e template to create a job, see [link](https://docs.databricks.com/dev-tools/bundles/jobs-tutorial.html)."
+                    "markdownDescription": "The job resource allows you to define [jobs and their corresponding tasks](https://docs.databricks.com/api/workspace/jobs/create) in your bundle. For information about jobs, see [link](https://docs.databricks.com/jobs/index.html). For a tutorial that uses a Databricks Asset Bundles template to create a job, see [link](https://docs.databricks.com/dev-tools/bundles/jobs-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -552,7 +552,7 @@
                       }
                     },
                     "additionalProperties": false,
-                    "markdownDescription": "The model resource allows you to define [legacy models](https://docs.databricks.com/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use \u003cUC\u003e [registered models](https://docs.databricks.com/dev-tools/bundles/reference.html#registered-model) instead."
+                    "markdownDescription": "The model resource allows you to define [legacy models](https://docs.databricks.com/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](https://docs.databricks.com/dev-tools/bundles/reference.html#registered-model) instead."
                   },
                   {
                     "type": "string",
@@ -743,7 +743,7 @@
                       }
                     },
                     "additionalProperties": false,
-                    "markdownDescription": "The pipeline resource allows you to create \u003cDLT\u003e [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/delta-live-tables/index.html). For a tutorial that uses the \u003cDABS\u003e template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
+                    "markdownDescription": "The pipeline resource allows you to create Delta Live Tables [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/dlt/index.html). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -818,7 +818,7 @@
                       "assets_dir",
                       "output_schema_name"
                     ],
-                    "markdownDescription": "The quality_monitor resource allows you to define a \u003cUC\u003e [table monitor](https://docs.databricks.com/api/workspace/qualitymonitors/create). For information about monitors, see [link](https://docs.databricks.com/machine-learning/model-serving/monitor-diagnose-endpoints.html)."
+                    "markdownDescription": "The quality_monitor resource allows you to define a Unity Catalog [table monitor](https://docs.databricks.com/api/workspace/qualitymonitors/create). For information about monitors, see [link](https://docs.databricks.com/machine-learning/model-serving/monitor-diagnose-endpoints.html)."
                   },
                   {
                     "type": "string",
@@ -861,7 +861,7 @@
                       "name",
                       "schema_name"
                     ],
-                    "markdownDescription": "The registered model resource allows you to define models in \u003cUC\u003e. For information about \u003cUC\u003e [registered models](https://docs.databricks.com/api/workspace/registeredmodels/create), see [link](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html)."
+                    "markdownDescription": "The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](https://docs.databricks.com/api/workspace/registeredmodels/create), see [link](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html)."
                   },
                   {
                     "type": "string",
@@ -902,7 +902,7 @@
                       "catalog_name",
                       "name"
                     ],
-                    "markdownDescription": "The schema resource type allows you to define \u003cUC\u003e [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
+                    "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
                   },
                   {
                     "type": "string",
@@ -948,7 +948,7 @@
                       "name",
                       "schema_name"
                     ],
-                    "markdownDescription": "The volume resource type allows you to define and create \u003cUC\u003e [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use \u003cDABS\u003e to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.\n\n- Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)."
+                    "markdownDescription": "The volume resource type allows you to define and create Unity Catalog [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.\n\n- Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)."
                   },
                   {
                     "type": "string",
@@ -1440,9 +1440,9 @@
                       "markdownDescription": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [quality_monitors](https://docs.databricks.com/dev-tools/bundles/resources.html#quality_monitors)."
                     },
                     "registered_models": {
-                      "description": "The registered model definitions for the bundle, where each key is the name of the \u003cUC\u003e registered model.",
+                      "description": "The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel",
-                      "markdownDescription": "The registered model definitions for the bundle, where each key is the name of the \u003cUC\u003e registered model. See [registered_models](https://docs.databricks.com/dev-tools/bundles/resources.html#registered_models)."
+                      "markdownDescription": "The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [registered_models](https://docs.databricks.com/dev-tools/bundles/resources.html#registered_models)"
                     },
                     "schemas": {
                       "description": "The schema definitions for the bundle, where each key is the name of the schema.",
@@ -2126,7 +2126,7 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
-                      "description": "Granularities for aggregating data into time windows based on their timestamp. Currently the following static\ngranularities are supported:\n{``\"5 minutes\"``, ``\"30 minutes\"``, ``\"1 hour\"``, ``\"1 day\"``, ``\"\u003cn\u003e week(s)\"``, ``\"1 month\"``, ``\"1 year\"``}.\n",
+                      "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "label_col": {
@@ -2283,7 +2283,7 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
-                      "description": "Granularities for aggregating data into time windows based on their timestamp. Currently the following static\ngranularities are supported:\n{``\"5 minutes\"``, ``\"30 minutes\"``, ``\"1 hour\"``, ``\"1 day\"``, ``\"\u003cn\u003e week(s)\"``, ``\"1 month\"``, ``\"1 year\"``}.\n",
+                      "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "timestamp_col": {
@@ -2768,7 +2768,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "dependencies": {
-                      "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e\nE.g. dependencies: [\"foo==0.0.1\", \"-r /Workspace/test/requirements.txt\"]",
+                      "description": "List of pip dependencies, as supported by the version of pip in this environment.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -2864,7 +2864,7 @@
                   "type": "object",
                   "properties": {
                     "abfss": {
-                      "description": "destination needs to be provided. e.g.\n`{ \"abfss\" : { \"destination\" : \"abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e\" } }",
+                      "description": "Contains the Azure Data Lake Storage destination path",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info"
                     },
                     "dbfs": {
@@ -2972,11 +2972,11 @@
                   "type": "object",
                   "properties": {
                     "log_analytics_primary_key": {
-                      "description": "\u003cneeds content added\u003e",
+                      "description": "The primary key for the Azure Log Analytics agent configuration",
                       "$ref": "#/$defs/string"
                     },
                     "log_analytics_workspace_id": {
-                      "description": "\u003cneeds content added\u003e",
+                      "description": "The workspace ID for the Azure Log Analytics agent configuration",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -7440,12 +7440,12 @@
     "resources": {
       "description": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-      "markdownDescription": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about \u003cDABS\u003e supported resources, and resource definition reference, see [link](https://docs.databricks.com/dev-tools/bundles/resources.html).\n\n```yaml\nresources:\n  \u003cresource-type\u003e:\n    \u003cresource-name\u003e:\n      \u003cresource-field-name\u003e: \u003cresource-field-value\u003e\n```"
+      "markdownDescription": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Databricks Asset Bundles supported resources, and resource definition reference, see [link](https://docs.databricks.com/dev-tools/bundles/resources.html).\n\n```yaml\nresources:\n  \u003cresource-type\u003e:\n    \u003cresource-name\u003e:\n      \u003cresource-field-name\u003e: \u003cresource-field-value\u003e\n```"
     },
     "run_as": {
-      "description": "The identity to use when running \u003cDABS\u003e workflows.",
+      "description": "The identity to use when running Databricks Asset Bundles workflows.",
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
-      "markdownDescription": "The identity to use when running \u003cDABS\u003e workflows. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html)."
+      "markdownDescription": "The identity to use when running Databricks Asset Bundles workflows. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html)."
     },
     "sync": {
       "description": "The files and file paths to include or exclude in the bundle.",

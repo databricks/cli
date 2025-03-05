@@ -12,7 +12,7 @@ func buildMarkdown(nodes []rootNode, outputFile, header string) error {
 	m = m.PlainText(header)
 	for _, node := range nodes {
 		m = m.LF()
-		title := escapeBrackets(node.Title)
+		title := node.Title
 		if node.TopLevel {
 			m = m.H2(title)
 		} else {
@@ -68,21 +68,24 @@ func pickLastWord(s string) string {
 // Build a custom table which we use in Databricks website
 func buildAttributeTable(m *markdownRenderer, attributes []attributeNode) *markdownRenderer {
 	m = m.LF()
-	m = m.PlainText(".. list-table::")
-	m = m.PlainText("   :header-rows: 1")
+	m = m.PlainText(":::list-table")
 	m = m.LF()
 
-	m = m.PlainText("   * - Key")
-	m = m.PlainText("     - Type")
-	m = m.PlainText("     - Description")
+	m = m.PlainText("- - Key")
+	m = m.PlainText("  - Type")
+	m = m.PlainText("  - Description")
 	m = m.LF()
 
 	for _, a := range attributes {
-		m = m.PlainText("   * - " + fmt.Sprintf("`%s`", a.Title))
-		m = m.PlainText("     - " + a.Type)
-		m = m.PlainText("     - " + formatDescription(a))
+		m = m.PlainText("- - " + fmt.Sprintf("`%s`", a.Title))
+		m = m.PlainText("  - " + a.Type)
+		m = m.PlainText("  - " + formatDescription(a))
 		m = m.LF()
 	}
+
+	m = m.PlainText(":::")
+	m = m.LF()
+
 	return m
 }
 
@@ -94,7 +97,7 @@ func formatDescription(a attributeNode) string {
 		} else if s != "" {
 			s += ". "
 		}
-		s += fmt.Sprintf("See [_](#%s).", cleanAnchor(a.Link))
+		s += fmt.Sprintf("See [\\_](#%s).", cleanAnchor(a.Link))
 	}
 	return s
 }
@@ -102,15 +105,7 @@ func formatDescription(a attributeNode) string {
 // Docs framework does not allow special characters in anchor links and strip them out by default
 // We need to clean them up to make sure the links pass the validation
 func cleanAnchor(s string) string {
-	s = strings.ReplaceAll(s, "<", "")
-	s = strings.ReplaceAll(s, ">", "")
 	s = strings.ReplaceAll(s, ".", "")
-
-	return s
-}
-
-func escapeBrackets(s string) string {
-	s = strings.ReplaceAll(s, "<", "\\<")
-	s = strings.ReplaceAll(s, ">", "\\>")
+	s = strings.ReplaceAll(s, nameFieldWithFormat, nameField)
 	return s
 }
