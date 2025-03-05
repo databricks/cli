@@ -199,7 +199,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 		return "", err
 	}
 
-	libsync.WriteGitIgnore(ctx, filepath.Join(b.BundleRootPath, ".databricks"))
+	libsync.WriteGitIgnore(ctx, b.BundleRootPath)
 	return dir, nil
 }
 
