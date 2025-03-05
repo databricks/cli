@@ -186,9 +186,19 @@ func TestPrebuilt(t *testing.T) {
 	tempDir := t.TempDir()
 	ctx := context.Background()
 
-	// AI TODO: set mtime of prebuiltWheel to fixed value 2025-03-05 14:15:55.123456789. Simplify the code below to hardcode names based on this value.
+	// Set fixed modification time for deterministic testing
+	fixedTime := time.Date(2025, 3, 5, 14, 15, 55, 123456789, time.UTC)
+	err := os.Chtimes(prebuiltWheel, fixedTime, fixedTime)
+	require.NoError(t, err)
+
+	// With the fixed time, we know exactly what the output filename will be
+	expectedVersion := "0.0.1+20250305141555.12"
+	expectedFilename := "my_test_code-" + expectedVersion + "-py3-none-any.whl"
+	expectedPath := filepath.Join(tempDir, expectedFilename)
+
 	outname, err := PatchWheel(ctx, prebuiltWheel, tempDir)
 	require.NoError(t, err)
+	require.Equal(t, expectedPath, outname)
 
 	_, err = os.Stat(outname)
 	require.NoError(t, err)
@@ -198,10 +208,8 @@ func TestPrebuilt(t *testing.T) {
 	require.NoError(t, err)
 	defer archive.Close()
 
-	// Extract wheel info to determine the dist-info directory name
-	wheelInfo, err := ParseWheelFilename(filepath.Base(outname))
-	require.NoError(t, err)
-	distInfoPrefix := wheelInfo.Distribution + "-" + wheelInfo.Version + ".dist-info/"
+	// With fixed time, we know the exact dist-info directory name
+	distInfoPrefix := "my_test_code-" + expectedVersion + ".dist-info/"
 
 	// Find METADATA and RECORD files
 	var metadataContent, recordContent []byte
@@ -223,7 +231,7 @@ func TestPrebuilt(t *testing.T) {
 
 	// Verify METADATA contains the expected version
 	require.NotNil(t, metadataContent, "METADATA file not found in wheel")
-	assert.Contains(t, string(metadataContent), "Version: "+wheelInfo.Version)
+	assert.Contains(t, string(metadataContent), "Version: "+expectedVersion)
 
 	// Verify RECORD contains entries with the correct dist-info prefix
 	require.NotNil(t, recordContent, "RECORD file not found in wheel")
