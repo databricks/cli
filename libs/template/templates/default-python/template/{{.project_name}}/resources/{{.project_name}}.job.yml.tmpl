@@ -22,10 +22,7 @@ resources:
       email_notifications:
         on_failure:
           - {{user_name}}
-
-      {{else}}
-
-      {{end -}}
+      {{- end}}
 
       tasks:
         {{- if eq .include_notebook "yes" }}

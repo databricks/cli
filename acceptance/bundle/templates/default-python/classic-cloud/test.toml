@@ -1,0 +1,11 @@
+Local = false
+Cloud = true
+
+[[Repls]]
+Old = '\bnode_type_id: [0-9a-zA-Z_.-]+\b'
+New = 'node_type_id: (redacted)'
+
+[[Repls]]
+# windows fix
+Old = '\\'
+New = '/'
