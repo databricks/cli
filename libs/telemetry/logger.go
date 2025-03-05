@@ -78,8 +78,8 @@ func Upload(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	ctx, _ = context.WithTimeout(ctx, 3*time.Second)
-	var resp *ResponseBody
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
 
 	// Only try uploading logs for a maximum of 3 times.
 	for i := range 3 {
@@ -90,7 +90,7 @@ func Upload(ctx context.Context, cfg *config.Config) error {
 			// proceed
 		}
 
-		resp, err = attempt(ctx, apiClient, protoLogs)
+		resp, err := attempt(ctx, apiClient, protoLogs)
 
 		// All logs were uploaded successfully.
 		if err == nil && resp.NumProtoSuccess >= int64(len(protoLogs)) {
