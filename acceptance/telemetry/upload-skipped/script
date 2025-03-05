@@ -8,5 +8,7 @@ if [ -f ./telemetry.pid ]; then
   echo "telemetry process was started"
   exit 1
 else
+  # The telemetry process should not be started because the DATABRICKS_CLI_DISABLE_TELEMETRY
+  # environment variable is set.
   echo "telemetry process not started. No pid file found"
 fi
