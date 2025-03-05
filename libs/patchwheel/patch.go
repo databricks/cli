@@ -23,6 +23,9 @@ const (
 	nameKey    = "Name:"
 )
 
+// findFiles returns a slice with a *zip.File for every filename in the arguments slice.
+// The order of the return value matches the order of the arguments.
+// If not found, the corresponding entry is nil.
 func findFiles(r *zip.ReadCloser, files ...string) []*zip.File {
 	found := 0
 	result := make([]*zip.File, len(files))
