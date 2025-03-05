@@ -6,13 +6,18 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -74,9 +79,6 @@ func New(ctx context.Context) *cobra.Command {
 		// get the context back
 		ctx = cmd.Context()
 
-		// Detect if the CLI is running on DBR and store this on the context.
-		ctx = dbr.DetectRuntime(ctx)
-
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
@@ -124,6 +126,14 @@ Stack Trace:
 %s`, version, r, string(trace))
 	}()
 
+	// Configure a telemetry logger and store it in the context.
+	ctx = telemetry.WithNewLogger(ctx)
+
+	// Detect if the CLI is running on DBR and store this on the context.
+	ctx = dbr.DetectRuntime(ctx)
+
+	startTime := time.Now()
+
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
@@ -151,5 +161,38 @@ Stack Trace:
 		}
 	}
 
+	exitCode := 0
+	if err != nil {
+		exitCode = 1
+	}
+
+	uploadTelemetry(cmd.Context(), commandString(cmd), startTime, exitCode)
 	return err
+}
+
+func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, exitCode int) {
+	// Return early if there are no logs to upload.
+	if !telemetry.HasLogs(ctx) {
+		return
+	}
+
+	// Telemetry is disabled. We don't upload logs.
+	if os.Getenv(telemetry.DisableEnvVar) != "" {
+		return
+	}
+
+	telemetry.SetExecutionContext(ctx, protos.ExecutionContext{
+		CmdExecID:       cmdExecId,
+		Version:         build.GetInfo().Version,
+		Command:         cmdStr,
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      env.Get(ctx, dbr.EnvVarName),
+		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
+		ExitCode:        int64(exitCode),
+	})
+
+	err := telemetry.Upload(ctx, ConfigUsed(ctx))
+	if err != nil {
+		log.Debugf(ctx, "failed to upload telemetry: %v", err)
+	}
 }

@@ -11,6 +11,8 @@ import (
 // Dereference [os.Stat] to allow mocking in tests.
 var statFunc = os.Stat
 
+const EnvVarName = "DATABRICKS_RUNTIME_VERSION"
+
 // detect returns true if the current process is running on a Databricks Runtime.
 // Its return value is meant to be cached in the context.
 func detect(ctx context.Context) bool {
@@ -21,7 +23,7 @@ func detect(ctx context.Context) bool {
 	}
 
 	// Databricks Runtime always has the DATABRICKS_RUNTIME_VERSION environment variable set.
-	if value, ok := env.Lookup(ctx, "DATABRICKS_RUNTIME_VERSION"); !ok || value == "" {
+	if value, ok := env.Lookup(ctx, EnvVarName); !ok || value == "" {
 		return false
 	}
 

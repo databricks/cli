@@ -16,20 +16,20 @@ import (
 	"github.com/google/uuid"
 )
 
+// Environment variable to disable telemetry. If this is set to any value, telemetry
+// will be disabled.
+const DisableEnvVar = "DATABRICKS_CLI_DISABLE_TELEMETRY"
+
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	fromContext(ctx).log(event)
 }
 
-func GetLogs(ctx context.Context) []protos.FrontendLog {
-	return fromContext(ctx).getLogs()
+func SetExecutionContext(ctx context.Context, ec protos.ExecutionContext) {
+	fromContext(ctx).setExecutionContext(ec)
 }
 
 func HasLogs(ctx context.Context) bool {
 	return len(fromContext(ctx).getLogs()) > 0
-}
-
-func SetExecutionContext(ctx context.Context, ec protos.ExecutionContext) {
-	fromContext(ctx).setExecutionContext(ec)
 }
 
 type logger struct {
@@ -63,7 +63,7 @@ func (l *logger) setExecutionContext(ec protos.ExecutionContext) {
 func Upload(ctx context.Context, cfg *config.Config) error {
 	l := fromContext(ctx)
 	if len(l.logs) == 0 {
-		return nil
+		return fmt.Errorf("no logs to upload")
 	}
 
 	protoLogs := make([]string, len(l.logs))
