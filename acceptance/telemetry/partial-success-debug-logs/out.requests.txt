@@ -10,8 +10,8 @@
     "uploadTime": "UNIX_TIME_MILLIS",
     "items": [],
     "protoLogs": [
-      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\",\"execution_time_ms\":1},\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
-      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\",\"execution_time_ms\":1},\"cli_test_event\":{\"name\":\"VALUE2\"}}}}"
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\"},\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\"},\"cli_test_event\":{\"name\":\"VALUE2\"}}}}"
     ]
   }
 }
@@ -27,8 +27,8 @@
     "uploadTime": "UNIX_TIME_MILLIS",
     "items": [],
     "protoLogs": [
-      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\",\"execution_time_ms\":1},\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
-      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\",\"execution_time_ms\":1},\"cli_test_event\":{\"name\":\"VALUE2\"}}}}"
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\"},\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\"},\"cli_test_event\":{\"name\":\"VALUE2\"}}}}"
     ]
   }
 }
@@ -44,8 +44,8 @@
     "uploadTime": "UNIX_TIME_MILLIS",
     "items": [],
     "protoLogs": [
-      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\",\"execution_time_ms\":1},\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
-      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\",\"execution_time_ms\":1},\"cli_test_event\":{\"name\":\"VALUE2\"}}}}"
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\"},\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"selftest_send-telemetry\",\"operating_system\":\"[OS]\"},\"cli_test_event\":{\"name\":\"VALUE2\"}}}}"
     ]
   }
 }
