@@ -1,0 +1,12 @@
+bundle:
+  name: ml-experiment
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
+resources:
+  experiments:
+    experiment1:
+      name: {{.experiment_name}}
+      artifact_location: s3://test-location
+
