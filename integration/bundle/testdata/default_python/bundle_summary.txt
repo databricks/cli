@@ -164,7 +164,7 @@
           }
         ],
         "name": "[dev [USERNAME]] project_name_$UNIQUE_PRJ_pipeline",
-        "target": "project_name_$UNIQUE_PRJ_dev",
+        "schema": "project_name_$UNIQUE_PRJ_dev",
         "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
       }
     }
