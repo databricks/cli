@@ -1,0 +1,15 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI apps create --help
+trace $CLI apps delete --help
+trace $CLI apps deploy --help
+trace $CLI apps get --help
+trace $CLI apps get-deployment --help
+trace $CLI apps get-permission-levels --help
+trace $CLI apps get-permissions --help
+trace $CLI apps list --help
+trace $CLI apps list-deployments --help
+trace $CLI apps set-permissions --help
+trace $CLI apps start --help
+trace $CLI apps stop --help
+trace $CLI apps update --help
+trace $CLI apps update-permissions --help

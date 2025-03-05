@@ -1,0 +1,9 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI token-management create-obo-token --help
+trace $CLI token-management delete --help
+trace $CLI token-management get --help
+trace $CLI token-management get-permission-levels --help
+trace $CLI token-management get-permissions --help
+trace $CLI token-management list --help
+trace $CLI token-management set-permissions --help
+trace $CLI token-management update-permissions --help

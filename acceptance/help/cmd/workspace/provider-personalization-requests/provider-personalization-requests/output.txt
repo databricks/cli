@@ -1,0 +1,40 @@
+
+>>> $CLI provider-personalization-requests list --help
+All personalization requests across all listings.
+  
+  List personalization requests to this provider. This will return all
+  personalization requests, regardless of which listing they are for.
+
+Usage:
+  databricks provider-personalization-requests list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI provider-personalization-requests update --help
+Update personalization request status.
+  
+  Update personalization request. This method only permits updating the status
+  of the request.
+
+Usage:
+  databricks provider-personalization-requests update LISTING_ID REQUEST_ID STATUS [flags]
+
+Flags:
+  -h, --help            help for update
+      --json JSON       either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --reason string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

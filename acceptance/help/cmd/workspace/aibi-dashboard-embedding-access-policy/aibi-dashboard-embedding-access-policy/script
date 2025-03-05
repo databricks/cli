@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI aibi-dashboard-embedding-access-policy delete --help
+trace $CLI aibi-dashboard-embedding-access-policy get --help
+trace $CLI aibi-dashboard-embedding-access-policy update --help

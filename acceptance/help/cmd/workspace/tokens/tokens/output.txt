@@ -1,0 +1,64 @@
+
+>>> $CLI tokens create --help
+Create a user token.
+  
+  Creates and returns a token for a user. If this call is made through token
+  authentication, it creates a token with the same client ID as the
+  authenticated token. If the user's token quota is exceeded, this call returns
+  an error **QUOTA_EXCEEDED**.
+
+Usage:
+  databricks tokens create [flags]
+
+Flags:
+      --comment string         Optional description to attach to the token.
+  -h, --help                   help for create
+      --json JSON              either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --lifetime-seconds int   The lifetime of the token, in seconds.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI tokens delete --help
+Revoke token.
+  
+  Revokes an access token.
+  
+  If a token with the specified ID is not valid, this call returns an error
+  **RESOURCE_DOES_NOT_EXIST**.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to be revoked.
+
+Usage:
+  databricks tokens delete TOKEN_ID [flags]
+
+Flags:
+  -h, --help        help for delete
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI tokens list --help
+List tokens.
+  
+  Lists all the valid tokens for a user-workspace pair.
+
+Usage:
+  databricks tokens list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

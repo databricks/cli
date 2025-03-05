@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI access-control-proxy get-assignable-roles-for-resource --help
+trace $CLI access-control-proxy get-rule-set --help
+trace $CLI access-control-proxy update-rule-set --help

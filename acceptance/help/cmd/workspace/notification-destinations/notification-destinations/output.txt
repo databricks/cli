@@ -1,0 +1,95 @@
+
+>>> $CLI notification-destinations create --help
+Create a notification destination.
+  
+  Creates a notification destination. Requires workspace admin permissions.
+
+Usage:
+  databricks notification-destinations create [flags]
+
+Flags:
+      --display-name string   The display name for the notification destination.
+  -h, --help                  help for create
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI notification-destinations delete --help
+Delete a notification destination.
+  
+  Deletes a notification destination. Requires workspace admin permissions.
+
+Usage:
+  databricks notification-destinations delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI notification-destinations get --help
+Get a notification destination.
+  
+  Gets a notification destination.
+
+Usage:
+  databricks notification-destinations get ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI notification-destinations list --help
+List notification destinations.
+  
+  Lists notification destinations.
+
+Usage:
+  databricks notification-destinations list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI notification-destinations update --help
+Update a notification destination.
+  
+  Updates a notification destination. Requires workspace admin permissions. At
+  least one field is required in the request body.
+
+  Arguments:
+    ID: UUID identifying notification destination.
+
+Usage:
+  databricks notification-destinations update ID [flags]
+
+Flags:
+      --display-name string   The display name for the notification destination.
+  -h, --help                  help for update
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

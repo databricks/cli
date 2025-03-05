@@ -1,0 +1,372 @@
+
+>>> $CLI lakeview create --help
+Create dashboard.
+  
+  Create a draft dashboard.
+
+Usage:
+  databricks lakeview create [flags]
+
+Flags:
+      --display-name string           The display name of the dashboard.
+  -h, --help                          help for create
+      --json JSON                     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --serialized-dashboard string   The contents of the dashboard in serialized string form.
+      --warehouse-id string           The warehouse ID used to run the dashboard.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview create-schedule --help
+Create dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+
+Usage:
+  databricks lakeview create-schedule DASHBOARD_ID [flags]
+
+Flags:
+      --display-name string                The display name for schedule.
+  -h, --help                               help for create-schedule
+      --json JSON                          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --pause-status SchedulePauseStatus   The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]
+      --warehouse-id string                The warehouse id to run the dashboard with for the schedule.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview create-subscription --help
+Create schedule subscription.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.
+
+Usage:
+  databricks lakeview create-subscription DASHBOARD_ID SCHEDULE_ID [flags]
+
+Flags:
+  -h, --help        help for create-subscription
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview delete-schedule --help
+Delete dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+    SCHEDULE_ID: UUID identifying the schedule.
+
+Usage:
+  databricks lakeview delete-schedule DASHBOARD_ID SCHEDULE_ID [flags]
+
+Flags:
+  -h, --help   help for delete-schedule
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview delete-subscription --help
+Delete schedule subscription.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
+    SUBSCRIPTION_ID: UUID identifying the subscription.
+
+Usage:
+  databricks lakeview delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID [flags]
+
+Flags:
+  -h, --help   help for delete-subscription
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview get --help
+Get dashboard.
+  
+  Get a draft dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard.
+
+Usage:
+  databricks lakeview get DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview get-published --help
+Get published dashboard.
+  
+  Get the current published dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the published dashboard.
+
+Usage:
+  databricks lakeview get-published DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help   help for get-published
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview get-schedule --help
+Get dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+    SCHEDULE_ID: UUID identifying the schedule.
+
+Usage:
+  databricks lakeview get-schedule DASHBOARD_ID SCHEDULE_ID [flags]
+
+Flags:
+  -h, --help   help for get-schedule
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview get-subscription --help
+Get schedule subscription.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
+    SUBSCRIPTION_ID: UUID identifying the subscription.
+
+Usage:
+  databricks lakeview get-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID [flags]
+
+Flags:
+  -h, --help   help for get-subscription
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview list --help
+List dashboards.
+
+Usage:
+  databricks lakeview list [flags]
+
+Flags:
+  -h, --help                 help for list
+      --page-size int        The number of dashboards to return per page.
+      --show-trashed         The flag to include dashboards located in the trash.
+      --view DashboardView   DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview list-schedules --help
+List dashboard schedules.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedules belongs.
+
+Usage:
+  databricks lakeview list-schedules DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help            help for list-schedules
+      --page-size int   The number of schedules to return per page.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview list-subscriptions --help
+List schedule subscriptions.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard which the subscriptions belongs.
+    SCHEDULE_ID: UUID identifying the schedule which the subscriptions belongs.
+
+Usage:
+  databricks lakeview list-subscriptions DASHBOARD_ID SCHEDULE_ID [flags]
+
+Flags:
+  -h, --help            help for list-subscriptions
+      --page-size int   The number of subscriptions to return per page.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview migrate --help
+Migrate dashboard.
+  
+  Migrates a classic SQL dashboard to Lakeview.
+
+  Arguments:
+    SOURCE_DASHBOARD_ID: UUID of the dashboard to be migrated.
+
+Usage:
+  databricks lakeview migrate SOURCE_DASHBOARD_ID [flags]
+
+Flags:
+      --display-name string       Display name for the new Lakeview dashboard.
+  -h, --help                      help for migrate
+      --json JSON                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --parent-path string        The workspace path of the folder to contain the migrated Lakeview dashboard.
+      --update-parameter-syntax   Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated to named syntax (:param) when converting datasets in the dashboard.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview publish --help
+Publish dashboard.
+  
+  Publish the current draft dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to be published.
+
+Usage:
+  databricks lakeview publish DASHBOARD_ID [flags]
+
+Flags:
+      --embed-credentials     Flag to indicate if the publisher's credentials should be embedded in the published dashboard.
+  -h, --help                  help for publish
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --warehouse-id string   The ID of the warehouse that can be used to override the warehouse which was set in the draft.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview trash --help
+Trash dashboard.
+  
+  Trash a dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard.
+
+Usage:
+  databricks lakeview trash DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help   help for trash
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview unpublish --help
+Unpublish dashboard.
+  
+  Unpublish the dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the published dashboard.
+
+Usage:
+  databricks lakeview unpublish DASHBOARD_ID [flags]
+
+Flags:
+  -h, --help   help for unpublish
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview update --help
+Update dashboard.
+  
+  Update a draft dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard.
+
+Usage:
+  databricks lakeview update DASHBOARD_ID [flags]
+
+Flags:
+      --display-name string           The display name of the dashboard.
+  -h, --help                          help for update
+      --json JSON                     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --serialized-dashboard string   The contents of the dashboard in serialized string form.
+      --warehouse-id string           The warehouse ID used to run the dashboard.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI lakeview update-schedule --help
+Update dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+    SCHEDULE_ID: UUID identifying the schedule.
+
+Usage:
+  databricks lakeview update-schedule DASHBOARD_ID SCHEDULE_ID [flags]
+
+Flags:
+      --display-name string                The display name for schedule.
+  -h, --help                               help for update-schedule
+      --json JSON                          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --pause-status SchedulePauseStatus   The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]
+      --warehouse-id string                The warehouse id to run the dashboard with for the schedule.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

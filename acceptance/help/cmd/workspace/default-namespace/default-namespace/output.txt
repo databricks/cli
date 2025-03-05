@@ -1,0 +1,5 @@
+
+>>> $CLI default-namespace delete --help
+Error: unknown command "default-namespace" for "databricks"
+
+Exit code: 1

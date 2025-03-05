@@ -1,0 +1,10 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI instance-pools create --help
+trace $CLI instance-pools delete --help
+trace $CLI instance-pools edit --help
+trace $CLI instance-pools get --help
+trace $CLI instance-pools get-permission-levels --help
+trace $CLI instance-pools get-permissions --help
+trace $CLI instance-pools list --help
+trace $CLI instance-pools set-permissions --help
+trace $CLI instance-pools update-permissions --help

@@ -1,0 +1,101 @@
+
+>>> $CLI account budgets create --help
+Create new budget.
+  
+  Create a new budget configuration for an account. For full details, see
+  https://docs.databricks.com/en/admin/account-settings/budgets.html.
+
+Usage:
+  databricks account budgets create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account budgets delete --help
+Delete budget.
+  
+  Deletes a budget configuration for an account. Both account and budget
+  configuration are specified by ID. This cannot be undone.
+
+  Arguments:
+    BUDGET_ID: The Databricks budget configuration ID.
+
+Usage:
+  databricks account budgets delete BUDGET_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account budgets get --help
+Get budget.
+  
+  Gets a budget configuration for an account. Both account and budget
+  configuration are specified by ID.
+
+  Arguments:
+    BUDGET_ID: The budget configuration ID
+
+Usage:
+  databricks account budgets get BUDGET_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account budgets list --help
+Get all budgets.
+  
+  Gets all budgets associated with this account.
+
+Usage:
+  databricks account budgets list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-token string   A page token received from a previous get all budget configurations call.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account budgets update --help
+Modify budget.
+  
+  Updates a budget configuration for an account. Both account and budget
+  configuration are specified by ID.
+
+  Arguments:
+    BUDGET_ID: The Databricks budget configuration ID.
+
+Usage:
+  databricks account budgets update BUDGET_ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

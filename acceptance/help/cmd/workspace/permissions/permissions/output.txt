@@ -1,0 +1,102 @@
+
+>>> $CLI permissions get --help
+Get object permissions.
+  
+  Gets the permissions of an object. Objects can inherit permissions from their
+  parent objects or root object.
+
+  Arguments:
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
+      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
+      directories, experiments, files, instance-pools, jobs, notebooks,
+      pipelines, queries, registered-models, repos, serving-endpoints, or
+      warehouses.
+    REQUEST_OBJECT_ID: The id of the request object.
+
+Usage:
+  databricks permissions get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI permissions get-permission-levels --help
+Get object permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    REQUEST_OBJECT_TYPE: <needs content>
+    REQUEST_OBJECT_ID: <needs content>
+
+Usage:
+  databricks permissions get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI permissions set --help
+Set object permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their parent objects or root object.
+
+  Arguments:
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
+      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
+      directories, experiments, files, instance-pools, jobs, notebooks,
+      pipelines, queries, registered-models, repos, serving-endpoints, or
+      warehouses.
+    REQUEST_OBJECT_ID: The id of the request object.
+
+Usage:
+  databricks permissions set REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID [flags]
+
+Flags:
+  -h, --help        help for set
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI permissions update --help
+Update object permissions.
+  
+  Updates the permissions on an object. Objects can inherit permissions from
+  their parent objects or root object.
+
+  Arguments:
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
+      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
+      directories, experiments, files, instance-pools, jobs, notebooks,
+      pipelines, queries, registered-models, repos, serving-endpoints, or
+      warehouses.
+    REQUEST_OBJECT_ID: The id of the request object.
+
+Usage:
+  databricks permissions update REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

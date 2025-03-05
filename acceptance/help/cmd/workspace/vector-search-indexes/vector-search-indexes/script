@@ -1,0 +1,11 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI vector-search-indexes create-index --help
+trace $CLI vector-search-indexes delete-data-vector-index --help
+trace $CLI vector-search-indexes delete-index --help
+trace $CLI vector-search-indexes get-index --help
+trace $CLI vector-search-indexes list-indexes --help
+trace $CLI vector-search-indexes query-index --help
+trace $CLI vector-search-indexes query-next-page --help
+trace $CLI vector-search-indexes scan-index --help
+trace $CLI vector-search-indexes sync-index --help
+trace $CLI vector-search-indexes upsert-data-vector-index --help

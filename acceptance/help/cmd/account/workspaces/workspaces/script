@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account workspaces create --help
+trace $CLI account workspaces delete --help
+trace $CLI account workspaces get --help
+trace $CLI account workspaces list --help
+trace $CLI account workspaces update --help

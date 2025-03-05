@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account storage-credentials create --help
+trace $CLI account storage-credentials delete --help
+trace $CLI account storage-credentials get --help
+trace $CLI account storage-credentials list --help
+trace $CLI account storage-credentials update --help

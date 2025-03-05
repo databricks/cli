@@ -1,0 +1,5 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI provider-provider-analytics-dashboards create --help
+trace $CLI provider-provider-analytics-dashboards get --help
+trace $CLI provider-provider-analytics-dashboards get-latest-version --help
+trace $CLI provider-provider-analytics-dashboards update --help

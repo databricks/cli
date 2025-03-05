@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI alerts-legacy create --help
+trace $CLI alerts-legacy delete --help
+trace $CLI alerts-legacy get --help
+trace $CLI alerts-legacy list --help
+trace $CLI alerts-legacy update --help

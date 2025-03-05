@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+{{- $isAccount := .IsAccounts }}
+{{- $cmdGrp := (.TrimPrefix "account").KebabName }}
+{{- range .Methods}}
+trace $CLI {{if $isAccount }}account {{end}}{{$cmdGrp}} {{.KebabName}} --help
+{{- end}}

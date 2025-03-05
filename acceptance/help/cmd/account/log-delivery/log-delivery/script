@@ -1,0 +1,5 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI account log-delivery create --help
+trace $CLI account log-delivery get --help
+trace $CLI account log-delivery list --help
+trace $CLI account log-delivery patch-status --help

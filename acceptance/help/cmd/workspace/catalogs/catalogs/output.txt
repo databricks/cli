@@ -1,0 +1,124 @@
+
+>>> $CLI catalogs create --help
+Create a catalog.
+  
+  Creates a new catalog instance in the parent metastore if the caller is a
+  metastore admin or has the **CREATE_CATALOG** privilege.
+
+  Arguments:
+    NAME: Name of catalog.
+
+Usage:
+  databricks catalogs create NAME [flags]
+
+Flags:
+      --comment string           User-provided free-form text description.
+      --connection-name string   The name of the connection to an external data source.
+  -h, --help                     help for create
+      --json JSON                either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --provider-name string     The name of delta sharing provider.
+      --share-name string        The name of the share under the share provider.
+      --storage-root string      Storage root URL for managed tables within catalog.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI catalogs delete --help
+Delete a catalog.
+  
+  Deletes the catalog that matches the supplied name. The caller must be a
+  metastore admin or the owner of the catalog.
+
+  Arguments:
+    NAME: The name of the catalog.
+
+Usage:
+  databricks catalogs delete NAME [flags]
+
+Flags:
+      --force   Force deletion even if the catalog is not empty.
+  -h, --help    help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI catalogs get --help
+Get a catalog.
+  
+  Gets the specified catalog in a metastore. The caller must be a metastore
+  admin, the owner of the catalog, or a user that has the **USE_CATALOG**
+  privilege set for their account.
+
+  Arguments:
+    NAME: The name of the catalog.
+
+Usage:
+  databricks catalogs get NAME [flags]
+
+Flags:
+  -h, --help             help for get
+      --include-browse   Whether to include catalogs in the response for which the principal can only access selective metadata for.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI catalogs list --help
+List catalogs.
+  
+  Gets an array of catalogs in the metastore. If the caller is the metastore
+  admin, all catalogs will be retrieved. Otherwise, only catalogs owned by the
+  caller (or for which the caller has the **USE_CATALOG** privilege) will be
+  retrieved. There is no guarantee of a specific ordering of the elements in the
+  array.
+
+Usage:
+  databricks catalogs list [flags]
+
+Flags:
+  -h, --help                help for list
+      --include-browse      Whether to include catalogs in the response for which the principal can only access selective metadata for.
+      --max-results int     Maximum number of catalogs to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI catalogs update --help
+Update a catalog.
+  
+  Updates the catalog that matches the supplied name. The caller must be either
+  the owner of the catalog, or a metastore admin (when changing the owner field
+  of the catalog).
+
+  Arguments:
+    NAME: The name of the catalog.
+
+Usage:
+  databricks catalogs update NAME [flags]
+
+Flags:
+      --comment string                                                User-provided free-form text description.
+      --enable-predictive-optimization EnablePredictiveOptimization   Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]
+  -h, --help                                                          help for update
+      --isolation-mode CatalogIsolationMode                           Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATED, OPEN]
+      --json JSON                                                     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string                                               New name for the catalog.
+      --owner string                                                  Username of current owner of catalog.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

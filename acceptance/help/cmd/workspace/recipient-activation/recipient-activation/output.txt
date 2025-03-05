@@ -1,0 +1,41 @@
+
+>>> $CLI recipient-activation get-activation-url-info --help
+Get a share activation URL.
+  
+  Gets an activation URL for a share.
+
+  Arguments:
+    ACTIVATION_URL: The one time activation url. It also accepts activation token.
+
+Usage:
+  databricks recipient-activation get-activation-url-info ACTIVATION_URL [flags]
+
+Flags:
+  -h, --help   help for get-activation-url-info
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI recipient-activation retrieve-token --help
+Get an access token.
+  
+  Retrieve access token with an activation url. This is a public API without any
+  authentication.
+
+  Arguments:
+    ACTIVATION_URL: The one time activation url. It also accepts activation token.
+
+Usage:
+  databricks recipient-activation retrieve-token ACTIVATION_URL [flags]
+
+Flags:
+  -h, --help   help for retrieve-token
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

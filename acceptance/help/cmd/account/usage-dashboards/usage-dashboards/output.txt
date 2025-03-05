@@ -1,0 +1,40 @@
+
+>>> $CLI account usage-dashboards create --help
+Create new usage dashboard.
+  
+  Create a usage dashboard specified by workspaceId, accountId, and dashboard
+  type.
+
+Usage:
+  databricks account usage-dashboards create [flags]
+
+Flags:
+      --dashboard-type UsageDashboardType   Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]
+  -h, --help                                help for create
+      --json JSON                           either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --workspace-id int                    The workspace ID of the workspace in which the usage dashboard is created.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account usage-dashboards get --help
+Get usage dashboard.
+  
+  Get a usage dashboard specified by workspaceId, accountId, and dashboard type.
+
+Usage:
+  databricks account usage-dashboards get [flags]
+
+Flags:
+      --dashboard-type UsageDashboardType   Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]
+  -h, --help                                help for get
+      --workspace-id int                    The workspace ID of the workspace in which the usage dashboard is created.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,127 @@
+
+>>> $CLI schemas create --help
+Create a schema.
+  
+  Creates a new schema for catalog in the Metatastore. The caller must be a
+  metastore admin, or have the **CREATE_SCHEMA** privilege in the parent
+  catalog.
+
+  Arguments:
+    NAME: Name of schema, relative to parent catalog.
+    CATALOG_NAME: Name of parent catalog.
+
+Usage:
+  databricks schemas create NAME CATALOG_NAME [flags]
+
+Flags:
+      --comment string        User-provided free-form text description.
+  -h, --help                  help for create
+      --json JSON             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --storage-root string   Storage root URL for managed tables within schema.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI schemas delete --help
+Delete a schema.
+  
+  Deletes the specified schema from the parent catalog. The caller must be the
+  owner of the schema or an owner of the parent catalog.
+
+  Arguments:
+    FULL_NAME: Full name of the schema.
+
+Usage:
+  databricks schemas delete FULL_NAME [flags]
+
+Flags:
+      --force   Force deletion even if the schema is not empty.
+  -h, --help    help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI schemas get --help
+Get a schema.
+  
+  Gets the specified schema within the metastore. The caller must be a metastore
+  admin, the owner of the schema, or a user that has the **USE_SCHEMA**
+  privilege on the schema.
+
+  Arguments:
+    FULL_NAME: Full name of the schema.
+
+Usage:
+  databricks schemas get FULL_NAME [flags]
+
+Flags:
+  -h, --help             help for get
+      --include-browse   Whether to include schemas in the response for which the principal can only access selective metadata for.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI schemas list --help
+List schemas.
+  
+  Gets an array of schemas for a catalog in the metastore. If the caller is the
+  metastore admin or the owner of the parent catalog, all schemas for the
+  catalog will be retrieved. Otherwise, only schemas owned by the caller (or for
+  which the caller has the **USE_SCHEMA** privilege) will be retrieved. There is
+  no guarantee of a specific ordering of the elements in the array.
+
+  Arguments:
+    CATALOG_NAME: Parent catalog for schemas of interest.
+
+Usage:
+  databricks schemas list CATALOG_NAME [flags]
+
+Flags:
+  -h, --help                help for list
+      --include-browse      Whether to include schemas in the response for which the principal can only access selective metadata for.
+      --max-results int     Maximum number of schemas to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI schemas update --help
+Update a schema.
+  
+  Updates a schema for a catalog. The caller must be the owner of the schema or
+  a metastore admin. If the caller is a metastore admin, only the __owner__
+  field can be changed in the update. If the __name__ field must be updated, the
+  caller must be a metastore admin or have the **CREATE_SCHEMA** privilege on
+  the parent catalog.
+
+  Arguments:
+    FULL_NAME: Full name of the schema.
+
+Usage:
+  databricks schemas update FULL_NAME [flags]
+
+Flags:
+      --comment string                                                User-provided free-form text description.
+      --enable-predictive-optimization EnablePredictiveOptimization   Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]
+  -h, --help                                                          help for update
+      --json JSON                                                     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --new-name string                                               New name for the schema.
+      --owner string                                                  Username of current owner of schema.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

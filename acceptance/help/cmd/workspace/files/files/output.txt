@@ -1,0 +1,5 @@
+
+>>> $CLI files create-directory --help
+Error: unknown command "files" for "databricks"
+
+Exit code: 1

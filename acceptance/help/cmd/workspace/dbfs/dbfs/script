@@ -1,0 +1,11 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI dbfs add-block --help
+trace $CLI dbfs close --help
+trace $CLI dbfs create --help
+trace $CLI dbfs delete --help
+trace $CLI dbfs get-status --help
+trace $CLI dbfs list --help
+trace $CLI dbfs mkdirs --help
+trace $CLI dbfs move --help
+trace $CLI dbfs put --help
+trace $CLI dbfs read --help
