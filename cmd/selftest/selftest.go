@@ -12,5 +12,6 @@ func New() *cobra.Command {
 	}
 
 	cmd.AddCommand(newPanic())
+	cmd.AddCommand(newPatchWhl())
 	return cmd
 }
