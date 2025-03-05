@@ -40,4 +40,8 @@ type Extension struct {
 	// https://code.visualstudio.com/docs/languages/json#_use-rich-formatting-in-hovers
 	// Also it can be used in documentation generation.
 	MarkdownDescription string `json:"markdownDescription,omitempty"`
+
+	// This field is not in the JSON schema spec, but it is supported in VSCode
+	// It is used to provide a warning for deprectated fields
+	DeprecationMessage string `json:"deprecationMessage,omitempty"`
 }
