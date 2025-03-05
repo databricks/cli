@@ -29,19 +29,12 @@ func getPythonScriptsDir() string {
 }
 
 func getPythonVersions() []string {
-	if testing.Short() {
-		return []string{
-			"python3.9",
-			"python3.12",
-		}
-	} else {
-		return []string{
-			"python3.9",
-			"python3.10",
-			"python3.11",
-			"python3.12",
-			"python3.13",
-		}
+	return []string{
+		"python3.9",
+		"python3.10",
+		"python3.11",
+		"python3.12",
+		"python3.13",
 	}
 }
 
