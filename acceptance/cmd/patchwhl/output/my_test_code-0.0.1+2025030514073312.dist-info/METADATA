@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: my-test-code
+Version: 0.0.1+2025030514073312
+Summary: my test wheel
+Home-page: https://databricks.com
+Author: Databricks
+Author-email: john.doe@databricks.com
+Requires-Dist: setuptools
+
