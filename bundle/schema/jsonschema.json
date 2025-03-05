@@ -1217,7 +1217,9 @@
                   "properties": {
                     "pydabs": {
                       "description": "The PyDABs configuration.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs"
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs",
+                      "deprecationMessage": "Deprecated: please use python instead",
+                      "deprecated": true
                     },
                     "python": {
                       "description": "Configures loading of Python code defined with 'databricks-bundles' package.",
@@ -1506,7 +1508,9 @@
                     },
                     "compute_id": {
                       "description": "Deprecated. The ID of the compute to use for this target.",
-                      "$ref": "#/$defs/string"
+                      "$ref": "#/$defs/string",
+                      "deprecationMessage": "Deprecated: please use cluster_id instead",
+                      "deprecated": true
                     },
                     "default": {
                       "description": "Whether this target is the default target.",
@@ -7408,6 +7412,11 @@
       "description": "The bundle attributes when deploying to this target.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle",
       "markdownDescription": "The bundle attributes when deploying to this target,"
+    },
+    "environments": {
+      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Target",
+      "deprecationMessage": "Deprecated: please use targets instead",
+      "deprecated": true
     },
     "experimental": {
       "description": "Defines attributes for experimental features.",
