@@ -5,13 +5,7 @@ hello, world
 >>> [CLI] bundle exec -- pwd
 [TMPDIR]
 
->>> [CLI] bundle exec -- echo --help
---help
-
->>> [CLI] bundle exec -- bash -c exit 5
-Error: Running "bash -c exit 5" failed with exit code: 5
+>>> [CLI] bundle exec -- --help
+Error: starting "--help" failed: exec: "--help": executable file not found in $PATH
 
 Exit code: 1
-
->>> [CLI] bundle exec -- bash -c echo hello > /dev/stderr
-hello

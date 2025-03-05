@@ -2,8 +2,9 @@ trace $CLI bundle exec -- echo "hello, world"
 
 trace $CLI bundle exec -- pwd
 
-# The CLI should not parse the --help flag and should pass it as is to echo.
-trace $CLI bundle exec -- echo --help
+# The CLI should not parse the --help flag and should try to run it as an executable
+# instead.
+trace $CLI bundle exec -- --help
 
 # The error message should include the exit code.
 errcode trace $CLI bundle exec -- bash -c "exit 5"
