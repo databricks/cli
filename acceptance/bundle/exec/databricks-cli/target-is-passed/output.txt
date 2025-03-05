@@ -13,7 +13,7 @@
 
 >>> errcode [CLI] bundle exec -t pat -- [CLI] current-user me -t oauth
 Error: cannot resolve bundle auth configuration: validate: more than one authorization method configured: oauth and pat. Config: host=[DATABRICKS_URL], token=***, client_id=client_id, databricks_cli_path=[CLI]. Env: DATABRICKS_HOST, DATABRICKS_TOKEN, DATABRICKS_CLI_PATH
-Error: Running "[CLI] current-user me -t oauth" failed with exit code: 1
+Error: running "[CLI] current-user me -t oauth" failed with exit code: 1
 
 Exit code: 1
 

@@ -13,15 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type exitCodeErr struct {
-	exitCode int
-	args     []string
-}
-
-func (e *exitCodeErr) Error() string {
-	return fmt.Sprintf("Running %q failed with exit code: %d", strings.Join(e.args, " "), e.exitCode)
-}
-
 func newExecCommand() *cobra.Command {
 	execCmd := &cobra.Command{
 		Use:   "exec",
@@ -147,10 +138,7 @@ Example usage:
 				//
 				// This keeps the door open for us to associate specific exit codes
 				// with specific classes of errors in the future.
-				return &exitCodeErr{
-					exitCode: exitErr.ExitCode(),
-					args:     args,
-				}
+				return fmt.Errorf("running %q failed with exit code: %d", strings.Join(args, " "), exitErr.ExitCode())
 			}
 			if err != nil {
 				return fmt.Errorf("running %q failed: %w", strings.Join(args, " "), err)
