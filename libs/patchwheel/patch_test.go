@@ -185,6 +185,8 @@ func TestPatchWheel(t *testing.T) {
 func TestPrebuilt(t *testing.T) {
 	tempDir := t.TempDir()
 	ctx := context.Background()
+
+	// AI TODO: set mtime of prebuiltWheel to some fixed value. Simplify the code below to hardcode names based on this value
 	outname, err := PatchWheel(ctx, prebuiltWheel, tempDir)
 	require.NoError(t, err)
 
