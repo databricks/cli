@@ -94,6 +94,7 @@ func Upload(ctx context.Context, cfg *config.Config) error {
 
 		// All logs were uploaded successfully.
 		if err == nil && resp.NumProtoSuccess >= int64(len(protoLogs)) {
+			log.Debugf(ctx, "All %d logs uploaded successfully", len(protoLogs))
 			return nil
 		}
 

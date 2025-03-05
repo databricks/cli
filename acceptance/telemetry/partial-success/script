@@ -1,1 +1,1 @@
-trace $CLI selftest send-telemetry
+trace $CLI selftest send-telemetry --debug

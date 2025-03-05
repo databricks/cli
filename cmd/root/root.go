@@ -173,11 +173,13 @@ Stack Trace:
 func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, exitCode int) {
 	// Return early if there are no logs to upload.
 	if !telemetry.HasLogs(ctx) {
+		log.Debugf(ctx, "no telemetry logs to upload")
 		return
 	}
 
 	// Telemetry is disabled. We don't upload logs.
 	if os.Getenv(telemetry.DisableEnvVar) != "" {
+		log.Debugf(ctx, "telemetry upload is disabled. Not uploading any logs.")
 		return
 	}
 

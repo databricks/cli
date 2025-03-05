@@ -1,2 +1,56 @@
 
->>> [CLI] selftest send-telemetry
+>>> [CLI] selftest send-telemetry --debug
+HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
+HH:MM:SS Info: completed execution pid=PID exit_code=0
+HH:MM:SS Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (210 more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (210 more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 501 Not Implemented
+< {
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
+< } pid=PID sdk=true
+HH:MM:SS Debug: non-retriable error: Endpoint not implemented. pid=PID sdk=true
+HH:MM:SS Debug: Attempt 1 failed due to a server side error. Retrying status code: 501
+ pid=PID
+HH:MM:SS Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (210 more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (210 more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 501 Not Implemented
+< {
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
+< } pid=PID sdk=true
+HH:MM:SS Debug: non-retriable error: Endpoint not implemented. pid=PID sdk=true
+HH:MM:SS Debug: Attempt 2 failed due to a server side error. Retrying status code: 501
+ pid=PID
+HH:MM:SS Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (210 more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (210 more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 501 Not Implemented
+< {
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
+< } pid=PID sdk=true
+HH:MM:SS Debug: non-retriable error: Endpoint not implemented. pid=PID sdk=true
+HH:MM:SS Debug: Attempt 3 failed due to a server side error. Retrying status code: 501
+ pid=PID
+HH:MM:SS Debug: failed to upload telemetry: failed to upload telemetry logs after three attempts pid=PID
