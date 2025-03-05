@@ -90,6 +90,7 @@ type DataSourceAppApp struct {
 	Creator                  string                             `json:"creator,omitempty"`
 	DefaultSourceCodePath    string                             `json:"default_source_code_path,omitempty"`
 	Description              string                             `json:"description,omitempty"`
+	Id                       string                             `json:"id,omitempty"`
 	Name                     string                             `json:"name"`
 	PendingDeployment        *DataSourceAppAppPendingDeployment `json:"pending_deployment,omitempty"`
 	Resources                []DataSourceAppAppResources        `json:"resources,omitempty"`
