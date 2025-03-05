@@ -32,3 +32,7 @@ New = "HH:MM:SS"
 [[Repls]]
 Old = "pid=[0-9]+"
 New = "pid=PID"
+
+[[Repls]]
+Old = "\\([0-9]+ more bytes\\)"
+New = "(N more bytes)"

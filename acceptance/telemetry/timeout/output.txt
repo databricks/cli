@@ -6,8 +6,8 @@ HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (246 more bytes)",
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (246 more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": "UNIX_TIME_MILLIS"
 > }
