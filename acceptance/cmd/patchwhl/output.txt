@@ -17,7 +17,7 @@ Warn: Patched whl: my_test_code-0.0.1-py3-none-any.whl -> my_test_code-0.0.1+202
  Home-page: https://databricks.com
 --- original/my_test_code-0.0.1+2025030514073312.dist-info/RECORD
 +++ output/my_test_code-0.0.1+2025030514073312.dist-info/RECORD
-@@ -1,7 +1,8 @@
+@@ -1,7 +1,7 @@
  src/__init__.py,sha256=BRmKeYehopKv4NG_SFa7t6wn248RrPHJivu7DM1R-Rw,48
  src/__main__.py,sha256=8TtsnLsaJEM35Y4L8ocrv-qfxusgYpRL2HPyYiabHng,242
 -my_test_code-0.0.1.dist-info/METADATA,sha256=6fyVq4hexXGUP_J2mB1CI-ijZ6CenvKNIlHx0bKPRJ0,197
@@ -30,4 +30,3 @@ Warn: Patched whl: my_test_code-0.0.1-py3-none-any.whl -> my_test_code-0.0.1+202
 +my_test_code-0.0.1+2025030514073312.dist-info/entry_points.txt,sha256=oDWOW9SsBlk4Uejj1ftYPBxfhJ5ZJctb4JOUIG1rc-4,34
 +my_test_code-0.0.1+2025030514073312.dist-info/top_level.txt,sha256=74rtVfumQlgAPzR5_2CgYN24MB0XARCg0t-gzk6gTrM,4
 +my_test_code-0.0.1+2025030514073312.dist-info/RECORD,,
-+

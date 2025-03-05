@@ -103,7 +103,6 @@ func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	buf.WriteString("\n")
 	return buf.Bytes(), nil
 }
 
