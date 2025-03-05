@@ -204,7 +204,7 @@ func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, ex
 	}
 
 	d := daemon.Daemon{
-		Args:        []string{"telemetry", "upload", fmt.Sprintf("--log-level=%s", logLevel)},
+		Args:        []string{"telemetry", "upload", "--log-level=" + logLevel},
 		Env:         auth.ProcessEnv(ConfigUsed(ctx)),
 		PidFilePath: os.Getenv(telemetry.PidFileEnvVar),
 		LogFile:     os.Getenv(telemetry.UploadLogsFileEnvVar),
