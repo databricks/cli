@@ -11,7 +11,7 @@ import (
 type WheelInfo struct {
 	Distribution string   // Package distribution name
 	Version      string   // Package version
-	Tags         []string // Python tags (python_tag, abi_tag, platform_tag)
+	Tags         []string // [optional build tag,] python_tag, abi_tag, platform_tag
 }
 
 // calculateNewVersion generates a new version string and filename based on the wheel info and modification time.
