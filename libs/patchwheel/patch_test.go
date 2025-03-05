@@ -47,7 +47,6 @@ func verifyVersion(t *testing.T, tempDir, wheelPath string) {
 	cmdOut := captureOutput(t, tempDir, pyExec, "-c", "import myproj; myproj.print_version()")
 	actualVersion := strings.TrimSpace(cmdOut)
 	t.Logf("Verified installed version: %s", actualVersion)
-	assert.True(t, strings.HasPrefix(actualVersion, "0.1.0+20"), "Version should start with 0.1.0+20, got %s", actualVersion)
 	assert.Equal(t, expectedVersion, actualVersion, "Installed version doesn't match expected version from wheel filename")
 }
 

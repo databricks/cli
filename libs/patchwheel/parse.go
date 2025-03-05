@@ -2,6 +2,7 @@ package patchwheel
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,9 +23,7 @@ type WheelInfo struct {
 func calculateNewVersion(info WheelInfo, mtime time.Time) (newVersion, newFilename string) {
 	baseVersion, _, _ := strings.Cut(info.Version, "+")
 
-	dt := mtime.Format("20060102150405.00")
-	dt = strings.Replace(dt, ".", "", 1)
-	newVersion = baseVersion + "+" + dt
+	newVersion = baseVersion + "+" + strconv.FormatInt(mtime.UnixNano(), 10)
 
 	newFilename = fmt.Sprintf("%s-%s-%s.whl",
 		info.Distribution,
