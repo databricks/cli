@@ -20,27 +20,13 @@ import (
 
 var versionKey []byte = []byte("Version:")
 
-// findFiles returns a slice with a *zip.File for every filename in the arguments slice.
-// The order of the return value matches the order of the arguments.
-// If not found, the corresponding entry is nil.
-func findFiles(r *zip.ReadCloser, files ...string) []*zip.File {
-	found := 0
-	result := make([]*zip.File, len(files))
+func findFile(r *zip.ReadCloser, filename string) *zip.File {
 	for _, f := range r.File {
-		for ind, prev := range result {
-			if prev != nil {
-				continue
-			}
-			if f.Name == files[ind] {
-				result[ind] = f
-				found += 1
-				if found >= len(files) {
-					return result
-				}
-			}
+		if f.Name == filename {
+			return f
 		}
 	}
-	return result
+	return nil
 }
 
 // patchMetadata returns new METADATA content with an updated "Version:" field and validates that previous version matches oldVersion
@@ -152,13 +138,12 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	defer r.Close()
 
 	oldDistInfoPrefix := wheelInfo.Distribution + "-" + wheelInfo.Version + ".dist-info/"
-	files := findFiles(r, oldDistInfoPrefix+"METADATA", oldDistInfoPrefix+"RECORD")
-	metadataFile, recordFile := files[0], files[1]
-
+	metadataFile := findFile(r, oldDistInfoPrefix+"METADATA")
 	if metadataFile == nil {
 		return "", fmt.Errorf("wheel %s missing %sMETADATA", path, oldDistInfoPrefix)
 	}
 
+	recordFile := findFile(r, oldDistInfoPrefix+"RECORD")
 	if recordFile == nil {
 		return "", fmt.Errorf("wheel %s missing %sRECORD file", path, oldDistInfoPrefix)
 	}
