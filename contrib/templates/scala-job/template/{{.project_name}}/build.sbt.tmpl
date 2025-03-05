@@ -22,8 +22,6 @@ assemblyMergeStrategy := {
 }
 
 // to run with new jvm options, a fork is required otherwise it uses same options as sbt process
-run / fork := true
-run / javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
+fork := true
+javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
 
-test / fork := true
-test / javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
