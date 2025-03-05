@@ -58,8 +58,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: custom_tags
-	cmd.Flags().StringVar(&createReq.PolicyName, "policy-name", createReq.PolicyName, `The name of the policy.`)
+	// TODO: complex arg: policy
 	cmd.Flags().StringVar(&createReq.RequestId, "request-id", createReq.RequestId, `A unique identifier for this request.`)
 
 	cmd.Use = "create"
