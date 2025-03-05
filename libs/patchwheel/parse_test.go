@@ -52,7 +52,7 @@ func TestCalculateNewVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			newVersion, newFilename := CalculateNewVersion(tt.info, tt.mtime)
+			newVersion, newFilename := calculateNewVersion(tt.info, tt.mtime)
 			if newVersion != tt.expectedVersion {
 				t.Errorf("expected version %s, got %s", tt.expectedVersion, newVersion)
 			}

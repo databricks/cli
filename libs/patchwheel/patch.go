@@ -118,7 +118,7 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 		return "", err
 	}
 
-	newVersion, newFilename := CalculateNewVersion(wheelInfo, wheelMtime)
+	newVersion, newFilename := calculateNewVersion(wheelInfo, wheelMtime)
 	outpath := filepath.Join(outputDir, newFilename)
 
 	if _, err := os.Stat(outpath); err == nil {
