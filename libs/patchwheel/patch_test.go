@@ -188,6 +188,12 @@ func TestPrebuilt(t *testing.T) {
 
 	_, err = os.Stat(outname)
 	require.NoError(t, err)
+
+	// XXX unpack METADATA and RECORD
+	// AI TODO:
+	//  - read zip archive outname
+	//  - find location of METADATA and RECORD files
+	//  - compare contents of METADATA and RECORD with predefined strings
 }
 
 func errPatchWheel(t *testing.T, name, out string) {
