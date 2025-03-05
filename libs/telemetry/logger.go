@@ -63,7 +63,7 @@ func (l *logger) setExecutionContext(ec protos.ExecutionContext) {
 func Upload(ctx context.Context, cfg *config.Config) error {
 	l := fromContext(ctx)
 	if len(l.logs) == 0 {
-		return fmt.Errorf("no logs to upload")
+		return errors.New("no logs to upload")
 	}
 
 	protoLogs := make([]string, len(l.logs))
