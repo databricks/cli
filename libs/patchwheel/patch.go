@@ -23,22 +23,24 @@ const (
 	nameKey    = "Name:"
 )
 
-func findMetadataAndRecord(r *zip.ReadCloser, oldDistInfoPrefix string) (metadataFile, recordFile *zip.File) {
+func findFiles(r *zip.ReadCloser, files ...string) []*zip.File {
+	found := 0
+	result := make([]*zip.File, len(files))
 	for _, f := range r.File {
-		if metadataFile == nil && f.Name == oldDistInfoPrefix+"METADATA" {
-			metadataFile = f
-		}
-
-		if recordFile == nil && f.Name == oldDistInfoPrefix+"RECORD" {
-			recordFile = f
-
-			if metadataFile != nil {
-				break
+		for ind, prev := range result {
+			if prev != nil {
+				continue
+			}
+			if f.Name == files[ind] {
+				result[ind] = f
+				found += 1
+				if found >= len(files) {
+					return result
+				}
 			}
 		}
 	}
-
-	return metadataFile, recordFile
+	return result
 }
 
 // patchMetadata returns new METADATA content with an updated "Version:" field and validates that previous version matches oldVersion
@@ -141,13 +143,15 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	defer r.Close()
 
 	oldDistInfoPrefix := wheelInfo.Distribution + "-" + wheelInfo.Version + ".dist-info/"
-	metadataFile, recordFile := findMetadataAndRecord(r, oldDistInfoPrefix)
+	files := findFiles(r, oldDistInfoPrefix+"METADATA", oldDistInfoPrefix+"RECORD")
+	metadataFile, recordFile := files[0], files[1]
+
 	if metadataFile == nil {
-		return "", fmt.Errorf("wheel %s missing METADATA file", path)
+		return "", fmt.Errorf("wheel %s missing %sMETADATA", path, oldDistInfoPrefix)
 	}
 
 	if recordFile == nil {
-		return "", fmt.Errorf("wheel %s missing RECORD file", path)
+		return "", fmt.Errorf("wheel %s missing %sRECORD file", path, oldDistInfoPrefix)
 	}
 
 	metadataReader, err := metadataFile.Open()
