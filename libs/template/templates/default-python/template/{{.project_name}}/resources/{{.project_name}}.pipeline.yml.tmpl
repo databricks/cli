@@ -13,7 +13,7 @@ resources:
       {{- else}}
       catalog: {{default_catalog}}
       {{- end}}
-      target: {{.project_name}}_${bundle.target}
+      schema: {{.project_name}}_${bundle.target}
       {{- if $with_serverless }}
       serverless: true
       {{- end}}
