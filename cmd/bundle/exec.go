@@ -22,15 +22,6 @@ func (e *exitCodeErr) Error() string {
 	return fmt.Sprintf("Running %q failed with exit code: %d", strings.Join(e.args, " "), e.exitCode)
 }
 
-type runErr struct {
-	err  error
-	args []string
-}
-
-func (e *runErr) Error() string {
-	return fmt.Sprintf("Running %q failed: %s", strings.Join(e.args, " "), e.err)
-}
-
 func newExecCommand() *cobra.Command {
 	execCmd := &cobra.Command{
 		Use:   "exec",
