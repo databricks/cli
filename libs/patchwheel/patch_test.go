@@ -1,8 +1,10 @@
 package patchwheel
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -189,11 +191,42 @@ func TestPrebuilt(t *testing.T) {
 	_, err = os.Stat(outname)
 	require.NoError(t, err)
 
-	// XXX unpack METADATA and RECORD
-	// AI TODO:
-	//  - read zip archive outname
-	//  - find location of METADATA and RECORD files
-	//  - compare contents of METADATA and RECORD with predefined strings
+	// Verify the contents of the patched wheel
+	archive, err := zip.OpenReader(outname)
+	require.NoError(t, err)
+	defer archive.Close()
+
+	// Extract wheel info to determine the dist-info directory name
+	wheelInfo, err := ParseWheelFilename(filepath.Base(outname))
+	require.NoError(t, err)
+	distInfoPrefix := wheelInfo.Distribution + "-" + wheelInfo.Version + ".dist-info/"
+
+	// Find METADATA and RECORD files
+	var metadataContent, recordContent []byte
+	for _, f := range archive.File {
+		if f.Name == distInfoPrefix+"METADATA" {
+			rc, err := f.Open()
+			require.NoError(t, err)
+			metadataContent, err = io.ReadAll(rc)
+			rc.Close()
+			require.NoError(t, err)
+		} else if f.Name == distInfoPrefix+"RECORD" {
+			rc, err := f.Open()
+			require.NoError(t, err)
+			recordContent, err = io.ReadAll(rc)
+			rc.Close()
+			require.NoError(t, err)
+		}
+	}
+
+	// Verify METADATA contains the expected version
+	require.NotNil(t, metadataContent, "METADATA file not found in wheel")
+	assert.Contains(t, string(metadataContent), "Version: "+wheelInfo.Version)
+
+	// Verify RECORD contains entries with the correct dist-info prefix
+	require.NotNil(t, recordContent, "RECORD file not found in wheel")
+	assert.Contains(t, string(recordContent), distInfoPrefix+"METADATA")
+	assert.Contains(t, string(recordContent), distInfoPrefix+"RECORD")
 }
 
 func errPatchWheel(t *testing.T, name, out string) {
