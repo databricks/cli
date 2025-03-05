@@ -1,5 +1,29 @@
 # Version changelog
 
+## [Release] Release v0.243.0
+
+CLI:
+ * Upgrade Go SDK to 0.59.0 ([#2425](https://github.com/databricks/cli/pull/2425)).
+
+Bundles:
+ * Added a warning when `config` section is used in apps ([#2416](https://github.com/databricks/cli/pull/2416)).
+ * Switch to use GET workspaces-files/{name} instead of workspace/export for state files to avoid 10MB limit ([#2423](https://github.com/databricks/cli/pull/2423)).
+ * Use schema field for pipeline in builtin template ([#2347](https://github.com/databricks/cli/pull/2347)).
+ * Add warning when variable interpolation is used for auth fields ([#2399](https://github.com/databricks/cli/pull/2399)).
+ * Add warning when include is used in config files other than databricks.yml ([#2389](https://github.com/databricks/cli/pull/2389)).
+ * Add support for schemas in deployment bind/unbind commands ([#2406](https://github.com/databricks/cli/pull/2406)).
+ * Do not modify/create .gitignore in bundle root ([#2429](https://github.com/databricks/cli/pull/2429)).
+ * Raise an error when there are multiple local libraries with the same basename used  ([#2382](https://github.com/databricks/cli/pull/2382)).
+ * Upgrade TF provider to 1.68.0 ([#2426](https://github.com/databricks/cli/pull/2426)).
+
+API Changes:
+ * Changed `databricks experiments log-inputs` command with new required argument order.
+ * Added `databricks genie get-space` command.
+ * Added `databricks providers list-provider-share-assets` command.
+ * Changed `databricks shares update-permissions` command return type to become non-empty.
+
+OpenAPI commit e5c870006a536121442cfd2441bdc8a5fb76ae1e (2025-03-03)
+
 ## [Release] Release v0.242.0
 
 Notable changes:
