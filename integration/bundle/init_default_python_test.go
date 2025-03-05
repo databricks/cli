@@ -31,8 +31,8 @@ var pythonVersionsShort = []string{
 }
 
 var extraInstalls = map[string][]string{
-	"3.12": {"setuptools"},
-	"3.13": {"setuptools"},
+	"3.12": {"setuptools==75.8.2"},
+	"3.13": {"setuptools==75.8.2"},
 }
 
 func TestDefaultPython(t *testing.T) {

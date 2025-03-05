@@ -47,9 +47,14 @@ type ResourcePipelineClusterClusterLogConfS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourcePipelineClusterClusterLogConfVolumes struct {
+	Destination string `json:"destination"`
+}
+
 type ResourcePipelineClusterClusterLogConf struct {
-	Dbfs *ResourcePipelineClusterClusterLogConfDbfs `json:"dbfs,omitempty"`
-	S3   *ResourcePipelineClusterClusterLogConfS3   `json:"s3,omitempty"`
+	Dbfs    *ResourcePipelineClusterClusterLogConfDbfs    `json:"dbfs,omitempty"`
+	S3      *ResourcePipelineClusterClusterLogConfS3      `json:"s3,omitempty"`
+	Volumes *ResourcePipelineClusterClusterLogConfVolumes `json:"volumes,omitempty"`
 }
 
 type ResourcePipelineClusterGcpAttributes struct {

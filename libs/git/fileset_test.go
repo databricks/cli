@@ -1,10 +1,8 @@
 package git
 
 import (
-	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/vfs"
@@ -50,35 +48,4 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	files, err := fileSet.Files()
 	require.NoError(t, err)
 	assert.Len(t, files, 3)
-}
-
-func TestFileSetAddsCacheDirToGitIgnore(t *testing.T) {
-	projectDir := t.TempDir()
-	fileSet, err := NewFileSetAtRoot(vfs.MustNew(projectDir))
-	require.NoError(t, err)
-	err = fileSet.EnsureValidGitIgnoreExists()
-	require.NoError(t, err)
-
-	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
-	assert.FileExists(t, gitIgnorePath)
-	fileBytes, err := os.ReadFile(gitIgnorePath)
-	assert.NoError(t, err)
-	assert.Contains(t, string(fileBytes), ".databricks")
-}
-
-func TestFileSetDoesNotCacheDirToGitIgnoreIfAlreadyPresent(t *testing.T) {
-	projectDir := t.TempDir()
-	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
-
-	fileSet, err := NewFileSetAtRoot(vfs.MustNew(projectDir))
-	require.NoError(t, err)
-	err = os.WriteFile(gitIgnorePath, []byte(".databricks"), 0o644)
-	require.NoError(t, err)
-
-	err = fileSet.EnsureValidGitIgnoreExists()
-	require.NoError(t, err)
-
-	b, err := os.ReadFile(gitIgnorePath)
-	require.NoError(t, err)
-	assert.Equal(t, 1, strings.Count(string(b), ".databricks"))
 }
