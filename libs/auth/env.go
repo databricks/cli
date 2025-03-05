@@ -4,10 +4,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-<<<<<<< HEAD
-	"sort"
-=======
->>>>>>> origin
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/config"
