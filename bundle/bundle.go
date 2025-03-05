@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
@@ -198,6 +199,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 		return "", err
 	}
 
+	libsync.WriteGitIgnore(ctx, b.BundleRootPath)
 	return dir, nil
 }
 
