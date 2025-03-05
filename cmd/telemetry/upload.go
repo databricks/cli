@@ -2,9 +2,10 @@ package telemetry
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -22,15 +23,15 @@ func newTelemetryUpload() *cobra.Command {
 
 			resp, err := telemetry.Upload(ctx)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: %s\n", err)
+				log.Error(ctx, err.Error())
 				os.Exit(1)
 			}
 
-			fmt.Printf("Telemetry logs uploaded successfully\n")
-			fmt.Println("Response:")
+			cmdio.LogString(ctx, "Telemetry logs uploaded successfully")
+			cmdio.LogString(ctx, "Response:")
 			b, err := json.Marshal(resp)
 			if err == nil {
-				fmt.Println(string(b))
+				cmdio.LogString(ctx, string(b))
 			}
 		},
 	}

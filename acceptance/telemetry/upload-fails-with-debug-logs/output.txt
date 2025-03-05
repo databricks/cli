@@ -1,5 +1,5 @@
 
 >>> [CLI] selftest send-telemetry --debug
-13:45:02 Info: start pid=73578 version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
-13:45:02 Info: completed execution pid=73578 exit_code=0
+HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
+HH:MM:SS Info: completed execution pid=PID exit_code=0
 [wait_pid] process has ended
