@@ -52,8 +52,8 @@ func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 	var buf bytes.Buffer
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, versionKey) {
-			foundVersion := strings.TrimSpace(line[len(versionKey):])
+		if versionValue, ok := strings.CutPrefix(line, versionKey); ok {
+			foundVersion := strings.TrimSpace(versionValue)
 			if foundVersion != oldVersion {
 				return nil, fmt.Errorf("Unexpected version in METADATA: %s (expected %s)", strings.TrimSpace(line), oldVersion)
 			}
