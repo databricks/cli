@@ -1,8 +1,0 @@
-
->>> cd a/b/c
-
->>> pwd
-[TMPDIR]/a/b/c
-
->>> [CLI] bundle exec -- pwd
-[TMPDIR]

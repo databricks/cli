@@ -1,6 +1,0 @@
-trace cd a/b/c
-
-trace pwd
-
-# Scripts that bundle exec executes should run from the bundle root.
-trace $CLI bundle exec -- dir
