@@ -1,7 +1,7 @@
-Warn: Attempt 0 failed due to a server side error. Retrying status code: 501
-
 Warn: Attempt 1 failed due to a server side error. Retrying status code: 501
 
 Warn: Attempt 2 failed due to a server side error. Retrying status code: 501
+
+Warn: Attempt 3 failed due to a server side error. Retrying status code: 501
 
 Error: upload did not succeed after three attempts
