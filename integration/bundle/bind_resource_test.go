@@ -73,7 +73,7 @@ func TestBindExperimentToExistingExperiment(t *testing.T) {
 	// destroy the bundle:
 	destroyBundle(t, ctx, bundleRoot)
 
-	// Check that schema is unbound and exists after bundle is destroyed
+	// Check that experiment is unbound and exists after bundle is destroyed
 	postDestroyExperiment, err := w.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
 		ExperimentId: predefinedExperiment.ExperimentId,
 	})
