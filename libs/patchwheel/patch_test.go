@@ -173,7 +173,11 @@ func TestPatchWheel(t *testing.T) {
 			require.NoError(t, err)
 			require.Greater(t, patchedWheel3, patchedWheel)
 
-			runCmd(t, tempDir, "uv", "pip", "install", "-q", patchedWheel3)
+			// Now use regular pip to re-install the wheel. First install pip.
+			runCmd(t, tempDir, "uv", "pip", "install", "-q", "pip")
+
+			pippath := filepath.Join(".venv", getPythonScriptsDir(), "pip")
+			runCmd(t, tempDir, pippath, "install", "-q", patchedWheel3)
 			verifyVersion(t, tempDir, patchedWheel3)
 		})
 	}
