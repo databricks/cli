@@ -1,0 +1,1 @@
+trace $CLI bundle exec -- echo hello
