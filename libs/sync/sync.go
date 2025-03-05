@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	stdsync "sync"
 	"time"
 
@@ -68,6 +69,8 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	WriteGitIgnore(ctx, filepath.Join(opts.LocalRoot.Native(), ".databricks"))
 
 	includeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Include)
 	if err != nil {

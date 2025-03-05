@@ -95,6 +95,7 @@ func SnapshotPath(opts *SyncOptions) (string, error) {
 			return "", fmt.Errorf("failed to create config directory: %s", err)
 		}
 	}
+
 	fileName := GetFileName(opts.Host, opts.RemotePath)
 	return filepath.Join(snapshotDir, fileName), nil
 }
