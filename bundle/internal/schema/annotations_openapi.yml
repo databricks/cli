@@ -5,6 +5,7 @@ github.com/databricks/cli/bundle/config/resources.App:
       The active deployment of the app. A deployment is considered active when it has been deployed
       to the app compute.
   "app_status": {}
+  "budget_policy_id": {}
   "compute_status": {}
   "create_time":
     "description": |-
@@ -19,6 +20,7 @@ github.com/databricks/cli/bundle/config/resources.App:
   "description":
     "description": |-
       The description of the app.
+  "effective_budget_policy_id": {}
   "id":
     "description": |-
       The unique identifier of the app.
@@ -118,7 +120,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       The optional ID of the instance pool to which the cluster belongs.
   "is_single_node":
     "description": |
-      This field can only be used with `kind`.
+      This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
   "kind": {}
@@ -175,7 +177,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       Up to 10 keys can be specified.
   "use_ml_runtime":
     "description": |
-      This field can only be used with `kind`.
+      This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
   "workload_type": {}
@@ -311,6 +313,9 @@ github.com/databricks/cli/bundle/config/resources.Job:
     "description": |-
       A collection of system notification IDs to notify when runs of this job begin or complete.
 github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
+  "_":
+    "description": |-
+      An experiment and its metadata.
   "artifact_location":
     "description": |-
       Location where artifacts for the experiment are stored.
@@ -1089,7 +1094,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       The optional ID of the instance pool to which the cluster belongs.
   "is_single_node":
     "description": |
-      This field can only be used with `kind`.
+      This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
   "kind": {}
@@ -1146,7 +1151,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       Up to 10 keys can be specified.
   "use_ml_runtime":
     "description": |
-      This field can only be used with `kind`.
+      This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
   "workload_type": {}
@@ -1156,7 +1161,7 @@ github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode:
       Data security mode decides what data governance model to use when accessing data
       from a cluster.
 
-      The following modes can only be used with `kind`.
+      The following modes can only be used when `kind = CLASSIC_PREVIEW`.
       * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
       * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
       * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
@@ -1465,6 +1470,19 @@ github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask:
   "notebook_name":
     "description": |-
       Name of the notebook being run.
+github.com/databricks/databricks-sdk-go/service/jobs.ComputeConfig:
+  "_":
+    "description": |-
+      Next field: 4
+  "gpu_node_pool_id":
+    "description": |-
+      IDof the GPU pool to use.
+  "gpu_type":
+    "description": |-
+      GPU type.
+  "num_gpus":
+    "description": |-
+      Number of GPUs.
 github.com/databricks/databricks-sdk-go/service/jobs.Condition:
   "_":
     "enum":
@@ -1579,6 +1597,37 @@ github.com/databricks/databricks-sdk-go/service/jobs.Format:
         SINGLE_TASK
       - |-
         MULTI_TASK
+github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
+  "_":
+    "description": |-
+      Next field: 9
+  "command":
+    "description": |-
+      Command launcher to run the actual script, e.g. bash, python etc.
+  "compute": {}
+  "dl_runtime_image":
+    "description": |-
+      Runtime image
+  "mlflow_experiment_name":
+    "description": |-
+      Optional string containing the name of the MLflow experiment to log the run to. If name is not
+      found, backend will create the mlflow experiment using the name.
+  "source":
+    "description": |-
+      Optional location type of the training script. When set to `WORKSPACE`, the script will be retrieved from the local Databricks workspace. When set to `GIT`, the script will be retrieved from a Git repository
+      defined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.
+      * `WORKSPACE`: Script is located in Databricks workspace.
+      * `GIT`: Script is located in cloud Git provider.
+  "training_script_path":
+    "description": |-
+      The training script file path to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required.
+  "yaml_parameters":
+    "description": |-
+      Optional string containing model parameters passed to the training script in yaml format.
+      If present, then the content in yaml_parameters_file_path will be ignored.
+  "yaml_parameters_file_path":
+    "description": |-
+      Optional path to a YAML file containing model parameters passed to the training script.
 github.com/databricks/databricks-sdk-go/service/jobs.GitProvider:
   "_":
     "enum":
@@ -2144,6 +2193,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "for_each_task":
     "description": |-
       The task executes a nested task for every input provided when the `for_each_task` field is present.
+  "gen_ai_compute_task": {}
   "health": {}
   "job_cluster_key":
     "description": |-
@@ -2296,6 +2346,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications:
     "description": |-
       An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.
 github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag:
+  "_":
+    "description": |-
+      A tag for an experiment.
   "key":
     "description": |-
       The tag key.
@@ -2864,6 +2917,12 @@ github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfig:
     "description": |-
       The underlying provider in Amazon Bedrock. Supported values (case
       insensitive) include: Anthropic, Cohere, AI21Labs, Amazon.
+  "instance_profile_arn":
+    "description": |-
+      ARN of the instance profile that the external model will use to access AWS resources.
+      You must authenticate using an instance profile or access keys.
+      If you prefer to authenticate using access keys, see `aws_access_key_id`,
+      `aws_access_key_id_plaintext`, `aws_secret_access_key` and `aws_secret_access_key_plaintext`.
 github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfigBedrockProvider:
   "_":
     "enum":
