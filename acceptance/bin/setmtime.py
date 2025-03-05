@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Cross-platform set mtime with nanosecond precision.
-Usage: setmtime.py <timestmap> <filenames>
+Usage: setmtime.py <timestamp> <filenames>
 """
 
 import sys

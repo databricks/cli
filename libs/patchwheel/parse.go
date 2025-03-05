@@ -19,7 +19,7 @@ type WheelInfo struct {
 //   - if there is an existing part after + it is dropped
 //   - append +<mtime of the original wheel> to version
 //
-// Example transform: "1.2.3" -> "1.2.3+2025030412345678"
+// Example version transform: "1.2.3" -> "1.2.3+1741091696780123321"
 func calculateNewVersion(info WheelInfo, mtime time.Time) (newVersion, newFilename string) {
 	baseVersion, _, _ := strings.Cut(info.Version, "+")
 
