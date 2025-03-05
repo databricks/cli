@@ -41,7 +41,10 @@ builds:
   binary: databricks
 
 archives:
-- format: zip
+- format: tar.gz
+  format_overrides:
+    - goos: windows
+      format: zip
 
   # Include version in archive only for release builds and not for snapshot builds.
   # Snapshot archives must have a stable file name such that the artifacts in the nightly
