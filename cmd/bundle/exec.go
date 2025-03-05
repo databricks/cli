@@ -112,37 +112,30 @@ Example usage:
 
 			var stdoutErr error
 			go func() {
-				reader := bufio.NewReader(stdout)
-				line, err := reader.ReadString('\n')
-				for err == nil {
-					_, err = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", strings.TrimSpace(line))
+				defer wg.Done()
+
+				scanner := bufio.NewScanner(stdout)
+				for scanner.Scan() {
+					_, err = fmt.Fprintln(cmd.OutOrStdout(), scanner.Text())
 					if err != nil {
 						stdoutErr = err
 						break
 					}
-					line, err = reader.ReadString('\n')
 				}
-
-				wg.Done()
 			}()
 
 			var stderrErr error
 			go func() {
-				reader := bufio.NewReader(stderr)
-				// TODO CONTINUE: The formatting is messed u[] because of the new line business
-				// here.
-				// Fix that.
-				line, err := reader.ReadString('\n')
-				for err == nil {
-					_, err = fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", strings.TrimSpace(line))
+				defer wg.Done()
+
+				scanner := bufio.NewScanner(stderr)
+				for scanner.Scan() {
+					_, err = fmt.Fprintln(cmd.ErrOrStderr(), scanner.Text())
 					if err != nil {
 						stderrErr = err
 						break
 					}
-					line, err = reader.ReadString('\n')
 				}
-
-				wg.Done()
 			}()
 
 			wg.Wait()
