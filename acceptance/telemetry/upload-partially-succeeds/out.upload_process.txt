@@ -1,4 +1,7 @@
-Attempt 0 was a partial success. Number of logs uploaded: 1 out of 2
-Attempt 1 was a partial success. Number of logs uploaded: 1 out of 2
-Attempt 2 was a partial success. Number of logs uploaded: 1 out of 2
+Warn: Attempt 0 was a partial success. Number of logs uploaded: 1 out of 2
+
+Warn: Attempt 1 was a partial success. Number of logs uploaded: 1 out of 2
+
+Warn: Attempt 2 was a partial success. Number of logs uploaded: 1 out of 2
+
 error: upload did not succeed after three attempts

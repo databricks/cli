@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -91,7 +92,7 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 
 		// Partial success. Retry.
 		if err == nil && resp.NumProtoSuccess < int64(len(logs)) {
-			fmt.Fprintf(os.Stderr, "Attempt %d was a partial success. Number of logs uploaded: %d out of %d\n", i, resp.NumProtoSuccess, len(logs))
+			log.Warnf(ctx, "Attempt %d was a partial success. Number of logs uploaded: %d out of %d\n", i, resp.NumProtoSuccess, len(logs))
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -101,7 +102,7 @@ func Upload(ctx context.Context) (*ResponseBody, error) {
 		// ref: https://github.com/databricks/databricks-sdk-go/blob/cdb28002afacb8b762348534a4c4040a9f19c24b/apierr/errors.go#L91
 		var apiErr *apierr.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 && apiErr.StatusCode != 503 {
-			fmt.Fprintf(os.Stderr, "Attempt %d failed due to a server side error. Retrying status code: %d\n", i, apiErr.StatusCode)
+			log.Warnf(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d\n", i, apiErr.StatusCode)
 			time.Sleep(2 * time.Second)
 			continue
 		}

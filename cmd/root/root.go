@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -233,8 +234,15 @@ func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, ex
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
+	// Default to warn log level. If debug is enabled in the parent process, we set
+	// the log level to debug for the telemetry worker as well.
+	logLevel := "warn"
+	if log.GetLogger(ctx).Enabled(ctx, logger.LevelDebug) {
+		logLevel = "debug"
+	}
+
 	d := daemon.Daemon{
-		Args:        []string{"telemetry", "upload"},
+		Args:        []string{"telemetry", "upload", fmt.Sprintf("--log-level=%s", logLevel)},
 		Env:         env,
 		PidFilePath: os.Getenv(telemetry.PidFileEnvVar),
 		LogFile:     os.Getenv(telemetry.UploadLogsFileEnvVar),
