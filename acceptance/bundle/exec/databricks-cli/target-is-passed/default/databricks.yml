@@ -4,7 +4,9 @@ bundle:
 targets:
   pat:
     default: true
+    workspace:
+      profile: pat-profile
 
   oauth:
     workspace:
-      client_id: client_id
+      profile: oauth-profile

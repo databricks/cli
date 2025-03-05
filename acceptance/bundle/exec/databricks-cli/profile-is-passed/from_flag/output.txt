@@ -1,10 +1,4 @@
 
->>> [CLI] bundle exec -- [CLI] current-user me
-{
-  "id":"[USERID]",
-  "userName":"[USERNAME]"
-}
-
 >>> [CLI] bundle exec --profile myprofile -- [CLI] current-user me
 {
   "id":"[USERID]",

@@ -1,5 +1,4 @@
 # Replace placeholder with an actual host URL
-envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
@@ -7,8 +6,5 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
-# This should use the profile configured in the bundle, i.e. PAT auth
+# Should use default target, which is bat based authentication
 trace $CLI bundle exec -- $CLI current-user me
-
-# This should use myprofile, which uses oauth.
-trace $CLI bundle exec --profile myprofile -- $CLI current-user me

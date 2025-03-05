@@ -1,20 +1,6 @@
 {
-  "headers": {
-    "Authorization": [
-      "Bearer [DATABRICKS_TOKEN]"
-    ]
-  },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
-}
-{
-  "headers": {
-    "Authorization": [
-      "Bearer [DATABRICKS_TOKEN]"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/oidc/.well-known/oauth-authorization-server"
 }
 {
   "method": "GET",

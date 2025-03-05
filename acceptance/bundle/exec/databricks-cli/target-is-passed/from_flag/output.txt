@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle exec -t oauth -- [CLI] current-user me
+{
+  "id":"[USERID]",
+  "userName":"[USERNAME]"
+}

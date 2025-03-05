@@ -1,0 +1,10 @@
+# Replace placeholder with an actual host URL
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# Credentials will be picked up from .databrickscfg. Unset existing credentials.
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# Explicitly select oauth target
+trace $CLI bundle exec -t oauth -- $CLI current-user me

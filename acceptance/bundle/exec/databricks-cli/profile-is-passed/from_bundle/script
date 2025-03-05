@@ -1,0 +1,10 @@
+# Replace placeholder with an actual host URL
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# Credentials will be picked up from .databrickscfg. Unset existing credentials.
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# This should use the profile configured in the bundle, i.e. PAT auth
+trace $CLI bundle exec -- $CLI current-user me
