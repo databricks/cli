@@ -1,4 +1,4 @@
-# Replace placeholder with an actual host URL
+# Replace placeholder with an actual host URL and token
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
@@ -6,5 +6,5 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
-# Should use default target, which is bat based authentication
+# Should use default target, which is pat based authentication
 trace $CLI bundle exec -- $CLI current-user me

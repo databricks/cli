@@ -1,4 +1,4 @@
-# Replace placeholder with an actual host URL
+# Replace placeholder with an actual host URL and token
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
