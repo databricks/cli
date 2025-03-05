@@ -3,7 +3,7 @@
 hello, world
 
 >>> [CLI] bundle exec -- --help
-Error: starting "--help" failed: exec: "--help": executable file not found in $PATH
+Error: starting "--help" failed: exec: "--help": executable file not found in PATH
 
 Exit code: 1
 

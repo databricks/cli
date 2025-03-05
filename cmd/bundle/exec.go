@@ -55,7 +55,7 @@ Example usage:
 			//
 			// This is only useful for when the Databricks CLI is the child command,
 			// since if we do not explicitly pass the profile, the CLI will use the
-			// profile configured in the bundle YAML configuration (if any).
+			// auth configured in the bundle YAML configuration (if any).
 			if b.Config.Workspace.Profile != "" {
 				env = append(env, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 			}
