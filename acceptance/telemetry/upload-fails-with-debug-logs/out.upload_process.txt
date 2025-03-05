@@ -1,0 +1,53 @@
+13:45:02 Info: start pid=73585 version=[DEV_VERSION] args="[CLI], telemetry, upload, --log-level=debug"
+13:45:02 Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (246 more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (246 more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 501 Not Implemented
+< {
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
+< } pid=73585 sdk=true
+13:45:02 Debug: non-retriable error: Endpoint not implemented. pid=73585 sdk=true
+13:45:02 Warn: Attempt 0 failed due to a server side error. Retrying status code: 501
+ pid=73585
+13:45:04 Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (246 more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (246 more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 501 Not Implemented
+< {
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
+< } pid=73585 sdk=true
+13:45:04 Debug: non-retriable error: Endpoint not implemented. pid=73585 sdk=true
+13:45:04 Warn: Attempt 1 failed due to a server side error. Retrying status code: 501
+ pid=73585
+13:45:06 Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (246 more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (246 more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 501 Not Implemented
+< {
+<   "error_code": "ERROR_CODE",
+<   "message": "Endpoint not implemented."
+< } pid=73585 sdk=true
+13:45:06 Debug: non-retriable error: Endpoint not implemented. pid=73585 sdk=true
+13:45:06 Warn: Attempt 2 failed due to a server side error. Retrying status code: 501
+ pid=73585
+error: upload did not succeed after three attempts
