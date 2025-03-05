@@ -6,4 +6,6 @@ trace $CLI bundle validate -t prod
 
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore
+
+# Only for this test (default-sql), record .databricks/.gitignore in the output
 mv .databricks/.gitignore .databricks/out.gitignore
