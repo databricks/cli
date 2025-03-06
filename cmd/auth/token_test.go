@@ -118,7 +118,7 @@ func TestTokenCmdWithProfilePrintsHelpfulLoginMessageOnRefreshFailure(t *testing
 func TestTokenCmdWithHostPrintsHelpfulLoginMessageOnRefreshFailure(t *testing.T) {
 	cmd, output := getCobraCmdForTest(refreshFailureTokenResponse)
 	cmd.SetArgs([]string{"auth", "token", "--host", "https://accounts.cloud.databricks.com", "--account-id", "expired"})
-	err := cmd.Execute()
+	err := root.Execute(cmd.Context(), cmd)
 
 	out := output.String()
 	assert.Empty(t, out)

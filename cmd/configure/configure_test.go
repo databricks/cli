@@ -58,7 +58,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
