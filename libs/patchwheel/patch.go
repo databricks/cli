@@ -94,7 +94,6 @@ func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash
 
 // PatchWheel reads an existing wheel file path and outputs a new one in outputDir,
 // with a version modified according to the following rules:
-// The version is updated according to the following rules:
 //   - if there is an existing part after + it is dropped
 //   - append +<mtime of the original wheel> to version
 //
