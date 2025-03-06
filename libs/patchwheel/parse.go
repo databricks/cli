@@ -36,6 +36,8 @@ func calculateNewVersion(info WheelInfo, mtime time.Time) (newVersion, newFilena
 // ParseWheelFilename parses a wheel filename and extracts its components.
 // Wheel filenames follow the pattern: {distribution}-{version}(-{build tag})?-{python_tag}-{abi_tag}-{platform_tag}.whl
 // https://peps.python.org/pep-0491
+// The function does not try hard to validate if the format is correct, it tries to parse whatever is available.
+// However, it does require 5 or 6 components in the filename.
 func ParseWheelFilename(filename string) (WheelInfo, error) {
 	parts := strings.Split(filename, "-")
 	if len(parts) < 5 {
