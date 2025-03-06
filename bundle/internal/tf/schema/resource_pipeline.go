@@ -47,9 +47,14 @@ type ResourcePipelineClusterClusterLogConfS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourcePipelineClusterClusterLogConfVolumes struct {
+	Destination string `json:"destination"`
+}
+
 type ResourcePipelineClusterClusterLogConf struct {
-	Dbfs *ResourcePipelineClusterClusterLogConfDbfs `json:"dbfs,omitempty"`
-	S3   *ResourcePipelineClusterClusterLogConfS3   `json:"s3,omitempty"`
+	Dbfs    *ResourcePipelineClusterClusterLogConfDbfs    `json:"dbfs,omitempty"`
+	S3      *ResourcePipelineClusterClusterLogConfS3      `json:"s3,omitempty"`
+	Volumes *ResourcePipelineClusterClusterLogConfVolumes `json:"volumes,omitempty"`
 }
 
 type ResourcePipelineClusterGcpAttributes struct {
@@ -249,6 +254,11 @@ type ResourcePipelineRestartWindow struct {
 	TimeZoneId string   `json:"time_zone_id,omitempty"`
 }
 
+type ResourcePipelineRunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
+}
+
 type ResourcePipelineTriggerCron struct {
 	QuartzCronSchedule string `json:"quartz_cron_schedule,omitempty"`
 	TimezoneId         string `json:"timezone_id,omitempty"`
@@ -296,5 +306,6 @@ type ResourcePipeline struct {
 	Library              []ResourcePipelineLibrary            `json:"library,omitempty"`
 	Notification         []ResourcePipelineNotification       `json:"notification,omitempty"`
 	RestartWindow        *ResourcePipelineRestartWindow       `json:"restart_window,omitempty"`
+	RunAs                *ResourcePipelineRunAs               `json:"run_as,omitempty"`
 	Trigger              *ResourcePipelineTrigger             `json:"trigger,omitempty"`
 }

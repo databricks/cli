@@ -1,5 +1,5 @@
 
->>> $CLI bundle run --help
+>>> [CLI] bundle run --help
 Run the job or pipeline identified by KEY.
 
 The KEY is the unique identifier of the resource to run. In addition to

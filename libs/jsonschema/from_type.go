@@ -18,10 +18,6 @@ var skipTags = []string{
 	// Annotation for internal bundle fields that should not be exposed to customers.
 	// Fields can be tagged as "internal" to remove them from the generated schema.
 	"internal",
-
-	// Annotation for bundle fields that have been deprecated.
-	// Fields tagged as "deprecated" are omitted from the generated schema.
-	"deprecated",
 }
 
 type constructor struct {
@@ -109,6 +105,10 @@ func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (
 	res := c.definitions[typePath(typ)]
 	res.Definitions = c.Definitions()
 	return res, nil
+}
+
+func TypePath(typ reflect.Type) string {
+	return typePath(typ)
 }
 
 // typePath computes a unique string representation of the type. $ref in the generated
@@ -255,8 +255,8 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 	structFields := getStructFields(typ)
 	for _, structField := range structFields {
 		bundleTags := strings.Split(structField.Tag.Get("bundle"), ",")
-		// Fields marked as "readonly", "internal" or "deprecated" are skipped
-		// while generating the schema
+		// Fields marked as "readonly" or "internal" are skipped while generating
+		// the schema
 		skip := false
 		for _, tag := range skipTags {
 			if slices.Contains(bundleTags, tag) {

@@ -71,9 +71,6 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "oauth2",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Add methods

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,8 +9,10 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
-	"gopkg.in/yaml.v3"
 )
 
 type Components struct {
@@ -114,19 +117,23 @@ func mapIncorrectTypNames(ref string) string {
 
 // Use the OpenAPI spec to load descriptions for the given type.
 func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
-	annotations := annotationFile{}
-	overrides := annotationFile{}
+	annotations := annotation.File{}
+	overrides := annotation.File{}
 
 	b, err := os.ReadFile(overridesPath)
 	if err != nil {
 		return err
 	}
-	err = yaml.Unmarshal(b, &overrides)
+	overridesDyn, err := yamlloader.LoadYAML(overridesPath, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	err = convert.ToTyped(&overrides, overridesDyn)
 	if err != nil {
 		return err
 	}
 	if overrides == nil {
-		overrides = annotationFile{}
+		overrides = annotation.File{}
 	}
 
 	_, err = jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
@@ -137,16 +144,16 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			}
 
 			basePath := getPath(typ)
-			pkg := map[string]annotation{}
+			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
 
 			if ref.Description != "" || ref.Enum != nil {
-				pkg[RootTypeKey] = annotation{Description: ref.Description, Enum: ref.Enum}
+				pkg[RootTypeKey] = annotation.Descriptor{Description: ref.Description, Enum: ref.Enum}
 			}
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Properties[k]; ok {
-					pkg[k] = annotation{Description: refProp.Description, Enum: refProp.Enum}
+					pkg[k] = annotation.Descriptor{Description: refProp.Description, Enum: refProp.Enum}
 					if refProp.Description == "" {
 						addEmptyOverride(k, basePath, overrides)
 					}
@@ -195,22 +202,22 @@ func prependCommentToFile(outputPath, comment string) error {
 	return err
 }
 
-func addEmptyOverride(key, pkg string, overridesFile annotationFile) {
+func addEmptyOverride(key, pkg string, overridesFile annotation.File) {
 	if overridesFile[pkg] == nil {
-		overridesFile[pkg] = map[string]annotation{}
+		overridesFile[pkg] = map[string]annotation.Descriptor{}
 	}
 
 	overrides := overridesFile[pkg]
 	if overrides[key].Description == "" {
-		overrides[key] = annotation{Description: Placeholder}
+		overrides[key] = annotation.Descriptor{Description: annotation.Placeholder}
 	}
 
 	a, ok := overrides[key]
 	if !ok {
-		a = annotation{}
+		a = annotation.Descriptor{}
 	}
 	if a.Description == "" {
-		a.Description = Placeholder
+		a.Description = annotation.Placeholder
 	}
 	overrides[key] = a
 }

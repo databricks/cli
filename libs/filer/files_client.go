@@ -257,8 +257,9 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 	// The directory delete API returns a 400 if the directory is not empty
 	if aerr.StatusCode == http.StatusBadRequest {
 		reasons := []string{}
-		for _, detail := range aerr.Details {
-			reasons = append(reasons, detail.Reason)
+		details := aerr.ErrorDetails()
+		if details.ErrorInfo != nil {
+			reasons = append(reasons, details.ErrorInfo.Reason)
 		}
 		// Error code 400 is generic and can be returned for other reasons. Make
 		// sure one of the reasons for the error is that the directory is not empty.

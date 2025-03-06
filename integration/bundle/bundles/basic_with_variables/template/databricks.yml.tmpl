@@ -1,0 +1,32 @@
+bundle:
+  name: basic
+
+workspace:
+  {{ if .root_path }}
+  root_path: "{{.root_path}}/.bundle/{{.unique_id}}"
+  {{ else }}
+  root_path: "~/.bundle/{{.unique_id}}"
+  {{ end }}
+
+variables:
+  task__key: # Note: the variable has double underscore
+    default: my_notebook_task
+
+resources:
+  jobs:
+    foo__bar: # Note: the resource has double underscore to check that TF provider can use such names
+      name: test-job-basic-{{.unique_id}}
+      tasks:
+        - task_key: ${var.task__key}
+          new_cluster:
+            num_workers: 1
+            spark_version: "{{.spark_version}}"
+            node_type_id: "{{.node_type_id}}"
+          spark_python_task:
+            python_file: ./hello_world.py
+    foo:
+      name: test-job-basic-ref-{{.unique_id}}
+      tasks:
+        - task_key: job_task
+          run_job_task:
+            job_id: ${resources.jobs.foo__bar.id}

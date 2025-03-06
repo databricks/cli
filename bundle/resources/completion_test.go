@@ -25,7 +25,7 @@ func TestCompletions_SkipDuplicates(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"foo": {
-						PipelineSpec: &pipelines.PipelineSpec{},
+						CreatePipeline: &pipelines.CreatePipeline{},
 					},
 				},
 			},
@@ -50,7 +50,7 @@ func TestCompletions_Filter(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"bar": {
-						PipelineSpec: &pipelines.PipelineSpec{},
+						CreatePipeline: &pipelines.CreatePipeline{},
 					},
 				},
 			},

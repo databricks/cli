@@ -1,0 +1,17 @@
+resources:
+  jobs:
+    out:
+      name: gitjob
+      tasks:
+        - task_key: test_task
+          notebook_task:
+            notebook_path: some/test/notebook.py
+        - task_key: test_task_2
+          notebook_task:
+            notebook_path: /Workspace/Users/foo@bar.com/some/test/notebook.py
+            source: WORKSPACE
+      git_source:
+        git_branch: main
+        git_commit: abcdef
+        git_provider: github
+        git_url: https://git.databricks.com

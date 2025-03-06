@@ -1,0 +1,14 @@
+bundle:
+  name: test-auth
+
+workspace:
+  host: $DATABRICKS_HOST
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: $DATABRICKS_HOST
+  prod:
+    workspace:
+      host: https://bar.com

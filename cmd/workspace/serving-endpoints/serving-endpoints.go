@@ -642,7 +642,8 @@ func newHttpRequest() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
 	}
 
 	// Disable completions since they are not applicable.

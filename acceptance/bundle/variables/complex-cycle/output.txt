@@ -3,7 +3,7 @@ Warning: Detected unresolved variables after 11 resolution rounds
 Name: cycle
 Target: default
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/cycle/default
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/cycle/default
 
 Found 1 warning

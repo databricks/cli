@@ -1,5 +1,5 @@
 
->>> $CLI bundle deployment --help
+>>> [CLI] bundle deployment --help
 Deployment related commands
 
 Usage:

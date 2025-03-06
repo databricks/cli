@@ -7,8 +7,7 @@
       "exec_path": "/tmp/.../terraform"
     },
     "git": {
-      "bundle_root_path": ".",
-      "inferred": true
+      "bundle_root_path": "."
     },
     "mode": "development",
     "deployment": {
@@ -16,65 +15,65 @@
         "enabled": false
       }
     },
-    "uuid": "<UUID>"
+    "uuid": "[UUID]"
   },
   "include": [
     "resources/project_name_$UNIQUE_PRJ.job.yml",
     "resources/project_name_$UNIQUE_PRJ.pipeline.yml"
   ],
   "workspace": {
-    "host": "$DATABRICKS_URL",
+    "host": "[DATABRICKS_URL]",
     "current_user": {
       "active": true,
-      "displayName": "$USERNAME",
+      "displayName": "[USERNAME]",
       "emails": [
         {
           "primary": true,
           "type": "work",
-          "value": "$USERNAME"
+          "value": "[USERNAME]"
         }
       ],
       "groups": [
         {
-          "$ref": "Groups/$USER.Groups[0]",
+          "$ref": "Groups/[USERGROUP]",
           "display": "team.engineering",
           "type": "direct",
-          "value": "$USER.Groups[0]"
+          "value": "[USERGROUP]"
         }
       ],
-      "id": "$USER.Id",
+      "id": "[USERID]",
       "name": {
-        "familyName": "$USERNAME",
-        "givenName": "$USERNAME"
+        "familyName": "[USERNAME]",
+        "givenName": "[USERNAME]"
       },
       "schemas": [
         "urn:ietf:params:scim:schemas:core:2.0:User",
         "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
       ],
-      "short_name": "$USERNAME",
-      "userName": "$USERNAME"
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
     },
-    "root_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev",
-    "file_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/files",
-    "resource_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/resources",
-    "artifact_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/artifacts",
-    "state_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/state"
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/resources",
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/artifacts",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/state"
   },
   "resources": {
     "jobs": {
       "project_name_$UNIQUE_PRJ_job": {
         "deployment": {
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {
           "on_failure": [
-            "$USERNAME"
+            "[USERNAME]"
           ]
         },
         "format": "MULTI_TASK",
-        "id": "<NUMID>",
+        "id": "[NUMID]",
         "job_clusters": [
           {
             "job_cluster_key": "job_cluster",
@@ -83,24 +82,25 @@
                 "max_workers": 4,
                 "min_workers": 1
               },
+              "data_security_mode": "SINGLE_USER",
               "node_type_id": "i3.xlarge",
               "spark_version": "15.4.x-scala2.12"
             }
           }
         ],
         "max_concurrent_runs": 4,
-        "name": "[dev $USERNAME] project_name_$UNIQUE_PRJ_job",
+        "name": "[dev [USERNAME]] project_name_$UNIQUE_PRJ_job",
         "queue": {
           "enabled": true
         },
         "tags": {
-          "dev": "$USERNAME"
+          "dev": "[USERNAME]"
         },
         "tasks": [
           {
             "job_cluster_key": "job_cluster",
             "notebook_task": {
-              "notebook_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/notebook"
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/notebook"
             },
             "task_key": "notebook_task"
           },
@@ -141,31 +141,31 @@
             "unit": "DAYS"
           }
         },
-        "url": "$DATABRICKS_URL/jobs/<NUMID>?o=<NUMID>"
+        "url": "[DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]"
       }
     },
     "pipelines": {
       "project_name_$UNIQUE_PRJ_pipeline": {
         "catalog": "main",
         "configuration": {
-          "bundle.sourcePath": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/files/src"
+          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files/src"
         },
         "deployment": {
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/state/metadata.json"
         },
         "development": true,
-        "id": "<UUID>",
+        "id": "[UUID]",
         "libraries": [
           {
             "notebook": {
-              "path": "/Workspace/Users/$USERNAME/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/dlt_pipeline"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/files/src/dlt_pipeline"
             }
           }
         ],
-        "name": "[dev $USERNAME] project_name_$UNIQUE_PRJ_pipeline",
-        "target": "project_name_$UNIQUE_PRJ_dev",
-        "url": "$DATABRICKS_URL/pipelines/<UUID>?o=<NUMID>"
+        "name": "[dev [USERNAME]] project_name_$UNIQUE_PRJ_pipeline",
+        "schema": "project_name_$UNIQUE_PRJ_dev",
+        "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
       }
     }
   },
@@ -175,12 +175,12 @@
     ]
   },
   "presets": {
-    "name_prefix": "[dev $USERNAME] ",
+    "name_prefix": "[dev [USERNAME]] ",
     "pipelines_development": true,
     "trigger_pause_status": "PAUSED",
     "jobs_max_concurrent_runs": 4,
     "tags": {
-      "dev": "$USERNAME"
+      "dev": "[USERNAME]"
     }
   }
 }

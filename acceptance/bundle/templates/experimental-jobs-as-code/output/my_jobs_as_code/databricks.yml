@@ -2,7 +2,8 @@
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: my_jobs_as_code
-  uuid: <UUID>
+  uuid: [UUID]
+  databricks_cli_version: ">= 0.238.0"
 
 experimental:
   python:
@@ -33,16 +34,16 @@ targets:
     mode: development
     default: true
     workspace:
-      host: $DATABRICKS_URL
+      host: [DATABRICKS_URL]
 
   prod:
     mode: production
     workspace:
-      host: $DATABRICKS_URL
-      # We explicitly specify /Workspace/Users/$USERNAME to make sure we only have a single copy.
-      root_path: /Workspace/Users/$USERNAME/.bundle/${bundle.name}/${bundle.target}
+      host: [DATABRICKS_URL]
+      # We explicitly specify /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+      root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     permissions:
-      - user_name: $USERNAME
+      - user_name: [USERNAME]
         level: CAN_MANAGE
     run_as:
-      user_name: $USERNAME
+      user_name: [USERNAME]

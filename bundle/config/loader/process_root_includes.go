@@ -71,11 +71,11 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 				continue
 			}
 			seen[rel] = true
-			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" {
+			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" && filepath.Ext(rel) != ".json" {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "Files in the 'include' configuration section must be YAML files.",
-					Detail:    fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML file, and only YAML files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
+					Summary:   "Files in the 'include' configuration section must be YAML or JSON files.",
+					Detail:    fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML or JSON file, and only such files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
 					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", i)),
 				})
 				continue
@@ -98,5 +98,5 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// Swap out the original includes list with the expanded globs.
 	b.Config.Include = files
 
-	return bundle.Apply(ctx, b, bundle.Seq(out...))
+	return bundle.ApplySeq(ctx, b, out...)
 }

@@ -165,12 +165,28 @@ func TestLoadOutput(t *testing.T) {
 	require.Equal(t, filepath.Join(bundleRoot, generatedFileName), notebookPath.Locations()[0].File)
 }
 
-func TestParsePythonLocations(t *testing.T) {
-	expected := dyn.Location{File: "foo.py", Line: 1, Column: 2}
+func TestParsePythonLocations_absolutePath(t *testing.T) {
+	// output can contain absolute path that is outside of the bundle root
+	expected := dyn.Location{File: "/Shared/foo.py", Line: 1, Column: 2}
+
+	input := `{"path": "foo", "file": "/Shared/foo.py", "line": 1, "column": 2}`
+	reader := bytes.NewReader([]byte(input))
+	locations, err := parsePythonLocations("/tmp/", reader)
+
+	assert.NoError(t, err)
+
+	assert.True(t, locations.keys["foo"].exists)
+	assert.Equal(t, expected, locations.keys["foo"].location)
+}
+
+func TestParsePythonLocations_relativePath(t *testing.T) {
+	// output can contain relative paths, we expect all locations to be absolute
+	// at this stage of mutator pipeline
+	expected := dyn.Location{File: filepath.Clean("/tmp/my_project/foo.py"), Line: 1, Column: 2}
 
 	input := `{"path": "foo", "file": "foo.py", "line": 1, "column": 2}`
 	reader := bytes.NewReader([]byte(input))
-	locations, err := parsePythonLocations(reader)
+	locations, err := parsePythonLocations(filepath.Clean("/tmp/my_project"), reader)
 
 	assert.NoError(t, err)
 

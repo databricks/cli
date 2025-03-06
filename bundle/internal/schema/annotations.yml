@@ -1,31 +1,25 @@
 github.com/databricks/cli/bundle/config.Artifact:
   "build":
     "description": |-
-      An optional set of non-default build commands that you want to run locally before deployment.
-
-      For Python wheel builds, the Databricks CLI assumes that it can find a local install of the Python wheel package to run builds, and it runs the command python setup.py bdist_wheel by default during each bundle deployment.
-
-      To specify multiple build commands, separate each command with double-ampersand (&&) characters.
+      An optional set of build commands to run locally before deployment.
   "executable":
     "description": |-
-      The executable type.
+      The executable type. Valid values are `bash`, `sh`, and `cmd`.
   "files":
     "description": |-
-      The source files for the artifact.
-    "markdown_description": |-
-      The source files for the artifact, defined as an [_](#artifact_file).
+      The relative or absolute path to the built artifact files.
   "path":
     "description": |-
-      The location where the built artifact will be saved.
+      The local path of the directory for the artifact.
   "type":
     "description": |-
-      The type of the artifact.
+      Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
     "markdown_description": |-
-      The type of the artifact. Valid values are `wheel` or `jar`
+      Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
 github.com/databricks/cli/bundle/config.ArtifactFile:
   "source":
     "description": |-
-      The path of the files used to build the artifact.
+      Required. The artifact source file.
 github.com/databricks/cli/bundle/config.Bundle:
   "cluster_id":
     "description": |-
@@ -34,7 +28,7 @@ github.com/databricks/cli/bundle/config.Bundle:
       The ID of a cluster to use to run the bundle. See [_](/dev-tools/bundles/settings.md#cluster_id).
   "compute_id":
     "description": |-
-      PLACEHOLDER
+      Deprecated. The ID of the compute to use to run the bundle.
   "databricks_cli_version":
     "description": |-
       The Databricks CLI version to use for the bundle.
@@ -44,12 +38,12 @@ github.com/databricks/cli/bundle/config.Bundle:
     "description": |-
       The definition of the bundle deployment
     "markdown_description": |-
-      The definition of the bundle deployment. For supported attributes, see [_](#deployment) and [_](/dev-tools/bundles/deployment-modes.md).
+      The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md).
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
     "markdown_description": |-
-      The Git version control details that are associated with your bundle. For supported attributes, see [_](#git) and [_](/dev-tools/bundles/settings.md#git).
+      The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git).
   "name":
     "description": |-
       The name of the bundle.
@@ -63,24 +57,24 @@ github.com/databricks/cli/bundle/config.Deployment:
   "lock":
     "description": |-
       The deployment lock attributes.
-    "markdown_description": |-
-      The deployment lock attributes. See [_](#lock).
 github.com/databricks/cli/bundle/config.Experimental:
   "pydabs":
     "description": |-
       The PyDABs configuration.
+    "deprecation_message": |-
+      Deprecated: please use python instead
   "python":
     "description": |-
       Configures loading of Python code defined with 'databricks-bundles' package.
   "python_wheel_wrapper":
     "description": |-
-      Whether to use a Python wheel wrapper
+      Whether to use a Python wheel wrapper.
   "scripts":
     "description": |-
-      The commands to run
+      The commands to run.
   "use_legacy_run_as":
     "description": |-
-      Whether to use the legacy run_as behavior
+      Whether to use the legacy run_as behavior.
 github.com/databricks/cli/bundle/config.Git:
   "branch":
     "description": |-
@@ -149,69 +143,90 @@ github.com/databricks/cli/bundle/config.Python:
 github.com/databricks/cli/bundle/config.Resources:
   "apps":
     "description": |-
-      PLACEHOLDER
+      The app resource defines a Databricks app.
+    "markdown_description": |-
+      The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [_](/dev-tools/databricks-apps/index.md).
   "clusters":
     "description": |-
-      The cluster definitions for the bundle.
+      The cluster definitions for the bundle, where each key is the name of a cluster.
     "markdown_description": |-
-      The cluster definitions for the bundle. See [_](/dev-tools/bundles/resources.md#cluster)
+      The cluster definitions for the bundle, where each key is the name of a cluster. See [_](/dev-tools/bundles/resources.md#clusters).
   "dashboards":
     "description": |-
-      The dashboard definitions for the bundle.
+      The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
-      The dashboard definitions for the bundle. See [_](/dev-tools/bundles/resources.md#dashboard)
+      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [_](/dev-tools/bundles/resources.md#dashboards).
   "experiments":
     "description": |-
-      The experiment definitions for the bundle.
+      The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
-      The experiment definitions for the bundle. See [_](/dev-tools/bundles/resources.md#experiment)
+      The experiment definitions for the bundle, where each key is the name of the experiment. See [_](/dev-tools/bundles/resources.md#experiments).
   "jobs":
     "description": |-
-      The job definitions for the bundle.
+      The job definitions for the bundle, where each key is the name of the job.
     "markdown_description": |-
-      The job definitions for the bundle. See [_](/dev-tools/bundles/resources.md#job)
+      The job definitions for the bundle, where each key is the name of the job. See [_](/dev-tools/bundles/resources.md#jobs).
   "model_serving_endpoints":
     "description": |-
-      The model serving endpoint definitions for the bundle.
+      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
     "markdown_description": |-
-      The model serving endpoint definitions for the bundle. See [_](/dev-tools/bundles/resources.md#model_serving_endpoint)
+      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [_](/dev-tools/bundles/resources.md#model_serving_endpoints).
   "models":
     "description": |-
-      The model definitions for the bundle.
+      The model definitions for the bundle, where each key is the name of the model.
     "markdown_description": |-
-      The model definitions for the bundle. See [_](/dev-tools/bundles/resources.md#model)
+      The model definitions for the bundle, where each key is the name of the model. See [_](/dev-tools/bundles/resources.md#models).
   "pipelines":
     "description": |-
-      The pipeline definitions for the bundle.
+      The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
-      The pipeline definitions for the bundle. See [_](/dev-tools/bundles/resources.md#pipeline)
+      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [_](/dev-tools/bundles/resources.md#pipelines).
   "quality_monitors":
     "description": |-
-      The quality monitor definitions for the bundle.
+      The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
     "markdown_description": |-
-      The quality monitor definitions for the bundle. See [_](/dev-tools/bundles/resources.md#quality_monitor)
+      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality_monitors).
   "registered_models":
     "description": |-
-      The registered model definitions for the bundle.
+      The registered model definitions for the bundle, where each key is the name of the <UC> registered model.
     "markdown_description": |-
-      The registered model definitions for the bundle. See [_](/dev-tools/bundles/resources.md#registered_model)
+      The registered model definitions for the bundle, where each key is the name of the <UC> registered model. See [_](/dev-tools/bundles/resources.md#registered_models).
   "schemas":
     "description": |-
-      The schema definitions for the bundle.
+      The schema definitions for the bundle, where each key is the name of the schema.
     "markdown_description": |-
-      The schema definitions for the bundle. See [_](/dev-tools/bundles/resources.md#schema)
+      The schema definitions for the bundle, where each key is the name of the schema. See [_](/dev-tools/bundles/resources.md#schemas).
   "volumes":
     "description": |-
-      PLACEHOLDER
+      The volume definitions for the bundle, where each key is the name of the volume.
+    "markdown_description": |-
+      The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volumes).
 github.com/databricks/cli/bundle/config.Root:
   "artifacts":
     "description": |-
       Defines the attributes to build an artifact
+    "markdown_description": |-
+      Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [_](/dev-tools/bundles/settings.md#artifacts).
+
+      Artifact settings defined in the top level of the bundle configuration can be overridden in the `targets` mapping. See [_](/dev-tools/bundles/artifact-overrides.md).
+    "markdown_examples": |-
+      ```yaml
+      artifacts:
+        default:
+          type: whl
+          build: poetry build
+          path: .
+      ```
   "bundle":
     "description": |-
-      The attributes of the bundle.
+      The bundle attributes when deploying to this target.
     "markdown_description": |-
-      The attributes of the bundle. See [_](/dev-tools/bundles/settings.md#bundle)
+      The bundle attributes when deploying to this target,
+  "environments":
+    "description": |-
+      PLACEHOLDER
+    "deprecation_message": |-
+      Deprecated: please use targets instead
   "experimental":
     "description": |-
       Defines attributes for experimental features.
@@ -219,12 +234,24 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       Specifies a list of path globs that contain configuration files to include within the bundle.
     "markdown_description": |-
-      Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
+      Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include).
   "permissions":
     "description": |-
-      Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle
+      Defines a permission for a specific entity.
     "markdown_description": |-
-      Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
+      A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.
+
+      See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
+    "markdown_examples": |-
+      ```yaml
+      permissions:
+        - level: CAN_VIEW
+          group_name: test-group
+        - level: CAN_MANAGE
+          user_name: someone@example.com
+        - level: CAN_RUN
+          service_principal_name: 123456-abcdef
+      ```
   "presets":
     "description": |-
       Defines bundle deployment presets.
@@ -232,26 +259,39 @@ github.com/databricks/cli/bundle/config.Root:
       Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.md#presets).
   "resources":
     "description": |-
-      Specifies information about the Databricks resources used by the bundle
+      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
     "markdown_description": |-
-      Specifies information about the Databricks resources used by the bundle. See [_](/dev-tools/bundles/resources.md).
+      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about <DABS> supported resources, and resource definition reference, see [_](/dev-tools/bundles/resources.md).
+
+      ```yaml
+      resources:
+        <resource-type>:
+          <resource-name>:
+            <resource-field-name>: <resource-field-value>
+      ```
   "run_as":
     "description": |-
-      The identity to use to run the bundle.
+      The identity to use when running <DABS> workflows.
+    "markdown_description": |-
+      The identity to use when running <DABS> workflows. See [_](/dev-tools/bundles/run-as.md).
   "sync":
     "description": |-
       The files and file paths to include or exclude in the bundle.
     "markdown_description": |-
-      The files and file paths to include or exclude in the bundle. See [_](/dev-tools/bundles/)
+      The files and file paths to include or exclude in the bundle. See [_](/dev-tools/bundles/settings.md#sync).
   "targets":
     "description": |-
       Defines deployment targets for the bundle.
+    "markdown_description": |-
+      Defines deployment targets for the bundle. See [_](/dev-tools/bundles/settings.md#targets)
   "variables":
     "description": |-
       A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.
   "workspace":
     "description": |-
       Defines the Databricks workspace for the bundle.
+    "markdown_description": |-
+      Defines the Databricks workspace for the bundle. See [_](/dev-tools/bundles/settings.md#workspace).
 github.com/databricks/cli/bundle/config.Sync:
   "exclude":
     "description": |-
@@ -266,25 +306,23 @@ github.com/databricks/cli/bundle/config.Target:
   "artifacts":
     "description": |-
       The artifacts to include in the target deployment.
-    "markdown_description": |-
-      The artifacts to include in the target deployment. See [_](#artifact)
   "bundle":
     "description": |-
-      The name of the bundle when deploying to this target.
+      The bundle attributes when deploying to this target.
   "cluster_id":
     "description": |-
       The ID of the cluster to use for this target.
   "compute_id":
     "description": |-
       Deprecated. The ID of the compute to use for this target.
+    "deprecation_message": |-
+      Deprecated: please use cluster_id instead
   "default":
     "description": |-
       Whether this target is the default target.
   "git":
     "description": |-
       The Git version control settings for the target.
-    "markdown_description": |-
-      The Git version control settings for the target. See [_](#git).
   "mode":
     "description": |-
       The deployment mode for the target.
@@ -293,38 +331,26 @@ github.com/databricks/cli/bundle/config.Target:
   "permissions":
     "description": |-
       The permissions for deploying and running the bundle in the target.
-    "markdown_description": |-
-      The permissions for deploying and running the bundle in the target. See [_](#permission).
   "presets":
     "description": |-
       The deployment presets for the target.
-    "markdown_description": |-
-      The deployment presets for the target. See [_](#preset).
   "resources":
     "description": |-
       The resource definitions for the target.
-    "markdown_description": |-
-      The resource definitions for the target. See [_](#resources).
   "run_as":
     "description": |-
       The identity to use to run the bundle.
     "markdown_description": |-
-      The identity to use to run the bundle. See [_](#job_run_as) and [_](/dev-tools/bundles/run_as.md).
+      The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md).
   "sync":
     "description": |-
       The local paths to sync to the target workspace when a bundle is run or deployed.
-    "markdown_description": |-
-      The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#sync).
   "variables":
     "description": |-
       The custom variable definitions for the target.
-    "markdown_description": |-
-      The custom variable definitions for the target. See [_](/dev-tools/bundles/settings.md#variables) and [_](/dev-tools/bundles/variables.md).
   "workspace":
     "description": |-
       The Databricks workspace for the target.
-    "markdown_description": |-
-      The Databricks workspace for the target. [_](#workspace)
 github.com/databricks/cli/bundle/config.Workspace:
   "artifact_path":
     "description": |-
@@ -374,64 +400,6 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
-github.com/databricks/cli/bundle/config/resources.App:
-  "active_deployment":
-    "description": |-
-      PLACEHOLDER
-  "app_status":
-    "description": |-
-      PLACEHOLDER
-  "compute_status":
-    "description": |-
-      PLACEHOLDER
-  "config":
-    "description": |-
-      PLACEHOLDER
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "creator":
-    "description": |-
-      PLACEHOLDER
-  "default_source_code_path":
-    "description": |-
-      PLACEHOLDER
-  "description":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "pending_deployment":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "resources":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_client_id":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_id":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "source_code_path":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-  "updater":
-    "description": |-
-      PLACEHOLDER
-  "url":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:
   "principal":
     "description": |-
@@ -440,6 +408,11 @@ github.com/databricks/cli/bundle/config/resources.Grant:
     "description": |-
       The privileges to grant to the specified entity
 github.com/databricks/cli/bundle/config/resources.Permission:
+  "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
   "group_name":
     "description": |-
       The name of the group that has the permission set in level.
@@ -455,44 +428,44 @@ github.com/databricks/cli/bundle/config/resources.Permission:
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-
-      PLACEHOLDER
+      The name of the alert for which to retrieve an ID.
   "cluster":
     "description": |-
-      PLACEHOLDER
+      The name of the cluster for which to retrieve an ID.
   "cluster_policy":
     "description": |-
-      PLACEHOLDER
+      The name of the cluster_policy for which to retrieve an ID.
   "dashboard":
     "description": |-
-      PLACEHOLDER
+      The name of the dashboard for which to retrieve an ID.
   "instance_pool":
     "description": |-
-      PLACEHOLDER
+      The name of the instance_pool for which to retrieve an ID.
   "job":
     "description": |-
-      PLACEHOLDER
+      The name of the job for which to retrieve an ID.
   "metastore":
     "description": |-
-      PLACEHOLDER
+      The name of the metastore for which to retrieve an ID.
   "notification_destination":
     "description": |-
-      PLACEHOLDER
+      The name of the notification_destination for which to retrieve an ID.
   "pipeline":
     "description": |-
-      PLACEHOLDER
+      The name of the pipeline for which to retrieve an ID.
   "query":
     "description": |-
-      PLACEHOLDER
+      The name of the query for which to retrieve an ID.
   "service_principal":
     "description": |-
-      PLACEHOLDER
+      The name of the service_principal for which to retrieve an ID.
   "warehouse":
     "description": |-
-      PLACEHOLDER
+      The name of the warehouse for which to retrieve an ID.
 github.com/databricks/cli/bundle/config/variable.TargetVariable:
   "default":
     "description": |-
-      PLACEHOLDER
+      The default value for the variable.
   "description":
     "description": |-
       The description of the variable.
@@ -506,9 +479,14 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
     "description": |-
       The type of the variable.
 github.com/databricks/cli/bundle/config/variable.Variable:
+  "_":
+    "description": |-
+      Defines a custom variable for the bundle.
+    "markdown_description": |-
+      Defines a custom variable for the bundle. See [_](/dev-tools/bundles/settings.md#variables).
   "default":
     "description": |-
-      PLACEHOLDER
+      The default value for the variable.
   "description":
     "description": |-
       The description of the variable
@@ -516,107 +494,14 @@ github.com/databricks/cli/bundle/config/variable.Variable:
     "description": |-
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
     "markdown_description": |-
-      The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID."
+      The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
   "type":
     "description": |-
       The type of the variable.
-github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
-  "create_time":
+github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
+  "service_principal_name":
     "description": |-
-      PLACEHOLDER
-  "creator":
+      The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+  "user_name":
     "description": |-
-      PLACEHOLDER
-  "deployment_artifacts":
-    "description": |-
-      PLACEHOLDER
-  "deployment_id":
-    "description": |-
-      PLACEHOLDER
-  "mode":
-    "description": |-
-      PLACEHOLDER
-  "source_code_path":
-    "description": |-
-      PLACEHOLDER
-  "status":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts:
-  "source_code_path":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
-  "message":
-    "description": |-
-      PLACEHOLDER
-  "state":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.AppResource:
-  "description":
-    "description": |-
-      PLACEHOLDER
-  "job":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "secret":
-    "description": |-
-      PLACEHOLDER
-  "serving_endpoint":
-    "description": |-
-      PLACEHOLDER
-  "sql_warehouse":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
-  "id":
-    "description": |-
-      PLACEHOLDER
-  "permission":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret:
-  "key":
-    "description": |-
-      PLACEHOLDER
-  "permission":
-    "description": |-
-      PLACEHOLDER
-  "scope":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint:
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "permission":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse:
-  "id":
-    "description": |-
-      PLACEHOLDER
-  "permission":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
-  "message":
-    "description": |-
-      PLACEHOLDER
-  "state":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
-  "message":
-    "description": |-
-      PLACEHOLDER
-  "state":
-    "description": |-
-      PLACEHOLDER
+      The email of an active workspace user. Non-admin users can only set this field to their own email.

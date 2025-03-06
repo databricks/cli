@@ -1,0 +1,5 @@
+Error: git clone failed: git clone https://invalid-domain-123.databricks.com/hello/world [TMPDIR]_GPARENT/world-123456 --no-tags --depth=1: exit status 128. Cloning into '[TMPDIR]_GPARENT/world-123456'...
+fatal: unable to access 'https://invalid-domain-123.databricks.com/hello/world/': Could not resolve host: invalid-domain-123.databricks.com
+
+
+Exit code: 1

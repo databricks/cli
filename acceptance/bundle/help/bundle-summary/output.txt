@@ -1,5 +1,5 @@
 
->>> $CLI bundle summary --help
+>>> [CLI] bundle summary --help
 Summarize resources deployed by this bundle
 
 Usage:

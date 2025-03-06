@@ -1,0 +1,7 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "task_key": "test default"
+  }
+]

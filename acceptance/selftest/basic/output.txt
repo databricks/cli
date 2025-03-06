@@ -1,0 +1,39 @@
+=== Capturing STDERR
+>>> python3 -c import sys; sys.stderr.write("STDERR\n")
+STDERR
+
+=== Capturing STDOUT
+>>> python3 -c import sys; sys.stderr.write("STDOUT\n")
+STDOUT
+
+=== Capturing exit code
+>>> errcode python3 -c raise SystemExit(5)
+
+Exit code: 5
+
+=== Capturing exit code (alt)
+>>> python3 -c raise SystemExit(7)
+
+Exit code: 7
+
+=== Capturing pwd
+>>> python3 -c import os; print(os.getcwd())
+[TMPDIR]
+
+=== Capturing subdir
+>>> mkdir -p subdir/a/b/c
+
+>>> withdir subdir/a/b/c python3 -c import os; print(os.getcwd())
+[TMPDIR]/subdir/a/b/c
+
+=== Custom output files - everything starting with out is captured and compared
+>>> echo HELLO
+
+=== Custom regex can be specified in [[Repl]] section
+1234
+CUSTOM_NUMBER_REGEX
+123456
+
+=== Testing --version
+>>> [CLI] --version
+Databricks CLI v[DEV_VERSION]

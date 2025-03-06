@@ -21,6 +21,11 @@ func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, err
 		return dyn.InvalidValue, err
 	}
 
+	vout, err = dyn.DropKeys(vout, []string{"allow_duplicate_names", "dry_run"})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourcePipeline{}, vout)
 	for _, diag := range diags {

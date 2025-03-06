@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
@@ -72,6 +73,7 @@ type Bundle struct {
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
 	client     *databricks.WorkspaceClient
+	clientErr  error
 
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
@@ -134,23 +136,25 @@ func TryLoad(ctx context.Context) (*Bundle, error) {
 	return Load(ctx, root)
 }
 
-func (b *Bundle) InitializeWorkspaceClient() (*databricks.WorkspaceClient, error) {
-	client, err := b.Config.Workspace.Client()
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
-	}
-	return client, nil
+func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
+	b.clientOnce.Do(func() {
+		var err error
+		b.client, err = b.Config.Workspace.Client()
+		if err != nil {
+			b.clientErr = fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
+		}
+	})
+
+	return b.client, b.clientErr
 }
 
 func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
-	b.clientOnce.Do(func() {
-		var err error
-		b.client, err = b.InitializeWorkspaceClient()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return b.client
+	client, err := b.WorkspaceClientE()
+	if err != nil {
+		panic(err)
+	}
+
+	return client
 }
 
 // SetWorkpaceClient sets the workspace client for this bundle.
@@ -195,6 +199,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 		return "", err
 	}
 
+	libsync.WriteGitIgnore(ctx, b.BundleRootPath)
 	return dir, nil
 }
 

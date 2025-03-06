@@ -1,0 +1,11 @@
+bundle:
+  name: scripts
+
+experimental:
+  scripts:
+    preinit: "python3 ./myscript.py $EXITCODE preinit"
+    postinit: "python3 ./myscript.py 0 postinit"
+    prebuild: "python3 ./myscript.py 0 prebuild"
+    postbuild: "python3 ./myscript.py 0 postbuild"
+    predeploy: "python3 ./myscript.py 0 predeploy"
+    postdeploy: "python3 ./myscript.py 0 postdeploy"

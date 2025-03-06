@@ -42,6 +42,11 @@
                 },
                 "warehouse_types": {
                     "enum": [ "PRO", "CLASSIC", "TYPE_UNSPECIFIED" ]
+                },
+                "extras": {
+                    "type": "string",
+                    "pattern": "^([^,]+)(,([^,]+))*$",
+                    "default": ""
                 }
             }
         },

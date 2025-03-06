@@ -1,5 +1,114 @@
 # Version changelog
 
+## [Release] Release v0.243.0
+
+CLI:
+ * Upgrade Go SDK to 0.59.0 ([#2425](https://github.com/databricks/cli/pull/2425)).
+
+Bundles:
+ * Added a warning when `config` section is used in apps ([#2416](https://github.com/databricks/cli/pull/2416)).
+ * Switch to use GET workspaces-files/{name} instead of workspace/export for state files to avoid 10MB limit ([#2423](https://github.com/databricks/cli/pull/2423)).
+ * Use schema field for pipeline in builtin template ([#2347](https://github.com/databricks/cli/pull/2347)).
+ * Add warning when variable interpolation is used for auth fields ([#2399](https://github.com/databricks/cli/pull/2399)).
+ * Add warning when include is used in config files other than databricks.yml ([#2389](https://github.com/databricks/cli/pull/2389)).
+ * Add support for schemas in deployment bind/unbind commands ([#2406](https://github.com/databricks/cli/pull/2406)).
+ * Do not modify/create .gitignore in bundle root ([#2429](https://github.com/databricks/cli/pull/2429)).
+ * Raise an error when there are multiple local libraries with the same basename used  ([#2382](https://github.com/databricks/cli/pull/2382)).
+ * Upgrade TF provider to 1.68.0 ([#2426](https://github.com/databricks/cli/pull/2426)).
+
+API Changes:
+ * Changed `databricks experiments log-inputs` command with new required argument order.
+ * Added `databricks genie get-space` command.
+ * Added `databricks providers list-provider-share-assets` command.
+ * Changed `databricks shares update-permissions` command return type to become non-empty.
+
+OpenAPI commit e5c870006a536121442cfd2441bdc8a5fb76ae1e (2025-03-03)
+
+## [Release] Release v0.242.0
+
+Notable changes:
+Starting this version CLI does not load bundle auth information when CLI command is executed inside the bundle directory with explicitly provided via `-p` flag profile.
+For more details see the related GitHub issue https://github.com/databricks/cli/issues/1358
+
+CLI:
+ * Do not load host from bundle for CLI commands when profile flag is used ([#2335](https://github.com/databricks/cli/pull/2335)).
+ * Fixed accessing required path parameters in CLI generation when --json flag ([#2373](https://github.com/databricks/cli/pull/2373)).
+
+Bundles:
+ * Provide instructions for testing in the default-python template ([#2355](https://github.com/databricks/cli/pull/2355)).
+ * Remove `run_as` from the built-in templates ([#2044](https://github.com/databricks/cli/pull/2044)).
+ * Change warning about incomplete permissions section into a recommendation ([#2043](https://github.com/databricks/cli/pull/2043)).
+ * Refine `mode: production` diagnostic output ([#2236](https://github.com/databricks/cli/pull/2236)).
+ * Support serverless mode in default-python template (explicit prompt) ([#2377](https://github.com/databricks/cli/pull/2377)).
+ * Set default data_security_mode to "SINGLE_USER" in bundle templates ([#2372](https://github.com/databricks/cli/pull/2372)).
+ * Fixed spark version check for clusters defined in the same bundle ([#2374](https://github.com/databricks/cli/pull/2374)).
+
+API Changes:
+ * Added `databricks genie get-message-query-result-by-attachment` command.
+
+OpenAPI commit 99f644e72261ef5ecf8d74db20f4b7a1e09723cc (2025-02-11)
+
+## [Release] Release v0.241.2
+
+This is a bugfix release to address an issue where jobs with tasks with a
+libraries section with PyPI packages could not be deployed.
+
+Bundles:
+ * Revert changes related to basename check for local libraries ([#2345](https://github.com/databricks/cli/pull/2345)).
+
+## [Release] Release v0.241.1
+
+Bundles:
+ * Fix for regression deploying resources with PyPi and Maven library types ([#2341](https://github.com/databricks/cli/pull/2341)).
+
+## [Release] Release v0.241.0
+
+Bundles:
+ * Added support to generate Git based jobs ([#2304](https://github.com/databricks/cli/pull/2304)).
+ * Added support for run_as in pipelines ([#2287](https://github.com/databricks/cli/pull/2287)).
+ * Raise an error when there are multiple local libraries with the same basename used ([#2297](https://github.com/databricks/cli/pull/2297)).
+ * Fix env variable for AzureCli local config ([#2248](https://github.com/databricks/cli/pull/2248)).
+ * Accept JSON files in includes section ([#2265](https://github.com/databricks/cli/pull/2265)).
+ * Always print warnings and errors; clean up format ([#2213](https://github.com/databricks/cli/pull/2213))
+
+API Changes:
+ * Added `databricks account budget-policy` command group.
+ * Added `databricks lakeview-embedded` command group.
+ * Added `databricks query-execution` command group.
+ * Added `databricks account enable-ip-access-lists` command group.
+ * Added `databricks redash-config` command group.
+
+OpenAPI commit c72c58f97b950fcb924a90ef164bcb10cfcd5ece (2025-02-03)
+Dependency updates:
+ * Upgrade to TF provider 1.65.1 ([#2328](https://github.com/databricks/cli/pull/2328)).
+ * Bump github.com/hashicorp/terraform-exec from 0.21.0 to 0.22.0 ([#2237](https://github.com/databricks/cli/pull/2237)).
+ * Bump github.com/spf13/pflag from 1.0.5 to 1.0.6 ([#2281](https://github.com/databricks/cli/pull/2281)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.56.1 to 0.57.0 ([#2321](https://github.com/databricks/cli/pull/2321)).
+ * Bump golang.org/x/oauth2 from 0.25.0 to 0.26.0 ([#2322](https://github.com/databricks/cli/pull/2322)).
+ * Bump golang.org/x/term from 0.28.0 to 0.29.0 ([#2325](https://github.com/databricks/cli/pull/2325)).
+ * Bump golang.org/x/text from 0.21.0 to 0.22.0 ([#2323](https://github.com/databricks/cli/pull/2323)).
+ * Bump golang.org/x/mod from 0.22.0 to 0.23.0 ([#2324](https://github.com/databricks/cli/pull/2324)).
+
+## [Release] Release v0.240.0
+
+Bundles:
+ * Added support for double underscore variable references ([#2203](https://github.com/databricks/cli/pull/2203)).
+ * Do not wait for app compute to start on `bundle deploy` ([#2144](https://github.com/databricks/cli/pull/2144)).
+ * Remove bundle.git.inferred ([#2258](https://github.com/databricks/cli/pull/2258)).
+ * libs/python: Remove DetectInterpreters ([#2234](https://github.com/databricks/cli/pull/2234)).
+
+API Changes:
+ * Added `databricks access-control` command group.
+ * Added `databricks serving-endpoints http-request` command.
+ * Changed `databricks serving-endpoints create` command with new required argument order.
+ * Changed `databricks serving-endpoints get-open-api` command return type to become non-empty.
+ * Changed `databricks recipients update` command return type to become non-empty.
+
+OpenAPI commit 0be1b914249781b5e903b7676fd02255755bc851 (2025-01-22)
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.55.0 to 0.56.1 ([#2238](https://github.com/databricks/cli/pull/2238)).
+ * Upgrade TF provider to 1.64.1 ([#2247](https://github.com/databricks/cli/pull/2247)).
+
 ## [Release] Release v0.239.1
 
 CLI:

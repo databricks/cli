@@ -17,7 +17,7 @@ my_jobs_as_code_job = Job.from_dict(
         },
         "email_notifications": {
             "on_failure": [
-                "$USERNAME",
+                "[USERNAME]",
             ],
         },
         "tasks": [
@@ -56,6 +56,7 @@ my_jobs_as_code_job = Job.from_dict(
                 "new_cluster": {
                     "spark_version": "15.4.x-scala2.12",
                     "node_type_id": "i3.xlarge",
+                    "data_security_mode": "SINGLE_USER",
                     "autoscale": {
                         "min_workers": 1,
                         "max_workers": 4,

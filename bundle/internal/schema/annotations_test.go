@@ -33,6 +33,10 @@ func TestConvertLinksToAbsoluteUrl(t *testing.T) {
 			input:    "This is a link to [external](https://external.com)",
 			expected: "This is a link to [external](https://external.com)",
 		},
+		{
+			input:    "This is a link to [one](/relative), [two](/relative-2)",
+			expected: "This is a link to [one](https://docs.databricks.com/relative), [two](https://docs.databricks.com/relative-2)",
+		},
 	}
 
 	for _, test := range tests {

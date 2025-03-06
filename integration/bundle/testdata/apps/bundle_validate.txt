@@ -1,7 +1,11 @@
+Warning: App config section detected
+
+remove 'config' from app resource 'test_app' section and use app.yml file in the root of this app instead
+
 Name: basic
 Target: default
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/$UNIQUE_PRJ
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/$UNIQUE_PRJ
 
-Validation OK!
+Found 1 warning

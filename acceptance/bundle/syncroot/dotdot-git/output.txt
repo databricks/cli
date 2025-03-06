@@ -1,10 +1,10 @@
-Error: path "$TMPDIR" is not within repository root "$TMPDIR/myrepo"
+Error: path "[TMPDIR]" is not within repository root "[TMPDIR]/myrepo"
 
 Name: test-bundle
 Target: default
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/test-bundle/default
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Found 1 error
 

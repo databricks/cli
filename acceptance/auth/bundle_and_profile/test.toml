@@ -1,0 +1,14 @@
+# Some of the clouds have DATABRICKS_HOST variable setup without https:// prefix
+# In the result, output is replaced with DATABRICKS_URL variable instead of DATABRICKS_HOST
+# This is a workaround to replace DATABRICKS_URL with DATABRICKS_HOST
+[[Repls]]
+Old='DATABRICKS_HOST'
+New='DATABRICKS_TARGET'
+
+[[Repls]]
+Old='DATABRICKS_URL'
+New='DATABRICKS_TARGET'
+
+[[Repls]]
+Old='Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": .*'
+New='Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)'

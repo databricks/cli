@@ -32,6 +32,7 @@ type hook struct {
 	RequireDatabricksConnect bool    `yaml:"require_databricks_connect,omitempty"`
 	MinRuntimeVersion        string  `yaml:"min_runtime_version,omitempty"`
 	WarehouseTypes           whTypes `yaml:"warehouse_types,omitempty"`
+	Extras                   string  `yaml:"extras,omitempty"`
 }
 
 func (h *hook) RequireRunningCluster() bool {
@@ -258,6 +259,10 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 		}
 	}
 	feedback <- "Installing Python library dependencies"
+	if i.Installer.Extras != "" {
+		// install main and optional dependencies
+		return i.installPythonDependencies(ctx, fmt.Sprintf(".[%s]", i.Installer.Extras))
+	}
 	return i.installPythonDependencies(ctx, ".")
 }
 

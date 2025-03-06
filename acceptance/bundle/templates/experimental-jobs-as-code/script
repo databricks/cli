@@ -3,12 +3,12 @@ trace $CLI bundle init experimental-jobs-as-code --config-file ./input.json --ou
 cd output/my_jobs_as_code
 
 # silence uv output because it's non-deterministic
-uv sync 2> /dev/null
-
-# remove version constraint because it always creates a warning on dev builds
-cat databricks.yml | grep -v databricks_cli_version > databricks.yml.new
-mv databricks.yml.new databricks.yml
+uv sync -q
 
 trace $CLI bundle validate -t dev --output json | jq ".resources"
 
 rm -fr .venv resources/__pycache__ uv.lock my_jobs_as_code.egg-info
+
+# Do not affect this repository's git behaviour #2318
+mv .gitignore out.gitignore
+rm .databricks/.gitignore

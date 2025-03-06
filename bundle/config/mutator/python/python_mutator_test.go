@@ -54,6 +54,8 @@ func TestPythonMutator_Name_applyMutators(t *testing.T) {
 func TestPythonMutator_loadResources(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 
+	rootPath := filepath.Join(t.TempDir(), "my_project")
+
 	b := loadYaml("databricks.yml", `
       experimental:
         python:
@@ -63,6 +65,9 @@ func TestPythonMutator_loadResources(t *testing.T) {
         jobs:
           job0:
             name: job_0`)
+
+	// set rootPath so that we can make absolute paths in dyn.Location
+	b.BundleRootPath = rootPath
 
 	ctx := withProcessStub(
 		t,
@@ -120,7 +125,7 @@ func TestPythonMutator_loadResources(t *testing.T) {
 
 		assert.Equal(t, []dyn.Location{
 			{
-				File:   "src/examples/job1.py",
+				File:   filepath.Join(rootPath, "src/examples/job1.py"),
 				Line:   5,
 				Column: 7,
 			},

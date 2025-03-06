@@ -1,0 +1,2 @@
+✨ Successfully initialized template
+user_name: [USERNAME]

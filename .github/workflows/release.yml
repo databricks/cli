@@ -26,7 +26,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
-          go-version: 1.23.4
+          go-version-file: go.mod
 
           # The default cache key for this action considers only the `go.sum` file.
           # We include .goreleaser.yaml here to differentiate from the cache used by the push action
@@ -46,7 +46,7 @@ jobs:
       # QEMU is required to build cross platform docker images using buildx.
       # It allows virtualization of the CPU architecture at the application level.
       - name: Set up QEMU dependency
-        uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
       - name: Run GoReleaser
         id: releaser

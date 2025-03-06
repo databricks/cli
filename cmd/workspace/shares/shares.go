@@ -484,8 +484,6 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
-	cmd.Flags().IntVar(&updatePermissionsReq.MaxResults, "max-results", updatePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
-	cmd.Flags().StringVar(&updatePermissionsReq.PageToken, "page-token", updatePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "update-permissions NAME"
 	cmd.Short = `Update permissions.`
@@ -494,8 +492,8 @@ func newUpdatePermissions() *cobra.Command {
   Updates the permissions for a data share in the metastore. The caller must be
   a metastore admin or an owner of the share.
   
-  For new recipient grants, the user must also be the owner of the recipients.
-  recipient revocations do not require additional privileges.
+  For new recipient grants, the user must also be the recipient owner or
+  metastore admin. recipient revocations do not require additional privileges.
 
   Arguments:
     NAME: The name of the share.`
@@ -526,11 +524,11 @@ func newUpdatePermissions() *cobra.Command {
 		}
 		updatePermissionsReq.Name = args[0]
 
-		err = w.Shares.UpdatePermissions(ctx, updatePermissionsReq)
+		response, err := w.Shares.UpdatePermissions(ctx, updatePermissionsReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

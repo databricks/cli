@@ -90,46 +90,25 @@ func NewView(worktreeRoot, root vfs.Path) (*View, error) {
 	target = strings.TrimPrefix(target, string(os.PathSeparator))
 	target = path.Clean(filepath.ToSlash(target))
 
-	return &View{
+	result := &View{
 		repo:       repo,
 		targetPath: target,
-	}, nil
+	}
+
+	result.SetupDefaults()
+	return result, nil
 }
 
 func NewViewAtRoot(root vfs.Path) (*View, error) {
 	return NewView(root, root)
 }
 
-func (v *View) EnsureValidGitIgnoreExists() error {
-	ign, err := v.IgnoreDirectory(".databricks")
-	if err != nil {
-		return err
-	}
-
-	// return early if .databricks is already being ignored
-	if ign {
-		return nil
-	}
-
-	// Create .gitignore with .databricks entry
-	gitIgnorePath := filepath.Join(v.repo.Root(), v.targetPath, ".gitignore")
-	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
+func (v *View) SetupDefaults() {
 	// Hard code .databricks ignore pattern so that we never sync it (irrespective)
 	// of .gitignore patterns
 	v.repo.addIgnoreRule(newStringIgnoreRules([]string{
 		".databricks",
 	}))
 
-	_, err = file.WriteString("\n.databricks\n")
-	if err != nil {
-		return err
-	}
-
 	v.repo.taintIgnoreRules()
-	return nil
 }

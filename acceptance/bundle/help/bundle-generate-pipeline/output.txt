@@ -1,5 +1,5 @@
 
->>> $CLI bundle generate pipeline --help
+>>> [CLI] bundle generate pipeline --help
 Generate bundle configuration for a pipeline
 
 Usage:

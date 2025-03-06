@@ -331,7 +331,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 		return dyn.InvalidValue, diag.Errorf("failed to load diagnostics: %s", pythonDiagnosticsErr)
 	}
 
-	locations, err := loadLocationsFile(locationsPath)
+	locations, err := loadLocationsFile(opts.bundleRootPath, locationsPath)
 	if err != nil {
 		return dyn.InvalidValue, diag.Errorf("failed to load locations: %s", err)
 	}
@@ -381,7 +381,7 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 }
 
 // loadLocationsFile loads locations.json containing source locations for generated YAML.
-func loadLocationsFile(locationsPath string) (*pythonLocations, error) {
+func loadLocationsFile(bundleRoot, locationsPath string) (*pythonLocations, error) {
 	locationsFile, err := os.Open(locationsPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		return newPythonLocations(), nil
@@ -391,7 +391,7 @@ func loadLocationsFile(locationsPath string) (*pythonLocations, error) {
 
 	defer locationsFile.Close()
 
-	return parsePythonLocations(locationsFile)
+	return parsePythonLocations(bundleRoot, locationsFile)
 }
 
 func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {

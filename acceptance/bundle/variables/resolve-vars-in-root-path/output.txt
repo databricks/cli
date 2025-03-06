@@ -1,9 +1,5 @@
 {
   "artifact_path": "TestResolveVariableReferencesToBundleVariables/bar/artifacts",
-  "current_user": {
-    "short_name": "$USERNAME",
-    "userName": "$USERNAME"
-  },
   "file_path": "TestResolveVariableReferencesToBundleVariables/bar/files",
   "resource_path": "TestResolveVariableReferencesToBundleVariables/bar/resources",
   "root_path": "TestResolveVariableReferencesToBundleVariables/bar",

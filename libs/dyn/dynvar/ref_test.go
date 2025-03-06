@@ -15,9 +15,13 @@ func TestNewRefNoString(t *testing.T) {
 
 func TestNewRefValidPattern(t *testing.T) {
 	for in, refs := range map[string][]string{
-		"${hello_world.world_world}": {"hello_world.world_world"},
-		"${helloworld.world-world}":  {"helloworld.world-world"},
-		"${hello-world.world-world}": {"hello-world.world-world"},
+		"${hello_world.world_world}":  {"hello_world.world_world"},
+		"${helloworld.world-world}":   {"helloworld.world-world"},
+		"${hello-world.world-world}":  {"hello-world.world-world"},
+		"${hello_world.world__world}": {"hello_world.world__world"},
+		"${hello_world.world--world}": {"hello_world.world--world"},
+		"${hello_world.world-_world}": {"hello_world.world-_world"},
+		"${hello_world.world_-world}": {"hello_world.world_-world"},
 	} {
 		ref, ok := newRef(dyn.V(in))
 		require.True(t, ok, "should match valid pattern: %s", in)
@@ -36,8 +40,6 @@ func TestNewRefInvalidPattern(t *testing.T) {
 		"${_-_._-_.id}",                 // cannot use _- in sequence
 		"${0helloworld.world-world}",    // interpolated first section shouldn't start with number
 		"${helloworld.9world-world}",    // interpolated second section shouldn't start with number
-		"${a-a.a-_a-a.id}",              // fails because of -_ in the second segment
-		"${a-a.a--a-a.id}",              // fails because of -- in the second segment
 	}
 	for _, v := range invalid {
 		_, ok := newRef(dyn.V(v))

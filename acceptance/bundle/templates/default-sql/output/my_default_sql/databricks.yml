@@ -2,7 +2,7 @@
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: my_default_sql
-  uuid: <UUID>
+  uuid: [UUID]
 
 include:
   - resources/*.yml
@@ -25,7 +25,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: $DATABRICKS_URL
+      host: [DATABRICKS_URL]
     variables:
       warehouse_id: f00dcafe
       catalog: main
@@ -34,15 +34,13 @@ targets:
   prod:
     mode: production
     workspace:
-      host: $DATABRICKS_URL
-      # We explicitly specify /Workspace/Users/$USERNAME to make sure we only have a single copy.
-      root_path: /Workspace/Users/$USERNAME/.bundle/${bundle.name}/${bundle.target}
+      host: [DATABRICKS_URL]
+      # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+      root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     variables:
       warehouse_id: f00dcafe
       catalog: main
       schema: default
     permissions:
-      - user_name: $USERNAME
+      - user_name: [USERNAME]
         level: CAN_MANAGE
-    run_as:
-      user_name: $USERNAME

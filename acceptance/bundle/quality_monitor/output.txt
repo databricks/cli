@@ -1,5 +1,5 @@
 
->>> $CLI bundle validate -o json -t development
+>>> [CLI] bundle validate -o json -t development
 {
   "mode": "development",
   "quality_monitors": {
@@ -21,7 +21,7 @@
   }
 }
 
->>> $CLI bundle validate -o json -t staging
+>>> [CLI] bundle validate -o json -t staging
 {
   "mode": null,
   "quality_monitors": {
@@ -46,7 +46,7 @@
   }
 }
 
->>> $CLI bundle validate -o json -t production
+>>> [CLI] bundle validate -o json -t production
 {
   "mode": null,
   "quality_monitors": {

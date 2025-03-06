@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
@@ -30,8 +31,8 @@ var pythonVersionsShort = []string{
 }
 
 var extraInstalls = map[string][]string{
-	"3.12": {"setuptools"},
-	"3.13": {"setuptools"},
+	"3.12": {"setuptools==75.8.2"},
+	"3.13": {"setuptools==75.8.2"},
 }
 
 func TestDefaultPython(t *testing.T) {
@@ -53,6 +54,7 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	uniqueProjectId := testutil.RandomName("")
 	ctx, replacements := testdiff.WithReplacementsMap(ctx)
 	replacements.Set(uniqueProjectId, "$UNIQUE_PRJ")
+	replacements.Set(strings.ToLower(uniqueProjectId), "$UNIQUE_PRJ")
 
 	user, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)

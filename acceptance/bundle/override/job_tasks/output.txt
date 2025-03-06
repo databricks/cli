@@ -28,7 +28,7 @@
   ]
 }
 
->>> errcode $CLI bundle validate -o json -t staging
+>>> errcode [CLI] bundle validate -o json -t staging
 Error: file ./test1.py not found
 
 
@@ -63,14 +63,14 @@ Exit code: 1
   ]
 }
 
->>> errcode $CLI bundle validate -t staging
+>>> errcode [CLI] bundle validate -t staging
 Error: file ./test1.py not found
 
 Name: override_job_tasks
 Target: staging
 Workspace:
-  User: $USERNAME
-  Path: /Workspace/Users/$USERNAME/.bundle/override_job_tasks/staging
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/override_job_tasks/staging
 
 Found 1 error
 

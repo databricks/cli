@@ -1,0 +1,45 @@
+# Replace placeholder with an actual host URL
+envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+host=$DATABRICKS_HOST
+unset DATABRICKS_HOST
+
+title "Inside the bundle, no flags"
+trace errcode $CLI current-user me | jq .userName
+
+title "Inside the bundle, target flags"
+trace errcode $CLI current-user me -t dev | jq .userName
+
+title "Inside the bundle, target and matching profile"
+trace errcode $CLI current-user me -t dev -p DEFAULT | jq .userName
+
+title "Inside the bundle, profile flag not matching bundle host. Should use profile from the flag and not the bundle."
+trace errcode $CLI current-user me -p profile_name | jq .userName
+
+title "Inside the bundle, target and not matching profile"
+trace errcode $CLI current-user me -t dev -p profile_name
+
+title "Bundle commands load bundle configuration when no flags, validation OK"
+trace errcode $CLI bundle validate
+
+title "Bundle commands load bundle configuration with -t flag, validation OK"
+trace errcode $CLI bundle validate -t dev
+
+title "Bundle commands load bundle configuration with -p flag, validation not OK (profile host don't match bundle host)"
+trace errcode $CLI bundle validate -p profile_name
+
+title "Bundle commands load bundle configuration with -t and -p flag, validation OK (profile host match bundle host)"
+trace errcode $CLI bundle validate -t dev -p DEFAULT
+
+title "Bundle commands load bundle configuration with -t and -p flag, validation not OK (profile host don't match bundle host)"
+trace errcode $CLI bundle validate -t prod -p DEFAULT
+
+cd ..
+export DATABRICKS_HOST=$host
+title "Outside the bundle, no flags"
+trace errcode $CLI current-user me | jq .userName
+
+title "Outside the bundle, profile flag"
+trace errcode $CLI current-user me -p profile_name | jq .userName

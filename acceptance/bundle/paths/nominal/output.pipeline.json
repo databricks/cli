@@ -1,22 +1,22 @@
 [
   {
     "file": {
-      "path": "/Workspace/Users/$USERNAME/.bundle/nominal/development/files/src/file1.py"
+      "path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/file1.py"
     }
   },
   {
     "notebook": {
-      "path": "/Workspace/Users/$USERNAME/.bundle/nominal/development/files/src/notebook1"
+      "path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/notebook1"
     }
   },
   {
     "file": {
-      "path": "/Workspace/Users/$USERNAME/.bundle/nominal/development/files/src/file2.py"
+      "path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/file2.py"
     }
   },
   {
     "notebook": {
-      "path": "/Workspace/Users/$USERNAME/.bundle/nominal/development/files/src/notebook2"
+      "path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/notebook2"
     }
   }
 ]

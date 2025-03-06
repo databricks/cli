@@ -1,0 +1,1 @@
+$CLI bundle generate job --existing-job-id 1234 --config-dir . --key out

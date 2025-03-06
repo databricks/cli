@@ -3,86 +3,123 @@ package acceptance_test
 import (
 	"os"
 	"path/filepath"
-	"sync"
+	"slices"
+	"strings"
 	"testing"
 
+	"dario.cat/mergo"
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
+	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/stretchr/testify/require"
 )
 
 const configFilename = "test.toml"
 
-var (
-	configCache map[string]TestConfig
-	configMutex sync.Mutex
-)
-
 type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
-	Badness string
+	Badness *string
 
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
 	// If absent, default to true.
 	GOOS map[string]bool
 
+	// If true, run this test when running locally with a testserver
+	Local *bool
+
+	// If true, run this test when running with cloud env configured
+	Cloud *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
+
+	// List of server stubs to load. Example configuration:
+	//
+	// [[Server]]
+	// Pattern = "POST /api/2.1/jobs/create"
+	// Response.Body = '''
+	// {
+	// 	"job_id": 1111
+	// }
+	// '''
+	Server []ServerStub
+
+	// Record the requests made to the server and write them as output to
+	// out.requests.txt
+	RecordRequests *bool
+
+	// List of request headers to include when recording requests.
+	IncludeRequestHeaders []string
+
+	// List of gitignore patterns to ignore when checking output files
+	Ignore []string
+
+	CompiledIgnoreObject *ignore.GitIgnore
 }
 
-// FindConfig finds the closest config file.
-func FindConfig(t *testing.T, dir string) (string, bool) {
-	shared := false
+type ServerStub struct {
+	// The HTTP method and path to match. Examples:
+	// 1. /api/2.0/clusters/list (matches all methods)
+	// 2. GET /api/2.0/clusters/list
+	Pattern string
+
+	// The response body to return.
+	Response testserver.Response
+}
+
+// FindConfigs finds all the config relevant for this test,
+// ordered from the most outermost (at acceptance/) to current test directory (identified by dir).
+// Argument dir must be a relative path from the root of acceptance tests (<project_root>/acceptance/).
+func FindConfigs(t *testing.T, dir string) []string {
+	configs := []string{}
 	for {
 		path := filepath.Join(dir, configFilename)
 		_, err := os.Stat(path)
 
 		if err == nil {
-			return path, shared
+			configs = append(configs, path)
 		}
-
-		shared = true
 
 		if dir == "" || dir == "." {
 			break
 		}
 
-		if os.IsNotExist(err) {
-			dir = filepath.Dir(dir)
+		dir = filepath.Dir(dir)
+
+		if err == nil || os.IsNotExist(err) {
 			continue
 		}
 
 		t.Fatalf("Error while reading %s: %s", path, err)
 	}
 
-	t.Fatal("Config not found: " + configFilename)
-	return "", shared
+	slices.Reverse(configs)
+	return configs
 }
 
 // LoadConfig loads the config file. Non-leaf configs are cached.
 func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
-	path, leafConfig := FindConfig(t, dir)
+	configs := FindConfigs(t, dir)
 
-	if leafConfig {
-		return DoLoadConfig(t, path), path
+	if len(configs) == 0 {
+		return TestConfig{}, "(no config)"
 	}
 
-	configMutex.Lock()
-	defer configMutex.Unlock()
+	result := DoLoadConfig(t, configs[0])
 
-	if configCache == nil {
-		configCache = make(map[string]TestConfig)
+	for _, cfgName := range configs[1:] {
+		cfg := DoLoadConfig(t, cfgName)
+		err := mergo.Merge(&result, cfg, mergo.WithOverride, mergo.WithoutDereference, mergo.WithAppendSlice)
+		if err != nil {
+			t.Fatalf("Error during config merge: %s: %s", cfgName, err)
+		}
 	}
 
-	result, ok := configCache[path]
-	if ok {
-		return result, path
-	}
+	result.CompiledIgnoreObject = ignore.CompileIgnoreLines(result.Ignore...)
 
-	result = DoLoadConfig(t, path)
-	configCache[path] = result
-	return result, path
+	return result, strings.Join(configs, ", ")
 }
 
 func DoLoadConfig(t *testing.T, path string) TestConfig {

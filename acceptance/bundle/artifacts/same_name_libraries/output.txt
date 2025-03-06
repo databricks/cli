@@ -1,0 +1,14 @@
+
+>>> errcode [CLI] bundle deploy
+Building whl1...
+Building whl2...
+Error: Duplicate local library names: my_default_python-0.0.1-py3-none-any.whl
+  at resources.jobs.test.tasks[0].libraries[0].whl
+     resources.jobs.test.tasks[1].libraries[0].whl
+  in databricks.yml:36:15
+     databricks.yml:45:15
+
+Local library names must be unique but found libraries with the same name: whl1/dist/my_default_python-0.0.1-py3-none-any.whl, whl2/dist/my_default_python-0.0.1-py3-none-any.whl
+
+
+Exit code: 1

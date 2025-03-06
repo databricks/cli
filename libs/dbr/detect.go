@@ -13,23 +13,27 @@ var statFunc = os.Stat
 
 // detect returns true if the current process is running on a Databricks Runtime.
 // Its return value is meant to be cached in the context.
-func detect(ctx context.Context) bool {
+func detect(ctx context.Context) Environment {
 	// Databricks Runtime implies Linux.
 	// Return early on other operating systems.
 	if runtime.GOOS != "linux" {
-		return false
+		return Environment{}
 	}
 
 	// Databricks Runtime always has the DATABRICKS_RUNTIME_VERSION environment variable set.
-	if value, ok := env.Lookup(ctx, "DATABRICKS_RUNTIME_VERSION"); !ok || value == "" {
-		return false
+	version, ok := env.Lookup(ctx, "DATABRICKS_RUNTIME_VERSION")
+	if !ok || version == "" {
+		return Environment{}
 	}
 
 	// Expect to see a "/databricks" directory.
 	if fi, err := statFunc("/databricks"); err != nil || !fi.IsDir() {
-		return false
+		return Environment{}
 	}
 
 	// All checks passed.
-	return true
+	return Environment{
+		IsDbr:   true,
+		Version: version,
+	}
 }

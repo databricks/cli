@@ -92,7 +92,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 		}
 
 		saver := yamlsaver.NewSaverWithStyle(
-			// Including all PipelineSpec and nested fields which are map[string]string type
+			// Including all CreatePipeline and nested fields which are map[string]string type
 			map[string]yaml.Style{
 				"spark_conf":    yaml.DoubleQuotedStyle,
 				"custom_tags":   yaml.DoubleQuotedStyle,

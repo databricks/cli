@@ -25,11 +25,8 @@ coverage-acceptance.txt
 __pycache__
 *.pyc
 
-.terraform
-.terraform.lock.hcl
-
+.idea
 .vscode/launch.json
 .vscode/tasks.json
 
-.databricks
 .ruff_cache

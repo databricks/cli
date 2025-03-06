@@ -56,7 +56,7 @@ func TestLookup_MultipleFound(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"foo": {
-						PipelineSpec: &pipelines.PipelineSpec{},
+						CreatePipeline: &pipelines.CreatePipeline{},
 					},
 				},
 			},
@@ -107,7 +107,7 @@ func TestLookup_NominalWithFilters(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"bar": {
-						PipelineSpec: &pipelines.PipelineSpec{},
+						CreatePipeline: &pipelines.CreatePipeline{},
 					},
 				},
 			},

@@ -43,7 +43,7 @@ func init() {
 }
 
 func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
-	ctx := dbr.MockRuntime(context.Background(), false)
+	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{})
 
 	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))
 	require.NoError(t, err)
@@ -78,7 +78,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
 	require.NoError(t, err)
-	diags := bundle.Apply(ctx, b, phases.LoadNamedTarget(target))
+	diags := phases.LoadNamedTarget(ctx, b, target)
 	require.NoError(t, diags.Error())
 
 	// Apply initialize / validation mutators
@@ -91,16 +91,15 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)
+	b.SetWorkpaceClient(w)
 	b.WorkspaceClient()
 
-	diags = bundle.Apply(ctx, b, bundle.Seq(
-		phases.Initialize(),
-	))
+	diags = phases.Initialize(ctx, b)
 	require.NoError(t, diags.Error())
 
 	// Apply build mutator
 	if build {
-		diags = bundle.Apply(ctx, b, phases.Build())
+		diags = phases.Build(ctx, b)
 		require.NoError(t, diags.Error())
 	}
 }
@@ -116,14 +115,17 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 		for _, includeDlt := range options {
 			for _, includePython := range options {
 				for _, isServicePrincipal := range []bool{true, false} {
-					config := map[string]any{
-						"project_name":     "my_project",
-						"include_notebook": includeNotebook,
-						"include_dlt":      includeDlt,
-						"include_python":   includePython,
+					for _, serverless := range options {
+						config := map[string]any{
+							"project_name":     "my_project",
+							"include_notebook": includeNotebook,
+							"include_dlt":      includeDlt,
+							"include_python":   includePython,
+							"serverless":       serverless,
+						}
+						tempDir := t.TempDir()
+						assertBuiltinTemplateValid(t, "default-python", config, "dev", isServicePrincipal, build, tempDir)
 					}
-					tempDir := t.TempDir()
-					assertBuiltinTemplateValid(t, "default-python", config, "dev", isServicePrincipal, build, tempDir)
 				}
 			}
 		}
@@ -135,6 +137,7 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 		"include_notebook": "yes",
 		"include_dlt":      "yes",
 		"include_python":   "yes",
+		"serverless":       "yes",
 	}
 	isServicePrincipal = false
 	build = true

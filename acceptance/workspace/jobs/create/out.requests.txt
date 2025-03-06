@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/jobs_create cmd-exec-id/[UUID] auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.1/jobs/create",
+  "body": {
+    "name": "abc"
+  }
+}

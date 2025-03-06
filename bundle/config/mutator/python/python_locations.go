@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	pathlib "path"
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -99,7 +100,7 @@ func removeVirtualLocations(locations []dyn.Location) []dyn.Location {
 // parsePythonLocations parses locations.json from the Python mutator.
 //
 // locations file is newline-separated JSON objects with pythonLocationEntry structure.
-func parsePythonLocations(input io.Reader) (*pythonLocations, error) {
+func parsePythonLocations(bundleRoot string, input io.Reader) (*pythonLocations, error) {
 	decoder := json.NewDecoder(input)
 	locations := newPythonLocations()
 
@@ -114,6 +115,12 @@ func parsePythonLocations(input io.Reader) (*pythonLocations, error) {
 		path, err := dyn.NewPathFromString(entry.Path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse python location: %s", err)
+		}
+
+		// Output can contain both relative paths and absolute paths outside of bundle root.
+		// Mutator pipeline expects all path to be absolute at this point, so make all paths absolute.
+		if !pathlib.IsAbs(entry.File) {
+			entry.File = filepath.Join(bundleRoot, entry.File)
 		}
 
 		location := dyn.Location{

@@ -50,10 +50,10 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
-          go-version: 1.23.4
+          go-version-file: go.mod
 
       - name: Setup Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: '3.9'
 
@@ -82,7 +82,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
-          go-version: 1.23.4
+          go-version-file: go.mod
           # Use different schema from regular job, to avoid overwriting the same key
           cache-dependency-path: |
             go.sum
@@ -95,12 +95,12 @@ jobs:
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
+        uses: golangci/golangci-lint-action@2226d7cb06a077cd73e56eedd38eecad18e5d837 # v6.5.0
         with:
           version: v1.63.4
           args: --timeout=15m
       - name: Run ruff
-        uses: astral-sh/ruff-action@31a518504640beb4897d0b9f9e50a2a9196e75ba # v3.0.1
+        uses: astral-sh/ruff-action@f14634c415d3e63ffd4d550a22f037df4c734a60 # v3.1.0
         with:
           version: "0.9.1"
           args: "format --check"
@@ -116,7 +116,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
-          go-version: 1.23.4
+          go-version-file: go.mod
           # Use different schema from regular job, to avoid overwriting the same key
           cache-dependency-path: |
             go.sum
@@ -145,7 +145,10 @@ jobs:
           go run main.go bundle schema > schema.json
 
           # Add markdownDescription keyword to ajv
-          echo "module.exports=function(a){a.addKeyword('markdownDescription')}" >> keywords.js
+          echo "module.exports = function(a) {
+            a.addKeyword('markdownDescription');
+            a.addKeyword('deprecationMessage');
+          }" >> keywords.js
 
           for file in ./bundle/internal/schema/testdata/pass/*.yml; do
             ajv test -s schema.json -d $file --valid -c=./keywords.js
