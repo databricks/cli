@@ -104,9 +104,16 @@ func Upload(ctx context.Context, cfg *config.Config, ec protos.ExecutionContext)
 
 		// Partial success. Retry.
 		if err == nil && resp.NumProtoSuccess < int64(len(protoLogs)) {
-			log.Debugf(ctx, "Attempt %d was a partial success. Number of logs uploaded: %d out of %d\n", i+1, resp.NumProtoSuccess, len(protoLogs))
+			log.Debugf(ctx, "Attempt %d was a partial success. Number of logs uploaded: %d out of %d", i+1, resp.NumProtoSuccess, len(protoLogs))
 			time.Sleep(waitBetweenRetries)
 			continue
+		}
+
+		// Do not retry if the context deadline was exceeded. This means that our
+		// timeout of three seconds was triggered and we should not try again.
+		if errors.Is(err, context.DeadlineExceeded) {
+			log.Debugf(ctx, "Attempt %d failed due to a timeout. Will not retry", i+1)
+			return fmt.Errorf("uploading telemetry logs timed out: %w", err)
 		}
 
 		// We retry for all 5xx responses. Note that the SDK only retries for 503 and 429
@@ -118,7 +125,7 @@ func Upload(ctx context.Context, cfg *config.Config, ec protos.ExecutionContext)
 		// all 5xx responses.
 		var apiErr *apierr.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
-			log.Debugf(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d\n", i+1, apiErr.StatusCode)
+			log.Debugf(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.StatusCode)
 			time.Sleep(waitBetweenRetries)
 			continue
 		}

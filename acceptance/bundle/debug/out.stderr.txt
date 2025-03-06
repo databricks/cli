@@ -99,4 +99,3 @@
 < } pid=12345 mutator=validate:files_to_sync sdk=true
 10:07:59 Debug: Path /Workspace/Users/[USERNAME]/.bundle/debug/default/files has type directory (ID: 0) pid=12345 mutator=validate:files_to_sync
 10:07:59 Info: completed execution pid=12345 exit_code=0
-10:07:59 Debug: no telemetry logs to upload pid=12345

@@ -13,4 +13,5 @@ HH:MM:SS Debug: POST /telemetry-ext
 > }
 < Error: Post "[DATABRICKS_URL]/telemetry-ext": context deadline exceeded pid=PID sdk=true
 HH:MM:SS Debug: non-retriable error: Post "[DATABRICKS_URL]/telemetry-ext": context deadline exceeded pid=PID sdk=true
-HH:MM:SS Debug: failed to upload telemetry: uploading telemetry logs timed out: context deadline exceeded pid=PID
+HH:MM:SS Debug: Attempt 1 failed due to a timeout. Will not retry pid=PID
+HH:MM:SS Debug: telemetry upload failed: uploading telemetry logs timed out: Post "[DATABRICKS_URL]/telemetry-ext": context deadline exceeded pid=PID

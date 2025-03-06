@@ -166,6 +166,7 @@ Stack Trace:
 		exitCode = 1
 	}
 
+	ctx = cmd.Context()
 	if telemetry.HasLogs(ctx) {
 		err := telemetry.Upload(ctx, ConfigUsed(ctx), protos.ExecutionContext{
 			CmdExecID:       cmdExecId,
@@ -177,7 +178,7 @@ Stack Trace:
 			ExitCode:        int64(exitCode),
 		})
 		if err != nil {
-			log.Debugf(ctx, "failed to upload telemetry logs: %s", err)
+			log.Debugf(ctx, "telemetry upload failed: %s", err)
 		}
 	}
 

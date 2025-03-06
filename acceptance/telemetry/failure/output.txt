@@ -17,8 +17,7 @@ HH:MM:SS Debug: POST /telemetry-ext
 <   "message": "Endpoint not implemented."
 < } pid=PID sdk=true
 HH:MM:SS Debug: non-retriable error: Endpoint not implemented. pid=PID sdk=true
-HH:MM:SS Debug: Attempt 1 failed due to a server side error. Retrying status code: 501
- pid=PID
+HH:MM:SS Debug: Attempt 1 failed due to a server side error. Retrying status code: 501 pid=PID
 HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
@@ -34,8 +33,7 @@ HH:MM:SS Debug: POST /telemetry-ext
 <   "message": "Endpoint not implemented."
 < } pid=PID sdk=true
 HH:MM:SS Debug: non-retriable error: Endpoint not implemented. pid=PID sdk=true
-HH:MM:SS Debug: Attempt 2 failed due to a server side error. Retrying status code: 501
- pid=PID
+HH:MM:SS Debug: Attempt 2 failed due to a server side error. Retrying status code: 501 pid=PID
 HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
@@ -51,6 +49,5 @@ HH:MM:SS Debug: POST /telemetry-ext
 <   "message": "Endpoint not implemented."
 < } pid=PID sdk=true
 HH:MM:SS Debug: non-retriable error: Endpoint not implemented. pid=PID sdk=true
-HH:MM:SS Debug: Attempt 3 failed due to a server side error. Retrying status code: 501
- pid=PID
-HH:MM:SS Debug: failed to upload telemetry: failed to upload telemetry logs after three attempts pid=PID
+HH:MM:SS Debug: Attempt 3 failed due to a server side error. Retrying status code: 501 pid=PID
+HH:MM:SS Debug: telemetry upload failed: failed to upload telemetry logs after three attempts pid=PID
