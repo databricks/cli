@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -18,7 +19,6 @@ import (
 var (
 	workspaceClient int
 	accountClient   int
-	configUsed      int
 )
 
 type ErrNoWorkspaceProfiles struct {
@@ -119,7 +119,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
-	ctx = context.WithValue(ctx, &configUsed, cfg)
+	ctx = command.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	profiler := profile.GetProfiler(ctx)
@@ -202,7 +202,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
-	ctx = context.WithValue(ctx, &configUsed, cfg)
+	ctx = command.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
@@ -213,7 +213,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		}
 
 		if b != nil {
-			ctx = context.WithValue(ctx, &configUsed, b.Config.Workspace.Config())
+			ctx = command.SetConfigUsed(ctx, b.Config.Workspace.Config())
 			cmd.SetContext(ctx)
 			client, err := b.WorkspaceClientE()
 			if err != nil {
@@ -335,12 +335,4 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 		panic("cannot get *databricks.AccountClient. Please report it as a bug")
 	}
 	return a
-}
-
-func ConfigUsed(ctx context.Context) *config.Config {
-	cfg, ok := ctx.Value(&configUsed).(*config.Config)
-	if !ok {
-		panic("cannot get *config.Config. Please report it as a bug")
-	}
-	return cfg
 }
