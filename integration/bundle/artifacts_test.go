@@ -80,7 +80,7 @@ func TestUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
+	diags := bundle.ApplySeq(ctx, b, libraries.ExpandGlobReferences(), libraries.Upload())
 	require.NoError(t, diags.Error())
 
 	// The remote path attribute on the artifact file should have been set.
@@ -144,7 +144,7 @@ func TestUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
+	diags := bundle.ApplySeq(ctx, b, libraries.ExpandGlobReferences(), libraries.Upload())
 	require.NoError(t, diags.Error())
 
 	// The remote path attribute on the artifact file should have been set.
@@ -213,7 +213,7 @@ func TestUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
+	diags := bundle.ApplySeq(ctx, b, libraries.ExpandGlobReferences(), libraries.Upload())
 	require.NoError(t, diags.Error())
 
 	// The remote path attribute on the artifact file should have been set.

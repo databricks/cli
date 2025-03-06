@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle init default-python --config-file [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/input.json --output-dir output
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_default_python' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> diff.py [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output output/
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python.pipeline.yml
++++ output/my_default_python/resources/my_default_python.pipeline.yml
+@@ -4,6 +4,5 @@
+     my_default_python_pipeline:
+       name: my_default_python_pipeline
+-      ## Catalog is required for serverless compute
+-      catalog: main
++      catalog: customcatalog
+       schema: my_default_python_${bundle.target}
+       serverless: true

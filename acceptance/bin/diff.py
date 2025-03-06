@@ -43,8 +43,8 @@ def main():
         elif f not in set1:
             print(f"Only in {d2}: {f}")
         else:
-            a = [replaceAll(patterns, x) for x in p1.read_text().splitlines(True)]
-            b = [replaceAll(patterns, x) for x in p2.read_text().splitlines(True)]
+            a = replaceAll(patterns, p1.read_text()).splitlines(True)
+            b = replaceAll(patterns, p2.read_text()).splitlines(True)
             if a != b:
                 p1_str = p1.as_posix()
                 p2_str = p2.as_posix()

@@ -1,0 +1,50 @@
+
+=== Apps update with correct input
+>>> [CLI] apps update test-name --json @input.json
+{
+  "app_status": {
+    "message":"Application is running.",
+    "state":"DEPLOYING"
+  },
+  "compute_status": {
+    "message":"App compute is active.",
+    "state":"ERROR"
+  },
+  "description":"My app description.",
+  "id":"12345",
+  "name":"test-name",
+  "resources": [
+    {
+      "description":"API key for external service.",
+      "name":"api-key",
+      "secret": {
+        "key":"my-key",
+        "permission":"READ",
+        "scope":"my-scope"
+      }
+    }
+  ],
+  "url":"test-name-123.cloud.databricksapps.com"
+}
+
+=== Apps update with missing parameter
+>>> [CLI] apps update --json @input.json
+Error: accepts 1 arg(s), received 0
+
+Usage:
+  databricks apps update NAME [flags]
+
+Flags:
+      --budget-policy-id string   
+      --description string        The description of the app.
+  -h, --help                      help for update
+      --json JSON                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+Exit code: 1

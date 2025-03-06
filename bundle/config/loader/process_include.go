@@ -161,6 +161,17 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return diags
 	}
 
+	if len(this.Include) > 0 {
+		diags = diags.Append(diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "Include section is defined outside root file",
+			Detail: `An include section is defined in a file that is not databricks.yml.
+Only includes defined in databricks.yml are applied.`,
+			Locations: this.GetLocations("include"),
+			Paths:     []dyn.Path{dyn.MustPathFromString("include")},
+		})
+	}
+
 	err := b.Config.Merge(this)
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))

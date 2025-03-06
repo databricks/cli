@@ -20,6 +20,12 @@ var testUser = iam.User{
 	UserName: "tester@databricks.com",
 }
 
+var testMetastore = catalog.MetastoreAssignment{
+	DefaultCatalogName: "hive_metastore",
+	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
+	WorkspaceId:        470123456789500,
+}
+
 func AddHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req testserver.Request) any {
 		return compute.ListPoliciesResponse{
@@ -105,10 +111,13 @@ func AddHandlers(server *testserver.Server) {
 		return ""
 	})
 
+	server.Handle("GET", "/api/2.0/workspace-files/{path:.*}", func(req testserver.Request) any {
+		path := req.Vars["path"]
+		return req.Workspace.WorkspaceFilesExportFile(path)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
-		return catalog.MetastoreAssignment{
-			DefaultCatalogName: "main",
-		}
+		return testMetastore
 	})
 
 	server.Handle("GET", "/api/2.0/permissions/directories/{objectId}", func(req testserver.Request) any {

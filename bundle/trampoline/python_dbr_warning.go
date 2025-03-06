@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/mod/semver"
@@ -60,11 +61,37 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 		}
 
 		if task.ExistingClusterId != "" {
-			version, err := getSparkVersionForCluster(ctx, b.WorkspaceClient(), task.ExistingClusterId)
-			// If there's error getting spark version for cluster, do not mark it as incompatible
-			if err != nil {
-				log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())
-				return false
+			var version string
+			var err error
+			// If the cluster id is a variable and it's not resolved, it means it references a cluster defined in the same bundle.
+			// So we can get the version from the cluster definition.
+			// It's defined in a form of resources.clusters.<cluster_key>.id
+			if strings.HasPrefix(task.ExistingClusterId, "${") {
+				p, ok := dynvar.PureReferenceToPath(task.ExistingClusterId)
+				if !ok || len(p) < 3 {
+					log.Warnf(ctx, "unable to parse cluster key from %s", task.ExistingClusterId)
+					return false
+				}
+
+				if p[0].Key() != "resources" || p[1].Key() != "clusters" {
+					log.Warnf(ctx, "incorrect variable reference for cluster id %s", task.ExistingClusterId)
+					return false
+				}
+
+				clusterKey := p[2].Key()
+				cluster, ok := b.Config.Resources.Clusters[clusterKey]
+				if !ok {
+					log.Warnf(ctx, "unable to find cluster with key %s", clusterKey)
+					return false
+				}
+				version = cluster.SparkVersion
+			} else {
+				version, err = getSparkVersionForCluster(ctx, b.WorkspaceClient(), task.ExistingClusterId)
+				// If there's error getting spark version for cluster, do not mark it as incompatible
+				if err != nil {
+					log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())
+					return false
+				}
 			}
 
 			if lowerThanExpectedVersion(version) {
@@ -82,7 +109,7 @@ func lowerThanExpectedVersion(sparkVersion string) bool {
 		return false
 	}
 
-	if parts[1][0] == 'x' { // treat versions like 13.x as the very latest minor (13.99)
+	if len(parts[1]) > 0 && parts[1][0] == 'x' { // treat versions like 13.x as the very latest minor (13.99)
 		parts[1] = "99"
 	}
 

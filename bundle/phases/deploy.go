@@ -19,6 +19,8 @@ import (
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
 	terraformlib "github.com/databricks/cli/libs/terraform"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -124,60 +126,94 @@ is removed from the catalog, but the underlying files are not deleted:`
 	return approved, nil
 }
 
-// The deploy phase deploys artifacts and resources.
-func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
+func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
-	deployCore := bundle.Defer(
-		bundle.Seq(
-			bundle.LogString("Deploying resources..."),
-			terraform.Apply(),
-		),
-		bundle.Seq(
-			terraform.StatePush(),
-			terraform.Load(),
-			apps.InterpolateVariables(),
-			apps.UploadConfig(),
-			metadata.Compute(),
-			metadata.Upload(),
-			bundle.LogString("Deployment complete!"),
-		),
-	)
+	cmdio.LogString(ctx, "Deploying resources...")
+	diags := bundle.Apply(ctx, b, terraform.Apply())
 
-	deployMutator := bundle.Seq(
+	// following original logic, continuing with sequence below even if terraform had errors
+
+	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+		terraform.StatePush(),
+		terraform.Load(),
+		apps.InterpolateVariables(),
+		apps.UploadConfig(),
+		metadata.Compute(),
+		metadata.Upload(),
+	))
+
+	if !diags.HasError() {
+		cmdio.LogString(ctx, "Deployment complete!")
+	}
+
+	return diags
+}
+
+// The deploy phase deploys artifacts and resources.
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) (diags diag.Diagnostics) {
+	log.Info(ctx, "Phase: deploy")
+
+	// Core mutators that CRUD resources and modify deployment state. These
+	// mutators need informed consent if they are potentially destructive.
+	diags = bundle.ApplySeq(ctx, b,
 		scripts.Execute(config.ScriptPreDeploy),
 		lock.Acquire(),
-		bundle.Defer(
-			bundle.Seq(
-				terraform.StatePull(),
-				terraform.CheckDashboardsModifiedRemotely(),
-				deploy.StatePull(),
-				mutator.ValidateGitDetails(),
-				artifacts.CleanUp(),
-				libraries.ExpandGlobReferences(),
-				libraries.Upload(),
-				trampoline.TransformWheelTask(),
-				files.Upload(outputHandler),
-				deploy.StateUpdate(),
-				deploy.StatePush(),
-				permissions.ApplyWorkspaceRootPermissions(),
-				terraform.Interpolate(),
-				terraform.Write(),
-				terraform.CheckRunningResource(),
-				terraform.Plan(terraform.PlanGoal("deploy")),
-				bundle.If(
-					approvalForDeploy,
-					deployCore,
-					bundle.LogString("Deployment cancelled!"),
-				),
-			),
-			lock.Release(lock.GoalDeploy),
-		),
-		scripts.Execute(config.ScriptPostDeploy),
 	)
 
-	return newPhase(
-		"deploy",
-		[]bundle.Mutator{deployMutator},
+	if diags.HasError() {
+		// lock is not acquired here
+		return diags
+	}
+
+	// lock is acquired here
+	defer func() {
+		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
+	}()
+
+	diags = bundle.ApplySeq(ctx, b,
+		terraform.StatePull(),
+		terraform.CheckDashboardsModifiedRemotely(),
+		deploy.StatePull(),
+		mutator.ValidateGitDetails(),
+		artifacts.CleanUp(),
+		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
+		// know what are the actual library paths.
+		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
+		// mutator is part of the deploy step rather than validate.
+		libraries.ExpandGlobReferences(),
+		libraries.CheckForSameNameLibraries(),
+		libraries.Upload(),
+		trampoline.TransformWheelTask(),
+		files.Upload(outputHandler),
+		deploy.StateUpdate(),
+		deploy.StatePush(),
+		permissions.ApplyWorkspaceRootPermissions(),
+		terraform.Interpolate(),
+		terraform.Write(),
+		terraform.CheckRunningResource(),
+		terraform.Plan(terraform.PlanGoal("deploy")),
 	)
+
+	if diags.HasError() {
+		return diags
+	}
+
+	haveApproval, err := approvalForDeploy(ctx, b)
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+		return diags
+	}
+
+	if haveApproval {
+		diags = diags.Extend(deployCore(ctx, b))
+	} else {
+		cmdio.LogString(ctx, "Deployment cancelled!")
+	}
+
+	if diags.HasError() {
+		return diags
+	}
+
+	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostDeploy)))
 }

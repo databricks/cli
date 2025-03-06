@@ -1,5 +1,53 @@
 # Version changelog
 
+## [Release] Release v0.243.0
+
+CLI:
+ * Upgrade Go SDK to 0.59.0 ([#2425](https://github.com/databricks/cli/pull/2425)).
+
+Bundles:
+ * Added a warning when `config` section is used in apps ([#2416](https://github.com/databricks/cli/pull/2416)).
+ * Switch to use GET workspaces-files/{name} instead of workspace/export for state files to avoid 10MB limit ([#2423](https://github.com/databricks/cli/pull/2423)).
+ * Use schema field for pipeline in builtin template ([#2347](https://github.com/databricks/cli/pull/2347)).
+ * Add warning when variable interpolation is used for auth fields ([#2399](https://github.com/databricks/cli/pull/2399)).
+ * Add warning when include is used in config files other than databricks.yml ([#2389](https://github.com/databricks/cli/pull/2389)).
+ * Add support for schemas in deployment bind/unbind commands ([#2406](https://github.com/databricks/cli/pull/2406)).
+ * Do not modify/create .gitignore in bundle root ([#2429](https://github.com/databricks/cli/pull/2429)).
+ * Raise an error when there are multiple local libraries with the same basename used  ([#2382](https://github.com/databricks/cli/pull/2382)).
+ * Upgrade TF provider to 1.68.0 ([#2426](https://github.com/databricks/cli/pull/2426)).
+
+API Changes:
+ * Changed `databricks experiments log-inputs` command with new required argument order.
+ * Added `databricks genie get-space` command.
+ * Added `databricks providers list-provider-share-assets` command.
+ * Changed `databricks shares update-permissions` command return type to become non-empty.
+
+OpenAPI commit e5c870006a536121442cfd2441bdc8a5fb76ae1e (2025-03-03)
+
+## [Release] Release v0.242.0
+
+Notable changes:
+Starting this version CLI does not load bundle auth information when CLI command is executed inside the bundle directory with explicitly provided via `-p` flag profile.
+For more details see the related GitHub issue https://github.com/databricks/cli/issues/1358
+
+CLI:
+ * Do not load host from bundle for CLI commands when profile flag is used ([#2335](https://github.com/databricks/cli/pull/2335)).
+ * Fixed accessing required path parameters in CLI generation when --json flag ([#2373](https://github.com/databricks/cli/pull/2373)).
+
+Bundles:
+ * Provide instructions for testing in the default-python template ([#2355](https://github.com/databricks/cli/pull/2355)).
+ * Remove `run_as` from the built-in templates ([#2044](https://github.com/databricks/cli/pull/2044)).
+ * Change warning about incomplete permissions section into a recommendation ([#2043](https://github.com/databricks/cli/pull/2043)).
+ * Refine `mode: production` diagnostic output ([#2236](https://github.com/databricks/cli/pull/2236)).
+ * Support serverless mode in default-python template (explicit prompt) ([#2377](https://github.com/databricks/cli/pull/2377)).
+ * Set default data_security_mode to "SINGLE_USER" in bundle templates ([#2372](https://github.com/databricks/cli/pull/2372)).
+ * Fixed spark version check for clusters defined in the same bundle ([#2374](https://github.com/databricks/cli/pull/2374)).
+
+API Changes:
+ * Added `databricks genie get-message-query-result-by-attachment` command.
+
+OpenAPI commit 99f644e72261ef5ecf8d74db20f4b7a1e09723cc (2025-02-11)
+
 ## [Release] Release v0.241.2
 
 This is a bugfix release to address an issue where jobs with tasks with a

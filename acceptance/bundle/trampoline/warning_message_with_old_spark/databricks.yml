@@ -1,0 +1,20 @@
+bundle:
+  name: trampoline_warning_message_with_old_spark
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+resources:
+  jobs:
+    whl:
+      name: "wheel-job"
+      tasks:
+        - task_key: test_task
+          python_wheel_task:
+            package_name: my_package
+            entry_point: my_module.my_function
+          existing_cluster_id: "some-test-cluster-id"
+          libraries:
+            - whl: ./dist/*.whl

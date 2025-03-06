@@ -38,5 +38,5 @@ func (m *all) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 	}
 
-	return bundle.Apply(ctx, b, bundle.Seq(out...))
+	return bundle.ApplySeq(ctx, b, out...)
 }

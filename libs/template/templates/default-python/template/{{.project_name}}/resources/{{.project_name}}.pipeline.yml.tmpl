@@ -1,15 +1,22 @@
+{{$with_serverless := (eq .serverless "yes") -}}
 # The main pipeline for {{.project_name}}
 resources:
   pipelines:
     {{.project_name}}_pipeline:
       name: {{.project_name}}_pipeline
       {{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
+      {{- if $with_serverless }}
+      ## Catalog is required for serverless compute
+      catalog: main{{else}}
       ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
-      # catalog: catalog_name
+      # catalog: catalog_name{{end}}
       {{- else}}
       catalog: {{default_catalog}}
       {{- end}}
-      target: {{.project_name}}_${bundle.target}
+      schema: {{.project_name}}_${bundle.target}
+      {{- if $with_serverless }}
+      serverless: true
+      {{- end}}
       libraries:
         - notebook:
             path: ../src/dlt_pipeline.ipynb

@@ -1,0 +1,4 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/state/default/state/terraform.tfstate"
+}
