@@ -229,13 +229,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx = context.WithValue(ctx, &workspaceClient, w)
+	ctx = command.SetWorkspaceClient(ctx, w)
 	cmd.SetContext(ctx)
 	return nil
-}
-
-func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) context.Context {
-	return context.WithValue(ctx, &workspaceClient, w)
 }
 
 func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
