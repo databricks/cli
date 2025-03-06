@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -292,7 +293,7 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, isAccount)
 
-	a := AccountClient(cmd.Context())
+	a := command.AccountClient(cmd.Context())
 	require.NotNil(t, a)
 }
 

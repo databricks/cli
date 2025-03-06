@@ -10,4 +10,8 @@ const (
 	// configUsedKey is the context key for the auth configuration used to run the
 	// command.
 	configUsedKey = key(2)
+
+	// accountClientKey is the context key for an already configured account
+	// client that can be used to make authenticated requests.
+	accountClientKey = key(4)
 )
