@@ -36,13 +36,13 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 	}{
 		{
 			name:          "preset enabled, bundle in Workspace, databricks runtime",
-			ctx:           dbr.MockRuntime(testContext, true),
+			ctx:           dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			initialValue:  &enabled,
 			expectedValue: &enabled,
 		},
 		{
 			name: "preset enabled, bundle not in Workspace, databricks runtime",
-			ctx:  dbr.MockRuntime(testContext, true),
+			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
 				b.SyncRootPath = "/Users/user.name@company.com"
 			},
@@ -52,26 +52,26 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 		},
 		{
 			name:            "preset enabled, bundle in Workspace, not databricks runtime",
-			ctx:             dbr.MockRuntime(testContext, false),
+			ctx:             dbr.MockRuntime(testContext, dbr.Environment{}),
 			initialValue:    &enabled,
 			expectedValue:   &disabled,
 			expectedWarning: "source-linked deployment is available only in the Databricks Workspace",
 		},
 		{
 			name:          "preset disabled, bundle in Workspace, databricks runtime",
-			ctx:           dbr.MockRuntime(testContext, true),
+			ctx:           dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			initialValue:  &disabled,
 			expectedValue: &disabled,
 		},
 		{
 			name:          "preset nil, bundle in Workspace, databricks runtime",
-			ctx:           dbr.MockRuntime(testContext, true),
+			ctx:           dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			initialValue:  nil,
 			expectedValue: nil,
 		},
 		{
 			name: "preset nil, dev mode true, bundle in Workspace, databricks runtime",
-			ctx:  dbr.MockRuntime(testContext, true),
+			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
 				b.Config.Bundle.Mode = config.Development
 			},
@@ -80,7 +80,7 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 		},
 		{
 			name: "preset enabled, workspace.file_path is defined by user",
-			ctx:  dbr.MockRuntime(testContext, true),
+			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
 				b.Config.Workspace.FilePath = "file_path"
 			},
@@ -90,7 +90,7 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 		},
 		{
 			name: "preset enabled, apps is defined by user",
-			ctx:  dbr.MockRuntime(testContext, true),
+			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
 				b.Config.Resources.Apps = map[string]*resources.App{
 					"app": {},
