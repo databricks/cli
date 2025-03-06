@@ -105,11 +105,15 @@ func Upload(ctx context.Context, cfg *config.Config) error {
 			continue
 		}
 
-		// We retry for all 5xx responses. We explicitly omit 503 in the predicate here
-		// because it is already automatically retried in the SDK layer.
-		// ref: https://github.com/databricks/databricks-sdk-go/blob/cdb28002afacb8b762348534a4c4040a9f19c24b/apierr/errors.go#L91
+		// We retry for all 5xx responses. Note that the SDK only retries for 503 and 429
+		// (as of 6th March 2025) so we need some additional logic here to retry for other
+		// 5xx responses.
+		// SDK ref: https://github.com/databricks/databricks-sdk-go/blob/cdb28002afacb8b762348534a4c4040a9f19c24b/apierr/errors.go#L91
+		//
+		// The UI infra team (who owns the /telemetry-ext API) recommends retrying for
+		// all 5xx responses.
 		var apiErr *apierr.APIError
-		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 && apiErr.StatusCode != 503 {
+		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
 			log.Debugf(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d\n", i+1, apiErr.StatusCode)
 			time.Sleep(200 * time.Millisecond)
 			continue
