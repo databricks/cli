@@ -16,7 +16,7 @@ func TestCommandConfigUsed(t *testing.T) {
 
 	// Panic if ConfigUsed is called before SetConfigUsed.
 	assert.Panics(t, func() {
-		ConfigUsed(nil)
+		ConfigUsed(ctx)
 	})
 
 	ctx = SetConfigUsed(ctx, cfg)
