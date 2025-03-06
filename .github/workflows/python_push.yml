@@ -1,0 +1,62 @@
+name: python build
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - experimental/python/**
+  merge_group:
+    types: [checks_requested]
+    paths:
+      - experimental/python/**
+  push:
+    # Always run on push to main. The build cache can only be reused
+    # if it was saved by a run from the repository's default branch.
+    # The run result will be identical to that from the merge queue
+    # because the commit is identical, yet we need to perform it to
+    # seed the build cache.
+    branches:
+      - main
+
+jobs:
+  python_tests:
+    name: tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        pyVersion: [ '3.10', '3.11', '3.12', '3.13' ]
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
+        with:
+          python-version: ${{ matrix.python-version }}
+          version: "0.6.5"
+          checksum: "8fc9895719a1291ecd193cb86f9282ff3649cef797d29eacc74c4f573aab1e2f"
+
+      - name: Run tests
+        working-directory: experimental/python
+        run: make test
+
+  python_linters:
+    name: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
+        with:
+          version: "0.6.5"
+          checksum: "8fc9895719a1291ecd193cb86f9282ff3649cef797d29eacc74c4f573aab1e2f"
+
+      - name: Run lint
+        working-directory: experimental/python
+        run: make lint
