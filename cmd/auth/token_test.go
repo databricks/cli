@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/cache"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -106,7 +107,7 @@ func getCobraCmdForTest(f fixtures.HTTPFixture) (*cobra.Command, *bytes.Buffer) 
 func TestTokenCmdWithProfilePrintsHelpfulLoginMessageOnRefreshFailure(t *testing.T) {
 	cmd, output := getCobraCmdForTest(refreshFailureTokenResponse)
 	cmd.SetArgs([]string{"auth", "token", "--profile", "expired"})
-	err := cmd.Execute()
+	err := root.Execute(cmd.Context(), cmd)
 
 	out := output.String()
 	assert.Empty(t, out)
