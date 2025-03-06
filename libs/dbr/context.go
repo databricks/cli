@@ -13,6 +13,11 @@ const (
 	// The value of 1 is arbitrary and can be any number.
 	// Other keys in the same package must have different values.
 	dbrKey = key(1)
+
+	// dbrVersionKey is the context key for the runtime version itself.
+	// It'll contain the value of the DATABRICKS_RUNTIME_VERSION environment variable
+	// if the process is running on a Databricks Runtime.
+	dbrVersionKey = key(2)
 )
 
 // DetectRuntime detects whether or not the current
@@ -22,7 +27,11 @@ func DetectRuntime(ctx context.Context) context.Context {
 	if v := ctx.Value(dbrKey); v != nil {
 		panic("dbr.DetectRuntime called twice on the same context")
 	}
-	return context.WithValue(ctx, dbrKey, detect(ctx))
+
+	version, isRuntime := detect(ctx)
+	ctx = context.WithValue(ctx, dbrKey, isRuntime)
+	ctx = context.WithValue(ctx, dbrVersionKey, version)
+	return ctx
 }
 
 // MockRuntime is a helper function to mock the detection result.
@@ -46,4 +55,12 @@ func RunsOnRuntime(ctx context.Context) bool {
 		panic("dbr.RunsOnRuntime called without calling dbr.DetectRuntime first")
 	}
 	return v.(bool)
+}
+
+func RuntimeVersion(ctx context.Context) string {
+	if !RunsOnRuntime(ctx) {
+		return ""
+	}
+
+	return ctx.Value(dbrVersionKey).(string)
 }

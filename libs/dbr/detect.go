@@ -11,25 +11,28 @@ import (
 // Dereference [os.Stat] to allow mocking in tests.
 var statFunc = os.Stat
 
+const EnvVarName = "DATABRICKS_RUNTIME_VERSION"
+
 // detect returns true if the current process is running on a Databricks Runtime.
 // Its return value is meant to be cached in the context.
-func detect(ctx context.Context) bool {
+func detect(ctx context.Context) (string, bool) {
 	// Databricks Runtime implies Linux.
 	// Return early on other operating systems.
 	if runtime.GOOS != "linux" {
-		return false
+		return "", false
 	}
 
 	// Databricks Runtime always has the DATABRICKS_RUNTIME_VERSION environment variable set.
-	if value, ok := env.Lookup(ctx, "DATABRICKS_RUNTIME_VERSION"); !ok || value == "" {
-		return false
+	version, ok := env.Lookup(ctx, EnvVarName)
+	if !ok || version == "" {
+		return "", false
 	}
 
 	// Expect to see a "/databricks" directory.
 	if fi, err := statFunc("/databricks"); err != nil || !fi.IsDir() {
-		return false
+		return "", false
 	}
 
 	// All checks passed.
-	return true
+	return version, true
 }
