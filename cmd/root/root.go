@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
@@ -123,6 +124,9 @@ Panic Payload: %v
 Stack Trace:
 %s`, version, r, string(trace))
 	}()
+
+	// Set a cmd-exec-id value in the context
+	ctx = command.SetExecId(ctx)
 
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
