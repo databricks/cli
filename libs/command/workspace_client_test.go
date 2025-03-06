@@ -27,8 +27,7 @@ func TestCommandWorkspaceClient(t *testing.T) {
 
 	// Multiple calls should return a pointer to the same client.
 	w := command.WorkspaceClient(ctx)
-	assert.Equal(t, w, command.WorkspaceClient(ctx))
-	assert.Equal(t, w, command.WorkspaceClient(ctx))
+	assert.Same(t, w, command.WorkspaceClient(ctx))
 
 	// The client should have the correct configuration.
 	assert.Equal(t, "https://test.com", command.WorkspaceClient(ctx).Config.Host)
