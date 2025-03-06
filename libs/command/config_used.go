@@ -7,9 +7,6 @@ import (
 )
 
 func SetConfigUsed(ctx context.Context, cfg *config.Config) context.Context {
-	if v := ctx.Value(configUsedKey); v != nil {
-		panic("command.SetConfigUsed called twice on the same context")
-	}
 	return context.WithValue(ctx, configUsedKey, cfg)
 }
 

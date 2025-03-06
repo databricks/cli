@@ -41,7 +41,7 @@ var (
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
 // example: var SingleTest = "bundle/variables/empty"
-var SingleTest = ""
+var SingleTest = "auth/bundle_and_profile"
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
