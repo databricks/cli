@@ -1,0 +1,172 @@
+
+>>> $CLI account ip-access-lists create --help
+Create access list.
+  
+  Creates an IP access list for the account.
+  
+  A list can be an allow list or a block list. See the top of this file for a
+  description of how the server treats allow lists and block lists at runtime.
+  
+  When creating or updating an IP access list:
+  
+  * For all allow lists and block lists combined, the API supports a maximum of
+  1000 IP/CIDR values, where one CIDR counts as a single value. Attempts to
+  exceed that number return error 400 with error_code value QUOTA_EXCEEDED.
+  * If the new list would block the calling user's current IP, error 400 is
+  returned with error_code value INVALID_STATE.
+  
+  It can take a few minutes for the changes to take effect.
+
+  Arguments:
+    LABEL: Label for the IP access list. This **cannot** be empty.
+    LIST_TYPE: Type of IP access list. Valid values are as follows and are
+      case-sensitive:
+      
+      * ALLOW: An allow list. Include this IP or range. * BLOCK: A block
+      list. Exclude this IP or range. IP addresses in the block list are
+      excluded even if they are included in an allow list.
+
+Usage:
+  databricks account ip-access-lists create LABEL LIST_TYPE [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account ip-access-lists delete --help
+Delete access list.
+  
+  Deletes an IP access list, specified by its list ID.
+
+  Arguments:
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
+
+Usage:
+  databricks account ip-access-lists delete IP_ACCESS_LIST_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account ip-access-lists get --help
+Get IP access list.
+  
+  Gets an IP access list, specified by its list ID.
+
+  Arguments:
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
+
+Usage:
+  databricks account ip-access-lists get IP_ACCESS_LIST_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account ip-access-lists list --help
+Get access lists.
+  
+  Gets all IP access lists for the specified account.
+
+Usage:
+  databricks account ip-access-lists list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account ip-access-lists replace --help
+Replace access list.
+  
+  Replaces an IP access list, specified by its ID.
+  
+  A list can include allow lists and block lists. See the top of this file for a
+  description of how the server treats allow lists and block lists at run time.
+  When replacing an IP access list: * For all allow lists and block lists
+  combined, the API supports a maximum of 1000 IP/CIDR values, where one CIDR
+  counts as a single value. Attempts to exceed that number return error 400 with
+  error_code value QUOTA_EXCEEDED. * If the resulting list would block the
+  calling user's current IP, error 400 is returned with error_code value
+  INVALID_STATE. It can take a few minutes for the changes to take effect.
+
+  Arguments:
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
+    LABEL: Label for the IP access list. This **cannot** be empty.
+    LIST_TYPE: Type of IP access list. Valid values are as follows and are
+      case-sensitive:
+      
+      * ALLOW: An allow list. Include this IP or range. * BLOCK: A block
+      list. Exclude this IP or range. IP addresses in the block list are
+      excluded even if they are included in an allow list.
+    ENABLED: Specifies whether this IP access list is enabled.
+
+Usage:
+  databricks account ip-access-lists replace IP_ACCESS_LIST_ID LABEL LIST_TYPE ENABLED [flags]
+
+Flags:
+  -h, --help        help for replace
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account ip-access-lists update --help
+Update access list.
+  
+  Updates an existing IP access list, specified by its ID.
+  
+  A list can include allow lists and block lists. See the top of this file for a
+  description of how the server treats allow lists and block lists at run time.
+  
+  When updating an IP access list:
+  
+  * For all allow lists and block lists combined, the API supports a maximum of
+  1000 IP/CIDR values, where one CIDR counts as a single value. Attempts to
+  exceed that number return error 400 with error_code value QUOTA_EXCEEDED.
+  * If the updated list would block the calling user's current IP, error 400 is
+  returned with error_code value INVALID_STATE.
+  
+  It can take a few minutes for the changes to take effect.
+
+  Arguments:
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
+
+Usage:
+  databricks account ip-access-lists update IP_ACCESS_LIST_ID [flags]
+
+Flags:
+      --enabled              Specifies whether this IP access list is enabled.
+  -h, --help                 help for update
+      --json JSON            either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --label string         Label for the IP access list.
+      --list-type ListType   Type of IP access list. Supported values: [ALLOW, BLOCK]
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI policy-compliance-for-clusters enforce-compliance --help
+trace $CLI policy-compliance-for-clusters get-compliance --help
+trace $CLI policy-compliance-for-clusters list-compliance --help

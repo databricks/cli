@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI volumes create --help
+trace $CLI volumes delete --help
+trace $CLI volumes list --help
+trace $CLI volumes read --help
+trace $CLI volumes update --help

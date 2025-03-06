@@ -1,0 +1,6 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI notification-destinations create --help
+trace $CLI notification-destinations delete --help
+trace $CLI notification-destinations get --help
+trace $CLI notification-destinations list --help
+trace $CLI notification-destinations update --help

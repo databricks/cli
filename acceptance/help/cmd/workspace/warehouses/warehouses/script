@@ -1,0 +1,14 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI warehouses create --help
+trace $CLI warehouses delete --help
+trace $CLI warehouses edit --help
+trace $CLI warehouses get --help
+trace $CLI warehouses get-permission-levels --help
+trace $CLI warehouses get-permissions --help
+trace $CLI warehouses get-workspace-warehouse-config --help
+trace $CLI warehouses list --help
+trace $CLI warehouses set-permissions --help
+trace $CLI warehouses set-workspace-warehouse-config --help
+trace $CLI warehouses start --help
+trace $CLI warehouses stop --help
+trace $CLI warehouses update-permissions --help

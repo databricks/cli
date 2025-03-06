@@ -1,0 +1,79 @@
+
+>>> $CLI policy-compliance-for-clusters enforce-compliance --help
+Enforce cluster policy compliance.
+  
+  Updates a cluster to be compliant with the current version of its policy. A
+  cluster can be updated if it is in a RUNNING or TERMINATED state.
+  
+  If a cluster is updated while in a RUNNING state, it will be restarted so
+  that the new attributes can take effect.
+  
+  If a cluster is updated while in a TERMINATED state, it will remain
+  TERMINATED. The next time the cluster is started, the new attributes will
+  take effect.
+  
+  Clusters created by the Databricks Jobs, DLT, or Models services cannot be
+  enforced by this API. Instead, use the "Enforce job policy compliance" API to
+  enforce policy compliance on jobs.
+
+  Arguments:
+    CLUSTER_ID: The ID of the cluster you want to enforce policy compliance on.
+
+Usage:
+  databricks policy-compliance-for-clusters enforce-compliance CLUSTER_ID [flags]
+
+Flags:
+  -h, --help            help for enforce-compliance
+      --json JSON       either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --validate-only   If set, previews the changes that would be made to a cluster to enforce compliance but does not update the cluster.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI policy-compliance-for-clusters get-compliance --help
+Get cluster policy compliance.
+  
+  Returns the policy compliance status of a cluster. Clusters could be out of
+  compliance if their policy was updated after the cluster was last edited.
+
+  Arguments:
+    CLUSTER_ID: The ID of the cluster to get the compliance status
+
+Usage:
+  databricks policy-compliance-for-clusters get-compliance CLUSTER_ID [flags]
+
+Flags:
+  -h, --help   help for get-compliance
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI policy-compliance-for-clusters list-compliance --help
+List cluster policy compliance.
+  
+  Returns the policy compliance status of all clusters that use a given policy.
+  Clusters could be out of compliance if their policy was updated after the
+  cluster was last edited.
+
+  Arguments:
+    POLICY_ID: Canonical unique identifier for the cluster policy.
+
+Usage:
+  databricks policy-compliance-for-clusters list-compliance POLICY_ID [flags]
+
+Flags:
+  -h, --help                help for list-compliance
+      --page-size int       Use this field to specify the maximum number of results to be returned by the server.
+      --page-token string   A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

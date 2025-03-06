@@ -1,0 +1,97 @@
+
+>>> $CLI account metastores create --help
+Create metastore.
+  
+  Creates a Unity Catalog metastore.
+
+Usage:
+  databricks account metastores create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account metastores delete --help
+Delete a metastore.
+  
+  Deletes a Unity Catalog metastore for an account, both specified by ID.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+
+Usage:
+  databricks account metastores delete METASTORE_ID [flags]
+
+Flags:
+      --force   Force deletion even if the metastore is not empty.
+  -h, --help    help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account metastores get --help
+Get a metastore.
+  
+  Gets a Unity Catalog metastore from an account, both specified by ID.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+
+Usage:
+  databricks account metastores get METASTORE_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account metastores list --help
+Get all metastores associated with an account.
+  
+  Gets all Unity Catalog metastores associated with an account specified by ID.
+
+Usage:
+  databricks account metastores list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI account metastores update --help
+Update a metastore.
+  
+  Updates an existing Unity Catalog metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+
+Usage:
+  databricks account metastores update METASTORE_ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

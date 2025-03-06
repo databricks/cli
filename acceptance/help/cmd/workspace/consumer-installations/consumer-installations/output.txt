@@ -1,0 +1,99 @@
+
+>>> $CLI consumer-installations create --help
+Install from a listing.
+  
+  Install payload associated with a Databricks Marketplace listing.
+
+Usage:
+  databricks consumer-installations create LISTING_ID [flags]
+
+Flags:
+      --catalog-name string                        
+  -h, --help                                       help for create
+      --json JSON                                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --recipient-type DeltaSharingRecipientType   . Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]
+      --share-name string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-installations delete --help
+Uninstall from a listing.
+  
+  Uninstall an installation associated with a Databricks Marketplace listing.
+
+Usage:
+  databricks consumer-installations delete LISTING_ID INSTALLATION_ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-installations list --help
+List all installations.
+  
+  List all installations across all listings.
+
+Usage:
+  databricks consumer-installations list [flags]
+
+Flags:
+  -h, --help                help for list
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-installations list-listing-installations --help
+List installations for a listing.
+  
+  List all installations for a particular listing.
+
+Usage:
+  databricks consumer-installations list-listing-installations LISTING_ID [flags]
+
+Flags:
+  -h, --help                help for list-listing-installations
+      --page-size int       
+      --page-token string
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI consumer-installations update --help
+Update an installation.
+  
+  This is a update API that will update the part of the fields defined in the
+  installation table as well as interact with external services according to the
+  fields not included in the installation table 1. the token will be rotate if
+  the rotateToken flag is true 2. the token will be forcibly rotate if the
+  rotateToken flag is true and the tokenInfo field is empty
+
+Usage:
+  databricks consumer-installations update LISTING_ID INSTALLATION_ID [flags]
+
+Flags:
+  -h, --help           help for update
+      --json JSON      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --rotate-token
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

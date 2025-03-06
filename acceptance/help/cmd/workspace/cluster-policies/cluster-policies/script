@@ -1,0 +1,10 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI cluster-policies create --help
+trace $CLI cluster-policies delete --help
+trace $CLI cluster-policies edit --help
+trace $CLI cluster-policies get --help
+trace $CLI cluster-policies get-permission-levels --help
+trace $CLI cluster-policies get-permissions --help
+trace $CLI cluster-policies list --help
+trace $CLI cluster-policies set-permissions --help
+trace $CLI cluster-policies update-permissions --help

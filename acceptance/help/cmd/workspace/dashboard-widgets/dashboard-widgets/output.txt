@@ -1,0 +1,53 @@
+
+>>> $CLI dashboard-widgets create --help
+Add widget to a dashboard.
+
+Usage:
+  databricks dashboard-widgets create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI dashboard-widgets delete --help
+Remove widget.
+
+  Arguments:
+    ID: Widget ID returned by :method:dashboardwidgets/create
+
+Usage:
+  databricks dashboard-widgets delete ID [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI dashboard-widgets update --help
+Update existing widget.
+
+  Arguments:
+    ID: Widget ID returned by :method:dashboardwidgets/create
+
+Usage:
+  databricks dashboard-widgets update ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

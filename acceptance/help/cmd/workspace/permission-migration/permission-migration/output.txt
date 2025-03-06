@@ -1,0 +1,23 @@
+
+>>> $CLI permission-migration migrate-permissions --help
+Migrate Permissions.
+
+  Arguments:
+    WORKSPACE_ID: WorkspaceId of the associated workspace where the permission migration
+      will occur.
+    FROM_WORKSPACE_GROUP_NAME: The name of the workspace group that permissions will be migrated from.
+    TO_ACCOUNT_GROUP_NAME: The name of the account group that permissions will be migrated to.
+
+Usage:
+  databricks permission-migration migrate-permissions WORKSPACE_ID FROM_WORKSPACE_GROUP_NAME TO_ACCOUNT_GROUP_NAME [flags]
+
+Flags:
+  -h, --help        help for migrate-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --size int    The maximum number of permissions that will be migrated.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

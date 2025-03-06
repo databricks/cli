@@ -1,0 +1,207 @@
+
+>>> $CLI instance-pools create --help
+Create a new instance pool.
+  
+  Creates a new instance pool using idle and ready-to-use cloud instances.
+
+  Arguments:
+    INSTANCE_POOL_NAME: Pool name requested by the user. Pool name must be unique. Length must be
+      between 1 and 100 characters.
+    NODE_TYPE_ID: This field encodes, through a single value, the resources available to
+      each of the Spark nodes in this cluster. For example, the Spark nodes can
+      be provisioned and optimized for memory or compute intensive workloads. A
+      list of available node types can be retrieved by using the
+      :method:clusters/listNodeTypes API call.
+
+Usage:
+  databricks instance-pools create INSTANCE_POOL_NAME NODE_TYPE_ID [flags]
+
+Flags:
+      --enable-elastic-disk                         Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.
+  -h, --help                                        help for create
+      --idle-instance-autotermination-minutes int   Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.
+      --json JSON                                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --max-capacity int                            Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.
+      --min-idle-instances int                      Minimum number of idle instances to keep in the instance pool.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-pools delete --help
+Delete an instance pool.
+  
+  Deletes the instance pool permanently. The idle instances in the pool are
+  terminated asynchronously.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool to be terminated.
+
+Usage:
+  databricks instance-pools delete INSTANCE_POOL_ID [flags]
+
+Flags:
+  -h, --help        help for delete
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-pools edit --help
+Edit an existing instance pool.
+  
+  Modifies the configuration of an existing instance pool.
+
+  Arguments:
+    INSTANCE_POOL_ID: Instance pool ID
+    INSTANCE_POOL_NAME: Pool name requested by the user. Pool name must be unique. Length must be
+      between 1 and 100 characters.
+    NODE_TYPE_ID: This field encodes, through a single value, the resources available to
+      each of the Spark nodes in this cluster. For example, the Spark nodes can
+      be provisioned and optimized for memory or compute intensive workloads. A
+      list of available node types can be retrieved by using the
+      :method:clusters/listNodeTypes API call.
+
+Usage:
+  databricks instance-pools edit INSTANCE_POOL_ID INSTANCE_POOL_NAME NODE_TYPE_ID [flags]
+
+Flags:
+  -h, --help                                        help for edit
+      --idle-instance-autotermination-minutes int   Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.
+      --json JSON                                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --max-capacity int                            Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.
+      --min-idle-instances int                      Minimum number of idle instances to keep in the instance pool.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-pools get --help
+Get instance pool information.
+  
+  Retrieve the information for an instance pool based on its identifier.
+
+  Arguments:
+    INSTANCE_POOL_ID: The canonical unique identifier for the instance pool.
+
+Usage:
+  databricks instance-pools get INSTANCE_POOL_ID [flags]
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-pools get-permission-levels --help
+Get instance pool permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.
+
+Usage:
+  databricks instance-pools get-permission-levels INSTANCE_POOL_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-pools get-permissions --help
+Get instance pool permissions.
+  
+  Gets the permissions of an instance pool. Instance pools can inherit
+  permissions from their root object.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.
+
+Usage:
+  databricks instance-pools get-permissions INSTANCE_POOL_ID [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-pools list --help
+List instance pool info.
+  
+  Gets a list of instance pools with their statistics.
+
+Usage:
+  databricks instance-pools list [flags]
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-pools set-permissions --help
+Set instance pool permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.
+
+Usage:
+  databricks instance-pools set-permissions INSTANCE_POOL_ID [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI instance-pools update-permissions --help
+Update instance pool permissions.
+  
+  Updates the permissions on an instance pool. Instance pools can inherit
+  permissions from their root object.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.
+
+Usage:
+  databricks instance-pools update-permissions INSTANCE_POOL_ID [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

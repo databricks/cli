@@ -1,0 +1,4 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI grants get --help
+trace $CLI grants get-effective --help
+trace $CLI grants update --help

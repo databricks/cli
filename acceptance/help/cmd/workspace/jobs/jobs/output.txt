@@ -1,0 +1,470 @@
+
+>>> $CLI jobs cancel-all-runs --help
+Cancel all runs of a job.
+  
+  Cancels all active runs of a job. The runs are canceled asynchronously, so it
+  doesn't prevent new runs from being started.
+
+Usage:
+  databricks jobs cancel-all-runs [flags]
+
+Flags:
+      --all-queued-runs   Optional boolean parameter to cancel all queued runs.
+  -h, --help              help for cancel-all-runs
+      --job-id int        The canonical identifier of the job to cancel all runs of.
+      --json JSON         either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs cancel-run --help
+Cancel a run.
+  
+  Cancels a job run or a task run. The run is canceled asynchronously, so it may
+  still be running when this request completes.
+
+  Arguments:
+    RUN_ID: This field is required.
+
+Usage:
+  databricks jobs cancel-run RUN_ID [flags]
+
+Flags:
+  -h, --help               help for cancel-run
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach TERMINATED or SKIPPED state
+      --timeout duration   maximum amount of time to reach TERMINATED or SKIPPED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs create --help
+Create a new job.
+  
+  Create a new job.
+
+Usage:
+  databricks jobs create [flags]
+
+Flags:
+  -h, --help        help for create
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs delete --help
+Delete a job.
+  
+  Deletes a job.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to delete. This field is required.
+
+Usage:
+  databricks jobs delete JOB_ID [flags]
+
+Flags:
+  -h, --help        help for delete
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs delete-run --help
+Delete a job run.
+  
+  Deletes a non-active run. Returns an error if the run is active.
+
+  Arguments:
+    RUN_ID: ID of the run to delete.
+
+Usage:
+  databricks jobs delete-run RUN_ID [flags]
+
+Flags:
+  -h, --help        help for delete-run
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs export-run --help
+Export and retrieve a job run.
+  
+  Export and retrieve the job run task.
+
+  Arguments:
+    RUN_ID: The canonical identifier for the run. This field is required.
+
+Usage:
+  databricks jobs export-run RUN_ID [flags]
+
+Flags:
+  -h, --help                            help for export-run
+      --views-to-export ViewsToExport   Which views to export (CODE, DASHBOARDS, or ALL). Supported values: [ALL, CODE, DASHBOARDS]
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs get --help
+Get a single job.
+  
+  Retrieves the details for a single job.
+  
+  In Jobs API 2.2, requests for a single job support pagination of tasks and
+  job_clusters when either exceeds 100 elements. Use the next_page_token
+  field to check for more results and pass its value as the page_token in
+  subsequent requests. Arrays with fewer than 100 elements in a page will be
+  empty on later pages.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to retrieve information about. This
+      field is required.
+
+Usage:
+  databricks jobs get JOB_ID [flags]
+
+Flags:
+  -h, --help                help for get
+      --page-token string   Use next_page_token returned from the previous GetJob to request the next page of the job's sub-resources.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs get-permission-levels --help
+Get job permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.
+
+Usage:
+  databricks jobs get-permission-levels JOB_ID [flags]
+
+Flags:
+  -h, --help   help for get-permission-levels
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs get-permissions --help
+Get job permissions.
+  
+  Gets the permissions of a job. Jobs can inherit permissions from their root
+  object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.
+
+Usage:
+  databricks jobs get-permissions JOB_ID [flags]
+
+Flags:
+  -h, --help   help for get-permissions
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs get-run --help
+Get a single job run.
+  
+  Retrieves the metadata of a run.
+  
+  In Jobs API 2.2, requests for a single job run support pagination of tasks
+  and job_clusters when either exceeds 100 elements. Use the next_page_token
+  field to check for more results and pass its value as the page_token in
+  subsequent requests. Arrays with fewer than 100 elements in a page will be
+  empty on later pages.
+
+  Arguments:
+    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.
+      This field is required.
+
+Usage:
+  databricks jobs get-run RUN_ID [flags]
+
+Flags:
+  -h, --help                      help for get-run
+      --include-history           Whether to include the repair history in the response.
+      --include-resolved-values   Whether to include resolved parameter values in the response.
+      --no-wait                   do not wait to reach TERMINATED or SKIPPED state
+      --page-token string         Use next_page_token returned from the previous GetRun to request the next page of the run's sub-resources.
+      --timeout duration          maximum amount of time to reach TERMINATED or SKIPPED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs get-run-output --help
+Get the output for a single run.
+  
+  Retrieve the output and metadata of a single task run. When a notebook task
+  returns a value through the dbutils.notebook.exit() call, you can use this
+  endpoint to retrieve that value. Databricks restricts this API to returning
+  the first 5 MB of the output. To return a larger result, you can store job
+  results in a cloud storage service.
+  
+  This endpoint validates that the __run_id__ parameter is valid and returns an
+  HTTP status code 400 if the __run_id__ parameter is invalid. Runs are
+  automatically removed after 60 days. If you to want to reference them beyond
+  60 days, you must save old run results before they expire.
+
+  Arguments:
+    RUN_ID: The canonical identifier for the run.
+
+Usage:
+  databricks jobs get-run-output RUN_ID [flags]
+
+Flags:
+  -h, --help   help for get-run-output
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs list --help
+List jobs.
+  
+  Retrieves a list of jobs.
+
+Usage:
+  databricks jobs list [flags]
+
+Flags:
+      --expand-tasks        Whether to include task and cluster details in the response.
+  -h, --help                help for list
+      --limit int           The number of jobs to return.
+      --name string         A filter on the list based on the exact (case insensitive) job name.
+      --offset int          The offset of the first job to return, relative to the most recently created job.
+      --page-token string   Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of jobs respectively.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs list-runs --help
+List job runs.
+  
+  List runs in descending order by start time.
+
+Usage:
+  databricks jobs list-runs [flags]
+
+Flags:
+      --active-only           If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.
+      --completed-only        If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.
+      --expand-tasks          Whether to include task and cluster details in the response.
+  -h, --help                  help for list-runs
+      --job-id int            The job for which to list runs.
+      --limit int             The number of runs to return.
+      --offset int            The offset of the first run to return, relative to the most recent run.
+      --page-token string     Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of runs respectively.
+      --run-type RunType      The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]
+      --start-time-from int   Show runs that started _at or after_ this value.
+      --start-time-to int     Show runs that started _at or before_ this value.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs repair-run --help
+Repair a job run.
+  
+  Re-run one or more tasks. Tasks are re-run as part of the original job run.
+  They use the current job and task settings, and can be viewed in the history
+  for the original job run.
+
+  Arguments:
+    RUN_ID: The job run ID of the run to repair. The run must not be in progress.
+
+Usage:
+  databricks jobs repair-run RUN_ID [flags]
+
+Flags:
+  -h, --help                     help for repair-run
+      --json JSON                either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --latest-repair-id int     The ID of the latest repair.
+      --no-wait                  do not wait to reach TERMINATED or SKIPPED state
+      --rerun-all-failed-tasks   If true, repair all failed tasks.
+      --rerun-dependent-tasks    If true, repair all tasks that depend on the tasks in rerun_tasks, even if they were previously successful.
+      --timeout duration         maximum amount of time to reach TERMINATED or SKIPPED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs reset --help
+Update all job settings (reset).
+  
+  Overwrite all settings for the given job. Use the [_Update_
+  endpoint](:method:jobs/update) to update job settings partially.
+
+Usage:
+  databricks jobs reset [flags]
+
+Flags:
+  -h, --help        help for reset
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs run-now --help
+Trigger a new job run.
+  
+  Run a job and return the run_id of the triggered run.
+
+  Arguments:
+    JOB_ID: The ID of the job to be executed
+
+Usage:
+  databricks jobs run-now JOB_ID [flags]
+
+Flags:
+  -h, --help                       help for run-now
+      --idempotency-token string   An optional token to guarantee the idempotency of job run requests.
+      --json JSON                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait                    do not wait to reach TERMINATED or SKIPPED state
+      --timeout duration           maximum amount of time to reach TERMINATED or SKIPPED state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs set-permissions --help
+Set job permissions.
+  
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.
+
+Usage:
+  databricks jobs set-permissions JOB_ID [flags]
+
+Flags:
+  -h, --help        help for set-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs submit --help
+Create and trigger a one-time run.
+  
+  Submit a one-time run. This endpoint allows you to submit a workload directly
+  without creating a job. Runs submitted using this endpoint don’t display in
+  the UI. Use the jobs/runs/get API to check the run state after the job is
+  submitted.
+
+Usage:
+  databricks jobs submit [flags]
+
+Flags:
+      --budget-policy-id string    The user specified id of the budget policy to use for this one-time run.
+  -h, --help                       help for submit
+      --idempotency-token string   An optional token that can be used to guarantee the idempotency of job run requests.
+      --json JSON                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait                    do not wait to reach TERMINATED or SKIPPED state
+      --run-name string            An optional name for the run.
+      --timeout duration           maximum amount of time to reach TERMINATED or SKIPPED state (default 20m0s)
+      --timeout-seconds int        An optional timeout applied to each run of this job.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs update --help
+Update job settings partially.
+  
+  Add, update, or remove specific settings of an existing job. Use the [_Reset_
+  endpoint](:method:jobs/reset) to overwrite all job settings.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to update. This field is required.
+
+Usage:
+  databricks jobs update JOB_ID [flags]
+
+Flags:
+  -h, --help        help for update
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI jobs update-permissions --help
+Update job permissions.
+  
+  Updates the permissions on a job. Jobs can inherit permissions from their root
+  object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.
+
+Usage:
+  databricks jobs update-permissions JOB_ID [flags]
+
+Flags:
+  -h, --help        help for update-permissions
+      --json JSON   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

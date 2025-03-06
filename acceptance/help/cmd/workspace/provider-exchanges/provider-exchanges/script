@@ -1,0 +1,10 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace $CLI provider-exchanges add-listing-to-exchange --help
+trace $CLI provider-exchanges create --help
+trace $CLI provider-exchanges delete --help
+trace $CLI provider-exchanges delete-listing-from-exchange --help
+trace $CLI provider-exchanges get --help
+trace $CLI provider-exchanges list --help
+trace $CLI provider-exchanges list-exchanges-for-listing --help
+trace $CLI provider-exchanges list-listings-for-exchange --help
+trace $CLI provider-exchanges update --help
