@@ -132,7 +132,7 @@ func TestEnvVarsConfigureNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -165,7 +165,7 @@ func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -194,7 +194,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
