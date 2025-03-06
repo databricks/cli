@@ -33,8 +33,9 @@ func MockExecId(ctx context.Context, v string) context.Context {
 	return context.WithValue(ctx, execIDKey, v)
 }
 
-// A UUID that will allow us to correlate multiple API requests made by
-// the same CLI invocation.
+// ExecId returns a UUID value that is guaranteed to be the same throughout
+// the lifetime of the command execution, and unique for each invocation of the
+// CLI.
 func ExecId(ctx context.Context) string {
 	v := ctx.Value(execIDKey)
 	if v == nil {
