@@ -27,9 +27,7 @@ func DetectRuntime(ctx context.Context) context.Context {
 	if v := ctx.Value(dbrKey); v != nil {
 		panic("dbr.DetectRuntime called twice on the same context")
 	}
-
-	ctx = context.WithValue(ctx, dbrKey, detect(ctx))
-	return ctx
+	return context.WithValue(ctx, dbrKey, detect(ctx))
 }
 
 // MockRuntime is a helper function to mock the detection result.
@@ -56,9 +54,10 @@ func RunsOnRuntime(ctx context.Context) bool {
 }
 
 func RuntimeVersion(ctx context.Context) string {
-	if !RunsOnRuntime(ctx) {
-		return ""
+	v := ctx.Value(dbrKey)
+	if v == nil {
+		panic("dbr.RuntimeVersion called without calling dbr.DetectRuntime first")
 	}
 
-	return ctx.Value(dbrKey).(Environment).Version
+	return v.(Environment).Version
 }
