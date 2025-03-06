@@ -23,7 +23,7 @@ func TestCommandConfigUsed(t *testing.T) {
 
 	// Multiple calls should return a pointer to the same config.
 	c := ConfigUsed(ctx)
-	assert.Equal(t, c, ConfigUsed(ctx))
+	assert.Same(t, c, ConfigUsed(ctx))
 
 	// The config should have the correct configuration.
 	assert.Equal(t, "https://test.com", ConfigUsed(ctx).Host)
