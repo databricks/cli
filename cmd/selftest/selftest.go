@@ -11,6 +11,7 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
+	cmd.AddCommand(newSendTelemetry())
 	cmd.AddCommand(newPanic())
 	cmd.AddCommand(newPatchWhl())
 	return cmd

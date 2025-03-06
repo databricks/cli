@@ -2,17 +2,26 @@ package root
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/daemon"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -74,9 +83,6 @@ func New(ctx context.Context) *cobra.Command {
 		// get the context back
 		ctx = cmd.Context()
 
-		// Detect if the CLI is running on DBR and store this on the context.
-		ctx = dbr.DetectRuntime(ctx)
-
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
@@ -124,6 +130,10 @@ Stack Trace:
 %s`, version, r, string(trace))
 	}()
 
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = dbr.DetectRuntime(ctx)
+	startTime := time.Now()
+
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
@@ -150,6 +160,75 @@ Stack Trace:
 			)
 		}
 	}
+	exitCode := 0
+	if err != nil {
+		exitCode = 1
+	}
 
+	uploadTelemetry(cmd.Context(), commandString(cmd), startTime, exitCode)
 	return err
+}
+
+func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, exitCode int) {
+	// Nothing to upload.
+	if !telemetry.HasLogs(ctx) {
+		return
+	}
+
+	// Telemetry is disabled. We don't upload logs.
+	if os.Getenv(telemetry.DisableEnvVar) != "" {
+		return
+	}
+
+	telemetry.SetExecutionContext(ctx, protos.ExecutionContext{
+		CmdExecID:       cmdExecId,
+		Version:         build.GetInfo().Version,
+		Command:         cmdStr,
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      env.Get(ctx, dbr.EnvVarName),
+		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
+		ExitCode:        int64(exitCode),
+	})
+
+	logs := telemetry.GetLogs(ctx)
+
+	in := telemetry.UploadConfig{
+		Logs: logs,
+	}
+
+	// Default to warn log level. If debug is enabled in the parent process, we set
+	// the log level to debug for the telemetry worker as well.
+	logLevel := "warn"
+	if log.GetLogger(ctx).Enabled(ctx, logger.LevelDebug) {
+		logLevel = "debug"
+	}
+
+	d := daemon.Daemon{
+		Args:        []string{"telemetry", "upload", "--log-level=" + logLevel},
+		Env:         auth.ProcessEnv(ConfigUsed(ctx)),
+		PidFilePath: os.Getenv(telemetry.PidFileEnvVar),
+		LogFile:     os.Getenv(telemetry.UploadLogsFileEnvVar),
+	}
+
+	err := d.Start()
+	if err != nil {
+		log.Warnf(ctx, "failed to start telemetry worker: %s", err)
+		return
+	}
+
+	// If the telemetry worker is started successfully, we write the logs to its stdin.
+	b, err := json.Marshal(in)
+	if err != nil {
+		log.Warnf(ctx, "failed to marshal telemetry logs: %s", err)
+		return
+	}
+	err = d.WriteInput(b)
+	if err != nil {
+		log.Warnf(ctx, "failed to write to telemetry worker: %s", err)
+	}
+
+	err = d.Release()
+	if err != nil {
+		log.Warnf(ctx, "failed to release telemetry worker: %s", err)
+	}
 }
