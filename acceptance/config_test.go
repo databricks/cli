@@ -17,6 +17,12 @@ import (
 
 const configFilename = "test.toml"
 
+type StageFeature string
+
+const (
+	UnityCatalogEnabledWorkspace StageFeature = "unity-catalog"
+)
+
 type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
 	Badness *string
@@ -30,6 +36,10 @@ type TestConfig struct {
 
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
+
+	// Which stage features this test requires. Each string is a feature name that must be present
+	// in the current stage for the test to run. If absent, no specific features are required.
+	RequiredStageFeatures []StageFeature
 
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
@@ -57,6 +67,15 @@ type TestConfig struct {
 	Ignore []string
 
 	CompiledIgnoreObject *ignore.GitIgnore
+}
+
+func (tc *TestConfig) RequiresStageFeature(feature StageFeature) bool {
+	for _, f := range tc.RequiredStageFeatures {
+		if f == feature {
+			return true
+		}
+	}
+	return false
 }
 
 type ServerStub struct {

@@ -225,6 +225,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 	}
 
+	if config.RequiresStageFeature(UnityCatalogEnabledWorkspace) {
+		if os.Getenv("TEST_METASTORE_ID") == "" {
+			t.Skipf("Skipping on non-UC workspaces")
+		}
+		if os.Getenv("DATABRICKS_ACCOUNT_ID") != "" {
+			t.Skipf("Skipping on accounts")
+		}
+	}
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
