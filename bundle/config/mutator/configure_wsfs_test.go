@@ -47,7 +47,7 @@ func TestConfigureWSFS_SkipsIfNotRunningOnRuntime(t *testing.T) {
 	originalSyncRoot := b.SyncRoot
 
 	ctx := context.Background()
-	ctx = dbr.MockRuntime(ctx, false)
+	ctx = dbr.MockRuntime(ctx, dbr.Environment{})
 	diags := bundle.Apply(ctx, b, mutator.ConfigureWSFS())
 	assert.Empty(t, diags)
 	assert.Equal(t, originalSyncRoot, b.SyncRoot)
@@ -58,7 +58,7 @@ func TestConfigureWSFS_SwapSyncRoot(t *testing.T) {
 	originalSyncRoot := b.SyncRoot
 
 	ctx := context.Background()
-	ctx = dbr.MockRuntime(ctx, true)
+	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "15.4"})
 	diags := bundle.Apply(ctx, b, mutator.ConfigureWSFS())
 	assert.Empty(t, diags)
 	assert.NotEqual(t, originalSyncRoot, b.SyncRoot)

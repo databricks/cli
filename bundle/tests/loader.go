@@ -69,7 +69,7 @@ func initializeTarget(t *testing.T, path, env string) (*bundle.Bundle, diag.Diag
 	b := load(t, path)
 	configureMock(t, b)
 
-	ctx := dbr.MockRuntime(context.Background(), false)
+	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{})
 	diags := bundle.Apply(ctx, b, mutator.SelectTarget(env))
 	diags = diags.Extend(phases.Initialize(ctx, b))
 

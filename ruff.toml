@@ -1,1 +1,4 @@
 line-length = 150
+
+# tagging.py is synced from universe in the `openapi/tagging` directory and follows different format rules.
+exclude = ["tagging.py"]
