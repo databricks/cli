@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCommand_WorkspaceClient(t *testing.T) {
+func TestCommandWorkspaceClient(t *testing.T) {
 	ctx := context.Background()
 	client := &databricks.WorkspaceClient{
 		Config: &config.Config{
