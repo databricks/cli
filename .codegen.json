@@ -1,4 +1,6 @@
 {
+    "mode": "cli_legacy",
+    "api_changelog": true,
     "formatter": "go run golang.org/x/tools/cmd/goimports@latest -w $FILENAMES && go fmt ./...",
     "services": {
         ".codegen/service.go.tmpl": "cmd/{{if .IsAccounts}}account{{else}}workspace{{end}}/{{(.TrimPrefix \"account\").KebabName}}/{{(.TrimPrefix \"account\").KebabName}}.go"
