@@ -58,6 +58,11 @@ func (l *logger) setExecutionContext(ec protos.ExecutionContext) {
 	}
 }
 
+const (
+	uploadTimeout      = 3 * time.Second
+	waitBetweenRetries = 200 * time.Millisecond
+)
+
 func Upload(ctx context.Context, cfg *config.Config) error {
 	l := fromContext(ctx)
 	if len(l.logs) == 0 {
@@ -78,7 +83,7 @@ func Upload(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, uploadTimeout)
 	defer cancel()
 
 	// Only try uploading logs for a maximum of 3 times.
@@ -101,7 +106,7 @@ func Upload(ctx context.Context, cfg *config.Config) error {
 		// Partial success. Retry.
 		if err == nil && resp.NumProtoSuccess < int64(len(protoLogs)) {
 			log.Debugf(ctx, "Attempt %d was a partial success. Number of logs uploaded: %d out of %d\n", i+1, resp.NumProtoSuccess, len(protoLogs))
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(waitBetweenRetries)
 			continue
 		}
 
@@ -115,7 +120,7 @@ func Upload(ctx context.Context, cfg *config.Config) error {
 		var apiErr *apierr.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
 			log.Debugf(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d\n", i+1, apiErr.StatusCode)
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(waitBetweenRetries)
 			continue
 		}
 	}
