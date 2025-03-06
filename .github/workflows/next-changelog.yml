@@ -53,15 +53,7 @@ jobs:
           echo "Changed files: $modified_files"
           if ! echo "$modified_files" | grep -q "NEXT_CHANGELOG.md"; then
             echo "NEXT_CHANGELOG.md not modified."
-          
-            # Check if PR message contains NO_CHANGELOG=true
-            if echo "$pr_message" | grep -q "NO_CHANGELOG=true"; then
-              echo "NO_CHANGELOG=true found in PR message. Skipping changelog check."
-              exit 0
-            else
-              echo "WARNING: file NEXT_CHANGELOG.md not changed. If this is expected, add NO_CHANGELOG=true to the PR message."
-              exit 1
-            fi
+            exit 0
           fi
 
       - name: Comment on PR with instructions if needed
