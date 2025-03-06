@@ -31,7 +31,7 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 		t.Skip("Skipping test on Windows")
 	}
 
-	ctx := dbr.MockRuntime(context.Background(), true)
+	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{IsDbr: true, Version: "15.4"})
 	ctx = root.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
 	})

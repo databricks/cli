@@ -43,7 +43,7 @@ func init() {
 }
 
 func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
-	ctx := dbr.MockRuntime(context.Background(), false)
+	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{})
 
 	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))
 	require.NoError(t, err)
