@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -173,7 +172,7 @@ Stack Trace:
 			Version:         build.GetInfo().Version,
 			Command:         commandString(cmd),
 			OperatingSystem: runtime.GOOS,
-			DbrVersion:      env.Get(ctx, dbr.EnvVarName),
+			DbrVersion:      dbr.RuntimeVersion(ctx),
 			ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 			ExitCode:        int64(exitCode),
 		})
