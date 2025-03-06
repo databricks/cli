@@ -48,7 +48,7 @@ func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 	err := Upload(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
-	})
+	}, protos.ExecutionContext{})
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
 }
@@ -96,7 +96,7 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 	err := Upload(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
-	})
+	}, protos.ExecutionContext{})
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
 }
@@ -143,7 +143,7 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 	err := Upload(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
-	})
+	}, protos.ExecutionContext{})
 	assert.EqualError(t, err, "failed to upload telemetry logs after three attempts")
 	assert.Equal(t, 3, count)
 }
