@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -18,18 +19,14 @@ import (
 
 // Environment variable to disable telemetry. If this is set to any value, telemetry
 // will be disabled.
-const DisableEnvVar = "DATABRICKS_CLI_DISABLE_TELEMETRY"
+const disableEnvVar = "DATABRICKS_CLI_DISABLE_TELEMETRY"
 
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	fromContext(ctx).log(event)
 }
 
-func SetExecutionContext(ctx context.Context, ec protos.ExecutionContext) {
-	fromContext(ctx).setExecutionContext(ec)
-}
-
 func HasLogs(ctx context.Context) bool {
-	return len(fromContext(ctx).getLogs()) > 0
+	return len(fromContext(ctx).logs) > 0
 }
 
 type logger struct {
@@ -48,25 +45,27 @@ func (l *logger) log(event protos.DatabricksCliLog) {
 	})
 }
 
-func (l *logger) getLogs() []protos.FrontendLog {
-	return l.logs
-}
-
-func (l *logger) setExecutionContext(ec protos.ExecutionContext) {
-	for i := range l.logs {
-		l.logs[i].Entry.DatabricksCliLog.ExecutionContext = &ec
-	}
-}
-
 const (
 	uploadTimeout      = 3 * time.Second
 	waitBetweenRetries = 200 * time.Millisecond
 )
 
-func Upload(ctx context.Context, cfg *config.Config) error {
+func Upload(ctx context.Context, cfg *config.Config, ec protos.ExecutionContext) error {
 	l := fromContext(ctx)
 	if len(l.logs) == 0 {
-		return errors.New("no logs to upload")
+		log.Debugf(ctx, "no telemetry logs to upload")
+		return nil
+	}
+
+	// Telemetry is disabled. We don't upload logs.
+	if env.Get(ctx, disableEnvVar) != "" {
+		log.Debugf(ctx, "telemetry upload is disabled. Not uploading any logs.")
+		return nil
+	}
+
+	// Set the execution context for all logs.
+	for i := range l.logs {
+		l.logs[i].Entry.DatabricksCliLog.ExecutionContext = &ec
 	}
 
 	protoLogs := make([]string, len(l.logs))

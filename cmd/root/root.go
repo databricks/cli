@@ -166,35 +166,20 @@ Stack Trace:
 		exitCode = 1
 	}
 
-	uploadTelemetry(cmd.Context(), commandString(cmd), startTime, exitCode)
+	if telemetry.HasLogs(ctx) {
+		err := telemetry.Upload(ctx, ConfigUsed(ctx), protos.ExecutionContext{
+			CmdExecID:       cmdExecId,
+			Version:         build.GetInfo().Version,
+			Command:         commandString(cmd),
+			OperatingSystem: runtime.GOOS,
+			DbrVersion:      env.Get(ctx, dbr.EnvVarName),
+			ExecutionTimeMs: time.Since(startTime).Milliseconds(),
+			ExitCode:        int64(exitCode),
+		})
+		if err != nil {
+			log.Debugf(ctx, "failed to upload telemetry logs: %s", err)
+		}
+	}
+
 	return err
-}
-
-func uploadTelemetry(ctx context.Context, cmdStr string, startTime time.Time, exitCode int) {
-	// Return early if there are no logs to upload.
-	if !telemetry.HasLogs(ctx) {
-		log.Debugf(ctx, "no telemetry logs to upload")
-		return
-	}
-
-	// Telemetry is disabled. We don't upload logs.
-	if env.Get(ctx, telemetry.DisableEnvVar) != "" {
-		log.Debugf(ctx, "telemetry upload is disabled. Not uploading any logs.")
-		return
-	}
-
-	telemetry.SetExecutionContext(ctx, protos.ExecutionContext{
-		CmdExecID:       cmdExecId,
-		Version:         build.GetInfo().Version,
-		Command:         cmdStr,
-		OperatingSystem: runtime.GOOS,
-		DbrVersion:      env.Get(ctx, dbr.EnvVarName),
-		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
-		ExitCode:        int64(exitCode),
-	})
-
-	err := telemetry.Upload(ctx, ConfigUsed(ctx))
-	if err != nil {
-		log.Debugf(ctx, "failed to upload telemetry: %v", err)
-	}
 }
