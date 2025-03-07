@@ -17,8 +17,7 @@ import (
 
 // Placeholders to use as unique keys in context.Context.
 var (
-	workspaceClient int
-	accountClient   int
+	accountClient int
 )
 
 type ErrNoWorkspaceProfiles struct {
@@ -229,13 +228,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx = context.WithValue(ctx, &workspaceClient, w)
+	ctx = command.SetWorkspaceClient(ctx, w)
 	cmd.SetContext(ctx)
 	return nil
-}
-
-func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) context.Context {
-	return context.WithValue(ctx, &workspaceClient, w)
 }
 
 func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
@@ -319,14 +314,6 @@ func emptyHttpRequest(ctx context.Context) *http.Request {
 		panic(err)
 	}
 	return req
-}
-
-func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
-	w, ok := ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
-	if !ok {
-		panic("cannot get *databricks.WorkspaceClient. Please report it as a bug")
-	}
-	return w
 }
 
 func AccountClient(ctx context.Context) *databricks.AccountClient {
