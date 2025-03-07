@@ -35,4 +35,4 @@ Destroy complete!
 }
 
 === Test cleanup: 
-=== Delete the pre-defined schema: 0
+=== Delete the pre-defined schema test-schema-[UUID]: 0
