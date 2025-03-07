@@ -33,15 +33,18 @@ jobs:
 
   tests:
     needs: cleanups
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os.name }}
 
     strategy:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
+	  # uv_checksum: https://github.com/astral-sh/uv/releases/download/0.6.5/uv-x86_64-apple-darwin.tar.gz.sha256
+          - { name: macos-latest, uv_checksum: "d336d862694e1c36afea55eb15f5df02aa77c04a168b781df515d641e23285f0" }
+	  # uv_checksum: https://github.com/astral-sh/uv/releases/download/0.6.5/uv-x86_64-unknown-linux-gnu.tar.gz.sha256
+          - { name: ubuntu-latest, uv_checksum: "8fc9895719a1291ecd193cb86f9282ff3649cef797d29eacc74c4f573aab1e2f" }
+	  # uv_checksum: https://github.com/astral-sh/uv/releases/download/0.6.5/uv-x86_64-pc-windows-msvc.zip.sha256
+          - { name: windows-latest, uv_checksum: "a3e9f0913189c38b804bf6bb3d348af305a8ceabc690be92b6e111245a821640" }
 
     steps:
       - name: Checkout repository and submodules
@@ -58,7 +61,10 @@ jobs:
           python-version: '3.9'
 
       - name: Install uv
-        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
+        with:
+          version: "0.6.5"
+          checksum: ${{ matrix.os.uv_checksum }}
 
       - name: Set go env
         run: |
