@@ -17,12 +17,6 @@ import (
 
 const configFilename = "test.toml"
 
-type StageFeature string
-
-const (
-	UnityCatalogEnabledWorkspace StageFeature = "unity-catalog"
-)
-
 type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
 	Badness *string
