@@ -1,5 +1,5 @@
 bundle:
-  name: bind-schema-test-$BUNDLE_UUID
+  name: bind-schema-test-$BUNDLE_NAME_SUFFIX
 
 resources:
   schemas:

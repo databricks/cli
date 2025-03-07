@@ -1,7 +1,7 @@
 title "Bind schema test: "
 
 title "Substitute variables in the template: "
-export BUNDLE_UUID=$(uuid)
+export BUNDLE_NAME_SUFFIX=$(uuid)
 export SCHEMA_NAME="test-schema-$(uuid)"
 envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
 
