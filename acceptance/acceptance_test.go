@@ -223,10 +223,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	if !isTruePtr(config.Cloud) && cloudEnv != "" {
 		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-	}
-
-	if config.RequiresStageFeature(UnityCatalogEnabledWorkspace) {
-		if os.Getenv("TEST_METASTORE_ID") == "" {
+	} else {
+		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
 			t.Skipf("Skipping on non-UC workspaces")
 		}
 	}
