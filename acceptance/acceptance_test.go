@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"os"
@@ -19,8 +20,6 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
-
-	"github.com/google/uuid"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
@@ -41,7 +40,7 @@ var (
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
 // Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
 // example: var SingleTest = "bundle/variables/empty"
-var SingleTest = ""
+var SingleTest = "bundle/deployment/bind/schema"
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -58,7 +57,7 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
-	MaxFileSize      = 100_000
+	MaxFileSize      = 300_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
 )
@@ -74,6 +73,10 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	testAccept(t, InprocessMode, SingleTest)
+}
+
+func TestAcceptLocal(t *testing.T) {
 	testAccept(t, InprocessMode, SingleTest)
 }
 
@@ -223,10 +226,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	if !isTruePtr(config.Cloud) && cloudEnv != "" {
 		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-	} else {
-		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			t.Skipf("Skipping on non-UC workspaces")
-		}
+	}
+	if cloudEnv != "" && isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
+		t.Skipf("Skipping on non-UC workspaces")
 	}
 
 	var tmpDir string
@@ -332,6 +334,22 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		pUser, err := workspaceClient.CurrentUser.Me(context.Background())
 		require.NoError(t, err, "Failed to get current user")
 		user = *pUser
+	}
+
+	if cloudEnv != "" && isTruePtr(config.RecordRequests) {
+		// Start a new recording proxy for this test
+		logPath := filepath.Join(tmpDir, "out.request-recordings.txt")
+		targetHost := os.Getenv("DATABRICKS_HOST")
+		proxyServer, err := testserver.NewProxyRecorder(targetHost, logPath)
+		t.Logf("Starting a recording proxy server; proxies to " + targetHost + "; recording requests to " + logPath)
+		if err != nil {
+			t.Fatalf("Failed to create proxy server: %v", err)
+		}
+		t.Cleanup(proxyServer.Close)
+
+		t.Logf("Setting DATABRICKS_DEFAULT_HOST to " + proxyServer.URL())
+		t.Setenv("DATABRICKS_DEFAULT_HOST", proxyServer.URL())
+		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+proxyServer.URL())
 	}
 
 	testdiff.PrepareReplacementsUser(t, &repls, user)

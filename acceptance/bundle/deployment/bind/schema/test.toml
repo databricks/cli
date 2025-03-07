@@ -1,3 +1,32 @@
-Local = false
+Local = true
 Cloud = true
 RequiresUnityCatalog = true
+RecordRequests = true
+
+[[Server]]
+Pattern = "POST /api/2.1/unity-catalog/schemas"
+Response.Body = '''
+{
+    "name":"test-schema-6260d50f-e8ff-4905-8f28-812345678903",
+    "catalog_name":"main",
+    "enable_auto_maintenance":"INHERIT",
+    "enable_predictive_optimization":"INHERIT",
+    "full_name":"main.test-schema-6260d50f-e8ff-4905-8f28-812345678903",
+    "created_at":1741363224990,
+    "created_by":"[USERNAME]",
+    "updated_at":1741363224990,
+    "updated_by":"[USERNAME]",
+    "catalog_type":"MANAGED_CATALOG",
+    "schema_id":"6260d50f-e8ff-4905-8f28-812345678903",
+    "securable_type":"SCHEMA",
+    "securable_kind":"SCHEMA_STANDARD",
+    "browse_only":false,
+    "metastore_version":-1
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/schemas/{schema_fullname}"
+
+[[Server]]
+Pattern = "POST /api/2.1/unity-catalog/schemas"
