@@ -229,9 +229,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if os.Getenv("TEST_METASTORE_ID") == "" {
 			t.Skipf("Skipping on non-UC workspaces")
 		}
-		if os.Getenv("DATABRICKS_ACCOUNT_ID") != "" {
-			t.Skipf("Skipping on accounts")
-		}
 	}
 
 	var tmpDir string
