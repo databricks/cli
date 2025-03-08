@@ -246,7 +246,7 @@ func TestOfflineInstallerWorksForReleases(t *testing.T) {
 	// install a labs project on a machine which has internet
 	// zip and copy the file to the intended machine and
 	// run databricks labs install --offline=true
-	// it will look for the code in the same install directory and if present load from there.
+	// it will look for the code in the same install directory and if present, install from there.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
