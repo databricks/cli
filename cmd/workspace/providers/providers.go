@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
@@ -34,6 +35,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newList())
+	cmd.AddCommand(newListProviderShareAssets())
 	cmd.AddCommand(newListShares())
 	cmd.AddCommand(newUpdate())
 
@@ -94,7 +96,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -168,7 +170,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -240,7 +242,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -319,7 +321,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		response := w.Providers.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -332,6 +334,72 @@ func newList() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
 		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+// start list-provider-share-assets command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listProviderShareAssetsOverrides []func(
+	*cobra.Command,
+	*sharing.ListProviderShareAssetsRequest,
+)
+
+func newListProviderShareAssets() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listProviderShareAssetsReq sharing.ListProviderShareAssetsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.FunctionMaxResults, "function-max-results", listProviderShareAssetsReq.FunctionMaxResults, `Maximum number of functions to return.`)
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.NotebookMaxResults, "notebook-max-results", listProviderShareAssetsReq.NotebookMaxResults, `Maximum number of notebooks to return.`)
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.TableMaxResults, "table-max-results", listProviderShareAssetsReq.TableMaxResults, `Maximum number of tables to return.`)
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.VolumeMaxResults, "volume-max-results", listProviderShareAssetsReq.VolumeMaxResults, `Maximum number of volumes to return.`)
+
+	cmd.Use = "list-provider-share-assets PROVIDER_NAME SHARE_NAME"
+	cmd.Short = `List assets by provider share.`
+	cmd.Long = `List assets by provider share.
+  
+  Get arrays of assets associated with a specified provider's share. The caller
+  is the recipient of the share.
+
+  Arguments:
+    PROVIDER_NAME: The name of the provider who owns the share.
+    SHARE_NAME: The name of the share.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := command.WorkspaceClient(ctx)
+
+		listProviderShareAssetsReq.ProviderName = args[0]
+		listProviderShareAssetsReq.ShareName = args[1]
+
+		response, err := w.Providers.ListProviderShareAssets(ctx, listProviderShareAssetsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listProviderShareAssetsOverrides {
+		fn(cmd, &listProviderShareAssetsReq)
 	}
 
 	return cmd
@@ -372,7 +440,7 @@ func newListShares() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -449,7 +517,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

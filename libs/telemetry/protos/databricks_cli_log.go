@@ -24,10 +24,12 @@ type ExecutionContext struct {
 	FromWebTerminal bool `json:"from_web_terminal,omitempty"`
 
 	// Time taken for the CLI command to execute.
-	ExecutionTimeMs int64 `json:"execution_time_ms,omitempty"`
+	// We want to serialize the zero value as well so the omitempty tag is not set.
+	ExecutionTimeMs int64 `json:"execution_time_ms"`
 
 	// Exit code of the CLI command.
-	ExitCode int64 `json:"exit_code,omitempty"`
+	// We want to serialize the zero value as well so the omitempty tag is not set.
+	ExitCode int64 `json:"exit_code"`
 }
 
 type CliTestEvent struct {

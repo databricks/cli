@@ -1,0 +1,36 @@
+title "Bind schema test: "
+
+title "Substitute variables in the template: "
+export BUNDLE_NAME_SUFFIX=$(uuid)
+export SCHEMA_NAME="test-schema-$(uuid)"
+envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
+
+title "Create a pre-defined schema: "
+CATALOG_NAME=main
+$CLI schemas create ${SCHEMA_NAME} ${CATALOG_NAME} | jq '{full_name, catalog_name, comment}'
+
+cleanupRemoveSchema() {
+    title "Test cleanup: "
+    title "Delete the pre-defined schema ${SCHEMA_NAME}: "
+    $CLI schemas delete ${CATALOG_NAME}.${SCHEMA_NAME}
+    echo $?
+}
+trap cleanupRemoveSchema EXIT
+
+title "Bind schema: "
+$CLI bundle deployment bind schema1 ${CATALOG_NAME}.${SCHEMA_NAME} --auto-approve
+
+title "Deploy bundle: "
+$CLI bundle deploy --force-lock --auto-approve
+
+title "Read the pre-defined schema: "
+$CLI schemas get ${CATALOG_NAME}.${SCHEMA_NAME}  | jq '{full_name, catalog_name, comment}'
+
+title "Unbind the schema: "
+$CLI bundle deployment unbind schema1
+
+title "Destroy the bundle: "
+$CLI bundle destroy --auto-approve
+
+title "Read the pre-defined schema again (expecting it still exists): "
+$CLI schemas get ${CATALOG_NAME}.${SCHEMA_NAME}  | jq '{full_name, catalog_name, comment}'

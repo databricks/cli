@@ -14,8 +14,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	bundleConfig "github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -43,7 +43,7 @@ func init() {
 }
 
 func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
-	ctx := dbr.MockRuntime(context.Background(), false)
+	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{})
 
 	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 		cachedUser.UserName = "1d410060-a513-496f-a197-23cc82e5f46d"
 	}
 	cachedIsServicePrincipal = &isServicePrincipal
-	ctx = root.SetWorkspaceClient(ctx, w)
+	ctx = command.SetWorkspaceClient(ctx, w)
 	helpers := loadHelpers(ctx)
 
 	renderer, err := newRenderer(ctx, settings, helpers, templateFS, templateDirName, libraryDirName)
@@ -91,6 +91,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)
+	b.SetWorkpaceClient(w)
 	b.WorkspaceClient()
 
 	diags = phases.Initialize(ctx, b)
@@ -191,7 +192,7 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/email/template", "./testdata/email/library")
 	require.NoError(t, err)
@@ -364,7 +365,7 @@ func TestRendererPersistToDisk(t *testing.T) {
 
 func TestRendererWalk(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/walk/template", "./testdata/walk/library")
@@ -395,7 +396,7 @@ func TestRendererWalk(t *testing.T) {
 
 func TestRendererFailFunction(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/fail/template", "./testdata/fail/library")
@@ -407,7 +408,7 @@ func TestRendererFailFunction(t *testing.T) {
 
 func TestRendererSkipsDirsEagerly(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/skip-dir-eagerly/template", "./testdata/skip-dir-eagerly/library")
@@ -423,7 +424,7 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 
 func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -448,7 +449,7 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 
 func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/skip-is-relative/template", "./testdata/skip-is-relative/library")
@@ -465,7 +466,7 @@ func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 
 func TestRendererSkip(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -499,7 +500,7 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 		t.SkipNow()
 	}
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/executable-bit-read/template", "./testdata/executable-bit-read/library")
@@ -587,7 +588,7 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 
 func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/copy-file-walk/template", "./testdata/copy-file-walk/library")
@@ -603,7 +604,7 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 
 func TestRendererFileTreeRendering(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -632,7 +633,7 @@ func TestRendererFileTreeRendering(t *testing.T) {
 
 func TestRendererSubTemplateInPath(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
+	ctx = command.SetWorkspaceClient(ctx, nil)
 
 	// Copy the template directory to a temporary directory where we can safely include a templated file path.
 	// These paths include characters that are forbidden in Go modules, so we can't use the testdata directory.

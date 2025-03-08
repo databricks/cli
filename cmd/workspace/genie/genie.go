@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
@@ -41,6 +42,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetMessage())
 	cmd.AddCommand(newGetMessageQueryResult())
 	cmd.AddCommand(newGetMessageQueryResultByAttachment())
+	cmd.AddCommand(newGetSpace())
 	cmd.AddCommand(newStartConversation())
 
 	// Apply optional overrides to this command.
@@ -78,8 +80,9 @@ func newCreateMessage() *cobra.Command {
 	cmd.Short = `Create conversation message.`
 	cmd.Long = `Create conversation message.
   
-  Create new message in [conversation](:method:genie/startconversation). The AI
-  response uses all previously created messages in the conversation to respond.
+  Create new message in a [conversation](:method:genie/startconversation). The
+  AI response uses all previously created messages in the conversation to
+  respond.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the conversation is started.
@@ -103,7 +106,7 @@ func newCreateMessage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createMessageJson.Unmarshal(&createMessageReq)
@@ -192,7 +195,7 @@ func newExecuteMessageQuery() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		executeMessageQueryReq.SpaceId = args[0]
 		executeMessageQueryReq.ConversationId = args[1]
@@ -256,7 +259,7 @@ func newGetMessage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		getMessageReq.SpaceId = args[0]
 		getMessageReq.ConversationId = args[1]
@@ -298,8 +301,8 @@ func newGetMessageQueryResult() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-message-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID"
-	cmd.Short = `Get conversation message SQL query result.`
-	cmd.Long = `Get conversation message SQL query result.
+	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
+	cmd.Long = `[Deprecated] Get conversation message SQL query result.
   
   Get the result of SQL query if the message has a query attachment. This is
   only available if a message has a query attachment and the message status is
@@ -320,7 +323,7 @@ func newGetMessageQueryResult() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		getMessageQueryResultReq.SpaceId = args[0]
 		getMessageQueryResultReq.ConversationId = args[1]
@@ -362,11 +365,12 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-message-query-result-by-attachment SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
-	cmd.Short = `Get conversation message SQL query result by attachment id.`
-	cmd.Long = `Get conversation message SQL query result by attachment id.
+	cmd.Short = `Get conversation message SQL query result.`
+	cmd.Long = `Get conversation message SQL query result.
   
-  Get the result of SQL query by attachment id This is only available if a
-  message has a query attachment and the message status is EXECUTING_QUERY.
+  Get the result of SQL query if the message has a query attachment. This is
+  only available if a message has a query attachment and the message status is
+  EXECUTING_QUERY OR COMPLETED.
 
   Arguments:
     SPACE_ID: Genie space ID
@@ -384,7 +388,7 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		getMessageQueryResultByAttachmentReq.SpaceId = args[0]
 		getMessageQueryResultByAttachmentReq.ConversationId = args[1]
@@ -405,6 +409,64 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getMessageQueryResultByAttachmentOverrides {
 		fn(cmd, &getMessageQueryResultByAttachmentReq)
+	}
+
+	return cmd
+}
+
+// start get-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSpaceOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetSpaceRequest,
+)
+
+func newGetSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSpaceReq dashboards.GenieGetSpaceRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-space SPACE_ID"
+	cmd.Short = `Get details of a Genie Space.`
+	cmd.Long = `Get details of a Genie Space.
+  
+  Get a Genie Space.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := command.WorkspaceClient(ctx)
+
+		getSpaceReq.SpaceId = args[0]
+
+		response, err := w.Genie.GetSpace(ctx, getSpaceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSpaceOverrides {
+		fn(cmd, &getSpaceReq)
 	}
 
 	return cmd
@@ -461,7 +523,7 @@ func newStartConversation() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := startConversationJson.Unmarshal(&startConversationReq)

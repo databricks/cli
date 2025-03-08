@@ -35,7 +35,7 @@ func TestDetect_NotLinux(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	assert.False(t, detect(ctx))
+	assert.Equal(t, Environment{}, detect(ctx))
 }
 
 func TestDetect_Env(t *testing.T) {
@@ -46,17 +46,23 @@ func TestDetect_Env(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		ctx := env.Set(context.Background(), "DATABRICKS_RUNTIME_VERSION", "")
-		assert.False(t, detect(ctx))
+		assert.Equal(t, Environment{}, detect(ctx))
 	})
 
 	t.Run("non-empty cluster", func(t *testing.T) {
 		ctx := env.Set(context.Background(), "DATABRICKS_RUNTIME_VERSION", "15.4")
-		assert.True(t, detect(ctx))
+		assert.Equal(t, Environment{
+			IsDbr:   true,
+			Version: "15.4",
+		}, detect(ctx))
 	})
 
 	t.Run("non-empty serverless", func(t *testing.T) {
 		ctx := env.Set(context.Background(), "DATABRICKS_RUNTIME_VERSION", "client.1.13")
-		assert.True(t, detect(ctx))
+		assert.Equal(t, Environment{
+			IsDbr:   true,
+			Version: "client.1.13",
+		}, detect(ctx))
 	})
 }
 
@@ -68,16 +74,19 @@ func TestDetect_Stat(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		configureStatFunc(t, nil, fs.ErrNotExist)
-		assert.False(t, detect(ctx))
+		assert.Equal(t, Environment{}, detect(ctx))
 	})
 
 	t.Run("not a directory", func(t *testing.T) {
 		configureStatFunc(t, fakefs.FileInfo{}, nil)
-		assert.False(t, detect(ctx))
+		assert.Equal(t, Environment{}, detect(ctx))
 	})
 
 	t.Run("directory", func(t *testing.T) {
 		configureStatFunc(t, fakefs.FileInfo{FakeDir: true}, nil)
-		assert.True(t, detect(ctx))
+		assert.Equal(t, Environment{
+			IsDbr:   true,
+			Version: "non-empty",
+		}, detect(ctx))
 	})
 }
