@@ -151,7 +151,7 @@ func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnos
 			"  root_path: /Workspace/Users/%s/.bundle/${bundle.name}/${bundle.target}",
 		b.Config.Workspace.CurrentUser.UserName,
 	)
-	if !isExplicitRootSet(b) {
+	if !isExplicitRootSet(b) && b.Config.Owner == "" {
 		if isRunAsSet(r) || isPrincipalUsed {
 			// Just setting run_as is not enough to guarantee a single deployment,
 			// and neither is setting a principal.

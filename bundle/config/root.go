@@ -29,6 +29,9 @@ type Root struct {
 	// version of the spec (TODO), default cluster, default warehouse, etc.
 	Bundle Bundle `json:"bundle,omitempty"`
 
+	// Project is an alias for bundle.
+	Project Bundle `json:"project,omitempty"`
+
 	// Include specifies a list of patterns of file names to load and
 	// merge into the this configuration. Only includes defined in the root
 	// `databricks.yml` are processed. Defaults to an empty list.
@@ -56,6 +59,16 @@ type Root struct {
 
 	// Sync section specifies options for files synchronization
 	Sync Sync `json:"sync,omitempty"`
+
+	// DeployOnRun determines if the bundle should be deployed before running.
+	// This is useful for development workflows where you want to deploy
+	// changes before running a job or pipeline.
+	DeployOnRun bool `json:"deploy_on_run,omitempty"`
+
+	// The owner of this deployment. This property is used to set the permissions
+	// for the deployment and to determine the default deployment path
+	// when 'mode: production' is used.
+	Owner string `json:"owner,omitempty"`
 
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
@@ -298,8 +311,8 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return err
 	}
 
-	// Confirm validity of variable overrides.
-	err = validateVariableOverrides(root, target)
+	// Ensure validity of variable overrides.
+	root, err = ensureValidVariables(root, target)
 	if err != nil {
 		return err
 	}
@@ -313,6 +326,8 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"sync",
 		"permissions",
 		"presets",
+		"deploy_on_run",
+		"owner",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
 			return err
@@ -328,12 +343,18 @@ func (r *Root) MergeTargetOverrides(name string) error {
 			if vDefault.Kind() != dyn.KindInvalid {
 				defaultPath := varPath.Append(dyn.Key("default"))
 				root, err = dyn.SetByPath(root, defaultPath, vDefault)
+				if err != nil {
+					return root, err
+				}
 			}
 
 			vLookup := variable.Get("lookup")
 			if vLookup.Kind() != dyn.KindInvalid {
 				lookupPath := varPath.Append(dyn.Key("lookup"))
 				root, err = dyn.SetByPath(root, lookupPath, vLookup)
+				if err != nil {
+					return root, err
+				}
 			}
 
 			return root, err
@@ -501,36 +522,53 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 	}))
 }
 
-// validateVariableOverrides checks that all variables specified
+// ensureValidVariables makes sure that all variables specified
 // in the target override are also defined in the root.
-func validateVariableOverrides(root, target dyn.Value) (err error) {
+func ensureValidVariables(root, target dyn.Value) (dyn.Value, error) {
 	var rv map[string]variable.Variable
 	var tv map[string]variable.Variable
 
-	// Collect variables from the root.
-	if v := root.Get("variables"); v.Kind() != dyn.KindInvalid {
-		err = convert.ToTyped(&rv, v)
+	// Collect variables from the target.
+	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
+		err := convert.ToTyped(&tv, v)
 		if err != nil {
-			return fmt.Errorf("unable to collect variables from root: %w", err)
+			return root, fmt.Errorf("unable to collect variables from target: %w", err)
 		}
 	}
 
-	// Collect variables from the target.
-	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
-		err = convert.ToTyped(&tv, v)
-		if err != nil {
-			return fmt.Errorf("unable to collect variables from target: %w", err)
+	rootVars := root.Get("variables")
+	if rootVars.Kind() == dyn.KindInvalid {
+		// No root variables are declared. We treat these as optional:
+		// it's okay not to specify the for brevity, but then we cannot
+		// check the target variables for consistency.
+		// _, err = dyn.Set(root, "variables", dyn.V(map[string]dyn.Value{}))
+		targetVars := map[string]dyn.Value{}
+		for k := range tv {
+			targetVars[k] = dyn.V(map[string]dyn.Value{
+				"default": dyn.V(tv[k].Default),
+			})
 		}
+		root, err := dyn.Set(root, "variables", dyn.V(targetVars))
+		if err != nil {
+			return root, fmt.Errorf("unable to create variables map in root: %w", err)
+		}
+		return root, nil
+	}
+
+	// Collect variables from the root.
+	err := convert.ToTyped(&rv, rootVars)
+	if err != nil {
+		return root, fmt.Errorf("unable to collect variables from root: %w", err)
 	}
 
 	// Check that all variables in the target exist in the root.
 	for k := range tv {
 		if _, ok := rv[k]; !ok {
-			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
+			return root, fmt.Errorf("variable %s is not defined but is assigned a value", k)
 		}
 	}
 
-	return nil
+	return root, nil
 }
 
 // Best effort to get the location of configuration value at the specified path.

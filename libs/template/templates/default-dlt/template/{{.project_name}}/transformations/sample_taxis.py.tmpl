@@ -1,0 +1,23 @@
+"""
+The 'transformations' folder contains all transformations
+applied in this pipeline.
+Documentation: https://docs.databricks.com/delta-live-tables/python-ref.html
+"""
+
+import dlt
+from pyspark.sql.functions import to_date, count
+from pyspark.sql import DataFrame
+
+{{- $suffix := .project_name }}
+{{- if (eq .project_name "my_dlt_project") }}
+  {{- $suffix = short_name }}
+{{- end }}
+
+@dlt.table(comment="Sample table with taxi data")
+def sample_taxis_{{$suffix}}():
+    return (
+        dlt.read("taxis_raw_{{$suffix}}")
+        .withColumn("pickup_date", to_date("tpep_pickup_datetime"))
+        .groupBy("pickup_date")
+        .agg(count("*").alias("number_of_trips"))
+    )

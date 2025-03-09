@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/clis"
 	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
@@ -49,6 +50,7 @@ func TestStatePush(t *testing.T) {
 
 	m := &statePush{
 		identityFiler(mock),
+		clis.General,
 	}
 
 	ctx := context.Background()

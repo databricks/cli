@@ -39,7 +39,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return nil
 	}
 
-	statePath, err := getPathToStateFile(ctx, b)
+	statePath, err := GetPathToStateFile(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}

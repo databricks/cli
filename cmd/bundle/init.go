@@ -4,26 +4,31 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
 
-func newInitCommand() *cobra.Command {
+func newInitCommand(cliType clis.CLIType) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize using a bundle template",
 		Args:  root.MaximumNArgs(1),
-		Long: fmt.Sprintf(`Initialize using a bundle template.
-
-TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
-%s
-- a local file system path with a template directory
-- a Git repository URL, e.g. https://github.com/my/repository
-
-See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, template.HelpDescriptions()),
 	}
+	if cliType == clis.DLT {
+		cmd.Short = "Initialize a new DLT project"
+		cmd.Long = "Initialize a new DLT project"
+	}
+	cmd.Long = fmt.Sprintf(cmd.Short+`
+
+	TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
+	%s
+	- a local file system path with a template directory
+	- a Git repository URL, e.g. https://github.com/my/repository
+
+	See https://docs.databricks.com/dev-tools/bundles/templates.html for more information on templates.`, template.HelpDescriptions())
 
 	var configFile string
 	var outputDir string
@@ -56,7 +61,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 
 		ctx := cmd.Context()
-		tmpl, err := r.Resolve(ctx)
+		tmpl, err := r.Resolve(ctx, cliType)
 		if errors.Is(err, template.ErrCustomSelected) {
 			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
 			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")

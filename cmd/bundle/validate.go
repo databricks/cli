@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +28,12 @@ func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 	return nil
 }
 
-func newValidateCommand() *cobra.Command {
+func newValidateCommand(hidden bool, cliType clis.CLIType) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "validate",
-		Short: "Validate configuration",
-		Args:  root.NoArgs,
+		Use:    "validate",
+		Short:  "Validate configuration",
+		Args:   root.NoArgs,
+		Hidden: hidden,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -43,6 +46,13 @@ func newValidateCommand() *cobra.Command {
 			} else {
 				return errors.New("invariant failed: returned bundle is nil")
 			}
+		}
+
+		if cliType == clis.DLT {
+			diags = diags.Extend(diag.Diagnostics{{
+				Summary:  "Use dry-run command to do a dry run of all DLT definitions in this project",
+				Severity: diag.Recommendation,
+			}})
 		}
 
 		if !diags.HasError() {

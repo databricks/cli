@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
@@ -45,7 +46,7 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 		OutputDir:         bundleRoot,
 	}
 
-	tmpl, err := r.Resolve(ctx)
+	tmpl, err := r.Resolve(ctx, clis.General)
 	require.NoError(t, err)
 	defer tmpl.Reader.Cleanup(ctx)
 

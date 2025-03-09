@@ -43,6 +43,12 @@ acc-showcover:
 build: vendor
 	go build -mod vendor
 
+dlt:
+	go build ./clis/dlt
+
+dab:
+	go build ./clis/dab
+
 snapshot:
 	go build -o .databricks/databricks
 
@@ -63,4 +69,4 @@ integration: vendor
 integration-short: vendor
 	VERBOSE_TEST=1 $(INTEGRATION) -short
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs
+.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs dlt dab

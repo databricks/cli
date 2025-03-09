@@ -58,7 +58,7 @@ func TestStatePush(t *testing.T) {
 
 	ctx := context.Background()
 
-	statePath, err := getPathToStateFile(ctx, b)
+	statePath, err := GetPathToStateFile(ctx, b)
 	require.NoError(t, err)
 
 	state := DeploymentState{

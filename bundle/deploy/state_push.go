@@ -24,7 +24,7 @@ func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
-	statePath, err := getPathToStateFile(ctx, b)
+	statePath, err := GetPathToStateFile(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}

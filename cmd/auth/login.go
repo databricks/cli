@@ -23,8 +23,11 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks profile name"
 	prompt.Default = defaultValue
+	if defaultValue == "" {
+		defaultValue = "DEFAULT"
+	}
+	prompt.Label = fmt.Sprintf("Databricks profile name [%s]", defaultValue)
 	prompt.AllowEdit = true
 	return prompt.Run()
 }
@@ -34,14 +37,15 @@ const (
 	defaultTimeout          = 1 * time.Hour
 )
 
-func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+func newLoginCommand(hidden bool, persistentAuth *auth.PersistentAuth) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
 	if runtime.GOOS == "windows" {
 		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
 	}
 	cmd := &cobra.Command{
-		Use:   "login [HOST]",
-		Short: "Log into a Databricks workspace or account",
+		Use:    "login [HOST]",
+		Hidden: hidden,
+		Short:  "Log into a Databricks workspace or account",
 		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
 This command logs you into the Databricks workspace or account and saves
 the authentication configuration in a profile (in %s by default).

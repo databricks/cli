@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +16,7 @@ func TestTemplateResolverBothTagAndBranch(t *testing.T) {
 		Branch: "branch",
 	}
 
-	_, err := r.Resolve(context.Background())
+	_, err := r.Resolve(context.Background(), clis.General)
 	assert.EqualError(t, err, "only one of tag or branch can be specified")
 }
 
@@ -23,7 +24,7 @@ func TestTemplateResolverErrorsWhenPromptingIsNotSupported(t *testing.T) {
 	r := Resolver{}
 	ctx := cmdio.MockDiscard(context.Background())
 
-	_, err := r.Resolve(ctx)
+	_, err := r.Resolve(ctx, clis.General)
 	assert.EqualError(t, err, "prompting is not supported. Please specify the path, name or URL of the template to use")
 }
 
@@ -38,7 +39,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 				TemplatePathOrUrl: name,
 			}
 
-			tmpl, err := r.Resolve(context.Background())
+			tmpl, err := r.Resolve(context.Background(), clis.General)
 			require.NoError(t, err)
 
 			assert.Equal(t, &builtinReader{name: name}, tmpl.Reader)
@@ -52,7 +53,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 			ConfigFile:        "/config/file",
 		}
 
-		tmpl, err := r.Resolve(context.Background())
+		tmpl, err := r.Resolve(context.Background(), clis.General)
 		require.NoError(t, err)
 
 		// Assert reader and writer configuration
@@ -69,7 +70,7 @@ func TestTemplateResolverForCustomUrl(t *testing.T) {
 		ConfigFile:        "/config/file",
 	}
 
-	tmpl, err := r.Resolve(context.Background())
+	tmpl, err := r.Resolve(context.Background(), clis.General)
 	require.NoError(t, err)
 
 	assert.Equal(t, Custom, tmpl.name)
@@ -89,7 +90,7 @@ func TestTemplateResolverForCustomPath(t *testing.T) {
 		ConfigFile:        "/config/file",
 	}
 
-	tmpl, err := r.Resolve(context.Background())
+	tmpl, err := r.Resolve(context.Background(), clis.General)
 	require.NoError(t, err)
 
 	assert.Equal(t, Custom, tmpl.name)

@@ -3,6 +3,7 @@ package template
 import (
 	"testing"
 
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +24,7 @@ func TestTemplateOptions(t *testing.T) {
 		{Name: "mlops-stacks", Id: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)"},
 		{Name: "custom...", Id: "Bring your own template"},
 	}
-	assert.Equal(t, expected, options())
+	assert.Equal(t, expected, options(clis.General))
 }
 
 func TestBundleInitRepoName(t *testing.T) {

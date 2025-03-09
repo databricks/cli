@@ -5,13 +5,14 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/spf13/cobra"
 )
 
-func newUnbindCommand() *cobra.Command {
+func newUnbindCommand(cliType clis.CLIType) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "unbind KEY",
 		Short: "Unbind bundle-defined resources from its managed remote resource",
@@ -40,7 +41,7 @@ func newUnbindCommand() *cobra.Command {
 
 		diags = phases.Initialize(ctx, b)
 		if !diags.HasError() {
-			diags = diags.Extend(phases.Unbind(ctx, b, resource.TerraformResourceName(), args[0]))
+			diags = diags.Extend(phases.Unbind(ctx, b, resource.TerraformResourceName(), args[0], cliType))
 		}
 		if err := diags.Error(); err != nil {
 			return err

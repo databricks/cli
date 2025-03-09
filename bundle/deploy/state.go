@@ -177,7 +177,7 @@ func loadState(r io.Reader) (*DeploymentState, error) {
 	return &s, nil
 }
 
-func getPathToStateFile(ctx context.Context, b *bundle.Bundle) (string, error) {
+func GetPathToStateFile(ctx context.Context, b *bundle.Bundle) (string, error) {
 	cacheDir, err := b.CacheDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot get bundle cache directory: %w", err)

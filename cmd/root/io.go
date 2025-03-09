@@ -13,7 +13,7 @@ type outputFlag struct {
 	output flags.Output
 }
 
-func initOutputFlag(cmd *cobra.Command) *outputFlag {
+func InitOutputFlag(cmd *cobra.Command) *outputFlag {
 	f := outputFlag{
 		output: flags.OutputText,
 	}

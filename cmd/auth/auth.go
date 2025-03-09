@@ -22,15 +22,27 @@ Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
 GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	}
 
-	var perisistentAuth auth.PersistentAuth
-	cmd.PersistentFlags().StringVar(&perisistentAuth.Host, "host", perisistentAuth.Host, "Databricks Host")
-	cmd.PersistentFlags().StringVar(&perisistentAuth.AccountID, "account-id", perisistentAuth.AccountID, "Databricks Account ID")
+	var persistentAuth auth.PersistentAuth
+	cmd.PersistentFlags().StringVar(&persistentAuth.Host, "host", persistentAuth.Host, "Databricks Host")
+	cmd.PersistentFlags().StringVar(&persistentAuth.AccountID, "account-id", persistentAuth.AccountID, "Databricks Account ID")
 
+	hidden := false
 	cmd.AddCommand(newEnvCommand())
-	cmd.AddCommand(newLoginCommand(&perisistentAuth))
+	cmd.AddCommand(newLoginCommand(hidden, &persistentAuth))
 	cmd.AddCommand(newProfilesCommand())
-	cmd.AddCommand(newTokenCommand(&perisistentAuth))
+	cmd.AddCommand(newTokenCommand(&persistentAuth))
 	cmd.AddCommand(newDescribeCommand())
+	return cmd
+}
+
+// NewTopLevelLoginCommand creates a new login command for use in a top-level command group.
+// This is useful for custom CLIs where the 'auth' command group does not exist.
+func NewTopLevelLoginCommand(hidden bool) *cobra.Command {
+	var persistentAuth auth.PersistentAuth
+	cmd := newLoginCommand(hidden, &persistentAuth)
+	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	cmd.Flags().StringVar(&persistentAuth.Host, "host", persistentAuth.Host, "Databricks Host")
+	cmd.Flags().StringVar(&persistentAuth.AccountID, "account-id", persistentAuth.AccountID, "Databricks Account ID")
 	return cmd
 }
 

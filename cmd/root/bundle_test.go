@@ -209,7 +209,7 @@ func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
 
 func TestTargetFlagFull(t *testing.T) {
 	cmd := emptyCommand(t)
-	initTargetFlag(cmd)
+	InitTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "--target", "development"})
 
 	ctx := context.Background()
@@ -221,7 +221,7 @@ func TestTargetFlagFull(t *testing.T) {
 
 func TestTargetFlagShort(t *testing.T) {
 	cmd := emptyCommand(t)
-	initTargetFlag(cmd)
+	InitTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "-t", "production"})
 
 	ctx := context.Background()
@@ -234,7 +234,7 @@ func TestTargetFlagShort(t *testing.T) {
 // TODO: remove when environment flag is fully deprecated
 func TestTargetEnvironmentFlag(t *testing.T) {
 	cmd := emptyCommand(t)
-	initTargetFlag(cmd)
+	InitTargetFlag(cmd)
 	initEnvironmentFlag(cmd)
 	cmd.SetArgs([]string{"version", "--environment", "development"})
 

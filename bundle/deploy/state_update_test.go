@@ -101,7 +101,7 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	ctx := context.Background()
 
 	// Create an existing state file.
-	statePath, err := getPathToStateFile(ctx, b)
+	statePath, err := GetPathToStateFile(ctx, b)
 	require.NoError(t, err)
 
 	state := &DeploymentState{

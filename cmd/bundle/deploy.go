@@ -5,20 +5,24 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-func newDeployCommand() *cobra.Command {
+func newDeployCommand(cliType clis.CLIType) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploy bundle",
+		Short: "Deploy to a workspace",
 		Args:  root.NoArgs,
 	}
 
@@ -35,8 +39,10 @@ func newDeployCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
+	if cliType == clis.DLT {
+		cmd.Flags().MarkHidden("compute-id")
+	}
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
-	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -68,6 +74,10 @@ func newDeployCommand() *cobra.Command {
 					sync.TextOutput(ctx, c, cmd.OutOrStdout())
 				}
 			}
+			if cliType == clis.DLT {
+				// DLT CLI has very minimalistic output
+				cmdio.LogString(ctx, fmt.Sprintf("Deploying to target '%s'...", b.Config.Bundle.Target))
+			}
 
 			diags = diags.Extend(phases.Initialize(ctx, b))
 
@@ -80,7 +90,19 @@ func newDeployCommand() *cobra.Command {
 			}
 
 			if !diags.HasError() {
-				diags = diags.Extend(phases.Deploy(ctx, b, outputHandler))
+				diags = diags.Extend(phases.Deploy(ctx, b, outputHandler, cliType))
+			}
+
+			if cliType == clis.DLT {
+				if len(b.Config.Resources.Pipelines) == 1 {
+					diags = diags.Extend(bundle.ApplySeq(ctx, b, mutator.InitializeURLs()))
+					for _, pipeline := range b.Config.Resources.Pipelines {
+						fmt.Println("Deployed to " + color.CyanString(pipeline.URL))
+						break
+					}
+				} else {
+					fmt.Println("TIP: Use the 'dlt.run' command to see all deployed resources.")
+				}
 			}
 		}
 

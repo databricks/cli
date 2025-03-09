@@ -1,0 +1,26 @@
+{{/* skip this file for now! */}}
+{{skip "job.yml"}}
+
+# The job that triggers the {{.project_name}} pipeline.
+resources:
+  jobs:
+    {{.project_name}}_job:
+      name: {{.project_name}}_job
+
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      {{- if not is_service_principal}}
+
+      email_notifications:
+        on_failure: {{user_name}}
+
+      {{- end}}
+
+      tasks:
+        - task_key: refresh_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.{{.project_name}}.id}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"
 	"github.com/databricks/cli/cmd/auth"
@@ -69,7 +70,7 @@ func New(ctx context.Context) *cobra.Command {
 	// Add other subcommands.
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
-	cli.AddCommand(bundle.New())
+	cli.AddCommand(bundle.New(clis.General))
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))

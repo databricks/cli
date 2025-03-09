@@ -39,10 +39,10 @@ func New(ctx context.Context) *cobra.Command {
 	// Initialize flags
 	logFlags := initLogFlags(cmd)
 	progressLoggerFlag := initProgressLoggerFlag(cmd, logFlags)
-	outputFlag := initOutputFlag(cmd)
+	outputFlag := InitOutputFlag(cmd)
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
-	initTargetFlag(cmd)
+	InitTargetFlag(cmd)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()

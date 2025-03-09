@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -17,6 +18,7 @@ import (
 
 type statePush struct {
 	filerFactory deploy.FilerFactory
+	cliType      clis.CLIType
 }
 
 func (l *statePush) Name() string {
@@ -48,7 +50,9 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	defer local.Close()
 
 	// Upload state file from local cache directory to filer.
-	cmdio.LogString(ctx, "Updating deployment state...")
+	if l.cliType != clis.DLT {
+		cmdio.LogString(ctx, "Updating deployment state...")
+	}
 	log.Infof(ctx, "Writing local state file to remote state directory")
 	err = f.Write(ctx, TerraformStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
@@ -58,6 +62,6 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	return nil
 }
 
-func StatePush() bundle.Mutator {
-	return &statePush{deploy.StateFiler}
+func StatePush(cliType clis.CLIType) bundle.Mutator {
+	return &statePush{deploy.StateFiler, cliType}
 }

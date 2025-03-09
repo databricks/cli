@@ -6,11 +6,12 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) (diags diag.Diagnostics) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, cliType clis.CLIType) (diags diag.Diagnostics) {
 	log.Info(ctx, "Phase: bind")
 
 	diags = bundle.Apply(ctx, b, lock.Acquire())
@@ -27,13 +28,13 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) (d
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Import(opts),
-		terraform.StatePush(),
+		terraform.StatePush(cliType),
 	))
 
 	return diags
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey string) (diags diag.Diagnostics) {
+func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey string, cliType clis.CLIType) (diags diag.Diagnostics) {
 	log.Info(ctx, "Phase: unbind")
 
 	diags = bundle.Apply(ctx, b, lock.Acquire())
@@ -50,7 +51,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey str
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Unbind(resourceType, resourceKey),
-		terraform.StatePush(),
+		terraform.StatePush(cliType),
 	))
 
 	return diags

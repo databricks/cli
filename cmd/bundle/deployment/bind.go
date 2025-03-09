@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -14,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newBindCommand() *cobra.Command {
+func newBindCommand(cliType clis.CLIType) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bind KEY RESOURCE_ID",
 		Short: "Bind bundle-defined resources to existing resources",
@@ -60,7 +61,7 @@ func newBindCommand() *cobra.Command {
 				ResourceType: resource.TerraformResourceName(),
 				ResourceKey:  args[0],
 				ResourceId:   args[1],
-			}))
+			}, cliType))
 		}
 		if err := diags.Error(); err != nil {
 			return fmt.Errorf("failed to bind the resource, err: %w", err)

@@ -1,0 +1,18 @@
+# The configuration for the {{.project_name}} pipeline.
+resources:
+  pipelines:
+    {{.project_name}}:
+      name: {{.project_name}}
+      serverless: true
+      {{- if or (eq .default_catalog "") (eq .default_catalog "hive_metastore")}}
+      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+      # catalog: ${var.catalog}
+      {{- else}}
+      catalog: ${var.catalog}
+      {{- end}}
+      schema: ${var.schema}
+      libraries:
+        - file:
+            path: data_sources/**
+        - file:
+            path: transformations/**
