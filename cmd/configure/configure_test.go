@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/cmd"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/ini.v1"
 )
@@ -57,7 +58,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
@@ -91,7 +92,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -131,7 +132,7 @@ func TestEnvVarsConfigureNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -164,7 +165,7 @@ func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -193,7 +194,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
 
-	err := cmd.ExecuteContext(ctx)
+	err := root.Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
