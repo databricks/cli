@@ -137,8 +137,13 @@ func getMapValueType(v *jsonschema.Schema, refs map[string]*jsonschema.Schema) *
 	return nil
 }
 
+const (
+	nameField           = "name"
+	nameFieldWithFormat = "_name_"
+)
+
 func getMapKeyPrefix(s string) string {
-	return s + ".<name>"
+	return s + "." + nameFieldWithFormat
 }
 
 func removePluralForm(s string) string {

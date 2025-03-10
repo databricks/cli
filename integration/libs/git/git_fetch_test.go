@@ -50,7 +50,7 @@ func TestFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	targetPath := ensureWorkspacePrefix(acc.TemporaryRepo(wt, examplesRepoUrl))
 
-	ctx = dbr.MockRuntime(ctx, true)
+	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "15.4"})
 
 	for _, inputPath := range []string{
 		path.Join(targetPath, "knowledge_base/dashboard_nyc_taxi"),
@@ -72,7 +72,7 @@ func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	err := wt.W.Workspace.MkdirsByPath(ctx, path.Join(rootPath, "a/b/c"))
 	require.NoError(t, err)
 
-	ctx = dbr.MockRuntime(ctx, true)
+	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "15.4"})
 
 	tests := []struct {
 		input string

@@ -17,6 +17,14 @@ const (
 	// The value of 1 is arbitrary and can be any number.
 	// Other keys in the same package must have different values.
 	execIdKey = key(1)
+
+	// configUsedKey is the context key for the auth configuration used to run the
+	// command.
+	configUsedKey = key(2)
+
+	// workspaceClientKey is the context key for an already configured workspace
+	// client that can be used to make authenticated requests.
+	workspaceClientKey = key(3)
 )
 
 func GenerateExecId(ctx context.Context) context.Context {

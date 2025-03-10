@@ -241,6 +241,45 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	r.RunAndExpectOutput("setting up important infrastructure")
 }
 
+func TestOfflineInstallerWorksForReleases(t *testing.T) {
+	// This cmd is useful in systems where there is internet restriction, the user should follow a set-up as follows:
+	// install a labs project on a machine which has internet
+	// zip and copy the file to the intended machine and
+	// run databricks labs install --offline=true
+	// it will look for the code in the same install directory and if present, install from there.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.1/clusters/get" {
+			respondWithJSON(t, w, &compute.ClusterDetails{
+				State: compute.StateRunning,
+			})
+			return
+		}
+		t.Logf("Requested: %s", r.URL.Path)
+		t.FailNow()
+	}))
+	defer server.Close()
+
+	ctx := installerContext(t, server)
+	newHome := copyTestdata(t, "testdata/installed-in-home")
+	ctx = env.WithUserHomeDir(ctx, newHome)
+
+	ctx, stub := process.WithStub(ctx)
+	stub.WithStdoutFor(`python[\S]+ --version`, "Python 3.10.5")
+	// on Unix, we call `python3`, but on Windows it is `python.exe`
+	stub.WithStderrFor(`python[\S]+ -m venv .*/.databricks/labs/blueprint/state/venv`, "[mock venv create]")
+	stub.WithStderrFor(`python[\S]+ -m pip install --upgrade --upgrade-strategy eager .`, "[mock pip install]")
+	stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
+
+	// simulate the case of GitHub Actions
+	ctx = env.Set(ctx, "DATABRICKS_HOST", server.URL)
+	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "...")
+	ctx = env.Set(ctx, "DATABRICKS_CLUSTER_ID", "installer-cluster")
+	ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "installer-warehouse")
+
+	r := testcli.NewRunner(t, ctx, "labs", "install", "blueprint", "--offline=true", "--debug")
+	r.RunAndExpectOutput("setting up important infrastructure")
+}
+
 func TestInstallerWorksForDevelopment(t *testing.T) {
 	defer func() {
 		if !t.Failed() {
