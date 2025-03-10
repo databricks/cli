@@ -7,9 +7,6 @@ import (
 )
 
 func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
-	if v := ctx.Value(accountClientKey); v != nil {
-		panic("command.SetAccountClient called twice on the same context")
-	}
 	return context.WithValue(ctx, accountClientKey, a)
 }
 

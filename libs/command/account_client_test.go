@@ -30,9 +30,4 @@ func TestCommandAccountClient(t *testing.T) {
 
 	// The client should have the correct configuration.
 	assert.Equal(t, "test-account", AccountClient(ctx).Config.AccountID)
-
-	// Second call should panic.
-	assert.Panics(t, func() {
-		SetAccountClient(ctx, client)
-	})
 }
