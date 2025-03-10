@@ -159,6 +159,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
+	repls.Set(os.Getenv("TEST_INSTANCE_POOL_ID"), "[TEST_INSTANCE_POOL_ID]")
+
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
@@ -256,6 +258,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		}
 	}
 
+	// XXX rename away from uuid1 since it's not uuid due to replacements
+	uuid1 := strings.ReplaceAll(uuid.NewString(), "-", "_")
+	repls.Set(uuid1, "[UUID1]")
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -281,6 +287,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "UUID1="+uuid1)
 
 	var workspaceClient *databricks.WorkspaceClient
 	var user iam.User
