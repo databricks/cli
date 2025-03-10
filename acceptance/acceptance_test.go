@@ -742,6 +742,8 @@ func runWithTail(t *testing.T, cmd *exec.Cmd, filename string) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
+	start := time.Now()
+
 	// Tail goroutine: open the file and read new lines as they are written.
 	go func() {
 		defer wg.Done()
@@ -771,13 +773,13 @@ func runWithTail(t *testing.T, cmd *exec.Cmd, filename string) error {
 			line, err := reader.ReadString('\n')
 			msg := strings.TrimRight(line, "\n")
 			if len(msg) > 0 {
-				t.Log(msg)
+				d := time.Since(start)
+				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
 			}
 
 			if err != nil {
 				if errors.Is(err, io.EOF) {
-					// Sleep briefly if no complete line is available.
-					time.Sleep(100 * time.Millisecond)
+					time.Sleep(50 * time.Millisecond)
 					continue
 				}
 				t.Logf("error reading file: %v", err)
