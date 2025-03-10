@@ -5,6 +5,7 @@ package redash_config
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +58,7 @@ func newGetConfig() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 		response, err := w.RedashConfig.GetConfig(ctx)
 		if err != nil {
 			return err

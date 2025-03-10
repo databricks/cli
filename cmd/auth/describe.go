@@ -110,7 +110,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		return &status, nil
 	}
 
-	w := root.WorkspaceClient(ctx)
+	w := command.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return &authStatus{

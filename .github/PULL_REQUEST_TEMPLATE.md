@@ -8,7 +8,5 @@ For example, were there any decisions behind the change that are not reflected i
 ## Tests
 <!-- How have you tested the changes? -->
 
----
 <!-- If your PR needs to be included in the release notes for next release,
-remove the line below and add a separate entry in NEXT_CHANGELOG.md as part of your PR. -->
-NO_CHANGELOG=true
+add a separate entry in NEXT_CHANGELOG.md as part of your PR. -->

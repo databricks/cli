@@ -264,7 +264,7 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 	require.False(t, isAccount)
 	require.NoError(t, err)
 
-	w := WorkspaceClient(cmd.Context())
+	w := command.WorkspaceClient(cmd.Context())
 	require.NotNil(t, w)
 }
 

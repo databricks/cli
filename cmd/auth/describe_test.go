@@ -18,7 +18,7 @@ import (
 func TestGetWorkspaceAuthStatus(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
-	ctx = root.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	ctx = command.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -76,7 +76,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 func TestGetWorkspaceAuthStatusError(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
-	ctx = root.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	ctx = command.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -125,7 +125,7 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
-	ctx = root.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	ctx = command.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)

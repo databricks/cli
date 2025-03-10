@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/cache"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -106,7 +107,7 @@ func getCobraCmdForTest(f fixtures.HTTPFixture) (*cobra.Command, *bytes.Buffer) 
 func TestTokenCmdWithProfilePrintsHelpfulLoginMessageOnRefreshFailure(t *testing.T) {
 	cmd, output := getCobraCmdForTest(refreshFailureTokenResponse)
 	cmd.SetArgs([]string{"auth", "token", "--profile", "expired"})
-	err := cmd.Execute()
+	err := root.Execute(cmd.Context(), cmd)
 
 	out := output.String()
 	assert.Empty(t, out)
@@ -117,7 +118,7 @@ func TestTokenCmdWithProfilePrintsHelpfulLoginMessageOnRefreshFailure(t *testing
 func TestTokenCmdWithHostPrintsHelpfulLoginMessageOnRefreshFailure(t *testing.T) {
 	cmd, output := getCobraCmdForTest(refreshFailureTokenResponse)
 	cmd.SetArgs([]string{"auth", "token", "--host", "https://accounts.cloud.databricks.com", "--account-id", "expired"})
-	err := cmd.Execute()
+	err := root.Execute(cmd.Context(), cmd)
 
 	out := output.String()
 	assert.Empty(t, out)
@@ -128,7 +129,7 @@ func TestTokenCmdWithHostPrintsHelpfulLoginMessageOnRefreshFailure(t *testing.T)
 func TestTokenCmdInvalidResponse(t *testing.T) {
 	cmd, output := getCobraCmdForTest(refreshFailureInvalidResponse)
 	cmd.SetArgs([]string{"auth", "token", "--profile", "active"})
-	err := cmd.Execute()
+	err := root.Execute(cmd.Context(), cmd)
 
 	out := output.String()
 	assert.Empty(t, out)
@@ -139,7 +140,7 @@ func TestTokenCmdInvalidResponse(t *testing.T) {
 func TestTokenCmdOtherErrorResponse(t *testing.T) {
 	cmd, output := getCobraCmdForTest(refreshFailureOtherError)
 	cmd.SetArgs([]string{"auth", "token", "--profile", "active"})
-	err := cmd.Execute()
+	err := root.Execute(cmd.Context(), cmd)
 
 	out := output.String()
 	assert.Empty(t, out)
@@ -150,7 +151,7 @@ func TestTokenCmdOtherErrorResponse(t *testing.T) {
 func TestTokenCmdWithProfileSuccess(t *testing.T) {
 	cmd, output := getCobraCmdForTest(refreshSuccessTokenResponse)
 	cmd.SetArgs([]string{"auth", "token", "--profile", "active"})
-	err := cmd.Execute()
+	err := root.Execute(cmd.Context(), cmd)
 
 	out := output.String()
 	validateToken(t, out)
@@ -160,7 +161,7 @@ func TestTokenCmdWithProfileSuccess(t *testing.T) {
 func TestTokenCmdWithHostSuccess(t *testing.T) {
 	cmd, output := getCobraCmdForTest(refreshSuccessTokenResponse)
 	cmd.SetArgs([]string{"auth", "token", "--host", "https://accounts.cloud.databricks.com", "--account-id", "expired"})
-	err := cmd.Execute()
+	err := root.Execute(cmd.Context(), cmd)
 
 	out := output.String()
 	validateToken(t, out)
