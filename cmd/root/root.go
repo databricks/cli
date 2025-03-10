@@ -125,8 +125,8 @@ Stack Trace:
 %s`, version, r, string(trace))
 	}()
 
-	// Set a cmd-exec-id value in the context
-	ctx = command.SetExecId(ctx)
+	// Set a command execution ID value in the context
+	ctx = command.GenerateExecId(ctx)
 
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)

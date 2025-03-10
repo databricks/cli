@@ -13,31 +13,24 @@ import (
 type key int
 
 const (
-	// execIDKey is the context key for the execution ID.
+	// execIdKey is the context key for the execution ID.
 	// The value of 1 is arbitrary and can be any number.
 	// Other keys in the same package must have different values.
-	execIDKey = key(1)
+	execIdKey = key(1)
 )
 
-func SetExecId(ctx context.Context) context.Context {
-	if v := ctx.Value(execIDKey); v != nil {
+func GenerateExecId(ctx context.Context) context.Context {
+	if v := ctx.Value(execIdKey); v != nil {
 		panic("command.SetExecId called twice on the same context")
 	}
-	return context.WithValue(ctx, execIDKey, uuid.New().String())
-}
-
-func MockExecId(ctx context.Context, v string) context.Context {
-	if v := ctx.Value(execIDKey); v != nil {
-		panic("command.MockExecId called twice on the same context")
-	}
-	return context.WithValue(ctx, execIDKey, v)
+	return context.WithValue(ctx, execIdKey, uuid.New().String())
 }
 
 // ExecId returns a UUID value that is guaranteed to be the same throughout
 // the lifetime of the command execution, and unique for each invocation of the
 // CLI.
 func ExecId(ctx context.Context) string {
-	v := ctx.Value(execIDKey)
+	v := ctx.Value(execIdKey)
 	if v == nil {
 		panic("command.ExecId called without calling command.SetExecId first")
 	}

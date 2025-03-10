@@ -10,10 +10,10 @@ import (
 )
 
 func TestWithCommandExecIdInUserAgent(t *testing.T) {
-	ctx := command.MockExecId(context.Background(), "some-exec-id")
+	ctx := command.GenerateExecId(context.Background())
 	ctx = withCommandExecIdInUserAgent(ctx)
 
-	// Check that the command exec ID is set in the user agent string.
+	// user agent should contain cmd-exec-id/<UUID>
 	ua := useragent.FromContext(ctx)
-	assert.Contains(t, ua, "cmd-exec-id/some-exec-id")
+	assert.Regexp(t, `cmd-exec-id/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`, ua)
 }

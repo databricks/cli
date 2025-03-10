@@ -8,31 +8,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestContext_SetExecIdPanics(t *testing.T) {
+func TestCommandSetExecIdPanics(t *testing.T) {
 	ctx := context.Background()
 
 	// Set the execution ID.
-	ctx = SetExecId(ctx)
+	ctx = GenerateExecId(ctx)
 
 	// Expect a panic if the execution ID is set twice.
 	assert.Panics(t, func() {
-		ctx = SetExecId(ctx)
+		ctx = GenerateExecId(ctx)
 	})
 }
 
-func TestContext_MockExecIdPanics(t *testing.T) {
-	ctx := context.Background()
-
-	// Set the execution ID.
-	ctx = MockExecId(ctx, "test")
-
-	// Expect a panic if the mock function is run twice.
-	assert.Panics(t, func() {
-		MockExecId(ctx, "test")
-	})
-}
-
-func TestContext_ExecIdPanics(t *testing.T) {
+func TestCommandExecIdPanics(t *testing.T) {
 	ctx := context.Background()
 
 	// Expect a panic if the execution ID is not set.
@@ -41,11 +29,11 @@ func TestContext_ExecIdPanics(t *testing.T) {
 	})
 }
 
-func TestContext_ExecId(t *testing.T) {
+func TestCommandExecId(t *testing.T) {
 	ctx := context.Background()
 
 	// Set the execution ID.
-	ctx = SetExecId(ctx)
+	ctx = GenerateExecId(ctx)
 
 	// Expect no panic because the execution ID is set.
 	assert.NotPanics(t, func() {
@@ -59,10 +47,4 @@ func TestContext_ExecId(t *testing.T) {
 
 	// The value should be a valid UUID.
 	assert.NoError(t, uuid.Validate(v))
-}
-
-func TestContext_ExecIdWithMock(t *testing.T) {
-	ctx := context.Background()
-	assert.Equal(t, "test", ExecId(MockExecId(ctx, "test")))
-	assert.Equal(t, "test2", ExecId(MockExecId(ctx, "test2")))
 }
