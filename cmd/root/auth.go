@@ -15,11 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Placeholders to use as unique keys in context.Context.
-var (
-	accountClient int
-)
-
 type ErrNoWorkspaceProfiles struct {
 	path string
 }
