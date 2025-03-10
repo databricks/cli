@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
