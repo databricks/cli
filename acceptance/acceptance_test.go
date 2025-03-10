@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,6 +17,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -36,6 +38,7 @@ var (
 	KeepTmp     bool
 	NoRepl      bool
 	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail        bool
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -52,6 +55,7 @@ func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
+	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
 }
 
 const (
@@ -366,12 +370,17 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 
 	// Write combined output to a file
-	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
+	outputPath := filepath.Join(tmpDir, "output.txt")
+	out, err := os.Create(outputPath)
 	require.NoError(t, err)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	cmd.Dir = tmpDir
-	err = cmd.Run()
+	if Tail {
+		err = runWithTail(t, cmd, outputPath)
+	} else {
+		err = cmd.Run()
+	}
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -720,4 +729,83 @@ func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
+}
+
+// runWithTail starts cmd.Run() and concurrently tails the file.
+// For each new line that appears in the file, it calls t.Log(line).
+// When cmd.Run() finishes, it uses os.Stat(filename) to get the file’s final size,
+// and stops tailing once the file offset is greater or equal to that size.
+// The function returns the error from cmd.Run().
+func runWithTail(t *testing.T, cmd *exec.Cmd, filename string) error {
+	// finalSizeCh communicates the final file size to the tail goroutine.
+	finalSizeCh := make(chan int64, 1)
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Tail goroutine: open the file and read new lines as they are written.
+	go func() {
+		defer wg.Done()
+
+		f, err := openWait(filename)
+		assert.NoError(t, err)
+		defer f.Close()
+
+		reader := bufio.NewReader(f)
+		finalSize := int64(-1)
+
+		for {
+			select {
+			case fs := <-finalSizeCh:
+				finalSize = fs
+			default:
+			}
+
+			if finalSize >= 0 {
+				cur, seekErr := f.Seek(0, io.SeekCurrent)
+				assert.NoError(t, seekErr)
+				if cur >= finalSize || err != nil {
+					break
+				}
+			}
+
+			line, err := reader.ReadString('\n')
+			msg := strings.TrimRight(line, "\n")
+			if len(msg) > 0 {
+				t.Log(msg)
+			}
+
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					// Sleep briefly if no complete line is available.
+					time.Sleep(100 * time.Millisecond)
+					continue
+				}
+				t.Logf("error reading file: %v", err)
+				break
+			}
+		}
+	}()
+
+	err := cmd.Run()
+
+	fi, statErr := os.Stat(filename)
+	assert.NoError(t, statErr)
+
+	finalSizeCh <- fi.Size()
+
+	wg.Wait()
+	return err
+}
+
+func openWait(path string) (*os.File, error) {
+	deadline := time.Now().Add(1 * time.Second)
+	for {
+		f, err := os.Open(path)
+		if err == nil {
+			return f, err
+		}
+		if time.Now().After(deadline) {
+			return nil, err
+		}
+	}
 }
