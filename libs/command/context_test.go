@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCommandSetExecIdPanics(t *testing.T) {
+func TestCommandGenerateExecIdPanics(t *testing.T) {
 	ctx := context.Background()
 
 	// Set the execution ID.
@@ -29,7 +29,7 @@ func TestCommandExecIdPanics(t *testing.T) {
 	})
 }
 
-func TestCommandExecId(t *testing.T) {
+func TestCommandGenerateExecId(t *testing.T) {
 	ctx := context.Background()
 
 	// Set the execution ID.
