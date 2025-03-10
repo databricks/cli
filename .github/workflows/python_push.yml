@@ -37,7 +37,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           version: "0.6.5"
-          checksum: "8fc9895719a1291ecd193cb86f9282ff3649cef797d29eacc74c4f573aab1e2f"
 
       - name: Run tests
         working-directory: experimental/python
