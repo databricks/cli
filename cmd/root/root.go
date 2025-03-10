@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
@@ -126,7 +126,7 @@ Stack Trace:
 	}()
 
 	// Set a command execution ID value in the context
-	ctx = command.GenerateExecId(ctx)
+	ctx = cmdctx.GenerateExecId(ctx)
 
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
