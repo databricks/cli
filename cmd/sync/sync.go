@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
@@ -65,7 +66,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	}
 
 	ctx := cmd.Context()
-	client := root.WorkspaceClient(ctx)
+	client := command.WorkspaceClient(ctx)
 
 	localRoot := vfs.MustNew(args[0])
 	info, err := git.FetchRepositoryInfo(ctx, localRoot.Native(), client)
@@ -186,7 +187,7 @@ func New() *cobra.Command {
 		case 0:
 			return nil, cobra.ShellCompDirectiveFilterDirs
 		case 1:
-			wsc := root.WorkspaceClient(cmd.Context())
+			wsc := command.WorkspaceClient(cmd.Context())
 			return completeRemotePath(cmd.Context(), wsc, toComplete)
 		default:
 			return nil, cobra.ShellCompDirectiveNoFileComp

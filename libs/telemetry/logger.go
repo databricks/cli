@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/google/uuid"
 )
 
@@ -50,7 +50,7 @@ const (
 	waitBetweenRetries = 200 * time.Millisecond
 )
 
-func Upload(ctx context.Context, cfg *config.Config, ec protos.ExecutionContext) error {
+func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	l := fromContext(ctx)
 	if len(l.logs) == 0 {
 		log.Debugf(ctx, "no telemetry logs to upload")
@@ -77,7 +77,7 @@ func Upload(ctx context.Context, cfg *config.Config, ec protos.ExecutionContext)
 		protoLogs[i] = string(b)
 	}
 
-	apiClient, err := client.New(cfg)
+	apiClient, err := client.New(command.ConfigUsed(ctx))
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}

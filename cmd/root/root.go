@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -131,6 +132,9 @@ Stack Trace:
 	// Detect if the CLI is running on DBR and store this on the context.
 	ctx = dbr.DetectRuntime(ctx)
 
+	// Set a command execution ID value in the context
+	ctx = command.GenerateExecId(ctx)
+
 	startTime := time.Now()
 
 	// Run the command
@@ -166,19 +170,17 @@ Stack Trace:
 	}
 
 	ctx = cmd.Context()
-	if telemetry.HasLogs(ctx) {
-		err := telemetry.Upload(ctx, ConfigUsed(ctx), protos.ExecutionContext{
-			CmdExecID:       cmdExecId,
-			Version:         build.GetInfo().Version,
-			Command:         commandString(cmd),
-			OperatingSystem: runtime.GOOS,
-			DbrVersion:      dbr.RuntimeVersion(ctx),
-			ExecutionTimeMs: time.Since(startTime).Milliseconds(),
-			ExitCode:        int64(exitCode),
-		})
-		if err != nil {
-			log.Debugf(ctx, "telemetry upload failed: %s", err)
-		}
+	telemetryErr := telemetry.Upload(ctx, protos.ExecutionContext{
+		CmdExecID:       command.ExecId(ctx),
+		Version:         build.GetInfo().Version,
+		Command:         commandString(cmd),
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      dbr.RuntimeVersion(ctx),
+		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
+		ExitCode:        int64(exitCode),
+	})
+	if telemetryErr != nil {
+		log.Debugf(ctx, "telemetry upload failed: %s", err)
 	}
 
 	return err

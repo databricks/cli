@@ -7,16 +7,20 @@ import (
 )
 
 func newInstallCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "install NAME",
-		Args:  root.ExactArgs(1),
-		Short: "Installs project",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			inst, err := project.NewInstaller(cmd, args[0])
-			if err != nil {
-				return err
-			}
-			return inst.Install(cmd.Context())
-		},
+	cmd := &cobra.Command{}
+	var offlineInstall bool
+
+	cmd.Flags().BoolVar(&offlineInstall, "offline", offlineInstall, `If installing in offline mode, set this flag to true.`)
+
+	cmd.Use = "install NAME"
+	cmd.Args = root.ExactArgs(1)
+	cmd.Short = "Installs project"
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		inst, err := project.NewInstaller(cmd, args[0], offlineInstall)
+		if err != nil {
+			return err
+		}
+		return inst.Install(cmd.Context())
 	}
+	return cmd
 }
