@@ -12,7 +12,7 @@ export EXPERIMENT_NAME
 envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
 
 title "Create a pre-defined experiment"
-EXPERIMENT_ID=$($CLI experiments create-experiment ${EXPERIMENT_NAME} | jq -r '.experiment_id')
+EXPERIMENT_ID=$($CLI experiments create-experiment "${EXPERIMENT_NAME}" | jq -r '.experiment_id')
 
 cleanupRemoveExperiment() {
     title "Test cleanup: "
