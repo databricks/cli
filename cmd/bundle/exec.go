@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/spf13/cobra"
@@ -42,13 +41,11 @@ Example usage:
 
 			env := auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
 
-			// If user has specified a target, pass it to the child command. DABs
-			// defines a "default" target which is a placeholder for when no target is defined.
-			// If that's the case, i.e. no targets are defined, then do not pass the target.
+			// If user has specified a target, pass it to the child command.
 			//
 			// This is only useful for when the Databricks CLI is the child command.
-			if b.Config.Bundle.Target != mutator.DefaultTargetPlaceholder {
-				env = append(env, "DATABRICKS_BUNDLE_TARGET="+b.Config.Bundle.Target)
+			if target := root.GetTarget(cmd); target != "" {
+				env = append(env, "DATABRICKS_CONFIG_TARGET="+target)
 			}
 
 			// If the bundle has a profile configured, explicitly pass it to the child command.
