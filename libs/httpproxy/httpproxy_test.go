@@ -89,7 +89,7 @@ func TestProxyStart(t *testing.T) {
 
 	code, body = sendTestRequest(t, "/")
 	require.Equal(t, http.StatusInternalServerError, code)
-	require.Contains(t, string(body), fmt.Sprintf("dial tcp %s: connect: connection refused", serverAddr))
+	require.Contains(t, string(body), fmt.Sprintf("Error forwarding request: Get \"http://%s/\": dial tcp %s", serverAddr, serverAddr))
 }
 
 func TestProxyHandleWebSocket(t *testing.T) {
