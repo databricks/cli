@@ -1,0 +1,38 @@
+
+=== Bind schema test: 
+=== Substitute variables in the template: 
+=== Create a pre-defined schema: {
+  "full_name": "main.test-schema-[UUID]",
+  "catalog_name": "main",
+  "comment": null
+}
+
+=== Bind schema: Updating deployment state...
+Successfully bound databricks_schema with an id 'main.test-schema-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-schema-test-[UUID]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Read the pre-defined schema: {
+  "full_name": "main.test-schema-[UUID]",
+  "catalog_name": "main",
+  "comment": "This schema was created from DABs"
+}
+
+=== Unbind the schema: Updating deployment state...
+
+=== Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-schema-test-[UUID]/default
+
+Deleting files...
+Destroy complete!
+
+=== Read the pre-defined schema again (expecting it still exists): {
+  "full_name": "main.test-schema-[UUID]",
+  "catalog_name": "main",
+  "comment": "This schema was created from DABs"
+}
+
+=== Test cleanup: 
+=== Delete the pre-defined schema test-schema-[UUID]: 0

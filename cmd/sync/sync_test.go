@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -58,7 +58,7 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 
 	f := syncFlags{}
 	cmd := New()
-	cmd.SetContext(root.SetWorkspaceClient(context.Background(), nil))
+	cmd.SetContext(command.SetWorkspaceClient(context.Background(), nil))
 	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
 	assert.Equal(t, local, opts.LocalRoot.Native())
