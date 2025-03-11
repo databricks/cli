@@ -180,7 +180,7 @@ Stack Trace:
 		ExitCode:        int64(exitCode),
 	})
 	if telemetryErr != nil {
-		log.Debugf(ctx, "telemetry upload failed: %s", err)
+		log.Debugf(ctx, "telemetry upload failed: %s", telemetryErr)
 	}
 
 	return err
