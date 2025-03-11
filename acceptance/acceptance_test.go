@@ -246,7 +246,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		}
 
 		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			t.Skipf("Disable via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+			t.Skipf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
 		}
 
 	} else {
