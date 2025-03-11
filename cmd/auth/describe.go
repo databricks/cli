@@ -57,7 +57,7 @@ func newDescribeCommand() *cobra.Command {
 		var err error
 		status, err = getAuthStatus(cmd, args, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 			isAccount, err := root.MustAnyClient(cmd, args)
-			return root.ConfigUsed(cmd.Context()), isAccount, err
+			return command.ConfigUsed(cmd.Context()), isAccount, err
 		})
 		if err != nil {
 			return err
