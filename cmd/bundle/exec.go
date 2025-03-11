@@ -20,8 +20,11 @@ func newExecCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		Long: `Execute a command using the same authentication context as the bundle
 
-The current working directory of the provided command will be set to the root
+Note: The current working directory of the provided command will be set to the root
 of the bundle.
+
+Authentication to the input command will be provided by setting the appropriate
+environment variables that Databricks tools use to authenticate.
 
 Example usage:
 1. databricks bundle exec -- echo "hello, world"
