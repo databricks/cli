@@ -224,24 +224,24 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	tailOutput := Tail
 
 	if isRunningOnCloud {
-		if isTruePtr(config.CloudLong) {
+		if isTruePtr(config.CloudSlow) {
 			if testing.Short() {
-				t.Skipf("Disabled via CloudLong setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+				t.Skipf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 			}
 
 			if testing.Verbose() {
-				// Combination of CloudLong and -v auto-enables -tail
+				// Combination of CloudSlow and -v auto-enables -tail
 				tailOutput = true
 			}
 		}
 
-		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudLong)
+		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
 		if !isCloudEnabled {
-			t.Skipf("Disabled via Cloud/CloudLong setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudLong=%v)",
+			t.Skipf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
 				configPath,
 				cloudEnv,
 				isTruePtr(config.Cloud),
-				isTruePtr(config.CloudLong),
+				isTruePtr(config.CloudSlow),
 			)
 		}
 

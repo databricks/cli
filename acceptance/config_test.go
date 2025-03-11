@@ -33,7 +33,7 @@ type TestConfig struct {
 
 	// If true, run this test when running with cloud env configured and -short is not passed
 	// This also sets -tail when -v is passed.
-	CloudLong *bool
+	CloudSlow *bool
 
 	// If true and Cloud=true, run this test only if unity catalog is available in the cloud environment
 	RequiresUnityCatalog *bool
