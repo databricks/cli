@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -45,10 +46,12 @@ func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 		},
 	})
 
-	err := Upload(ctx, &config.Config{
+	ctx = command.SetConfigUsed(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
-	}, protos.ExecutionContext{})
+	})
+
+	err := Upload(ctx, protos.ExecutionContext{})
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
 }
@@ -92,11 +95,12 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 			Name: protos.DummyCliEnumValue2,
 		},
 	})
-
-	err := Upload(ctx, &config.Config{
+	ctx = command.SetConfigUsed(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
-	}, protos.ExecutionContext{})
+	})
+
+	err := Upload(ctx, protos.ExecutionContext{})
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
 }
@@ -140,10 +144,12 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 		},
 	})
 
-	err := Upload(ctx, &config.Config{
+	ctx = command.SetConfigUsed(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
-	}, protos.ExecutionContext{})
+	})
+
+	err := Upload(ctx, protos.ExecutionContext{})
 	assert.EqualError(t, err, "failed to upload telemetry logs after three attempts")
 	assert.Equal(t, 3, count)
 }
