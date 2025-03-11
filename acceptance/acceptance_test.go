@@ -220,17 +220,39 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
-	if !isTruePtr(config.Local) && cloudEnv == "" {
-		t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-	}
+	isRunningOnCloud := cloudEnv != ""
+	tailOutput := Tail
 
-	if !isTruePtr(config.Cloud) && cloudEnv != "" {
-		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-	}
+	if isRunningOnCloud {
+		if isTruePtr(config.CloudSlow) {
+			if testing.Short() {
+				t.Skipf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+			}
 
-	if cloudEnv != "" {
+			if testing.Verbose() {
+				// Combination of CloudSlow and -v auto-enables -tail
+				tailOutput = true
+			}
+		}
+
+		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
+		if !isCloudEnabled {
+			t.Skipf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
+				configPath,
+				cloudEnv,
+				isTruePtr(config.Cloud),
+				isTruePtr(config.CloudSlow),
+			)
+		}
+
 		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			t.Skipf("Skipping on non-UC workspaces")
+			t.Skipf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+		}
+
+	} else {
+		// Local run
+		if !isTruePtr(config.Local) {
+			t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 		}
 	}
 
@@ -267,7 +289,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// specifies a custom server stubs.
 	var server *testserver.Server
 
-	if cloudEnv == "" {
+	if !isRunningOnCloud {
 		// Start a new server for this test if either:
 		// 1. A custom server spec is defined in the test configuration.
 		// 2. The test is configured to record requests and assert on them. We need
@@ -374,7 +396,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	require.NoError(t, err)
 	defer out.Close()
 
-	err = runWithLog(t, cmd, out)
+	err = runWithLog(t, cmd, out, tailOutput)
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -725,7 +747,7 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File) error {
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
@@ -743,7 +765,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File) error {
 	reader := bufio.NewReader(r)
 	for {
 		line, err := reader.ReadString('\n')
-		if Tail {
+		if tail {
 			msg := strings.TrimRight(line, "\n")
 			if len(msg) > 0 {
 				d := time.Since(start)
