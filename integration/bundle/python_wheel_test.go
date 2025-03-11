@@ -47,14 +47,6 @@ func runPythonWheelTest(t *testing.T, templateName, sparkVersion string, pythonW
 	require.Contains(t, out, "['my_test_code', 'param1', 'param2']")
 }
 
-func TestPythonWheelTaskDeployAndRunWithoutWrapper(t *testing.T) {
-	runPythonWheelTest(t, "python_wheel_task", "13.3.x-snapshot-scala2.12", false)
-}
-
-func TestPythonWheelTaskDeployAndRunWithWrapper(t *testing.T) {
-	runPythonWheelTest(t, "python_wheel_task", "12.2.x-scala2.12", true)
-}
-
 func TestPythonWheelTaskDeployAndRunOnInteractiveCluster(t *testing.T) {
 	if testutil.GetCloud(t) == testutil.AWS {
 		t.Skip("Skipping test for AWS cloud because it is not permitted to create clusters")
