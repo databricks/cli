@@ -28,7 +28,7 @@ func DefaultMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		EnvironmentsToTargets(),
 		ComputeIdToClusterId(),
 		InitializeVariables(),
-		DefineDefaultTarget(),
+		DefinePlaceholderTarget(),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
 
 		// Note: This mutator must run before the target overrides are merged.

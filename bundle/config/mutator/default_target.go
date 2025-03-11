@@ -9,23 +9,28 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type defineDefaultTarget struct {
+type definePlaceholderTarget struct {
 	name string
 }
 
-// DefineDefaultTarget adds a target named "default"
+const PlaceholderTargetName = "PLACEHOLDER_TARGET"
+
+// DefinePlaceholderTarget adds a target named "PLACEHOLDER_TARGET"
 // to the configuration if none have been defined.
-func DefineDefaultTarget() bundle.Mutator {
-	return &defineDefaultTarget{
-		name: "default",
+//
+// We do this because downstream mutators like [SelectDefaultTarget]
+// and [SelectTarget] expect at least one target to be defined.
+func DefinePlaceholderTarget() bundle.Mutator {
+	return &definePlaceholderTarget{
+		name: "PlaceholderTargetName",
 	}
 }
 
-func (m *defineDefaultTarget) Name() string {
+func (m *definePlaceholderTarget) Name() string {
 	return fmt.Sprintf("DefineDefaultTarget(%s)", m.name)
 }
 
-func (m *defineDefaultTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *definePlaceholderTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Nothing to do if the configuration has at least 1 target.
 	if len(b.Config.Targets) > 0 {
 		return nil
