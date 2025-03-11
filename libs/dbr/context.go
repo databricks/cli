@@ -15,6 +15,11 @@ const (
 	dbrKey = key(1)
 )
 
+type Environment struct {
+	IsDbr   bool
+	Version string
+}
+
 // DetectRuntime detects whether or not the current
 // process is running inside a Databricks Runtime environment.
 // It return a new context with the detection result set.
@@ -27,11 +32,11 @@ func DetectRuntime(ctx context.Context) context.Context {
 
 // MockRuntime is a helper function to mock the detection result.
 // It returns a new context with the detection result set.
-func MockRuntime(ctx context.Context, b bool) context.Context {
+func MockRuntime(ctx context.Context, runtime Environment) context.Context {
 	if v := ctx.Value(dbrKey); v != nil {
 		panic("dbr.MockRuntime called twice on the same context")
 	}
-	return context.WithValue(ctx, dbrKey, b)
+	return context.WithValue(ctx, dbrKey, runtime)
 }
 
 // RunsOnRuntime returns the detection result from the context.
@@ -45,5 +50,14 @@ func RunsOnRuntime(ctx context.Context) bool {
 	if v == nil {
 		panic("dbr.RunsOnRuntime called without calling dbr.DetectRuntime first")
 	}
-	return v.(bool)
+	return v.(Environment).IsDbr
+}
+
+func RuntimeVersion(ctx context.Context) string {
+	v := ctx.Value(dbrKey)
+	if v == nil {
+		panic("dbr.RuntimeVersion called without calling dbr.DetectRuntime first")
+	}
+
+	return v.(Environment).Version
 }

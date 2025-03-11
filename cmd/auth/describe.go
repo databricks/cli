@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -109,7 +110,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		return &status, nil
 	}
 
-	w := root.WorkspaceClient(ctx)
+	w := command.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return &authStatus{

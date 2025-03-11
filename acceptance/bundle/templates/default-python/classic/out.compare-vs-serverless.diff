@@ -48,7 +48,7 @@
 -      catalog: main
 +      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
 +      # catalog: catalog_name
-       target: my_default_python_${bundle.target}
+       schema: my_default_python_${bundle.target}
 -      serverless: true
        libraries:
          - notebook:

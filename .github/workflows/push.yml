@@ -58,7 +58,9 @@ jobs:
           python-version: '3.9'
 
       - name: Install uv
-        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
+        with:
+          version: "0.6.5"
 
       - name: Set go env
         run: |
@@ -145,7 +147,10 @@ jobs:
           go run main.go bundle schema > schema.json
 
           # Add markdownDescription keyword to ajv
-          echo "module.exports=function(a){a.addKeyword('markdownDescription')}" >> keywords.js
+          echo "module.exports = function(a) {
+            a.addKeyword('markdownDescription');
+            a.addKeyword('deprecationMessage');
+          }" >> keywords.js
 
           for file in ./bundle/internal/schema/testdata/pass/*.yml; do
             ajv test -s schema.json -d $file --valid -c=./keywords.js

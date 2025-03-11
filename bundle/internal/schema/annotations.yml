@@ -61,6 +61,8 @@ github.com/databricks/cli/bundle/config.Experimental:
   "pydabs":
     "description": |-
       The PyDABs configuration.
+    "deprecation_message": |-
+      Deprecated: please use python instead
   "python":
     "description": |-
       Configures loading of Python code defined with 'databricks-bundles' package.
@@ -186,9 +188,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality_monitors).
   "registered_models":
     "description": |-
-      The registered model definitions for the bundle, where each key is the name of the <UC> registered model.
+      The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.
     "markdown_description": |-
-      The registered model definitions for the bundle, where each key is the name of the <UC> registered model. See [_](/dev-tools/bundles/resources.md#registered_models).
+      The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [_](/dev-tools/bundles/resources.md#registered_models)
   "schemas":
     "description": |-
       The schema definitions for the bundle, where each key is the name of the schema.
@@ -220,6 +222,11 @@ github.com/databricks/cli/bundle/config.Root:
       The bundle attributes when deploying to this target.
     "markdown_description": |-
       The bundle attributes when deploying to this target,
+  "environments":
+    "description": |-
+      PLACEHOLDER
+    "deprecation_message": |-
+      Deprecated: please use targets instead
   "experimental":
     "description": |-
       Defines attributes for experimental features.
@@ -254,7 +261,7 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
     "markdown_description": |-
-      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about <DABS> supported resources, and resource definition reference, see [_](/dev-tools/bundles/resources.md).
+      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Databricks Asset Bundles supported resources, and resource definition reference, see [_](/dev-tools/bundles/resources.md).
 
       ```yaml
       resources:
@@ -264,9 +271,9 @@ github.com/databricks/cli/bundle/config.Root:
       ```
   "run_as":
     "description": |-
-      The identity to use when running <DABS> workflows.
+      The identity to use when running Databricks Asset Bundles workflows.
     "markdown_description": |-
-      The identity to use when running <DABS> workflows. See [_](/dev-tools/bundles/run-as.md).
+      The identity to use when running Databricks Asset Bundles workflows. See [_](/dev-tools/bundles/run-as.md).
   "sync":
     "description": |-
       The files and file paths to include or exclude in the bundle.
@@ -308,6 +315,8 @@ github.com/databricks/cli/bundle/config.Target:
   "compute_id":
     "description": |-
       Deprecated. The ID of the compute to use for this target.
+    "deprecation_message": |-
+      Deprecated: please use cluster_id instead
   "default":
     "description": |-
       Whether this target is the default target.

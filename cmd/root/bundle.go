@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/diag"
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
@@ -102,7 +103,7 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 	if err != nil {
 		return b, diags.Extend(diag.FromErr(err))
 	}
-	ctx = context.WithValue(ctx, &configUsed, client.Config)
+	ctx = command.SetConfigUsed(ctx, client.Config)
 	cmd.SetContext(ctx)
 
 	return b, diags
