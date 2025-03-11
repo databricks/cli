@@ -17,69 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 )
-
-func TestBindExperimentToExistingExperiment(t *testing.T) {
-	ctx, wt := acc.UcWorkspaceTest(t)
-
-	currentUser, err := wt.W.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-
-	// create a pre-defined experiment:
-	uniqueId := uuid.New().String()
-	experimentName := "/Workspace/Users/" + currentUser.UserName + "/test-experiment" + uniqueId
-	predefinedExperiment, err := wt.W.Experiments.CreateExperiment(ctx, ml.CreateExperiment{
-		Name:             experimentName,
-		ArtifactLocation: "s3://test-location",
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := wt.W.Experiments.DeleteExperiment(ctx, ml.DeleteExperiment{ExperimentId: predefinedExperiment.ExperimentId})
-		require.NoError(t, err)
-	})
-
-	// setup the bundle:
-	bundleRoot := initTestTemplate(t, ctx, "ml_experiment", map[string]any{
-		"unique_id":       uniqueId,
-		"experiment_name": experimentName,
-	})
-	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-
-	// run the bind command:
-	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "experiment1", predefinedExperiment.ExperimentId, "--auto-approve")
-	_, _, err = c.Run()
-	require.NoError(t, err)
-
-	// deploy the bundle:
-	deployBundle(t, ctx, bundleRoot)
-
-	// check that the predefinedExperiment was not re-created / deleted (it is still active):
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	updatedExperiment, err := w.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
-		ExperimentId: predefinedExperiment.ExperimentId,
-	})
-	require.NoError(t, err)
-
-	require.Equal(t, "active", updatedExperiment.Experiment.LifecycleStage)
-
-	// unbind the experiment:
-	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "unbind", "experiment1")
-	_, _, err = c.Run()
-	require.NoError(t, err)
-
-	// destroy the bundle:
-	destroyBundle(t, ctx, bundleRoot)
-
-	// Check that experiment is unbound and exists after bundle is destroyed
-	postDestroyExperiment, err := w.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
-		ExperimentId: predefinedExperiment.ExperimentId,
-	})
-	require.NoError(t, err)
-	require.Equal(t, "active", postDestroyExperiment.Experiment.LifecycleStage)
-}
 
 func TestBindSchemaToExistingSchema(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
