@@ -13,9 +13,9 @@ type definePlaceholderTarget struct {
 	name string
 }
 
-const PlaceholderTargetName = "PLACEHOLDER_TARGET"
+const PlaceholderTargetName = "BUNDLE_PLACEHOLDER_TARGET"
 
-// DefinePlaceholderTarget adds a target named "PLACEHOLDER_TARGET"
+// DefinePlaceholderTarget adds a target named "BUNDLE_PLACEHOLDER_TARGET"
 // to the configuration if none have been defined.
 //
 // We do this because downstream mutators like [SelectDefaultTarget]
