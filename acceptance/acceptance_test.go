@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"sort"
@@ -26,12 +27,15 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	KeepTmp bool
-	NoRepl  bool
+	KeepTmp     bool
+	NoRepl      bool
+	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -55,12 +59,18 @@ const (
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 100_000
+	// Filename to save replacements to (used by diff.py)
+	ReplsFile = "repls.json"
 )
 
 var Scripts = map[string]bool{
 	EntryPointScript: true,
 	CleanupScript:    true,
 	PrepareScript:    true,
+}
+
+var Ignored = map[string]bool{
+	ReplsFile: true,
 }
 
 func TestAccept(t *testing.T) {
@@ -71,7 +81,8 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode {
 		t.Skip("Already tested by TestAccept")
 	}
-	require.Equal(t, 1, testAccept(t, true, "selftest"))
+	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
+	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
@@ -117,14 +128,12 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
-	ctx := context.Background()
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
 		defaultServer := testserver.New(t)
 		AddHandlers(defaultServer)
-		// Redirect API access to local server:
-		t.Setenv("DATABRICKS_HOST", defaultServer.URL)
+		t.Setenv("DATABRICKS_DEFAULT_HOST", defaultServer.URL)
 
 		homeDir := t.TempDir()
 		// Do not read user's ~/.databrickscfg
@@ -147,26 +156,13 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
-	var config databricks.Config
-	if cloudEnv == "" {
-		// use fake token for local tests
-		config = databricks.Config{Token: "dbapi1234"}
-	} else {
-		// non-local tests rely on environment variables
-		config = databricks.Config{}
-	}
-	workspaceClient, err := databricks.NewWorkspaceClient(&config)
-	require.NoError(t, err)
-
-	user, err := workspaceClient.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-	require.NotNil(t, user)
-	testdiff.PrepareReplacementsUser(t, &repls, *user)
-	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
-	testdiff.PrepareReplacementsUUID(t, &repls)
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
+
+	repls.SetPath(cwd, "[TESTROOT]")
+
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -179,8 +175,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	}
 
 	for _, dir := range testDirs {
-		testName := strings.ReplaceAll(dir, "\\", "/")
-		t.Run(testName, func(t *testing.T) {
+		t.Run(dir, func(t *testing.T) {
 			if !InprocessMode {
 				t.Parallel()
 			}
@@ -202,7 +197,8 @@ func getTests(t *testing.T) []string {
 		name := filepath.Base(path)
 		if name == EntryPointScript {
 			// Presence of 'script' marks a test case in this directory
-			testDirs = append(testDirs, filepath.Dir(path))
+			testName := filepath.ToSlash(filepath.Dir(path))
+			testDirs = append(testDirs, testName)
 		}
 		return nil
 	})
@@ -221,8 +217,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
-	if config.LocalOnly && cloudEnv != "" {
-		t.Skipf("Disabled via LocalOnly setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	if !isTruePtr(config.Local) && cloudEnv == "" {
+		t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	}
+
+	if !isTruePtr(config.Cloud) && cloudEnv != "" {
+		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	} else {
+		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
+			t.Skipf("Skipping on non-UC workspaces")
+		}
 	}
 
 	var tmpDir string
@@ -238,7 +242,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	repls.SetPathWithParents(tmpDir, "[TMPDIR]")
-	repls.Repls = append(repls.Repls, config.Repls...)
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -252,37 +255,98 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
 
+	var workspaceClient *databricks.WorkspaceClient
+	var user iam.User
+
 	// Start a new server with a custom configuration if the acceptance test
 	// specifies a custom server stubs.
 	var server *testserver.Server
 
-	// Start a new server for this test if either:
-	// 1. A custom server spec is defined in the test configuration.
-	// 2. The test is configured to record requests and assert on them. We need
-	//    a duplicate of the default server to record requests because the default
-	//    server otherwise is a shared resource.
-	if len(config.Server) > 0 || config.RecordRequests {
-		server = testserver.New(t)
-		server.RecordRequests = config.RecordRequests
-		server.IncludeRequestHeaders = config.IncludeRequestHeaders
+	if cloudEnv == "" {
+		// Start a new server for this test if either:
+		// 1. A custom server spec is defined in the test configuration.
+		// 2. The test is configured to record requests and assert on them. We need
+		//    a duplicate of the default server to record requests because the default
+		//    server otherwise is a shared resource.
 
-		// If no custom server stubs are defined, add the default handlers.
-		if len(config.Server) == 0 {
-			AddHandlers(server)
-		}
+		databricksLocalHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
 
-		for _, stub := range config.Server {
-			require.NotEmpty(t, stub.Pattern)
-			server.Handle(stub.Pattern, func(fakeWorkspace *testserver.FakeWorkspace, req *http.Request) (any, int) {
-				statusCode := http.StatusOK
-				if stub.Response.StatusCode != 0 {
-					statusCode = stub.Response.StatusCode
+		if len(config.Server) > 0 || isTruePtr(config.RecordRequests) {
+			server = testserver.New(t)
+			if isTruePtr(config.RecordRequests) {
+				requestsPath := filepath.Join(tmpDir, "out.requests.txt")
+				server.RecordRequestsCallback = func(request *testserver.Request) {
+					req := getLoggedRequest(request, config.IncludeRequestHeaders)
+					reqJson, err := json.MarshalIndent(req, "", "  ")
+					assert.NoErrorf(t, err, "Failed to indent: %#v", req)
+
+					reqJsonWithRepls := repls.Replace(string(reqJson))
+
+					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+					assert.NoError(t, err)
+					defer f.Close()
+
+					_, err = f.WriteString(reqJsonWithRepls + "\n")
+					assert.NoError(t, err)
 				}
-				return stub.Response.Body, statusCode
-			})
+			}
+
+			// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
+			// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
+			slices.Reverse(config.Server)
+
+			for _, stub := range config.Server {
+				require.NotEmpty(t, stub.Pattern)
+				items := strings.Split(stub.Pattern, " ")
+				require.Len(t, items, 2)
+				server.Handle(items[0], items[1], func(req testserver.Request) any {
+					return stub.Response
+				})
+			}
+
+			// The earliest handlers take precedence, add default handlers last
+			AddHandlers(server)
+			databricksLocalHost = server.URL
 		}
-		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+server.URL)
+
+		// Each local test should use a new token that will result into a new fake workspace,
+		// so that test don't interfere with each other.
+		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+		config := databricks.Config{
+			Host:  databricksLocalHost,
+			Token: "dbapi" + tokenSuffix,
+		}
+		workspaceClient, err = databricks.NewWorkspaceClient(&config)
+		require.NoError(t, err)
+
+		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+config.Host)
+		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+config.Token)
+
+		// For the purposes of replacements, use testUser.
+		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
+		user = testUser
+	} else {
+		// Use whatever authentication mechanism is configured by the test runner.
+		workspaceClient, err = databricks.NewWorkspaceClient(&databricks.Config{})
+		require.NoError(t, err)
+		pUser, err := workspaceClient.CurrentUser.Me(context.Background())
+		require.NoError(t, err, "Failed to get current user")
+		user = *pUser
 	}
+
+	testdiff.PrepareReplacementsUser(t, &repls, user)
+	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
+
+	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
+	testdiff.PrepareReplacementsUUID(t, &repls)
+
+	// User replacements come last:
+	repls.Repls = append(repls.Repls, config.Repls...)
+
+	// Save replacements to temp test directory so that it can be read by diff.py
+	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
+	require.NoError(t, err)
+	testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
@@ -294,14 +358,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
-	// Each local test should use a new token that will result into a new fake workspace,
-	// so that test don't interfere with each other.
-	if cloudEnv == "" {
-		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-		token := "dbapi" + tokenSuffix
-		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+token)
-		repls.Set(token, "[DATABRICKS_TOKEN]")
-	}
+	absDir, err := filepath.Abs(dir)
+	require.NoError(t, err)
+	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
@@ -310,25 +369,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Stderr = out
 	cmd.Dir = tmpDir
 	err = cmd.Run()
-
-	// Write the requests made to the server to a output file if the test is
-	// configured to record requests.
-	if config.RecordRequests {
-		f, err := os.OpenFile(filepath.Join(tmpDir, "out.requests.txt"), os.O_CREATE|os.O_WRONLY, 0o644)
-		require.NoError(t, err)
-
-		for _, req := range server.Requests {
-			reqJson, err := json.Marshal(req)
-			require.NoError(t, err)
-
-			reqJsonWithRepls := repls.Replace(string(reqJson))
-			_, err = f.WriteString(reqJsonWithRepls + "\n")
-			require.NoError(t, err)
-		}
-
-		err = f.Close()
-		require.NoError(t, err)
-	}
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -343,6 +383,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Make sure there are not unaccounted for new files
 	files := ListDir(t, tmpDir)
+	unexpected := []string{}
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -350,12 +391,22 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if _, ok := outputs[relPath]; ok {
 			continue
 		}
-		t.Errorf("Unexpected output: %s", relPath)
+		if _, ok := Ignored[relPath]; ok {
+			continue
+		}
+		if config.CompiledIgnoreObject.MatchesPath(relPath) {
+			continue
+		}
+		unexpected = append(unexpected, relPath)
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
 			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
+	}
+
+	if len(unexpected) > 0 {
+		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
 }
 
@@ -380,8 +431,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
-		t.Errorf("Missing output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
-		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		t.Errorf("Missing output file: %s", relPath)
 		if testdiff.OverwriteMode {
 			t.Logf("Removing output file: %s", relPath)
 			require.NoError(t, os.Remove(pathRef))
@@ -407,7 +457,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		testutil.WriteFile(t, pathRef, valueNew)
 	}
 
-	if !equal && printedRepls != nil && !*printedRepls {
+	if VerboseTest && !equal && printedRepls != nil && !*printedRepls {
 		*printedRepls = true
 		var items []string
 		for _, item := range repls.Repls {
@@ -628,4 +678,43 @@ func RunCommand(t *testing.T, args []string, dir string) {
 	if len(out) > 0 {
 		t.Logf("%s output: %s", args, out)
 	}
+}
+
+type LoggedRequest struct {
+	Headers http.Header `json:"headers,omitempty"`
+	Method  string      `json:"method"`
+	Path    string      `json:"path"`
+	Body    any         `json:"body,omitempty"`
+	RawBody string      `json:"raw_body,omitempty"`
+}
+
+func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedRequest {
+	result := LoggedRequest{
+		Method:  req.Method,
+		Path:    req.URL.Path,
+		Headers: filterHeaders(req.Headers, includedHeaders),
+	}
+
+	if json.Valid(req.Body) {
+		result.Body = json.RawMessage(req.Body)
+	} else {
+		result.RawBody = string(req.Body)
+	}
+
+	return result
+}
+
+func filterHeaders(h http.Header, includedHeaders []string) http.Header {
+	headers := make(http.Header)
+	for k, v := range h {
+		if !slices.Contains(includedHeaders, k) {
+			continue
+		}
+		headers[k] = v
+	}
+	return headers
+}
+
+func isTruePtr(value *bool) bool {
+	return value != nil && *value
 }

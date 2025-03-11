@@ -2,7 +2,7 @@ terraform {
   required_providers {
     databricks = {
       source  = "databricks/databricks"
-      version = "1.64.1"
+      version = "1.68.0"
     }
   }
 

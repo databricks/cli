@@ -1,4 +1,1 @@
-$CLI bundle validate --debug 2> full.stderr.txt
-grep -vw parallel full.stderr.txt > out.stderr.txt
-grep -w parallel full.stderr.txt | sort_lines.py > out.stderr.parallel.txt
-rm full.stderr.txt
+$CLI bundle validate --debug 2> out.stderr.txt

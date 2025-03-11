@@ -1,0 +1,4 @@
+trace curl -s $DATABRICKS_HOST/api/2.0/preview/scim/v2/Me
+trace curl -sD - $DATABRICKS_HOST/custom/endpoint?query=param
+
+trace errcode $CLI workspace get-status /a/b/c

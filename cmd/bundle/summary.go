@@ -35,7 +35,7 @@ func newSummaryCommand() *cobra.Command {
 			return diags.Error()
 		}
 
-		diags = bundle.Apply(ctx, b, phases.Initialize())
+		diags = phases.Initialize(ctx, b)
 		if err := diags.Error(); err != nil {
 			return err
 		}
@@ -49,18 +49,20 @@ func newSummaryCommand() *cobra.Command {
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			diags = bundle.Apply(ctx, b, bundle.Seq(
+			diags = bundle.ApplySeq(ctx, b,
 				terraform.StatePull(),
 				terraform.Interpolate(),
 				terraform.Write(),
-			))
+			)
 			if err := diags.Error(); err != nil {
 				return err
 			}
 		}
 
-		diags = bundle.Apply(ctx, b,
-			bundle.Seq(terraform.Load(), mutator.InitializeURLs()))
+		diags = bundle.ApplySeq(ctx, b,
+			terraform.Load(),
+			mutator.InitializeURLs(),
+		)
 		if err := diags.Error(); err != nil {
 			return err
 		}
@@ -74,6 +76,7 @@ func newSummaryCommand() *cobra.Command {
 				return err
 			}
 			_, _ = cmd.OutOrStdout().Write(buf)
+			_, _ = cmd.OutOrStdout().Write([]byte{'\n'})
 		default:
 			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 		}

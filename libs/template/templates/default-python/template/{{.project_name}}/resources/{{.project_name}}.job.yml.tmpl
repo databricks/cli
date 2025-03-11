@@ -4,6 +4,7 @@
 {{if and (eq .include_dlt "yes") (and (eq .include_notebook "no") (eq .include_python "no")) -}}
 # This job runs {{.project_name}}_pipeline on a schedule.
 {{end -}}
+{{$with_serverless := (eq .serverless "yes") -}}
 
 resources:
   jobs:
@@ -29,7 +30,8 @@ resources:
       tasks:
         {{- if eq .include_notebook "yes" }}
         - task_key: notebook_task
-          job_cluster_key: job_cluster
+        {{- if not $with_serverless}}
+          job_cluster_key: job_cluster{{end}}
           notebook_task:
             notebook_path: ../src/notebook.ipynb
         {{end -}}
@@ -52,23 +54,41 @@ resources:
           depends_on:
             - task_key: notebook_task
           {{end}}
-          job_cluster_key: job_cluster
+          {{- if $with_serverless }}
+          environment_key: default
+          {{- else }}
+          job_cluster_key: job_cluster{{end}}
           python_wheel_task:
             package_name: {{.project_name}}
             entry_point: main
+          {{- if not $with_serverless }}
           libraries:
             # By default we just include the .whl file generated for the {{.project_name}} package.
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../dist/*.whl
+{{- end -}}
+{{else}}
+{{- end}}
+{{if $with_serverless}}
+      # A list of task execution environment specifications that can be referenced by tasks of this job.
+      environments:
+        - environment_key: default
 
-      {{else}}
-      {{end -}}
+          # Full documentation of this spec can be found at:
+          # https://docs.databricks.com/api/workspace/jobs/create#environments-spec
+          spec:
+            client: "1"
+            dependencies:
+              - ../dist/*.whl
+{{ else }}
       job_clusters:
         - job_cluster_key: job_cluster
           new_cluster:
             spark_version: {{template "latest_lts_dbr_version"}}
             node_type_id: {{smallest_node_type}}
+            data_security_mode: SINGLE_USER
             autoscale:
                 min_workers: 1
                 max_workers: 4
+{{end -}}

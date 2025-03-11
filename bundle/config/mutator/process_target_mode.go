@@ -73,7 +73,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	// this could be surprising since most users (and tools) expect triggers
 	// to be paused in development.
 	// (Note that there still is an exceptional case where users set the trigger
-	// status to UNPAUSED at the level of an individual object, whic hwas
+	// status to UNPAUSED at the level of an individual object, which was
 	// historically allowed.)
 	if p.TriggerPauseStatus == config.Unpaused {
 		diags = diags.Append(diag.Diagnostic{
@@ -134,7 +134,7 @@ func findNonUserPath(b *bundle.Bundle) string {
 	return ""
 }
 
-func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
+func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {
@@ -144,8 +144,11 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 
 	// We need to verify that there is only a single deployment of the current target.
 	// The best way to enforce this is to explicitly set root_path.
-	advice := fmt.Sprintf(
-		"set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Workspace/Users/%s/.bundle/${bundle.name}/${bundle.target}",
+	advice := "set 'workspace.root_path' to make sure only one copy is deployed"
+	adviceDetail := fmt.Sprintf(
+		"A common practice is to use a username or principal name in this path, i.e. use\n"+
+			"\n"+
+			"  root_path: /Workspace/Users/%s/.bundle/${bundle.name}/${bundle.target}",
 		b.Config.Workspace.CurrentUser.UserName,
 	)
 	if !isExplicitRootSet(b) {
@@ -154,9 +157,21 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 			// and neither is setting a principal.
 			// We only show a warning for these cases since we didn't historically
 			// report an error for them.
-			return diag.Recommendationf("target with 'mode: production' should %s", advice)
+			return diag.Diagnostics{
+				{
+					Severity: diag.Recommendation,
+					Summary:  "target with 'mode: production' should " + advice,
+					Detail:   adviceDetail,
+				},
+			}
 		}
-		return diag.Errorf("target with 'mode: production' must %s", advice)
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  "target with 'mode: production' must " + advice,
+				Detail:   adviceDetail,
+			},
+		}
 	}
 	return nil
 }
@@ -188,7 +203,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return diags
 	case config.Production:
 		isPrincipal := iamutil.IsServicePrincipal(b.Config.Workspace.CurrentUser.User)
-		return validateProductionMode(ctx, b, isPrincipal)
+		return validateProductionMode(b, isPrincipal)
 	case "":
 		// No action
 	default:

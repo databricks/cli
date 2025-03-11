@@ -1,0 +1,15 @@
+
+>>> [CLI] selftest panic
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [DEV_VERSION]
+
+Panic Payload: the databricks selftest panic command always panics
+
+Stack Trace:
+goroutine 1 [running]:
+runtime/debug.Stack()
+
+Exit code: 1

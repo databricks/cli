@@ -11,7 +11,7 @@ func listOverride(listCmd *cobra.Command, listReq *sql.ListQueriesRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Name"}}	{{header "Author"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{range .}}{{.Id|green}}	{{.Name|cyan}}	{{.User.Email|cyan}}
+	{{range .}}{{.Id|green}}	{{.DisplayName|cyan}}	{{.OwnerUserName|cyan}}
 	{{end}}`)
 }
 

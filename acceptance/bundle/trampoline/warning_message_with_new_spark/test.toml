@@ -1,0 +1,16 @@
+# Since we use existing cluster id value which is not available in cloud envs, we need to stub the request
+# and run this test only locally
+Cloud = false
+
+[[Server]]
+Pattern = "GET /api/2.1/clusters/get"
+Response.Body = '''
+{
+    "cluster_id": "some-cluster-id",
+    "state": "RUNNING",
+    "spark_version": "13.3.x-scala2.12",
+    "node_type_id": "Standard_DS3_v2",
+    "driver_node_type_id": "Standard_DS3_v2",
+    "cluster_name": "some-cluster-name",
+    "spark_context_id": 12345
+}'''

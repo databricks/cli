@@ -22,7 +22,48 @@ func ConvertToMapValue(strct any, order *Order, skipFields []string, dst map[str
 		return dyn.InvalidValue, fmt.Errorf("expected map, got %s", mv.Kind())
 	}
 
+	mv, err = sortMapAlphabetically(mv)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
 	return skipAndOrder(mv, order, skipFields, dst)
+}
+
+// Sort the map alphabetically by keys. This is used to produce stable output for generated YAML files.
+func sortMapAlphabetically(mv dyn.Value) (dyn.Value, error) {
+	sortedMap := dyn.NewMapping()
+	mapV := mv.MustMap()
+	keys := mapV.Keys()
+	slices.SortStableFunc(keys, func(i, j dyn.Value) int {
+		iKey := i.MustString()
+		jKey := j.MustString()
+		if iKey < jKey {
+			return -1
+		}
+
+		if iKey > jKey {
+			return 1
+		}
+		return 0
+	})
+
+	for _, key := range keys {
+		value, _ := mapV.Get(key)
+		var err error
+		if value.Kind() == dyn.KindMap {
+			value, err = sortMapAlphabetically(value)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+		}
+		err = sortedMap.Set(key, value)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+	}
+
+	return dyn.V(sortedMap), nil
 }
 
 func skipAndOrder(mv dyn.Value, order *Order, skipFields []string, dst map[string]dyn.Value) (dyn.Value, error) {
@@ -44,7 +85,11 @@ func skipAndOrder(mv dyn.Value, order *Order, skipFields []string, dst map[strin
 			continue
 		}
 
-		dst[k] = dyn.NewValue(v.Value(), []dyn.Location{{Line: order.Get(k)}})
+		if order == nil {
+			dst[k] = v
+		} else {
+			dst[k] = dyn.NewValue(v.Value(), []dyn.Location{{Line: order.Get(k)}})
+		}
 	}
 
 	return dyn.V(dst), nil

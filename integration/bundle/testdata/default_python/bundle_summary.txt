@@ -82,6 +82,7 @@
                 "max_workers": 4,
                 "min_workers": 1
               },
+              "data_security_mode": "SINGLE_USER",
               "node_type_id": "i3.xlarge",
               "spark_version": "15.4.x-scala2.12"
             }
@@ -163,7 +164,7 @@
           }
         ],
         "name": "[dev [USERNAME]] project_name_$UNIQUE_PRJ_pipeline",
-        "target": "project_name_$UNIQUE_PRJ_dev",
+        "schema": "project_name_$UNIQUE_PRJ_dev",
         "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
       }
     }

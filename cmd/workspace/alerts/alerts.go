@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -82,7 +83,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -145,7 +146,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -212,7 +213,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -289,7 +290,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		response := w.Alerts.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -335,10 +336,17 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     ID: 
-    UPDATE_MASK: Field mask is required to be passed into the PATCH request. Field mask
-      specifies which fields of the setting payload will be updated. The field
-      mask needs to be supplied as single string. To specify multiple fields in
-      the field mask, use comma as the separator (no space).`
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+      
+      A field mask of * indicates full replacement. It’s recommended to
+      always explicitly list the fields being updated and avoid using *
+      wildcards, as it can lead to unintended results if the API changes in the
+      future.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -357,7 +365,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

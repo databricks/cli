@@ -65,7 +65,7 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 		v = resolveRefs(v, refs)
 		node := rootNode{
 			Title:       k,
-			Description: getDescription(v, item.topLevel),
+			Description: getDescription(v),
 			TopLevel:    item.topLevel,
 			Example:     getExample(v),
 			Type:        getHumanReadableType(v.Type),
@@ -78,7 +78,7 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 
 		mapValueType := getMapValueType(v, refs)
 		if mapValueType != nil {
-			d := getDescription(mapValueType, true)
+			d := getDescription(mapValueType)
 			if d != "" {
 				node.Description = d
 			}
@@ -137,8 +137,13 @@ func getMapValueType(v *jsonschema.Schema, refs map[string]*jsonschema.Schema) *
 	return nil
 }
 
+const (
+	nameField           = "name"
+	nameFieldWithFormat = "_name_"
+)
+
 func getMapKeyPrefix(s string) string {
-	return s + ".<name>"
+	return s + "." + nameFieldWithFormat
 }
 
 func removePluralForm(s string) string {
@@ -174,7 +179,7 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[stri
 		attributes = append(attributes, attributeNode{
 			Title:       k,
 			Type:        typeString,
-			Description: getDescription(v, true),
+			Description: getDescription(v),
 			Link:        reference,
 		})
 	}
@@ -184,8 +189,8 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[stri
 	return attributes
 }
 
-func getDescription(s *jsonschema.Schema, allowMarkdown bool) string {
-	if allowMarkdown && s.MarkdownDescription != "" {
+func getDescription(s *jsonschema.Schema) string {
+	if s.MarkdownDescription != "" {
 		return s.MarkdownDescription
 	}
 	return s.Description

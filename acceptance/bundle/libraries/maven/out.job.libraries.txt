@@ -1,0 +1,7 @@
+[
+  {
+    "maven": {
+      "coordinates": "org.jsoup:jsoup:1.7.2"
+    }
+  }
+]

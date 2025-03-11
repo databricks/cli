@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -102,7 +103,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -177,7 +178,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		deleteReq.Name = args[0]
 
@@ -239,7 +240,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		getReq.Name = args[0]
 
@@ -302,7 +303,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		response := w.Catalogs.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -342,6 +343,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
 	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATED, OPEN]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the catalog.`)
+	// TODO: map via StringToStringVar: options
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of catalog.`)
 	// TODO: map via StringToStringVar: properties
 
@@ -366,7 +368,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

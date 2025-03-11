@@ -1,8 +1,8 @@
 package acceptance_test
 
 import (
+	"context"
 	"encoding/json"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -14,8 +14,7 @@ import (
 
 func StartCmdServer(t *testing.T) *testserver.Server {
 	server := testserver.New(t)
-
-	server.Handle("/", func(w *testserver.FakeWorkspace, r *http.Request) (any, int) {
+	server.Handle("GET", "/", func(r testserver.Request) any {
 		q := r.URL.Query()
 		args := strings.Split(q.Get("args"), " ")
 
@@ -28,7 +27,7 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 
 		defer Chdir(t, q.Get("cwd"))()
 
-		c := testcli.NewRunner(t, r.Context(), args...)
+		c := testcli.NewRunner(t, context.Background(), args...)
 		c.Verbose = false
 		stdout, stderr, err := c.Run()
 		result := map[string]any{
@@ -40,7 +39,7 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 			exitcode = 1
 		}
 		result["exitcode"] = exitcode
-		return result, http.StatusOK
+		return result
 	})
 	return server
 }

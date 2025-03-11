@@ -1,0 +1,21 @@
+
+>>> curl -s [DATABRICKS_URL]/api/2.0/preview/scim/v2/Me
+{
+    "id": "[USERID]",
+    "userName": "[USERNAME]"
+}
+>>> curl -sD - [DATABRICKS_URL]/custom/endpoint?query=param
+HTTP/1.1 201 Created
+X-Custom-Header: hello
+Date: (redacted)
+Content-Length: (redacted)
+Content-Type: text/plain; charset=utf-8
+
+custom
+---
+response
+
+>>> errcode [CLI] workspace get-status /a/b/c
+Error: Workspace path not found
+
+Exit code: 1

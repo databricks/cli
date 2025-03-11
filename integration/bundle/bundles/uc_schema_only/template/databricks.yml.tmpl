@@ -1,0 +1,13 @@
+bundle:
+  name: uc-schema-only
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
+resources:
+  schemas:
+    schema1:
+      name: test-schema-{{.unique_id}}
+      catalog_name: main
+      comment: This schema was created from DABs
+

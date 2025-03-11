@@ -179,7 +179,7 @@ func TestTranslatePaths(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
@@ -333,7 +333,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									File: &pipelines.FileLibrary{
@@ -488,7 +488,7 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
@@ -532,7 +532,7 @@ func TestPipelineNotebookDoesNotExistErrorWithoutExtension(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"pipeline": {
-								PipelineSpec: &pipelines.PipelineSpec{
+								CreatePipeline: &pipelines.CreatePipeline{
 									Libraries: []pipelines.PipelineLibrary{
 										{
 											Notebook: &pipelines.NotebookLibrary{
@@ -572,7 +572,7 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									File: &pipelines.FileLibrary{
@@ -677,7 +677,7 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
@@ -712,7 +712,7 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									File: &pipelines.FileLibrary{
@@ -828,12 +828,10 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 	})
 	require.NoError(t, diags.Error())
 
-	diags = bundle.Apply(ctx, b,
-		bundle.Seq(
-			mutator.SetVariables(),
-			mutator.ResolveVariableReferences("variables"),
-			mutator.TranslatePaths(),
-		))
+	diags = bundle.ApplySeq(ctx, b,
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferences("variables"),
+		mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(
@@ -916,7 +914,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
+						CreatePipeline: &pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{

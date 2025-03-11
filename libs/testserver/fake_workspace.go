@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,40 +32,39 @@ func NewFakeWorkspace() *FakeWorkspace {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(path string) (workspace.ObjectInfo, int) {
+func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	if s.directories[path] {
-		return workspace.ObjectInfo{
-			ObjectType: "DIRECTORY",
-			Path:       path,
-		}, http.StatusOK
+		return Response{
+			Body: &workspace.ObjectInfo{
+				ObjectType: "DIRECTORY",
+				Path:       path,
+			},
+		}
 	} else if _, ok := s.files[path]; ok {
-		return workspace.ObjectInfo{
-			ObjectType: "FILE",
-			Path:       path,
-			Language:   "SCALA",
-		}, http.StatusOK
+		return Response{
+			Body: &workspace.ObjectInfo{
+				ObjectType: "FILE",
+				Path:       path,
+				Language:   "SCALA",
+			},
+		}
 	} else {
-		return workspace.ObjectInfo{}, http.StatusNotFound
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "Workspace path not found"},
+		}
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) (string, int) {
+func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	s.directories[request.Path] = true
-
-	return "{}", http.StatusOK
 }
 
-func (s *FakeWorkspace) WorkspaceExport(path string) ([]byte, int) {
-	file := s.files[path]
-
-	if file == nil {
-		return nil, http.StatusNotFound
-	}
-
-	return file, http.StatusOK
+func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
+	return s.files[path]
 }
 
-func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) (string, int) {
+func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	if !recursive {
 		s.files[path] = nil
 	} else {
@@ -76,28 +74,33 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) (string, in
 			}
 		}
 	}
-
-	return "{}", http.StatusOK
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) (any, int) {
+func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
-
 	s.files[path] = body
-
-	return "{}", http.StatusOK
 }
 
-func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) (any, int) {
+func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return s.files[path]
+}
+
+func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 	jobId := s.nextJobId
 	s.nextJobId++
 
 	jobSettings := jobs.JobSettings{}
 	err := jsonConvert(request, &jobSettings)
 	if err != nil {
-		return internalError(err)
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Cannot convert request to jobSettings: %s", err),
+		}
 	}
 
 	s.jobs[jobId] = jobs.Job{
@@ -105,32 +108,44 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) (any, int) {
 		Settings: &jobSettings,
 	}
 
-	return jobs.CreateResponse{JobId: jobId}, http.StatusOK
+	return Response{
+		Body: jobs.CreateResponse{JobId: jobId},
+	}
 }
 
-func (s *FakeWorkspace) JobsGet(jobId string) (any, int) {
+func (s *FakeWorkspace) JobsGet(jobId string) Response {
 	id := jobId
 
 	jobIdInt, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		return internalError(fmt.Errorf("failed to parse job id: %s", err))
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Failed to parse job id: %s: %v", err, id),
+		}
 	}
 
 	job, ok := s.jobs[jobIdInt]
 	if !ok {
-		return jobs.Job{}, http.StatusNotFound
+		return Response{
+			StatusCode: 404,
+		}
 	}
 
-	return job, http.StatusOK
+	return Response{
+		Body: job,
+	}
 }
 
-func (s *FakeWorkspace) JobsList() (any, int) {
+func (s *FakeWorkspace) JobsList() Response {
 	list := make([]jobs.BaseJob, 0, len(s.jobs))
 	for _, job := range s.jobs {
 		baseJob := jobs.BaseJob{}
 		err := jsonConvert(job, &baseJob)
 		if err != nil {
-			return internalError(fmt.Errorf("failed to convert job to base job: %w", err))
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("failed to convert job to base job: %s", err),
+			}
 		}
 
 		list = append(list, baseJob)
@@ -141,9 +156,11 @@ func (s *FakeWorkspace) JobsList() (any, int) {
 		return list[i].JobId < list[j].JobId
 	})
 
-	return jobs.ListJobsResponse{
-		Jobs: list,
-	}, http.StatusOK
+	return Response{
+		Body: jobs.ListJobsResponse{
+			Jobs: list,
+		},
+	}
 }
 
 // jsonConvert saves input to a value pointed by output
@@ -162,8 +179,4 @@ func jsonConvert(input, output any) error {
 	}
 
 	return nil
-}
-
-func internalError(err error) (string, int) {
-	return fmt.Sprintf("internal error: %s", err), http.StatusInternalServerError
 }

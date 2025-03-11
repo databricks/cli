@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/set"
 )
 
@@ -33,9 +34,25 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
+	me := b.Config.Workspace.CurrentUser.User
+	identityType := "user_name"
+	if iamutil.IsServicePrincipal(me) {
+		identityType = "service_principal_name"
+	}
+
 	return diag.Diagnostics{{
-		Severity:  diag.Warning,
-		Summary:   fmt.Sprintf("permissions section should include %s or one of their groups with CAN_MANAGE permissions", b.Config.Workspace.CurrentUser.UserName),
+		Severity: diag.Recommendation,
+		Summary: fmt.Sprintf("permissions section should explicitly include the current deployment identity '%s' or one of its groups\n"+
+			"If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.\n\n"+
+			"Consider using a adding a top-level permissions section such as the following:\n\n"+
+			"  permissions:\n"+
+			"    - %s: %s\n"+
+			"      level: CAN_MANAGE\n\n"+
+			"See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.",
+			b.Config.Workspace.CurrentUser.UserName,
+			identityType,
+			b.Config.Workspace.CurrentUser.UserName,
+		),
 		Locations: []dyn.Location{b.Config.GetLocation("permissions")},
 		ID:        diag.PermissionNotIncluded,
 	}}
@@ -46,7 +63,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 // target workspace folder.
 //
 // Returns:
-// - isManager: true if the current user is can manage the bundle resources.
+// - canManageBundle: true if the current user or one of their groups can manage the bundle resources.
 // - assistance: advice on who to contact as to manage this project
 func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 	canManageBundle := false

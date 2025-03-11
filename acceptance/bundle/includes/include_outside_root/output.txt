@@ -1,0 +1,14 @@
+Warning: Include section is defined outside root file
+  at include
+  in a.yml:2:3
+
+An include section is defined in a file that is not databricks.yml.
+Only includes defined in databricks.yml are applied.
+
+Name: include_outside_root
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/include_outside_root/default
+
+Found 1 warning

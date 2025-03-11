@@ -41,7 +41,7 @@ func TestCommandFlagGrouping(t *testing.T) {
 	cmd.Flags().BoolP("bool", "b", false, "Bool flag")
 
 	buf := bytes.NewBuffer(nil)
-	cmd.SetOutput(buf)
+	cmd.SetOut(buf)
 	err := cmd.Usage()
 	require.NoError(t, err)
 

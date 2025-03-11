@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle validate
+Name: apps_yaml
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/apps_yaml/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/apps_yaml/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

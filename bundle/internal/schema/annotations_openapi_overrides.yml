@@ -5,6 +5,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "app_status":
     "description": |-
       PLACEHOLDER
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
   "compute_status":
     "description": |-
       PLACEHOLDER
@@ -21,6 +24,9 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       PLACEHOLDER
   "description":
+    "description": |-
+      PLACEHOLDER
+  "effective_budget_policy_id":
     "description": |-
       PLACEHOLDER
   "name":
@@ -134,7 +140,7 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
 github.com/databricks/cli/bundle/config/resources.Job:
   "_":
     "markdown_description": |-
-      The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a <DABS> template to create a job, see [_](/dev-tools/bundles/jobs-tutorial.md).
+      The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a Databricks Asset Bundles template to create a job, see [_](/dev-tools/bundles/jobs-tutorial.md).
     "markdown_examples": |-
       The following example defines a job with the resource key `hello-job` with one notebook task:
 
@@ -182,7 +188,7 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
 github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "_":
     "markdown_description": |-
-      The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use <UC> [registered models](#registered-model) instead.
+      The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](#registered-model) instead.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -191,7 +197,7 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
     "markdown_description": |-
       The model_serving_endpoint resource allows you to define [model serving endpoints](/api/workspace/servingendpoints/create). See [_](/machine-learning/model-serving/manage-serving-endpoints.md).
     "markdown_examples": |-
-      The following example defines a <UC> model serving endpoint:
+      The following example defines a Unity Catalog model serving endpoint:
 
       ```yaml
       resources:
@@ -218,7 +224,7 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
 github.com/databricks/cli/bundle/config/resources.Pipeline:
   "_":
     "markdown_description": |-
-      The pipeline resource allows you to create <DLT> [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/delta-live-tables/index.md). For a tutorial that uses the <DABS> template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+      The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
     "markdown_examples": |-
       The following example defines a pipeline with the resource key `hello-pipeline`:
 
@@ -239,13 +245,19 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
               - notebook:
                   path: ./pipeline.py
       ```
+  "dry_run":
+    "description": |-
+      PLACEHOLDER
   "permissions":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "_":
     "markdown_description": |-
-      The quality_monitor resource allows you to define a <UC> [table monitor](/api/workspace/qualitymonitors/create). For information about monitors, see [_](/machine-learning/model-serving/monitor-diagnose-endpoints.md).
+      The quality_monitor resource allows you to define a Unity Catalog [table monitor](/api/workspace/qualitymonitors/create). For information about monitors, see [_](/machine-learning/model-serving/monitor-diagnose-endpoints.md).
     "markdown_examples": |-
       The following example defines a quality monitor:
 
@@ -273,9 +285,9 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
 github.com/databricks/cli/bundle/config/resources.RegisteredModel:
   "_":
     "markdown_description": |-
-      The registered model resource allows you to define models in <UC>. For information about <UC> [registered models](/api/workspace/registeredmodels/create), see [_](/machine-learning/manage-model-lifecycle/index.md).
+      The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](/api/workspace/registeredmodels/create), see [_](/machine-learning/manage-model-lifecycle/index.md).
     "markdown_examples": |-
-      The following example defines a registered model in <UC>:
+      The following example defines a registered model in Unity Catalog:
 
       ```yaml
       resources:
@@ -296,12 +308,12 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
 github.com/databricks/cli/bundle/config/resources.Schema:
   "_":
     "markdown_description": |-
-      The schema resource type allows you to define <UC> [schemas](/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:
+      The schema resource type allows you to define Unity Catalog [schemas](/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:
 
       - The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.
       - Only fields supported by the corresponding [Schemas object create API](/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](/api/workspace/schemas/update).
     "markdown_examples": |-
-      The following example defines a pipeline with the resource key `my_pipeline` that creates a <UC> schema with the key `my_schema` as the target:
+      The following example defines a pipeline with the resource key `my_pipeline` that creates a Unity Catalog schema with the key `my_schema` as the target:
 
       ```yaml
       resources:
@@ -322,9 +334,9 @@ github.com/databricks/cli/bundle/config/resources.Schema:
             comment: This schema was created by DABs.
       ```
 
-      A top-level grants mapping is not supported by <DABS>, so if you want to set grants for a schema, define the grants for the schema within the `schemas` mapping. For more information about grants, see [_](/data-governance/unity-catalog/manage-privileges/index.md#grant).
+      A top-level grants mapping is not supported by Databricks Asset Bundles, so if you want to set grants for a schema, define the grants for the schema within the `schemas` mapping. For more information about grants, see [_](/data-governance/unity-catalog/manage-privileges/index.md#grant).
 
-      The following example defines a <UC> schema with grants:
+      The following example defines a Unity Catalog schema with grants:
 
       ```yaml
       resources:
@@ -349,13 +361,13 @@ github.com/databricks/cli/bundle/config/resources.Schema:
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
-      The volume resource type allows you to define and create <UC> [volumes](/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:
+      The volume resource type allows you to define and create Unity Catalog [volumes](/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:
 
-      - A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use <DABS> to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.
+      - A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.
 
       - Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [_](/dev-tools/bundles/deployment-modes.md#custom-presets).
     "markdown_examples": |-
-      The following example creates a <UC> volume with the key `my_volume`:
+      The following example creates a Unity Catalog volume with the key `my_volume`:
 
       ```yaml
       resources:
@@ -366,7 +378,7 @@ github.com/databricks/cli/bundle/config/resources.Volume:
             schema_name: my_schema
       ```
 
-      For an example bundle that runs a job that writes to a file in <UC> volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
+      For an example bundle that runs a job that writes to a file in Unity Catalog volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
   "grants":
     "description": |-
       PLACEHOLDER
@@ -500,6 +512,10 @@ github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "availability":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
+  "compute":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
   "git_snapshot":
     "description": |-
@@ -524,6 +540,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "gen_ai_compute_task":
+    "description": |-
+      PLACEHOLDER
   "health":
     "description": |-
       PLACEHOLDER
@@ -560,3 +579,26 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
   "model_version":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
+  "abfss":
+    "description": |-
+      Contains the Azure Data Lake Storage destination path
+github.com/databricks/databricks-sdk-go/service/compute.Environment:
+  "dependencies":
+    "description": |-
+      List of pip dependencies, as supported by the version of pip in this environment.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
+  "granularities":
+    "description": |-
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
+  "granularities":
+    "description": |-
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
+  "log_analytics_primary_key":
+    "description": |-
+      The primary key for the Azure Log Analytics agent configuration
+  "log_analytics_workspace_id":
+    "description": |-
+      The workspace ID for the Azure Log Analytics agent configuration

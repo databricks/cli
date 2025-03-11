@@ -116,7 +116,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 			bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
 				return dyn.Set(v, "resources.clusters.foo.num_workers", dyn.V(0))
 			})
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := SingleNodeCluster().Apply(ctx, b)
 			assert.Equal(t, diag.Diagnostics{
 				{
 					Severity:  diag.Warning,
@@ -165,7 +165,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 				return dyn.Set(v, "resources.jobs.foo.job_clusters[0].new_cluster.num_workers", dyn.V(0))
 			})
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := SingleNodeCluster().Apply(ctx, b)
 			assert.Equal(t, diag.Diagnostics{
 				{
 					Severity:  diag.Warning,
@@ -214,7 +214,7 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 				return dyn.Set(v, "resources.jobs.foo.tasks[0].new_cluster.num_workers", dyn.V(0))
 			})
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Equal(t, diag.Diagnostics{
 				{
 					Severity:  diag.Warning,
@@ -238,7 +238,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"foo": {
-								PipelineSpec: &pipelines.PipelineSpec{
+								CreatePipeline: &pipelines.CreatePipeline{
 									Clusters: []pipelines.PipelineCluster{
 										{
 											SparkConf:  tc.sparkConf,
@@ -260,7 +260,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 				return dyn.Set(v, "resources.pipelines.foo.clusters[0].num_workers", dyn.V(0))
 			})
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Equal(t, diag.Diagnostics{
 				{
 					Severity:  diag.Warning,
@@ -313,7 +313,7 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 				return dyn.Set(v, "resources.jobs.foo.tasks[0].for_each_task.task.new_cluster.num_workers", dyn.V(0))
 			})
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Equal(t, diag.Diagnostics{
 				{
 					Severity:  diag.Warning,
@@ -397,7 +397,7 @@ func TestValidateSingleNodeClusterPassInteractiveClusters(t *testing.T) {
 				})
 			}
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Empty(t, diags)
 		})
 	}
@@ -437,7 +437,7 @@ func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
 				})
 			}
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Empty(t, diags)
 		})
 	}
@@ -477,7 +477,7 @@ func TestValidateSingleNodeClusterPassJobTaskClusters(t *testing.T) {
 				})
 			}
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Empty(t, diags)
 		})
 	}
@@ -493,7 +493,7 @@ func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"foo": {
-								PipelineSpec: &pipelines.PipelineSpec{
+								CreatePipeline: &pipelines.CreatePipeline{
 									Clusters: []pipelines.PipelineCluster{
 										{
 											SparkConf:  tc.sparkConf,
@@ -514,7 +514,7 @@ func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
 				})
 			}
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Empty(t, diags)
 		})
 	}
@@ -558,7 +558,7 @@ func TestValidateSingleNodeClusterPassJobForEachTaskCluster(t *testing.T) {
 				})
 			}
 
-			diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), SingleNodeCluster())
+			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Empty(t, diags)
 		})
 	}

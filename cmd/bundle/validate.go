@@ -20,7 +20,9 @@ func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
-	_, _ = cmd.OutOrStdout().Write(buf)
+	out := cmd.OutOrStdout()
+	_, _ = out.Write(buf)
+	_, _ = out.Write([]byte{'\n'})
 	return nil
 }
 
@@ -44,11 +46,11 @@ func newValidateCommand() *cobra.Command {
 		}
 
 		if !diags.HasError() {
-			diags = diags.Extend(bundle.Apply(ctx, b, phases.Initialize()))
+			diags = diags.Extend(phases.Initialize(ctx, b))
 		}
 
 		if !diags.HasError() {
-			diags = diags.Extend(bundle.Apply(ctx, b, validate.Validate()))
+			diags = diags.Extend(validate.Validate(ctx, b))
 		}
 
 		switch root.OutputType(cmd) {

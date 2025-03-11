@@ -17,31 +17,31 @@ func JobTaskClusterSpec() bundle.ReadOnlyMutator {
 	return &jobTaskClusterSpec{}
 }
 
-type jobTaskClusterSpec struct{}
+type jobTaskClusterSpec struct{ bundle.RO }
 
 func (v *jobTaskClusterSpec) Name() string {
 	return "validate:job_task_cluster_spec"
 }
 
-func (v *jobTaskClusterSpec) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
-	for resourceName, job := range rb.Config().Resources.Jobs {
+	for resourceName, job := range b.Config.Resources.Jobs {
 		resourcePath := jobsPath.Append(dyn.Key(resourceName))
 
 		for taskIndex, task := range job.Tasks {
 			taskPath := resourcePath.Append(dyn.Key("tasks"), dyn.Index(taskIndex))
 
-			diags = diags.Extend(validateJobTask(rb, task, taskPath))
+			diags = diags.Extend(validateJobTask(b, task, taskPath))
 		}
 	}
 
 	return diags
 }
 
-func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
+func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	var specified []string
@@ -74,7 +74,7 @@ func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path
 	if task.ForEachTask != nil {
 		forEachTaskPath := taskPath.Append(dyn.Key("for_each_task"), dyn.Key("task"))
 
-		diags = diags.Extend(validateJobTask(rb, task.ForEachTask.Task, forEachTaskPath))
+		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
 	}
 
 	if isComputeTask(task) && len(specified) == 0 {
@@ -92,7 +92,7 @@ func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path
 				Severity:  diag.Error,
 				Summary:   "Missing required cluster or environment settings",
 				Detail:    detail,
-				Locations: rb.Config().GetLocations(taskPath.String()),
+				Locations: b.Config.GetLocations(taskPath.String()),
 				Paths:     []dyn.Path{taskPath},
 			})
 		}

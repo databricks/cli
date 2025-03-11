@@ -11,15 +11,74 @@
 >>> errcode [CLI] current-user me -t dev -p DEFAULT
 "[USERNAME]"
 
-=== Inside the bundle, profile flag not matching bundle host. Badness: should use profile from flag instead and not fail
+=== Inside the bundle, profile flag not matching bundle host. Should use profile from the flag and not the bundle.
 >>> errcode [CLI] current-user me -p profile_name
-Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host https://non-existing-subdomain.databricks.com, but CLI configured to use [DATABRICKS_URL]
+Error: Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)
 
 Exit code: 1
 
 === Inside the bundle, target and not matching profile
 >>> errcode [CLI] current-user me -t dev -p profile_name
-Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host https://non-existing-subdomain.databricks.com, but CLI configured to use [DATABRICKS_URL]
+Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host https://non-existing-subdomain.databricks.com, but CLI configured to use [DATABRICKS_TARGET]
+
+Exit code: 1
+
+=== Bundle commands load bundle configuration when no flags, validation OK
+>>> errcode [CLI] bundle validate
+Name: test-auth
+Target: dev
+Workspace:
+  Host: [DATABRICKS_TARGET]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-auth/dev
+
+Validation OK!
+
+=== Bundle commands load bundle configuration with -t flag, validation OK
+>>> errcode [CLI] bundle validate -t dev
+Name: test-auth
+Target: dev
+Workspace:
+  Host: [DATABRICKS_TARGET]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-auth/dev
+
+Validation OK!
+
+=== Bundle commands load bundle configuration with -p flag, validation not OK (profile host don't match bundle host)
+>>> errcode [CLI] bundle validate -p profile_name
+Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host https://non-existing-subdomain.databricks.com, but CLI configured to use [DATABRICKS_TARGET]
+
+Name: test-auth
+Target: dev
+Workspace:
+  Host: [DATABRICKS_TARGET]
+
+Found 1 error
+
+Exit code: 1
+
+=== Bundle commands load bundle configuration with -t and -p flag, validation OK (profile host match bundle host)
+>>> errcode [CLI] bundle validate -t dev -p DEFAULT
+Name: test-auth
+Target: dev
+Workspace:
+  Host: [DATABRICKS_TARGET]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-auth/dev
+
+Validation OK!
+
+=== Bundle commands load bundle configuration with -t and -p flag, validation not OK (profile host don't match bundle host)
+>>> errcode [CLI] bundle validate -t prod -p DEFAULT
+Error: cannot resolve bundle auth configuration: config host mismatch: profile uses host [DATABRICKS_TARGET], but CLI configured to use https://bar.com
+
+Name: test-auth
+Target: prod
+Workspace:
+  Host: https://bar.com
+
+Found 1 error
 
 Exit code: 1
 

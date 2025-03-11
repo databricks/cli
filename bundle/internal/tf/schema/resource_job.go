@@ -114,9 +114,14 @@ type ResourceJobJobClusterNewClusterClusterLogConfS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobJobClusterNewClusterClusterLogConfVolumes struct {
+	Destination string `json:"destination"`
+}
+
 type ResourceJobJobClusterNewClusterClusterLogConf struct {
-	Dbfs *ResourceJobJobClusterNewClusterClusterLogConfDbfs `json:"dbfs,omitempty"`
-	S3   *ResourceJobJobClusterNewClusterClusterLogConfS3   `json:"s3,omitempty"`
+	Dbfs    *ResourceJobJobClusterNewClusterClusterLogConfDbfs    `json:"dbfs,omitempty"`
+	S3      *ResourceJobJobClusterNewClusterClusterLogConfS3      `json:"s3,omitempty"`
+	Volumes *ResourceJobJobClusterNewClusterClusterLogConfVolumes `json:"volumes,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterClusterMountInfoNetworkFilesystemInfo struct {
@@ -339,9 +344,14 @@ type ResourceJobNewClusterClusterLogConfS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobNewClusterClusterLogConfVolumes struct {
+	Destination string `json:"destination"`
+}
+
 type ResourceJobNewClusterClusterLogConf struct {
-	Dbfs *ResourceJobNewClusterClusterLogConfDbfs `json:"dbfs,omitempty"`
-	S3   *ResourceJobNewClusterClusterLogConfS3   `json:"s3,omitempty"`
+	Dbfs    *ResourceJobNewClusterClusterLogConfDbfs    `json:"dbfs,omitempty"`
+	S3      *ResourceJobNewClusterClusterLogConfS3      `json:"s3,omitempty"`
+	Volumes *ResourceJobNewClusterClusterLogConfVolumes `json:"volumes,omitempty"`
 }
 
 type ResourceJobNewClusterClusterMountInfoNetworkFilesystemInfo struct {
@@ -708,9 +718,14 @@ type ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfVolumes struct {
+	Destination string `json:"destination"`
+}
+
 type ResourceJobTaskForEachTaskTaskNewClusterClusterLogConf struct {
-	Dbfs *ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfDbfs `json:"dbfs,omitempty"`
-	S3   *ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfS3   `json:"s3,omitempty"`
+	Dbfs    *ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfDbfs    `json:"dbfs,omitempty"`
+	S3      *ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfS3      `json:"s3,omitempty"`
+	Volumes *ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfVolumes `json:"volumes,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterClusterMountInfoNetworkFilesystemInfo struct {
@@ -1104,9 +1119,14 @@ type ResourceJobTaskNewClusterClusterLogConfS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobTaskNewClusterClusterLogConfVolumes struct {
+	Destination string `json:"destination"`
+}
+
 type ResourceJobTaskNewClusterClusterLogConf struct {
-	Dbfs *ResourceJobTaskNewClusterClusterLogConfDbfs `json:"dbfs,omitempty"`
-	S3   *ResourceJobTaskNewClusterClusterLogConfS3   `json:"s3,omitempty"`
+	Dbfs    *ResourceJobTaskNewClusterClusterLogConfDbfs    `json:"dbfs,omitempty"`
+	S3      *ResourceJobTaskNewClusterClusterLogConfS3      `json:"s3,omitempty"`
+	Volumes *ResourceJobTaskNewClusterClusterLogConfVolumes `json:"volumes,omitempty"`
 }
 
 type ResourceJobTaskNewClusterClusterMountInfoNetworkFilesystemInfo struct {
@@ -1489,6 +1509,7 @@ type ResourceJob struct {
 	MaxRetries             int                              `json:"max_retries,omitempty"`
 	MinRetryIntervalMillis int                              `json:"min_retry_interval_millis,omitempty"`
 	Name                   string                           `json:"name,omitempty"`
+	PerformanceTarget      string                           `json:"performance_target,omitempty"`
 	RetryOnTimeout         bool                             `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                `json:"tags,omitempty"`
 	TimeoutSeconds         int                              `json:"timeout_seconds,omitempty"`

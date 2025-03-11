@@ -19,3 +19,6 @@ How to regenerate Go structs from an updated terraform provider?
 2. Delete `./tmp` if it exists
 3. Run `go run .`
 4. Run `gofmt -s -w ../schema`
+5. Go back to the root of the repo.
+6. Update `/acceptance/terraform/main.tf` file to use new version of TF provider
+7. Run `go test ./acceptance -v -update -run TestAccept/terraform` to update test output with a new version of TF provider

@@ -76,10 +76,10 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 
 	ctx := cmdio.MockDiscard(context.Background())
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(
+	diags := bundle.ApplySeq(ctx, b,
 		mutator.DefineDefaultWorkspacePaths(),
 		mutator.TranslatePaths(),
-	))
+	)
 	require.Empty(t, diags)
 
 	return ctx, b, mwc

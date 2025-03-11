@@ -13,25 +13,31 @@ const cacheTTL = 1 * time.Hour
 
 // NewReleaseCache creates a release cache for a repository in the GitHub org.
 // Caller has to provide different cache directories for different repositories.
-func NewReleaseCache(org, repo, cacheDir string) *ReleaseCache {
+func NewReleaseCache(org, repo, cacheDir string, offlineInstall bool) *ReleaseCache {
 	pattern := fmt.Sprintf("%s-%s-releases", org, repo)
 	return &ReleaseCache{
-		cache: localcache.NewLocalCache[Versions](cacheDir, pattern, cacheTTL),
-		Org:   org,
-		Repo:  repo,
+		cache:   localcache.NewLocalCache[Versions](cacheDir, pattern, cacheTTL),
+		Org:     org,
+		Repo:    repo,
+		Offline: offlineInstall,
 	}
 }
 
 type ReleaseCache struct {
-	cache localcache.LocalCache[Versions]
-	Org   string
-	Repo  string
+	cache   localcache.LocalCache[Versions]
+	Org     string
+	Repo    string
+	Offline bool
 }
 
 func (r *ReleaseCache) Load(ctx context.Context) (Versions, error) {
-	return r.cache.Load(ctx, func() (Versions, error) {
-		return getVersions(ctx, r.Org, r.Repo)
-	})
+	if !r.Offline {
+		return r.cache.Load(ctx, func() (Versions, error) {
+			return getVersions(ctx, r.Org, r.Repo)
+		})
+	}
+	cached, err := r.cache.LoadCache()
+	return cached.Data, err
 }
 
 // getVersions is considered to be a private API, as we want the usage go through a cache

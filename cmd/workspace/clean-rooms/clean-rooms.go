@@ -5,6 +5,7 @@ package clean_rooms
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/cleanrooms"
 	"github.com/spf13/cobra"
@@ -75,8 +76,9 @@ func newCreate() *cobra.Command {
   Create a new clean room with the specified collaborators. This method is
   asynchronous; the returned name field inside the clean_room field can be used
   to poll the clean room status, using the :method:cleanrooms/get method. When
-  this method returns, the cluster will be in a PROVISIONING state. The cluster
-  will be usable once it enters an ACTIVE state.
+  this method returns, the clean room will be in a PROVISIONING state, with only
+  name, owner, comment, created_at and status populated. The clean room will be
+  usable once it enters an ACTIVE state.
   
   The caller must be a metastore admin or have the **CREATE_CLEAN_ROOM**
   privilege on the metastore.`
@@ -91,7 +93,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.CleanRoom)
@@ -165,7 +167,7 @@ func newCreateOutputCatalog() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createOutputCatalogJson.Unmarshal(&createOutputCatalogReq.OutputCatalog)
@@ -238,7 +240,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		deleteReq.Name = args[0]
 
@@ -293,7 +295,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		getReq.Name = args[0]
 
@@ -352,7 +354,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		response := w.CleanRooms.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -412,7 +414,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := command.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

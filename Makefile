@@ -10,7 +10,7 @@ lint:
 	golangci-lint run --fix
 
 tidy:
-	# not part of golangci-lint, apparently
+	@# not part of golangci-lint, apparently
 	go mod tidy
 
 lintcheck:
@@ -20,7 +20,7 @@ lintcheck:
 # formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
 # If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 fmt:
-	ruff format -q
+	ruff format -qn
 	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
 
 test:
@@ -28,7 +28,7 @@ test:
 
 cover:
 	rm -fr ./acceptance/build/cover/
-	CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
@@ -61,6 +61,6 @@ integration: vendor
 	$(INTEGRATION)
 
 integration-short: vendor
-	$(INTEGRATION) -short
+	VERBOSE_TEST=1 $(INTEGRATION) -short
 
 .PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs

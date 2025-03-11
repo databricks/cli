@@ -17,11 +17,10 @@ func TestFromTypeBasic(t *testing.T) {
 		TriplePointer ***int `json:"triple_pointer,omitempty"`
 
 		// These fields should be ignored in the resulting schema.
-		NotAnnotated     string
-		DashedTag        string `json:"-"`
-		InternalTagged   string `json:"internal_tagged" bundle:"internal"`
-		DeprecatedTagged string `json:"deprecated_tagged" bundle:"deprecated"`
-		ReadOnlyTagged   string `json:"readonly_tagged" bundle:"readonly"`
+		NotAnnotated   string
+		DashedTag      string `json:"-"`
+		InternalTagged string `json:"internal_tagged" bundle:"internal"`
+		ReadOnlyTagged string `json:"readonly_tagged" bundle:"readonly"`
 	}
 
 	strRef := "#/$defs/string"

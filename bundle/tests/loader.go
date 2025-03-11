@@ -20,7 +20,7 @@ func load(t *testing.T, path string) *bundle.Bundle {
 	ctx := context.Background()
 	b, err := bundle.Load(ctx, path)
 	require.NoError(t, err)
-	diags := bundle.Apply(ctx, b, phases.Load())
+	diags := phases.Load(ctx, b)
 	require.NoError(t, diags.Error())
 	return b
 }
@@ -38,8 +38,9 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		return nil, diag.FromErr(err)
 	}
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(
-		phases.LoadNamedTarget(env),
+	diags := phases.LoadNamedTarget(ctx, b, env)
+
+	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		mutator.RewriteSyncPaths(),
 		mutator.SyncDefaultPath(),
 		mutator.SyncInferRoot(),
@@ -68,11 +69,9 @@ func initializeTarget(t *testing.T, path, env string) (*bundle.Bundle, diag.Diag
 	b := load(t, path)
 	configureMock(t, b)
 
-	ctx := dbr.MockRuntime(context.Background(), false)
-	diags := bundle.Apply(ctx, b, bundle.Seq(
-		mutator.SelectTarget(env),
-		phases.Initialize(),
-	))
+	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{})
+	diags := bundle.Apply(ctx, b, mutator.SelectTarget(env))
+	diags = diags.Extend(phases.Initialize(ctx, b))
 
 	return b, diags
 }
