@@ -47,4 +47,4 @@ HH:MM:SS Debug: POST /telemetry-ext
 <   "numProtoSuccess": 1
 < } pid=PID sdk=true
 HH:MM:SS Debug: Attempt 3 was a partial success. Number of logs uploaded: 1 out of 2 pid=PID
-HH:MM:SS Debug: telemetry upload failed: failed to upload telemetry logs after three attempts pid=PID
+HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after three attempts pid=PID

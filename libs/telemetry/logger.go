@@ -121,7 +121,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		// all 5xx responses.
 		var apiErr *apierr.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
-			log.Debugf(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.StatusCode)
+			log.Infof(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.StatusCode)
 			time.Sleep(waitBetweenRetries)
 			continue
 		}
