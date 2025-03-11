@@ -17,7 +17,6 @@ import (
 	"slices"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -368,19 +367,48 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
+	cmd.Dir = tmpDir
 
-	// Write combined output to a file
 	outputPath := filepath.Join(tmpDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
-	cmd.Stdout = out
-	cmd.Stderr = out
-	cmd.Dir = tmpDir
-	if Tail {
-		err = runWithTail(t, cmd, outputPath)
-	} else {
-		err = cmd.Run()
+	defer out.Close()
+
+	r, w := io.Pipe()
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	start := time.Now()
+	err = cmd.Start()
+	require.NoError(t, err)
+
+	processErrCh := make(chan error, 1)
+	go func() {
+		processErrCh <- cmd.Wait()
+		w.Close()
+	}()
+
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadString('\n')
+		if Tail {
+			msg := strings.TrimRight(line, "\n")
+			if len(msg) > 0 {
+				d := time.Since(start)
+				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+			}
+		}
+		if len(line) > 0 {
+			_, err = out.WriteString(line)
+			require.NoError(t, err)
+		}
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
 	}
+
+	err = <-processErrCh
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -729,72 +757,4 @@ func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
-}
-
-// runWithTail starts cmd.Run() and concurrently tails the file.
-// For each new line that appears in the file, it calls t.Log(line).
-// When cmd.Run() finishes, it uses os.Stat(filename) to get the file’s final size,
-// and stops tailing once the file offset is greater or equal to that size.
-// The function returns the error from cmd.Run().
-func runWithTail(t *testing.T, cmd *exec.Cmd, filename string) error {
-	// finalSizeCh communicates the final file size to the tail goroutine.
-	finalSizeCh := make(chan int64, 1)
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	start := time.Now()
-
-	// Tail goroutine: open the file and read new lines as they are written.
-	go func() {
-		defer wg.Done()
-
-		f, err := os.Open(filename)
-		assert.NoError(t, err)
-		defer f.Close()
-
-		reader := bufio.NewReader(f)
-		finalSize := int64(-1)
-
-		for {
-			select {
-			case fs := <-finalSizeCh:
-				finalSize = fs
-			default:
-			}
-
-			if finalSize >= 0 {
-				cur, seekErr := f.Seek(0, io.SeekCurrent)
-				assert.NoError(t, seekErr)
-				if cur >= finalSize || err != nil {
-					break
-				}
-			}
-
-			line, err := reader.ReadString('\n')
-			msg := strings.TrimRight(line, "\n")
-			if len(msg) > 0 {
-				d := time.Since(start)
-				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
-			}
-
-			if err != nil {
-				if errors.Is(err, io.EOF) {
-					time.Sleep(50 * time.Millisecond)
-					continue
-				}
-				t.Logf("error reading file: %v", err)
-				break
-			}
-		}
-	}()
-
-	err := cmd.Run()
-
-	fi, statErr := os.Stat(filename)
-	assert.NoError(t, statErr)
-
-	finalSizeCh <- fi.Size()
-
-	wg.Wait()
-	return err
 }
