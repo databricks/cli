@@ -29,7 +29,7 @@ require (
 	github.com/wI2L/jsondiff v0.6.1 // MIT
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/mod v0.23.0
-	golang.org/x/oauth2 v0.26.0
+	golang.org/x/oauth2 v0.28.0
 	golang.org/x/sync v0.11.0
 	golang.org/x/sys v0.31.0
 	golang.org/x/term v0.30.0
