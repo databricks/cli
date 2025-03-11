@@ -115,6 +115,10 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		// We retry for all 5xx responses. Note that the SDK only retries for 503 and 429
 		// (as of 6th March 2025) so we need some additional logic here to retry for other
 		// 5xx responses.
+		//
+		// Note: We should never see a 503 or 429 here because the SDK default timeout
+		// of 1 minute is more than the 3 second timeout we set above.
+		//
 		// SDK ref: https://github.com/databricks/databricks-sdk-go/blob/cdb28002afacb8b762348534a4c4040a9f19c24b/apierr/errors.go#L91
 		//
 		// The UI infra team (who owns the /telemetry-ext API) recommends retrying for
