@@ -748,7 +748,7 @@ func runWithTail(t *testing.T, cmd *exec.Cmd, filename string) error {
 	go func() {
 		defer wg.Done()
 
-		f, err := openWait(filename)
+		f, err := os.Open(filename)
 		assert.NoError(t, err)
 		defer f.Close()
 
@@ -797,17 +797,4 @@ func runWithTail(t *testing.T, cmd *exec.Cmd, filename string) error {
 
 	wg.Wait()
 	return err
-}
-
-func openWait(path string) (*os.File, error) {
-	deadline := time.Now().Add(1 * time.Second)
-	for {
-		f, err := os.Open(path)
-		if err == nil {
-			return f, err
-		}
-		if time.Now().After(deadline) {
-			return nil, err
-		}
-	}
 }
