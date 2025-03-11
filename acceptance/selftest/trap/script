@@ -1,0 +1,7 @@
+# This does not work on Windows, somehow all the slashes are lost:
+# command: trap "$CLI missing-command" EXIT
+# output: script: line 1: Y:cliacceptancebuildwindows_amd64databricks.exe: command not found
+
+# Adding single quotes around $CLI helps:
+trap "errcode trace '$CLI' missing-command" EXIT
+echo "run first"
