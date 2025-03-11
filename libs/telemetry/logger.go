@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/databricks/cli/libs/command"
@@ -17,9 +18,14 @@ import (
 	"github.com/google/uuid"
 )
 
-// Environment variable to disable telemetry. If this is set to any value, telemetry
-// will be disabled.
-const disableEnvVar = "DATABRICKS_CLI_DISABLE_TELEMETRY"
+const (
+	// Environment variable to disable telemetry. If this is set to any value, telemetry
+	// will be disabled.
+	disableEnvVar = "DATABRICKS_CLI_DISABLE_TELEMETRY"
+
+	// Timeout in seconds for uploading telemetry logs.
+	timeoutEnvVar = "DATABRICKS_CLI_TELEMETRY_TIMEOUT"
+)
 
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	fromContext(ctx).log(event)
@@ -39,8 +45,8 @@ func (l *logger) log(event protos.DatabricksCliLog) {
 }
 
 const (
-	uploadTimeout      = 3 * time.Second
-	waitBetweenRetries = 200 * time.Millisecond
+	defaultUploadTimeout = 3 * time.Second
+	waitBetweenRetries   = 200 * time.Millisecond
 )
 
 func Upload(ctx context.Context, ec protos.ExecutionContext) error {
@@ -73,6 +79,16 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	apiClient, err := client.New(command.ConfigUsed(ctx))
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	uploadTimeout := defaultUploadTimeout
+	if v := env.Get(ctx, timeoutEnvVar); v != "" {
+		timeout, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse timeout: %w", err)
+		}
+
+		uploadTimeout = time.Duration(timeout * float64(time.Second))
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, uploadTimeout)
