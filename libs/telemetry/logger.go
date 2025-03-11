@@ -30,9 +30,6 @@ type logger struct {
 }
 
 func (l *logger) log(event protos.DatabricksCliLog) {
-	if l.logs == nil {
-		l.logs = make([]protos.FrontendLog, 0)
-	}
 	l.logs = append(l.logs, protos.FrontendLog{
 		FrontendLogEventID: uuid.New().String(),
 		Entry: protos.FrontendLogEntry{
@@ -115,7 +112,6 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		// We retry for all 5xx responses. Note that the SDK only retries for 503 and 429
 		// (as of 6th March 2025) so we need some additional logic here to retry for other
 		// 5xx responses.
-		//
 		// Note: We should never see a 503 or 429 here because the SDK default timeout
 		// of 1 minute is more than the 3 second timeout we set above.
 		//
