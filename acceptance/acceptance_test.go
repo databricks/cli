@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"bufio"
 	"context"
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -256,6 +257,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		}
 	}
 
+	id := uuid.New()
+	uniqueName := strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "=")
+	require.Greater(t, len(uniqueName), 8, uniqueName)
+	repls.Set(uniqueName, "[UNIQUE_NAME]")
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -281,6 +287,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 
 	var workspaceClient *databricks.WorkspaceClient
 	var user iam.User
