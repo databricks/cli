@@ -223,7 +223,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	if !isTruePtr(config.Cloud) && cloudEnv != "" {
 		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-	} else {
+	}
+
+	if cloudEnv != "" {
 		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
 			t.Skipf("Skipping on non-UC workspaces")
 		}
@@ -361,6 +363,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
+	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 
 	// Write combined output to a file
 	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
