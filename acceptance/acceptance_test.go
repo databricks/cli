@@ -374,41 +374,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	require.NoError(t, err)
 	defer out.Close()
 
-	r, w := io.Pipe()
-	cmd.Stdout = w
-	cmd.Stderr = w
-
-	start := time.Now()
-	err = cmd.Start()
-	require.NoError(t, err)
-
-	processErrCh := make(chan error, 1)
-	go func() {
-		processErrCh <- cmd.Wait()
-		w.Close()
-	}()
-
-	reader := bufio.NewReader(r)
-	for {
-		line, err := reader.ReadString('\n')
-		if Tail {
-			msg := strings.TrimRight(line, "\n")
-			if len(msg) > 0 {
-				d := time.Since(start)
-				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
-			}
-		}
-		if len(line) > 0 {
-			_, err = out.WriteString(line)
-			require.NoError(t, err)
-		}
-		if err == io.EOF {
-			break
-		}
-		require.NoError(t, err)
-	}
-
-	err = <-processErrCh
+	err = runWithLog(t, cmd, out)
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -757,4 +723,42 @@ func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
+}
+
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File) error {
+	r, w := io.Pipe()
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	start := time.Now()
+	err := cmd.Start()
+	require.NoError(t, err)
+
+	processErrCh := make(chan error, 1)
+	go func() {
+		processErrCh <- cmd.Wait()
+		w.Close()
+	}()
+
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadString('\n')
+		if Tail {
+			msg := strings.TrimRight(line, "\n")
+			if len(msg) > 0 {
+				d := time.Since(start)
+				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+			}
+		}
+		if len(line) > 0 {
+			_, err = out.WriteString(line)
+			require.NoError(t, err)
+		}
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+	}
+
+	return <-processErrCh
 }
