@@ -25,10 +25,6 @@ func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	fromContext(ctx).log(event)
 }
 
-func HasLogs(ctx context.Context) bool {
-	return len(fromContext(ctx).logs) > 0
-}
-
 type logger struct {
 	logs []protos.FrontendLog
 }
