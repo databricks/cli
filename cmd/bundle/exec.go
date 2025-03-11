@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/command"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +40,7 @@ Example usage:
 
 			childCmd := exec.Command(args[0], args[1:]...)
 
-			env := auth.ProcessEnv(root.ConfigUsed(cmd.Context()))
+			env := auth.ProcessEnv(command.ConfigUsed(cmd.Context()))
 
 			// If user has specified a target, pass it to the child command.
 			//
