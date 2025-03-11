@@ -1,12 +1,9 @@
 package acceptance_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/databricks/cli/libs/log"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -104,7 +101,6 @@ func AddHandlers(server *testserver.Server) {
 	server.Handle("POST", "/api/2.0/workspace/delete", func(req testserver.Request) any {
 		path := req.URL.Query().Get("path")
 		recursive := req.URL.Query().Get("recursive") == "true"
-		log.Debugf(context.Background(), "[workspace files] Delete file: %s, %v ", path, recursive)
 		req.Workspace.WorkspaceDelete(path, recursive)
 		return ""
 	})
@@ -112,15 +108,12 @@ func AddHandlers(server *testserver.Server) {
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path:.*}", func(req testserver.Request) any {
 		path := req.Vars["path"]
 		req.Workspace.WorkspaceFilesImportFile(path, req.Body)
-		log.Debug(context.Background(), "[workspace files] Import file: "+path)
 		return ""
 	})
 
 	server.Handle("GET", "/api/2.0/workspace-files/{path:.*}", func(req testserver.Request) any {
 		path := req.Vars["path"]
-		file := req.Workspace.WorkspaceFilesExportFile(path)
-		log.Debugf(context.Background(), "[workspace files] Read file: %s, exists: %v", path, file != nil)
-		return file
+		return req.Workspace.WorkspaceFilesExportFile(path)
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
