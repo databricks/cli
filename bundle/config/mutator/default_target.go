@@ -13,16 +13,16 @@ type definePlaceholderTarget struct {
 	name string
 }
 
-const PlaceholderTargetName = "BUNDLE_PLACEHOLDER_TARGET"
+const PlaceholderTargetName = "PLACEHOLDER_TARGET"
 
-// DefinePlaceholderTarget adds a target named "BUNDLE_PLACEHOLDER_TARGET"
+// DefinePlaceholderTarget adds a target named "PLACEHOLDER_TARGET"
 // to the configuration if none have been defined.
 //
 // We do this because downstream mutators like [SelectDefaultTarget]
 // and [SelectTarget] expect at least one target to be defined.
 func DefinePlaceholderTarget() bundle.Mutator {
 	return &definePlaceholderTarget{
-		name: "PlaceholderTargetName",
+		name: PlaceholderTargetName,
 	}
 }
 
