@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -36,6 +37,7 @@ var (
 	KeepTmp     bool
 	NoRepl      bool
 	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail        bool
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -52,6 +54,7 @@ func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
+	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
 }
 
 const (
@@ -364,14 +367,14 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
-
-	// Write combined output to a file
-	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
-	require.NoError(t, err)
-	cmd.Stdout = out
-	cmd.Stderr = out
 	cmd.Dir = tmpDir
-	err = cmd.Run()
+
+	outputPath := filepath.Join(tmpDir, "output.txt")
+	out, err := os.Create(outputPath)
+	require.NoError(t, err)
+	defer out.Close()
+
+	err = runWithLog(t, cmd, out)
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -720,4 +723,42 @@ func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
+}
+
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File) error {
+	r, w := io.Pipe()
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	start := time.Now()
+	err := cmd.Start()
+	require.NoError(t, err)
+
+	processErrCh := make(chan error, 1)
+	go func() {
+		processErrCh <- cmd.Wait()
+		w.Close()
+	}()
+
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadString('\n')
+		if Tail {
+			msg := strings.TrimRight(line, "\n")
+			if len(msg) > 0 {
+				d := time.Since(start)
+				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+			}
+		}
+		if len(line) > 0 {
+			_, err = out.WriteString(line)
+			require.NoError(t, err)
+		}
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+	}
+
+	return <-processErrCh
 }
