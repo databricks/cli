@@ -74,6 +74,9 @@ type ServerStub struct {
 
 	// The response body to return.
 	Response testserver.Response
+
+	// Artificial delay in seconds to simulate slow responses.
+	DelaySeconds *float64
 }
 
 // FindConfigs finds all the config relevant for this test,

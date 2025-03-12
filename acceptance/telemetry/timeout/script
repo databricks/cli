@@ -1,0 +1,4 @@
+# Set timeout to 0.1 second to make this test faster
+export DATABRICKS_CLI_TELEMETRY_TIMEOUT=0.1
+
+trace $CLI selftest send-telemetry --debug
