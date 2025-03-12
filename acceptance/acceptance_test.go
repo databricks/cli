@@ -259,7 +259,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	id := uuid.New()
 	uniqueName := strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "=")
-	require.Greater(t, len(uniqueName), 8, uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
