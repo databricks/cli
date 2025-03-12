@@ -1,12 +1,45 @@
+
+>>> cat input.json
 {
     "project_name": "my_test_code",
     "spark_version": "13.3.x-snapshot-scala2.12",
-    "node_type_id": "",
+    "node_type_id": "[NODE_TYPE_ID]",
     "unique_id": "[UNIQUE_NAME]",
     "python_wheel_wrapper": false,
     "instance_pool_id": "[TEST_INSTANCE_POOL_ID]"
 }
 ✨ Successfully initialized template
+
+>>> cat databricks.yml
+bundle:
+  name: wheel-task
+
+workspace:
+  root_path: "~/.bundle/[UNIQUE_NAME]"
+
+resources:
+  clusters:
+    test_cluster:
+      cluster_name: "test-cluster-[UNIQUE_NAME]"
+      spark_version: "13.3.x-snapshot-scala2.12"
+      node_type_id: "[NODE_TYPE_ID]"
+      num_workers: 1
+      data_security_mode: USER_ISOLATION
+
+  jobs:
+    some_other_job:
+      name: "[${bundle.target}] Test Wheel Job [UNIQUE_NAME]"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "${resources.clusters.test_cluster.cluster_id}"
+          python_wheel_task:
+            package_name: my_test_code
+            entry_point: run
+            parameters:
+              - "one"
+              - "two"
+          libraries:
+            - whl: ./dist/*.whl
 
 >>> [CLI] bundle deploy
 Building python_artifact...
@@ -27,6 +60,7 @@ Got arguments:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete cluster test_cluster
   delete job some_other_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]

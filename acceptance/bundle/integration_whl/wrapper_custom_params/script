@@ -1,8 +1,9 @@
 export SPARK_VERSION=12.2.x-scala2.12
 export PYTHON_WHEEL_WRAPPER=true
 envsubst < $TESTDIR/../base/input.json.tmpl > input.json
-cat input.json
+trace cat input.json
 $CLI bundle init $TESTDIR/../base --config-file input.json
+trace cat databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy
 trace $CLI bundle run some_other_job --python-params param1,param2

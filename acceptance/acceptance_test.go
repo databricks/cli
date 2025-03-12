@@ -173,6 +173,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// Matches defaultSparkVersion in ../integration/bundle/helpers_test.go
 	t.Setenv("DEFAULT_SPARK_VERSION", "13.3.x-snapshot-scala2.12")
 
+	nodeTypeID := getNodeTypeID(cloudEnv)
+	t.Setenv("NODE_TYPE_ID", nodeTypeID)
+	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
+
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
@@ -798,4 +802,23 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	}
 
 	return <-processErrCh
+}
+
+func getNodeTypeID(cloudEnv string) string {
+	switch cloudEnv {
+	// no idea why, but
+	// aws-prod-ucws sets CLOUD_ENV to "ucws"
+	// gcp-prod-ucws sets CLOUD_ENV to "gcp-ucws"
+	// azure-prod-ucws sets CLOUD_ENV to "azure"
+	case "aws", "ucws":
+		return "i3.xlarge"
+	case "azure":
+		return "Standard_DS4_v2"
+	case "gcp", "gcp-ucws":
+		return "n1-standard-4"
+	case "":
+		return "local-fake-node"
+	default:
+		return "unknown-cloudEnv-" + cloudEnv
+	}
 }
