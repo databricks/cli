@@ -15,7 +15,6 @@ func (e *EnvVar) String() string {
 
 func GetBaseEnvVars(config *Config) []EnvVar {
 	envVars := []EnvVar{
-		{Name: "PATH", Value: "/usr/local/bin:/usr/bin:/bin:.venv/bin"},
 		{Name: "PYTHONUNBUFFERED", Value: "1"},
 		{Name: "DATABRICKS_APP_NAME", Value: config.AppName},
 		{Name: "DATABRICKS_APP_URL", Value: config.AppURL},
