@@ -1,18 +1,4 @@
 
-<<<<<<< HEAD
->>> cat input.json
-{
-    "project_name": "my_test_code",
-    "spark_version": "13.3.x-snapshot-scala2.12",
-    "node_type_id": "[NODE_TYPE_ID]",
-    "unique_id": "[UNIQUE_NAME]",
-    "python_wheel_wrapper": false,
-    "instance_pool_id": "[TEST_INSTANCE_POOL_ID]"
-}
-✨ Successfully initialized template
-
-=======
->>>>>>> 5b0e9e17 (Clean up golang template from integration_whl)
 >>> cat databricks.yml
 bundle:
   name: wheel-task
