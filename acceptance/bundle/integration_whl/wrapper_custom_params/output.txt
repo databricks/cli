@@ -1,4 +1,5 @@
 
+<<<<<<< HEAD
 >>> cat input.json
 {
     "project_name": "my_test_code",
@@ -10,6 +11,8 @@
 }
 ✨ Successfully initialized template
 
+=======
+>>>>>>> 5b0e9e17 (Clean up golang template from integration_whl)
 >>> cat databricks.yml
 bundle:
   name: wheel-task
@@ -17,10 +20,8 @@ bundle:
 workspace:
   root_path: "~/.bundle/[UNIQUE_NAME]"
 
-
-experimental:
-  python_wheel_wrapper: true
-
+include:
+  - python_wheel_wrapper.yml
 
 resources:
   jobs:
@@ -30,10 +31,15 @@ resources:
         - task_key: TestTask
           new_cluster:
             num_workers: 1
+<<<<<<< HEAD
             spark_version: "12.2.x-scala2.12"
             node_type_id: "[NODE_TYPE_ID]"
+=======
+            spark_version: 12.2.x-scala2.12
+            node_type_id: i3.xlarge
+>>>>>>> 5b0e9e17 (Clean up golang template from integration_whl)
             data_security_mode: USER_ISOLATION
-            instance_pool_id: "[TEST_INSTANCE_POOL_ID]"
+            instance_pool_id: [TEST_INSTANCE_POOL_ID]
           python_wheel_task:
             package_name: my_test_code
             entry_point: run

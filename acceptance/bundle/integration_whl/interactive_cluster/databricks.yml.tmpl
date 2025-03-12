@@ -2,20 +2,20 @@ bundle:
   name: wheel-task
 
 workspace:
-  root_path: "~/.bundle/{{.unique_id}}"
+  root_path: "~/.bundle/$UNIQUE_NAME"
 
 resources:
   clusters:
     test_cluster:
-      cluster_name: "test-cluster-{{.unique_id}}"
-      spark_version: "{{.spark_version}}"
-      node_type_id: "{{.node_type_id}}"
+      cluster_name: "test-cluster-$UNIQUE_NAME"
+      spark_version: "$DEFAULT_SPARK_VERSION"
+      node_type_id: "$NODE_TYPE_ID"
       num_workers: 1
       data_security_mode: USER_ISOLATION
 
   jobs:
     some_other_job:
-      name: "[${bundle.target}] Test Wheel Job {{.unique_id}}"
+      name: "[${bundle.target}] Test Wheel Job $UNIQUE_NAME"
       tasks:
         - task_key: TestTask
           existing_cluster_id: "${resources.clusters.test_cluster.cluster_id}"
