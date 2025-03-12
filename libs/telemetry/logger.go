@@ -46,7 +46,7 @@ func (l *logger) log(event protos.DatabricksCliLog) {
 
 const (
 	defaultUploadTimeout = 3 * time.Second
-	waitBetweenRetries   = 100 * time.Millisecond
+	waitBetweenRetries   = 200 * time.Millisecond
 )
 
 func Upload(ctx context.Context, ec protos.ExecutionContext) error {
