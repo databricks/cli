@@ -39,6 +39,7 @@ var (
 	NoRepl      bool
 	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
 	Tail        bool
+	Force       bool
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -56,6 +57,7 @@ func init() {
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
+	flag.BoolVar(&Force, "force", false, "Force running the specified tests, ignore all reasons to skip")
 }
 
 const (
@@ -82,7 +84,7 @@ func TestAccept(t *testing.T) {
 }
 
 func TestInprocessMode(t *testing.T) {
-	if InprocessMode {
+	if InprocessMode && !Force {
 		t.Skip("Already tested by TestAccept")
 	}
 	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
@@ -226,43 +228,47 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
-		t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+		if !Force {
+			t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+		}
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
 	tailOutput := Tail
 
-	if isRunningOnCloud {
-		if isTruePtr(config.CloudSlow) {
-			if testing.Short() {
-				t.Skipf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+	if isRunningOnCloud && isTruePtr(config.CloudSlow) && testing.Verbose() {
+		// Combination of CloudSlow and -v auto-enables -tail
+		tailOutput = true
+	}
+
+	if !Force {
+		if isRunningOnCloud {
+			if isTruePtr(config.CloudSlow) {
+				if testing.Short() {
+					t.Skipf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+				}
 			}
 
-			if testing.Verbose() {
-				// Combination of CloudSlow and -v auto-enables -tail
-				tailOutput = true
+			isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
+			if !isCloudEnabled {
+				t.Skipf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
+					configPath,
+					cloudEnv,
+					isTruePtr(config.Cloud),
+					isTruePtr(config.CloudSlow),
+				)
 			}
-		}
 
-		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
-		if !isCloudEnabled {
-			t.Skipf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
-				configPath,
-				cloudEnv,
-				isTruePtr(config.Cloud),
-				isTruePtr(config.CloudSlow),
-			)
-		}
+			if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
+				t.Skipf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+			}
 
-		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			t.Skipf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
-		}
-
-	} else {
-		// Local run
-		if !isTruePtr(config.Local) {
-			t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+		} else {
+			// Local run
+			if !isTruePtr(config.Local) {
+				t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+			}
 		}
 	}
 
