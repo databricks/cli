@@ -1,4 +1,4 @@
-export SPARK_VERSION=13.3.x-snapshot-scala2.12
+export SPARK_VERSION=$DEFAULT_SPARK_VERSION
 export PYTHON_WHEEL_WRAPPER=false
 envsubst < $TESTDIR/../base/input.json.tmpl > input.json
 cat input.json
