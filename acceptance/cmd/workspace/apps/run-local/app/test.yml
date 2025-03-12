@@ -1,0 +1,4 @@
+command:
+- python3
+- -c
+- "print('Hello, world')"

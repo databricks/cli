@@ -1,0 +1,17 @@
+Hello, world
+
+=== Starting the app in background...Waiting for the app to start...
+
+=== Checking app is running...
+>>> curl -s -o - http://127.0.0.1:8001
+{"Accept":"*/*","Accept-Encoding":"gzip","Host":"127.0.0.1:8000","User-Agent":"curl/(version)","X-Forwarded-Email":"[USERNAME]","X-Forwarded-Host":"localhost","X-Forwarded-Preferred-Username":"","X-Forwarded-User":"[USERNAME]","X-Real-Ip":"127.0.0.1","X-Request-Id":"[UUID]"}
+
+=== Sending shutdown request...
+>>> curl -s -o /dev/null http://127.0.0.1:8001/shutdown
+
+=== Checking CLI command output...
+>>> grep To debug your app, attach a debugger to port 5678 ./out.run.txt
+To debug your app, attach a debugger to port 5678
+
+>>> grep -o Python Flask app has started with: test ./out.run.txt
+Python Flask app has started with: test
