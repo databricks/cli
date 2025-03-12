@@ -22,7 +22,8 @@ result = []
 
 for root, dirs, files in os.walk("."):
     for filename in files:
-        path = os.path.join(root, filename).lstrip("./\\").replace("\\", "/")
+        path = os.path.join(root, filename).replace("\\", "/")
+        path = path.removeprefix("./")
         if regex.search(path):
             result.append(path)
 
