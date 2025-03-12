@@ -24,8 +24,8 @@ dynamic = ["version"]
 [project.entry-points.packages]
 main = "my_jobs_as_code.main:main"
 
-[tool.setuptools]
-py-modules = ["resources", "my_jobs_as_code"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.uv]
 ## Dependencies for local development
