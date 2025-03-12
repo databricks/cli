@@ -49,6 +49,28 @@ const (
 	waitBetweenRetries   = 200 * time.Millisecond
 )
 
+// Sleep for duration d only if there's enough time before the context deadline.
+// If there's not enough time, cancel the context early and return.
+func sleep(ctx context.Context, cancel func(), d time.Duration) {
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		log.Infof(ctx, "sleep called when context has no deadline")
+		cancel() // cancel the context to prevent any further work
+		return
+	}
+
+	remainingTime := time.Until(deadline)
+
+	// There's not enough time to sleep and then retry. Cancel the context.
+	if remainingTime < d {
+		log.Debugf(ctx, "not enough time to sleep and retry before context deadline. Cancelling context")
+		cancel()
+		return
+	}
+
+	time.Sleep(d)
+}
+
 func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	l := fromContext(ctx)
 	if len(l.logs) == 0 {
@@ -114,7 +136,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		// Partial success. Retry.
 		if err == nil && resp.NumProtoSuccess < int64(len(protoLogs)) {
 			log.Debugf(ctx, "Attempt %d was a partial success. Number of logs uploaded: %d out of %d", i+1, resp.NumProtoSuccess, len(protoLogs))
-			time.Sleep(waitBetweenRetries)
+			sleep(ctx, cancel, waitBetweenRetries)
 			continue
 		}
 
@@ -138,7 +160,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		var apiErr *apierr.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
 			log.Infof(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.StatusCode)
-			time.Sleep(waitBetweenRetries)
+			sleep(ctx, cancel, waitBetweenRetries)
 			continue
 		}
 	}
