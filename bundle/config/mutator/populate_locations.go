@@ -23,13 +23,8 @@ func (m *populateLocations) Name() string {
 func (m *populateLocations) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	locs, err := dynloc.Build(
 		b.Config.Value(),
-
 		// Make all paths relative to the bundle root.
-		dynloc.WithBasePath(b.BundleRootPath),
-
-		// Limit to maximum depth of 3.
-		// The intent is to capture locations of all resources but not their configurations.
-		dynloc.WithMaxDepth(3),
+		b.BundleRootPath,
 	)
 	if err != nil {
 		return diag.FromErr(err)

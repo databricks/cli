@@ -3,6 +3,7 @@ package dynloc
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 
@@ -34,29 +35,39 @@ type Locations struct {
 	// map with locations as compact as possible.
 	fileToIndex map[string]int
 
-	// maxDepth is the maximum depth of the [dyn.Path] keys in the [Locations] map.
-	maxDepth int
-
 	// basePath is the base path used to compute relative paths.
 	basePath string
 }
 
 func (l *Locations) gatherLocations(v dyn.Value) (map[string][]dyn.Location, error) {
 	locs := map[string][]dyn.Location{}
+	patterns := []*regexp.Regexp{
+		// Top level fields
+		regexp.MustCompile(`^[^.]+$`),
+		// Top level resources for all types (e.g. "resources.jobs" or "resources.jobs.my_job")
+		regexp.MustCompile(`^resources\.[^.]+(\.[^.]+)?$`),
+		// Job tasks (e.g. "resources.jobs.my_job.tasks[2]")
+		regexp.MustCompile(`^resources\.[^.]+\.[^.]+\.tasks(\[\d+\])$`),
+	}
+
 	_, err := dyn.Walk(v, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		// Skip the root value.
 		if len(p) == 0 {
 			return v, nil
 		}
 
-		// Skip if the path depth exceeds the maximum depth.
-		if l.maxDepth > 0 && len(p) > l.maxDepth {
-			return v, dyn.ErrSkip
+		// Only gather locations for paths that match the patterns.
+		pathStr := p.String()
+		for _, re := range patterns {
+			if re.MatchString(pathStr) {
+				locs[pathStr] = v.Locations()
+				break
+			}
 		}
 
-		locs[p.String()] = v.Locations()
 		return v, nil
 	})
+
 	return locs, err
 }
 
@@ -128,22 +139,8 @@ func (l *Locations) addLocation(path, file string, line, col int) error {
 // Option is a functional option for the [Build] function.
 type Option func(l *Locations)
 
-// WithMaxDepth sets the maximum depth of the [dyn.Path] keys in the [Locations] map.
-func WithMaxDepth(depth int) Option {
-	return func(l *Locations) {
-		l.maxDepth = depth
-	}
-}
-
-// WithBasePath sets the base path used to compute relative paths.
-func WithBasePath(basePath string) Option {
-	return func(l *Locations) {
-		l.basePath = basePath
-	}
-}
-
 // Build constructs a [Locations] object from a [dyn.Value].
-func Build(v dyn.Value, opts ...Option) (Locations, error) {
+func Build(v dyn.Value, basePath string) (Locations, error) {
 	l := Locations{
 		Version:   Version,
 		Files:     make([]string, 0),
@@ -151,11 +148,7 @@ func Build(v dyn.Value, opts ...Option) (Locations, error) {
 
 		// Internal state.
 		fileToIndex: make(map[string]int),
-	}
-
-	// Apply options.
-	for _, opt := range opts {
-		opt(&l)
+		basePath:    basePath,
 	}
 
 	// Traverse the value and collect locations.
