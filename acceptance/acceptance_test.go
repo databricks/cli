@@ -802,11 +802,15 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 
 func getNodeTypeID(cloudEnv string) string {
 	switch cloudEnv {
-	case "aws":
+	// no idea why, but
+	// aws-prod-ucws sets CLOUD_ENV to "ucws"
+	// gcp-prod-ucws sets CLOUD_ENV to "gcp-ucws"
+	// azure-prod-ucws sets CLOUD_ENV to "azure"
+	case "aws", "ucws":
 		return "i3.xlarge"
 	case "azure":
 		return "Standard_DS4_v2"
-	case "gcp":
+	case "gcp", "gcp-ucws":
 		return "n1-standard-4"
 	case "":
 		return "local-fake-node"

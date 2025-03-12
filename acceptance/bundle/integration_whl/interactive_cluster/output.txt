@@ -3,7 +3,7 @@
 {
     "project_name": "my_test_code",
     "spark_version": "13.3.x-snapshot-scala2.12",
-    "node_type_id": "i3.xlarge",
+    "node_type_id": "[NODE_TYPE_ID]",
     "unique_id": "[UNIQUE_NAME]",
     "python_wheel_wrapper": false,
     "instance_pool_id": "[TEST_INSTANCE_POOL_ID]"
@@ -22,7 +22,7 @@ resources:
     test_cluster:
       cluster_name: "test-cluster-[UNIQUE_NAME]"
       spark_version: "13.3.x-snapshot-scala2.12"
-      node_type_id: "i3.xlarge"
+      node_type_id: "[NODE_TYPE_ID]"
       num_workers: 1
       data_security_mode: USER_ISOLATION
 
