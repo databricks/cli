@@ -7,7 +7,10 @@ uv sync -q
 
 trace $CLI bundle validate -t dev --output json | jq ".resources"
 
-rm -fr .venv resources/__pycache__ uv.lock my_jobs_as_code.egg-info
+uv build -q
+trace unzip -Z1 dist/my_jobs_as_code-0.0.1-py3-none-any.whl
+
+rm -fr .venv resources/__pycache__ uv.lock src/my_jobs_as_code.egg-info dist
 
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore
