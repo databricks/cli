@@ -172,6 +172,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	// Matches defaultSparkVersion in ../integration/bundle/helpers_test.go
 	t.Setenv("DEFAULT_SPARK_VERSION", "13.3.x-snapshot-scala2.12")
+	t.Setenv("NODE_TYPE_ID", getNodeTypeID(cloudEnv))
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -794,4 +795,15 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	}
 
 	return <-processErrCh
+}
+
+func getNodeTypeID(cloudEnv string) string {
+	switch cloudEnv {
+	case "azure":
+		return "Standard_DS4_v2"
+	case "gcp":
+		return "n1-standard-4"
+	default: // "aws", "", invalid values:
+		return "i3.xlarge"
+	}
 }
