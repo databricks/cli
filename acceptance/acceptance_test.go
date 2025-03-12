@@ -170,6 +170,9 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
+	// Matches defaultSparkVersion in ../integration/bundle/helpers_test.go
+	t.Setenv("DEFAULT_SPARK_VERSION", "13.3.x-snapshot-scala2.12")
+
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
