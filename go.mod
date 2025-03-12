@@ -1,8 +1,8 @@
 module github.com/databricks/cli
 
-go 1.23
+go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.23.7
 
 require (
 	dario.cat/mergo v1.0.1 // BSD 3-Clause
@@ -29,11 +29,11 @@ require (
 	github.com/wI2L/jsondiff v0.6.1 // MIT
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/mod v0.23.0
-	golang.org/x/oauth2 v0.26.0
-	golang.org/x/sync v0.11.0
-	golang.org/x/sys v0.30.0
-	golang.org/x/term v0.29.0
-	golang.org/x/text v0.22.0
+	golang.org/x/oauth2 v0.28.0
+	golang.org/x/sync v0.12.0
+	golang.org/x/sys v0.31.0
+	golang.org/x/term v0.30.0
+	golang.org/x/text v0.23.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 	gopkg.in/yaml.v3 v3.0.1
 )

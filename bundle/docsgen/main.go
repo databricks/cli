@@ -7,6 +7,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/annotation"
@@ -43,7 +44,7 @@ func main() {
 		[]string{path.Join(annotationDir, "annotations.yml")},
 		path.Join(outputDir, rootFileName),
 		reflect.TypeOf(config.Root{}),
-		string(rootHeader),
+		fillTemplateVariables(string(rootHeader)),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -56,7 +57,7 @@ func main() {
 		[]string{path.Join(annotationDir, "annotations_openapi.yml"), path.Join(annotationDir, "annotations_openapi_overrides.yml"), path.Join(annotationDir, "annotations.yml")},
 		path.Join(outputDir, resourcesFileName),
 		reflect.TypeOf(config.Resources{}),
-		string(resourcesHeader),
+		fillTemplateVariables(string(resourcesHeader)),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -132,4 +133,9 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	if a.MarkdownExamples != "" {
 		s.Examples = []string{a.MarkdownExamples}
 	}
+}
+
+func fillTemplateVariables(s string) string {
+	currentDate := time.Now().Format("2006-01-02")
+	return strings.ReplaceAll(s, "{{update_date}}", currentDate)
 }

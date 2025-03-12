@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -36,6 +37,7 @@ var (
 	KeepTmp     bool
 	NoRepl      bool
 	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail        bool
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -52,6 +54,7 @@ func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
+	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
 }
 
 const (
@@ -217,12 +220,40 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
-	if !isTruePtr(config.Local) && cloudEnv == "" {
-		t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-	}
+	isRunningOnCloud := cloudEnv != ""
+	tailOutput := Tail
 
-	if !isTruePtr(config.Cloud) && cloudEnv != "" {
-		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+	if isRunningOnCloud {
+		if isTruePtr(config.CloudSlow) {
+			if testing.Short() {
+				t.Skipf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+			}
+
+			if testing.Verbose() {
+				// Combination of CloudSlow and -v auto-enables -tail
+				tailOutput = true
+			}
+		}
+
+		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
+		if !isCloudEnabled {
+			t.Skipf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
+				configPath,
+				cloudEnv,
+				isTruePtr(config.Cloud),
+				isTruePtr(config.CloudSlow),
+			)
+		}
+
+		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
+			t.Skipf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+		}
+
+	} else {
+		// Local run
+		if !isTruePtr(config.Local) {
+			t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+		}
 	}
 
 	var tmpDir string
@@ -258,7 +289,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// specifies a custom server stubs.
 	var server *testserver.Server
 
-	if cloudEnv == "" {
+	if !isRunningOnCloud {
 		// Start a new server for this test if either:
 		// 1. A custom server spec is defined in the test configuration.
 		// 2. The test is configured to record requests and assert on them. We need
@@ -357,14 +388,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
-
-	// Write combined output to a file
-	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
-	require.NoError(t, err)
-	cmd.Stdout = out
-	cmd.Stderr = out
+	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Dir = tmpDir
-	err = cmd.Run()
+
+	outputPath := filepath.Join(tmpDir, "output.txt")
+	out, err := os.Create(outputPath)
+	require.NoError(t, err)
+	defer out.Close()
+
+	err = runWithLog(t, cmd, out, tailOutput)
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -713,4 +745,42 @@ func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
+}
+
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
+	r, w := io.Pipe()
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	start := time.Now()
+	err := cmd.Start()
+	require.NoError(t, err)
+
+	processErrCh := make(chan error, 1)
+	go func() {
+		processErrCh <- cmd.Wait()
+		w.Close()
+	}()
+
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadString('\n')
+		if tail {
+			msg := strings.TrimRight(line, "\n")
+			if len(msg) > 0 {
+				d := time.Since(start)
+				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+			}
+		}
+		if len(line) > 0 {
+			_, err = out.WriteString(line)
+			require.NoError(t, err)
+		}
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+	}
+
+	return <-processErrCh
 }

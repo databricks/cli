@@ -31,6 +31,13 @@ type TestConfig struct {
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
 
+	// If true, run this test when running with cloud env configured and -short is not passed
+	// This also sets -tail when -v is passed.
+	CloudSlow *bool
+
+	// If true and Cloud=true, run this test only if unity catalog is available in the cloud environment
+	RequiresUnityCatalog *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
