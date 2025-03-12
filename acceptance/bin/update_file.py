@@ -6,6 +6,7 @@ Replace all strings OLD with NEW in FILENAME.
 
 If OLD is not found in FILENAME, the script reports error.
 """
+
 import sys
 
 filename, old, new = sys.argv[1:]
