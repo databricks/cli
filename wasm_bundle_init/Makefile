@@ -6,11 +6,11 @@ clean:
 	rm bundle_init bundle_init.wasm
 
 bundle_init.wasm: main_wasm.go ../libs/template/*
-	GOOS=js GOARCH=wasm go build -ldflags="-w -s" -o bundle_init.wasm
+	GOOS=js GOARCH=wasm go build -ldflags="-w -s" -gcflags=all=-l -o bundle_init.wasm
 
 # non-wasm build to test locally
 bundle_init: main_cli.go ../libs/template/*
-	go build -ldflags="-w -s" -o bundle_init
+	go build -ldflags="-w -s" -gcflags=all=-l -o bundle_init
 
 run: bundle_init
 	./bundle_init default-python '{}' '{}'
