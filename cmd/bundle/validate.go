@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
@@ -33,6 +34,10 @@ func newValidateCommand() *cobra.Command {
 		Args:  root.NoArgs,
 	}
 
+	var includeLocations bool
+	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
+	cmd.Flags().MarkHidden("include-locations")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
@@ -51,6 +56,11 @@ func newValidateCommand() *cobra.Command {
 
 		if !diags.HasError() {
 			diags = diags.Extend(validate.Validate(ctx, b))
+		}
+
+		// Include location information in the output if the flag is set.
+		if includeLocations {
+			diags = diags.Extend(bundle.Apply(ctx, b, mutator.PopulateLocations()))
 		}
 
 		switch root.OutputType(cmd) {
