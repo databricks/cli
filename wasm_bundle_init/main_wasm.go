@@ -8,15 +8,21 @@ import (
 	"syscall/js"
 )
 
-func jsonWrapper() js.Func {
-	jsonFunc := js.FuncOf(func(this js.Value, args []js.Value) any {
+func renderTemplateWrapper() js.Func {
+	renderFunc := js.FuncOf(func(this js.Value, args []js.Value) any {
 		if len(args) != 1 {
 			return "Invalid no of arguments passed"
 		}
 		inputJSON := args[0].String()
 		fmt.Printf("input %s\n", inputJSON)
 
-		out := Render("default-python", map[string]string{"param1": "value1"})
+		// Parse the JSON input into a map
+		var params map[string]string
+		if err := json.Unmarshal([]byte(inputJSON), &params); err != nil {
+			return fmt.Sprintf("Error parsing JSON: %s", err.Error())
+		}
+
+		out := Render("default-python", params)
 
 		pretty, err := json.MarshalIndent(out, "", "  ")
 		if err != nil {
@@ -29,7 +35,7 @@ func jsonWrapper() js.Func {
 
 func main() {
 	fmt.Println("Go Web Assembly")
-	js.Global().Set("formatJSON", jsonWrapper())
+	js.Global().Set("RenderTemplate", renderTemplateWrapper())
 
 	select {}
 }

@@ -7,6 +7,7 @@
 			const go = new Go();
 			WebAssembly.instantiateStreaming(fetch("bundle_init.wasm"), go.importObject).then((result) => {
 				go.run(result.instance);
+				console.log("WASM loaded, RenderTemplate function available");
 			});
 		</script>
 	</head>
