@@ -87,6 +87,60 @@
 		<script>
 			const go = new Go();
 
+			// Functions to handle URL hash parameters
+			function encodeParamsToHash() {
+				const templateName = document.getElementById("templateName").value;
+				const params = document.getElementById("paramsInput").value;
+				const helpers = document.getElementById("helpersInput").value;
+				
+				try {
+					// Validate JSON before encoding
+					JSON.parse(params);
+					JSON.parse(helpers);
+					
+					// Create an object with all parameters
+					const hashData = {
+						template: templateName,
+						params: params,
+						helpers: helpers
+					};
+					
+					// Set the hash
+					window.location.hash = encodeURIComponent(JSON.stringify(hashData));
+				} catch (e) {
+					console.error("Invalid JSON, not updating URL hash:", e);
+				}
+			}
+			
+			function decodeHashToParams() {
+				if (!window.location.hash || window.location.hash === "#") {
+					return false;
+				}
+				
+				try {
+					const hashData = JSON.parse(decodeURIComponent(window.location.hash.substring(1)));
+					
+					if (hashData.template) {
+						document.getElementById("templateName").value = hashData.template;
+					}
+					
+					if (hashData.params) {
+						document.getElementById("paramsInput").value = hashData.params;
+					}
+					
+					if (hashData.helpers) {
+						document.getElementById("helpersInput").value = hashData.helpers;
+					}
+					
+					return true;
+				} catch (e) {
+					console.error("Error parsing hash parameters:", e);
+					// Clear the hash if it's invalid
+					window.location.hash = "";
+					return false;
+				}
+			}
+
   function fetchCompressed(url) {
         return fetch(url)
             .then(response => {
@@ -117,23 +171,34 @@
 				console.log("WASM loaded, RenderTemplate function available");
 				document.getElementById("renderButton").disabled = false;
 				
-				// Set default parameters
-				document.getElementById("paramsInput").value = JSON.stringify({
-					"project_name": "my_databricks_project",
-                    "include_notebook": "yes",
-                    "include_dlt": "yes",
-                    "include_python": "yes",
-                    "serverless": "no"
-				}, null, 2);
+				// Check if we have parameters in the URL hash
+				const hashParamsLoaded = decodeHashToParams();
 				
-				// Set default helper parameters
-				document.getElementById("helpersInput").value = JSON.stringify({
-					"user_name": "jane.doe@example.com",
-					"short_name": "jane",
-					"workspace_host": "dbc-abcd1234-5678.cloud.databricks.com",
-					"default_catalog": "main",
-					"smallest_node_type": "i3.xlarge"
-				}, null, 2);
+				// If no hash parameters, set defaults
+				if (!hashParamsLoaded) {
+					// Set default parameters
+					document.getElementById("paramsInput").value = JSON.stringify({
+						"project_name": "my_databricks_project",
+						"include_notebook": "yes",
+						"include_dlt": "yes",
+						"include_python": "yes",
+						"serverless": "no"
+					}, null, 2);
+					
+					// Set default helper parameters
+					document.getElementById("helpersInput").value = JSON.stringify({
+						"user_name": "jane.doe@example.com",
+						"short_name": "jane",
+						"workspace_host": "dbc-abcd1234-5678.cloud.databricks.com",
+						"default_catalog": "main",
+						"smallest_node_type": "i3.xlarge"
+					}, null, 2);
+				}
+				
+				// Add event listeners to update hash when parameters change
+				document.getElementById("templateName").addEventListener("change", encodeParamsToHash);
+				document.getElementById("paramsInput").addEventListener("input", encodeParamsToHash);
+				document.getElementById("helpersInput").addEventListener("input", encodeParamsToHash);
 			});
 
 			// Helper function to format bytes to human-readable format
@@ -150,6 +215,8 @@
 			}
 			
 			function renderTemplate() {
+				// Update URL hash with current parameters
+				encodeParamsToHash();
 				const outputContainer = document.getElementById("output");
 				outputContainer.innerHTML = ""; // Clear previous output
 				
