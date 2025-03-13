@@ -1,6 +1,9 @@
-.PHONY: build_wasm build_cli all size run
+.PHONY: build_wasm build_cli all size run clean
 
 all: bundle_init.wasm bundle_init
+
+clean:
+	rm bundle_init bundle_init.wasm
 
 bundle_init.wasm: main_wasm.go ../libs/template/*
 	GOOS=js GOARCH=wasm go build -o bundle_init.wasm
