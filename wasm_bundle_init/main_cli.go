@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/libs/template"
@@ -10,7 +11,12 @@ import (
 
 func main() {
 	tmpl := template.GetTemplate("default-python")
-	fmt.Printf("vim-go %v\n", tmpl)
+	// Output template info as indented JSON
+	tmplJSON, _ := json.MarshalIndent(tmpl, "", "  ")
+	fmt.Printf("%s\n", tmplJSON)
+	
 	out := Render("default-python", map[string]string{"param1": "value1"})
-	fmt.Printf("%v\n", out)
+	// Output rendered result as indented JSON
+	outJSON, _ := json.MarshalIndent(out, "", "  ")
+	fmt.Printf("%s\n", outJSON)
 }
