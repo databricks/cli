@@ -130,7 +130,7 @@
 					const startTime = performance.now();
 					
 					// Call the WASM function with template name and parameters
-					const result = RenderTemplate(templateName, JSON.stringify(params));
+                    const result = RenderTemplate(templateName, JSON.stringify(params), "{}");
 					
 					// Calculate rendering time
 					const endTime = performance.now();

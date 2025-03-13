@@ -41,7 +41,7 @@ var (
 // is run and can be used to attribute DBU revenue to bundle templates.
 var bundleUuid = uuid.New().String()
 
-func loadHelpers(ctx context.Context, values map[string]any) template.FuncMap {
+func loadHelpers(ctx context.Context, values map[string]string) template.FuncMap {
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}
@@ -96,10 +96,9 @@ func loadHelpers(ctx context.Context, values map[string]any) template.FuncMap {
 		// Unity Catalog is not enabled, return an empty string.
 		"default_catalog": readValuesFunc(values, "default_catalog", ""),
 
-
 		"is_service_principal": func() (bool, error) {
 			return false, nil
-		}
+		},
 	}
 }
 

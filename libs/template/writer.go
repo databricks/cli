@@ -34,6 +34,11 @@ type defaultWriter struct {
 	// Internal state
 	config   *config
 	renderer *renderer
+
+	configValues map[string]any
+
+	// helpers like user_name, short_name, host:
+	helperValues map[string]string
 }
 
 func (w *defaultWriter) GetOutput() map[string]string {
@@ -101,9 +106,11 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 		if err != nil {
 			return err
 		}
+	} else if tmpl.configValues != nil {
+		tmpl.config.values = tmpl.configValues
 	}
 
-	helpers := loadHelpers(ctx)
+	helpers := loadHelpers(ctx, tmpl.helperValues)
 	tmpl.renderer, err = newRenderer(ctx, tmpl.config.values, helpers, readerFs, templateDirName, libraryDirName)
 	if err != nil {
 		return err

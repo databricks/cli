@@ -12,6 +12,7 @@ func main() {
 	// Use command line arg for template name if provided, otherwise default
 	templateName := os.Args[1]
 	paramsString := os.Args[2]
+	helpersString := os.Args[3]
 
 	var params map[string]any
 	err := json.Unmarshal([]byte(paramsString), &params)
@@ -20,7 +21,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	out := Render(templateName, params)
+	var helpers map[string]string
+	err = json.Unmarshal([]byte(helpersString), &helpers)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing helpers: %v\n", err)
+		os.Exit(1)
+	}
+
+	out := Render(templateName, params, helpers)
 
 	// Output rendered result as indented JSON
 	outJSON, _ := json.MarshalIndent(out, "", "  ")
