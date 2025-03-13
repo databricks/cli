@@ -255,6 +255,12 @@
 							fileContainer.appendChild(fileContent);
 							outputContainer.appendChild(fileContainer);
 							
+							// Pre-open YAML files
+							if (fileExtension === 'yml' || fileExtension === 'yaml') {
+								fileContent.classList.add("open");
+								toggleIcon.textContent = "-";
+							}
+							
 							// Apply syntax highlighting if needed
 							if (fileContent.dataset.needsHighlight) {
 								Prism.highlightElement(fileContent.querySelector('code'));
