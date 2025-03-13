@@ -5,4 +5,4 @@ resources:
       tasks:
         - task_key: default
           notebook_task:
-            notebook_path: ./src/notebook.py
+            notebook_path: ../src/dev.py
