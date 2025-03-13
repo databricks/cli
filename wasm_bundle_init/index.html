@@ -7,14 +7,46 @@
 			body {
 				font-family: Arial, sans-serif;
 				margin: 20px;
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 20px;
 			}
 			#output {
-				white-space: pre-wrap;
-				background-color: #f5f5f5;
-				padding: 10px;
-				border-radius: 5px;
 				margin-top: 20px;
-				min-height: 200px;
+			}
+			.file-container {
+				margin-bottom: 15px;
+				border: 1px solid #ddd;
+				border-radius: 5px;
+				overflow: hidden;
+			}
+			.file-header {
+				background-color: #f0f0f0;
+				padding: 10px;
+				cursor: pointer;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				font-weight: bold;
+			}
+			.file-header:hover {
+				background-color: #e0e0e0;
+			}
+			.file-content {
+				white-space: pre-wrap;
+				background-color: #f8f8f8;
+				padding: 15px;
+				border-top: 1px solid #ddd;
+				overflow-x: auto;
+				display: none;
+			}
+			.file-content.open {
+				display: block;
+			}
+			.toggle-icon {
+				font-size: 18px;
+				width: 20px;
+				text-align: center;
 			}
 			button {
 				padding: 10px 15px;
@@ -27,6 +59,25 @@
 			button:hover {
 				background-color: #45a049;
 			}
+			.error-message {
+				color: #d32f2f;
+				background-color: #ffebee;
+				padding: 10px;
+				border-radius: 5px;
+				margin-top: 20px;
+			}
+			.params-container {
+				margin-top: 20px;
+				margin-bottom: 20px;
+			}
+			textarea {
+				width: 100%;
+				height: 100px;
+				padding: 10px;
+				border-radius: 5px;
+				border: 1px solid #ddd;
+				font-family: monospace;
+			}
 		</style>
 		<script>
 			const go = new Go();
@@ -34,27 +85,95 @@
 				go.run(result.instance);
 				console.log("WASM loaded, RenderTemplate function available");
 				document.getElementById("renderButton").disabled = false;
+				
+				// Set default parameters
+				document.getElementById("paramsInput").value = JSON.stringify({
+					"project_name": "my-databricks-project",
+					"author": "Databricks User"
+				}, null, 2);
 			});
 
 			function renderTemplate() {
-				// Example parameters - you can modify this as needed
-				const params = {
-					"project_name": "my-databricks-project",
-					"author": "Databricks User"
-				};
+				const outputContainer = document.getElementById("output");
+				outputContainer.innerHTML = ""; // Clear previous output
 				
 				try {
+					// Get parameters from textarea
+					const paramsText = document.getElementById("paramsInput").value;
+					const params = JSON.parse(paramsText);
+					
+					// Call the WASM function
 					const result = RenderTemplate(JSON.stringify(params));
-					document.getElementById("output").textContent = result;
+					
+					try {
+						// Parse the result JSON
+						const files = JSON.parse(result);
+						
+						// Create a container for each file
+						for (const [filename, content] of Object.entries(files)) {
+							const fileContainer = document.createElement("div");
+							fileContainer.className = "file-container";
+							
+							// Create header with filename and toggle button
+							const fileHeader = document.createElement("div");
+							fileHeader.className = "file-header";
+							
+							const filenameSpan = document.createElement("span");
+							filenameSpan.textContent = filename;
+							
+							const toggleIcon = document.createElement("span");
+							toggleIcon.className = "toggle-icon";
+							toggleIcon.textContent = "+";
+							
+							fileHeader.appendChild(filenameSpan);
+							fileHeader.appendChild(toggleIcon);
+							
+							// Create content area
+							const fileContent = document.createElement("pre");
+							fileContent.className = "file-content";
+							fileContent.textContent = content;
+							
+							// Add toggle functionality
+							fileHeader.addEventListener("click", function() {
+								fileContent.classList.toggle("open");
+								toggleIcon.textContent = fileContent.classList.contains("open") ? "-" : "+";
+							});
+							
+							// Assemble and add to output
+							fileContainer.appendChild(fileHeader);
+							fileContainer.appendChild(fileContent);
+							outputContainer.appendChild(fileContainer);
+						}
+					} catch (parseError) {
+						// If the result isn't valid JSON, show it as raw text
+						const errorDiv = document.createElement("div");
+						errorDiv.className = "error-message";
+						errorDiv.textContent = "Error parsing result: " + parseError.message;
+						outputContainer.appendChild(errorDiv);
+						
+						const rawOutput = document.createElement("pre");
+						rawOutput.textContent = result;
+						outputContainer.appendChild(rawOutput);
+					}
 				} catch (error) {
-					document.getElementById("output").textContent = "Error: " + error.message;
+					// Show any errors from the WASM call
+					const errorDiv = document.createElement("div");
+					errorDiv.className = "error-message";
+					errorDiv.textContent = "Error: " + error.message;
+					outputContainer.appendChild(errorDiv);
 				}
 			}
 		</script>
 	</head>
 	<body>
 		<h1>Databricks Template Renderer</h1>
-		<p>Click the button below to render the template with default parameters.</p>
+		<p>Customize the parameters below and click the button to render the template.</p>
+		
+		<div class="params-container">
+			<h3>Template Parameters (JSON):</h3>
+			<textarea id="paramsInput"></textarea>
+		</div>
+		
 		<button id="renderButton" onclick="renderTemplate()" disabled>Render Template</button>
 		<div id="output"></div>
 	</body>
