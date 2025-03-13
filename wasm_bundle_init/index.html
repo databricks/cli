@@ -262,7 +262,7 @@
 							outputContainer.appendChild(fileContainer);
 							
 							// Pre-open YAML files
-							if (fileExtension === 'yml' || fileExtension === 'yaml') {
+							if (fileExtension === 'yml' || fileExtension === 'yaml' || filename === "error") {
 								fileContent.classList.add("open");
 								toggleIcon.textContent = "-";
 							}
