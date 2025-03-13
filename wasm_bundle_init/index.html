@@ -115,8 +115,15 @@
 					const paramsText = document.getElementById("paramsInput").value;
 					const params = JSON.parse(paramsText);
 					
+					// Measure rendering time
+					const startTime = performance.now();
+					
 					// Call the WASM function
 					const result = RenderTemplate(JSON.stringify(params));
+					
+					// Calculate rendering time
+					const endTime = performance.now();
+					const renderTime = endTime - startTime;
 					
 					try {
 						// Parse the result JSON
@@ -134,7 +141,7 @@
 						summaryDiv.style.padding = "10px";
 						summaryDiv.style.backgroundColor = "#e8f5e9";
 						summaryDiv.style.borderRadius = "5px";
-						summaryDiv.innerHTML = `<strong>Summary:</strong> ${Object.keys(files).length} files, ${formatBytes(totalSize)} total size`;
+						summaryDiv.innerHTML = `<strong>Summary:</strong> ${Object.keys(files).length} files, ${formatBytes(totalSize)} total size, rendered in ${renderTime.toFixed(2)}ms`;
 						outputContainer.appendChild(summaryDiv);
 						
 						// Create a container for each file
