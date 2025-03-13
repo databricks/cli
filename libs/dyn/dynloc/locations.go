@@ -3,7 +3,6 @@ package dynloc
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"sort"
 
@@ -41,34 +40,25 @@ type Locations struct {
 
 func (l *Locations) gatherLocations(v dyn.Value) (map[string][]dyn.Location, error) {
 	locs := map[string][]dyn.Location{}
-	patterns := []*regexp.Regexp{
-		// Top level fields
-		regexp.MustCompile(`^[^.]+$`),
-		// Top level resources for all types (e.g. "resources.jobs" or "resources.jobs.my_job")
-		regexp.MustCompile(`^resources\.[^.]+(\.[^.]+)?$`),
-		// Job tasks (e.g. "resources.jobs.my_job.tasks[2]")
-		regexp.MustCompile(`^resources\.[^.]+\.[^.]+\.tasks(\[\d+\])$`),
+	patterns := []dyn.Pattern{
+		dyn.NewPattern(dyn.AnyKey()),                                                                          // Top level fields
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey()),                                                    // Resource groups ("resources.jobs")
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),                                      // Resources for all types ("resources.jobs.my_job")
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks")),                 // Job tasks ("resources.jobs.my_job.tasks")
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex()), // Job task items ("resources.jobs.my_job.tasks[2]")
 	}
 
-	_, err := dyn.Walk(v, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		// Skip the root value.
-		if len(p) == 0 {
+	for _, pattern := range patterns {
+		_, err := dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			locs[p.String()] = v.Locations()
 			return v, nil
+		})
+		if err != nil {
+			return nil, err
 		}
+	}
 
-		// Only gather locations for paths that match the patterns.
-		pathStr := p.String()
-		for _, re := range patterns {
-			if re.MatchString(pathStr) {
-				locs[pathStr] = v.Locations()
-				break
-			}
-		}
-
-		return v, nil
-	})
-
-	return locs, err
+	return locs, nil
 }
 
 func (l *Locations) normalizeFilePath(file string) (string, error) {
@@ -135,9 +125,6 @@ func (l *Locations) addLocation(path, file string, line, col int) error {
 
 	return nil
 }
-
-// Option is a functional option for the [Build] function.
-type Option func(l *Locations)
 
 // Build constructs a [Locations] object from a [dyn.Value].
 func Build(v dyn.Value, basePath string) (Locations, error) {

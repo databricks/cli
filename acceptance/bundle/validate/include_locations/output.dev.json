@@ -19,20 +19,6 @@
         3
       ]
     ],
-    "include[0]": [
-      [
-        0,
-        5,
-        5
-      ]
-    ],
-    "include[1]": [
-      [
-        0,
-        6,
-        5
-      ]
-    ],
     "resources": [
       [
         2,
@@ -67,6 +53,18 @@
         1,
         6,
         11
+      ]
+    ],
+    "resources.jobs.my_job.tasks": [
+      [
+        2,
+        6,
+        9
+      ],
+      [
+        1,
+        8,
+        13
       ]
     ],
     "resources.jobs.my_job.tasks[0]": [
