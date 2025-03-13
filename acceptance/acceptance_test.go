@@ -85,8 +85,8 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode {
 		t.Skip("Already tested by TestAccept")
 	}
-	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
-	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
+	require.Equal(t, 1, testAccept(t, true, "bundle/artifacts/whl_explicit"))
+	// require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {

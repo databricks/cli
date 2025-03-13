@@ -110,6 +110,14 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 				return v, fmt.Errorf("expected string, got %s", v.Kind())
 			}
 
+			sv, ok = file.GetByString("patched")
+			if ok {
+				patched, ok := sv.AsString()
+				if ok && patched != "" {
+					source = patched
+				}
+			}
+
 			libs[source] = append(libs[source], configLocation{
 				configPath: p.Append(dyn.Key("remote_path")),
 				location:   v.Location(),

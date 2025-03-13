@@ -3,6 +3,7 @@ package whl
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -10,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/cli/libs/python"
 )
 
@@ -47,11 +49,40 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(wheels) == 0 {
 		return diag.Errorf("cannot find built wheel in %s for package %s", dir, m.name)
 	}
+
+	cacheDir, err := b.CacheDir(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	patchedWheelsDir := filepath.Join(cacheDir, "patched_wheels")
+	err = os.MkdirAll(patchedWheelsDir, 0o700)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	var diags diag.Diagnostics
+
 	for _, wheel := range wheels {
+		patchedWheel := ""
+		if artifact.DynamicVersion {
+			// TODO: clean up previous versions
+			patchedWheel, err = patchwheel.PatchWheel(ctx, wheel, patchedWheelsDir)
+			log.Warnf(ctx, "Patching %s: %s %s", wheel, patchedWheel, err)
+			if err != nil {
+				diags = diags.Append(diag.Diagnostic{
+					Severity: diag.Warning,
+					Summary:  "Failed to patch wheel with dynamic version",
+					Detail:   fmt.Sprintf("When patching %s encountered an error: %s", wheel, err),
+					// TODO: Locations
+					// Paths: []Path{"artifacts." + m.name},
+				})
+			}
+		}
 		artifact.Files = append(artifact.Files, config.ArtifactFile{
-			Source: wheel,
+			Source:  wheel,
+			Patched: patchedWheel,
 		})
 	}
 
-	return nil
+	return diags
 }

@@ -1,3 +1,4 @@
+#trap "rm out.requests.txt" EXIT
 trace $CLI bundle deploy
 
 trace find.py --expect 1 whl
@@ -9,3 +10,14 @@ title "Expecting 1 wheel to be uploaded"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
 
 rm out.requests.txt
+
+# build the wheel again, timestamp should be updated
+trace $CLI bundle deploy
+
+trace find.py --expect 1 whl  # TODO XXX 2
+
+title "Expecting 1 wheel in libraries section in /jobs/reset"
+trace jq -s '.[] | select(.path=="/api/2.1/jobs/reset") | .body.new_settings.tasks' out.requests.txt
+
+title "Expecting 1 wheel to be uploaded"
+trace jq .path < out.requests.txt | grep import | grep whl | sort

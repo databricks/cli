@@ -7,6 +7,7 @@ artifacts:
       path: "./my_test_code"
       # using 'python' there because 'python3' does not exist in virtualenv on windows
       build: python setup.py bdist_wheel
+      #dynamic_version: true
 
 resources:
   jobs:

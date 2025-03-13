@@ -2,7 +2,7 @@ package libraries
 
 import (
 	"context"
-	"encoding/json"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -13,11 +13,7 @@ import (
 type switchToPatchedWheels struct{}
 
 func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	m, _ := json.Marshal(b.Config.Artifacts)
-	log.Warnf(ctx, "artifacts: %s", m)
-
-	replacements := getReplacements(b.Config.Artifacts)
-	log.Warnf(ctx, "replacements: %v", replacements)
+	replacements := getReplacements(ctx, b.Config.Artifacts, b.BundleRoot.Native())
 
 	for jobName, jobRef := range b.Config.Resources.Jobs {
 		if jobRef == nil {
@@ -33,11 +29,11 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 		// resources.jobs.*.task[*].libraries[*]
 
 		for taskInd, task := range job.Tasks {
-			for libInd, libraries := range task.Libraries {
-				repl := replacements[libraries.Whl]
+			for libInd, lib := range task.Libraries {
+				repl := replacements[lib.Whl]
 				if repl != "" {
-					log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].libraries[%d].whl from %s to %s", jobName, taskInd, libInd, libraries.Whl, repl)
-					libraries.Whl = repl
+					log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].libraries[%d].whl from %s to %s", jobName, taskInd, libInd, lib.Whl, repl)
+					task.Libraries[libInd].Whl = repl
 				}
 			}
 		}
@@ -52,12 +48,22 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 	return nil
 }
 
-func getReplacements(artifacts config.Artifacts) map[string]string {
+func getReplacements(ctx context.Context, artifacts config.Artifacts, bundleRoot string) map[string]string {
 	result := make(map[string]string)
 	for _, artifact := range artifacts {
 		for _, file := range artifact.Files {
 			if file.Patched != "" {
-				result[file.Source] = file.Patched
+				source, err := filepath.Rel(bundleRoot, file.Source)
+				if err != nil {
+					log.Debugf(ctx, "Failed to get relative path (%s, %s): %s", bundleRoot, file.Source, err)
+					continue
+				}
+				patched, err := filepath.Rel(bundleRoot, file.Patched)
+				if err != nil {
+					log.Debugf(ctx, "Failed to get relative path (%s, %s): %s", bundleRoot, file.Patched, err)
+					continue
+				}
+				result[source] = patched
 				// There already was a check for duplicate by same_name_libraries.go
 			}
 		}
