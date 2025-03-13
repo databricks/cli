@@ -3,13 +3,59 @@
 	<head>
 		<meta charset="utf-8"/>
 		<script src="wasm_exec.js"></script>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 20px;
+			}
+			#output {
+				white-space: pre-wrap;
+				background-color: #f5f5f5;
+				padding: 10px;
+				border-radius: 5px;
+				margin-top: 20px;
+				min-height: 200px;
+			}
+			button {
+				padding: 10px 15px;
+				background-color: #4CAF50;
+				color: white;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+			button:hover {
+				background-color: #45a049;
+			}
+		</style>
 		<script>
 			const go = new Go();
 			WebAssembly.instantiateStreaming(fetch("bundle_init.wasm"), go.importObject).then((result) => {
 				go.run(result.instance);
 				console.log("WASM loaded, RenderTemplate function available");
+				document.getElementById("renderButton").disabled = false;
 			});
+
+			function renderTemplate() {
+				// Example parameters - you can modify this as needed
+				const params = {
+					"project_name": "my-databricks-project",
+					"author": "Databricks User"
+				};
+				
+				try {
+					const result = RenderTemplate(JSON.stringify(params));
+					document.getElementById("output").textContent = result;
+				} catch (error) {
+					document.getElementById("output").textContent = "Error: " + error.message;
+				}
+			}
 		</script>
 	</head>
-	<body></body>
+	<body>
+		<h1>Databricks Template Renderer</h1>
+		<p>Click the button below to render the template with default parameters.</p>
+		<button id="renderButton" onclick="renderTemplate()" disabled>Render Template</button>
+		<div id="output"></div>
+	</body>
 </html>
