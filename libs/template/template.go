@@ -19,15 +19,16 @@ type Template struct {
 	hidden      bool
 }
 
-func (tmpl *Template) Render(params map[string]any, helpers map[string]string) map[string]string {
+func Render(templateName string, params map[string]any, helpers map[string]string) (map[string]string, error) {
+	tmpl := GetTemplate(templateName)
 	w := tmpl.Writer.(*defaultWriter)
 	w.configValues = params
 	w.helperValues = helpers
 	err := w.Materialize(context.Background(), tmpl.Reader)
 	if err != nil {
-		return map[string]string{"error": err.Error()}
+		return nil, err
 	}
-	return tmpl.Writer.GetOutput()
+	return tmpl.Writer.GetOutput(), nil
 }
 
 type TemplateName string

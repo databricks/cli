@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/databricks/cli/libs/template"
 )
 
 func main() {
@@ -28,9 +30,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	out := Render(templateName, params, helpers)
+	out, err := template.Render(templateName, params, helpers)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		os.Exit(1)
+	}
 
 	// Output rendered result as indented JSON
-	outJSON, _ := json.MarshalIndent(out, "", "  ")
+	outJSON, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		os.Exit(1)
+	}
+
 	fmt.Printf("%s\n", outJSON)
 }
