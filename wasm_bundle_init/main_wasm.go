@@ -9,7 +9,7 @@ import (
 )
 
 func renderTemplateWrapper() js.Func {
-	renderFunc := js.FuncOf(func(this js.Value, args []js.Value) any {
+	return js.FuncOf(func(this js.Value, args []js.Value) any {
 		if len(args) != 1 {
 			return "Invalid no of arguments passed"
 		}
@@ -30,7 +30,6 @@ func renderTemplateWrapper() js.Func {
 		}
 		return string(pretty)
 	})
-	return jsonFunc
 }
 
 func main() {
