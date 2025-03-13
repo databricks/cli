@@ -103,8 +103,8 @@ func loadHelpers(ctx context.Context, values map[string]any) template.FuncMap {
 	}
 }
 
-func readValuesFunc(values map[string]string, name, defaultValue string) (func() string) {
-	return func() string {}
+func readValuesFunc(values map[string]string, name, defaultValue string) func() string {
+	return func() string {
 		x, ok := values[name]
 		if ok {
 			return x
