@@ -41,7 +41,7 @@ var (
 // is run and can be used to attribute DBU revenue to bundle templates.
 var bundleUuid = uuid.New().String()
 
-func loadHelpers(ctx context.Context) template.FuncMap {
+func loadHelpers(ctx context.Context, values map[string]any) template.FuncMap {
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}
@@ -85,101 +85,30 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return result
 		},
 		// Get smallest node type (follows Terraform's GetSmallestNodeType)
-		"smallest_node_type": func() (string, error) {
-			/*
-				if w.Config.Host == "" {
-					return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
-				}
-				if w.Config.IsAzure() {
-					return "Standard_D3_v2", nil
-				} else if w.Config.IsGcp() {
-					return "n1-standard-4", nil
-				}
-			*/
-			return "i3.xlarge", nil
-		},
+		"smallest_node_type": readValuesFunc(values, "smallest_node_type", "i3.xlarge"),
 		"path_separator": func() string {
 			return string(os.PathSeparator)
 		},
-		"workspace_host": func() (string, error) {
-			return "myhost.databricks.com", nil
-			/*
-
-				if w.Config.Host == "" {
-					return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
-				}
-				return w.Config.Host, nil
-			*/
-		},
-		"user_name": func() (string, error) {
-			return "denis.bilenko", nil
-			/*
-				if cachedUser == nil {
-					var err error
-					cachedUser, err = w.CurrentUser.Me(ctx)
-					if err != nil {
-						return "", err
-					}
-				}
-				result := cachedUser.UserName
-				if result == "" {
-					result = cachedUser.Id
-				}
-				return result, nil
-			*/
-		},
-		"short_name": func() (string, error) {
-			return "Denis", nil
-			/*
-				if cachedUser == nil {
-					var err error
-					cachedUser, err = w.CurrentUser.Me(ctx)
-					if err != nil {
-						return "", err
-					}
-				}
-				return iamutil.GetShortUserName(cachedUser), nil
-			*/
-		},
+		"workspace_host": readValuesFunc(values, "workspace_host", "<host>"),
+		"user_name":      readValuesFunc(values, "user_name", "<user>"),
+		"short_name":     readValuesFunc(values, "short_name", "<user>"),
 		// Get the default workspace catalog. If there is no default, or if
 		// Unity Catalog is not enabled, return an empty string.
-		"default_catalog": func() (string, error) {
-			return "default_catalog", nil
-			/*
-				if cachedCatalog == nil {
-					metastore, err := w.Metastores.Current(ctx)
-					if err != nil {
-						var aerr *apierr.APIError
-						if errors.As(err, &aerr) && (aerr.ErrorCode == "PERMISSION_DENIED" || aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST") {
-							// Ignore: access denied or workspace doesn't have a metastore assigned
-							empty_default := ""
-							cachedCatalog = &empty_default
-							return "", nil
-						}
-						return "", err
-					}
-					cachedCatalog = &metastore.DefaultCatalogName
-				}
-				return *cachedCatalog, nil
-			*/
-		},
+		"default_catalog": readValuesFunc(values, "default_catalog", ""),
+
+
 		"is_service_principal": func() (bool, error) {
 			return false, nil
-			/*
-				if cachedIsServicePrincipal != nil {
-					return *cachedIsServicePrincipal, nil
-				}
-				if cachedUser == nil {
-					var err error
-					cachedUser, err = w.CurrentUser.Me(ctx)
-					if err != nil {
-						return false, err
-					}
-				}
-				result := iamutil.IsServicePrincipal(cachedUser)
-				cachedIsServicePrincipal = &result
-				return result, nil
-			*/
-		},
+		}
+	}
+}
+
+func readValuesFunc(values map[string]string, name, defaultValue string) (func() string) {
+	return func() string {}
+		x, ok := values[name]
+		if ok {
+			return x
+		}
+		return defaultValue
 	}
 }
