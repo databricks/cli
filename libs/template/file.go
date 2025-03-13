@@ -1,12 +1,8 @@
 package template
 
 import (
-	"bytes"
-	"context"
 	"io/fs"
 	"slices"
-
-	"github.com/databricks/cli/libs/filer"
 )
 
 // Interface representing a file to be materialized from a template into a project
@@ -18,7 +14,7 @@ type file interface {
 	RelPath() string
 
 	// Write file to disk at the destination path.
-	Write(ctx context.Context, out filer.Filer) error
+	//Write(ctx context.Context, out filer.Filer) error
 
 	// contents returns the file contents as a byte slice.
 	// This is used for testing purposes.
@@ -43,6 +39,7 @@ func (f *copyFile) RelPath() string {
 	return f.relPath
 }
 
+/*
 func (f *copyFile) Write(ctx context.Context, out filer.Filer) error {
 	src, err := f.srcFS.Open(f.srcPath)
 	if err != nil {
@@ -51,6 +48,7 @@ func (f *copyFile) Write(ctx context.Context, out filer.Filer) error {
 	defer src.Close()
 	return out.Write(ctx, f.relPath, src, filer.CreateParentDirectories, filer.WriteMode(f.perm))
 }
+*/
 
 func (f *copyFile) Contents() ([]byte, error) {
 	return f.contents()
@@ -75,9 +73,9 @@ func (f *inMemoryFile) RelPath() string {
 	return f.relPath
 }
 
-func (f *inMemoryFile) Write(ctx context.Context, out filer.Filer) error {
-	return out.Write(ctx, f.relPath, bytes.NewReader(f.content), filer.CreateParentDirectories, filer.WriteMode(f.perm))
-}
+//func (f *inMemoryFile) Write(ctx context.Context, out filer.Filer) error {
+//	return out.Write(ctx, f.relPath, bytes.NewReader(f.content), filer.CreateParentDirectories, filer.WriteMode(f.perm))
+//}
 
 func (f *inMemoryFile) contents() ([]byte, error) {
 	return slices.Clone(f.content), nil

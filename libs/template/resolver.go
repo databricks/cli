@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
-
-	"github.com/databricks/cli/libs/git"
+	//"github.com/databricks/cli/libs/git"
 )
 
 var gitUrlPrefixes = []string{
@@ -105,7 +104,7 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 				gitUrl:      r.TemplatePathOrUrl,
 				ref:         ref,
 				templateDir: r.TemplateDir,
-				cloneFunc:   git.Clone,
+				//cloneFunc:   git.Clone,
 			}
 		} else {
 			tmpl.Reader = &localReader{

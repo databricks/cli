@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-
-	"github.com/databricks/cli/libs/git"
+	//"github.com/databricks/cli/libs/git"
 )
 
 type Template struct {
@@ -78,15 +77,15 @@ var databricksTemplates = []Template{
 		name:        MlopsStacks,
 		description: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)",
 		aliases:     []string{"mlops-stack"},
-		Reader:      &gitReader{gitUrl: "https://github.com/databricks/mlops-stacks", cloneFunc: git.Clone},
-		Writer:      &writerWithFullTelemetry{},
+		//Reader:      &gitReader{gitUrl: "https://github.com/databricks/mlops-stacks", cloneFunc: git.Clone},
+		Writer: &writerWithFullTelemetry{},
 	},
 	{
 		name:        DefaultPydabs,
 		hidden:      true,
 		description: "The default PyDABs template",
-		Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git", cloneFunc: git.Clone},
-		Writer:      &writerWithFullTelemetry{},
+		//Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git", cloneFunc: git.Clone},
+		Writer: &writerWithFullTelemetry{},
 	},
 	{
 		name:        ExperimentalJobsAsCode,
