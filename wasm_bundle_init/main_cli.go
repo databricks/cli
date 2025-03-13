@@ -5,18 +5,30 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/databricks/cli/libs/template"
 )
 
 func main() {
-	tmpl := template.GetTemplate("default-python")
+	// Use command line arg for template name if provided, otherwise default
+	templateName := "default-python"
+	if len(os.Args) > 1 {
+		templateName = os.Args[1]
+	}
+	
+	tmpl := template.GetTemplate(templateName)
 	// Output template info as indented JSON
 	tmplJSON, _ := json.MarshalIndent(tmpl, "", "  ")
-	fmt.Printf("%s\n", tmplJSON)
+	fmt.Printf("Template: %s\n%s\n", templateName, tmplJSON)
 
-	out := Render("default-python", map[string]string{"param1": "value1"})
+	// Create sample parameters
+	params := map[string]string{"param1": "value1"}
+	
+	// Render the template with the given name and parameters
+	out := Render(templateName, params)
+	
 	// Output rendered result as indented JSON
 	outJSON, _ := json.MarshalIndent(out, "", "  ")
-	fmt.Printf("%s\n", outJSON)
+	fmt.Printf("Rendered output:\n%s\n", outJSON)
 }
