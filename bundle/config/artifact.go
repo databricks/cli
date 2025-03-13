@@ -11,7 +11,11 @@ type ArtifactType string
 const ArtifactPythonWheel ArtifactType = `whl`
 
 type ArtifactFile struct {
-	Source     string `json:"source"`
+	Source string `json:"source"`
+
+	// Patched is populated if DynamicVersion is set and patching was successful
+	Patched string `json:"patched" bundle:"readonly"`
+
 	RemotePath string `json:"remote_path" bundle:"readonly"`
 }
 
@@ -30,4 +34,6 @@ type Artifact struct {
 	BuildCommand string         `json:"build,omitempty"`
 
 	Executable exec.ExecutableType `json:"executable,omitempty"`
+
+	DynamicVersion bool `json:"dynamic_version,omitempty"`
 }
