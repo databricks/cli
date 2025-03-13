@@ -1,22 +1,45 @@
-.PHONY: build_wasm build_cli all size run clean
+.PHONY: all clean release debug run size server
 
-all: bundle_init.wasm bundle_init
+all: release debug nativecli
 
 clean:
-	rm bundle_init bundle_init.wasm
+	rm -f nativecli bundle_init.*.wasm bundle_init.optimized.wasm.br bundle_init.optimized.wasm.gz
 
-bundle_init.wasm: main_wasm.go ../libs/template/*
-	GOOS=js GOARCH=wasm go build -ldflags="-w -s" -gcflags=all=-l -o bundle_init.wasm
+bundle_init.release.wasm: main_wasm.go ../libs/template/*
+	GOOS=js GOARCH=wasm go build -ldflags="-w -s" -gcflags=all=-l -o $@
+	ls -lh $@
+
+bundle_init.optimized.wasm: bundle_init.release.wasm
+	wasm-opt --enable-bulk-memory -Oz -o $@ bundle_init.release.wasm
+	ls -lh $@
+
+bundle_init.optimized.wasm.gz: bundle_init.optimized.wasm
+	gzip -9 -k -f $<
+	ls -lh $@
+
+bundle_init.optimized.wasm.br: bundle_init.optimized.wasm
+	brotli -f $<
+	ls -lh $@
+
+release: bundle_init.optimized.wasm.br bundle_init.optimized.wasm.gz
+
+debug: bundle_init.debug.wasm
+
+bundle_init.debug.wasm: main_wasm.go ../libs/template/*
+	GOOS=js GOARCH=wasm go build -gcflags=all=-l -o $@
+	ls -lh $@
 
 # non-wasm build to test locally
-bundle_init: main_cli.go ../libs/template/*
-	go build -ldflags="-w -s" -gcflags=all=-l -o bundle_init
+nativecli: main_cli.go ../libs/template/*
+	#go build -ldflags="-w -s" -gcflags=all=-l -o bundle_init
+	# -s prevents 'make size' from working
+	go build -ldflags="-w" -gcflags=all=-l -o $@
 
-run: bundle_init
-	./bundle_init default-python '{}' '{}'
+run: nativecli
+	./nativecli default-python '{}' '{}'
 
-size: build_cli analyze_size.py
-	go tool nm -size bundle_init | python3 analyze_size.py | head -n 50
+size: nativecli analyze_size.py
+	go tool nm -size nativecli | python3 analyze_size.py | head -n 50
 
-server: bundle_init.wasm
+server: bundle_init.optimized.wasm
 	python3 -m http.server

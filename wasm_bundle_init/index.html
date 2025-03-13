@@ -86,7 +86,7 @@
 		</style>
 		<script>
 			const go = new Go();
-			WebAssembly.instantiateStreaming(fetch("bundle_init.wasm"), go.importObject).then((result) => {
+			WebAssembly.instantiateStreaming(fetch("bundle_init.optimized.wasm"), go.importObject).then((result) => {
 				go.run(result.instance);
 				console.log("WASM loaded, RenderTemplate function available");
 				document.getElementById("renderButton").disabled = false;
