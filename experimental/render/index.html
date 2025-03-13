@@ -1,0 +1,443 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<script src="wasm_exec.js"></script>
+		<!-- Add Prism.js for syntax highlighting -->
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
+		<!-- Additional Prism themes for better readability -->
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 20px;
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 20px;
+			}
+			#output {
+				margin-top: 20px;
+			}
+			.file-container {
+				margin-bottom: 15px;
+				border: 1px solid #ddd;
+				border-radius: 5px;
+				overflow: hidden;
+			}
+			.file-header {
+				background-color: #f0f0f0;
+				padding: 10px;
+				cursor: pointer;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				font-weight: bold;
+			}
+			.file-header:hover {
+				background-color: #e0e0e0;
+			}
+			.file-content {
+				white-space: pre-wrap;
+				background-color: #f8f8f8;
+				padding: 15px;
+				border-top: 1px solid #ddd;
+				overflow-x: auto;
+				display: none;
+			}
+			.file-content.open {
+				display: block;
+			}
+			.toggle-icon {
+				font-size: 18px;
+				width: 20px;
+				text-align: center;
+			}
+			button {
+				padding: 10px 15px;
+				background-color: #4CAF50;
+				color: white;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+			button:hover {
+				background-color: #45a049;
+			}
+			.error-message {
+				color: #d32f2f;
+				background-color: #ffebee;
+				padding: 10px;
+				border-radius: 5px;
+				margin-top: 20px;
+			}
+			.params-container {
+				margin-top: 20px;
+				margin-bottom: 20px;
+			}
+			textarea {
+				width: 100%;
+				height: 100px;
+				padding: 10px;
+				border-radius: 5px;
+				border: 1px solid #ddd;
+				font-family: monospace;
+			}
+		</style>
+		<script>
+			const go = new Go();
+
+			// Functions to handle URL hash parameters
+			function encodeParamsToHash() {
+				const templateName = document.getElementById("templateName").value;
+				const params = document.getElementById("paramsInput").value;
+				const helpers = document.getElementById("helpersInput").value;
+				
+				try {
+					// Validate JSON before encoding
+					JSON.parse(params);
+					JSON.parse(helpers);
+					
+					// Create an object with all parameters
+					const hashData = {
+						template: templateName,
+						params: params,
+						helpers: helpers
+					};
+					
+					// Set the hash
+					window.location.hash = encodeURIComponent(JSON.stringify(hashData));
+				} catch (e) {
+					console.error("Invalid JSON, not updating URL hash:", e);
+				}
+			}
+			
+			function decodeHashToParams() {
+				if (!window.location.hash || window.location.hash === "#") {
+					return false;
+				}
+				
+				try {
+					const hashData = JSON.parse(decodeURIComponent(window.location.hash.substring(1)));
+					
+					if (hashData.template) {
+						document.getElementById("templateName").value = hashData.template;
+					}
+					
+					if (hashData.params) {
+						document.getElementById("paramsInput").value = hashData.params;
+					}
+					
+					if (hashData.helpers) {
+						document.getElementById("helpersInput").value = hashData.helpers;
+					}
+					
+					return true;
+				} catch (e) {
+					console.error("Error parsing hash parameters:", e);
+					// Clear the hash if it's invalid
+					window.location.hash = "";
+					return false;
+				}
+			}
+
+  function fetchCompressed(url) {
+        return fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+                }
+                
+                return response.arrayBuffer().then(compressedData => {
+                    const ds = new DecompressionStream('gzip');
+                    const decompressedStream = new Response(compressedData).body.pipeThrough(ds);
+                    
+                    // Create a new response with the decompressed data
+                    const newResponse = new Response(decompressedStream, {
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers: response.headers
+                    });
+                    
+                    newResponse.headers.set('Content-Type', 'application/wasm');
+                    
+                    return newResponse;
+                });
+            });
+    }
+
+			WebAssembly.instantiateStreaming(fetchCompressed("bundle_init.optimized.wasm.gz"), go.importObject).then((result) => {
+				go.run(result.instance);
+				console.log("WASM loaded, RenderTemplate function available");
+				document.getElementById("renderButton").disabled = false;
+				
+				// Check if we have parameters in the URL hash
+				const hashParamsLoaded = decodeHashToParams();
+				
+				// If no hash parameters, set defaults
+				if (!hashParamsLoaded) {
+					// Set default parameters
+					document.getElementById("paramsInput").value = JSON.stringify({
+						"project_name": "my_databricks_project",
+						"include_notebook": "yes",
+						"include_dlt": "yes",
+						"include_python": "yes",
+						"serverless": "no"
+					}, null, 2);
+					
+					// Set default helper parameters
+					document.getElementById("helpersInput").value = JSON.stringify({
+						"user_name": "jane.doe@example.com",
+						"short_name": "jane",
+						"workspace_host": "dbc-abcd1234-5678.cloud.databricks.com",
+						"default_catalog": "main",
+						"smallest_node_type": "i3.xlarge"
+					}, null, 2);
+				}
+				
+				// Add event listeners to update hash when parameters change
+				document.getElementById("templateName").addEventListener("change", encodeParamsToHash);
+				document.getElementById("paramsInput").addEventListener("input", encodeParamsToHash);
+				document.getElementById("helpersInput").addEventListener("input", encodeParamsToHash);
+			});
+
+			// Helper function to format bytes to human-readable format
+			function formatBytes(bytes, decimals = 2) {
+				if (bytes === 0) return '0 Bytes';
+				
+				const k = 1024;
+				const dm = decimals < 0 ? 0 : decimals;
+				const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+				
+				const i = Math.floor(Math.log(bytes) / Math.log(k));
+				
+				return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+			}
+			
+			function renderTemplate() {
+				// Update URL hash with current parameters
+				encodeParamsToHash();
+				const outputContainer = document.getElementById("output");
+				outputContainer.innerHTML = ""; // Clear previous output
+				
+				try {
+					// Get template name
+					const templateName = document.getElementById("templateName").value.trim();
+					if (!templateName) {
+						throw new Error("Template name cannot be empty");
+					}
+					
+					// Get parameters from textarea
+					const paramsText = document.getElementById("paramsInput").value;
+					const params = JSON.parse(paramsText);
+					
+					// Measure rendering time
+					const startTime = performance.now();
+					
+					// Call the WASM function with template name and parameters
+					// Get helpers from textarea
+					const helpersText = document.getElementById("helpersInput").value;
+					const helpers = JSON.parse(helpersText);
+					
+                    const result = RenderTemplate(templateName, JSON.stringify(params), JSON.stringify(helpers));
+					
+					// Calculate rendering time
+					const endTime = performance.now();
+					const renderTime = endTime - startTime;
+					
+					try {
+						// Parse the result JSON
+						const files = JSON.parse(result);
+						
+						// Calculate total size
+						let totalSize = 0;
+						Object.values(files).forEach(content => {
+							totalSize += content.length;
+						});
+						
+						// Add summary information
+						const summaryDiv = document.createElement("div");
+						summaryDiv.style.marginBottom = "20px";
+						summaryDiv.style.padding = "10px";
+						summaryDiv.style.backgroundColor = "#e8f5e9";
+						summaryDiv.style.borderRadius = "5px";
+						summaryDiv.innerHTML = `<strong>Summary:</strong> ${Object.keys(files).length} files, ${formatBytes(totalSize)} total size, rendered in ${renderTime.toFixed(2)}ms`;
+						outputContainer.appendChild(summaryDiv);
+						
+						// Create a container for each file
+						for (const [filename, content] of Object.entries(files)) {
+							const fileContainer = document.createElement("div");
+							fileContainer.className = "file-container";
+							
+							// Create header with filename and toggle button
+							const fileHeader = document.createElement("div");
+							fileHeader.className = "file-header";
+							
+							const filenameSpan = document.createElement("span");
+							filenameSpan.textContent = filename;
+							
+							const toggleIcon = document.createElement("span");
+							toggleIcon.className = "toggle-icon";
+							toggleIcon.textContent = "+";
+							
+							fileHeader.appendChild(filenameSpan);
+							fileHeader.appendChild(toggleIcon);
+							
+							// Create content area with syntax highlighting
+							const fileContent = document.createElement("pre");
+							fileContent.className = "file-content";
+							
+							// Determine language for syntax highlighting
+							let language = "";
+							const fileExtension = filename.split('.').pop().toLowerCase();
+							const fileName = filename.split('/').pop();
+							
+							// Map file extensions to Prism language classes
+							const languageMap = {
+								// Python files
+								'py': 'language-python',
+								'pyi': 'language-python',
+								
+								// YAML files
+								'yml': 'language-yaml',
+								'yaml': 'language-yaml',
+								
+								// JSON files
+								'json': 'language-json',
+								
+								// Markdown files
+								'md': 'language-markdown',
+								'markdown': 'language-markdown',
+								
+								// Config files
+								'ini': 'language-ini',
+								'toml': 'language-toml',
+								'cfg': 'language-ini',
+								
+								// Shell scripts
+								'sh': 'language-bash',
+								'bash': 'language-bash',
+								
+								// Web files
+								'html': 'language-html',
+								'css': 'language-css',
+								'js': 'language-javascript',
+								
+								// Go files
+								'go': 'language-go',
+								
+								// SQL files
+								'sql': 'language-sql',
+								
+								// Java/Scala
+								'java': 'language-java',
+								'scala': 'language-scala',
+							};
+							
+							// Special file names
+							if (fileName === '.gitignore' || fileName === '.dockerignore') {
+								language = 'language-git';
+							} else if (fileName === 'requirements.txt' || fileName === 'requirements-dev.txt' || fileName.match(/^requirements.*\.txt$/)) {
+								language = 'language-text';
+							} else if (fileName === 'Dockerfile') {
+								language = 'language-docker';
+							} else if (languageMap[fileExtension]) {
+								language = languageMap[fileExtension];
+							}
+							
+							// Apply syntax highlighting if language is supported
+							if (language) {
+								const codeElement = document.createElement("code");
+								codeElement.className = language;
+								codeElement.textContent = content;
+								fileContent.appendChild(codeElement);
+								
+								// Mark for Prism to highlight after adding to DOM
+								fileContent.dataset.needsHighlight = "true";
+							} else {
+								// No highlighting for other file types
+								fileContent.textContent = content;
+							}
+							
+							// Add toggle functionality
+							fileHeader.addEventListener("click", function() {
+								fileContent.classList.toggle("open");
+								toggleIcon.textContent = fileContent.classList.contains("open") ? "-" : "+";
+							});
+							
+							// Assemble and add to output
+							fileContainer.appendChild(fileHeader);
+							fileContainer.appendChild(fileContent);
+							outputContainer.appendChild(fileContainer);
+							
+							// Pre-open YAML files
+							if (fileExtension === 'yml' || fileExtension === 'yaml' || filename === "error") {
+								fileContent.classList.add("open");
+								toggleIcon.textContent = "-";
+							}
+							
+							// Apply syntax highlighting if needed
+							if (fileContent.dataset.needsHighlight) {
+								Prism.highlightElement(fileContent.querySelector('code'));
+							}
+						}
+					} catch (parseError) {
+						// If the result isn't valid JSON, show it as raw text
+						const errorDiv = document.createElement("div");
+						errorDiv.className = "error-message";
+						errorDiv.textContent = "Error parsing result: " + parseError.message;
+						outputContainer.appendChild(errorDiv);
+						
+						const rawOutput = document.createElement("pre");
+						rawOutput.textContent = result;
+						outputContainer.appendChild(rawOutput);
+					}
+				} catch (error) {
+					// Show any errors from the WASM call
+					const errorDiv = document.createElement("div");
+					errorDiv.className = "error-message";
+					errorDiv.textContent = "Error: " + error.message;
+					outputContainer.appendChild(errorDiv);
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<h1>Databricks Template Renderer</h1>
+		<p>Customize the parameters below and click the button to render the template.</p>
+		
+		<div class="params-container">
+			<h3>Template Name:</h3>
+			<input type="text" id="templateName" value="default-python" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ddd;">
+			
+			<h3>Template Parameters:</h3>
+			<textarea id="paramsInput"></textarea>
+			
+			<h3>Common Parameters:</h3>
+			<textarea id="helpersInput"></textarea>
+		</div>
+		
+		<button id="renderButton" onclick="renderTemplate()" disabled>Render Template</button>
+		<div id="output"></div>
+		<!-- Add Prism.js scripts at the end of body -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+		
+		<!-- Additional language components - order matters for dependencies -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-ini.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-git.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-scala.min.js"></script>
+	</body>
+</html>
