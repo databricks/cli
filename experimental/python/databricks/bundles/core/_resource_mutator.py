@@ -14,8 +14,29 @@ _T = TypeVar("_T", bound=Resource)
 @dataclass(frozen=True)
 class ResourceMutator(Generic[_T]):
     """
-    Mutators defined within a single Python module are applied in the order they are defined.
-    The relative order of mutators defined in different modules is not guaranteed.
+    Resource mutators are used to modify resources before they are deployed.
+
+    Mutators are applied both to resources defined in YAML and Python.
+    Mutators are applied in the order they are defined in databricks.yml.
+
+    Example:
+
+        .. code-block:: yaml
+
+            experimental:
+                python:
+                    mutators:
+                    - "resources:my_job_mutator"
+
+        .. code-block:: python
+
+            from databricks.bundles.core import Bundle, job_mutator
+            from databricks.bundles.jobs import Job
+
+
+            @job_mutator
+            def my_job_mutator(bundle: Bundle, job: Job) -> Job:
+                return replace(job, name="my_job")
 
     See :meth:`databricks.bundles.core.job_mutator`.
     """
