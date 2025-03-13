@@ -93,6 +93,19 @@
 				}, null, 2);
 			});
 
+			// Helper function to format bytes to human-readable format
+			function formatBytes(bytes, decimals = 2) {
+				if (bytes === 0) return '0 Bytes';
+				
+				const k = 1024;
+				const dm = decimals < 0 ? 0 : decimals;
+				const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+				
+				const i = Math.floor(Math.log(bytes) / Math.log(k));
+				
+				return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+			}
+			
 			function renderTemplate() {
 				const outputContainer = document.getElementById("output");
 				outputContainer.innerHTML = ""; // Clear previous output
@@ -108,6 +121,21 @@
 					try {
 						// Parse the result JSON
 						const files = JSON.parse(result);
+						
+						// Calculate total size
+						let totalSize = 0;
+						Object.values(files).forEach(content => {
+							totalSize += content.length;
+						});
+						
+						// Add summary information
+						const summaryDiv = document.createElement("div");
+						summaryDiv.style.marginBottom = "20px";
+						summaryDiv.style.padding = "10px";
+						summaryDiv.style.backgroundColor = "#e8f5e9";
+						summaryDiv.style.borderRadius = "5px";
+						summaryDiv.innerHTML = `<strong>Summary:</strong> ${Object.keys(files).length} files, ${formatBytes(totalSize)} total size`;
+						outputContainer.appendChild(summaryDiv);
 						
 						// Create a container for each file
 						for (const [filename, content] of Object.entries(files)) {
