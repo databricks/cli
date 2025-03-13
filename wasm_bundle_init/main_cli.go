@@ -14,7 +14,11 @@ func main() {
 	paramsString := os.Args[2]
 
 	var params map[string]string
-	// AI TODO: parse paramsString json into params
+	err := json.Unmarshal([]byte(paramsString), &params)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing parameters: %v\n", err)
+		os.Exit(1)
+	}
 
 	out := Render(templateName, params)
 
