@@ -229,7 +229,7 @@ func (r *renderer) walk() error {
 			return err
 		}
 		if match {
-			//logger.Infof(r.ctx, "skipping directory: %s", instanceDirectory)
+			// logger.Infof(r.ctx, "skipping directory: %s", instanceDirectory)
 			continue
 		}
 
@@ -246,7 +246,7 @@ func (r *renderer) walk() error {
 				}
 
 				if !slices.Contains(r.skipPatterns, pattern) {
-					//logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
+					// logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
 					r.skipPatterns = append(r.skipPatterns, pattern)
 				}
 				// return empty string will print nothing at function call site
@@ -282,7 +282,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			//logger.Infof(r.ctx, "added file to list of possible project files: %s", f.RelPath())
+			// logger.Infof(r.ctx, "added file to list of possible project files: %s", f.RelPath())
 			r.files = append(r.files, f)
 		}
 

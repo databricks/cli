@@ -14,7 +14,7 @@ func main() {
 	// Output template info as indented JSON
 	tmplJSON, _ := json.MarshalIndent(tmpl, "", "  ")
 	fmt.Printf("%s\n", tmplJSON)
-	
+
 	out := Render("default-python", map[string]string{"param1": "value1"})
 	// Output rendered result as indented JSON
 	outJSON, _ := json.MarshalIndent(out, "", "  ")

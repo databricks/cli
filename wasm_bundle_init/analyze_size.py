@@ -25,7 +25,7 @@ def process(input_lines):
         size = int(parts[1])
         symbol = parts[3]
         if address in symbols:
-            #print(f"WARNING: overlap found:\n  prev: {symbols[address][-1]}\n  new:  {line.strip()}", file=sys.stderr)
+            # print(f"WARNING: overlap found:\n  prev: {symbols[address][-1]}\n  new:  {line.strip()}", file=sys.stderr)
             continue
         symbols[address] = (address + size, size, symbol, line.strip())
 

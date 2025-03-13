@@ -111,7 +111,7 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 		if err != nil {
 			return err
 		}
-		//cmdio.LogString(ctx, welcome)
+		// cmdio.LogString(ctx, welcome)
 	}
 
 	// Prompt user for any missing config values. Assign default values if
@@ -126,7 +126,7 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 func (tmpl *defaultWriter) printSuccessMessage(ctx context.Context) error {
 	success := tmpl.config.schema.SuccessMessage
 	if success == "" {
-		//cmdio.LogString(ctx, "✨ Successfully initialized template")
+		// cmdio.LogString(ctx, "✨ Successfully initialized template")
 		return nil
 	}
 
@@ -134,7 +134,7 @@ func (tmpl *defaultWriter) printSuccessMessage(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	//cmdio.LogString(ctx, success)
+	// cmdio.LogString(ctx, success)
 	return nil
 }
 

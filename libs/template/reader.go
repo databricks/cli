@@ -82,11 +82,11 @@ func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
 	r.tmpRepoDir = repoDir
 
 	// start the spinner
-	//promptSpinner := cmdio.Spinner(ctx)
-	//promptSpinner <- "Downloading the template\n"
+	// promptSpinner := cmdio.Spinner(ctx)
+	// promptSpinner <- "Downloading the template\n"
 
 	err = r.cloneFunc(ctx, r.gitUrl, r.ref, repoDir)
-	//close(promptSpinner)
+	// close(promptSpinner)
 	if err != nil {
 		return nil, err
 	}
