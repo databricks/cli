@@ -73,7 +73,7 @@ func (c *config) assignValuesFromFile(path string) error {
 	// the LoadInstance call, we disable the additional properties check,
 	// to allow those properties to be loaded.
 	c.schema.AdditionalProperties = true
-	configFromFile, err := c.schema.LoadInstanceFromPath(path)
+	configFromFile, err := c.schema.LoadInstance(path)
 	c.schema.AdditionalProperties = false
 
 	if err != nil {
@@ -270,7 +270,6 @@ func (c *config) promptOrAssignDefaultValues(r *renderer) error {
 // to initialize the template.
 func (c *config) validate() error {
 	// For final validation, all properties in the JSON schema should have a value defined.
-	// since we add helpers like user_name to parameters, they cause an error here.
 	c.schema.Required = maps.Keys(c.schema.Properties)
 	if err := c.schema.ValidateInstance(c.values); err != nil {
 		return fmt.Errorf("validation for template input parameters failed. %w", err)

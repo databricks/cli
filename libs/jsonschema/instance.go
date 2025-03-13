@@ -10,7 +10,7 @@ import (
 
 // Load a JSON document and validate it against the JSON schema. Instance here
 // refers to a JSON document. see: https://json-schema.org/draft/2020-12/json-schema-core.html#name-instance
-func (s *Schema) LoadInstanceFromPath(path string) (map[string]any, error) {
+func (s *Schema) LoadInstance(path string) (map[string]any, error) {
 	instance := make(map[string]any)
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -21,12 +21,6 @@ func (s *Schema) LoadInstanceFromPath(path string) (map[string]any, error) {
 		return nil, err
 	}
 
-	return s.LoadInstance(instance)
-}
-
-// Load a JSON document and validate it against the JSON schema. Instance here
-// refers to a JSON document. see: https://json-schema.org/draft/2020-12/json-schema-core.html#name-instance
-func (s *Schema) LoadInstance(instance map[string]any) (map[string]any, error) {
 	// The default JSON unmarshaler parses untyped number values as float64.
 	// We convert integer properties from float64 to int64 here.
 	for name, v := range instance {

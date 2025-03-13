@@ -50,10 +50,6 @@ func (f *copyFile) Write(ctx context.Context, out filer.Filer) error {
 }
 */
 
-func (f *copyFile) Contents() ([]byte, error) {
-	return f.contents()
-}
-
 func (f *copyFile) contents() ([]byte, error) {
 	return fs.ReadFile(f.srcFS, f.srcPath)
 }
