@@ -5,6 +5,7 @@ from pathlib import Path
 from databricks.bundles.build import (
     _append_resources,
     _Args,
+    _Conf,
     _load_object,
     _parse_args,
     _parse_bundle_info,
@@ -265,4 +266,33 @@ def test_parse_args_unknown():
         phase="load_resources",
         locations=None,
         unknown_args=["--unknown"],
+    )
+
+
+def test_conf_from_dict():
+    actual = _Conf.from_dict(
+        {
+            "resources": [
+                "resources:load_resources",
+                "resources:load_more_resources",
+            ],
+            "mutators": [
+                "resources:add_notifications",
+                "resources:add_more_notifications",
+            ],
+            "venv_path": "venv",
+            "unknown": "unknown",
+        }
+    )
+
+    assert actual == _Conf(
+        resources=[
+            "resources:load_resources",
+            "resources:load_more_resources",
+        ],
+        mutators=[
+            "resources:add_notifications",
+            "resources:add_more_notifications",
+        ],
+        venv_path="venv",
     )

@@ -6,7 +6,7 @@ import logging
 import os.path
 import sys
 from copy import deepcopy
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, replace
 from typing import Callable, Optional, TextIO
 
 from databricks.bundles.core import Bundle, Diagnostics, Location, Resources
@@ -35,7 +35,7 @@ class _Conf:
 
     @classmethod
     def from_dict(cls, d: dict) -> "_Conf":
-        known_keys = {"resources", "mutators", "venv_path"}
+        known_keys = [f.name for f in fields(cls)]
         unknown_keys = d.keys() - known_keys
 
         if unknown_keys:
