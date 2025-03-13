@@ -24,6 +24,7 @@ type Writer interface {
 	Materialize(ctx context.Context, r Reader) error
 
 	GetOutput() map[string]string
+	SetParams(map[string]any)
 }
 
 type defaultWriter struct {
@@ -37,6 +38,10 @@ type defaultWriter struct {
 
 func (w *defaultWriter) GetOutput() map[string]string {
 	return w.Output
+}
+
+func (w *defaultWriter) SetParams(params map[string]any) {
+	w.config.values = params
 }
 
 /*

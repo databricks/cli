@@ -19,6 +19,11 @@ type Template struct {
 	hidden      bool
 }
 
+func (tmpl *Template) Render(params map[string]any) map[string]string {
+	_ = tmpl.Writer.Materialize(context.Background(), tmpl.Reader)
+	return tmpl.Writer.GetOutput()
+}
+
 type TemplateName string
 
 const (
@@ -37,6 +42,10 @@ func GetTemplate(name string) Template {
 		Reader: &builtinReader{name: name},
 		Writer: &defaultWriter{},
 	}
+}
+
+func (t *Template) SetParams(params map[string]any) {
+	t.Writer.SetParams(params)
 }
 
 var databricksTemplates = []Template{

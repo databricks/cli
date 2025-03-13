@@ -13,13 +13,12 @@ func renderTemplateWrapper() js.Func {
 		if len(args) != 2 {
 			return "Invalid number of arguments passed. Expected: template name and parameters JSON"
 		}
-		
+
 		templateName := args[0].String()
 		inputJSON := args[1].String()
 		fmt.Printf("Template: %s, input: %s\n", templateName, inputJSON)
 
-		// Parse the JSON input into a map
-		var params map[string]string
+		var params map[string]any
 		if err := json.Unmarshal([]byte(inputJSON), &params); err != nil {
 			return fmt.Sprintf("Error parsing JSON: %s", err.Error())
 		}

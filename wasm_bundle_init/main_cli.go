@@ -13,7 +13,7 @@ func main() {
 	templateName := os.Args[1]
 	paramsString := os.Args[2]
 
-	var params map[string]string
+	var params map[string]any
 	err := json.Unmarshal([]byte(paramsString), &params)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing parameters: %v\n", err)

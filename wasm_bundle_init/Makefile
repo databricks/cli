@@ -10,7 +10,7 @@ bundle_init: main_cli.go common.go ../libs/template/*
 	go build -o bundle_init
 
 run: bundle_init
-	./bundle_init
+	./bundle_init default-python '{}'
 
 size: build_cli analyze_size.py
 	go tool nm -size bundle_init | python3 analyze_size.py | head -n 50
