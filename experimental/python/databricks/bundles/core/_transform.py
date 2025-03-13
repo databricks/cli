@@ -270,7 +270,14 @@ def _unwrap_variable(tpe: type) -> Optional[type]:
     return None
 
 
-# from libs/dyn/dynvar/ref.go
+# Regex for string corresponding to variables.
+#
+# The source of truth is regex in libs/dyn/dynvar/ref.go
+#
+# Example:
+#   - "${a.b}"
+#   - "${a.b.c}"
+#   - "${a.b[0].c}"
 _base_var_def = r"[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*"
 _variable_regex = re.compile(
     r"\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}" % (_base_var_def, _base_var_def)

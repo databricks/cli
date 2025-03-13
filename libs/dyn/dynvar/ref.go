@@ -37,6 +37,7 @@ type ref struct {
 // Examples of a valid variable references:
 //   - "${a.b}"
 //   - "${a.b.c}"
+//   - "${a.b[0].c}"
 //   - "${a} ${b} ${c}"
 func newRef(v dyn.Value) (ref, bool) {
 	s, ok := v.AsString()
