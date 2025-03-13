@@ -270,9 +270,10 @@ def _unwrap_variable(tpe: type) -> Optional[type]:
     return None
 
 
-# from cli/libs/dyn/dynvar/ref.go
+# from libs/dyn/dynvar/ref.go
+_base_var_def = r"[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*"
 _variable_regex = re.compile(
-    r"\$\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)*(\[[0-9]+\])*)\}",
+    r"\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}" % (_base_var_def, _base_var_def)
 )
 
 
