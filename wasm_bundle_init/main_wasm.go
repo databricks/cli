@@ -10,11 +10,13 @@ import (
 
 func renderTemplateWrapper() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) any {
-		if len(args) != 1 {
-			return "Invalid no of arguments passed"
+		if len(args) != 2 {
+			return "Invalid number of arguments passed. Expected: template name and parameters JSON"
 		}
-		inputJSON := args[0].String()
-		fmt.Printf("input %s\n", inputJSON)
+		
+		templateName := args[0].String()
+		inputJSON := args[1].String()
+		fmt.Printf("Template: %s, input: %s\n", templateName, inputJSON)
 
 		// Parse the JSON input into a map
 		var params map[string]string
@@ -22,7 +24,7 @@ func renderTemplateWrapper() js.Func {
 			return fmt.Sprintf("Error parsing JSON: %s", err.Error())
 		}
 
-		out := Render("default-python", params)
+		out := Render(templateName, params)
 
 		pretty, err := json.MarshalIndent(out, "", "  ")
 		if err != nil {

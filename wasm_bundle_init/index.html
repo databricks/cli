@@ -116,6 +116,12 @@
 				outputContainer.innerHTML = ""; // Clear previous output
 				
 				try {
+					// Get template name
+					const templateName = document.getElementById("templateName").value.trim();
+					if (!templateName) {
+						throw new Error("Template name cannot be empty");
+					}
+					
 					// Get parameters from textarea
 					const paramsText = document.getElementById("paramsInput").value;
 					const params = JSON.parse(paramsText);
@@ -123,8 +129,8 @@
 					// Measure rendering time
 					const startTime = performance.now();
 					
-					// Call the WASM function
-					const result = RenderTemplate(JSON.stringify(params));
+					// Call the WASM function with template name and parameters
+					const result = RenderTemplate(templateName, JSON.stringify(params));
 					
 					// Calculate rendering time
 					const endTime = performance.now();
@@ -292,6 +298,9 @@
 		<p>Customize the parameters below and click the button to render the template.</p>
 		
 		<div class="params-container">
+			<h3>Template Name:</h3>
+			<input type="text" id="templateName" value="default-python" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ddd;">
+			
 			<h3>Template Parameters (JSON):</h3>
 			<textarea id="paramsInput"></textarea>
 		</div>
