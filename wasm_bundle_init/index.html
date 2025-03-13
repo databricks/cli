@@ -96,6 +96,15 @@
 					"project_name": "my-databricks-project",
 					"author": "Databricks User"
 				}, null, 2);
+				
+				// Set default helper parameters
+				document.getElementById("helpersInput").value = JSON.stringify({
+					"user_name": "jane.doe@example.com",
+					"short_name": "jane",
+					"workspace_host": "dbc-abcd1234-5678.cloud.databricks.com",
+					"default_catalog": "main",
+					"smallest_node_type": "i3.xlarge"
+				}, null, 2);
 			});
 
 			// Helper function to format bytes to human-readable format
@@ -130,7 +139,11 @@
 					const startTime = performance.now();
 					
 					// Call the WASM function with template name and parameters
-                    const result = RenderTemplate(templateName, JSON.stringify(params), "{}");
+					// Get helpers from textarea
+					const helpersText = document.getElementById("helpersInput").value;
+					const helpers = JSON.parse(helpersText);
+					
+                    const result = RenderTemplate(templateName, JSON.stringify(params), JSON.stringify(helpers));
 					
 					// Calculate rendering time
 					const endTime = performance.now();
@@ -303,6 +316,9 @@
 			
 			<h3>Template Parameters (JSON):</h3>
 			<textarea id="paramsInput"></textarea>
+			
+			<h3>Common Parameters (helpers):</h3>
+			<textarea id="helpersInput"></textarea>
 		</div>
 		
 		<button id="renderButton" onclick="renderTemplate()" disabled>Render Template</button>
