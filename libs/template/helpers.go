@@ -2,7 +2,6 @@ package template
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/url"
@@ -10,10 +9,8 @@ import (
 	"regexp"
 	"text/template"
 
-	"github.com/databricks/cli/libs/command"
-	"github.com/databricks/cli/libs/iamutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	//"github.com/databricks/databricks-sdk-go/apierr"
+	//"github.com/databricks/databricks-sdk-go/service/iam"
 
 	"github.com/google/uuid"
 )
@@ -32,9 +29,9 @@ type pair struct {
 }
 
 var (
-	cachedUser               *iam.User
-	cachedIsServicePrincipal *bool
-	cachedCatalog            *string
+// cachedUser               *iam.User
+// cachedIsServicePrincipal *bool
+// cachedCatalog            *string
 )
 
 // UUID that is stable for the duration of the template execution. This can be used
@@ -45,7 +42,6 @@ var (
 var bundleUuid = uuid.New().String()
 
 func loadHelpers(ctx context.Context) template.FuncMap {
-	w := command.WorkspaceClient(ctx)
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}
@@ -90,82 +86,100 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		},
 		// Get smallest node type (follows Terraform's GetSmallestNodeType)
 		"smallest_node_type": func() (string, error) {
-			if w.Config.Host == "" {
-				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
-			}
-			if w.Config.IsAzure() {
-				return "Standard_D3_v2", nil
-			} else if w.Config.IsGcp() {
-				return "n1-standard-4", nil
-			}
+			/*
+				if w.Config.Host == "" {
+					return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
+				}
+				if w.Config.IsAzure() {
+					return "Standard_D3_v2", nil
+				} else if w.Config.IsGcp() {
+					return "n1-standard-4", nil
+				}
+			*/
 			return "i3.xlarge", nil
 		},
 		"path_separator": func() string {
 			return string(os.PathSeparator)
 		},
 		"workspace_host": func() (string, error) {
-			if w.Config.Host == "" {
-				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
-			}
-			return w.Config.Host, nil
+			return "myhost.databricks.com", nil
+			/*
+
+				if w.Config.Host == "" {
+					return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
+				}
+				return w.Config.Host, nil
+			*/
 		},
 		"user_name": func() (string, error) {
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
-				if err != nil {
-					return "", err
+			return "denis.bilenko", nil
+			/*
+				if cachedUser == nil {
+					var err error
+					cachedUser, err = w.CurrentUser.Me(ctx)
+					if err != nil {
+						return "", err
+					}
 				}
-			}
-			result := cachedUser.UserName
-			if result == "" {
-				result = cachedUser.Id
-			}
-			return result, nil
+				result := cachedUser.UserName
+				if result == "" {
+					result = cachedUser.Id
+				}
+				return result, nil
+			*/
 		},
 		"short_name": func() (string, error) {
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
-				if err != nil {
-					return "", err
+			return "Denis", nil
+			/*
+				if cachedUser == nil {
+					var err error
+					cachedUser, err = w.CurrentUser.Me(ctx)
+					if err != nil {
+						return "", err
+					}
 				}
-			}
-			return iamutil.GetShortUserName(cachedUser), nil
+				return iamutil.GetShortUserName(cachedUser), nil
+			*/
 		},
 		// Get the default workspace catalog. If there is no default, or if
 		// Unity Catalog is not enabled, return an empty string.
 		"default_catalog": func() (string, error) {
-			if cachedCatalog == nil {
-				metastore, err := w.Metastores.Current(ctx)
-				if err != nil {
-					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && (aerr.ErrorCode == "PERMISSION_DENIED" || aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST") {
-						// Ignore: access denied or workspace doesn't have a metastore assigned
-						empty_default := ""
-						cachedCatalog = &empty_default
-						return "", nil
+			return "default_catalog", nil
+			/*
+				if cachedCatalog == nil {
+					metastore, err := w.Metastores.Current(ctx)
+					if err != nil {
+						var aerr *apierr.APIError
+						if errors.As(err, &aerr) && (aerr.ErrorCode == "PERMISSION_DENIED" || aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST") {
+							// Ignore: access denied or workspace doesn't have a metastore assigned
+							empty_default := ""
+							cachedCatalog = &empty_default
+							return "", nil
+						}
+						return "", err
 					}
-					return "", err
+					cachedCatalog = &metastore.DefaultCatalogName
 				}
-				cachedCatalog = &metastore.DefaultCatalogName
-			}
-			return *cachedCatalog, nil
+				return *cachedCatalog, nil
+			*/
 		},
 		"is_service_principal": func() (bool, error) {
-			if cachedIsServicePrincipal != nil {
-				return *cachedIsServicePrincipal, nil
-			}
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
-				if err != nil {
-					return false, err
+			return false, nil
+			/*
+				if cachedIsServicePrincipal != nil {
+					return *cachedIsServicePrincipal, nil
 				}
-			}
-			result := iamutil.IsServicePrincipal(cachedUser)
-			cachedIsServicePrincipal = &result
-			return result, nil
+				if cachedUser == nil {
+					var err error
+					cachedUser, err = w.CurrentUser.Me(ctx)
+					if err != nil {
+						return false, err
+					}
+				}
+				result := iamutil.IsServicePrincipal(cachedUser)
+				cachedIsServicePrincipal = &result
+				return result, nil
+			*/
 		},
 	}
 }

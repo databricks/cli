@@ -13,9 +13,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/logger"
+	//"github.com/databricks/databricks-sdk-go/logger"
 )
 
 const templateExtension = ".tmpl"
@@ -230,7 +229,7 @@ func (r *renderer) walk() error {
 			return err
 		}
 		if match {
-			logger.Infof(r.ctx, "skipping directory: %s", instanceDirectory)
+			//logger.Infof(r.ctx, "skipping directory: %s", instanceDirectory)
 			continue
 		}
 
@@ -247,7 +246,7 @@ func (r *renderer) walk() error {
 				}
 
 				if !slices.Contains(r.skipPatterns, pattern) {
-					logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
+					//logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
 					r.skipPatterns = append(r.skipPatterns, pattern)
 				}
 				// return empty string will print nothing at function call site
@@ -283,7 +282,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			logger.Infof(r.ctx, "added file to list of possible project files: %s", f.RelPath())
+			//logger.Infof(r.ctx, "added file to list of possible project files: %s", f.RelPath())
 			r.files = append(r.files, f)
 		}
 
@@ -291,7 +290,7 @@ func (r *renderer) walk() error {
 	return nil
 }
 
-func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
+func (r *renderer) persistToDisk(ctx context.Context, out map[string]string) error {
 	// Accumulate files which we will persist, skipping files whose path matches
 	// any of the skip patterns
 	filesToPersist := make([]file, 0)
@@ -310,21 +309,16 @@ func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 	// Assert no conflicting files exist
 	for _, file := range filesToPersist {
 		path := file.RelPath()
-		_, err := out.Stat(ctx, path)
-		if err == nil {
+		_, exists := out[path]
+		if exists {
 			return fmt.Errorf("failed to initialize template, one or more files already exist: %s", path)
-		}
-		if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("error while verifying file %s does not already exist: %w", path, err)
 		}
 	}
 
 	// Persist files to disk
 	for _, file := range filesToPersist {
-		err := file.Write(ctx, out)
-		if err != nil {
-			return err
-		}
+		data, _ := file.contents()
+		out[file.RelPath()] = string(data)
 	}
 	return nil
 }

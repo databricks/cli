@@ -52,6 +52,10 @@ func (f *copyFile) Write(ctx context.Context, out filer.Filer) error {
 	return out.Write(ctx, f.relPath, src, filer.CreateParentDirectories, filer.WriteMode(f.perm))
 }
 
+func (f *copyFile) Contents() ([]byte, error) {
+	return f.contents()
+}
+
 func (f *copyFile) contents() ([]byte, error) {
 	return fs.ReadFile(f.srcFS, f.srcPath)
 }

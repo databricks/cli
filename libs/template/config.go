@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
-	"github.com/databricks/cli/libs/log"
 	"golang.org/x/exp/maps"
 )
 
@@ -75,7 +73,7 @@ func (c *config) assignValuesFromFile(path string) error {
 	// the LoadInstance call, we disable the additional properties check,
 	// to allow those properties to be loaded.
 	c.schema.AdditionalProperties = true
-	configFromFile, err := c.schema.LoadInstance(path)
+	configFromFile, err := c.schema.LoadInstanceFromPath(path)
 	c.schema.AdditionalProperties = false
 
 	if err != nil {
@@ -165,42 +163,45 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 }
 
 func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, description string) error {
-	var userInput string
-	if property.Enum != nil {
-		// List options for the user to select from
-		options, err := property.EnumStringSlice()
-		if err != nil {
-			return err
-		}
-		userInput, err = cmdio.AskSelect(c.ctx, description, options)
-		if err != nil {
-			return err
-		}
-	} else {
-		var err error
-		userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Convert user input string back to a Go value
-	var err error
-	c.values[name], err = property.ParseString(userInput)
-	if err != nil {
-		// Show error and retry if validation fails
-		cmdio.LogString(c.ctx, "Validation failed: "+err.Error())
-		return retriableError{err: err}
-	}
-
-	// Validate the partial config which includes the new value
-	err = c.schema.ValidateInstance(c.values)
-	if err != nil {
-		// Show error and retry if validation fails
-		cmdio.LogString(c.ctx, "Validation failed: "+err.Error())
-		return retriableError{err: err}
-	}
 	return nil
+	/*
+		var userInput string
+		if property.Enum != nil {
+			// List options for the user to select from
+			options, err := property.EnumStringSlice()
+			if err != nil {
+				return err
+			}
+			userInput, err = cmdio.AskSelect(c.ctx, description, options)
+			if err != nil {
+				return err
+			}
+		} else {
+			var err error
+			userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Convert user input string back to a Go value
+		var err error
+		c.values[name], err = property.ParseString(userInput)
+		if err != nil {
+			// Show error and retry if validation fails
+			cmdio.LogString(c.ctx, "Validation failed: "+err.Error())
+			return retriableError{err: err}
+		}
+
+		// Validate the partial config which includes the new value
+		err = c.schema.ValidateInstance(c.values)
+		if err != nil {
+			// Show error and retry if validation fails
+			cmdio.LogString(c.ctx, "Validation failed: "+err.Error())
+			return retriableError{err: err}
+		}
+		return nil
+	*/
 }
 
 // Prompts user for values for properties that do not have a value set yet
@@ -255,11 +256,13 @@ func (c *config) promptForValues(r *renderer) error {
 // Prompt user for any missing config values. Assign default values if
 // terminal is not TTY
 func (c *config) promptOrAssignDefaultValues(r *renderer) error {
-	// TODO: replace with IsPromptSupported call (requires fixing TestAccBundleInitErrorOnUnknownFields test)
-	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) && !cmdio.IsGitBash(c.ctx) {
-		return c.promptForValues(r)
-	}
-	log.Debugf(c.ctx, "Terminal is not TTY. Assigning default values to template input parameters")
+	/*
+		// TODO: replace with IsPromptSupported call (requires fixing TestAccBundleInitErrorOnUnknownFields test)
+		if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) && !cmdio.IsGitBash(c.ctx) {
+			return c.promptForValues(r)
+		}
+		log.Debugf(c.ctx, "Terminal is not TTY. Assigning default values to template input parameters")
+	*/
 	return c.assignDefaultValues(r)
 }
 

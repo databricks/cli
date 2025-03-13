@@ -2,12 +2,10 @@ package template
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/git"
 )
 
@@ -32,6 +30,14 @@ const (
 	Custom                 TemplateName = "custom"
 	ExperimentalJobsAsCode TemplateName = "experimental-jobs-as-code"
 )
+
+func GetTemplate(name string) Template {
+	return Template{
+		name:   TemplateName(name),
+		Reader: &builtinReader{name: name},
+		Writer: &defaultWriter{},
+	}
+}
 
 var databricksTemplates = []Template{
 	{
@@ -87,6 +93,7 @@ func HelpDescriptions() string {
 
 var customTemplateDescription = "Bring your own template"
 
+/*
 func options() []cmdio.Tuple {
 	names := make([]cmdio.Tuple, 0, len(databricksTemplates))
 	for _, template := range databricksTemplates {
@@ -105,28 +112,31 @@ func options() []cmdio.Tuple {
 		Id:   customTemplateDescription,
 	})
 	return names
-}
+}*/
 
 func SelectTemplate(ctx context.Context) (TemplateName, error) {
-	if !cmdio.IsPromptSupported(ctx) {
-		return "", errors.New("prompting is not supported. Please specify the path, name or URL of the template to use")
-	}
-	description, err := cmdio.SelectOrdered(ctx, options(), "Template to use")
-	if err != nil {
-		return "", err
-	}
-
-	if description == customTemplateDescription {
-		return TemplateName(""), ErrCustomSelected
-	}
-
-	for _, template := range databricksTemplates {
-		if template.description == description {
-			return template.name, nil
+	return "", nil
+	/*
+		if !cmdio.IsPromptSupported(ctx) {
+			return "", errors.New("prompting is not supported. Please specify the path, name or URL of the template to use")
 		}
-	}
+		description, err := cmdio.SelectOrdered(ctx, options(), "Template to use")
+		if err != nil {
+			return "", err
+		}
 
-	return "", fmt.Errorf("template with description %s not found", description)
+		if description == customTemplateDescription {
+			return TemplateName(""), ErrCustomSelected
+		}
+
+		for _, template := range databricksTemplates {
+			if template.description == description {
+				return template.name, nil
+			}
+		}
+
+		return "", fmt.Errorf("template with description %s not found", description)
+	*/
 }
 
 func GetDatabricksTemplate(name TemplateName) *Template {
