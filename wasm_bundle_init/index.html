@@ -86,7 +86,33 @@
 		</style>
 		<script>
 			const go = new Go();
-			WebAssembly.instantiateStreaming(fetch("bundle_init.optimized.wasm"), go.importObject).then((result) => {
+
+  function fetchCompressed(url) {
+        return fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+                }
+                
+                return response.arrayBuffer().then(compressedData => {
+                    const ds = new DecompressionStream('gzip');
+                    const decompressedStream = new Response(compressedData).body.pipeThrough(ds);
+                    
+                    // Create a new response with the decompressed data
+                    const newResponse = new Response(decompressedStream, {
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers: response.headers
+                    });
+                    
+                    newResponse.headers.set('Content-Type', 'application/wasm');
+                    
+                    return newResponse;
+                });
+            });
+    }
+
+			WebAssembly.instantiateStreaming(fetchCompressed("bundle_init.optimized.wasm.gz"), go.importObject).then((result) => {
 				go.run(result.instance);
 				console.log("WASM loaded, RenderTemplate function available");
 				document.getElementById("renderButton").disabled = false;
