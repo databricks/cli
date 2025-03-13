@@ -1,4 +1,4 @@
-.PHONY: all clean release debug run size server
+.PHONY: all clean release debug run size server export
 
 all: release debug nativecli
 
@@ -41,5 +41,13 @@ run: nativecli
 size: nativecli analyze_size.py
 	go tool nm -size nativecli | python3 analyze_size.py | head -n 50
 
-server: bundle_init.optimized.wasm
+server: bundle_init.optimized.wasm.gz
 	python3 -m http.server
+
+export: bundle_init.optimized.wasm.gz
+	mkdir -p output
+	cp bundle_init.optimized.wasm.gz index.html wasm_exec.js output/
+	git checkout gh-pages
+	git pull origin gh-pages
+	mkdir -p ../experimental/render
+	cp output/bundle_init.optimized.wasm.gz output/index.html output/wasm_exec.js ../experimental/render
