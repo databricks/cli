@@ -1,6 +1,6 @@
 .PHONY: all clean release debug run size server export
 
-all: release debug nativecli
+all: release debug build/nativecli
 
 clean:
 	rm -rf build
