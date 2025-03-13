@@ -3,7 +3,7 @@
 all: release debug nativecli
 
 clean:
-	rm -f nativecli bundle_init.*.wasm bundle_init.optimized.wasm.br bundle_init.optimized.wasm.gz
+	rm -f build
 
 bundle_init.release.wasm: main_wasm.go ../libs/template/*
 	GOOS=js GOARCH=wasm go build -ldflags="-w -s" -gcflags=all=-l -o $@
