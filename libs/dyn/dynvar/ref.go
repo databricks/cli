@@ -8,12 +8,11 @@ import (
 )
 
 var (
-	// Regex should be in sync with _variable_regex in Python code.
-	//
-	// LINT.IfChange
+	// !!! Should be in sync with _variable_regex in Python code.
+	// !!!
+	// !!! See experimental/python/databricks/bundles/core/_transform.py
 	baseVarDef = `[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`
 	re         = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, baseVarDef, baseVarDef))
-	// LINT.ThenChange(experimental/python/databricks/bundles/core/_transform.py)
 )
 
 // ref represents a variable reference.
