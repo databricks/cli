@@ -2,6 +2,7 @@ from databricks.bundles.core import Bundle, Resources
 
 # databricks.yml defines the order of resource loading
 
+
 def load_resources_2() -> Resources:
     resources = Resources()
     resources.add_job(
@@ -10,6 +11,7 @@ def load_resources_2() -> Resources:
     )
 
     return resources
+
 
 def load_resources_1() -> Resources:
     resources = Resources()
