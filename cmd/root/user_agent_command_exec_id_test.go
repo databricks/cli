@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/cli/libs/command"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWithCommandExecIdInUserAgent(t *testing.T) {
-	ctx := command.GenerateExecId(context.Background())
+	ctx := cmdctx.GenerateExecId(context.Background())
 	ctx = withCommandExecIdInUserAgent(ctx)
 
 	// user agent should contain cmd-exec-id/<UUID>

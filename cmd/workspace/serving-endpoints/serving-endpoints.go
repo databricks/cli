@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/spf13/cobra"
@@ -24,7 +24,7 @@ func New() *cobra.Command {
 		Short: `The Serving Endpoints API allows you to create, update, and delete model serving endpoints.`,
 		Long: `The Serving Endpoints API allows you to create, update, and delete model
   serving endpoints.
-
+  
   You can use a serving endpoint to serve models from the Databricks Model
   Registry or from Unity Catalog. Endpoints expose the underlying models as
   scalable REST API endpoints using serverless compute. This means the endpoints
@@ -88,7 +88,7 @@ func newBuildLogs() *cobra.Command {
 	cmd.Use = "build-logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get build logs for a served model.`
 	cmd.Long = `Get build logs for a served model.
-
+  
   Retrieves the build logs associated with the provided served model.
 
   Arguments:
@@ -107,7 +107,7 @@ func newBuildLogs() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		buildLogsReq.Name = args[0]
 		buildLogsReq.ServedModelName = args[1]
@@ -186,7 +186,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -266,7 +266,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		deleteReq.Name = args[0]
 
@@ -308,7 +308,7 @@ func newExportMetrics() *cobra.Command {
 	cmd.Use = "export-metrics NAME"
 	cmd.Short = `Get metrics of a serving endpoint.`
 	cmd.Long = `Get metrics of a serving endpoint.
-
+  
   Retrieves the metrics associated with the provided serving endpoint in either
   Prometheus or OpenMetrics exposition format.
 
@@ -326,7 +326,7 @@ func newExportMetrics() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		exportMetricsReq.Name = args[0]
 
@@ -369,7 +369,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a single serving endpoint.`
 	cmd.Long = `Get a single serving endpoint.
-
+  
   Retrieves the details for a single serving endpoint.
 
   Arguments:
@@ -385,7 +385,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getReq.Name = args[0]
 
@@ -427,7 +427,7 @@ func newGetOpenApi() *cobra.Command {
 	cmd.Use = "get-open-api NAME"
 	cmd.Short = `Get the schema for a serving endpoint.`
 	cmd.Long = `Get the schema for a serving endpoint.
-
+  
   Get the query schema of the serving endpoint in OpenAPI format. The schema
   contains information for the supported paths, input and output format and
   datatypes.
@@ -446,7 +446,7 @@ func newGetOpenApi() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getOpenApiReq.Name = args[0]
 
@@ -489,7 +489,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permission levels.`
 	cmd.Long = `Get serving endpoint permission levels.
-
+  
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -505,7 +505,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getPermissionLevelsReq.ServingEndpointId = args[0]
 
@@ -547,7 +547,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permissions.`
 	cmd.Long = `Get serving endpoint permissions.
-
+  
   Gets the permissions of a serving endpoint. Serving endpoints can inherit
   permissions from their root object.
 
@@ -564,7 +564,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getPermissionsReq.ServingEndpointId = args[0]
 
@@ -630,7 +630,7 @@ func newHttpRequest() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		httpRequestReq.ConnectionName = args[0]
 		_, err = fmt.Sscan(args[1], &httpRequestReq.Method)
@@ -679,7 +679,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		response := w.ServingEndpoints.List(ctx)
 		return cmdio.RenderIterator(ctx, response)
 	}
@@ -715,7 +715,7 @@ func newLogs() *cobra.Command {
 	cmd.Use = "logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get the latest logs for a served model.`
 	cmd.Long = `Get the latest logs for a served model.
-
+  
   Retrieves the service logs associated with the provided served model.
 
   Arguments:
@@ -734,7 +734,7 @@ func newLogs() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		logsReq.Name = args[0]
 		logsReq.ServedModelName = args[1]
@@ -782,7 +782,7 @@ func newPatch() *cobra.Command {
 	cmd.Use = "patch NAME"
 	cmd.Short = `Update tags of a serving endpoint.`
 	cmd.Long = `Update tags of a serving endpoint.
-
+  
   Used to batch add and delete tags from a serving endpoint with a single API
   call.
 
@@ -800,7 +800,7 @@ func newPatch() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := patchJson.Unmarshal(&patchReq)
@@ -858,7 +858,7 @@ func newPut() *cobra.Command {
 	cmd.Use = "put NAME"
 	cmd.Short = `Update rate limits of a serving endpoint.`
 	cmd.Long = `Update rate limits of a serving endpoint.
-
+  
   Used to update the rate limits of a serving endpoint. NOTE: Only foundation
   model endpoints are currently supported. For external models, use AI Gateway
   to manage rate limits.
@@ -877,7 +877,7 @@ func newPut() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := putJson.Unmarshal(&putReq)
@@ -938,7 +938,7 @@ func newPutAiGateway() *cobra.Command {
 	cmd.Use = "put-ai-gateway NAME"
 	cmd.Short = `Update AI Gateway of a serving endpoint.`
 	cmd.Long = `Update AI Gateway of a serving endpoint.
-
+  
   Used to update the AI Gateway of a serving endpoint. NOTE: Only external model
   and provisioned throughput endpoints are currently supported.
 
@@ -956,7 +956,7 @@ func newPutAiGateway() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := putAiGatewayJson.Unmarshal(&putAiGatewayReq)
@@ -1040,7 +1040,7 @@ func newQuery() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := queryJson.Unmarshal(&queryReq)
@@ -1098,7 +1098,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Set serving endpoint permissions.`
 	cmd.Long = `Set serving endpoint permissions.
-
+  
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -1116,7 +1116,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1182,7 +1182,7 @@ func newUpdateConfig() *cobra.Command {
 	cmd.Use = "update-config NAME"
 	cmd.Short = `Update config of a serving endpoint.`
 	cmd.Long = `Update config of a serving endpoint.
-
+  
   Updates any combination of the serving endpoint's served entities, the compute
   configuration of those served entities, and the endpoint's traffic config. An
   endpoint that already has an update in progress can not be updated until the
@@ -1201,7 +1201,7 @@ func newUpdateConfig() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateConfigJson.Unmarshal(&updateConfigReq)
@@ -1272,7 +1272,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Update serving endpoint permissions.`
 	cmd.Long = `Update serving endpoint permissions.
-
+  
   Updates the permissions on a serving endpoint. Serving endpoints can inherit
   permissions from their root object.
 
@@ -1289,7 +1289,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)

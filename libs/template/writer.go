@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
 )
@@ -54,7 +54,7 @@ func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, e
 	// when running the CLI on DBR and initializing a template to the workspace.
 	//
 	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		return filer.NewWorkspaceFilesExtensionsClient(command.WorkspaceClient(ctx), outputDir)
+		return filer.NewWorkspaceFilesExtensionsClient(cmdctx.WorkspaceClient(ctx), outputDir)
 	}
 
 	return filer.NewLocalClient(outputDir)

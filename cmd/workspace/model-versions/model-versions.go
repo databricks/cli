@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -91,7 +91,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		deleteReq.FullName = args[0]
 		_, err = fmt.Sscan(args[1], &deleteReq.Version)
@@ -162,7 +162,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getReq.FullName = args[0]
 		_, err = fmt.Sscan(args[1], &getReq.Version)
@@ -232,7 +232,7 @@ func newGetByAlias() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getByAliasReq.FullName = args[0]
 		getByAliasReq.Alias = args[1]
@@ -308,7 +308,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		listReq.FullName = args[0]
 
@@ -375,7 +375,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

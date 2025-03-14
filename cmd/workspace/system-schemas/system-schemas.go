@@ -4,8 +4,8 @@ package system_schemas
 
 import (
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -77,7 +77,7 @@ func newDisable() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		disableReq.MetastoreId = args[0]
 		disableReq.SchemaName = args[1]
@@ -138,7 +138,7 @@ func newEnable() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		enableReq.MetastoreId = args[0]
 		enableReq.SchemaName = args[1]
@@ -201,7 +201,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		listReq.MetastoreId = args[0]
 

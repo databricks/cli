@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
@@ -36,7 +36,7 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoReq
 	createJson := createCmd.Flag("json").Value.(*flags.JsonFlag)
 	createCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(createReq)
 			if diags.HasError() {
@@ -72,7 +72,7 @@ func deleteOverride(deleteCmd *cobra.Command, deleteReq *workspace.DeleteRepoReq
 	deleteCmd.Use = "delete REPO_ID_OR_PATH"
 	deleteCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		deleteReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
 		if err != nil {
@@ -90,7 +90,7 @@ func getOverride(getCmd *cobra.Command, getReq *workspace.GetRepoRequest) {
 	getCmd.Use = "get REPO_ID_OR_PATH"
 	getCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		getReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
 		if err != nil {
 			return err
@@ -111,7 +111,7 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 	updateCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		var diags diag.Diagnostics
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
 			diags = updateJson.Unmarshal(&updateReq)
 			if diags.HasError() {

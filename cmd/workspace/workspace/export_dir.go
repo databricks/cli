@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -100,7 +100,7 @@ func newExportDir() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		opts.sourceDir = args[0]
 		opts.targetDir = args[1]
 

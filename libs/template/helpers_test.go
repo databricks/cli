@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
@@ -19,7 +19,7 @@ import (
 func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = command.SetWorkspaceClient(ctx, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/print-without-processing/template", "./testdata/print-without-processing/library")
 	require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
 func TestTemplateBundleUuidFunction(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = command.SetWorkspaceClient(ctx, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/bundle-uuid/template", "./testdata/bundle-uuid/library")
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestTemplateBundleUuidFunction(t *testing.T) {
 func TestTemplateRegexpCompileFunction(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = command.SetWorkspaceClient(ctx, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/regexp-compile/template", "./testdata/regexp-compile/library")
 	require.NoError(t, err)
@@ -75,7 +75,7 @@ func TestTemplateRegexpCompileFunction(t *testing.T) {
 func TestTemplateRandIntFunction(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = command.SetWorkspaceClient(ctx, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/random-int/template", "./testdata/random-int/library")
 	require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestTemplateRandIntFunction(t *testing.T) {
 func TestTemplateUuidFunction(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = command.SetWorkspaceClient(ctx, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/uuid/template", "./testdata/uuid/library")
 	require.NoError(t, err)
@@ -108,7 +108,7 @@ func TestTemplateUuidFunction(t *testing.T) {
 func TestTemplateUrlFunction(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = command.SetWorkspaceClient(ctx, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/urlparse-function/template", "./testdata/urlparse-function/library")
 
@@ -124,7 +124,7 @@ func TestTemplateUrlFunction(t *testing.T) {
 func TestTemplateMapPairFunction(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = command.SetWorkspaceClient(ctx, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/map-pair/template", "./testdata/map-pair/library")
 
@@ -145,7 +145,7 @@ func TestWorkspaceHost(t *testing.T) {
 			Host: "https://myhost.com",
 		},
 	}
-	ctx = command.SetWorkspaceClient(ctx, w)
+	ctx = cmdctx.SetWorkspaceClient(ctx, w)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/workspace-host/template", "./testdata/map-pair/library")
@@ -168,7 +168,7 @@ func TestWorkspaceHostNotConfigured(t *testing.T) {
 	w := &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{},
 	}
-	ctx = command.SetWorkspaceClient(ctx, w)
+	ctx = cmdctx.SetWorkspaceClient(ctx, w)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/workspace-host/template", "./testdata/map-pair/library")
