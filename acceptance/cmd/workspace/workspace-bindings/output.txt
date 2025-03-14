@@ -1,0 +1,7 @@
+
+>>> errcode [CLI] workspace-bindings get input-name
+{
+  "workspaces": [
+    42
+  ]
+}

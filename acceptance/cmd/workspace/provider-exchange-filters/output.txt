@@ -1,0 +1,15 @@
+
+>>> errcode [CLI] provider-exchange-filters list input-exchange_id
+[
+  {
+    "created_at": 42,
+    "created_by": "created_by",
+    "exchange_id": "exchange_id",
+    "filter_type": "ENUM",
+    "filter_value": "filter_value",
+    "id": "id",
+    "name": "name",
+    "updated_at": 42,
+    "updated_by": "updated_by"
+  }
+]

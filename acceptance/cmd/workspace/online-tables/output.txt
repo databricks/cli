@@ -1,0 +1,57 @@
+
+>>> errcode [CLI] online-tables get input-name
+{
+  "name":"name",
+  "spec": {
+    "perform_full_copy":false,
+    "pipeline_id":"pipeline_id",
+    "primary_key_columns": [
+      "_list"
+    ],
+    "run_continuously": {},
+    "run_triggered": {},
+    "source_table_full_name":"source_table_full_name",
+    "timeseries_key":"timeseries_key"
+  },
+  "status": {
+    "continuous_update_status": {
+      "initial_pipeline_sync_progress": {
+        "estimated_completion_time_seconds":42,
+        "latest_version_currently_processing":42,
+        "sync_progress_completion":42,
+        "synced_row_count":42,
+        "total_row_count":42
+      },
+      "last_processed_commit_version":42,
+      "timestamp":"timestamp"
+    },
+    "detailed_state":"ENUM",
+    "failed_status": {
+      "last_processed_commit_version":42,
+      "timestamp":"timestamp"
+    },
+    "message":"message",
+    "provisioning_status": {
+      "initial_pipeline_sync_progress": {
+        "estimated_completion_time_seconds":42,
+        "latest_version_currently_processing":42,
+        "sync_progress_completion":42,
+        "synced_row_count":42,
+        "total_row_count":42
+      }
+    },
+    "triggered_update_status": {
+      "last_processed_commit_version":42,
+      "timestamp":"timestamp",
+      "triggered_update_progress": {
+        "estimated_completion_time_seconds":42,
+        "latest_version_currently_processing":42,
+        "sync_progress_completion":42,
+        "synced_row_count":42,
+        "total_row_count":42
+      }
+    }
+  },
+  "table_serving_url":"table_serving_url",
+  "unity_catalog_provisioning_state":"ENUM"
+}

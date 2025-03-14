@@ -1,0 +1,7 @@
+
+>>> errcode [CLI] provider-provider-analytics-dashboards get
+{
+  "dashboard_id":"dashboard_id",
+  "id":"id",
+  "version":42
+}

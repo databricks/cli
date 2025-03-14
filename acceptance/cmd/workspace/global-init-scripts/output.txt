@@ -1,0 +1,27 @@
+
+>>> errcode [CLI] global-init-scripts get input-script_id
+{
+  "created_at":42,
+  "created_by":"created_by",
+  "enabled":false,
+  "name":"name",
+  "position":42,
+  "script":"script",
+  "script_id":"script_id",
+  "updated_at":42,
+  "updated_by":"updated_by"
+}
+
+>>> errcode [CLI] global-init-scripts list
+[
+  {
+    "created_at": 42,
+    "created_by": "created_by",
+    "enabled": false,
+    "name": "name",
+    "position": 42,
+    "script_id": "script_id",
+    "updated_at": 42,
+    "updated_by": "updated_by"
+  }
+]

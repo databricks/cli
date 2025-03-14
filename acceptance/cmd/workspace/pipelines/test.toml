@@ -2,24 +2,42 @@
 
 Local = true
 Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
 [[Server]]
 Pattern = "GET /api/2.0/pipelines/{pipeline_id}"
 Response.Body = '''
 {
     "cause": "cause",
+    
     "cluster_id": "cluster_id",
+    
     "creator_user_name": "creator_user_name",
+    
     "effective_budget_policy_id": "effective_budget_policy_id",
+    
     "health": "ENUM",
+    
     "last_modified": 42,
+    
     "latest_updates": [
     {
     "creation_time": "creation_time",
     "state": "ENUM",
     "update_id": "update_id"}],
+    
     "name": "name",
+    
     "pipeline_id": "pipeline_id",
+    
     "run_as_user_name": "run_as_user_name",
+    
     "spec": {
     "budget_policy_id": "budget_policy_id",
     "catalog": "catalog",
@@ -154,13 +172,16 @@ Response.Body = '''
     "quartz_cron_schedule": "quartz_cron_schedule",
     "timezone_id": "timezone_id"},
     "manual": {}}},
+    
     "state": "ENUM"
+    
 }
 '''
 [[Server]]
 Pattern = "GET /api/2.0/pipelines"
 Response.Body = '''
 {
+    "next_page_token": "",
     "statuses": [
     {
     "cluster_id": "cluster_id",
@@ -175,5 +196,6 @@ Response.Body = '''
     "pipeline_id": "pipeline_id",
     "run_as_user_name": "run_as_user_name",
     "state": "ENUM"}]
+    
 }
 '''

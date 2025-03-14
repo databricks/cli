@@ -1,0 +1,19 @@
+
+>>> errcode [CLI] clean-room-task-runs list input-clean_room_name
+[
+  {
+    "collaborator_job_run_info": {
+      "collaborator_alias": "collaborator_alias",
+      "collaborator_job_id": 42,
+      "collaborator_job_run_id": 42,
+      "collaborator_task_run_id": 42,
+      "collaborator_workspace_id": 42
+    },
+    "notebook_job_run_state": {},
+    "notebook_name": "notebook_name",
+    "output_schema_expiration_time": 42,
+    "output_schema_name": "output_schema_name",
+    "run_duration": 42,
+    "start_time": 42
+  }
+]

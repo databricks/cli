@@ -1,0 +1,19 @@
+
+>>> errcode [CLI] token-management get input-token_id
+{
+  "token_info": {
+    "comment":"comment",
+    "created_by_id":42,
+    "created_by_username":"created_by_username",
+    "creation_time":42,
+    "expiry_time":42,
+    "last_used_day":42,
+    "owner_id":42,
+    "token_id":"token_id",
+    "workspace_id":42
+  }
+}
+
+>>> errcode [CLI] token-management list
+ID        Created By           Comment
+token_id  created_by_username  comment

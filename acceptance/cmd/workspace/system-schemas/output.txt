@@ -1,0 +1,8 @@
+
+>>> errcode [CLI] system-schemas list input-metastore_id
+[
+  {
+    "schema": "schema",
+    "state": "ENUM"
+  }
+]

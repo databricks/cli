@@ -1,15 +1,31 @@
 # Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+{{- $excludes :=
+	list
+		"command-execution"
+		"statement-execution"
+		"dbfs"
+		"dbsql-permissions"
+		"account-access-control-proxy"
+		"files"
+        "dashboards"
+        "queries-legacy"
+}}
 
 {{- $cmdGrp := .KebabName }}
-{{- $supportedGrps := list "jobs" "clusters" "pipelines" "repos" }}
-{{- if not (in $supportedGrps $cmdGrp)}}
-	{{skipThisFile}}
+{{- if or .HasParent (or .IsAccounts (in $excludes .KebabName))  }}
+{{skipThisFile}}
 {{- end}}
+{{- $generated := false -}}
 {{- $supportedMethods := list "get" "list" "list-pipelines" }}
 {{- range .Methods}}
 {{- if in $supportedMethods .KebabName}}
+{{- $generated = true }}
 trace errcode $CLI {{$cmdGrp}} {{.KebabName}} {{ template "required-input" . }}
 {{- end}}
+{{- end}}
+
+{{- if not $generated }}
+{{skipThisFile}}
 {{- end}}
 
 {{- define "required-input" -}}

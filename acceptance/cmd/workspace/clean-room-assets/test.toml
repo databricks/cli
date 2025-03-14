@@ -1,0 +1,95 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+[[Server]]
+Pattern = "GET /api/2.0/clean-rooms/{clean_room_name}/assets/{asset_type}/{asset_full_name}"
+Response.Body = '''
+{
+    "added_at": 42,
+    
+    "asset_type": "ENUM",
+    
+    "foreign_table": {
+    "columns": [
+    {}]},
+    
+    "foreign_table_local_details": {
+    "local_name": "local_name"},
+    
+    "name": "name",
+    
+    "notebook": {
+    "etag": "etag",
+    "notebook_content": "notebook_content"},
+    
+    "owner_collaborator_alias": "owner_collaborator_alias",
+    
+    "status": "ENUM",
+    
+    "table": {
+    "columns": [
+    {}]},
+    
+    "table_local_details": {
+    "local_name": "local_name",
+    "partitions": [
+    {}]},
+    
+    "view": {
+    "columns": [
+    {}]},
+    
+    "view_local_details": {
+    "local_name": "local_name"},
+    
+    "volume_local_details": {
+    "local_name": "local_name"}
+    
+}
+'''
+[[Server]]
+Pattern = "GET /api/2.0/clean-rooms/{clean_room_name}/assets"
+Response.Body = '''
+{
+    "assets": [
+    {
+    "added_at": 42,
+    "asset_type": "ENUM",
+    "foreign_table": {
+    "columns": [
+    {}]},
+    "foreign_table_local_details": {
+    "local_name": "local_name"},
+    "name": "name",
+    "notebook": {
+    "etag": "etag",
+    "notebook_content": "notebook_content"},
+    "owner_collaborator_alias": "owner_collaborator_alias",
+    "status": "ENUM",
+    "table": {
+    "columns": [
+    {}]},
+    "table_local_details": {
+    "local_name": "local_name",
+    "partitions": [
+    {}]},
+    "view": {
+    "columns": [
+    {}]},
+    "view_local_details": {
+    "local_name": "local_name"},
+    "volume_local_details": {
+    "local_name": "local_name"}}],
+    
+    "next_page_token": ""
+}
+'''

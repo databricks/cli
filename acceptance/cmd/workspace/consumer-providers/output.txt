@@ -1,0 +1,40 @@
+
+>>> errcode [CLI] consumer-providers get input-id
+{
+  "provider": {
+    "business_contact_email":"business_contact_email",
+    "company_website_link":"company_website_link",
+    "dark_mode_icon_file_id":"dark_mode_icon_file_id",
+    "dark_mode_icon_file_path":"dark_mode_icon_file_path",
+    "description":"description",
+    "icon_file_id":"icon_file_id",
+    "icon_file_path":"icon_file_path",
+    "id":"id",
+    "is_featured":false,
+    "name":"name",
+    "privacy_policy_link":"privacy_policy_link",
+    "published_by":"published_by",
+    "support_contact_email":"support_contact_email",
+    "term_of_service_link":"term_of_service_link"
+  }
+}
+
+>>> errcode [CLI] consumer-providers list
+[
+  {
+    "business_contact_email": "business_contact_email",
+    "company_website_link": "company_website_link",
+    "dark_mode_icon_file_id": "dark_mode_icon_file_id",
+    "dark_mode_icon_file_path": "dark_mode_icon_file_path",
+    "description": "description",
+    "icon_file_id": "icon_file_id",
+    "icon_file_path": "icon_file_path",
+    "id": "id",
+    "is_featured": false,
+    "name": "name",
+    "privacy_policy_link": "privacy_policy_link",
+    "published_by": "published_by",
+    "support_contact_email": "support_contact_email",
+    "term_of_service_link": "term_of_service_link"
+  }
+]

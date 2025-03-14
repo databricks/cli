@@ -1,0 +1,29 @@
+
+>>> errcode [CLI] schemas get input-full_name
+{
+  "browse_only":false,
+  "catalog_name":"catalog_name",
+  "catalog_type":"catalog_type",
+  "comment":"comment",
+  "created_at":42,
+  "created_by":"created_by",
+  "effective_predictive_optimization_flag": {
+    "inherited_from_name":"inherited_from_name",
+    "inherited_from_type":"ENUM",
+    "value":"ENUM"
+  },
+  "enable_predictive_optimization":"ENUM",
+  "full_name":"full_name",
+  "metastore_id":"metastore_id",
+  "name":"name",
+  "owner":"owner",
+  "schema_id":"schema_id",
+  "storage_location":"storage_location",
+  "storage_root":"storage_root",
+  "updated_at":42,
+  "updated_by":"updated_by"
+}
+
+>>> errcode [CLI] schemas list input-catalog_name
+Full Name  Owner  Comment
+full_name  owner  comment

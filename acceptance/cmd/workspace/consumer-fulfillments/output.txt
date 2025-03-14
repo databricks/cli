@@ -1,0 +1,24 @@
+
+>>> errcode [CLI] consumer-fulfillments get input-listing_id
+[
+  {
+    "data_object_type": "data_object_type",
+    "name": "name"
+  }
+]
+
+>>> errcode [CLI] consumer-fulfillments list input-listing_id
+[
+  {
+    "fulfillment_type": "ENUM",
+    "listing_id": "listing_id",
+    "recipient_type": "ENUM",
+    "repo_info": {
+      "git_repo_url": "git_repo_url"
+    },
+    "share_info": {
+      "name": "name",
+      "type": "ENUM"
+    }
+  }
+]

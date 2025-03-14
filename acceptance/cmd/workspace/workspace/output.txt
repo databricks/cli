@@ -1,0 +1,4 @@
+
+>>> errcode [CLI] workspace list input-path
+ID  Type  Language  Path
+42  ENUM  ENUM      path

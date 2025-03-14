@@ -1,0 +1,100 @@
+
+>>> errcode [CLI] functions get input-name
+{
+  "browse_only":false,
+  "catalog_name":"catalog_name",
+  "comment":"comment",
+  "created_at":42,
+  "created_by":"created_by",
+  "data_type":"ENUM",
+  "external_language":"external_language",
+  "external_name":"external_name",
+  "full_data_type":"full_data_type",
+  "full_name":"full_name",
+  "function_id":"function_id",
+  "input_params": {
+    "parameters": [
+      {
+        "comment":"comment",
+        "name":"name",
+        "parameter_default":"parameter_default",
+        "parameter_mode":"ENUM",
+        "parameter_type":"ENUM",
+        "position":42,
+        "type_interval_type":"type_interval_type",
+        "type_json":"type_json",
+        "type_name":"ENUM",
+        "type_precision":42,
+        "type_scale":42,
+        "type_text":"type_text"
+      }
+    ]
+  },
+  "is_deterministic":false,
+  "is_null_call":false,
+  "metastore_id":"metastore_id",
+  "name":"name",
+  "owner":"owner",
+  "parameter_style":"ENUM",
+  "properties":"properties",
+  "return_params": {
+    "parameters": [
+      {
+        "comment":"comment",
+        "name":"name",
+        "parameter_default":"parameter_default",
+        "parameter_mode":"ENUM",
+        "parameter_type":"ENUM",
+        "position":42,
+        "type_interval_type":"type_interval_type",
+        "type_json":"type_json",
+        "type_name":"ENUM",
+        "type_precision":42,
+        "type_scale":42,
+        "type_text":"type_text"
+      }
+    ]
+  },
+  "routine_body":"ENUM",
+  "routine_definition":"routine_definition",
+  "routine_dependencies": {
+    "dependencies": [
+      {
+        "function": {
+          "function_full_name":"function_full_name"
+        },
+        "table": {
+          "table_full_name":"table_full_name"
+        }
+      }
+    ]
+  },
+  "schema_name":"schema_name",
+  "security_type":"ENUM",
+  "specific_name":"specific_name",
+  "sql_data_access":"ENUM",
+  "sql_path":"sql_path",
+  "updated_at":42,
+  "updated_by":"updated_by"
+}
+
+>>> errcode [CLI] functions list input-catalog_nameinput-schema_name
+Error: accepts 2 arg(s), received 1
+
+Usage:
+  databricks functions list CATALOG_NAME SCHEMA_NAME [flags]
+
+Flags:
+  -h, --help                help for list
+      --include-browse      Whether to include functions in the response for which the principal can only access selective metadata for.
+      --max-results int     Maximum number of functions to return.
+      --page-token string   Opaque pagination token to go to next page based on previous query.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+Exit code: 1

@@ -2,6 +2,14 @@
 
 Local = true
 Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
 [[Server]]
 Pattern = "GET /api/2.1/clusters/get"
 Response.Body = '''
@@ -9,7 +17,9 @@ Response.Body = '''
     "autoscale": {
     "max_workers": 42,
     "min_workers": 42},
+    
     "autotermination_minutes": 42,
+    
     "aws_attributes": {
     "availability": "ENUM",
     "ebs_volume_count": 42,
@@ -21,6 +31,7 @@ Response.Body = '''
     "instance_profile_arn": "instance_profile_arn",
     "spot_bid_price_percent": 42,
     "zone_id": "zone_id"},
+    
     "azure_attributes": {
     "availability": "ENUM",
     "first_on_demand": 42,
@@ -28,8 +39,11 @@ Response.Body = '''
     "log_analytics_primary_key": "log_analytics_primary_key",
     "log_analytics_workspace_id": "log_analytics_workspace_id"},
     "spot_bid_max_price": 42},
+    
     "cluster_cores": 42,
+    
     "cluster_id": "cluster_id",
+    
     "cluster_log_conf": {
     "dbfs": {
     "destination": "destination"},
@@ -43,23 +57,33 @@ Response.Body = '''
     "region": "region"},
     "volumes": {
     "destination": "destination"}},
+    
     "cluster_log_status": {
     "last_attempted": 42,
     "last_exception": "last_exception"},
+    
     "cluster_memory_mb": 42,
+    
     "cluster_name": "cluster_name",
+    
     "cluster_source": "ENUM",
+    
     "creator_user_name": "creator_user_name",
+    
     "custom_tags": {
 },
+    
     "data_security_mode": "ENUM",
+    
     "default_tags": {
 },
+    
     "docker_image": {
     "basic_auth": {
     "password": "password",
     "username": "username"},
     "url": "url"},
+    
     "driver": {
     "host_private_ip": "host_private_ip",
     "instance_id": "instance_id",
@@ -69,10 +93,15 @@ Response.Body = '''
     "private_ip": "private_ip",
     "public_dns": "public_dns",
     "start_timestamp": 42},
+    
     "driver_instance_pool_id": "driver_instance_pool_id",
+    
     "driver_node_type_id": "driver_node_type_id",
+    
     "enable_elastic_disk": false,
+    
     "enable_local_disk_encryption": false,
+    
     "executors": [
     {
     "host_private_ip": "host_private_ip",
@@ -83,6 +112,7 @@ Response.Body = '''
     "private_ip": "private_ip",
     "public_dns": "public_dns",
     "start_timestamp": 42}],
+    
     "gcp_attributes": {
     "availability": "ENUM",
     "boot_disk_size": 42,
@@ -90,6 +120,7 @@ Response.Body = '''
     "local_ssd_count": 42,
     "use_preemptible_executors": false,
     "zone_id": "zone_id"},
+    
     "init_scripts": [
     {
     "abfss": {
@@ -112,23 +143,39 @@ Response.Body = '''
     "destination": "destination"},
     "workspace": {
     "destination": "destination"}}],
+    
     "instance_pool_id": "instance_pool_id",
+    
     "is_single_node": false,
+    
     "jdbc_port": 42,
+    
     "kind": "ENUM",
+    
     "last_restarted_time": 42,
+    
     "last_state_loss_time": 42,
+    
     "node_type_id": "node_type_id",
+    
     "num_workers": 42,
+    
     "policy_id": "policy_id",
+    
     "runtime_engine": "ENUM",
+    
     "single_user_name": "single_user_name",
+    
     "spark_conf": {
 },
+    
     "spark_context_id": 42,
+    
     "spark_env_vars": {
 },
+    
     "spark_version": "spark_version",
+    
     "spec": {
     "apply_policy_default_values": false,
     "autoscale": {
@@ -228,22 +275,31 @@ Response.Body = '''
     "clients": {
     "jobs": false,
     "notebooks": false}}},
+    
     "ssh_public_keys": [
     "_list"],
+    
     "start_time": 42,
+    
     "state": "ENUM",
+    
     "state_message": "state_message",
+    
     "terminated_time": 42,
+    
     "termination_reason": {
     "code": "ENUM",
     "parameters": {
 },
     "type": "ENUM"},
+    
     "use_ml_runtime": false,
+    
     "workload_type": {
     "clients": {
     "jobs": false,
     "notebooks": false}}
+    
 }
 '''
 [[Server]]
@@ -490,6 +546,9 @@ Response.Body = '''
     "clients": {
     "jobs": false,
     "notebooks": false}}}],
+    
+    "next_page_token": "",
     "prev_page_token": "prev_page_token"
+    
 }
 '''

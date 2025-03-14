@@ -1,0 +1,84 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/metastores/{id}"
+Response.Body = '''
+{
+    "cloud": "cloud",
+    
+    "created_at": 42,
+    
+    "created_by": "created_by",
+    
+    "default_data_access_config_id": "default_data_access_config_id",
+    
+    "delta_sharing_organization_name": "delta_sharing_organization_name",
+    
+    "delta_sharing_recipient_token_lifetime_in_seconds": 42,
+    
+    "delta_sharing_scope": "ENUM",
+    
+    "external_access_enabled": false,
+    
+    "global_metastore_id": "global_metastore_id",
+    
+    "metastore_id": "metastore_id",
+    
+    "name": "name",
+    
+    "owner": "owner",
+    
+    "privilege_model_version": "privilege_model_version",
+    
+    "region": "region",
+    
+    "storage_root": "storage_root",
+    
+    "storage_root_credential_id": "storage_root_credential_id",
+    
+    "storage_root_credential_name": "storage_root_credential_name",
+    
+    "updated_at": 42,
+    
+    "updated_by": "updated_by"
+    
+}
+'''
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/metastores"
+Response.Body = '''
+{
+    "metastores": [
+    {
+    "cloud": "cloud",
+    "created_at": 42,
+    "created_by": "created_by",
+    "default_data_access_config_id": "default_data_access_config_id",
+    "delta_sharing_organization_name": "delta_sharing_organization_name",
+    "delta_sharing_recipient_token_lifetime_in_seconds": 42,
+    "delta_sharing_scope": "ENUM",
+    "external_access_enabled": false,
+    "global_metastore_id": "global_metastore_id",
+    "metastore_id": "metastore_id",
+    "name": "name",
+    "owner": "owner",
+    "privilege_model_version": "privilege_model_version",
+    "region": "region",
+    "storage_root": "storage_root",
+    "storage_root_credential_id": "storage_root_credential_id",
+    "storage_root_credential_name": "storage_root_credential_name",
+    "updated_at": 42,
+    "updated_by": "updated_by"}]
+    
+}
+'''

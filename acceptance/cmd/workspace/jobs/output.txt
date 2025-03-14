@@ -6,6 +6,7 @@
   "effective_budget_policy_id":"effective_budget_policy_id",
   "has_more":false,
   "job_id":42,
+  "next_page_token":"",
   "run_as_user_name":"run_as_user_name",
   "settings": {
     "budget_policy_id":"budget_policy_id",

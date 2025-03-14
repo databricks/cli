@@ -1,0 +1,101 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/ServicePrincipals/{id}"
+Response.Body = '''
+{
+    "active": false,
+    
+    "application_id": "application_id",
+    
+    "display_name": "display_name",
+    
+    "entitlements": [
+    {
+    "display": "display",
+    "primary": false,
+    "$ref": "$ref",
+    "type": "type",
+    "value": "value"}],
+    
+    "external_id": "external_id",
+    
+    "groups": [
+    {
+    "display": "display",
+    "primary": false,
+    "$ref": "$ref",
+    "type": "type",
+    "value": "value"}],
+    
+    "id": "id",
+    
+    "roles": [
+    {
+    "display": "display",
+    "primary": false,
+    "$ref": "$ref",
+    "type": "type",
+    "value": "value"}],
+    
+    "schemas": [
+    "ENUM"]
+    
+}
+'''
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/ServicePrincipals"
+Response.Body = '''
+{
+    "items_per_page": 42,
+    
+    "resources": [
+    {
+    "active": false,
+    "applicationId": "applicationId",
+    "displayName": "displayName",
+    "entitlements": [
+    {
+    "display": "display",
+    "primary": false,
+    "$ref": "$ref",
+    "type": "type",
+    "value": "value"}],
+    "externalId": "externalId",
+    "groups": [
+    {
+    "display": "display",
+    "primary": false,
+    "$ref": "$ref",
+    "type": "type",
+    "value": "value"}],
+    "id": "id",
+    "roles": [
+    {
+    "display": "display",
+    "primary": false,
+    "$ref": "$ref",
+    "type": "type",
+    "value": "value"}],
+    "schemas": [
+    "ENUM"]}],
+    
+    "schemas": [
+    "ENUM"],
+    
+    "start_index": 42,
+    
+    "total_results": 42
+    
+}
+'''

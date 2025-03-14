@@ -1,0 +1,69 @@
+
+>>> errcode [CLI] alerts get input-id
+{
+  "condition": {
+    "empty_result_state":"ENUM",
+    "op":"ENUM",
+    "operand": {
+      "column": {
+        "name":"name"
+      }
+    },
+    "threshold": {
+      "value": {
+        "bool_value":false,
+        "double_value":42,
+        "string_value":"string_value"
+      }
+    }
+  },
+  "create_time":"create_time",
+  "custom_body":"custom_body",
+  "custom_subject":"custom_subject",
+  "display_name":"display_name",
+  "id":"id",
+  "lifecycle_state":"ENUM",
+  "notify_on_ok":false,
+  "owner_user_name":"owner_user_name",
+  "parent_path":"parent_path",
+  "query_id":"query_id",
+  "seconds_to_retrigger":42,
+  "state":"ENUM",
+  "trigger_time":"trigger_time",
+  "update_time":"update_time"
+}
+
+>>> errcode [CLI] alerts list
+[
+  {
+    "condition": {
+      "empty_result_state": "ENUM",
+      "op": "ENUM",
+      "operand": {
+        "column": {
+          "name": "name"
+        }
+      },
+      "threshold": {
+        "value": {
+          "bool_value": false,
+          "double_value": 42,
+          "string_value": "string_value"
+        }
+      }
+    },
+    "create_time": "create_time",
+    "custom_body": "custom_body",
+    "custom_subject": "custom_subject",
+    "display_name": "display_name",
+    "id": "id",
+    "lifecycle_state": "ENUM",
+    "notify_on_ok": false,
+    "owner_user_name": "owner_user_name",
+    "query_id": "query_id",
+    "seconds_to_retrigger": 42,
+    "state": "ENUM",
+    "trigger_time": "trigger_time",
+    "update_time": "update_time"
+  }
+]

@@ -1,0 +1,4 @@
+
+>>> errcode [CLI] tokens list
+ID        Expiry time  Comment
+token_id  42           comment

@@ -1,0 +1,13 @@
+
+>>> errcode [CLI] artifact-allowlists get ENUM
+{
+  "artifact_matchers": [
+    {
+      "artifact":"artifact",
+      "match_type":"ENUM"
+    }
+  ],
+  "created_at":42,
+  "created_by":"created_by",
+  "metastore_id":"metastore_id"
+}

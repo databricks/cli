@@ -1,0 +1,21 @@
+
+>>> errcode [CLI] ip-access-lists get input-ip_access_list_id
+{
+  "ip_access_list": {
+    "address_count":42,
+    "created_at":42,
+    "created_by":42,
+    "enabled":false,
+    "ip_addresses": [
+      "_list"
+    ],
+    "label":"label",
+    "list_id":"list_id",
+    "list_type":"ENUM",
+    "updated_at":42,
+    "updated_by":42
+  }
+}
+
+>>> errcode [CLI] ip-access-lists list
+list_id  label  _list  BLOCK  DISABLED

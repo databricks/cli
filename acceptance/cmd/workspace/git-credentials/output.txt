@@ -1,0 +1,16 @@
+
+>>> errcode [CLI] git-credentials get 42
+{
+  "credential_id":42,
+  "git_provider":"git_provider",
+  "git_username":"git_username"
+}
+
+>>> errcode [CLI] git-credentials list
+[
+  {
+    "credential_id": 42,
+    "git_provider": "git_provider",
+    "git_username": "git_username"
+  }
+]

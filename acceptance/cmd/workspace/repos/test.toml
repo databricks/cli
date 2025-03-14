@@ -2,25 +2,41 @@
 
 Local = true
 Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
 [[Server]]
 Pattern = "GET /api/2.0/repos/{repo_id}"
 Response.Body = '''
 {
     "branch": "branch",
+    
     "head_commit_id": "head_commit_id",
+    
     "id": 42,
+    
     "path": "path",
+    
     "provider": "provider",
+    
     "sparse_checkout": {
     "patterns": [
     "_list"]},
+    
     "url": "url"
+    
 }
 '''
 [[Server]]
 Pattern = "GET /api/2.0/repos"
 Response.Body = '''
 {
+    "next_page_token": "",
     "repos": [
     {
     "branch": "branch",
@@ -32,5 +48,6 @@ Response.Body = '''
     "patterns": [
     "_list"]},
     "url": "url"}]
+    
 }
 '''

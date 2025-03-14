@@ -1,0 +1,30 @@
+
+>>> errcode [CLI] external-locations get input-name
+{
+  "access_point":"access_point",
+  "browse_only":false,
+  "comment":"comment",
+  "created_at":42,
+  "created_by":"created_by",
+  "credential_id":"credential_id",
+  "credential_name":"credential_name",
+  "encryption_details": {
+    "sse_encryption_details": {
+      "algorithm":"ENUM",
+      "aws_kms_key_arn":"aws_kms_key_arn"
+    }
+  },
+  "fallback":false,
+  "isolation_mode":"ENUM",
+  "metastore_id":"metastore_id",
+  "name":"name",
+  "owner":"owner",
+  "read_only":false,
+  "updated_at":42,
+  "updated_by":"updated_by",
+  "url":"url"
+}
+
+>>> errcode [CLI] external-locations list
+Name  Credential       URL
+name  credential_name  url

@@ -1,0 +1,83 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/tables/{table_name}/monitor"
+Response.Body = '''
+{
+    "assets_dir": "assets_dir",
+    
+    "baseline_table_name": "baseline_table_name",
+    
+    "custom_metrics": [
+    {
+    "definition": "definition",
+    "input_columns": [
+    "_list"],
+    "name": "name",
+    "output_data_type": "output_data_type",
+    "type": "ENUM"}],
+    
+    "dashboard_id": "dashboard_id",
+    
+    "data_classification_config": {
+    "enabled": false},
+    
+    "drift_metrics_table_name": "drift_metrics_table_name",
+    
+    "inference_log": {
+    "granularities": [
+    "_list"],
+    "label_col": "label_col",
+    "model_id_col": "model_id_col",
+    "prediction_col": "prediction_col",
+    "prediction_proba_col": "prediction_proba_col",
+    "problem_type": "ENUM",
+    "timestamp_col": "timestamp_col"},
+    
+    "latest_monitor_failure_msg": "latest_monitor_failure_msg",
+    
+    "monitor_version": "monitor_version",
+    
+    "notifications": {
+    "on_failure": {
+    "email_addresses": [
+    "_list"]},
+    "on_new_classification_tag_detected": {
+    "email_addresses": [
+    "_list"]}},
+    
+    "output_schema_name": "output_schema_name",
+    
+    "profile_metrics_table_name": "profile_metrics_table_name",
+    
+    "schedule": {
+    "pause_status": "ENUM",
+    "quartz_cron_expression": "quartz_cron_expression",
+    "timezone_id": "timezone_id"},
+    
+    "slicing_exprs": [
+    "_list"],
+    
+    "snapshot": {},
+    
+    "status": "ENUM",
+    
+    "table_name": "table_name",
+    
+    "time_series": {
+    "granularities": [
+    "_list"],
+    "timestamp_col": "timestamp_col"}
+    
+}
+'''

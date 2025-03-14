@@ -1,0 +1,24 @@
+
+>>> errcode [CLI] provider-files get input-file_id
+{
+  "file_info": {
+    "created_at":42,
+    "display_name":"display_name",
+    "download_link":"download_link",
+    "file_parent": {
+      "file_parent_type":"ENUM",
+      "parent_id":"parent_id"
+    },
+    "id":"id",
+    "marketplace_file_type":"ENUM",
+    "mime_type":"mime_type",
+    "status":"ENUM",
+    "status_message":"status_message",
+    "updated_at":42
+  }
+}
+
+>>> errcode [CLI] provider-files list
+Error: please provide command input in JSON format by specifying the --json flag
+
+Exit code: 1

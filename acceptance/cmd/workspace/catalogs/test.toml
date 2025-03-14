@@ -1,0 +1,109 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/catalogs/{name}"
+Response.Body = '''
+{
+    "browse_only": false,
+    
+    "catalog_type": "ENUM",
+    
+    "comment": "comment",
+    
+    "connection_name": "connection_name",
+    
+    "created_at": 42,
+    
+    "created_by": "created_by",
+    
+    "effective_predictive_optimization_flag": {
+    "inherited_from_name": "inherited_from_name",
+    "inherited_from_type": "ENUM",
+    "value": "ENUM"},
+    
+    "enable_predictive_optimization": "ENUM",
+    
+    "full_name": "full_name",
+    
+    "isolation_mode": "ENUM",
+    
+    "metastore_id": "metastore_id",
+    
+    "name": "name",
+    
+    "options": {
+},
+    
+    "owner": "owner",
+    
+    "properties": {
+},
+    
+    "provider_name": "provider_name",
+    
+    "provisioning_info": {
+    "state": "ENUM"},
+    
+    "securable_type": "securable_type",
+    
+    "share_name": "share_name",
+    
+    "storage_location": "storage_location",
+    
+    "storage_root": "storage_root",
+    
+    "updated_at": 42,
+    
+    "updated_by": "updated_by"
+    
+}
+'''
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/catalogs"
+Response.Body = '''
+{
+    "catalogs": [
+    {
+    "browse_only": false,
+    "catalog_type": "ENUM",
+    "comment": "comment",
+    "connection_name": "connection_name",
+    "created_at": 42,
+    "created_by": "created_by",
+    "effective_predictive_optimization_flag": {
+    "inherited_from_name": "inherited_from_name",
+    "inherited_from_type": "ENUM",
+    "value": "ENUM"},
+    "enable_predictive_optimization": "ENUM",
+    "full_name": "full_name",
+    "isolation_mode": "ENUM",
+    "metastore_id": "metastore_id",
+    "name": "name",
+    "options": {
+},
+    "owner": "owner",
+    "properties": {
+},
+    "provider_name": "provider_name",
+    "provisioning_info": {
+    "state": "ENUM"},
+    "securable_type": "securable_type",
+    "share_name": "share_name",
+    "storage_location": "storage_location",
+    "storage_root": "storage_root",
+    "updated_at": 42,
+    "updated_by": "updated_by"}],
+    
+    "next_page_token": ""
+}
+'''

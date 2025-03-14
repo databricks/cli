@@ -1,0 +1,42 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/volumes"
+Response.Body = '''
+{
+    "next_page_token": "",
+    "volumes": [
+    {
+    "access_point": "access_point",
+    "browse_only": false,
+    "catalog_name": "catalog_name",
+    "comment": "comment",
+    "created_at": 42,
+    "created_by": "created_by",
+    "encryption_details": {
+    "sse_encryption_details": {
+    "algorithm": "ENUM",
+    "aws_kms_key_arn": "aws_kms_key_arn"}},
+    "full_name": "full_name",
+    "metastore_id": "metastore_id",
+    "name": "name",
+    "owner": "owner",
+    "schema_name": "schema_name",
+    "storage_location": "storage_location",
+    "updated_at": 42,
+    "updated_by": "updated_by",
+    "volume_id": "volume_id",
+    "volume_type": "ENUM"}]
+    
+}
+'''

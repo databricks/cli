@@ -1,0 +1,79 @@
+
+>>> errcode [CLI] alerts-legacy get input-alert_id
+{
+  "created_at":"created_at",
+  "id":"id",
+  "last_triggered_at":"last_triggered_at",
+  "name":"name",
+  "options": {
+    "column":"column",
+    "custom_body":"custom_body",
+    "custom_subject":"custom_subject",
+    "empty_result_state":"ENUM",
+    "muted":false,
+    "op":"op",
+    "value":null
+  },
+  "parent":"parent",
+  "query": {
+    "created_at":"created_at",
+    "data_source_id":"data_source_id",
+    "description":"description",
+    "id":"id",
+    "is_archived":false,
+    "is_draft":false,
+    "is_safe":false,
+    "name":"name",
+    "options": {
+      "catalog":"catalog",
+      "moved_to_trash_at":"moved_to_trash_at",
+      "parameters": [
+        {
+          "enumOptions":"enumOptions",
+          "multiValuesOptions": {
+            "prefix":"prefix",
+            "separator":"separator",
+            "suffix":"suffix"
+          },
+          "name":"name",
+          "queryId":"queryId",
+          "title":"title",
+          "type":"ENUM"
+        }
+      ],
+      "schema":"schema"
+    },
+    "query":"query",
+    "tags": [
+      "tag_string_list"
+    ],
+    "updated_at":"updated_at",
+    "user_id":42
+  },
+  "rearm":42,
+  "state":"ENUM",
+  "updated_at":"updated_at",
+  "user": {
+    "email":"email",
+    "id":42,
+    "name":"name"
+  }
+}
+
+>>> errcode [CLI] alerts-legacy list
+Error: failed to unmarshal response body: json: cannot unmarshal object into Go value of type []sql.LegacyAlert. This is likely a bug in the Databricks SDK for Go or the underlying REST API. Please report this issue with the following debugging information to the SDK issue tracker at https://github.com/databricks/databricks-sdk-go/issues. Request log:
+```
+GET /api/2.0/preview/sql/alerts
+> * Host: 
+> * Accept: application/json
+> * Authorization: REDACTED
+> * Traceparent: (redacted)
+> * User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/alerts-legacy_list cmd-exec-id/[UUID] auth/pat
+< HTTP/1.1 200 OK
+< * Content-Length: 4
+< * Content-Type: text/plain; charset=utf-8
+< * Date: (redacted)
+< {}
+```
+
+Exit code: 1

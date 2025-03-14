@@ -1,23 +1,47 @@
 # Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+{{- $excludes :=
+	list
+		"command-execution"
+		"statement-execution"
+		"dbfs"
+		"dbsql-permissions"
+		"account-access-control-proxy"
+		"files"
+        "dashboards"
+        "queries-legacy"
+}}
 
 Local = true
 Cloud = false
 
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+
 {{- $seen := list "" }}
 {{- $cmdGrp := .KebabName }}
-{{- $supportedGrps := list "jobs" "clusters" "pipelines" "repos" }}
-{{- if not (in $supportedGrps $cmdGrp)}}
-	{{skipThisFile}}
+{{- if or .HasParent (or .IsAccounts (in $excludes .KebabName))  }}
+{{skipThisFile}}
 {{- end}}
+{{- $generated := false -}}
 {{- $supportedMethods := list "get" "list" "list-pipelines" }}
 {{- range .Methods}}
 {{- if in $supportedMethods .KebabName}}
+{{- $generated = true }}
 [[Server]]
 Pattern = "{{.Verb}} {{replaceAll "2.2" "2.1" .Path}}"
 Response.Body = '''
 {{ template "response-body" dict "Response" .Response "Seen" $seen }}
 '''
 {{- end}}
+{{- end}}
+
+{{- if not $generated }}
+{{skipThisFile}}
 {{- end}}
 
 {{- define "response-body" -}}
@@ -27,6 +51,8 @@ Response.Body = '''
     {{- range $i, $f := $fields}}
     {{- if (not (eq .SnakeName "next_page_token")) }}
     "{{.SnakeName}}": {{ template "value" dict "Key" .SnakeName "Entity" .Entity "Seen" $seen}}{{if notLast $i $fields}},{{end}}
+    {{else}}
+    "{{.SnakeName}}": ""{{if notLast $i $fields}},{{end}}
     {{- end}}
     {{- end}}
 }
@@ -37,25 +63,20 @@ Response.Body = '''
 {{- $key := .Key }}
 {{- if .Entity.IsString -}}
 "{{ $key }}"
-{{- end}}
-{{- if .Entity.IsNumber -}}
+{{- else if .Entity.IsNumber -}}
 42
-{{- end -}}
-{{- if .Entity.IsEnum -}}
+{{- else if .Entity.IsEnum -}}
 "ENUM"
-{{- end -}}
-{{- if .Entity.IsBool -}}
+{{- else if .Entity.IsBool -}}
 false
-{{- end -}}
-{{- if .Entity.IsMap -}}
+{{- else if .Entity.IsMap -}}
 {
     {{- $fields := .Entity.Fields }}
     {{- range $i, $f := $fields}}
     "{{.Name}}": {{template "value" dict "Key" .Name "Entity" .Entity.MapValue "Seen" $seen  }}{{if notLast $i $fields}},{{end}}
     {{- end }}
 }
-{{- end }}
-{{- if .Entity.IsObject -}}
+{{- else if .Entity.IsObject -}}
 {
     {{- $objName := .Entity.KebabName }}
     {{- if not (in $seen $objName) }}
@@ -70,10 +91,11 @@ false
     {{- end }}
     {{- end -}}
 }
-{{- end }}
-{{- if .Entity.IsArray -}}
+{{- else if .Entity.IsArray -}}
 [
     {{ template "value" dict "Key" .Entity.SnakeName "Entity" .Entity.ArrayValue "Seen" $seen  -}}
 ]
+{{- else -}}
+null
 {{- end }}
 {{- end -}}
