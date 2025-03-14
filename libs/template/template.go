@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/google/uuid"
 	//"github.com/databricks/cli/libs/git"
 )
 
@@ -19,6 +21,7 @@ type Template struct {
 }
 
 func Render(templateName string, params map[string]any, helpers map[string]string) (map[string]string, error) {
+	bundleUuid = uuid.New().String()
 	tmpl := GetTemplate(templateName)
 	w := tmpl.Writer.(*defaultWriter)
 	w.configValues = params
