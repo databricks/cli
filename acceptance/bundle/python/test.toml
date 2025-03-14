@@ -1,0 +1,2 @@
+Local = true
+Cloud = false # tests don't interract with APIs

@@ -1,0 +1,15 @@
+bundle:
+  name: my_project
+
+sync: {} # dont need to copy files
+
+experimental:
+  python:
+    resources:
+    - "resources:load_resources_1"
+    - "resources:load_resources_2"
+
+resources:
+  jobs:
+    my_job_3:
+      name: "Job 3"
