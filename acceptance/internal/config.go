@@ -187,7 +187,7 @@ func ExpandEnvMatrix(matrix map[string][]string) [][]string {
 	}
 	sort.Strings(keys)
 
-	result := [][]string{[]string{}}
+	result := [][]string{{}}
 
 	// For each key, expand the current result with all possible values for that key
 	for _, key := range keys {
