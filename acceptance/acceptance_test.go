@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
@@ -112,7 +113,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	execPath := ""
 
 	if InprocessMode {
-		cmdServer := StartCmdServer(t)
+		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
@@ -137,7 +138,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		defaultServer := testserver.New(t)
-		AddHandlers(defaultServer)
+		internal.AddHandlers(defaultServer)
 		t.Setenv("DATABRICKS_DEFAULT_HOST", defaultServer.URL)
 
 		homeDir := t.TempDir()
@@ -198,7 +199,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		t.Run(dir, func(t *testing.T) {
 			selectedDirs += 1
 
-			config, configPath := LoadConfig(t, dir)
+			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
 			if skipReason != "" {
@@ -241,7 +242,7 @@ func getTests(t *testing.T) []string {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-func getSkipReason(config *TestConfig, configPath string) string {
+func getSkipReason(config *internal.TestConfig, configPath string) string {
 	if Forcerun {
 		return ""
 	}
@@ -285,7 +286,7 @@ func getSkipReason(config *TestConfig, configPath string) string {
 	return ""
 }
 
-func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config TestConfig, configPath string) {
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string) {
 	tailOutput := Tail
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
@@ -380,7 +381,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			}
 
 			// The earliest handlers take precedence, add default handlers last
-			AddHandlers(server)
+			internal.AddHandlers(server)
 			databricksLocalHost = server.URL
 		}
 
@@ -399,7 +400,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		// For the purposes of replacements, use testUser.
 		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-		user = testUser
+		user = internal.TestUser
 	} else {
 		// Use whatever authentication mechanism is configured by the test runner.
 		workspaceClient, err = databricks.NewWorkspaceClient(&databricks.Config{})
