@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +15,7 @@ func TestExpandEnvMatrix(t *testing.T) {
 		{
 			name:     "empty matrix",
 			matrix:   map[string][]string{},
-			expected: [][]string{},
+			expected: nil,
 		},
 		{
 			name: "single key with single value",
@@ -78,9 +77,7 @@ func TestExpandEnvMatrix(t *testing.T) {
 				"KEY1": {},
 				"KEY2": {},
 			},
-			expected: [][]string{
-				{},
-			},
+			expected: nil,
 		},
 		{
 			name: "example from documentation",
@@ -98,42 +95,7 @@ func TestExpandEnvMatrix(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ExpandEnvMatrix(tt.matrix)
-			
-			// Sort the results for consistent comparison
-			for i := range result {
-				sort.Strings(result[i])
-			}
-			
-			for i := range tt.expected {
-				sort.Strings(tt.expected[i])
-			}
-			
-			// Sort the slices of slices for consistent comparison
-			sort.Slice(result, func(i, j int) bool {
-				return lessStringSlice(result[i], result[j])
-			})
-			
-			sort.Slice(tt.expected, func(i, j int) bool {
-				return lessStringSlice(tt.expected[i], tt.expected[j])
-			})
-			
 			assert.Equal(t, tt.expected, result)
 		})
 	}
-}
-
-// Helper function to compare string slices lexicographically
-func lessStringSlice(a, b []string) bool {
-	minLen := len(a)
-	if len(b) < minLen {
-		minLen = len(b)
-	}
-	
-	for i := 0; i < minLen; i++ {
-		if a[i] != b[i] {
-			return a[i] < b[i]
-		}
-	}
-	
-	return len(a) < len(b)
 }
