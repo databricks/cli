@@ -13,6 +13,7 @@ require (
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
+	github.com/gorilla/websocket v1.5.3 // BSD 2-Clause
 	github.com/hashicorp/go-version v1.7.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.9.1 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.22.0 // MPL 2.0
