@@ -42,10 +42,9 @@ var (
 	Forcerun    bool
 )
 
-// In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
-// Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
-// example: var SingleTest = "bundle/variables/empty"
-var SingleTest = ""
+// In order to debug CLI running under acceptance test, search for TestInprocessMode and update
+// the test name there, e..g "bundle/variables/empty".
+// Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -53,7 +52,7 @@ var SingleTest = ""
 var InprocessMode bool
 
 func init() {
-	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
@@ -80,7 +79,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, SingleTest)
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -189,15 +188,33 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
 	}
 
+	skippedDirs := 0
+	totalDirs := 0
+	selectedDirs := 0
+
 	for _, dir := range testDirs {
+		totalDirs += 1
+
 		t.Run(dir, func(t *testing.T) {
+			selectedDirs += 1
+
+			config, configPath := LoadConfig(t, dir)
+			skipReason := getSkipReason(&config, configPath)
+
+			if skipReason != "" {
+				skippedDirs += 1
+				t.Skip(skipReason)
+			}
+
 			if !InprocessMode {
 				t.Parallel()
 			}
 
-			runTest(t, dir, coverDir, repls.Clone())
+			runTest(t, dir, coverDir, repls.Clone(), config, configPath)
 		})
 	}
+
+	t.Logf("Summary: %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return len(testDirs)
 }
@@ -223,53 +240,58 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
-	config, configPath := LoadConfig(t, dir)
+func getSkipReason(config *TestConfig, configPath string) string {
+	if Forcerun {
+		return ""
+	}
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
-		if !Forcerun {
-			t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
-		}
+		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
+
+	if isRunningOnCloud {
+		if isTruePtr(config.CloudSlow) {
+			if testing.Short() {
+				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+			}
+		}
+
+		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
+		if !isCloudEnabled {
+			return fmt.Sprintf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
+				configPath,
+				cloudEnv,
+				isTruePtr(config.Cloud),
+				isTruePtr(config.CloudSlow),
+			)
+		}
+
+		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
+			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+		}
+
+	} else {
+		// Local run
+		if !isTruePtr(config.Local) {
+			return fmt.Sprintf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+		}
+	}
+
+	return ""
+}
+
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config TestConfig, configPath string) {
 	tailOutput := Tail
+	cloudEnv := os.Getenv("CLOUD_ENV")
+	isRunningOnCloud := cloudEnv != ""
 
 	if isRunningOnCloud && isTruePtr(config.CloudSlow) && testing.Verbose() {
 		// Combination of CloudSlow and -v auto-enables -tail
 		tailOutput = true
-	}
-
-	if !Forcerun {
-		if isRunningOnCloud {
-			if isTruePtr(config.CloudSlow) {
-				if testing.Short() {
-					t.Skipf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
-				}
-			}
-
-			isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
-			if !isCloudEnabled {
-				t.Skipf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
-					configPath,
-					cloudEnv,
-					isTruePtr(config.Cloud),
-					isTruePtr(config.CloudSlow),
-				)
-			}
-
-			if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-				t.Skipf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
-			}
-
-		} else {
-			// Local run
-			if !isTruePtr(config.Local) {
-				t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-			}
-		}
 	}
 
 	id := uuid.New()
