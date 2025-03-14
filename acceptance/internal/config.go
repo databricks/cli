@@ -162,9 +162,8 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 //
 // If any entries is an empty list, that variable is dropped from the matrix before processing.
 func ExpandEnvMatrix(matrix map[string][]string) [][]string {
-	// If the matrix is empty, return an empty slice
 	if len(matrix) == 0 {
-		return [][]string{}
+		return nil
 	}
 
 	// Filter out keys with empty value slices
@@ -175,18 +174,18 @@ func ExpandEnvMatrix(matrix map[string][]string) [][]string {
 		}
 	}
 
-	// If all keys had empty values, return a single empty environment
 	if len(filteredMatrix) == 0 {
-		return [][]string{[]string{}}
+		// Everything was filtered out
+		return nil
 	}
 
-	// Generate all combinations
 	var keys []string
+	// AI TODO Can you use modern golang to get all keys in golang?
+	// AI TODO Also sort the keys
 	for key := range filteredMatrix {
 		keys = append(keys, key)
 	}
 
-	// Start with a single empty environment
 	result := [][]string{[]string{}}
 
 	// For each key, expand the current result with all possible values for that key
