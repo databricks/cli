@@ -39,7 +39,7 @@ var (
 	NoRepl      bool
 	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
 	Tail        bool
-	Force       bool
+	Forcerun    bool
 )
 
 // In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
@@ -57,7 +57,7 @@ func init() {
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
-	flag.BoolVar(&Force, "force", false, "Force running the specified tests, ignore all reasons to skip")
+	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 }
 
 const (
@@ -84,7 +84,7 @@ func TestAccept(t *testing.T) {
 }
 
 func TestInprocessMode(t *testing.T) {
-	if InprocessMode && !Force {
+	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
 	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
@@ -228,7 +228,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
-		if !Force {
+		if !Forcerun {
 			t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 		}
 	}
@@ -242,7 +242,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tailOutput = true
 	}
 
-	if !Force {
+	if !Forcerun {
 		if isRunningOnCloud {
 			if isTruePtr(config.CloudSlow) {
 				if testing.Short() {
