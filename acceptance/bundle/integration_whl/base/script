@@ -1,0 +1,11 @@
+export EXTRA_CONFIG=empty.yml
+envsubst < databricks.yml.tmpl > databricks.yml
+trace cat databricks.yml
+trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
+trace $CLI bundle deploy
+trace $CLI bundle run some_other_job
+
+title "Make a change to code without version change and run the job again"
+update_file.py my_test_code/__main__.py 'Hello from my func' 'UPDATED MY FUNC'
+trace $CLI bundle deploy
+trace $CLI bundle run some_other_job

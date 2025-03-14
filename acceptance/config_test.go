@@ -31,6 +31,10 @@ type TestConfig struct {
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
 
+	// If true, run this test when running with cloud env configured and -short is not passed
+	// This also sets -tail when -v is passed.
+	CloudSlow *bool
+
 	// If true and Cloud=true, run this test only if unity catalog is available in the cloud environment
 	RequiresUnityCatalog *bool
 
@@ -70,6 +74,9 @@ type ServerStub struct {
 
 	// The response body to return.
 	Response testserver.Response
+
+	// Artificial delay in seconds to simulate slow responses.
+	DelaySeconds *float64
 }
 
 // FindConfigs finds all the config relevant for this test,

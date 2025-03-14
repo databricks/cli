@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -75,9 +79,6 @@ func New(ctx context.Context) *cobra.Command {
 		// get the context back
 		ctx = cmd.Context()
 
-		// Detect if the CLI is running on DBR and store this on the context.
-		ctx = dbr.DetectRuntime(ctx)
-
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
@@ -125,8 +126,16 @@ Stack Trace:
 %s`, version, r, string(trace))
 	}()
 
+	// Configure a telemetry logger and store it in the context.
+	ctx = telemetry.WithNewLogger(ctx)
+
+	// Detect if the CLI is running on DBR and store this on the context.
+	ctx = dbr.DetectRuntime(ctx)
+
 	// Set a command execution ID value in the context
 	ctx = command.GenerateExecId(ctx)
+
+	startTime := time.Now()
 
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
@@ -153,6 +162,25 @@ Stack Trace:
 				slog.String("error", err.Error()),
 			)
 		}
+	}
+
+	exitCode := 0
+	if err != nil {
+		exitCode = 1
+	}
+
+	ctx = cmd.Context()
+	telemetryErr := telemetry.Upload(ctx, protos.ExecutionContext{
+		CmdExecID:       command.ExecId(ctx),
+		Version:         build.GetInfo().Version,
+		Command:         commandString(cmd),
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      dbr.RuntimeVersion(ctx),
+		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
+		ExitCode:        int64(exitCode),
+	})
+	if telemetryErr != nil {
+		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)
 	}
 
 	return err

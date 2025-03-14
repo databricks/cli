@@ -1,0 +1,7 @@
+export EXTRA_CONFIG=empty.yml
+envsubst < $TESTDIR/../base/databricks.yml.tmpl > databricks.yml
+cp -r $TESTDIR/../base/{$EXTRA_CONFIG,setup.py,my_test_code} .
+trace cat databricks.yml
+trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
+trace $CLI bundle deploy
+trace $CLI bundle run some_other_job --python-params param1,param2

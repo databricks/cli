@@ -1,0 +1,21 @@
+Local = false
+#CloudSlow = true
+Ignore = [
+    ".databricks",
+    "build",
+    "dist",
+    "my_test_code",
+    "my_test_code.egg-info",
+    "setup.py",
+    "databricks.yml",
+    "python_wheel_wrapper.yml",
+    "empty.yml",
+]
+
+[[Repls]]
+Old = '2\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d'
+New = "[TIMESTAMP]"
+
+[[Repls]]
+Old = '\d{5,}'
+New = "[NUMID]"
