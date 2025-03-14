@@ -1,4 +1,4 @@
-package acceptance_test
+package internal
 
 import (
 	"encoding/json"
@@ -15,12 +15,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-var testUser = iam.User{
+var TestUser = iam.User{
 	Id:       "1000012345",
 	UserName: "tester@databricks.com",
 }
 
-var testMetastore = catalog.MetastoreAssignment{
+var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
 	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
 	WorkspaceId:        470123456789500,
@@ -71,7 +71,7 @@ func AddHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
 		return testserver.Response{
 			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
-			Body:    testUser,
+			Body:    TestUser,
 		}
 	})
 
@@ -117,7 +117,7 @@ func AddHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
-		return testMetastore
+		return TestMetastore
 	})
 
 	server.Handle("GET", "/api/2.0/permissions/directories/{objectId}", func(req testserver.Request) any {
