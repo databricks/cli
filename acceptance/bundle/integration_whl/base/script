@@ -1,8 +1,5 @@
-export SPARK_VERSION=$DEFAULT_SPARK_VERSION
-export PYTHON_WHEEL_WRAPPER=false
-envsubst < input.json.tmpl > input.json
-trace cat input.json
-$CLI bundle init . --config-file input.json
+export EXTRA_CONFIG=empty.yml
+envsubst < databricks.yml.tmpl > databricks.yml
 trace cat databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy
