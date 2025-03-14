@@ -64,6 +64,8 @@ type TestConfig struct {
 	Ignore []string
 
 	CompiledIgnoreObject *ignore.GitIgnore
+
+	EnvMatrix map[string][]string
 }
 
 type ServerStub struct {
@@ -148,4 +150,16 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	}
 
 	return config
+}
+
+// This function takes EnvMatrix and expands into a slice of environment configurations.
+// Each environment configuration is a slice of env vars in standard Golang format.
+// For example,
+//
+//	input: {"KEY": ["A", "B"], "OTHER": ["VALUE"]}
+//
+// output: [["KEY=A", "OTHER=VALUE"], ["KEY=B", "OTHER=VALUE"]]
+//
+// If any entries is an empty list, that variable is dropped from the matrix before processing.
+func ExpandEnvMatrix(matrix map[string][]string) [][]string {
 }
