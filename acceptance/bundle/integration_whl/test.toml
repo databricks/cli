@@ -19,3 +19,16 @@ New = "[TIMESTAMP]"
 [[Repls]]
 Old = '\d{5,}'
 New = "[NUMID]"
+
+[EnvMatrix]
+DEFAULT_SPARK_VERSION = [
+    "18.x-snapshot-scala2.13",
+    "17.x-snapshot-scala2.13",
+    "16.3.x-scala2.12",
+    "16.2.x-snapshot-scala2.12",
+    "15.4.x-scala2.12",
+    "15.4.x-snapshot-scala2.12",
+    "14.3.x-scala2.12",
+    "13.3.x-snapshot-scala2.12",
+    "12.2.x-snapshot-scala2.12",
+]
