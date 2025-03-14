@@ -1,0 +1,3 @@
+trace uv run --with databricks-bundles==0.7.2 -q $CLI bundle validate --output json
+
+rm -fr .databricks __pycache__

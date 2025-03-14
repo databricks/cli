@@ -1,0 +1,15 @@
+bundle:
+  name: my_project
+
+sync: {} # dont need to copy files
+
+experimental:
+  python:
+    mutators:
+    - "mutators:add_task_1"
+    - "mutators:add_task_2"
+
+resources:
+  jobs:
+    my_job:
+      tasks: []
