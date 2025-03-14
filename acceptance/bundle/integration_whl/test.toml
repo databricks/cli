@@ -7,8 +7,9 @@ Ignore = [
     "my_test_code",
     "my_test_code.egg-info",
     "setup.py",
-    "input.json",
     "databricks.yml",
+    "python_wheel_wrapper.yml",
+    "empty.yml",
 ]
 
 [[Repls]]

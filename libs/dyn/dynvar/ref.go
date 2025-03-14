@@ -8,6 +8,9 @@ import (
 )
 
 var (
+	// !!! Should be in sync with _variable_regex in Python code.
+	// !!!
+	// !!! See experimental/python/databricks/bundles/core/_transform.py
 	baseVarDef = `[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`
 	re         = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, baseVarDef, baseVarDef))
 )
@@ -33,6 +36,7 @@ type ref struct {
 // Examples of a valid variable references:
 //   - "${a.b}"
 //   - "${a.b.c}"
+//   - "${a.b[0].c}"
 //   - "${a} ${b} ${c}"
 func newRef(v dyn.Value) (ref, bool) {
 	s, ok := v.AsString()

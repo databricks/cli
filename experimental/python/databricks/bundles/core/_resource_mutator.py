@@ -52,6 +52,20 @@ class ResourceMutator(Generic[_T]):
     """
 
 
+# Below, we define decorators for each resource type. This approach allows us
+# to implement mutators that are only applied for specific resource types.
+#
+# Alternative approaches considered and rejected during design:
+#
+# - Inspecting type annotations without decorators.
+#   Rationale: Avoid implicit runtime behavior changes based solely on type annotations,
+#   especially if a function lacks an explicit decorator.
+#
+# - Using a universal @mutator decorator.
+#   Rationale: Determining whether a mutator is invoked based solely on type annotations
+#   was deemed overly implicit and potentially confusing.
+
+
 @overload
 def job_mutator(
     function: Callable[[Bundle, "Job"], "Job"],

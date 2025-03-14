@@ -1,0 +1,8 @@
+resources:
+  jobs:
+    my_job:
+      name: name
+      tasks:
+        - task_key: default
+          notebook_task:
+            notebook_path: ../src/dev.py

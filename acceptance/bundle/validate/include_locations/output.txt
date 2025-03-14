@@ -1,0 +1,4 @@
+
+>>> [CLI] bundle validate -t dev -o json --include-locations
+
+>>> [CLI] bundle validate -t prod -o json --include-locations
