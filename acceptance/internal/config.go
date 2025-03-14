@@ -163,8 +163,10 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 //
 // If any entries is an empty list, that variable is dropped from the matrix before processing.
 func ExpandEnvMatrix(matrix map[string][]string) [][]string {
+	result := [][]string{{}}
+
 	if len(matrix) == 0 {
-		return nil
+		return result
 	}
 
 	// Filter out keys with empty value slices
@@ -176,8 +178,7 @@ func ExpandEnvMatrix(matrix map[string][]string) [][]string {
 	}
 
 	if len(filteredMatrix) == 0 {
-		// Everything was filtered out
-		return nil
+		return result
 	}
 
 	// Get all keys and sort them for deterministic output
@@ -186,8 +187,6 @@ func ExpandEnvMatrix(matrix map[string][]string) [][]string {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-
-	result := [][]string{{}}
 
 	// For each key, expand the current result with all possible values for that key
 	for _, key := range keys {

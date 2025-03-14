@@ -15,7 +15,7 @@ func TestExpandEnvMatrix(t *testing.T) {
 		{
 			name:     "empty matrix",
 			matrix:   map[string][]string{},
-			expected: nil,
+			expected: [][]string{{}},
 		},
 		{
 			name: "single key with single value",
@@ -77,7 +77,7 @@ func TestExpandEnvMatrix(t *testing.T) {
 				"KEY1": {},
 				"KEY2": {},
 			},
-			expected: nil,
+			expected: [][]string{{}},
 		},
 		{
 			name: "example from documentation",
