@@ -20,6 +20,7 @@ dev-dependencies = [
   "pytest-cov==5.0.0",
   "pytest==8.3.3",
   "ruff==0.6.8",
+  "sphinx==8.0.2",
   "typing_extensions==4.12.2",
 ]
 
