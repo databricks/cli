@@ -211,7 +211,21 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			runTest(t, dir, coverDir, repls.Clone(), config, configPath)
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
+
+			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				runTest(t, dir, coverDir, repls.Clone(), config, configPath)
+			} else {
+				for _, envset := range expanded {
+					envname := strings.Join(envset, "/")
+					t.Run(envname, func(t *testing.T) {
+						if !InprocessMode {
+							t.Parallel()
+						}
+						runTest(t, dir, coverDir, repls.Clone(), config, configPath)
+					})
+				}
+			}
 		})
 	}
 
