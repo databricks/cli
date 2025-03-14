@@ -1,11 +1,15 @@
 package filer
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"path"
 	"slices"
 	"sort"
@@ -14,6 +18,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/files"
 )
 
@@ -63,31 +68,140 @@ func (info dbfsFileInfo) Sys() any {
 	return info.fi
 }
 
+// Interface to allow mocking of the Databricks API client.
+type databricksClient interface {
+	Do(ctx context.Context, method, path string, headers map[string]string,
+		requestBody, responseBody any, visitors ...func(*http.Request) error) error
+}
+
 // DbfsClient implements the [Filer] interface for the DBFS backend.
 type DbfsClient struct {
 	workspaceClient *databricks.WorkspaceClient
+
+	apiClient databricksClient
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
 }
 
 func NewDbfsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
 	return &DbfsClient{
 		workspaceClient: w,
+		apiClient:       apiClient,
 
 		root: NewWorkspaceRootPath(root),
 	}, nil
 }
 
+// The PUT API for DBFS requires setting the content length header beforehand in the HTTP
+// request.
+func contentLength(path, overwriteField string, file *os.File) (int64, error) {
+	buf := &bytes.Buffer{}
+	writer := multipart.NewWriter(buf)
+	err := writer.WriteField("path", path)
+	if err != nil {
+		return 0, fmt.Errorf("failed to write field path field in multipart form: %w", err)
+	}
+	err = writer.WriteField("overwrite", overwriteField)
+	if err != nil {
+		return 0, fmt.Errorf("failed to write field overwrite field in multipart form: %w", err)
+	}
+	_, err = writer.CreateFormFile("contents", "")
+	if err != nil {
+		return 0, fmt.Errorf("failed to write contents field in multipart form: %w", err)
+	}
+	err = writer.Close()
+	if err != nil {
+		return 0, fmt.Errorf("failed to close multipart form writer: %w", err)
+	}
+
+	stat, err := file.Stat()
+	if err != nil {
+		return 0, fmt.Errorf("failed to stat file %s: %w", path, err)
+	}
+
+	return int64(buf.Len()) + stat.Size(), nil
+}
+
+func contentLengthVisitor(path, overwriteField string, file *os.File) func(*http.Request) error {
+	return func(r *http.Request) error {
+		cl, err := contentLength(path, overwriteField, file)
+		if err != nil {
+			return fmt.Errorf("failed to calculate content length: %w", err)
+		}
+		r.ContentLength = cl
+		return nil
+	}
+}
+
+func (w *DbfsClient) putFile(ctx context.Context, path string, overwrite bool, file *os.File) error {
+	overwriteField := "False"
+	if overwrite {
+		overwriteField = "True"
+	}
+
+	pr, pw := io.Pipe()
+	writer := multipart.NewWriter(pw)
+	go func() {
+		defer pw.Close()
+
+		err := writer.WriteField("path", path)
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("failed to write field path field in multipart form: %w", err))
+			return
+		}
+		err = writer.WriteField("overwrite", overwriteField)
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("failed to write field overwrite field in multipart form: %w", err))
+			return
+		}
+		contents, err := writer.CreateFormFile("contents", "")
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("failed to write contents field in multipart form: %w", err))
+			return
+		}
+		_, err = io.Copy(contents, file)
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("error while streaming file to dbfs: %w", err))
+			return
+		}
+		err = writer.Close()
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("failed to close multipart form writer: %w", err))
+			return
+		}
+	}()
+
+	// Request bodies of Content-Type multipart/form-data are not supported by
+	// the Go SDK directly for DBFS. So we use the Do method directly.
+	err := w.apiClient.Do(ctx,
+		http.MethodPost,
+		"/api/2.0/dbfs/put",
+		map[string]string{"Content-Type": writer.FormDataContentType()},
+		pr,
+		nil,
+		contentLengthVisitor(path, overwriteField, file))
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
+		return FileAlreadyExistsError{path}
+	}
+	return err
+}
+
+// MaxUploadLimitForPutApi is the maximum size in bytes of a file that can be uploaded
+// using the /dbfs/put API. If the file is larger than this limit, the streaming
+// API (/dbfs/create and /dbfs/add-block) will be used instead.
+var MaxDbfsPutFileSize int64 = 2 * 1024 * 1024 * 1024
+
 func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
-	}
-
-	fileMode := files.FileModeWrite
-	if slices.Contains(mode, OverwriteIfExists) {
-		fileMode |= files.FileModeOverwrite
 	}
 
 	// Issue info call before write because it automatically creates parent directories.
@@ -114,7 +228,36 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		}
 	}
 
-	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, fileMode)
+	localFile, ok := reader.(*os.File)
+
+	// If the source is not a local file, we'll always use the streaming API endpoint.
+	if !ok {
+		return w.streamFile(ctx, absPath, slices.Contains(mode, OverwriteIfExists), reader)
+	}
+
+	stat, err := localFile.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to stat file: %w", err)
+	}
+
+	// If the source is a local file, but is too large then we'll use the streaming API endpoint.
+	if stat.Size() > MaxDbfsPutFileSize {
+		return w.streamFile(ctx, absPath, slices.Contains(mode, OverwriteIfExists), localFile)
+	}
+
+	// Use the /dbfs/put API when the file is on the local filesystem
+	// and is small enough. This is the most common case when users use the
+	// `databricks fs cp` command.
+	return w.putFile(ctx, absPath, slices.Contains(mode, OverwriteIfExists), localFile)
+}
+
+func (w *DbfsClient) streamFile(ctx context.Context, path string, overwrite bool, reader io.Reader) error {
+	fileMode := files.FileModeWrite
+	if overwrite {
+		fileMode |= files.FileModeOverwrite
+	}
+
+	handle, err := w.workspaceClient.Dbfs.Open(ctx, path, fileMode)
 	if err != nil {
 		var aerr *apierr.APIError
 		if !errors.As(err, &aerr) {
@@ -124,7 +267,7 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		// This API returns a 400 if the file already exists.
 		if aerr.StatusCode == http.StatusBadRequest {
 			if aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
-				return FileAlreadyExistsError{absPath}
+				return FileAlreadyExistsError{path}
 			}
 		}
 
@@ -136,7 +279,6 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 	if err == nil {
 		err = cerr
 	}
-
 	return err
 }
 
