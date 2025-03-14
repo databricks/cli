@@ -48,6 +48,10 @@ pkg/browser - https://github.com/pkg/browser
 Copyright (c) 2014, Dave Cheney <dave@cheney.net>
 License - https://github.com/pkg/browser/blob/master/LICENSE
 
+gorilla/websocket - github.com/gorilla/websocket
+Copyright (c) 2013 The Gorilla WebSocket Authors. All rights reserved.
+License - https://github.com/gorilla/websocket/blob/main/LICENSE
+
 ---
 
 This software contains code from the following open source projects, licensed under the BSD (3-clause) license:
