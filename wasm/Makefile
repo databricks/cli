@@ -54,4 +54,7 @@ export: build/bundle_init.optimized.wasm.gz
 	cp index.html wasm_exec.js build/
 	git checkout gh-pages
 	git pull origin gh-pages
+	git diff-index --quiet HEAD --  # do not touch git if there are changes
 	cp build/bundle_init.optimized.wasm.gz build/index.html build/wasm_exec.js ../experimental/template
+	git add ../experimental/template/bundle_init.optimized.wasm.gz ../experimental/template/index.html ../experimental/template/wasm_exec.js
+	git commit -n -m "Update experimental/template"
