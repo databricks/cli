@@ -1,0 +1,21 @@
+
+>>> errcode [CLI] volumes list input-catalog_nameinput-schema_name
+Error: accepts 2 arg(s), received 1
+
+Usage:
+  databricks volumes list CATALOG_NAME SCHEMA_NAME [flags]
+
+Flags:
+  -h, --help                help for list
+      --include-browse      Whether to include volumes in the response for which the principal can only access selective metadata for.
+      --max-results int     Maximum number of volumes to return (page length).
+      --page-token string   Opaque token returned by a previous request.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+Exit code: 1

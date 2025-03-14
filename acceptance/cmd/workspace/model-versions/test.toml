@@ -1,0 +1,103 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/models/{full_name}/versions/{version}"
+Response.Body = '''
+{
+    "aliases": [
+    {
+    "alias_name": "alias_name",
+    "version_num": 42}],
+    
+    "browse_only": false,
+    
+    "catalog_name": "catalog_name",
+    
+    "comment": "comment",
+    
+    "created_at": 42,
+    
+    "created_by": "created_by",
+    
+    "id": "id",
+    
+    "metastore_id": "metastore_id",
+    
+    "model_name": "model_name",
+    
+    "model_version_dependencies": {
+    "dependencies": [
+    {
+    "function": {
+    "function_full_name": "function_full_name"},
+    "table": {
+    "table_full_name": "table_full_name"}}]},
+    
+    "run_id": "run_id",
+    
+    "run_workspace_id": 42,
+    
+    "schema_name": "schema_name",
+    
+    "source": "source",
+    
+    "status": "ENUM",
+    
+    "storage_location": "storage_location",
+    
+    "updated_at": 42,
+    
+    "updated_by": "updated_by",
+    
+    "version": 42
+    
+}
+'''
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/models/{full_name}/versions"
+Response.Body = '''
+{
+    "model_versions": [
+    {
+    "aliases": [
+    {
+    "alias_name": "alias_name",
+    "version_num": 42}],
+    "browse_only": false,
+    "catalog_name": "catalog_name",
+    "comment": "comment",
+    "created_at": 42,
+    "created_by": "created_by",
+    "id": "id",
+    "metastore_id": "metastore_id",
+    "model_name": "model_name",
+    "model_version_dependencies": {
+    "dependencies": [
+    {
+    "function": {
+    "function_full_name": "function_full_name"},
+    "table": {
+    "table_full_name": "table_full_name"}}]},
+    "run_id": "run_id",
+    "run_workspace_id": 42,
+    "schema_name": "schema_name",
+    "source": "source",
+    "status": "ENUM",
+    "storage_location": "storage_location",
+    "updated_at": 42,
+    "updated_by": "updated_by",
+    "version": 42}],
+    
+    "next_page_token": ""
+}
+'''

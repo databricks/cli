@@ -1,0 +1,80 @@
+
+>>> errcode [CLI] recipients get input-name
+{
+  "activated":false,
+  "activation_url":"activation_url",
+  "authentication_type":"ENUM",
+  "cloud":"cloud",
+  "comment":"comment",
+  "created_at":42,
+  "created_by":"created_by",
+  "data_recipient_global_metastore_id":"data_recipient_global_metastore_id",
+  "expiration_time":42,
+  "ip_access_list": {
+    "allowed_ip_addresses": [
+      "_list"
+    ]
+  },
+  "metastore_id":"metastore_id",
+  "name":"name",
+  "owner":"owner",
+  "properties_kvpairs": {
+    "properties": {}
+  },
+  "region":"region",
+  "sharing_code":"sharing_code",
+  "tokens": [
+    {
+      "activation_url":"activation_url",
+      "created_at":42,
+      "created_by":"created_by",
+      "expiration_time":42,
+      "id":"id",
+      "updated_at":42,
+      "updated_by":"updated_by"
+    }
+  ],
+  "updated_at":42,
+  "updated_by":"updated_by"
+}
+
+>>> errcode [CLI] recipients list
+[
+  {
+    "activated": false,
+    "activation_url": "activation_url",
+    "authentication_type": "ENUM",
+    "cloud": "cloud",
+    "comment": "comment",
+    "created_at": 42,
+    "created_by": "created_by",
+    "data_recipient_global_metastore_id": "data_recipient_global_metastore_id",
+    "expiration_time": 42,
+    "ip_access_list": {
+      "allowed_ip_addresses": [
+        "_list"
+      ]
+    },
+    "metastore_id": "metastore_id",
+    "name": "name",
+    "owner": "owner",
+    "properties_kvpairs": {
+      "properties": {}
+    },
+    "region": "region",
+    "sharing_code": "sharing_code",
+    "tokens": [
+      {
+        "activation_url": "activation_url",
+        "created_at": 42,
+        "created_by": "created_by",
+        "expiration_time": 42,
+        "id": "id",
+        "updated_at": 42,
+        "updated_by": "updated_by"
+      }
+    ],
+    "updated_at": 42,
+    "updated_by": "updated_by"
+  }
+]

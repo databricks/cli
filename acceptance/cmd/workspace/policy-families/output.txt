@@ -1,0 +1,18 @@
+
+>>> errcode [CLI] policy-families get input-policy_family_id
+{
+  "definition":"definition",
+  "description":"description",
+  "name":"name",
+  "policy_family_id":"policy_family_id"
+}
+
+>>> errcode [CLI] policy-families list
+[
+  {
+    "definition": "definition",
+    "description": "description",
+    "name": "name",
+    "policy_family_id": "policy_family_id"
+  }
+]

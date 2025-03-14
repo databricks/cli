@@ -1,0 +1,88 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/connections/{name}"
+Response.Body = '''
+{
+    "comment": "comment",
+    
+    "connection_id": "connection_id",
+    
+    "connection_type": "ENUM",
+    
+    "created_at": 42,
+    
+    "created_by": "created_by",
+    
+    "credential_type": "ENUM",
+    
+    "full_name": "full_name",
+    
+    "metastore_id": "metastore_id",
+    
+    "name": "name",
+    
+    "options": {
+},
+    
+    "owner": "owner",
+    
+    "properties": {
+},
+    
+    "provisioning_info": {
+    "state": "ENUM"},
+    
+    "read_only": false,
+    
+    "securable_type": "securable_type",
+    
+    "updated_at": 42,
+    
+    "updated_by": "updated_by",
+    
+    "url": "url"
+    
+}
+'''
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/connections"
+Response.Body = '''
+{
+    "connections": [
+    {
+    "comment": "comment",
+    "connection_id": "connection_id",
+    "connection_type": "ENUM",
+    "created_at": 42,
+    "created_by": "created_by",
+    "credential_type": "ENUM",
+    "full_name": "full_name",
+    "metastore_id": "metastore_id",
+    "name": "name",
+    "options": {
+},
+    "owner": "owner",
+    "properties": {
+},
+    "provisioning_info": {
+    "state": "ENUM"},
+    "read_only": false,
+    "securable_type": "securable_type",
+    "updated_at": 42,
+    "updated_by": "updated_by",
+    "url": "url"}],
+    
+    "next_page_token": ""
+}
+'''

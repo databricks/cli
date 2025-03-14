@@ -1,0 +1,46 @@
+
+>>> errcode [CLI] connections get input-name
+{
+  "comment":"comment",
+  "connection_id":"connection_id",
+  "connection_type":"ENUM",
+  "created_at":42,
+  "created_by":"created_by",
+  "credential_type":"ENUM",
+  "full_name":"full_name",
+  "metastore_id":"metastore_id",
+  "name":"name",
+  "owner":"owner",
+  "provisioning_info": {
+    "state":"ENUM"
+  },
+  "read_only":false,
+  "securable_type":"securable_type",
+  "updated_at":42,
+  "updated_by":"updated_by",
+  "url":"url"
+}
+
+>>> errcode [CLI] connections list
+[
+  {
+    "comment": "comment",
+    "connection_id": "connection_id",
+    "connection_type": "ENUM",
+    "created_at": 42,
+    "created_by": "created_by",
+    "credential_type": "ENUM",
+    "full_name": "full_name",
+    "metastore_id": "metastore_id",
+    "name": "name",
+    "owner": "owner",
+    "provisioning_info": {
+      "state": "ENUM"
+    },
+    "read_only": false,
+    "securable_type": "securable_type",
+    "updated_at": 42,
+    "updated_by": "updated_by",
+    "url": "url"
+  }
+]

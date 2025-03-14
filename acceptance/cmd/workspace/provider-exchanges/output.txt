@@ -1,0 +1,74 @@
+
+>>> errcode [CLI] provider-exchanges get input-id
+{
+  "exchange": {
+    "comment":"comment",
+    "created_at":42,
+    "created_by":"created_by",
+    "filters": [
+      {
+        "created_at":42,
+        "created_by":"created_by",
+        "exchange_id":"exchange_id",
+        "filter_type":"ENUM",
+        "filter_value":"filter_value",
+        "id":"id",
+        "name":"name",
+        "updated_at":42,
+        "updated_by":"updated_by"
+      }
+    ],
+    "id":"id",
+    "linked_listings": [
+      {
+        "created_at":42,
+        "created_by":"created_by",
+        "exchange_id":"exchange_id",
+        "exchange_name":"exchange_name",
+        "id":"id",
+        "listing_id":"listing_id",
+        "listing_name":"listing_name"
+      }
+    ],
+    "name":"name",
+    "updated_at":42,
+    "updated_by":"updated_by"
+  }
+}
+
+>>> errcode [CLI] provider-exchanges list
+[
+  {
+    "comment": "comment",
+    "created_at": 42,
+    "created_by": "created_by",
+    "filters": [
+      {
+        "created_at": 42,
+        "created_by": "created_by",
+        "exchange_id": "exchange_id",
+        "filter_type": "ENUM",
+        "filter_value": "filter_value",
+        "id": "id",
+        "name": "name",
+        "updated_at": 42,
+        "updated_by": "updated_by"
+      }
+    ],
+    "id": "id",
+    "linked_listings": [
+      {
+        "created_at": 42,
+        "created_by": "created_by",
+        "exchange_id": "exchange_id",
+        "exchange_name": "exchange_name",
+        "id": "id",
+        "listing_id": "listing_id",
+        "listing_name": "listing_name"
+      }
+    ],
+    "name": "name",
+    "updated_at": 42,
+    "updated_by": "updated_by"
+  }
+]

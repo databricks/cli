@@ -1,5 +1,3 @@
-title "Apps update with correct input"
-trace $CLI apps update test-name --json @input.json
-
-title "Apps update with missing parameter"
-trace $CLI apps update --json @input.json
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+trace errcode $CLI apps get "input-name"
+trace errcode $CLI apps list 

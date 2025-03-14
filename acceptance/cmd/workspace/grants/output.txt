@@ -1,0 +1,19 @@
+
+>>> errcode [CLI] grants get ENUMinput-full_name
+Error: accepts 2 arg(s), received 1
+
+Usage:
+  databricks grants get SECURABLE_TYPE FULL_NAME [flags]
+
+Flags:
+  -h, --help               help for get
+      --principal string   If provided, only the permissions for the specified principal (user or group) are returned.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+Exit code: 1

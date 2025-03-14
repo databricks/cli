@@ -1,0 +1,30 @@
+
+>>> errcode [CLI] lakeview get input-dashboard_id
+{
+  "create_time":"create_time",
+  "dashboard_id":"dashboard_id",
+  "display_name":"display_name",
+  "etag":"etag",
+  "lifecycle_state":"ENUM",
+  "parent_path":"parent_path",
+  "path":"path",
+  "serialized_dashboard":"serialized_dashboard",
+  "update_time":"update_time",
+  "warehouse_id":"warehouse_id"
+}
+
+>>> errcode [CLI] lakeview list
+[
+  {
+    "create_time": "create_time",
+    "dashboard_id": "dashboard_id",
+    "display_name": "display_name",
+    "etag": "etag",
+    "lifecycle_state": "ENUM",
+    "parent_path": "parent_path",
+    "path": "path",
+    "serialized_dashboard": "serialized_dashboard",
+    "update_time": "update_time",
+    "warehouse_id": "warehouse_id"
+  }
+]

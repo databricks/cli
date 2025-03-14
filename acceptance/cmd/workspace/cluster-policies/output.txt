@@ -1,0 +1,8 @@
+
+>>> errcode [CLI] cluster-policies get input-policy_id
+Error: template: command:1:16: executing "command" at <pretty_json>: error calling pretty_json: invalid character 'd' looking for beginning of value
+
+Exit code: 1
+
+>>> errcode [CLI] cluster-policies list
+policy_id  name

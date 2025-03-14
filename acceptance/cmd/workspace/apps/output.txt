@@ -1,50 +1,83 @@
 
-=== Apps update with correct input
->>> [CLI] apps update test-name --json @input.json
+>>> errcode [CLI] apps get input-name
 {
+  "active_deployment": {
+    "create_time":"create_time",
+    "creator":"creator",
+    "deployment_artifacts": {
+      "source_code_path":"source_code_path"
+    },
+    "deployment_id":"deployment_id",
+    "mode":"ENUM",
+    "source_code_path":"source_code_path",
+    "status": {
+      "message":"message",
+      "state":"ENUM"
+    },
+    "update_time":"update_time"
+  },
   "app_status": {
-    "message":"Application is running.",
-    "state":"DEPLOYING"
+    "message":"message",
+    "state":"ENUM"
   },
+  "budget_policy_id":"budget_policy_id",
   "compute_status": {
-    "message":"App compute is active.",
-    "state":"ERROR"
+    "message":"message",
+    "state":"ENUM"
   },
-  "description":"My app description.",
-  "id":"12345",
-  "name":"test-name",
+  "create_time":"create_time",
+  "creator":"creator",
+  "default_source_code_path":"default_source_code_path",
+  "description":"description",
+  "effective_budget_policy_id":"effective_budget_policy_id",
+  "id":"id",
+  "name":"name",
+  "pending_deployment": {
+    "create_time":"create_time",
+    "creator":"creator",
+    "deployment_artifacts": {
+      "source_code_path":"source_code_path"
+    },
+    "deployment_id":"deployment_id",
+    "mode":"ENUM",
+    "source_code_path":"source_code_path",
+    "status": {
+      "message":"message",
+      "state":"ENUM"
+    },
+    "update_time":"update_time"
+  },
   "resources": [
     {
-      "description":"API key for external service.",
-      "name":"api-key",
+      "description":"description",
+      "job": {
+        "id":"id",
+        "permission":"ENUM"
+      },
+      "name":"name",
       "secret": {
-        "key":"my-key",
-        "permission":"READ",
-        "scope":"my-scope"
+        "key":"key",
+        "permission":"ENUM",
+        "scope":"scope"
+      },
+      "serving_endpoint": {
+        "name":"name",
+        "permission":"ENUM"
+      },
+      "sql_warehouse": {
+        "id":"id",
+        "permission":"ENUM"
       }
     }
   ],
-  "url":"test-name-123.cloud.databricksapps.com"
+  "service_principal_client_id":"service_principal_client_id",
+  "service_principal_id":42,
+  "service_principal_name":"service_principal_name",
+  "update_time":"update_time",
+  "updater":"updater",
+  "url":"url"
 }
 
-=== Apps update with missing parameter
->>> [CLI] apps update --json @input.json
-Error: accepts 1 arg(s), received 0
-
-Usage:
-  databricks apps update NAME [flags]
-
-Flags:
-      --budget-policy-id string   
-      --description string        The description of the app.
-  -h, --help                      help for update
-      --json JSON                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-
-
-Exit code: 1
+>>> errcode [CLI] apps list
+Name  Url  ComputeStatus  DeploymentStatus
+name  url  ENUM           ENUM

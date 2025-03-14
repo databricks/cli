@@ -1,0 +1,35 @@
+
+>>> errcode [CLI] catalogs get input-name
+{
+  "browse_only":false,
+  "catalog_type":"ENUM",
+  "comment":"comment",
+  "connection_name":"connection_name",
+  "created_at":42,
+  "created_by":"created_by",
+  "effective_predictive_optimization_flag": {
+    "inherited_from_name":"inherited_from_name",
+    "inherited_from_type":"ENUM",
+    "value":"ENUM"
+  },
+  "enable_predictive_optimization":"ENUM",
+  "full_name":"full_name",
+  "isolation_mode":"ENUM",
+  "metastore_id":"metastore_id",
+  "name":"name",
+  "owner":"owner",
+  "provider_name":"provider_name",
+  "provisioning_info": {
+    "state":"ENUM"
+  },
+  "securable_type":"securable_type",
+  "share_name":"share_name",
+  "storage_location":"storage_location",
+  "storage_root":"storage_root",
+  "updated_at":42,
+  "updated_by":"updated_by"
+}
+
+>>> errcode [CLI] catalogs list
+Name  Type  Comment
+name  ENUM  comment

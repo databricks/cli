@@ -1,0 +1,27 @@
+
+>>> errcode [CLI] metastores get input-id
+{
+  "cloud":"cloud",
+  "created_at":42,
+  "created_by":"created_by",
+  "default_data_access_config_id":"default_data_access_config_id",
+  "delta_sharing_organization_name":"delta_sharing_organization_name",
+  "delta_sharing_recipient_token_lifetime_in_seconds":42,
+  "delta_sharing_scope":"ENUM",
+  "external_access_enabled":false,
+  "global_metastore_id":"global_metastore_id",
+  "metastore_id":"metastore_id",
+  "name":"name",
+  "owner":"owner",
+  "privilege_model_version":"privilege_model_version",
+  "region":"region",
+  "storage_root":"storage_root",
+  "storage_root_credential_id":"storage_root_credential_id",
+  "storage_root_credential_name":"storage_root_credential_name",
+  "updated_at":42,
+  "updated_by":"updated_by"
+}
+
+>>> errcode [CLI] metastores list
+ID            Name  Region
+metastore_id  name  region

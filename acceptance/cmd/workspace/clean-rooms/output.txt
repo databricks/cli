@@ -1,0 +1,127 @@
+
+>>> errcode [CLI] clean-rooms get input-name
+Error: failed to unmarshal response body: invalid character '\n' in string literal. This is likely a bug in the Databricks SDK for Go or the underlying REST API. Please report this issue with the following debugging information to the SDK issue tracker at https://github.com/databricks/databricks-sdk-go/issues. Request log:
+```
+GET /api/2.0/clean-rooms/input-name
+> * Host: 
+> * Accept: application/json
+> * Authorization: REDACTED
+> * Traceparent: (redacted)
+> * User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/clean-rooms_get cmd-exec-id/[UUID] auth/pat
+< HTTP/1.1 200 OK
+< * Content-Length: 1246
+< * Content-Type: text/plain; charset=utf-8
+< * Date: (redacted)
+< {
+<   "access_restricted": "ENUM",
+<   "comment": "comment",
+<   "created_at": 42,
+<   "local_collaborator_alias": "local_collaborator_alias",
+<   "name": "name",
+<   "output_catalog": {
+<     "catalog_name": "catalog_name",
+<     "status": "ENUM"
+<   },
+<   "owner": "owner",
+<   "remote_detailed_info": {
+<     "central_clean_room_id": "central_clean_room_id",
+<     "cloud_vendor": "cloud_vendor",
+<     "collaborators": [
+<       {
+<         "collaborator_alias": "collaborator_alias",
+<         "display_name": "display_name",
+<         "global_metastore_id": "global_metastore_id",
+<         "invite_recipient_email": "invite_recipient_email",
+<         "invite_recipient_workspace_id": 42,
+<         "organization_name": "organization_name"
+<       }
+<     ],
+<     "compliance_security_profile": {
+<       "compliance_standards": [
+<         {}
+<       ],
+<       "is_enabled": false
+<     },
+<     "creator": {
+<       "collaborator_alias": "collaborator_alias",
+<       "display_name": "display_name",
+<       "global_metastore_id": "global_metastore_id",
+<       "invite_recipient_email": "invite_recipient_email",
+<       "invite_recipient_workspace_id": 42,
+<       "organization_name": "organization_name"
+<     },
+<     "egress_network_policy": {},
+<     "region": "region"
+<   },
+<   "status": "ENUM",
+<   "updated_at": 42
+< }
+```
+
+Exit code: 1
+
+>>> errcode [CLI] clean-rooms list
+Error: failed to unmarshal response body: invalid character '\n' in string literal. This is likely a bug in the Databricks SDK for Go or the underlying REST API. Please report this issue with the following debugging information to the SDK issue tracker at https://github.com/databricks/databricks-sdk-go/issues. Request log:
+```
+GET /api/2.0/clean-rooms
+> * Host: 
+> * Accept: application/json
+> * Authorization: REDACTED
+> * Traceparent: (redacted)
+> * User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/clean-rooms_list cmd-exec-id/[UUID] sdk-feature/pagination auth/pat
+< HTTP/1.1 200 OK
+< * Content-Length: 1257
+< * Content-Type: text/plain; charset=utf-8
+< * Date: (redacted)
+< {
+<   "clean_rooms": [
+<     {
+<       "access_restricted": "ENUM",
+<       "comment": "comment",
+<       "created_at": 42,
+<       "local_collaborator_alias": "local_collaborator_alias",
+<       "name": "name",
+<       "output_catalog": {
+<         "catalog_name": "catalog_name",
+<         "status": "ENUM"
+<       },
+<       "owner": "owner",
+<       "remote_detailed_info": {
+<         "central_clean_room_id": "central_clean_room_id",
+<         "cloud_vendor": "cloud_vendor",
+<         "collaborators": [
+<           {
+<             "collaborator_alias": "collaborator_alias",
+<             "display_name": "display_name",
+<             "global_metastore_id": "global_metastore_id",
+<             "invite_recipient_email": "invite_recipient_email",
+<             "invite_recipient_workspace_id": 42,
+<             "organization_name": "organization_name"
+<           }
+<         ],
+<         "compliance_security_profile": {
+<           "compliance_standards": [
+<             {}
+<           ],
+<           "is_enabled": false
+<         },
+<         "creator": {
+<           "collaborator_alias": "collaborator_alias",
+<           "display_name": "display_name",
+<           "global_metastore_id": "global_metastore_id",
+<           "invite_recipient_email": "invite_recipient_email",
+<           "invite_recipient_workspace_id": 42,
+<           "organization_name": "organization_name"
+<         },
+<         "egress_network_policy": {},
+<         "region": "region"
+<       },
+<       "status": "ENUM",
+<       "updated_at": 42
+<     }
+<   ],
+<   "next_page_token": ""
+< }
+```
+
+Exit code: 1
