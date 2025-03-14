@@ -1,0 +1,579 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+[[Server]]
+Pattern = "GET /api/2.1/jobs/get"
+Response.Body = '''
+{
+    "created_time": 42,
+    "creator_user_name": "creator_user_name",
+    "effective_budget_policy_id": "effective_budget_policy_id",
+    "has_more": false,
+    "job_id": 42,
+    "run_as_user_name": "run_as_user_name",
+    "settings": {
+    "budget_policy_id": "budget_policy_id",
+    "continuous": {
+    "pause_status": "ENUM"},
+    "deployment": {
+    "kind": "ENUM",
+    "metadata_file_path": "metadata_file_path"},
+    "description": "description",
+    "edit_mode": "ENUM",
+    "email_notifications": {
+    "no_alert_for_skipped_runs": false,
+    "on_duration_warning_threshold_exceeded": [
+    "_list"],
+    "on_failure": [
+    "_list"],
+    "on_start": [
+    "_list"],
+    "on_streaming_backlog_exceeded": [
+    "_list"],
+    "on_success": [
+    "_list"]},
+    "environments": [
+    {
+    "environment_key": "environment_key",
+    "spec": {}}],
+    "format": "ENUM",
+    "git_source": {
+    "git_branch": "git_branch",
+    "git_commit": "git_commit",
+    "git_provider": "ENUM",
+    "git_snapshot": {
+    "used_commit": "used_commit"},
+    "git_tag": "git_tag",
+    "git_url": "git_url",
+    "job_source": {
+    "dirty_state": "ENUM",
+    "import_from_git_branch": "import_from_git_branch",
+    "job_config_path": "job_config_path"}},
+    "health": {
+    "rules": [
+    {
+    "metric": "ENUM",
+    "op": "ENUM",
+    "value": 42}]},
+    "job_clusters": [
+    {
+    "job_cluster_key": "job_cluster_key",
+    "new_cluster": {}}],
+    "max_concurrent_runs": 42,
+    "name": "name",
+    "notification_settings": {
+    "no_alert_for_canceled_runs": false,
+    "no_alert_for_skipped_runs": false},
+    "parameters": [
+    {
+    "default": "default",
+    "name": "name"}],
+    "performance_target": "ENUM",
+    "queue": {
+    "enabled": false},
+    "run_as": {
+    "service_principal_name": "service_principal_name",
+    "user_name": "user_name"},
+    "schedule": {
+    "pause_status": "ENUM",
+    "quartz_cron_expression": "quartz_cron_expression",
+    "timezone_id": "timezone_id"},
+    "tags": {
+},
+    "tasks": [
+    {
+    "clean_rooms_notebook_task": {
+    "clean_room_name": "clean_room_name",
+    "etag": "etag",
+    "notebook_base_parameters": {
+},
+    "notebook_name": "notebook_name"},
+    "condition_task": {
+    "left": "left",
+    "op": "ENUM",
+    "right": "right"},
+    "dbt_task": {
+    "catalog": "catalog",
+    "commands": [
+    "_list"],
+    "profiles_directory": "profiles_directory",
+    "project_directory": "project_directory",
+    "schema": "schema",
+    "source": "ENUM",
+    "warehouse_id": "warehouse_id"},
+    "depends_on": [
+    {
+    "outcome": "outcome",
+    "task_key": "task_key"}],
+    "description": "description",
+    "disable_auto_optimization": false,
+    "email_notifications": {
+    "no_alert_for_skipped_runs": false,
+    "on_duration_warning_threshold_exceeded": [
+    "_list"],
+    "on_failure": [
+    "_list"],
+    "on_start": [
+    "_list"],
+    "on_streaming_backlog_exceeded": [
+    "_list"],
+    "on_success": [
+    "_list"]},
+    "environment_key": "environment_key",
+    "existing_cluster_id": "existing_cluster_id",
+    "for_each_task": {
+    "concurrency": 42,
+    "inputs": "inputs",
+    "task": {}},
+    "gen_ai_compute_task": {
+    "command": "command",
+    "compute": {
+    "gpu_node_pool_id": "gpu_node_pool_id",
+    "gpu_type": "gpu_type",
+    "num_gpus": 42},
+    "dl_runtime_image": "dl_runtime_image",
+    "mlflow_experiment_name": "mlflow_experiment_name",
+    "source": "ENUM",
+    "training_script_path": "training_script_path",
+    "yaml_parameters": "yaml_parameters",
+    "yaml_parameters_file_path": "yaml_parameters_file_path"},
+    "health": {
+    "rules": [
+    {
+    "metric": "ENUM",
+    "op": "ENUM",
+    "value": 42}]},
+    "job_cluster_key": "job_cluster_key",
+    "libraries": [
+    {}],
+    "max_retries": 42,
+    "min_retry_interval_millis": 42,
+    "new_cluster": {},
+    "notebook_task": {
+    "base_parameters": {
+},
+    "notebook_path": "notebook_path",
+    "source": "ENUM",
+    "warehouse_id": "warehouse_id"},
+    "notification_settings": {
+    "alert_on_last_attempt": false,
+    "no_alert_for_canceled_runs": false,
+    "no_alert_for_skipped_runs": false},
+    "pipeline_task": {
+    "full_refresh": false,
+    "pipeline_id": "pipeline_id"},
+    "python_wheel_task": {
+    "entry_point": "entry_point",
+    "named_parameters": {
+},
+    "package_name": "package_name",
+    "parameters": [
+    "_list"]},
+    "retry_on_timeout": false,
+    "run_if": "ENUM",
+    "run_job_task": {
+    "dbt_commands": [
+    "_list"],
+    "jar_params": [
+    "_list"],
+    "job_id": 42,
+    "job_parameters": {
+},
+    "notebook_params": {
+},
+    "pipeline_params": {
+    "full_refresh": false},
+    "python_named_params": {
+},
+    "python_params": [
+    "_list"],
+    "spark_submit_params": [
+    "_list"],
+    "sql_params": {
+}},
+    "spark_jar_task": {
+    "jar_uri": "jar_uri",
+    "main_class_name": "main_class_name",
+    "parameters": [
+    "_list"],
+    "run_as_repl": false},
+    "spark_python_task": {
+    "parameters": [
+    "_list"],
+    "python_file": "python_file",
+    "source": "ENUM"},
+    "spark_submit_task": {
+    "parameters": [
+    "_list"]},
+    "sql_task": {
+    "alert": {
+    "alert_id": "alert_id",
+    "pause_subscriptions": false,
+    "subscriptions": [
+    {
+    "destination_id": "destination_id",
+    "user_name": "user_name"}]},
+    "dashboard": {
+    "custom_subject": "custom_subject",
+    "dashboard_id": "dashboard_id",
+    "pause_subscriptions": false,
+    "subscriptions": [
+    {
+    "destination_id": "destination_id",
+    "user_name": "user_name"}]},
+    "file": {
+    "path": "path",
+    "source": "ENUM"},
+    "parameters": {
+},
+    "query": {
+    "query_id": "query_id"},
+    "warehouse_id": "warehouse_id"},
+    "task_key": "task_key",
+    "timeout_seconds": 42,
+    "webhook_notifications": {
+    "on_duration_warning_threshold_exceeded": [
+    {
+    "id": "id"}],
+    "on_failure": [
+    {
+    "id": "id"}],
+    "on_start": [
+    {
+    "id": "id"}],
+    "on_streaming_backlog_exceeded": [
+    {
+    "id": "id"}],
+    "on_success": [
+    {
+    "id": "id"}]}}],
+    "timeout_seconds": 42,
+    "trigger": {
+    "file_arrival": {
+    "min_time_between_triggers_seconds": 42,
+    "url": "url",
+    "wait_after_last_change_seconds": 42},
+    "pause_status": "ENUM",
+    "periodic": {
+    "interval": 42,
+    "unit": "ENUM"},
+    "table": {
+    "condition": "ENUM",
+    "min_time_between_triggers_seconds": 42,
+    "table_names": [
+    "_list"],
+    "wait_after_last_change_seconds": 42},
+    "table_update": {
+    "condition": "ENUM",
+    "min_time_between_triggers_seconds": 42,
+    "table_names": [
+    "_list"],
+    "wait_after_last_change_seconds": 42}},
+    "webhook_notifications": {
+    "on_duration_warning_threshold_exceeded": [
+    {
+    "id": "id"}],
+    "on_failure": [
+    {
+    "id": "id"}],
+    "on_start": [
+    {
+    "id": "id"}],
+    "on_streaming_backlog_exceeded": [
+    {
+    "id": "id"}],
+    "on_success": [
+    {
+    "id": "id"}]}}
+}
+'''
+[[Server]]
+Pattern = "GET /api/2.1/jobs/list"
+Response.Body = '''
+{
+    "has_more": false,
+    "jobs": [
+    {
+    "created_time": 42,
+    "creator_user_name": "creator_user_name",
+    "effective_budget_policy_id": "effective_budget_policy_id",
+    "has_more": false,
+    "job_id": 42,
+    "settings": {
+    "budget_policy_id": "budget_policy_id",
+    "continuous": {
+    "pause_status": "ENUM"},
+    "deployment": {
+    "kind": "ENUM",
+    "metadata_file_path": "metadata_file_path"},
+    "description": "description",
+    "edit_mode": "ENUM",
+    "email_notifications": {
+    "no_alert_for_skipped_runs": false,
+    "on_duration_warning_threshold_exceeded": [
+    "_list"],
+    "on_failure": [
+    "_list"],
+    "on_start": [
+    "_list"],
+    "on_streaming_backlog_exceeded": [
+    "_list"],
+    "on_success": [
+    "_list"]},
+    "environments": [
+    {
+    "environment_key": "environment_key",
+    "spec": {}}],
+    "format": "ENUM",
+    "git_source": {
+    "git_branch": "git_branch",
+    "git_commit": "git_commit",
+    "git_provider": "ENUM",
+    "git_snapshot": {
+    "used_commit": "used_commit"},
+    "git_tag": "git_tag",
+    "git_url": "git_url",
+    "job_source": {
+    "dirty_state": "ENUM",
+    "import_from_git_branch": "import_from_git_branch",
+    "job_config_path": "job_config_path"}},
+    "health": {
+    "rules": [
+    {
+    "metric": "ENUM",
+    "op": "ENUM",
+    "value": 42}]},
+    "job_clusters": [
+    {
+    "job_cluster_key": "job_cluster_key",
+    "new_cluster": {}}],
+    "max_concurrent_runs": 42,
+    "name": "name",
+    "notification_settings": {
+    "no_alert_for_canceled_runs": false,
+    "no_alert_for_skipped_runs": false},
+    "parameters": [
+    {
+    "default": "default",
+    "name": "name"}],
+    "performance_target": "ENUM",
+    "queue": {
+    "enabled": false},
+    "run_as": {
+    "service_principal_name": "service_principal_name",
+    "user_name": "user_name"},
+    "schedule": {
+    "pause_status": "ENUM",
+    "quartz_cron_expression": "quartz_cron_expression",
+    "timezone_id": "timezone_id"},
+    "tags": {
+},
+    "tasks": [
+    {
+    "clean_rooms_notebook_task": {
+    "clean_room_name": "clean_room_name",
+    "etag": "etag",
+    "notebook_base_parameters": {
+},
+    "notebook_name": "notebook_name"},
+    "condition_task": {
+    "left": "left",
+    "op": "ENUM",
+    "right": "right"},
+    "dbt_task": {
+    "catalog": "catalog",
+    "commands": [
+    "_list"],
+    "profiles_directory": "profiles_directory",
+    "project_directory": "project_directory",
+    "schema": "schema",
+    "source": "ENUM",
+    "warehouse_id": "warehouse_id"},
+    "depends_on": [
+    {
+    "outcome": "outcome",
+    "task_key": "task_key"}],
+    "description": "description",
+    "disable_auto_optimization": false,
+    "email_notifications": {
+    "no_alert_for_skipped_runs": false,
+    "on_duration_warning_threshold_exceeded": [
+    "_list"],
+    "on_failure": [
+    "_list"],
+    "on_start": [
+    "_list"],
+    "on_streaming_backlog_exceeded": [
+    "_list"],
+    "on_success": [
+    "_list"]},
+    "environment_key": "environment_key",
+    "existing_cluster_id": "existing_cluster_id",
+    "for_each_task": {
+    "concurrency": 42,
+    "inputs": "inputs",
+    "task": {}},
+    "gen_ai_compute_task": {
+    "command": "command",
+    "compute": {
+    "gpu_node_pool_id": "gpu_node_pool_id",
+    "gpu_type": "gpu_type",
+    "num_gpus": 42},
+    "dl_runtime_image": "dl_runtime_image",
+    "mlflow_experiment_name": "mlflow_experiment_name",
+    "source": "ENUM",
+    "training_script_path": "training_script_path",
+    "yaml_parameters": "yaml_parameters",
+    "yaml_parameters_file_path": "yaml_parameters_file_path"},
+    "health": {
+    "rules": [
+    {
+    "metric": "ENUM",
+    "op": "ENUM",
+    "value": 42}]},
+    "job_cluster_key": "job_cluster_key",
+    "libraries": [
+    {}],
+    "max_retries": 42,
+    "min_retry_interval_millis": 42,
+    "new_cluster": {},
+    "notebook_task": {
+    "base_parameters": {
+},
+    "notebook_path": "notebook_path",
+    "source": "ENUM",
+    "warehouse_id": "warehouse_id"},
+    "notification_settings": {
+    "alert_on_last_attempt": false,
+    "no_alert_for_canceled_runs": false,
+    "no_alert_for_skipped_runs": false},
+    "pipeline_task": {
+    "full_refresh": false,
+    "pipeline_id": "pipeline_id"},
+    "python_wheel_task": {
+    "entry_point": "entry_point",
+    "named_parameters": {
+},
+    "package_name": "package_name",
+    "parameters": [
+    "_list"]},
+    "retry_on_timeout": false,
+    "run_if": "ENUM",
+    "run_job_task": {
+    "dbt_commands": [
+    "_list"],
+    "jar_params": [
+    "_list"],
+    "job_id": 42,
+    "job_parameters": {
+},
+    "notebook_params": {
+},
+    "pipeline_params": {
+    "full_refresh": false},
+    "python_named_params": {
+},
+    "python_params": [
+    "_list"],
+    "spark_submit_params": [
+    "_list"],
+    "sql_params": {
+}},
+    "spark_jar_task": {
+    "jar_uri": "jar_uri",
+    "main_class_name": "main_class_name",
+    "parameters": [
+    "_list"],
+    "run_as_repl": false},
+    "spark_python_task": {
+    "parameters": [
+    "_list"],
+    "python_file": "python_file",
+    "source": "ENUM"},
+    "spark_submit_task": {
+    "parameters": [
+    "_list"]},
+    "sql_task": {
+    "alert": {
+    "alert_id": "alert_id",
+    "pause_subscriptions": false,
+    "subscriptions": [
+    {
+    "destination_id": "destination_id",
+    "user_name": "user_name"}]},
+    "dashboard": {
+    "custom_subject": "custom_subject",
+    "dashboard_id": "dashboard_id",
+    "pause_subscriptions": false,
+    "subscriptions": [
+    {
+    "destination_id": "destination_id",
+    "user_name": "user_name"}]},
+    "file": {
+    "path": "path",
+    "source": "ENUM"},
+    "parameters": {
+},
+    "query": {
+    "query_id": "query_id"},
+    "warehouse_id": "warehouse_id"},
+    "task_key": "task_key",
+    "timeout_seconds": 42,
+    "webhook_notifications": {
+    "on_duration_warning_threshold_exceeded": [
+    {
+    "id": "id"}],
+    "on_failure": [
+    {
+    "id": "id"}],
+    "on_start": [
+    {
+    "id": "id"}],
+    "on_streaming_backlog_exceeded": [
+    {
+    "id": "id"}],
+    "on_success": [
+    {
+    "id": "id"}]}}],
+    "timeout_seconds": 42,
+    "trigger": {
+    "file_arrival": {
+    "min_time_between_triggers_seconds": 42,
+    "url": "url",
+    "wait_after_last_change_seconds": 42},
+    "pause_status": "ENUM",
+    "periodic": {
+    "interval": 42,
+    "unit": "ENUM"},
+    "table": {
+    "condition": "ENUM",
+    "min_time_between_triggers_seconds": 42,
+    "table_names": [
+    "_list"],
+    "wait_after_last_change_seconds": 42},
+    "table_update": {
+    "condition": "ENUM",
+    "min_time_between_triggers_seconds": 42,
+    "table_names": [
+    "_list"],
+    "wait_after_last_change_seconds": 42}},
+    "webhook_notifications": {
+    "on_duration_warning_threshold_exceeded": [
+    {
+    "id": "id"}],
+    "on_failure": [
+    {
+    "id": "id"}],
+    "on_start": [
+    {
+    "id": "id"}],
+    "on_streaming_backlog_exceeded": [
+    {
+    "id": "id"}],
+    "on_success": [
+    {
+    "id": "id"}]}}}],
+    "prev_page_token": "prev_page_token"
+}
+'''

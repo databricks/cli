@@ -1,0 +1,18 @@
+
+>>> errcode [CLI] repos get 42
+{
+  "branch":"branch",
+  "head_commit_id":"head_commit_id",
+  "id":42,
+  "path":"path",
+  "provider":"provider",
+  "sparse_checkout": {
+    "patterns": [
+      "_list"
+    ]
+  },
+  "url":"url"
+}
+
+>>> errcode [CLI] repos list
+42  path  branch  url

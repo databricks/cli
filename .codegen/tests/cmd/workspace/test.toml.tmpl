@@ -1,0 +1,79 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+Local = true
+Cloud = false
+
+{{- $seen := list "" }}
+{{- $cmdGrp := .KebabName }}
+{{- $supportedGrps := list "jobs" "clusters" "pipelines" "repos" }}
+{{- if not (in $supportedGrps $cmdGrp)}}
+	{{skipThisFile}}
+{{- end}}
+{{- $supportedMethods := list "get" "list" "list-pipelines" }}
+{{- range .Methods}}
+{{- if in $supportedMethods .KebabName}}
+[[Server]]
+Pattern = "{{.Verb}} {{replaceAll "2.2" "2.1" .Path}}"
+Response.Body = '''
+{{ template "response-body" dict "Response" .Response "Seen" $seen }}
+'''
+{{- end}}
+{{- end}}
+
+{{- define "response-body" -}}
+{{- $seen := .Seen -}}
+{
+    {{- $fields := .Response.Fields}}
+    {{- range $i, $f := $fields}}
+    {{- if (not (eq .SnakeName "next_page_token")) }}
+    "{{.SnakeName}}": {{ template "value" dict "Key" .SnakeName "Entity" .Entity "Seen" $seen}}{{if notLast $i $fields}},{{end}}
+    {{- end}}
+    {{- end}}
+}
+{{- end -}}
+
+{{- define "value" -}}
+{{- $seen := .Seen }}
+{{- $key := .Key }}
+{{- if .Entity.IsString -}}
+"{{ $key }}"
+{{- end}}
+{{- if .Entity.IsNumber -}}
+42
+{{- end -}}
+{{- if .Entity.IsEnum -}}
+"ENUM"
+{{- end -}}
+{{- if .Entity.IsBool -}}
+false
+{{- end -}}
+{{- if .Entity.IsMap -}}
+{
+    {{- $fields := .Entity.Fields }}
+    {{- range $i, $f := $fields}}
+    "{{.Name}}": {{template "value" dict "Key" .Name "Entity" .Entity.MapValue "Seen" $seen  }}{{if notLast $i $fields}},{{end}}
+    {{- end }}
+}
+{{- end }}
+{{- if .Entity.IsObject -}}
+{
+    {{- $objName := .Entity.KebabName }}
+    {{- if not (in $seen $objName) }}
+    {{- range .Entity.Package.Types}}
+    {{- if eq .KebabName $objName}}
+    {{- $seen := append $seen .KebabName }}
+    {{- $fields := .Fields }}
+    {{- range $i, $f := $fields}}
+    "{{.Name}}": {{ template "value" dict "Key" .Name "Entity" .Entity "Seen" $seen  }}{{if notLast $i $fields}},{{end}}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end -}}
+}
+{{- end }}
+{{- if .Entity.IsArray -}}
+[
+    {{ template "value" dict "Key" .Entity.SnakeName "Entity" .Entity.ArrayValue "Seen" $seen  -}}
+]
+{{- end }}
+{{- end -}}

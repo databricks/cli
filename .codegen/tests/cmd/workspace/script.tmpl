@@ -1,0 +1,32 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+{{- $cmdGrp := .KebabName }}
+{{- $supportedGrps := list "jobs" "clusters" "pipelines" "repos" }}
+{{- if not (in $supportedGrps $cmdGrp)}}
+	{{skipThisFile}}
+{{- end}}
+{{- $supportedMethods := list "get" "list" "list-pipelines" }}
+{{- range .Methods}}
+{{- if in $supportedMethods .KebabName}}
+trace errcode $CLI {{$cmdGrp}} {{.KebabName}} {{ template "required-input" . }}
+{{- end}}
+{{- end}}
+
+{{- define "required-input" -}}
+{{- range .RequiredPositionalArguments }}{{ template "param-value" . }} {{- end }}
+{{- end -}}
+
+{{- define "param-value" -}}
+{{- if .Entity.IsString -}}
+"input-{{.SnakeName}}"
+{{- end}}
+{{- if .Entity.IsNumber -}}
+42
+{{- end -}}
+{{- if .Entity.IsEnum -}}
+"ENUM"
+{{- end -}}
+{{- if .Entity.IsBool -}}
+false
+{{- end -}}
+{{- end -}}
