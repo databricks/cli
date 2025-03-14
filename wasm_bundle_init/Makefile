@@ -54,5 +54,4 @@ export: build/bundle_init.optimized.wasm.gz
 	cp index.html wasm_exec.js build/
 	git checkout gh-pages
 	git pull origin gh-pages
-	mkdir -p ../experimental/render
-	cp build/bundle_init.optimized.wasm.gz build/index.html build/wasm_exec.js ../experimental/render
+	cp build/bundle_init.optimized.wasm.gz build/index.html build/wasm_exec.js ../experimental/template
