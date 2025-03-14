@@ -104,7 +104,7 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 				gitUrl:      r.TemplatePathOrUrl,
 				ref:         ref,
 				templateDir: r.TemplateDir,
-				//cloneFunc:   git.Clone,
+				// cloneFunc:   git.Clone,
 			}
 		} else {
 			tmpl.Reader = &localReader{

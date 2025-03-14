@@ -22,9 +22,6 @@ type Writer interface {
 
 	// Materialize the template to the local file system.
 	Materialize(ctx context.Context, r Reader) error
-
-	GetOutput() map[string]string
-	SetParams(map[string]any)
 }
 
 type defaultWriter struct {
@@ -39,14 +36,6 @@ type defaultWriter struct {
 
 	// helpers like user_name, short_name, host:
 	helperValues map[string]string
-}
-
-func (w *defaultWriter) GetOutput() map[string]string {
-	return w.Output
-}
-
-func (w *defaultWriter) SetParams(params map[string]any) {
-	w.config.values = params
 }
 
 /*

@@ -300,7 +300,7 @@ func (r *renderer) persistToDisk(ctx context.Context, out map[string]string) err
 			return err
 		}
 		if match {
-			//log.Infof(r.ctx, "skipping file: %s", file.RelPath())
+			// log.Infof(r.ctx, "skipping file: %s", file.RelPath())
 			continue
 		}
 		filesToPersist = append(filesToPersist, file)

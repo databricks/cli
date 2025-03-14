@@ -14,7 +14,7 @@ type file interface {
 	RelPath() string
 
 	// Write file to disk at the destination path.
-	//Write(ctx context.Context, out filer.Filer) error
+	// Write(ctx context.Context, out filer.Filer) error
 
 	// contents returns the file contents as a byte slice.
 	// This is used for testing purposes.

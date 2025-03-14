@@ -27,7 +27,7 @@ func Render(templateName string, params map[string]any, helpers map[string]strin
 	if err != nil {
 		return nil, err
 	}
-	return tmpl.Writer.GetOutput(), nil
+	return w.Output, nil
 }
 
 type TemplateName string
@@ -48,10 +48,6 @@ func GetTemplate(name string) Template {
 		Reader: &builtinReader{name: name},
 		Writer: &defaultWriter{},
 	}
-}
-
-func (t *Template) SetParams(params map[string]any) {
-	t.Writer.SetParams(params)
 }
 
 var databricksTemplates = []Template{
@@ -77,14 +73,14 @@ var databricksTemplates = []Template{
 		name:        MlopsStacks,
 		description: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)",
 		aliases:     []string{"mlops-stack"},
-		//Reader:      &gitReader{gitUrl: "https://github.com/databricks/mlops-stacks", cloneFunc: git.Clone},
+		// Reader:      &gitReader{gitUrl: "https://github.com/databricks/mlops-stacks", cloneFunc: git.Clone},
 		Writer: &writerWithFullTelemetry{},
 	},
 	{
 		name:        DefaultPydabs,
 		hidden:      true,
 		description: "The default PyDABs template",
-		//Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git", cloneFunc: git.Clone},
+		// Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git", cloneFunc: git.Clone},
 		Writer: &writerWithFullTelemetry{},
 	},
 	{
