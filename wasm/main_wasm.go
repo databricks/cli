@@ -8,6 +8,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"syscall/js"
 
 	"github.com/databricks/cli/libs/template"
@@ -85,8 +87,47 @@ func renderTemplateZipWrapper() js.Func {
 
 		// Add each file to the zip archive
 		for path, content := range out {
-			// Create a file inside the zip archive
-			zipFile, err := zipWriter.Create(path)
+			// Create a file header with the path
+			header := &zip.FileHeader{
+				Name:   path,
+				Method: zip.Deflate,
+			}
+
+			// Explicitly set the Flag bits to indicate UTF-8 encoding
+			// This is important for cross-platform compatibility
+			header.Flags |= 0x800
+
+			// Create the directory entries if they don't exist
+			// This ensures proper directory structure in the zip
+			dir := filepath.Dir(path)
+			if dir != "." && dir != "/" {
+				dirs := strings.Split(dir, "/")
+				currentPath := ""
+
+				for _, d := range dirs {
+					if d == "" {
+						continue
+					}
+
+					if currentPath != "" {
+						currentPath += "/"
+					}
+					currentPath += d
+
+					// Check if we've already added this directory
+					_, _ = zipWriter.CreateHeader(&zip.FileHeader{
+						Name:   currentPath + "/",
+						Method: zip.Store, // Directories typically use Store method
+						Flags:  0x800,     // UTF-8 encoding flag
+					})
+
+					// Ignore errors here as the directory might already exist
+					// We just want to ensure the structure is created
+				}
+			}
+
+			// Create a file inside the zip archive with proper headers
+			zipFile, err := zipWriter.CreateHeader(header)
 			if err != nil {
 				return wrapError(fmt.Sprintf("Error creating zip file entry %s: %s", path, err.Error()))
 			}
