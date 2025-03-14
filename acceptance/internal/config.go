@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 
@@ -179,12 +180,12 @@ func ExpandEnvMatrix(matrix map[string][]string) [][]string {
 		return nil
 	}
 
-	var keys []string
-	// AI TODO Can you use modern golang to get all keys in golang?
-	// AI TODO Also sort the keys
+	// Get all keys and sort them for deterministic output
+	keys := make([]string, 0, len(filteredMatrix))
 	for key := range filteredMatrix {
 		keys = append(keys, key)
 	}
+	sort.Strings(keys)
 
 	result := [][]string{[]string{}}
 
