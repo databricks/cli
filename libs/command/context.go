@@ -25,6 +25,10 @@ const (
 	// workspaceClientKey is the context key for an already configured workspace
 	// client that can be used to make authenticated requests.
 	workspaceClientKey = key(3)
+
+	// accountClientKey is the context key for an already configured account
+	// client that can be used to make authenticated requests.
+	accountClientKey = key(4)
 )
 
 func GenerateExecId(ctx context.Context) context.Context {

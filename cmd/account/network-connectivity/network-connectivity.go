@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
@@ -93,7 +94,7 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq)
@@ -190,7 +191,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq)
@@ -269,7 +270,7 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		deleteNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
 
@@ -333,7 +334,7 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		deletePrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
 		deletePrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
@@ -392,7 +393,7 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		getNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
 
@@ -451,7 +452,7 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		getPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
 		getPrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
@@ -509,7 +510,7 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		response := a.NetworkConnectivity.ListNetworkConnectivityConfigurations(ctx, listNetworkConnectivityConfigurationsReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -564,7 +565,7 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = args[0]
 

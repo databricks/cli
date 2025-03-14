@@ -5,6 +5,7 @@ package o_auth_published_apps
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
 )
@@ -73,7 +74,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := command.AccountClient(ctx)
 
 		response := a.OAuthPublishedApps.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
