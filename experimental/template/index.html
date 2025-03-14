@@ -253,10 +253,11 @@
 							throw new Error(zipData.error);
 						}
 						
-						// Create a download link for the ZIP file
+						// Create a download link for the ZIP file with template_name_project_name format
 						const downloadLink = document.createElement("a");
 						downloadLink.href = "data:" + zipData.type + ";base64," + zipData.data;
-						downloadLink.download = templateName + ".zip";
+						const projectName = params.project_name || "project";
+						downloadLink.download = `${templateName}_${projectName}.zip`;
 						
 						// Append to body, click, and remove
 						document.body.appendChild(downloadLink);
