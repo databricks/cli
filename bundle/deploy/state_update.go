@@ -51,7 +51,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		state.ID = uuid.New()
 	}
 
-	statePath, err := getPathToStateFile(ctx, b)
+	statePath, err := GetPathToStateFile(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -82,7 +82,7 @@ func StateUpdate() bundle.Mutator {
 
 func load(ctx context.Context, b *bundle.Bundle) (*DeploymentState, error) {
 	// If the file does not exist, return a new DeploymentState.
-	statePath, err := getPathToStateFile(ctx, b)
+	statePath, err := GetPathToStateFile(ctx, b)
 	if err != nil {
 		return nil, err
 	}

@@ -168,16 +168,16 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 	return maps.Keys(b.Config.Targets), cobra.ShellCompDirectiveDefault
 }
 
-func initTargetFlag(cmd *cobra.Command) {
+func InitTargetFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "target" parameter.
-	cmd.PersistentFlags().StringP("target", "t", "", "bundle target to use (if applicable)")
+	cmd.PersistentFlags().StringP("target", "t", "", "deployment target to use (if applicable)")
 	cmd.RegisterFlagCompletionFunc("target", targetCompletion)
 }
 
 // DEPRECATED flag
 func initEnvironmentFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "environment" parameter.
-	cmd.PersistentFlags().StringP("environment", "e", "", "bundle target to use (if applicable)")
+	cmd.PersistentFlags().StringP("environment", "e", "", "deployment target to use (if applicable)")
 	cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead")
 	cmd.RegisterFlagCompletionFunc("environment", targetCompletion)
 }

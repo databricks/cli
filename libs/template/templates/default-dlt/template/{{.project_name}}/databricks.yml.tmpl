@@ -1,0 +1,25 @@
+# This defines the {{.project_name}} project.
+project:
+  name: {{.project_name}}
+
+include:
+  - ./*.yml
+
+targets:
+  dev:
+    mode: development
+    deploy_on_run: true
+    workspace:
+      host: {{workspace_host}}
+    variables:
+      catalog: {{default_catalog}}
+      schema: {{if (eq .default_schema "")}}${workspace.current_user.short_name} # the current username, e.g. {{short_name}}{{else}}{{.default_schema}}{{end}}
+
+  prod:
+    mode: production
+    owner: {{user_name}}
+    workspace:
+      host: {{workspace_host}}
+    variables:
+      catalog: {{.default_catalog}}
+      schema: {{if (eq .default_schema "")}}default{{else}}{{.default_schema}}{{end}}

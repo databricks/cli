@@ -50,11 +50,13 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 	return opts, nil
 }
 
-func newSyncCommand() *cobra.Command {
+func newSyncCommand(hiddenForDLT bool) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "sync [flags]",
-		Short: "Synchronize bundle tree to the workspace",
-		Args:  root.NoArgs,
+		Use:    "sync [flags]",
+		Short:  "Synchronize source files to a workspace",
+		Long:   "Synchronize source files to a workspace",
+		Hidden: hiddenForDLT,
+		Args:   root.NoArgs,
 	}
 
 	var f syncFlags

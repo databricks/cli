@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"golang.org/x/exp/maps"
 )
@@ -42,6 +43,18 @@ func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// It is invalid to have multiple targets with the `default` flag set.
 	if len(defaults) > 1 {
 		return diag.Errorf("multiple targets are marked as default (%s)", strings.Join(defaults, ", "))
+	}
+
+	// Still no default? Then use development mode as a fallback.
+	// We support this as an optional fallback because it's a common
+	// pattern to have a single development environment, and it
+	// helps make databricks.yml even more concise.
+	if len(defaults) == 0 {
+		for name, env := range b.Config.Targets {
+			if env != nil && env.Mode == config.Development {
+				defaults = append(defaults, name)
+			}
+		}
 	}
 
 	// If no target has the `default` flag set, ask the user to specify one.

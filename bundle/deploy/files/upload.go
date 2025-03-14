@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/permissions"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -17,6 +18,7 @@ import (
 
 type upload struct {
 	outputHandler sync.OutputHandler
+	cliType       clis.CLIType
 }
 
 func (m *upload) Name() string {
@@ -29,7 +31,9 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return nil
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
+	if m.cliType != clis.DLT {
+		cmdio.LogString(ctx, fmt.Sprintf("Uploading files to %s...", b.Config.Workspace.FilePath))
+	}
 	opts, err := GetSyncOptions(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -54,6 +58,6 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-func Upload(outputHandler sync.OutputHandler) bundle.Mutator {
-	return &upload{outputHandler}
+func Upload(outputHandler sync.OutputHandler, cliType clis.CLIType) bundle.Mutator {
+	return &upload{outputHandler, cliType}
 }

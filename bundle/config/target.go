@@ -68,6 +68,16 @@ type Target struct {
 
 	Sync *Sync `json:"sync,omitempty"`
 
+	// DeployOnRun determines if the bundle should be deployed before running.
+	// This is useful for development workflows where you want to deploy
+	// changes before running a job or pipeline.
+	DeployOnRun bool `json:"deploy_on_run,omitempty"`
+
+	// The owner of this deployment. This property is used to set the permissions
+	// for the deployment and to determine the default deployment path
+	// when 'mode: production' is used.
+	Owner string `json:"owner,omitempty"`
+
 	Permissions []resources.Permission `json:"permissions,omitempty"`
 }
 

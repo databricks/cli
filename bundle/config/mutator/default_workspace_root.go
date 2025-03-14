@@ -24,6 +24,15 @@ func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle
 		return nil
 	}
 
+	// FIXME: this shouldn't appear here
+	if b.Config.Project.Name != "" {
+		if b.Config.Bundle.Name != "" {
+			return diag.Errorf("project and bundle cannot both be set")
+		}
+		// TODO: properly copy all values from project to bundle
+		b.Config.Bundle.Name = b.Config.Project.Name
+	}
+
 	if b.Config.Bundle.Name == "" {
 		return diag.Errorf("unable to define default workspace root: bundle name not defined")
 	}
@@ -32,8 +41,12 @@ func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle
 		return diag.Errorf("unable to define default workspace root: bundle target not selected")
 	}
 
+	prefix := "~/"
+	if b.Config.Owner != "" {
+		prefix = "/Workspace/Users/" + b.Config.Owner
+	}
 	b.Config.Workspace.RootPath = fmt.Sprintf(
-		"~/.bundle/%s/%s",
+		prefix+"/.bundle/%s/%s",
 		b.Config.Bundle.Name,
 		b.Config.Bundle.Target,
 	)

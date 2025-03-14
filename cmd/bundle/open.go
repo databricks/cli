@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -37,7 +38,13 @@ func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
-func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
+func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string, cliType clis.CLIType) (string, error) {
+	// DLT CLI: if there is a single pipeline, just run it without prompting.
+	runnableResources := computeRunnableResourcesMap(b, cliType)
+	if len(args) == 0 && cliType == clis.DLT && len(runnableResources) == 1 {
+		return maps.Values(runnableResources)[0], nil
+	}
+
 	// If no arguments are specified, prompt the user to select the resource to open.
 	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
 		return promptOpenArgument(ctx, b)
@@ -50,7 +57,7 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	return args[0], nil
 }
 
-func newOpenCommand() *cobra.Command {
+func newOpenCommand(cliType clis.CLIType) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "open",
 		Short: "Open a resource in the browser",
@@ -72,7 +79,7 @@ func newOpenCommand() *cobra.Command {
 			return err
 		}
 
-		arg, err := resolveOpenArgument(ctx, b, args)
+		arg, err := resolveOpenArgument(ctx, b, args, cliType)
 		if err != nil {
 			return err
 		}
