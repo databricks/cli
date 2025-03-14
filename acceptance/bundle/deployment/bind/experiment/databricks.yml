@@ -1,0 +1,8 @@
+bundle:
+  name: bind-ml-experiment-test-$BUNDLE_NAME_SUFFIX
+
+resources:
+  experiments:
+    experiment1:
+      name: $EXPERIMENT_NAME
+

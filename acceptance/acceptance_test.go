@@ -414,6 +414,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
+	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	cmd.Dir = tmpDir
 
 	outputPath := filepath.Join(tmpDir, "output.txt")

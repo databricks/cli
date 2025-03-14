@@ -1,0 +1,31 @@
+
+=== Bind experiment test: 
+=== Substitute variables in the template
+=== Create a pre-defined experiment
+=== Bind experiment: Updating deployment state...
+Successfully bound databricks_mlflow_experiment with an id '[NUMID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-ml-experiment-test-[UUID]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Read the pre-defined experiment: {
+  "name": "/Users/[USERNAME]/test-experiment[UUID]",
+  "lifecycle_stage": "active"
+}
+
+=== Unbind the experiment: Updating deployment state...
+
+=== Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-ml-experiment-test-[UUID]/default
+
+Deleting files...
+Destroy complete!
+
+=== Read the pre-defined experiment again (expecting it still exists and is not deleted): {
+  "name": "/Users/[USERNAME]/test-experiment[UUID]",
+  "lifecycle_stage": "active"
+}
+
+=== Test cleanup: 
+=== Delete the pre-defined experiment: 0
