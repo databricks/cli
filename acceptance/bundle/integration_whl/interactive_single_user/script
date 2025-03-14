@@ -1,6 +1,7 @@
-export DATA_SECURITY_MODE=USER_ISOLATION
-envsubst < databricks.yml.tmpl > databricks.yml
+export DATA_SECURITY_MODE=SINGLE_USER
+envsubst < $TESTDIR/../interactive_cluster/databricks.yml.tmpl > databricks.yml
 trace cat databricks.yml
+cp -r $TESTDIR/../interactive_cluster/{setup.py,my_test_code} .
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy
 trace $CLI bundle run some_other_job

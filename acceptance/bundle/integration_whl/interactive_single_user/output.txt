@@ -6,21 +6,21 @@ bundle:
 workspace:
   root_path: "~/.bundle/[UNIQUE_NAME]"
 
-include:
-  - empty.yml
-
 resources:
+  clusters:
+    test_cluster:
+      cluster_name: "test-cluster-[UNIQUE_NAME]"
+      spark_version: "13.3.x-snapshot-scala2.12"
+      node_type_id: "[NODE_TYPE_ID]"
+      num_workers: 1
+      data_security_mode: SINGLE_USER
+
   jobs:
     some_other_job:
       name: "[${bundle.target}] Test Wheel Job [UNIQUE_NAME]"
       tasks:
         - task_key: TestTask
-          new_cluster:
-            num_workers: 1
-            spark_version: 13.3.x-snapshot-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            data_security_mode: USER_ISOLATION
-            instance_pool_id: [TEST_INSTANCE_POOL_ID]
+          existing_cluster_id: "${resources.clusters.test_cluster.cluster_id}"
           python_wheel_task:
             package_name: my_test_code
             entry_point: run
@@ -28,7 +28,7 @@ resources:
               - "one"
               - "two"
           libraries:
-          - whl: ./dist/*.whl
+            - whl: ./dist/*.whl
 
 >>> [CLI] bundle deploy
 Building python_artifact...
@@ -67,6 +67,7 @@ Got arguments:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete cluster test_cluster
   delete job some_other_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
