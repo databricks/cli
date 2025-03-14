@@ -11,6 +11,16 @@ from databricks.bundles.core import (
     VariableOrOptional,
 )
 from databricks.bundles.core._transform import _transform
+from databricks.bundles.core._transform_to_json import _transform_to_json_object
+from databricks.bundles.jobs import (
+    ClusterSpec,
+    ClusterSpecDict,
+    CronSchedule,
+    ForEachTask,
+    NotebookTask,
+    PauseStatus,
+    Task,
+)
 
 
 class Color(Enum):
@@ -186,6 +196,82 @@ def test_transform_forward_ref():
     out = _transform(ForwardRefA, {"b": {"value": 42}})
 
     assert out == ForwardRefA(b=ForwardRefB(value=42))
+
+
+def test_complex_cluster_spec_roundtrip():
+    # this is what is pre-populated in clusters created from UI
+
+    cluster_spec_dict: ClusterSpecDict = {
+        "autoscale": {"min_workers": 1, "max_workers": 2},
+        "cluster_name": "test cluster",
+        "spark_version": "13.3.x-scala2.12",
+        "aws_attributes": {
+            "first_on_demand": 1,
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "auto",
+            "spot_bid_price_percent": 100,
+            "ebs_volume_count": 0,
+        },
+        "node_type_id": "i3.xlarge",
+        "driver_node_type_id": "i3.xlarge",
+        "spark_env_vars": {"PYSPARK_PYTHON": "/databricks/python3/bin/python3"},
+        "autotermination_minutes": 120,
+        "enable_elastic_disk": False,
+        "enable_local_disk_encryption": False,
+        "data_security_mode": "USER_ISOLATION",
+        "runtime_engine": "PHOTON",
+    }
+
+    cluster_spec = _transform(ClusterSpec, cluster_spec_dict)
+    cluster_spec_dict_2 = _transform_to_json_object(cluster_spec)
+
+    assert cluster_spec_dict == cluster_spec_dict_2
+
+
+def test_cron_schedule():
+    cron_schedule = _transform(
+        CronSchedule,
+        {
+            "quartz_cron_expression": "0 0 0 * * ?",
+            "pause_status": Variable(path="var.pause_status", type=str),
+        },
+    )
+
+    assert cron_schedule == CronSchedule(
+        quartz_cron_expression="0 0 0 * * ?",
+        pause_status=Variable(path="var.pause_status", type=PauseStatus),
+    )
+
+
+def test_for_each_task():
+    """
+    Test the special case of recursive data class.
+    """
+
+    task = _transform(
+        Task,
+        {
+            "task_key": "loop",
+            "for_each_task": {
+                "inputs": "[1, 2, 3]",
+                "task": {
+                    "task_key": "loop_iteration",
+                    "notebook_task": {"notebook_path": "notebooks/foo.ipynb"},
+                },
+            },
+        },
+    )
+
+    assert task == Task(
+        task_key="loop",
+        for_each_task=ForEachTask(
+            inputs="[1, 2, 3]",
+            task=Task(
+                task_key="loop_iteration",
+                notebook_task=NotebookTask(notebook_path="notebooks/foo.ipynb"),
+            ),
+        ),
+    )
 
 
 def test_transform_dict_keys():
