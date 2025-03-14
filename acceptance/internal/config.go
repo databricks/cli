@@ -162,4 +162,52 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 //
 // If any entries is an empty list, that variable is dropped from the matrix before processing.
 func ExpandEnvMatrix(matrix map[string][]string) [][]string {
+	// If the matrix is empty, return an empty slice
+	if len(matrix) == 0 {
+		return [][]string{}
+	}
+
+	// Filter out keys with empty value slices
+	filteredMatrix := make(map[string][]string)
+	for key, values := range matrix {
+		if len(values) > 0 {
+			filteredMatrix[key] = values
+		}
+	}
+
+	// If all keys had empty values, return a single empty environment
+	if len(filteredMatrix) == 0 {
+		return [][]string{[]string{}}
+	}
+
+	// Generate all combinations
+	var keys []string
+	for key := range filteredMatrix {
+		keys = append(keys, key)
+	}
+
+	// Start with a single empty environment
+	result := [][]string{[]string{}}
+
+	// For each key, expand the current result with all possible values for that key
+	for _, key := range keys {
+		values := filteredMatrix[key]
+		var newResult [][]string
+
+		// For each existing environment in the result
+		for _, env := range result {
+			// For each possible value of the current key
+			for _, value := range values {
+				// Create a new environment with the current key=value added
+				newEnv := make([]string, len(env)+1)
+				copy(newEnv, env)
+				newEnv[len(env)] = key + "=" + value
+				newResult = append(newResult, newEnv)
+			}
+		}
+
+		result = newResult
+	}
+
+	return result
 }
