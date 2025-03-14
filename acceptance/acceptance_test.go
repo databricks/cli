@@ -214,7 +214,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
 
 			if len(expanded) == 1 && len(expanded[0]) == 0 {
-				runTest(t, dir, coverDir, repls.Clone(), config, configPath)
+				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
 			} else {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -222,7 +222,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 						if !InprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, coverDir, repls.Clone(), config, configPath)
+						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset)
 					})
 				}
 			}
@@ -299,7 +299,7 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	return ""
 }
 
-func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string) {
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string, customEnv []string) {
 	tailOutput := Tail
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
@@ -445,6 +445,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
+	}
+
+	for _, keyvalue := range customEnv {
+		items := strings.Split(keyvalue, "=")
+		require.Len(t, items, 2)
+		cmd.Env = append(cmd.Env, keyvalue)
+		repls.Set(items[1], "["+items[0]+"]")
 	}
 
 	absDir, err := filepath.Abs(dir)
