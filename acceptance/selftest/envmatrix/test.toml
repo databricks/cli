@@ -1,0 +1,3 @@
+[EnvMatrix]
+FIRST = ["one", "two"]
+SECOND = ["variantA", "variantB"]
