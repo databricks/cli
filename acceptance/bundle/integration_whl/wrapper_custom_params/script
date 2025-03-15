@@ -1,4 +1,4 @@
-export DEFAULT_SPARK_VERSION=12.2.x-scala2.12
+#export DEFAULT_SPARK_VERSION=12.2.x-scala2.12
 export EXTRA_CONFIG=python_wheel_wrapper.yml
 envsubst < $TESTDIR/../base/databricks.yml.tmpl > databricks.yml
 cp -r $TESTDIR/../base/{$EXTRA_CONFIG,setup.py,my_test_code} .

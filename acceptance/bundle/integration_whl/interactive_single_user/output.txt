@@ -10,7 +10,7 @@ resources:
   clusters:
     test_cluster:
       cluster_name: "test-cluster-[UNIQUE_NAME]"
-      spark_version: "13.3.x-snapshot-scala2.12"
+      spark_version: "[DEFAULT_SPARK_VERSION]"
       node_type_id: "[NODE_TYPE_ID]"
       num_workers: 1
       data_security_mode: SINGLE_USER
