@@ -9,6 +9,10 @@ from databricks.bundles.compute._models.s3_storage_info import (
     S3StorageInfo,
     S3StorageInfoParam,
 )
+from databricks.bundles.compute._models.volumes_storage_info import (
+    VolumesStorageInfo,
+    VolumesStorageInfoParam,
+)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
@@ -35,6 +39,12 @@ class ClusterLogConf:
     `instance_profile_arn` has permission to write data to the s3 destination.
     """
 
+    volumes: VariableOrOptional[VolumesStorageInfo] = None
+    """
+    destination needs to be provided. e.g.
+    `{ "volumes" : { "destination" : "/Volumes/catalog/schema/volume/cluster_log" } }`
+    """
+
     @classmethod
     def from_dict(cls, value: "ClusterLogConfDict") -> "Self":
         return _transform(cls, value)
@@ -58,6 +68,12 @@ class ClusterLogConfDict(TypedDict, total=False):
     `{ "s3": { "destination" : "s3://cluster_log_bucket/prefix", "region" : "us-west-2" } }`
     Cluster iam role is used to access s3, please make sure the cluster iam role in
     `instance_profile_arn` has permission to write data to the s3 destination.
+    """
+
+    volumes: VariableOrOptional[VolumesStorageInfoParam]
+    """
+    destination needs to be provided. e.g.
+    `{ "volumes" : { "destination" : "/Volumes/catalog/schema/volume/cluster_log" } }`
     """
 
 

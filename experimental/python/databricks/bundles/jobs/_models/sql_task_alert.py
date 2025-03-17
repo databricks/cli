@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
@@ -26,14 +26,14 @@ class SqlTaskAlert:
     The canonical identifier of the SQL alert.
     """
 
-    subscriptions: VariableOrList[SqlTaskSubscription]
-    """
-    If specified, alert notifications are sent to subscribers.
-    """
-
     pause_subscriptions: VariableOrOptional[bool] = None
     """
     If true, the alert notifications are not sent to subscribers.
+    """
+
+    subscriptions: VariableOrList[SqlTaskSubscription] = field(default_factory=list)
+    """
+    If specified, alert notifications are sent to subscribers.
     """
 
     @classmethod
@@ -52,14 +52,14 @@ class SqlTaskAlertDict(TypedDict, total=False):
     The canonical identifier of the SQL alert.
     """
 
-    subscriptions: VariableOrList[SqlTaskSubscriptionParam]
-    """
-    If specified, alert notifications are sent to subscribers.
-    """
-
     pause_subscriptions: VariableOrOptional[bool]
     """
     If true, the alert notifications are not sent to subscribers.
+    """
+
+    subscriptions: VariableOrList[SqlTaskSubscriptionParam]
+    """
+    If specified, alert notifications are sent to subscribers.
     """
 
 

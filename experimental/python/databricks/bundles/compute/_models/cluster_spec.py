@@ -91,7 +91,7 @@ class ClusterSpec:
     cluster_log_conf: VariableOrOptional[ClusterLogConf] = None
     """
     The configuration for delivering spark logs to a long-term storage destination.
-    Two kinds of destinations (dbfs and s3) are supported. Only one destination can be specified
+    Three kinds of destinations (DBFS, S3 and Unity Catalog volumes) are supported. Only one destination can be specified
     for one cluster. If the conf is given, the logs will be delivered to the destination every
     `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
     the destination of executor logs is `$destination/$clusterId/executor`.
@@ -163,7 +163,7 @@ class ClusterSpec:
 
     is_single_node: VariableOrOptional[bool] = None
     """
-    This field can only be used with `kind`.
+    This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
     
@@ -242,7 +242,7 @@ class ClusterSpec:
 
     use_ml_runtime: VariableOrOptional[bool] = None
     """
-    This field can only be used with `kind`.
+    This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
     
@@ -295,7 +295,7 @@ class ClusterSpecDict(TypedDict, total=False):
     cluster_log_conf: VariableOrOptional[ClusterLogConfParam]
     """
     The configuration for delivering spark logs to a long-term storage destination.
-    Two kinds of destinations (dbfs and s3) are supported. Only one destination can be specified
+    Three kinds of destinations (DBFS, S3 and Unity Catalog volumes) are supported. Only one destination can be specified
     for one cluster. If the conf is given, the logs will be delivered to the destination every
     `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
     the destination of executor logs is `$destination/$clusterId/executor`.
@@ -367,7 +367,7 @@ class ClusterSpecDict(TypedDict, total=False):
 
     is_single_node: VariableOrOptional[bool]
     """
-    This field can only be used with `kind`.
+    This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
     
@@ -446,7 +446,7 @@ class ClusterSpecDict(TypedDict, total=False):
 
     use_ml_runtime: VariableOrOptional[bool]
     """
-    This field can only be used with `kind`.
+    This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
     

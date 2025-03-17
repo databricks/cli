@@ -27,9 +27,6 @@ class Environment:
     dependencies: VariableOrList[str] = field(default_factory=list)
     """
     List of pip dependencies, as supported by the version of pip in this environment.
-    Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
-    Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
-    E.g. dependencies: ["foo==0.0.1", "-r /Workspace/test/requirements.txt"]
     """
 
     @classmethod
@@ -54,9 +51,6 @@ class EnvironmentDict(TypedDict, total=False):
     dependencies: VariableOrList[str]
     """
     List of pip dependencies, as supported by the version of pip in this environment.
-    Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
-    Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
-    E.g. dependencies: ["foo==0.0.1", "-r /Workspace/test/requirements.txt"]
     """
 
 
