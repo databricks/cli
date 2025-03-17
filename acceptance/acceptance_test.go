@@ -240,6 +240,7 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
+// Return a reason to skip the test. Empty string means "don't skip".
 func getSkipReason(config *TestConfig, configPath string) string {
 	if Forcerun {
 		return ""
