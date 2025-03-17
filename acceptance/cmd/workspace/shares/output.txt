@@ -1,0 +1,84 @@
+
+>>> errcode [CLI] shares get input-name
+{
+  "comment":"comment",
+  "created_at":42,
+  "created_by":"created_by",
+  "name":"name",
+  "objects": [
+    {
+      "added_at":42,
+      "added_by":"added_by",
+      "cdf_enabled":false,
+      "comment":"comment",
+      "content":"content",
+      "data_object_type":"ENUM",
+      "history_data_sharing_status":"ENUM",
+      "name":"name",
+      "partitions": [
+        {
+          "values": [
+            {
+              "name":"name",
+              "op":"ENUM",
+              "recipient_property_key":"recipient_property_key",
+              "value":"value"
+            }
+          ]
+        }
+      ],
+      "shared_as":"shared_as",
+      "start_version":42,
+      "status":"ENUM",
+      "string_shared_as":"string_shared_as"
+    }
+  ],
+  "owner":"owner",
+  "storage_location":"storage_location",
+  "storage_root":"storage_root",
+  "updated_at":42,
+  "updated_by":"updated_by"
+}
+
+>>> errcode [CLI] shares list
+[
+  {
+    "comment": "comment",
+    "created_at": 42,
+    "created_by": "created_by",
+    "name": "name",
+    "objects": [
+      {
+        "added_at": 42,
+        "added_by": "added_by",
+        "cdf_enabled": false,
+        "comment": "comment",
+        "content": "content",
+        "data_object_type": "ENUM",
+        "history_data_sharing_status": "ENUM",
+        "name": "name",
+        "partitions": [
+          {
+            "values": [
+              {
+                "name": "name",
+                "op": "ENUM",
+                "recipient_property_key": "recipient_property_key",
+                "value": "value"
+              }
+            ]
+          }
+        ],
+        "shared_as": "shared_as",
+        "start_version": 42,
+        "status": "ENUM",
+        "string_shared_as": "string_shared_as"
+      }
+    ],
+    "owner": "owner",
+    "storage_location": "storage_location",
+    "storage_root": "storage_root",
+    "updated_at": 42,
+    "updated_by": "updated_by"
+  }
+]

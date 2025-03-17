@@ -1,0 +1,12 @@
+
+>>> errcode [CLI] grants get ENUM input-full_name
+{
+  "privilege_assignments": [
+    {
+      "principal":"principal",
+      "privileges": [
+        "ENUM"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+
+>>> errcode [CLI] instance-pools get input-instance_pool_id
+{
+  "aws_attributes": {
+    "availability":"ENUM",
+    "spot_bid_price_percent":42,
+    "zone_id":"zone_id"
+  },
+  "azure_attributes": {
+    "availability":"ENUM",
+    "spot_bid_max_price":42
+  },
+  "disk_spec": {
+    "disk_count":42,
+    "disk_iops":42,
+    "disk_size":42,
+    "disk_throughput":42,
+    "disk_type": {
+      "azure_disk_volume_type":"ENUM",
+      "ebs_volume_type":"ENUM"
+    }
+  },
+  "enable_elastic_disk":false,
+  "gcp_attributes": {
+    "gcp_availability":"ENUM",
+    "local_ssd_count":42,
+    "zone_id":"zone_id"
+  },
+  "idle_instance_autotermination_minutes":42,
+  "instance_pool_id":"instance_pool_id",
+  "instance_pool_name":"instance_pool_name",
+  "max_capacity":42,
+  "min_idle_instances":42,
+  "node_type_id":"node_type_id",
+  "preloaded_docker_images": [
+    {
+      "basic_auth": {
+        "password":"password",
+        "username":"username"
+      },
+      "url":"url"
+    }
+  ],
+  "preloaded_spark_versions": [
+    "_list"
+  ],
+  "state":"ENUM",
+  "stats": {
+    "idle_count":42,
+    "pending_idle_count":42,
+    "pending_used_count":42,
+    "used_count":42
+  },
+  "status": {
+    "pending_instance_errors": [
+      {
+        "instance_id":"instance_id",
+        "message":"message"
+      }
+    ]
+  }
+}
+
+>>> errcode [CLI] instance-pools list
+instance_pool_id  instance_pool_name  node_type_id  ENUM

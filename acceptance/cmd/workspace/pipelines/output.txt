@@ -1,0 +1,210 @@
+
+>>> errcode [CLI] pipelines get input-pipeline_id
+{
+  "cause":"cause",
+  "cluster_id":"cluster_id",
+  "creator_user_name":"creator_user_name",
+  "effective_budget_policy_id":"effective_budget_policy_id",
+  "health":"ENUM",
+  "last_modified":42,
+  "latest_updates": [
+    {
+      "creation_time":"creation_time",
+      "state":"ENUM",
+      "update_id":"update_id"
+    }
+  ],
+  "name":"name",
+  "pipeline_id":"pipeline_id",
+  "run_as_user_name":"run_as_user_name",
+  "spec": {
+    "budget_policy_id":"budget_policy_id",
+    "catalog":"catalog",
+    "channel":"channel",
+    "clusters": [
+      {
+        "apply_policy_default_values":false,
+        "autoscale": {
+          "max_workers":42,
+          "min_workers":42,
+          "mode":"ENUM"
+        },
+        "aws_attributes": {},
+        "azure_attributes": {},
+        "cluster_log_conf": {},
+        "driver_instance_pool_id":"driver_instance_pool_id",
+        "driver_node_type_id":"driver_node_type_id",
+        "enable_local_disk_encryption":false,
+        "gcp_attributes": {},
+        "init_scripts": [
+          {}
+        ],
+        "instance_pool_id":"instance_pool_id",
+        "label":"label",
+        "node_type_id":"node_type_id",
+        "num_workers":42,
+        "policy_id":"policy_id",
+        "ssh_public_keys": [
+          "_list"
+        ]
+      }
+    ],
+    "continuous":false,
+    "deployment": {
+      "kind":"ENUM",
+      "metadata_file_path":"metadata_file_path"
+    },
+    "development":false,
+    "edition":"edition",
+    "filters": {
+      "exclude": [
+        "_list"
+      ],
+      "include": [
+        "_list"
+      ]
+    },
+    "gateway_definition": {
+      "connection_id":"connection_id",
+      "connection_name":"connection_name",
+      "gateway_storage_catalog":"gateway_storage_catalog",
+      "gateway_storage_name":"gateway_storage_name",
+      "gateway_storage_schema":"gateway_storage_schema"
+    },
+    "id":"id",
+    "ingestion_definition": {
+      "connection_name":"connection_name",
+      "ingestion_gateway_id":"ingestion_gateway_id",
+      "objects": [
+        {
+          "report": {
+            "destination_catalog":"destination_catalog",
+            "destination_schema":"destination_schema",
+            "destination_table":"destination_table",
+            "source_url":"source_url",
+            "table_configuration": {
+              "primary_keys": [
+                "_list"
+              ],
+              "salesforce_include_formula_fields":false,
+              "scd_type":"ENUM",
+              "sequence_by": [
+                "_list"
+              ]
+            }
+          },
+          "schema": {
+            "destination_catalog":"destination_catalog",
+            "destination_schema":"destination_schema",
+            "source_catalog":"source_catalog",
+            "source_schema":"source_schema",
+            "table_configuration": {
+              "primary_keys": [
+                "_list"
+              ],
+              "salesforce_include_formula_fields":false,
+              "scd_type":"ENUM",
+              "sequence_by": [
+                "_list"
+              ]
+            }
+          },
+          "table": {
+            "destination_catalog":"destination_catalog",
+            "destination_schema":"destination_schema",
+            "destination_table":"destination_table",
+            "source_catalog":"source_catalog",
+            "source_schema":"source_schema",
+            "source_table":"source_table",
+            "table_configuration": {
+              "primary_keys": [
+                "_list"
+              ],
+              "salesforce_include_formula_fields":false,
+              "scd_type":"ENUM",
+              "sequence_by": [
+                "_list"
+              ]
+            }
+          }
+        }
+      ],
+      "table_configuration": {
+        "primary_keys": [
+          "_list"
+        ],
+        "salesforce_include_formula_fields":false,
+        "scd_type":"ENUM",
+        "sequence_by": [
+          "_list"
+        ]
+      }
+    },
+    "libraries": [
+      {
+        "file": {
+          "path":"path"
+        },
+        "jar":"jar",
+        "maven": {
+          "coordinates":""
+        },
+        "notebook": {
+          "path":"path"
+        },
+        "whl":"whl"
+      }
+    ],
+    "name":"name",
+    "notifications": [
+      {
+        "alerts": [
+          "_list"
+        ],
+        "email_recipients": [
+          "_list"
+        ]
+      }
+    ],
+    "photon":false,
+    "restart_window": {
+      "days_of_week": [
+        "ENUM"
+      ],
+      "start_hour":42,
+      "time_zone_id":"time_zone_id"
+    },
+    "schema":"schema",
+    "serverless":false,
+    "storage":"storage",
+    "target":"target",
+    "trigger": {
+      "cron": {
+        "quartz_cron_schedule":"quartz_cron_schedule",
+        "timezone_id":"timezone_id"
+      },
+      "manual": {}
+    }
+  },
+  "state":"ENUM"
+}
+
+>>> errcode [CLI] pipelines list-pipelines
+[
+  {
+    "cluster_id": "cluster_id",
+    "creator_user_name": "creator_user_name",
+    "health": "ENUM",
+    "latest_updates": [
+      {
+        "creation_time": "creation_time",
+        "state": "ENUM",
+        "update_id": "update_id"
+      }
+    ],
+    "name": "name",
+    "pipeline_id": "pipeline_id",
+    "run_as_user_name": "run_as_user_name",
+    "state": "ENUM"
+  }
+]

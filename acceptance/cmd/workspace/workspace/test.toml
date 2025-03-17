@@ -1,0 +1,20 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/list"
+Response.Body = '''
+{
+    "objects": [
+        {
+            "created_at": 42,
+            "language": "ENUM",
+            "modified_at": 42,
+            "object_id": 42,
+            "object_type": "ENUM",
+            "path": "path",
+            "resource_id": "resource_id",
+            "size": 42
+        }
+    ]
+}
+'''

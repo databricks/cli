@@ -1,0 +1,38 @@
+
+>>> errcode [CLI] service-principals get input-id
+{
+  "active":false,
+  "entitlements": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "groups": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "id":"id",
+  "roles": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "schemas": [
+    "ENUM"
+  ]
+}
+
+>>> errcode [CLI] service-principals list

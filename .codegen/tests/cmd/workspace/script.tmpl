@@ -1,0 +1,48 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+{{- $excludes :=
+	list
+		"command-execution"
+		"statement-execution"
+		"dbfs"
+		"dbsql-permissions"
+		"account-access-control-proxy"
+		"files"
+        "dashboards"
+        "queries-legacy"
+}}
+
+{{- $cmdGrp := .KebabName }}
+{{- if or .HasParent (or .IsAccounts (in $excludes .KebabName))  }}
+{{skipThisFile}}
+{{- end}}
+{{- $generated := false -}}
+{{- $supportedMethods := list "get" "list" "list-pipelines" }}
+{{- range .Methods}}
+{{- if in $supportedMethods .KebabName}}
+{{- $generated = true }}
+trace errcode $CLI {{$cmdGrp}} {{.KebabName}} {{ template "required-input" . }}
+{{- end}}
+{{- end}}
+
+{{- if not $generated }}
+{{skipThisFile}}
+{{- end}}
+
+{{- define "required-input" -}}
+{{- range .RequiredPositionalArguments }}{{ template "param-value" . }} {{ end }}
+{{- end -}}
+
+{{- define "param-value" -}}
+{{- if .Entity.IsString -}}
+"input-{{.SnakeName}}"
+{{- end}}
+{{- if .Entity.IsNumber -}}
+42
+{{- end -}}
+{{- if .Entity.IsEnum -}}
+ENUM
+{{- end -}}
+{{- if .Entity.IsBool -}}
+false
+{{- end -}}
+{{- end -}}

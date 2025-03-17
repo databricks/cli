@@ -1,0 +1,43 @@
+
+>>> errcode [CLI] notification-destinations get input-id
+{
+  "config": {
+    "email": {
+      "addresses": [
+        "_list"
+      ]
+    },
+    "generic_webhook": {
+      "password":"password",
+      "password_set":false,
+      "url":"url",
+      "url_set":false,
+      "username":"username",
+      "username_set":false
+    },
+    "microsoft_teams": {
+      "url":"url",
+      "url_set":false
+    },
+    "pagerduty": {
+      "integration_key":"integration_key",
+      "integration_key_set":false
+    },
+    "slack": {
+      "url":"url",
+      "url_set":false
+    }
+  },
+  "destination_type":"ENUM",
+  "display_name":"display_name",
+  "id":"id"
+}
+
+>>> errcode [CLI] notification-destinations list
+[
+  {
+    "destination_type": "ENUM",
+    "display_name": "display_name",
+    "id": "id"
+  }
+]

@@ -1,0 +1,25 @@
+# Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+[[Server]]
+Pattern = "GET /api/2.0/git-credentials/{credential_id}"
+Response.Body = '''
+{
+    "credential_id": 42,
+    "git_provider": "git_provider",
+    "git_username": "git_username"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/git-credentials"
+Response.Body = '''
+{
+    "credentials": [
+        {
+            "credential_id": 42,
+            "git_provider": "git_provider",
+            "git_username": "git_username"
+        }
+    ]
+}
+'''

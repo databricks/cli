@@ -1,0 +1,48 @@
+
+>>> errcode [CLI] registered-models get input-full_name
+{
+  "aliases": [
+    {
+      "alias_name":"alias_name",
+      "version_num":42
+    }
+  ],
+  "browse_only":false,
+  "catalog_name":"catalog_name",
+  "comment":"comment",
+  "created_at":42,
+  "created_by":"created_by",
+  "full_name":"full_name",
+  "metastore_id":"metastore_id",
+  "name":"name",
+  "owner":"owner",
+  "schema_name":"schema_name",
+  "storage_location":"storage_location",
+  "updated_at":42,
+  "updated_by":"updated_by"
+}
+
+>>> errcode [CLI] registered-models list
+[
+  {
+    "aliases": [
+      {
+        "alias_name": "alias_name",
+        "version_num": 42
+      }
+    ],
+    "browse_only": false,
+    "catalog_name": "catalog_name",
+    "comment": "comment",
+    "created_at": 42,
+    "created_by": "created_by",
+    "full_name": "full_name",
+    "metastore_id": "metastore_id",
+    "name": "name",
+    "owner": "owner",
+    "schema_name": "schema_name",
+    "storage_location": "storage_location",
+    "updated_at": 42,
+    "updated_by": "updated_by"
+  }
+]

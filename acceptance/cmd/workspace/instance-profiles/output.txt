@@ -1,0 +1,3 @@
+
+>>> errcode [CLI] instance-profiles list
+instance_profile_arn

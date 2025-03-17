@@ -1,0 +1,51 @@
+
+>>> errcode [CLI] users get input-id
+{
+  "active":false,
+  "emails": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "entitlements": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "groups": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "id":"id",
+  "name": {
+    "familyName":"familyName",
+    "givenName":"givenName"
+  },
+  "roles": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "schemas": [
+    "ENUM"
+  ]
+}
+
+>>> errcode [CLI] users list

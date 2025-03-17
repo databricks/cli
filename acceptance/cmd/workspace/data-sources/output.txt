@@ -1,0 +1,15 @@
+
+>>> errcode [CLI] data-sources list
+[
+  {
+    "id":"id",
+    "name":"name",
+    "pause_reason":"pause_reason",
+    "paused":42,
+    "supports_auto_limit":false,
+    "syntax":"syntax",
+    "type":"type",
+    "view_only":false,
+    "warehouse_id":"warehouse_id"
+  }
+]

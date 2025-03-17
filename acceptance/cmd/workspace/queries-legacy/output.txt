@@ -1,0 +1,5 @@
+
+>>> [CLI] queries list
+ID                                    Name             Author
+[UUID]  Example query 1  user@acme.com
+[UUID]  Example query 2  user@acme.com

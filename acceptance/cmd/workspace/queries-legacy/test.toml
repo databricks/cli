@@ -1,0 +1,58 @@
+[[Server]]
+Pattern = "GET /api/2.0/sql/queries"
+Response.Body = '''
+{
+  "results": [
+    {
+      "description": "Example description",
+      "owner_user_name": "user@acme.com",
+      "tags": [
+        "Tag 1"
+      ],
+      "display_name": "Example query 1",
+      "id": "ae25e731-92f2-4838-9fb2-1ca364320a3d",
+      "lifecycle_state": "ACTIVE",
+      "last_modifier_user_name": "user@acme.com",
+      "query_text": "SELECT 1",
+      "parameters": [
+        {
+          "name": "foo",
+          "text_value": {
+            "value": "bar"
+          },
+          "title": "foo"
+        }
+      ],
+      "update_time": "2019-08-24T14:15:22Z",
+      "warehouse_id": "a7066a8ef796be84",
+      "run_as_mode": "OWNER",
+      "create_time": "2019-08-24T14:15:22Z"
+    },
+    {
+      "description": "Example description",
+      "owner_user_name": "user@acme.com",
+      "tags": [
+        "Tag 1"
+      ],
+      "display_name": "Example query 2",
+      "id": "be25e731-92f2-4838-9fb2-1ca364320a3d",
+      "lifecycle_state": "ACTIVE",
+      "last_modifier_user_name": "user@acme.com",
+      "query_text": "SELECT 1",
+      "parameters": [
+        {
+          "name": "foo",
+          "text_value": {
+            "value": "bar"
+          },
+          "title": "foo"
+        }
+      ],
+      "update_time": "2019-08-24T14:15:22Z",
+      "warehouse_id": "a7066a8ef796be84",
+      "run_as_mode": "OWNER",
+      "create_time": "2019-08-24T14:15:22Z"
+    }
+  ]
+}
+'''

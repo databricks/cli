@@ -1,0 +1,49 @@
+
+>>> errcode [CLI] groups get input-id
+{
+  "entitlements": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "groups": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "id":"id",
+  "members": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "meta": {
+    "resourceType":"resourceType"
+  },
+  "roles": [
+    {
+      "$ref":"$ref",
+      "display":"display",
+      "primary":false,
+      "type":"type",
+      "value":"value"
+    }
+  ],
+  "schemas": [
+    "ENUM"
+  ]
+}
+
+>>> errcode [CLI] groups list

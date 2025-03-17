@@ -1,0 +1,14 @@
+Local = true
+Cloud = false
+
+[[Repls]]
+Old="Date: .*"
+New="Date: (redacted)"
+
+[[Repls]]
+Old="Traceparent: .*"
+New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
