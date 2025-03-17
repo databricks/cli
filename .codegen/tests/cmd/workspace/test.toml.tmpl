@@ -11,21 +11,6 @@
         "queries-legacy"
 }}
 
-Local = true
-Cloud = false
-
-[[Repls]]
-Old="Date: .*"
-New="Date: (redacted)"
-
-[[Repls]]
-Old="Traceparent: .*"
-New="Traceparent: (redacted)"
-
-[[Repls]]
-Old="User-Agent: .*"
-New="User-Agent: (redacted)"
-
 {{- $seen := list "" }}
 {{- $cmdGrp := .KebabName }}
 {{- if or .HasParent (or .IsAccounts (in $excludes .KebabName))  }}
