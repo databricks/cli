@@ -6,6 +6,7 @@ import (
 	"io/fs"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -35,13 +36,25 @@ func (m *acquire) init(b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func AcquireLock(ctx context.Context, lock config.Lock, locker *locker.Locker) diag.Diagnostics {
 	// Return early if locking is disabled.
-	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
+	if !lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
 		return nil
 	}
 
+	force := lock.Force
+	log.Infof(ctx, "Acquiring deployment lock (force: %v)", force)
+	err := locker.Lock(ctx, force)
+	if err != nil {
+		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
+		return diag.FromErr(err)
+	}
+
+	return nil
+}
+
+func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := m.init(b)
 	if err != nil {
 		return diag.FromErr(err)

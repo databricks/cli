@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -131,18 +130,22 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 	diags := bundle.Apply(ctx, b, terraform.Apply())
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = bundle.Apply(ctx, b, metadata.Compute())
+	if diags.HasError() {
+		return diags
+	}
 
 	// following original logic, continuing with sequence below even if terraform had errors
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+	diags = diags.Extend(bundle.ApplyParallel(ctx, b,
 		terraform.StatePush(),
 		terraform.Load(),
-		apps.InterpolateVariables(),
-		apps.UploadConfig(),
-		metadata.Compute(),
 		metadata.Upload(),
 	))
-
 	if !diags.HasError() {
 		cmdio.LogString(ctx, "Deployment complete!")
 	}
@@ -158,7 +161,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// mutators need informed consent if they are potentially destructive.
 	diags = bundle.ApplySeq(ctx, b,
 		scripts.Execute(config.ScriptPreDeploy),
-		lock.Acquire(),
 	)
 
 	if diags.HasError() {
@@ -171,10 +173,18 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
 	}()
 
-	diags = bundle.ApplySeq(ctx, b,
+	diags = bundle.ApplyParallel(ctx, b,
+		lock.Acquire(),
 		terraform.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
+	)
+
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = bundle.ApplySeq(ctx, b,
+		terraform.CheckDashboardsModifiedRemotely(),
 		mutator.ValidateGitDetails(),
 		artifacts.CleanUp(),
 		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
@@ -183,18 +193,39 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// mutator is part of the deploy step rather than validate.
 		libraries.ExpandGlobReferences(),
 		libraries.CheckForSameNameLibraries(),
+	)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = bundle.ApplyParallel(ctx, b,
 		libraries.Upload(),
-		trampoline.TransformWheelTask(),
 		files.Upload(outputHandler),
+	)
+
+	diags = bundle.ApplySeq(ctx, b,
+		trampoline.TransformWheelTask(),
 		deploy.StateUpdate(),
+	)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = bundle.ApplyParallel(ctx, b,
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
+		terraform.Initialize(),
+	)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = bundle.ApplySeq(ctx, b,
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.CheckRunningResource(),
 		terraform.Plan(terraform.PlanGoal("deploy")),
 	)
-
 	if diags.HasError() {
 		return diags
 	}

@@ -25,6 +25,8 @@ const (
 	// workspaceClientKey is the context key for an already configured workspace
 	// client that can be used to make authenticated requests.
 	workspaceClientKey = key(3)
+
+	databricksClientKey = key(5)
 )
 
 func GenerateExecId(ctx context.Context) context.Context {
