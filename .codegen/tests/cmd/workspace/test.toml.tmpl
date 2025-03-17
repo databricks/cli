@@ -25,7 +25,11 @@
 [[Server]]
 Pattern = "{{.Verb}} {{replaceAll "2.2" "2.1" .Path}}"
 Response.Body = '''
+{{- if .Response.ArrayValue }}
+{{ template "response-body-array" dict "SnakeName" .Response.SnakeName "Response" .Response "Seen" $seen }}
+{{- else}}
 {{ template "response-body" dict "Response" .Response "Seen" $seen }}
+{{- end}}
 '''
 {{- end}}
 {{- end}}
@@ -46,6 +50,10 @@ Response.Body = '''
     {{- end}}
     {{- end}}
 }
+{{- end -}}
+
+{{- define "response-body-array" -}}
+{{ template "value" dict "Key" .SnakeName "Entity" .Response "Seen" .Seen "Indent" 0}}
 {{- end -}}
 
 {{- define "value" -}}

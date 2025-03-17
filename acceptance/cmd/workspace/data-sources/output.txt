@@ -1,18 +1,15 @@
 
 >>> errcode [CLI] data-sources list
-Error: failed to unmarshal response body: json: cannot unmarshal object into Go value of type []sql.DataSource. This is likely a bug in the Databricks SDK for Go or the underlying REST API. Please report this issue with the following debugging information to the SDK issue tracker at https://github.com/databricks/databricks-sdk-go/issues. Request log:
-```
-GET /api/2.0/preview/sql/data_sources
-> * Host: 
-> * Accept: application/json
-> * Authorization: REDACTED
-> * Traceparent: (redacted)
-> * User-Agent: (redacted)
-< HTTP/1.1 200 OK
-< * Content-Length: 4
-< * Content-Type: text/plain; charset=utf-8
-< * Date: (redacted)
-< {}
-```
-
-Exit code: 1
+[
+  {
+    "id":"id",
+    "name":"name",
+    "pause_reason":"pause_reason",
+    "paused":42,
+    "supports_auto_limit":false,
+    "syntax":"syntax",
+    "type":"type",
+    "view_only":false,
+    "warehouse_id":"warehouse_id"
+  }
+]
