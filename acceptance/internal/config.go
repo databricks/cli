@@ -66,6 +66,12 @@ type TestConfig struct {
 
 	CompiledIgnoreObject *ignore.GitIgnore
 
+	// Environment variables matrix.
+	// For each key you can specify one or more values.
+	// For each value, you will get a new test with that environment variable set to
+	// that value (and replacement configured to match the value).
+	// If there are multiple variables defined, all combinations of tests are created,
+	// similar to github actions matrix strategy.
 	EnvMatrix map[string][]string
 }
 
