@@ -193,6 +193,10 @@ func ExpandEnvMatrix(matrix map[string][]string) [][]string {
 	}
 	sort.Strings(keys)
 
+	// Build an expansion of all combinations.
+	// At each step we look at a given key and append each possible value to each
+	// possible result accumulated up to this point.
+
 	for _, key := range keys {
 		values := filteredMatrix[key]
 		var newResult [][]string
