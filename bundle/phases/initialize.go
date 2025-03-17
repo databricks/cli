@@ -80,6 +80,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.CaptureSchemaDependency(),
 
 		// Provide permission config errors & warnings after initializing all variables
+		permissions.SetOwnerPermissions(),
 		permissions.PermissionDiagnostics(),
 		mutator.SetRunAs(),
 		mutator.OverrideCompute(),

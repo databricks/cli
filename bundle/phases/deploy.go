@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -126,16 +127,18 @@ is removed from the catalog, but the underlying files are not deleted:`
 	return approved, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func deployCore(ctx context.Context, b *bundle.Bundle, cliType clis.CLIType) diag.Diagnostics {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
-	cmdio.LogString(ctx, "Deploying resources...")
+	if cliType != clis.DLT {
+		cmdio.LogString(ctx, "Deploying resources...")
+	}
 	diags := bundle.Apply(ctx, b, terraform.Apply())
 
 	// following original logic, continuing with sequence below even if terraform had errors
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePush(),
+		terraform.StatePush(cliType),
 		terraform.Load(),
 		apps.InterpolateVariables(),
 		apps.UploadConfig(),
@@ -143,7 +146,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		metadata.Upload(),
 	))
 
-	if !diags.HasError() {
+	if !diags.HasError() && cliType != clis.DLT {
 		cmdio.LogString(ctx, "Deployment complete!")
 	}
 
@@ -151,7 +154,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) (diags diag.Diagnostics) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, cliType clis.CLIType) (diags diag.Diagnostics) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -185,7 +188,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		libraries.CheckForSameNameLibraries(),
 		libraries.Upload(),
 		trampoline.TransformWheelTask(),
-		files.Upload(outputHandler),
+		files.Upload(outputHandler, cliType),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
@@ -206,7 +209,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if haveApproval {
-		diags = diags.Extend(deployCore(ctx, b))
+		diags = diags.Extend(deployCore(ctx, b, cliType))
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 	}

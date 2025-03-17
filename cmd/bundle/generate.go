@@ -5,13 +5,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newGenerateCommand() *cobra.Command {
+func newGenerateCommand(hidden bool) *cobra.Command {
 	var key string
 
 	cmd := &cobra.Command{
-		Use:   "generate",
-		Short: "Generate bundle configuration",
-		Long:  "Generate bundle configuration",
+		Use:    "generate",
+		Short:  "Generate bundle configuration",
+		Long:   "Generate bundle configuration",
+		Hidden: hidden,
 	}
 
 	cmd.AddCommand(generate.NewGenerateJobCommand())

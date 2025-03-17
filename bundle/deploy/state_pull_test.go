@@ -103,7 +103,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	}
 
 	if opts.localState != nil {
-		statePath, err := getPathToStateFile(ctx, b)
+		statePath, err := GetPathToStateFile(ctx, b)
 		require.NoError(t, err)
 
 		data, err := json.Marshal(opts.localState)
@@ -117,7 +117,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	require.NoError(t, diags.Error())
 
 	// Check that deployment state was written
-	statePath, err := getPathToStateFile(ctx, b)
+	statePath, err := GetPathToStateFile(ctx, b)
 	require.NoError(t, err)
 
 	data, err := os.ReadFile(statePath)
@@ -274,7 +274,7 @@ func TestStatePullNoState(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	// Check that deployment state was not written
-	statePath, err := getPathToStateFile(ctx, b)
+	statePath, err := GetPathToStateFile(ctx, b)
 	require.NoError(t, err)
 
 	_, err = os.Stat(statePath)

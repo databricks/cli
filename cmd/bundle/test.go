@@ -6,14 +6,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newTestCommand() *cobra.Command {
+func newTestCommand(hidden bool) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "test",
-		Short: "run tests for the project",
-		Long:  `This is longer description of the command`,
+		Short: "Run tests for this project",
+		Long:  `Run tests for this project.`,
 
 		// We're not ready to expose this command until we specify its semantics.
-		Hidden: true,
+		Hidden: hidden,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

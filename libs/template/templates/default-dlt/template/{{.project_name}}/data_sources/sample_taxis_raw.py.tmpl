@@ -1,0 +1,16 @@
+"""
+The 'data_sources' folder contains definitions for all data sources
+used by the pipeline. Keeping them separate provides a clear overview
+of the data used and allows for easy swapping of sources during development.
+"""
+
+import dlt
+
+{{- $suffix := .project_name }}
+{{- if (eq .project_name "my_dlt_project") }}
+  {{- $suffix = short_name }}
+{{- end }}
+
+@dlt.view(comment="Sample raw taxi data")
+def taxis_raw_{{$suffix}}():
+    return spark.sql("SELECT * FROM samples.nyctaxi.trips LIMIT 10")

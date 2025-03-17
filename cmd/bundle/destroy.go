@@ -20,7 +20,7 @@ import (
 func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy",
-		Short: "Destroy deployed bundle resources",
+		Short: "Destroy deployed resources",
 		Args:  root.NoArgs,
 	}
 

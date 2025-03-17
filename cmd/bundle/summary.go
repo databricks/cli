@@ -12,17 +12,22 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
-func newSummaryCommand() *cobra.Command {
+func newSummaryCommand(hidden bool, cliType clis.CLIType) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "summary",
-		Short: "Summarize resources deployed by this bundle",
-		Args:  root.NoArgs,
+		Use:    "summary",
+		Short:  "Summarize resources deployed by this bundle",
+		Args:   root.NoArgs,
+		Hidden: hidden,
+	}
+	if cliType == clis.DLT {
+		cmd.Short = "Summarize all resources that are part of this project"
 	}
 
 	var forcePull bool

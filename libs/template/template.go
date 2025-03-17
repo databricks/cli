@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/clis"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/git"
 )
@@ -26,6 +27,7 @@ type TemplateName string
 const (
 	DefaultPython          TemplateName = "default-python"
 	DefaultSql             TemplateName = "default-sql"
+	DefaultDLT             TemplateName = "default-dlt"
 	DbtSql                 TemplateName = "dbt-sql"
 	MlopsStacks            TemplateName = "mlops-stacks"
 	DefaultPydabs          TemplateName = "default-pydabs"
@@ -36,8 +38,20 @@ const (
 var databricksTemplates = []Template{
 	{
 		name:        DefaultPython,
-		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
+		description: "The default Python template for Notebooks / DLT / Workflows",
 		Reader:      &builtinReader{name: string(DefaultPython)},
+		Writer:      &writerWithFullTelemetry{},
+	},
+	{
+		name:        DefaultDLT,
+		description: "The default DLT template",
+		Reader:      &builtinReader{name: string(DefaultDLT)},
+		Writer:      &writerWithFullTelemetry{},
+	},
+	{
+		name:        DefaultSql,
+		description: "The default SQL template for .sql files that run with Databricks SQL",
+		Reader:      &builtinReader{name: string(DefaultSql)},
 		Writer:      &writerWithFullTelemetry{},
 	},
 	{
@@ -87,10 +101,18 @@ func HelpDescriptions() string {
 
 var customTemplateDescription = "Bring your own template"
 
-func options() []cmdio.Tuple {
+func options(cliType clis.CLIType) []cmdio.Tuple {
 	names := make([]cmdio.Tuple, 0, len(databricksTemplates))
 	for _, template := range databricksTemplates {
 		if template.hidden {
+			continue
+		}
+		if cliType == clis.DLT && (template.name != DefaultDLT && template.name != Custom) {
+			// Only show DLT templates for DLT CLI
+			continue
+		}
+		if cliType != clis.DLT && template.name == DefaultDLT {
+			// Hide experimental DLT template in General CLI
 			continue
 		}
 		tuple := cmdio.Tuple{
@@ -107,11 +129,11 @@ func options() []cmdio.Tuple {
 	return names
 }
 
-func SelectTemplate(ctx context.Context) (TemplateName, error) {
+func SelectTemplate(ctx context.Context, cliType clis.CLIType) (TemplateName, error) {
 	if !cmdio.IsPromptSupported(ctx) {
 		return "", errors.New("prompting is not supported. Please specify the path, name or URL of the template to use")
 	}
-	description, err := cmdio.SelectOrdered(ctx, options(), "Template to use")
+	description, err := cmdio.SelectOrdered(ctx, options(cliType), "Template to use")
 	if err != nil {
 		return "", err
 	}
