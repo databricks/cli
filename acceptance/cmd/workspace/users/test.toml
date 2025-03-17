@@ -10,114 +10,127 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/preview/scim/v2/Users/{id}"
 Response.Body = '''
 {
     "active": false,
-    
     "display_name": "display_name",
-    
     "emails": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    
+        {
+            "display": "display",
+            "primary": false,
+            "$ref": "$ref",
+            "type": "type",
+            "value": "value"
+        }
+    ],
     "entitlements": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    
+        {
+            "display": "display",
+            "primary": false,
+            "$ref": "$ref",
+            "type": "type",
+            "value": "value"
+        }
+    ],
     "external_id": "external_id",
-    
     "groups": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    
+        {
+            "display": "display",
+            "primary": false,
+            "$ref": "$ref",
+            "type": "type",
+            "value": "value"
+        }
+    ],
     "id": "id",
-    
     "name": {
-    "familyName": "familyName",
-    "givenName": "givenName"},
-    
+        "familyName": "familyName",
+        "givenName": "givenName"
+    },
     "roles": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    
+        {
+            "display": "display",
+            "primary": false,
+            "$ref": "$ref",
+            "type": "type",
+            "value": "value"
+        }
+    ],
     "schemas": [
-    "ENUM"],
-    
+        "ENUM"
+    ],
     "user_name": "user_name"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/preview/scim/v2/Users"
 Response.Body = '''
 {
     "items_per_page": 42,
-    
     "resources": [
-    {
-    "active": false,
-    "displayName": "displayName",
-    "emails": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    "entitlements": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    "externalId": "externalId",
-    "groups": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    "id": "id",
-    "name": {
-    "familyName": "familyName",
-    "givenName": "givenName"},
-    "roles": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
+        {
+            "active": false,
+            "displayName": "displayName",
+            "emails": [
+                {
+                    "display": "display",
+                    "primary": false,
+                    "$ref": "$ref",
+                    "type": "type",
+                    "value": "value"
+                }
+            ],
+            "entitlements": [
+                {
+                    "display": "display",
+                    "primary": false,
+                    "$ref": "$ref",
+                    "type": "type",
+                    "value": "value"
+                }
+            ],
+            "externalId": "externalId",
+            "groups": [
+                {
+                    "display": "display",
+                    "primary": false,
+                    "$ref": "$ref",
+                    "type": "type",
+                    "value": "value"
+                }
+            ],
+            "id": "id",
+            "name": {
+                "familyName": "familyName",
+                "givenName": "givenName"
+            },
+            "roles": [
+                {
+                    "display": "display",
+                    "primary": false,
+                    "$ref": "$ref",
+                    "type": "type",
+                    "value": "value"
+                }
+            ],
+            "schemas": [
+                "ENUM"
+            ],
+            "userName": "userName"
+        }
+    ],
     "schemas": [
-    "ENUM"],
-    "userName": "userName"}],
-    
-    "schemas": [
-    "ENUM"],
-    
+        "ENUM"
+    ],
     "start_index": 42,
-    
     "total_results": 42
-    
 }
 '''

@@ -40,7 +40,7 @@ trace errcode $CLI {{$cmdGrp}} {{.KebabName}} {{ template "required-input" . }}
 42
 {{- end -}}
 {{- if .Entity.IsEnum -}}
-"ENUM"
+ENUM
 {{- end -}}
 {{- if .Entity.IsBool -}}
 false

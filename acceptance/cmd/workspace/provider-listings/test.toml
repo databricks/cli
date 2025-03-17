@@ -10,165 +10,208 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/marketplace-provider/listings/{id}"
 Response.Body = '''
 {
     "listing": {
-    "detail": {
-    "assets": [
-    "ENUM"],
-    "collection_date_end": 42,
-    "collection_date_start": 42,
-    "collection_granularity": {
-    "interval": 42,
-    "unit": "ENUM"},
-    "cost": "ENUM",
-    "data_source": "data_source",
-    "description": "description",
-    "documentation_link": "documentation_link",
-    "embedded_notebook_file_infos": [
-    {
-    "created_at": 42,
-    "display_name": "display_name",
-    "download_link": "download_link",
-    "file_parent": {
-    "file_parent_type": "ENUM",
-    "parent_id": "parent_id"},
-    "id": "id",
-    "marketplace_file_type": "ENUM",
-    "mime_type": "mime_type",
-    "status": "ENUM",
-    "status_message": "status_message",
-    "updated_at": 42}],
-    "file_ids": [
-    "_list"],
-    "geographical_coverage": "geographical_coverage",
-    "license": "license",
-    "pricing_model": "pricing_model",
-    "privacy_policy_link": "privacy_policy_link",
-    "size": 42,
-    "support_link": "support_link",
-    "tags": [
-    {
-    "tag_name": "ENUM",
-    "tag_values": [
-    "_list"]}],
-    "terms_of_service": "terms_of_service",
-    "update_frequency": {
-    "interval": 42,
-    "unit": "ENUM"}},
-    "id": "id",
-    "summary": {
-    "categories": [
-    "ENUM"],
-    "created_at": 42,
-    "created_by": "created_by",
-    "created_by_id": 42,
-    "exchange_ids": [
-    "_list"],
-    "git_repo": {
-    "git_repo_url": "git_repo_url"},
-    "listingType": "ENUM",
-    "name": "name",
-    "provider_id": "provider_id",
-    "provider_region": {
-    "cloud": "cloud",
-    "region": "region"},
-    "published_at": 42,
-    "published_by": "published_by",
-    "setting": {
-    "visibility": "ENUM"},
-    "share": {
-    "name": "name",
-    "type": "ENUM"},
-    "status": "ENUM",
-    "subtitle": "subtitle",
-    "updated_at": 42,
-    "updated_by": "updated_by",
-    "updated_by_id": 42}}
-    
+        "detail": {
+            "assets": [
+                "ENUM"
+            ],
+            "collection_date_end": 42,
+            "collection_date_start": 42,
+            "collection_granularity": {
+                "interval": 42,
+                "unit": "ENUM"
+            },
+            "cost": "ENUM",
+            "data_source": "data_source",
+            "description": "description",
+            "documentation_link": "documentation_link",
+            "embedded_notebook_file_infos": [
+                {
+                    "created_at": 42,
+                    "display_name": "display_name",
+                    "download_link": "download_link",
+                    "file_parent": {
+                        "file_parent_type": "ENUM",
+                        "parent_id": "parent_id"
+                    },
+                    "id": "id",
+                    "marketplace_file_type": "ENUM",
+                    "mime_type": "mime_type",
+                    "status": "ENUM",
+                    "status_message": "status_message",
+                    "updated_at": 42
+                }
+            ],
+            "file_ids": [
+                "_list"
+            ],
+            "geographical_coverage": "geographical_coverage",
+            "license": "license",
+            "pricing_model": "pricing_model",
+            "privacy_policy_link": "privacy_policy_link",
+            "size": 42,
+            "support_link": "support_link",
+            "tags": [
+                {
+                    "tag_name": "ENUM",
+                    "tag_values": [
+                        "_list"
+                    ]
+                }
+            ],
+            "terms_of_service": "terms_of_service",
+            "update_frequency": {
+                "interval": 42,
+                "unit": "ENUM"
+            }
+        },
+        "id": "id",
+        "summary": {
+            "categories": [
+                "ENUM"
+            ],
+            "created_at": 42,
+            "created_by": "created_by",
+            "created_by_id": 42,
+            "exchange_ids": [
+                "_list"
+            ],
+            "git_repo": {
+                "git_repo_url": "git_repo_url"
+            },
+            "listingType": "ENUM",
+            "name": "name",
+            "provider_id": "provider_id",
+            "provider_region": {
+                "cloud": "cloud",
+                "region": "region"
+            },
+            "published_at": 42,
+            "published_by": "published_by",
+            "setting": {
+                "visibility": "ENUM"
+            },
+            "share": {
+                "name": "name",
+                "type": "ENUM"
+            },
+            "status": "ENUM",
+            "subtitle": "subtitle",
+            "updated_at": 42,
+            "updated_by": "updated_by",
+            "updated_by_id": 42
+        }
+    }
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/marketplace-provider/listings"
 Response.Body = '''
 {
     "listings": [
-    {
-    "detail": {
-    "assets": [
-    "ENUM"],
-    "collection_date_end": 42,
-    "collection_date_start": 42,
-    "collection_granularity": {
-    "interval": 42,
-    "unit": "ENUM"},
-    "cost": "ENUM",
-    "data_source": "data_source",
-    "description": "description",
-    "documentation_link": "documentation_link",
-    "embedded_notebook_file_infos": [
-    {
-    "created_at": 42,
-    "display_name": "display_name",
-    "download_link": "download_link",
-    "file_parent": {
-    "file_parent_type": "ENUM",
-    "parent_id": "parent_id"},
-    "id": "id",
-    "marketplace_file_type": "ENUM",
-    "mime_type": "mime_type",
-    "status": "ENUM",
-    "status_message": "status_message",
-    "updated_at": 42}],
-    "file_ids": [
-    "_list"],
-    "geographical_coverage": "geographical_coverage",
-    "license": "license",
-    "pricing_model": "pricing_model",
-    "privacy_policy_link": "privacy_policy_link",
-    "size": 42,
-    "support_link": "support_link",
-    "tags": [
-    {
-    "tag_name": "ENUM",
-    "tag_values": [
-    "_list"]}],
-    "terms_of_service": "terms_of_service",
-    "update_frequency": {
-    "interval": 42,
-    "unit": "ENUM"}},
-    "id": "id",
-    "summary": {
-    "categories": [
-    "ENUM"],
-    "created_at": 42,
-    "created_by": "created_by",
-    "created_by_id": 42,
-    "exchange_ids": [
-    "_list"],
-    "git_repo": {
-    "git_repo_url": "git_repo_url"},
-    "listingType": "ENUM",
-    "name": "name",
-    "provider_id": "provider_id",
-    "provider_region": {
-    "cloud": "cloud",
-    "region": "region"},
-    "published_at": 42,
-    "published_by": "published_by",
-    "setting": {
-    "visibility": "ENUM"},
-    "share": {
-    "name": "name",
-    "type": "ENUM"},
-    "status": "ENUM",
-    "subtitle": "subtitle",
-    "updated_at": 42,
-    "updated_by": "updated_by",
-    "updated_by_id": 42}}],
-    
+        {
+            "detail": {
+                "assets": [
+                    "ENUM"
+                ],
+                "collection_date_end": 42,
+                "collection_date_start": 42,
+                "collection_granularity": {
+                    "interval": 42,
+                    "unit": "ENUM"
+                },
+                "cost": "ENUM",
+                "data_source": "data_source",
+                "description": "description",
+                "documentation_link": "documentation_link",
+                "embedded_notebook_file_infos": [
+                    {
+                        "created_at": 42,
+                        "display_name": "display_name",
+                        "download_link": "download_link",
+                        "file_parent": {
+                            "file_parent_type": "ENUM",
+                            "parent_id": "parent_id"
+                        },
+                        "id": "id",
+                        "marketplace_file_type": "ENUM",
+                        "mime_type": "mime_type",
+                        "status": "ENUM",
+                        "status_message": "status_message",
+                        "updated_at": 42
+                    }
+                ],
+                "file_ids": [
+                    "_list"
+                ],
+                "geographical_coverage": "geographical_coverage",
+                "license": "license",
+                "pricing_model": "pricing_model",
+                "privacy_policy_link": "privacy_policy_link",
+                "size": 42,
+                "support_link": "support_link",
+                "tags": [
+                    {
+                        "tag_name": "ENUM",
+                        "tag_values": [
+                            "_list"
+                        ]
+                    }
+                ],
+                "terms_of_service": "terms_of_service",
+                "update_frequency": {
+                    "interval": 42,
+                    "unit": "ENUM"
+                }
+            },
+            "id": "id",
+            "summary": {
+                "categories": [
+                    "ENUM"
+                ],
+                "created_at": 42,
+                "created_by": "created_by",
+                "created_by_id": 42,
+                "exchange_ids": [
+                    "_list"
+                ],
+                "git_repo": {
+                    "git_repo_url": "git_repo_url"
+                },
+                "listingType": "ENUM",
+                "name": "name",
+                "provider_id": "provider_id",
+                "provider_region": {
+                    "cloud": "cloud",
+                    "region": "region"
+                },
+                "published_at": 42,
+                "published_by": "published_by",
+                "setting": {
+                    "visibility": "ENUM"
+                },
+                "share": {
+                    "name": "name",
+                    "type": "ENUM"
+                },
+                "status": "ENUM",
+                "subtitle": "subtitle",
+                "updated_at": 42,
+                "updated_by": "updated_by",
+                "updated_by_id": 42
+            }
+        }
+    ],
     "next_page_token": ""
 }
 '''

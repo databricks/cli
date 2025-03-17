@@ -10,31 +10,34 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/policy-families/{policy_family_id}"
 Response.Body = '''
 {
     "definition": "definition",
-    
     "description": "description",
-    
     "name": "name",
-    
     "policy_family_id": "policy_family_id"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/policy-families"
 Response.Body = '''
 {
     "next_page_token": "",
     "policy_families": [
-    {
-    "definition": "definition",
-    "description": "description",
-    "name": "name",
-    "policy_family_id": "policy_family_id"}]
-    
+        {
+            "definition": "definition",
+            "description": "description",
+            "name": "name",
+            "policy_family_id": "policy_family_id"
+        }
+    ]
 }
 '''

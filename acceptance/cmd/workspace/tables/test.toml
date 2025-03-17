@@ -10,211 +10,232 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '''
 {
     "access_point": "access_point",
-    
     "browse_only": false,
-    
     "catalog_name": "catalog_name",
-    
     "columns": [
-    {
+        {
+            "comment": "comment",
+            "mask": {
+                "function_name": "function_name",
+                "using_column_names": [
+                    "_list"
+                ]
+            },
+            "name": "name",
+            "nullable": false,
+            "partition_index": 42,
+            "position": 42,
+            "type_interval_type": "type_interval_type",
+            "type_json": "type_json",
+            "type_name": "ENUM",
+            "type_precision": 42,
+            "type_scale": 42,
+            "type_text": "type_text"
+        }
+    ],
     "comment": "comment",
-    "mask": {
-    "function_name": "function_name",
-    "using_column_names": [
-    "_list"]},
-    "name": "name",
-    "nullable": false,
-    "partition_index": 42,
-    "position": 42,
-    "type_interval_type": "type_interval_type",
-    "type_json": "type_json",
-    "type_name": "ENUM",
-    "type_precision": 42,
-    "type_scale": 42,
-    "type_text": "type_text"}],
-    
-    "comment": "comment",
-    
     "created_at": 42,
-    
     "created_by": "created_by",
-    
     "data_access_configuration_id": "data_access_configuration_id",
-    
     "data_source_format": "ENUM",
-    
     "deleted_at": 42,
-    
     "delta_runtime_properties_kvpairs": {
-    "delta_runtime_properties": {
-}},
-    
+        "delta_runtime_properties": {
+        }
+    },
     "effective_predictive_optimization_flag": {
-    "inherited_from_name": "inherited_from_name",
-    "inherited_from_type": "ENUM",
-    "value": "ENUM"},
-    
+        "inherited_from_name": "inherited_from_name",
+        "inherited_from_type": "ENUM",
+        "value": "ENUM"
+    },
     "enable_predictive_optimization": "ENUM",
-    
     "encryption_details": {
-    "sse_encryption_details": {
-    "algorithm": "ENUM",
-    "aws_kms_key_arn": "aws_kms_key_arn"}},
-    
+        "sse_encryption_details": {
+            "algorithm": "ENUM",
+            "aws_kms_key_arn": "aws_kms_key_arn"
+        }
+    },
     "full_name": "full_name",
-    
     "metastore_id": "metastore_id",
-    
     "name": "name",
-    
     "owner": "owner",
-    
     "pipeline_id": "pipeline_id",
-    
     "properties": {
-},
-    
+    },
     "row_filter": {
-    "function_name": "function_name",
-    "input_column_names": [
-    "_list"]},
-    
+        "function_name": "function_name",
+        "input_column_names": [
+            "_list"
+        ]
+    },
     "schema_name": "schema_name",
-    
     "sql_path": "sql_path",
-    
     "storage_credential_name": "storage_credential_name",
-    
     "storage_location": "storage_location",
-    
     "table_constraints": [
-    {
-    "foreign_key_constraint": {
-    "child_columns": [
-    "_list"],
-    "name": "name",
-    "parent_columns": [
-    "_list"],
-    "parent_table": "parent_table"},
-    "named_table_constraint": {
-    "name": "name"},
-    "primary_key_constraint": {
-    "child_columns": [
-    "_list"],
-    "name": "name"}}],
-    
+        {
+            "foreign_key_constraint": {
+                "child_columns": [
+                    "_list"
+                ],
+                "name": "name",
+                "parent_columns": [
+                    "_list"
+                ],
+                "parent_table": "parent_table"
+            },
+            "named_table_constraint": {
+                "name": "name"
+            },
+            "primary_key_constraint": {
+                "child_columns": [
+                    "_list"
+                ],
+                "name": "name"
+            }
+        }
+    ],
     "table_id": "table_id",
-    
     "table_type": "ENUM",
-    
     "updated_at": 42,
-    
     "updated_by": "updated_by",
-    
     "view_definition": "view_definition",
-    
     "view_dependencies": {
-    "dependencies": [
-    {
-    "function": {
-    "function_full_name": "function_full_name"},
-    "table": {
-    "table_full_name": "table_full_name"}}]}
-    
+        "dependencies": [
+            {
+                "function": {
+                    "function_full_name": "function_full_name"
+                },
+                "table": {
+                    "table_full_name": "table_full_name"
+                }
+            }
+        ]
+    }
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.1/unity-catalog/tables"
 Response.Body = '''
 {
     "next_page_token": "",
     "tables": [
-    {
-    "access_point": "access_point",
-    "browse_only": false,
-    "catalog_name": "catalog_name",
-    "columns": [
-    {
-    "comment": "comment",
-    "mask": {
-    "function_name": "function_name",
-    "using_column_names": [
-    "_list"]},
-    "name": "name",
-    "nullable": false,
-    "partition_index": 42,
-    "position": 42,
-    "type_interval_type": "type_interval_type",
-    "type_json": "type_json",
-    "type_name": "ENUM",
-    "type_precision": 42,
-    "type_scale": 42,
-    "type_text": "type_text"}],
-    "comment": "comment",
-    "created_at": 42,
-    "created_by": "created_by",
-    "data_access_configuration_id": "data_access_configuration_id",
-    "data_source_format": "ENUM",
-    "deleted_at": 42,
-    "delta_runtime_properties_kvpairs": {
-    "delta_runtime_properties": {
-}},
-    "effective_predictive_optimization_flag": {
-    "inherited_from_name": "inherited_from_name",
-    "inherited_from_type": "ENUM",
-    "value": "ENUM"},
-    "enable_predictive_optimization": "ENUM",
-    "encryption_details": {
-    "sse_encryption_details": {
-    "algorithm": "ENUM",
-    "aws_kms_key_arn": "aws_kms_key_arn"}},
-    "full_name": "full_name",
-    "metastore_id": "metastore_id",
-    "name": "name",
-    "owner": "owner",
-    "pipeline_id": "pipeline_id",
-    "properties": {
-},
-    "row_filter": {
-    "function_name": "function_name",
-    "input_column_names": [
-    "_list"]},
-    "schema_name": "schema_name",
-    "sql_path": "sql_path",
-    "storage_credential_name": "storage_credential_name",
-    "storage_location": "storage_location",
-    "table_constraints": [
-    {
-    "foreign_key_constraint": {
-    "child_columns": [
-    "_list"],
-    "name": "name",
-    "parent_columns": [
-    "_list"],
-    "parent_table": "parent_table"},
-    "named_table_constraint": {
-    "name": "name"},
-    "primary_key_constraint": {
-    "child_columns": [
-    "_list"],
-    "name": "name"}}],
-    "table_id": "table_id",
-    "table_type": "ENUM",
-    "updated_at": 42,
-    "updated_by": "updated_by",
-    "view_definition": "view_definition",
-    "view_dependencies": {
-    "dependencies": [
-    {
-    "function": {
-    "function_full_name": "function_full_name"},
-    "table": {
-    "table_full_name": "table_full_name"}}]}}]
-    
+        {
+            "access_point": "access_point",
+            "browse_only": false,
+            "catalog_name": "catalog_name",
+            "columns": [
+                {
+                    "comment": "comment",
+                    "mask": {
+                        "function_name": "function_name",
+                        "using_column_names": [
+                            "_list"
+                        ]
+                    },
+                    "name": "name",
+                    "nullable": false,
+                    "partition_index": 42,
+                    "position": 42,
+                    "type_interval_type": "type_interval_type",
+                    "type_json": "type_json",
+                    "type_name": "ENUM",
+                    "type_precision": 42,
+                    "type_scale": 42,
+                    "type_text": "type_text"
+                }
+            ],
+            "comment": "comment",
+            "created_at": 42,
+            "created_by": "created_by",
+            "data_access_configuration_id": "data_access_configuration_id",
+            "data_source_format": "ENUM",
+            "deleted_at": 42,
+            "delta_runtime_properties_kvpairs": {
+                "delta_runtime_properties": {
+                }
+            },
+            "effective_predictive_optimization_flag": {
+                "inherited_from_name": "inherited_from_name",
+                "inherited_from_type": "ENUM",
+                "value": "ENUM"
+            },
+            "enable_predictive_optimization": "ENUM",
+            "encryption_details": {
+                "sse_encryption_details": {
+                    "algorithm": "ENUM",
+                    "aws_kms_key_arn": "aws_kms_key_arn"
+                }
+            },
+            "full_name": "full_name",
+            "metastore_id": "metastore_id",
+            "name": "name",
+            "owner": "owner",
+            "pipeline_id": "pipeline_id",
+            "properties": {
+            },
+            "row_filter": {
+                "function_name": "function_name",
+                "input_column_names": [
+                    "_list"
+                ]
+            },
+            "schema_name": "schema_name",
+            "sql_path": "sql_path",
+            "storage_credential_name": "storage_credential_name",
+            "storage_location": "storage_location",
+            "table_constraints": [
+                {
+                    "foreign_key_constraint": {
+                        "child_columns": [
+                            "_list"
+                        ],
+                        "name": "name",
+                        "parent_columns": [
+                            "_list"
+                        ],
+                        "parent_table": "parent_table"
+                    },
+                    "named_table_constraint": {
+                        "name": "name"
+                    },
+                    "primary_key_constraint": {
+                        "child_columns": [
+                            "_list"
+                        ],
+                        "name": "name"
+                    }
+                }
+            ],
+            "table_id": "table_id",
+            "table_type": "ENUM",
+            "updated_at": 42,
+            "updated_by": "updated_by",
+            "view_definition": "view_definition",
+            "view_dependencies": {
+                "dependencies": [
+                    {
+                        "function": {
+                            "function_full_name": "function_full_name"
+                        },
+                        "table": {
+                            "table_full_name": "table_full_name"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
 }
 '''

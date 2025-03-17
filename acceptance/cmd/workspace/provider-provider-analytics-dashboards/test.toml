@@ -10,15 +10,17 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/marketplace-provider/analytics_dashboard"
 Response.Body = '''
 {
     "dashboard_id": "dashboard_id",
-    
     "id": "id",
-    
     "version": 42
-    
 }
 '''

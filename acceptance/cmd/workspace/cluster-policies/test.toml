@@ -10,83 +10,91 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/policies/clusters/get"
 Response.Body = '''
 {
     "created_at_timestamp": 42,
-    
     "creator_user_name": "creator_user_name",
-    
     "definition": "definition",
-    
     "description": "description",
-    
     "is_default": false,
-    
     "libraries": [
-    {
-    "cran": {
-    "package": "package",
-    "repo": "repo"},
-    "egg": "egg",
-    "jar": "jar",
-    "maven": {
-    "coordinates": "coordinates",
-    "exclusions": [
-    "_list"],
-    "repo": "repo"},
-    "pypi": {
-    "package": "package",
-    "repo": "repo"},
-    "requirements": "requirements",
-    "whl": "whl"}],
-    
+        {
+            "cran": {
+                "package": "package",
+                "repo": "repo"
+            },
+            "egg": "egg",
+            "jar": "jar",
+            "maven": {
+                "coordinates": "coordinates",
+                "exclusions": [
+                    "_list"
+                ],
+                "repo": "repo"
+            },
+            "pypi": {
+                "package": "package",
+                "repo": "repo"
+            },
+            "requirements": "requirements",
+            "whl": "whl"
+        }
+    ],
     "max_clusters_per_user": 42,
-    
     "name": "name",
-    
     "policy_family_definition_overrides": "policy_family_definition_overrides",
-    
     "policy_family_id": "policy_family_id",
-    
     "policy_id": "policy_id"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/policies/clusters/list"
 Response.Body = '''
 {
     "policies": [
-    {
-    "created_at_timestamp": 42,
-    "creator_user_name": "creator_user_name",
-    "definition": "definition",
-    "description": "description",
-    "is_default": false,
-    "libraries": [
-    {
-    "cran": {
-    "package": "package",
-    "repo": "repo"},
-    "egg": "egg",
-    "jar": "jar",
-    "maven": {
-    "coordinates": "coordinates",
-    "exclusions": [
-    "_list"],
-    "repo": "repo"},
-    "pypi": {
-    "package": "package",
-    "repo": "repo"},
-    "requirements": "requirements",
-    "whl": "whl"}],
-    "max_clusters_per_user": 42,
-    "name": "name",
-    "policy_family_definition_overrides": "policy_family_definition_overrides",
-    "policy_family_id": "policy_family_id",
-    "policy_id": "policy_id"}]
-    
+        {
+            "created_at_timestamp": 42,
+            "creator_user_name": "creator_user_name",
+            "definition": "definition",
+            "description": "description",
+            "is_default": false,
+            "libraries": [
+                {
+                    "cran": {
+                        "package": "package",
+                        "repo": "repo"
+                    },
+                    "egg": "egg",
+                    "jar": "jar",
+                    "maven": {
+                        "coordinates": "coordinates",
+                        "exclusions": [
+                            "_list"
+                        ],
+                        "repo": "repo"
+                    },
+                    "pypi": {
+                        "package": "package",
+                        "repo": "repo"
+                    },
+                    "requirements": "requirements",
+                    "whl": "whl"
+                }
+            ],
+            "max_clusters_per_user": 42,
+            "name": "name",
+            "policy_family_definition_overrides": "policy_family_definition_overrides",
+            "policy_family_id": "policy_family_id",
+            "policy_id": "policy_id"
+        }
+    ]
 }
 '''

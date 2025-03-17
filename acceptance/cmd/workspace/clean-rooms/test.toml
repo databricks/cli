@@ -10,99 +10,114 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/clean-rooms/{name}"
 Response.Body = '''
 {
     "access_restricted": "ENUM",
-    
     "comment": "comment",
-    
     "created_at": 42,
-    
     "local_collaborator_alias": "local_collaborator_alias",
-    
     "name": "name",
-    
     "output_catalog": {
-    "catalog_name": "catalog_name",
-    "status": "ENUM"},
-    
+        "catalog_name": "catalog_name",
+        "status": "ENUM"
+    },
     "owner": "owner",
-    
     "remote_detailed_info": {
-    "central_clean_room_id": "central_clean_room_id",
-    "cloud_vendor": "cloud_vendor",
-    "collaborators": [
-    {
-    "collaborator_alias": "collaborator_alias",
-    "display_name": "display_name",
-    "global_metastore_id": "global_metastore_id",
-    "invite_recipient_email": "invite_recipient_email",
-    "invite_recipient_workspace_id": 42,
-    "organization_name": "organization_name"}],
-    "compliance_security_profile": {
-    "compliance_standards": [
-    {}],
-    "is_enabled": false},
-    "creator": {
-    "collaborator_alias": "collaborator_alias",
-    "display_name": "display_name",
-    "global_metastore_id": "global_metastore_id",
-    "invite_recipient_email": "invite_recipient_email",
-    "invite_recipient_workspace_id": 42,
-    "organization_name": "organization_name"},
-    "egress_network_policy": {},
-    "region": "region"},
-    
+        "central_clean_room_id": "central_clean_room_id",
+        "cloud_vendor": "cloud_vendor",
+        "collaborators": [
+            {
+                "collaborator_alias": "collaborator_alias",
+                "display_name": "display_name",
+                "global_metastore_id": "global_metastore_id",
+                "invite_recipient_email": "invite_recipient_email",
+                "invite_recipient_workspace_id": 42,
+                "organization_name": "organization_name"
+            }
+        ],
+        "compliance_security_profile": {
+            "compliance_standards": [
+                {
+                }
+            ],
+            "is_enabled": false
+        },
+        "creator": {
+            "collaborator_alias": "collaborator_alias",
+            "display_name": "display_name",
+            "global_metastore_id": "global_metastore_id",
+            "invite_recipient_email": "invite_recipient_email",
+            "invite_recipient_workspace_id": 42,
+            "organization_name": "organization_name"
+        },
+        "egress_network_policy": {
+        },
+        "region": "region"
+    },
     "status": "ENUM",
-    
     "updated_at": 42
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/clean-rooms"
 Response.Body = '''
 {
     "clean_rooms": [
-    {
-    "access_restricted": "ENUM",
-    "comment": "comment",
-    "created_at": 42,
-    "local_collaborator_alias": "local_collaborator_alias",
-    "name": "name",
-    "output_catalog": {
-    "catalog_name": "catalog_name",
-    "status": "ENUM"},
-    "owner": "owner",
-    "remote_detailed_info": {
-    "central_clean_room_id": "central_clean_room_id",
-    "cloud_vendor": "cloud_vendor",
-    "collaborators": [
-    {
-    "collaborator_alias": "collaborator_alias",
-    "display_name": "display_name",
-    "global_metastore_id": "global_metastore_id",
-    "invite_recipient_email": "invite_recipient_email",
-    "invite_recipient_workspace_id": 42,
-    "organization_name": "organization_name"}],
-    "compliance_security_profile": {
-    "compliance_standards": [
-    {}],
-    "is_enabled": false},
-    "creator": {
-    "collaborator_alias": "collaborator_alias",
-    "display_name": "display_name",
-    "global_metastore_id": "global_metastore_id",
-    "invite_recipient_email": "invite_recipient_email",
-    "invite_recipient_workspace_id": 42,
-    "organization_name": "organization_name"},
-    "egress_network_policy": {},
-    "region": "region"},
-    "status": "ENUM",
-    "updated_at": 42}],
-    
+        {
+            "access_restricted": "ENUM",
+            "comment": "comment",
+            "created_at": 42,
+            "local_collaborator_alias": "local_collaborator_alias",
+            "name": "name",
+            "output_catalog": {
+                "catalog_name": "catalog_name",
+                "status": "ENUM"
+            },
+            "owner": "owner",
+            "remote_detailed_info": {
+                "central_clean_room_id": "central_clean_room_id",
+                "cloud_vendor": "cloud_vendor",
+                "collaborators": [
+                    {
+                        "collaborator_alias": "collaborator_alias",
+                        "display_name": "display_name",
+                        "global_metastore_id": "global_metastore_id",
+                        "invite_recipient_email": "invite_recipient_email",
+                        "invite_recipient_workspace_id": 42,
+                        "organization_name": "organization_name"
+                    }
+                ],
+                "compliance_security_profile": {
+                    "compliance_standards": [
+                        {
+                        }
+                    ],
+                    "is_enabled": false
+                },
+                "creator": {
+                    "collaborator_alias": "collaborator_alias",
+                    "display_name": "display_name",
+                    "global_metastore_id": "global_metastore_id",
+                    "invite_recipient_email": "invite_recipient_email",
+                    "invite_recipient_workspace_id": 42,
+                    "organization_name": "organization_name"
+                },
+                "egress_network_policy": {
+                },
+                "region": "region"
+            },
+            "status": "ENUM",
+            "updated_at": 42
+        }
+    ],
     "next_page_token": ""
 }
 '''

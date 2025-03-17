@@ -10,83 +10,85 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/sql/alerts/{id}"
 Response.Body = '''
 {
     "condition": {
-    "empty_result_state": "ENUM",
-    "op": "ENUM",
-    "operand": {
-    "column": {
-    "name": "name"}},
-    "threshold": {
-    "value": {
-    "bool_value": false,
-    "double_value": 42,
-    "string_value": "string_value"}}},
-    
+        "empty_result_state": "ENUM",
+        "op": "ENUM",
+        "operand": {
+            "column": {
+                "name": "name"
+            }
+        },
+        "threshold": {
+            "value": {
+                "bool_value": false,
+                "double_value": 42,
+                "string_value": "string_value"
+            }
+        }
+    },
     "create_time": "create_time",
-    
     "custom_body": "custom_body",
-    
     "custom_subject": "custom_subject",
-    
     "display_name": "display_name",
-    
     "id": "id",
-    
     "lifecycle_state": "ENUM",
-    
     "notify_on_ok": false,
-    
     "owner_user_name": "owner_user_name",
-    
     "parent_path": "parent_path",
-    
     "query_id": "query_id",
-    
     "seconds_to_retrigger": 42,
-    
     "state": "ENUM",
-    
     "trigger_time": "trigger_time",
-    
     "update_time": "update_time"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/sql/alerts"
 Response.Body = '''
 {
     "next_page_token": "",
     "results": [
-    {
-    "condition": {
-    "empty_result_state": "ENUM",
-    "op": "ENUM",
-    "operand": {
-    "column": {
-    "name": "name"}},
-    "threshold": {
-    "value": {
-    "bool_value": false,
-    "double_value": 42,
-    "string_value": "string_value"}}},
-    "create_time": "create_time",
-    "custom_body": "custom_body",
-    "custom_subject": "custom_subject",
-    "display_name": "display_name",
-    "id": "id",
-    "lifecycle_state": "ENUM",
-    "notify_on_ok": false,
-    "owner_user_name": "owner_user_name",
-    "query_id": "query_id",
-    "seconds_to_retrigger": 42,
-    "state": "ENUM",
-    "trigger_time": "trigger_time",
-    "update_time": "update_time"}]
-    
+        {
+            "condition": {
+                "empty_result_state": "ENUM",
+                "op": "ENUM",
+                "operand": {
+                    "column": {
+                        "name": "name"
+                    }
+                },
+                "threshold": {
+                    "value": {
+                        "bool_value": false,
+                        "double_value": 42,
+                        "string_value": "string_value"
+                    }
+                }
+            },
+            "create_time": "create_time",
+            "custom_body": "custom_body",
+            "custom_subject": "custom_subject",
+            "display_name": "display_name",
+            "id": "id",
+            "lifecycle_state": "ENUM",
+            "notify_on_ok": false,
+            "owner_user_name": "owner_user_name",
+            "query_id": "query_id",
+            "seconds_to_retrigger": 42,
+            "state": "ENUM",
+            "trigger_time": "trigger_time",
+            "update_time": "update_time"
+        }
+    ]
 }
 '''

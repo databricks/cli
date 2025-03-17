@@ -10,70 +10,84 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.1/marketplace-consumer/listings/{listing_id}/personalization-requests"
 Response.Body = '''
 {
     "personalization_requests": [
-    {
-    "comment": "comment",
-    "consumer_region": {
-    "cloud": "cloud",
-    "region": "region"},
-    "contact_info": {
-    "company": "company",
-    "email": "email",
-    "first_name": "first_name",
-    "last_name": "last_name"},
-    "created_at": 42,
-    "id": "id",
-    "intended_use": "intended_use",
-    "is_from_lighthouse": false,
-    "listing_id": "listing_id",
-    "listing_name": "listing_name",
-    "metastore_id": "metastore_id",
-    "provider_id": "provider_id",
-    "recipient_type": "ENUM",
-    "share": {
-    "name": "name",
-    "type": "ENUM"},
-    "status": "ENUM",
-    "status_message": "status_message",
-    "updated_at": 42}]
-    
+        {
+            "comment": "comment",
+            "consumer_region": {
+                "cloud": "cloud",
+                "region": "region"
+            },
+            "contact_info": {
+                "company": "company",
+                "email": "email",
+                "first_name": "first_name",
+                "last_name": "last_name"
+            },
+            "created_at": 42,
+            "id": "id",
+            "intended_use": "intended_use",
+            "is_from_lighthouse": false,
+            "listing_id": "listing_id",
+            "listing_name": "listing_name",
+            "metastore_id": "metastore_id",
+            "provider_id": "provider_id",
+            "recipient_type": "ENUM",
+            "share": {
+                "name": "name",
+                "type": "ENUM"
+            },
+            "status": "ENUM",
+            "status_message": "status_message",
+            "updated_at": 42
+        }
+    ]
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.1/marketplace-consumer/personalization-requests"
 Response.Body = '''
 {
     "next_page_token": "",
     "personalization_requests": [
-    {
-    "comment": "comment",
-    "consumer_region": {
-    "cloud": "cloud",
-    "region": "region"},
-    "contact_info": {
-    "company": "company",
-    "email": "email",
-    "first_name": "first_name",
-    "last_name": "last_name"},
-    "created_at": 42,
-    "id": "id",
-    "intended_use": "intended_use",
-    "is_from_lighthouse": false,
-    "listing_id": "listing_id",
-    "listing_name": "listing_name",
-    "metastore_id": "metastore_id",
-    "provider_id": "provider_id",
-    "recipient_type": "ENUM",
-    "share": {
-    "name": "name",
-    "type": "ENUM"},
-    "status": "ENUM",
-    "status_message": "status_message",
-    "updated_at": 42}]
-    
+        {
+            "comment": "comment",
+            "consumer_region": {
+                "cloud": "cloud",
+                "region": "region"
+            },
+            "contact_info": {
+                "company": "company",
+                "email": "email",
+                "first_name": "first_name",
+                "last_name": "last_name"
+            },
+            "created_at": 42,
+            "id": "id",
+            "intended_use": "intended_use",
+            "is_from_lighthouse": false,
+            "listing_id": "listing_id",
+            "listing_name": "listing_name",
+            "metastore_id": "metastore_id",
+            "provider_id": "provider_id",
+            "recipient_type": "ENUM",
+            "share": {
+                "name": "name",
+                "type": "ENUM"
+            },
+            "status": "ENUM",
+            "status_message": "status_message",
+            "updated_at": 42
+        }
+    ]
 }
 '''

@@ -1,3 +1,3 @@
 # Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
-trace errcode $CLI clean-room-assets get "input-clean_room_name""ENUM""input-asset_full_name"
+trace errcode $CLI clean-room-assets get "input-clean_room_name"ENUM"input-asset_full_name"
 trace errcode $CLI clean-room-assets list "input-clean_room_name"

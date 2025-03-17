@@ -10,27 +10,31 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/git-credentials/{credential_id}"
 Response.Body = '''
 {
     "credential_id": 42,
-    
     "git_provider": "git_provider",
-    
     "git_username": "git_username"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/git-credentials"
 Response.Body = '''
 {
     "credentials": [
-    {
-    "credential_id": 42,
-    "git_provider": "git_provider",
-    "git_username": "git_username"}]
-    
+        {
+            "credential_id": 42,
+            "git_provider": "git_provider",
+            "git_username": "git_username"
+        }
+    ]
 }
 '''

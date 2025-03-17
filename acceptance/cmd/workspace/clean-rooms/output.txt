@@ -7,9 +7,9 @@ GET /api/2.0/clean-rooms/input-name
 > * Accept: application/json
 > * Authorization: REDACTED
 > * Traceparent: (redacted)
-> * User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/clean-rooms_get cmd-exec-id/[UUID] auth/pat
+> * User-Agent: (redacted)
 < HTTP/1.1 200 OK
-< * Content-Length: 1246
+< * Content-Length: 1477
 < * Content-Type: text/plain; charset=utf-8
 < * Date: (redacted)
 < {
@@ -68,9 +68,9 @@ GET /api/2.0/clean-rooms
 > * Accept: application/json
 > * Authorization: REDACTED
 > * Traceparent: (redacted)
-> * User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/clean-rooms_list cmd-exec-id/[UUID] sdk-feature/pagination auth/pat
+> * User-Agent: (redacted)
 < HTTP/1.1 200 OK
-< * Content-Length: 1257
+< * Content-Length: 1903
 < * Content-Type: text/plain; charset=utf-8
 < * Date: (redacted)
 < {

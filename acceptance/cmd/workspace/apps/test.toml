@@ -10,160 +10,176 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/apps/{name}"
 Response.Body = '''
 {
     "active_deployment": {
-    "create_time": "create_time",
-    "creator": "creator",
-    "deployment_artifacts": {
-    "source_code_path": "source_code_path"},
-    "deployment_id": "deployment_id",
-    "mode": "ENUM",
-    "source_code_path": "source_code_path",
-    "status": {
-    "message": "message",
-    "state": "ENUM"},
-    "update_time": "update_time"},
-    
+        "create_time": "create_time",
+        "creator": "creator",
+        "deployment_artifacts": {
+            "source_code_path": "source_code_path"
+        },
+        "deployment_id": "deployment_id",
+        "mode": "ENUM",
+        "source_code_path": "source_code_path",
+        "status": {
+            "message": "message",
+            "state": "ENUM"
+        },
+        "update_time": "update_time"
+    },
     "app_status": {
-    "message": "message",
-    "state": "ENUM"},
-    
+        "message": "message",
+        "state": "ENUM"
+    },
     "budget_policy_id": "budget_policy_id",
-    
     "compute_status": {
-    "message": "message",
-    "state": "ENUM"},
-    
+        "message": "message",
+        "state": "ENUM"
+    },
     "create_time": "create_time",
-    
     "creator": "creator",
-    
     "default_source_code_path": "default_source_code_path",
-    
     "description": "description",
-    
     "effective_budget_policy_id": "effective_budget_policy_id",
-    
     "id": "id",
-    
     "name": "name",
-    
     "pending_deployment": {
-    "create_time": "create_time",
-    "creator": "creator",
-    "deployment_artifacts": {
-    "source_code_path": "source_code_path"},
-    "deployment_id": "deployment_id",
-    "mode": "ENUM",
-    "source_code_path": "source_code_path",
-    "status": {
-    "message": "message",
-    "state": "ENUM"},
-    "update_time": "update_time"},
-    
+        "create_time": "create_time",
+        "creator": "creator",
+        "deployment_artifacts": {
+            "source_code_path": "source_code_path"
+        },
+        "deployment_id": "deployment_id",
+        "mode": "ENUM",
+        "source_code_path": "source_code_path",
+        "status": {
+            "message": "message",
+            "state": "ENUM"
+        },
+        "update_time": "update_time"
+    },
     "resources": [
-    {
-    "description": "description",
-    "job": {
-    "id": "id",
-    "permission": "ENUM"},
-    "name": "name",
-    "secret": {
-    "key": "key",
-    "permission": "ENUM",
-    "scope": "scope"},
-    "serving_endpoint": {
-    "name": "name",
-    "permission": "ENUM"},
-    "sql_warehouse": {
-    "id": "id",
-    "permission": "ENUM"}}],
-    
+        {
+            "description": "description",
+            "job": {
+                "id": "id",
+                "permission": "ENUM"
+            },
+            "name": "name",
+            "secret": {
+                "key": "key",
+                "permission": "ENUM",
+                "scope": "scope"
+            },
+            "serving_endpoint": {
+                "name": "name",
+                "permission": "ENUM"
+            },
+            "sql_warehouse": {
+                "id": "id",
+                "permission": "ENUM"
+            }
+        }
+    ],
     "service_principal_client_id": "service_principal_client_id",
-    
     "service_principal_id": 42,
-    
     "service_principal_name": "service_principal_name",
-    
     "update_time": "update_time",
-    
     "updater": "updater",
-    
     "url": "url"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/apps"
 Response.Body = '''
 {
     "apps": [
-    {
-    "active_deployment": {
-    "create_time": "create_time",
-    "creator": "creator",
-    "deployment_artifacts": {
-    "source_code_path": "source_code_path"},
-    "deployment_id": "deployment_id",
-    "mode": "ENUM",
-    "source_code_path": "source_code_path",
-    "status": {
-    "message": "message",
-    "state": "ENUM"},
-    "update_time": "update_time"},
-    "app_status": {
-    "message": "message",
-    "state": "ENUM"},
-    "budget_policy_id": "budget_policy_id",
-    "compute_status": {
-    "message": "message",
-    "state": "ENUM"},
-    "create_time": "create_time",
-    "creator": "creator",
-    "default_source_code_path": "default_source_code_path",
-    "description": "description",
-    "effective_budget_policy_id": "effective_budget_policy_id",
-    "id": "id",
-    "name": "name",
-    "pending_deployment": {
-    "create_time": "create_time",
-    "creator": "creator",
-    "deployment_artifacts": {
-    "source_code_path": "source_code_path"},
-    "deployment_id": "deployment_id",
-    "mode": "ENUM",
-    "source_code_path": "source_code_path",
-    "status": {
-    "message": "message",
-    "state": "ENUM"},
-    "update_time": "update_time"},
-    "resources": [
-    {
-    "description": "description",
-    "job": {
-    "id": "id",
-    "permission": "ENUM"},
-    "name": "name",
-    "secret": {
-    "key": "key",
-    "permission": "ENUM",
-    "scope": "scope"},
-    "serving_endpoint": {
-    "name": "name",
-    "permission": "ENUM"},
-    "sql_warehouse": {
-    "id": "id",
-    "permission": "ENUM"}}],
-    "service_principal_client_id": "service_principal_client_id",
-    "service_principal_id": 42,
-    "service_principal_name": "service_principal_name",
-    "update_time": "update_time",
-    "updater": "updater",
-    "url": "url"}],
-    
+        {
+            "active_deployment": {
+                "create_time": "create_time",
+                "creator": "creator",
+                "deployment_artifacts": {
+                    "source_code_path": "source_code_path"
+                },
+                "deployment_id": "deployment_id",
+                "mode": "ENUM",
+                "source_code_path": "source_code_path",
+                "status": {
+                    "message": "message",
+                    "state": "ENUM"
+                },
+                "update_time": "update_time"
+            },
+            "app_status": {
+                "message": "message",
+                "state": "ENUM"
+            },
+            "budget_policy_id": "budget_policy_id",
+            "compute_status": {
+                "message": "message",
+                "state": "ENUM"
+            },
+            "create_time": "create_time",
+            "creator": "creator",
+            "default_source_code_path": "default_source_code_path",
+            "description": "description",
+            "effective_budget_policy_id": "effective_budget_policy_id",
+            "id": "id",
+            "name": "name",
+            "pending_deployment": {
+                "create_time": "create_time",
+                "creator": "creator",
+                "deployment_artifacts": {
+                    "source_code_path": "source_code_path"
+                },
+                "deployment_id": "deployment_id",
+                "mode": "ENUM",
+                "source_code_path": "source_code_path",
+                "status": {
+                    "message": "message",
+                    "state": "ENUM"
+                },
+                "update_time": "update_time"
+            },
+            "resources": [
+                {
+                    "description": "description",
+                    "job": {
+                        "id": "id",
+                        "permission": "ENUM"
+                    },
+                    "name": "name",
+                    "secret": {
+                        "key": "key",
+                        "permission": "ENUM",
+                        "scope": "scope"
+                    },
+                    "serving_endpoint": {
+                        "name": "name",
+                        "permission": "ENUM"
+                    },
+                    "sql_warehouse": {
+                        "id": "id",
+                        "permission": "ENUM"
+                    }
+                }
+            ],
+            "service_principal_client_id": "service_principal_client_id",
+            "service_principal_id": 42,
+            "service_principal_name": "service_principal_name",
+            "update_time": "update_time",
+            "updater": "updater",
+            "url": "url"
+        }
+    ],
     "next_page_token": ""
 }
 '''

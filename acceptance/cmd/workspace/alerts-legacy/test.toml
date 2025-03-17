@@ -10,73 +10,76 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/preview/sql/alerts/{alert_id}"
 Response.Body = '''
 {
     "created_at": "created_at",
-    
     "id": "id",
-    
     "last_triggered_at": "last_triggered_at",
-    
     "name": "name",
-    
     "options": {
-    "column": "column",
-    "custom_body": "custom_body",
-    "custom_subject": "custom_subject",
-    "empty_result_state": "ENUM",
-    "muted": false,
-    "op": "op",
-    "value": null},
-    
+        "column": "column",
+        "custom_body": "custom_body",
+        "custom_subject": "custom_subject",
+        "empty_result_state": "ENUM",
+        "muted": false,
+        "op": "op",
+        "value": null
+    },
     "parent": "parent",
-    
     "query": {
-    "created_at": "created_at",
-    "data_source_id": "data_source_id",
-    "description": "description",
-    "id": "id",
-    "is_archived": false,
-    "is_draft": false,
-    "is_safe": false,
-    "name": "name",
-    "options": {
-    "catalog": "catalog",
-    "moved_to_trash_at": "moved_to_trash_at",
-    "parameters": [
-    {
-    "enumOptions": "enumOptions",
-    "multiValuesOptions": {
-    "prefix": "prefix",
-    "separator": "separator",
-    "suffix": "suffix"},
-    "name": "name",
-    "queryId": "queryId",
-    "title": "title",
-    "type": "ENUM",
-    "value": null}],
-    "schema": "schema"},
-    "query": "query",
-    "tags": [
-    "tag_string_list"],
-    "updated_at": "updated_at",
-    "user_id": 42},
-    
+        "created_at": "created_at",
+        "data_source_id": "data_source_id",
+        "description": "description",
+        "id": "id",
+        "is_archived": false,
+        "is_draft": false,
+        "is_safe": false,
+        "name": "name",
+        "options": {
+            "catalog": "catalog",
+            "moved_to_trash_at": "moved_to_trash_at",
+            "parameters": [
+                {
+                    "enumOptions": "enumOptions",
+                    "multiValuesOptions": {
+                        "prefix": "prefix",
+                        "separator": "separator",
+                        "suffix": "suffix"
+                    },
+                    "name": "name",
+                    "queryId": "queryId",
+                    "title": "title",
+                    "type": "ENUM",
+                    "value": null
+                }
+            ],
+            "schema": "schema"
+        },
+        "query": "query",
+        "tags": [
+            "tag_string_list"
+        ],
+        "updated_at": "updated_at",
+        "user_id": 42
+    },
     "rearm": 42,
-    
     "state": "ENUM",
-    
     "updated_at": "updated_at",
-    
     "user": {
-    "email": "email",
-    "id": 42,
-    "name": "name"}
-    
+        "email": "email",
+        "id": 42,
+        "name": "name"
+    }
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/preview/sql/alerts"
 Response.Body = '''

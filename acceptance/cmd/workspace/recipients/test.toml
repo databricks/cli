@@ -10,100 +10,98 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.1/unity-catalog/recipients/{name}"
 Response.Body = '''
 {
     "activated": false,
-    
     "activation_url": "activation_url",
-    
     "authentication_type": "ENUM",
-    
     "cloud": "cloud",
-    
     "comment": "comment",
-    
     "created_at": 42,
-    
     "created_by": "created_by",
-    
     "data_recipient_global_metastore_id": "data_recipient_global_metastore_id",
-    
     "expiration_time": 42,
-    
     "ip_access_list": {
-    "allowed_ip_addresses": [
-    "_list"]},
-    
+        "allowed_ip_addresses": [
+            "_list"
+        ]
+    },
     "metastore_id": "metastore_id",
-    
     "name": "name",
-    
     "owner": "owner",
-    
     "properties_kvpairs": {
-    "properties": {
-}},
-    
+        "properties": {
+        }
+    },
     "region": "region",
-    
     "sharing_code": "sharing_code",
-    
     "tokens": [
-    {
-    "activation_url": "activation_url",
-    "created_at": 42,
-    "created_by": "created_by",
-    "expiration_time": 42,
-    "id": "id",
+        {
+            "activation_url": "activation_url",
+            "created_at": 42,
+            "created_by": "created_by",
+            "expiration_time": 42,
+            "id": "id",
+            "updated_at": 42,
+            "updated_by": "updated_by"
+        }
+    ],
     "updated_at": 42,
-    "updated_by": "updated_by"}],
-    
-    "updated_at": 42,
-    
     "updated_by": "updated_by"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.1/unity-catalog/recipients"
 Response.Body = '''
 {
     "next_page_token": "",
     "recipients": [
-    {
-    "activated": false,
-    "activation_url": "activation_url",
-    "authentication_type": "ENUM",
-    "cloud": "cloud",
-    "comment": "comment",
-    "created_at": 42,
-    "created_by": "created_by",
-    "data_recipient_global_metastore_id": "data_recipient_global_metastore_id",
-    "expiration_time": 42,
-    "ip_access_list": {
-    "allowed_ip_addresses": [
-    "_list"]},
-    "metastore_id": "metastore_id",
-    "name": "name",
-    "owner": "owner",
-    "properties_kvpairs": {
-    "properties": {
-}},
-    "region": "region",
-    "sharing_code": "sharing_code",
-    "tokens": [
-    {
-    "activation_url": "activation_url",
-    "created_at": 42,
-    "created_by": "created_by",
-    "expiration_time": 42,
-    "id": "id",
-    "updated_at": 42,
-    "updated_by": "updated_by"}],
-    "updated_at": 42,
-    "updated_by": "updated_by"}]
-    
+        {
+            "activated": false,
+            "activation_url": "activation_url",
+            "authentication_type": "ENUM",
+            "cloud": "cloud",
+            "comment": "comment",
+            "created_at": 42,
+            "created_by": "created_by",
+            "data_recipient_global_metastore_id": "data_recipient_global_metastore_id",
+            "expiration_time": 42,
+            "ip_access_list": {
+                "allowed_ip_addresses": [
+                    "_list"
+                ]
+            },
+            "metastore_id": "metastore_id",
+            "name": "name",
+            "owner": "owner",
+            "properties_kvpairs": {
+                "properties": {
+                }
+            },
+            "region": "region",
+            "sharing_code": "sharing_code",
+            "tokens": [
+                {
+                    "activation_url": "activation_url",
+                    "created_at": 42,
+                    "created_by": "created_by",
+                    "expiration_time": 42,
+                    "id": "id",
+                    "updated_at": 42,
+                    "updated_by": "updated_by"
+                }
+            ],
+            "updated_at": 42,
+            "updated_by": "updated_by"
+        }
+    ]
 }
 '''

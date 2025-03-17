@@ -10,101 +10,100 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.1/unity-catalog/storage-credentials/{name}"
 Response.Body = '''
 {
     "aws_iam_role": {
-    "external_id": "external_id",
-    "role_arn": "role_arn",
-    "unity_catalog_iam_arn": "unity_catalog_iam_arn"},
-    
+        "external_id": "external_id",
+        "role_arn": "role_arn",
+        "unity_catalog_iam_arn": "unity_catalog_iam_arn"
+    },
     "azure_managed_identity": {
-    "access_connector_id": "access_connector_id",
-    "credential_id": "credential_id",
-    "managed_identity_id": "managed_identity_id"},
-    
+        "access_connector_id": "access_connector_id",
+        "credential_id": "credential_id",
+        "managed_identity_id": "managed_identity_id"
+    },
     "azure_service_principal": {
-    "application_id": "application_id",
-    "client_secret": "client_secret",
-    "directory_id": "directory_id"},
-    
+        "application_id": "application_id",
+        "client_secret": "client_secret",
+        "directory_id": "directory_id"
+    },
     "cloudflare_api_token": {
-    "access_key_id": "access_key_id",
-    "account_id": "account_id",
-    "secret_access_key": "secret_access_key"},
-    
+        "access_key_id": "access_key_id",
+        "account_id": "account_id",
+        "secret_access_key": "secret_access_key"
+    },
     "comment": "comment",
-    
     "created_at": 42,
-    
     "created_by": "created_by",
-    
     "databricks_gcp_service_account": {
-    "credential_id": "credential_id",
-    "email": "email"},
-    
+        "credential_id": "credential_id",
+        "email": "email"
+    },
     "full_name": "full_name",
-    
     "id": "id",
-    
     "isolation_mode": "ENUM",
-    
     "metastore_id": "metastore_id",
-    
     "name": "name",
-    
     "owner": "owner",
-    
     "read_only": false,
-    
     "updated_at": 42,
-    
     "updated_by": "updated_by",
-    
     "used_for_managed_storage": false
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.1/unity-catalog/storage-credentials"
 Response.Body = '''
 {
     "next_page_token": "",
     "storage_credentials": [
-    {
-    "aws_iam_role": {
-    "external_id": "external_id",
-    "role_arn": "role_arn",
-    "unity_catalog_iam_arn": "unity_catalog_iam_arn"},
-    "azure_managed_identity": {
-    "access_connector_id": "access_connector_id",
-    "credential_id": "credential_id",
-    "managed_identity_id": "managed_identity_id"},
-    "azure_service_principal": {
-    "application_id": "application_id",
-    "client_secret": "client_secret",
-    "directory_id": "directory_id"},
-    "cloudflare_api_token": {
-    "access_key_id": "access_key_id",
-    "account_id": "account_id",
-    "secret_access_key": "secret_access_key"},
-    "comment": "comment",
-    "created_at": 42,
-    "created_by": "created_by",
-    "databricks_gcp_service_account": {
-    "credential_id": "credential_id",
-    "email": "email"},
-    "full_name": "full_name",
-    "id": "id",
-    "isolation_mode": "ENUM",
-    "metastore_id": "metastore_id",
-    "name": "name",
-    "owner": "owner",
-    "read_only": false,
-    "updated_at": 42,
-    "updated_by": "updated_by",
-    "used_for_managed_storage": false}]
-    
+        {
+            "aws_iam_role": {
+                "external_id": "external_id",
+                "role_arn": "role_arn",
+                "unity_catalog_iam_arn": "unity_catalog_iam_arn"
+            },
+            "azure_managed_identity": {
+                "access_connector_id": "access_connector_id",
+                "credential_id": "credential_id",
+                "managed_identity_id": "managed_identity_id"
+            },
+            "azure_service_principal": {
+                "application_id": "application_id",
+                "client_secret": "client_secret",
+                "directory_id": "directory_id"
+            },
+            "cloudflare_api_token": {
+                "access_key_id": "access_key_id",
+                "account_id": "account_id",
+                "secret_access_key": "secret_access_key"
+            },
+            "comment": "comment",
+            "created_at": 42,
+            "created_by": "created_by",
+            "databricks_gcp_service_account": {
+                "credential_id": "credential_id",
+                "email": "email"
+            },
+            "full_name": "full_name",
+            "id": "id",
+            "isolation_mode": "ENUM",
+            "metastore_id": "metastore_id",
+            "name": "name",
+            "owner": "owner",
+            "read_only": false,
+            "updated_at": 42,
+            "updated_by": "updated_by",
+            "used_for_managed_storage": false
+        }
+    ]
 }
 '''

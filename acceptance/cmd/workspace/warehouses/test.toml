@@ -10,116 +10,117 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/sql/warehouses/{id}"
 Response.Body = '''
 {
     "auto_stop_mins": 42,
-    
     "channel": {
-    "dbsql_version": "dbsql_version",
-    "name": "ENUM"},
-    
+        "dbsql_version": "dbsql_version",
+        "name": "ENUM"
+    },
     "cluster_size": "cluster_size",
-    
     "creator_name": "creator_name",
-    
     "enable_photon": false,
-    
     "enable_serverless_compute": false,
-    
     "health": {
-    "details": "details",
-    "failure_reason": {
-    "code": "ENUM",
-    "parameters": {
-},
-    "type": "ENUM"},
-    "message": "message",
-    "status": "ENUM",
-    "summary": "summary"},
-    
+        "details": "details",
+        "failure_reason": {
+            "code": "ENUM",
+            "parameters": {
+            },
+            "type": "ENUM"
+        },
+        "message": "message",
+        "status": "ENUM",
+        "summary": "summary"
+    },
     "id": "id",
-    
     "instance_profile_arn": "instance_profile_arn",
-    
     "jdbc_url": "jdbc_url",
-    
     "max_num_clusters": 42,
-    
     "min_num_clusters": 42,
-    
     "name": "name",
-    
     "num_active_sessions": 42,
-    
     "num_clusters": 42,
-    
     "odbc_params": {
-    "hostname": "hostname",
-    "path": "path",
-    "port": 42,
-    "protocol": "protocol"},
-    
+        "hostname": "hostname",
+        "path": "path",
+        "port": 42,
+        "protocol": "protocol"
+    },
     "spot_instance_policy": "ENUM",
-    
     "state": "ENUM",
-    
     "tags": {
-    "custom_tags": [
-    {
-    "key": "key",
-    "value": "value"}]},
-    
+        "custom_tags": [
+            {
+                "key": "key",
+                "value": "value"
+            }
+        ]
+    },
     "warehouse_type": "ENUM"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/sql/warehouses"
 Response.Body = '''
 {
     "warehouses": [
-    {
-    "auto_stop_mins": 42,
-    "channel": {
-    "dbsql_version": "dbsql_version",
-    "name": "ENUM"},
-    "cluster_size": "cluster_size",
-    "creator_name": "creator_name",
-    "enable_photon": false,
-    "enable_serverless_compute": false,
-    "health": {
-    "details": "details",
-    "failure_reason": {
-    "code": "ENUM",
-    "parameters": {
-},
-    "type": "ENUM"},
-    "message": "message",
-    "status": "ENUM",
-    "summary": "summary"},
-    "id": "id",
-    "instance_profile_arn": "instance_profile_arn",
-    "jdbc_url": "jdbc_url",
-    "max_num_clusters": 42,
-    "min_num_clusters": 42,
-    "name": "name",
-    "num_active_sessions": 42,
-    "num_clusters": 42,
-    "odbc_params": {
-    "hostname": "hostname",
-    "path": "path",
-    "port": 42,
-    "protocol": "protocol"},
-    "spot_instance_policy": "ENUM",
-    "state": "ENUM",
-    "tags": {
-    "custom_tags": [
-    {
-    "key": "key",
-    "value": "value"}]},
-    "warehouse_type": "ENUM"}]
-    
+        {
+            "auto_stop_mins": 42,
+            "channel": {
+                "dbsql_version": "dbsql_version",
+                "name": "ENUM"
+            },
+            "cluster_size": "cluster_size",
+            "creator_name": "creator_name",
+            "enable_photon": false,
+            "enable_serverless_compute": false,
+            "health": {
+                "details": "details",
+                "failure_reason": {
+                    "code": "ENUM",
+                    "parameters": {
+                    },
+                    "type": "ENUM"
+                },
+                "message": "message",
+                "status": "ENUM",
+                "summary": "summary"
+            },
+            "id": "id",
+            "instance_profile_arn": "instance_profile_arn",
+            "jdbc_url": "jdbc_url",
+            "max_num_clusters": 42,
+            "min_num_clusters": 42,
+            "name": "name",
+            "num_active_sessions": 42,
+            "num_clusters": 42,
+            "odbc_params": {
+                "hostname": "hostname",
+                "path": "path",
+                "port": 42,
+                "protocol": "protocol"
+            },
+            "spot_instance_policy": "ENUM",
+            "state": "ENUM",
+            "tags": {
+                "custom_tags": [
+                    {
+                        "key": "key",
+                        "value": "value"
+                    }
+                ]
+            },
+            "warehouse_type": "ENUM"
+        }
+    ]
 }
 '''

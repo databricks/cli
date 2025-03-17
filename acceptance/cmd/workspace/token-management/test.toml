@@ -10,38 +10,45 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/token-management/tokens/{token_id}"
 Response.Body = '''
 {
     "token_info": {
-    "comment": "comment",
-    "created_by_id": 42,
-    "created_by_username": "created_by_username",
-    "creation_time": 42,
-    "expiry_time": 42,
-    "last_used_day": 42,
-    "owner_id": 42,
-    "token_id": "token_id",
-    "workspace_id": 42}
-    
+        "comment": "comment",
+        "created_by_id": 42,
+        "created_by_username": "created_by_username",
+        "creation_time": 42,
+        "expiry_time": 42,
+        "last_used_day": 42,
+        "owner_id": 42,
+        "token_id": "token_id",
+        "workspace_id": 42
+    }
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/token-management/tokens"
 Response.Body = '''
 {
     "token_infos": [
-    {
-    "comment": "comment",
-    "created_by_id": 42,
-    "created_by_username": "created_by_username",
-    "creation_time": 42,
-    "expiry_time": 42,
-    "last_used_day": 42,
-    "owner_id": 42,
-    "token_id": "token_id",
-    "workspace_id": 42}]
-    
+        {
+            "comment": "comment",
+            "created_by_id": 42,
+            "created_by_username": "created_by_username",
+            "creation_time": 42,
+            "expiry_time": 42,
+            "last_used_day": 42,
+            "owner_id": 42,
+            "token_id": "token_id",
+            "workspace_id": 42
+        }
+    ]
 }
 '''

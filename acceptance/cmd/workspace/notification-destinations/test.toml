@@ -10,49 +10,59 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/notification-destinations/{id}"
 Response.Body = '''
 {
     "config": {
-    "email": {
-    "addresses": [
-    "_list"]},
-    "generic_webhook": {
-    "password": "password",
-    "password_set": false,
-    "url": "url",
-    "url_set": false,
-    "username": "username",
-    "username_set": false},
-    "microsoft_teams": {
-    "url": "url",
-    "url_set": false},
-    "pagerduty": {
-    "integration_key": "integration_key",
-    "integration_key_set": false},
-    "slack": {
-    "url": "url",
-    "url_set": false}},
-    
+        "email": {
+            "addresses": [
+                "_list"
+            ]
+        },
+        "generic_webhook": {
+            "password": "password",
+            "password_set": false,
+            "url": "url",
+            "url_set": false,
+            "username": "username",
+            "username_set": false
+        },
+        "microsoft_teams": {
+            "url": "url",
+            "url_set": false
+        },
+        "pagerduty": {
+            "integration_key": "integration_key",
+            "integration_key_set": false
+        },
+        "slack": {
+            "url": "url",
+            "url_set": false
+        }
+    },
     "destination_type": "ENUM",
-    
     "display_name": "display_name",
-    
     "id": "id"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/notification-destinations"
 Response.Body = '''
 {
     "next_page_token": "",
     "results": [
-    {
-    "destination_type": "ENUM",
-    "display_name": "display_name",
-    "id": "id"}]
-    
+        {
+            "destination_type": "ENUM",
+            "display_name": "display_name",
+            "id": "id"
+        }
+    ]
 }
 '''

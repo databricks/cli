@@ -68,7 +68,7 @@ GET /api/2.0/preview/sql/alerts
 > * Accept: application/json
 > * Authorization: REDACTED
 > * Traceparent: (redacted)
-> * User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/alerts-legacy_list cmd-exec-id/[UUID] auth/pat
+> * User-Agent: (redacted)
 < HTTP/1.1 200 OK
 < * Content-Length: 4
 < * Content-Type: text/plain; charset=utf-8

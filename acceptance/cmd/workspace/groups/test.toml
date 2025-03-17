@@ -10,106 +10,121 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/preview/scim/v2/Groups/{id}"
 Response.Body = '''
 {
     "display_name": "display_name",
-    
     "entitlements": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    
+        {
+            "display": "display",
+            "primary": false,
+            "$ref": "$ref",
+            "type": "type",
+            "value": "value"
+        }
+    ],
     "external_id": "external_id",
-    
     "groups": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    
+        {
+            "display": "display",
+            "primary": false,
+            "$ref": "$ref",
+            "type": "type",
+            "value": "value"
+        }
+    ],
     "id": "id",
-    
     "members": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    
+        {
+            "display": "display",
+            "primary": false,
+            "$ref": "$ref",
+            "type": "type",
+            "value": "value"
+        }
+    ],
     "meta": {
-    "resourceType": "resourceType"},
-    
+        "resourceType": "resourceType"
+    },
     "roles": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    
+        {
+            "display": "display",
+            "primary": false,
+            "$ref": "$ref",
+            "type": "type",
+            "value": "value"
+        }
+    ],
     "schemas": [
-    "ENUM"]
-    
+        "ENUM"
+    ]
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/preview/scim/v2/Groups"
 Response.Body = '''
 {
     "items_per_page": 42,
-    
     "resources": [
-    {
-    "displayName": "displayName",
-    "entitlements": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    "externalId": "externalId",
-    "groups": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    "id": "id",
-    "members": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
-    "meta": {
-    "resourceType": "resourceType"},
-    "roles": [
-    {
-    "display": "display",
-    "primary": false,
-    "$ref": "$ref",
-    "type": "type",
-    "value": "value"}],
+        {
+            "displayName": "displayName",
+            "entitlements": [
+                {
+                    "display": "display",
+                    "primary": false,
+                    "$ref": "$ref",
+                    "type": "type",
+                    "value": "value"
+                }
+            ],
+            "externalId": "externalId",
+            "groups": [
+                {
+                    "display": "display",
+                    "primary": false,
+                    "$ref": "$ref",
+                    "type": "type",
+                    "value": "value"
+                }
+            ],
+            "id": "id",
+            "members": [
+                {
+                    "display": "display",
+                    "primary": false,
+                    "$ref": "$ref",
+                    "type": "type",
+                    "value": "value"
+                }
+            ],
+            "meta": {
+                "resourceType": "resourceType"
+            },
+            "roles": [
+                {
+                    "display": "display",
+                    "primary": false,
+                    "$ref": "$ref",
+                    "type": "type",
+                    "value": "value"
+                }
+            ],
+            "schemas": [
+                "ENUM"
+            ]
+        }
+    ],
     "schemas": [
-    "ENUM"]}],
-    
-    "schemas": [
-    "ENUM"],
-    
+        "ENUM"
+    ],
     "start_index": 42,
-    
     "total_results": 42
-    
 }
 '''

@@ -10,393 +10,482 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/serving-endpoints/{name}"
 Response.Body = '''
 {
     "ai_gateway": {
-    "guardrails": {
-    "input": {
-    "invalid_keywords": [
-    "_list"],
-    "pii": {
-    "behavior": "ENUM"},
-    "safety": false,
-    "valid_topics": [
-    "_list"]},
-    "output": {
-    "invalid_keywords": [
-    "_list"],
-    "pii": {
-    "behavior": "ENUM"},
-    "safety": false,
-    "valid_topics": [
-    "_list"]}},
-    "inference_table_config": {
-    "catalog_name": "catalog_name",
-    "enabled": false,
-    "schema_name": "schema_name",
-    "table_name_prefix": "table_name_prefix"},
-    "rate_limits": [
-    {
-    "calls": 42,
-    "key": "ENUM",
-    "renewal_period": "ENUM"}],
-    "usage_tracking_config": {
-    "enabled": false}},
-    
+        "guardrails": {
+            "input": {
+                "invalid_keywords": [
+                    "_list"
+                ],
+                "pii": {
+                    "behavior": "ENUM"
+                },
+                "safety": false,
+                "valid_topics": [
+                    "_list"
+                ]
+            },
+            "output": {
+                "invalid_keywords": [
+                    "_list"
+                ],
+                "pii": {
+                    "behavior": "ENUM"
+                },
+                "safety": false,
+                "valid_topics": [
+                    "_list"
+                ]
+            }
+        },
+        "inference_table_config": {
+            "catalog_name": "catalog_name",
+            "enabled": false,
+            "schema_name": "schema_name",
+            "table_name_prefix": "table_name_prefix"
+        },
+        "rate_limits": [
+            {
+                "calls": 42,
+                "key": "ENUM",
+                "renewal_period": "ENUM"
+            }
+        ],
+        "usage_tracking_config": {
+            "enabled": false
+        }
+    },
     "config": {
-    "auto_capture_config": {
-    "catalog_name": "catalog_name",
-    "enabled": false,
-    "schema_name": "schema_name",
-    "state": {
-    "payload_table": {
-    "name": "name",
-    "status": "status",
-    "status_message": "status_message"}},
-    "table_name_prefix": "table_name_prefix"},
-    "config_version": 42,
-    "served_entities": [
-    {
+        "auto_capture_config": {
+            "catalog_name": "catalog_name",
+            "enabled": false,
+            "schema_name": "schema_name",
+            "state": {
+                "payload_table": {
+                    "name": "name",
+                    "status": "status",
+                    "status_message": "status_message"
+                }
+            },
+            "table_name_prefix": "table_name_prefix"
+        },
+        "config_version": 42,
+        "served_entities": [
+            {
+                "creation_timestamp": 42,
+                "creator": "creator",
+                "entity_name": "entity_name",
+                "entity_version": "entity_version",
+                "environment_vars": {
+                },
+                "external_model": {
+                    "ai21labs_config": {
+                        "ai21labs_api_key": "ai21labs_api_key",
+                        "ai21labs_api_key_plaintext": "ai21labs_api_key_plaintext"
+                    },
+                    "amazon_bedrock_config": {
+                        "aws_access_key_id": "aws_access_key_id",
+                        "aws_access_key_id_plaintext": "aws_access_key_id_plaintext",
+                        "aws_region": "aws_region",
+                        "aws_secret_access_key": "aws_secret_access_key",
+                        "aws_secret_access_key_plaintext": "aws_secret_access_key_plaintext",
+                        "bedrock_provider": "ENUM",
+                        "instance_profile_arn": "instance_profile_arn"
+                    },
+                    "anthropic_config": {
+                        "anthropic_api_key": "anthropic_api_key",
+                        "anthropic_api_key_plaintext": "anthropic_api_key_plaintext"
+                    },
+                    "cohere_config": {
+                        "cohere_api_base": "cohere_api_base",
+                        "cohere_api_key": "cohere_api_key",
+                        "cohere_api_key_plaintext": "cohere_api_key_plaintext"
+                    },
+                    "databricks_model_serving_config": {
+                        "databricks_api_token": "databricks_api_token",
+                        "databricks_api_token_plaintext": "databricks_api_token_plaintext",
+                        "databricks_workspace_url": "databricks_workspace_url"
+                    },
+                    "google_cloud_vertex_ai_config": {
+                        "private_key": "private_key",
+                        "private_key_plaintext": "private_key_plaintext",
+                        "project_id": "project_id",
+                        "region": "region"
+                    },
+                    "name": "name",
+                    "openai_config": {
+                        "microsoft_entra_client_id": "microsoft_entra_client_id",
+                        "microsoft_entra_client_secret": "microsoft_entra_client_secret",
+                        "microsoft_entra_client_secret_plaintext": "microsoft_entra_client_secret_plaintext",
+                        "microsoft_entra_tenant_id": "microsoft_entra_tenant_id",
+                        "openai_api_base": "openai_api_base",
+                        "openai_api_key": "openai_api_key",
+                        "openai_api_key_plaintext": "openai_api_key_plaintext",
+                        "openai_api_type": "openai_api_type",
+                        "openai_api_version": "openai_api_version",
+                        "openai_deployment_name": "openai_deployment_name",
+                        "openai_organization": "openai_organization"
+                    },
+                    "palm_config": {
+                        "palm_api_key": "palm_api_key",
+                        "palm_api_key_plaintext": "palm_api_key_plaintext"
+                    },
+                    "provider": "ENUM",
+                    "task": "task"
+                },
+                "foundation_model": {
+                    "description": "description",
+                    "display_name": "display_name",
+                    "docs": "docs",
+                    "name": "name"
+                },
+                "instance_profile_arn": "instance_profile_arn",
+                "max_provisioned_throughput": 42,
+                "min_provisioned_throughput": 42,
+                "name": "name",
+                "scale_to_zero_enabled": false,
+                "state": {
+                    "deployment": "ENUM",
+                    "deployment_state_message": "deployment_state_message"
+                },
+                "workload_size": "workload_size",
+                "workload_type": "ENUM"
+            }
+        ],
+        "served_models": [
+            {
+                "creation_timestamp": 42,
+                "creator": "creator",
+                "environment_vars": {
+                },
+                "instance_profile_arn": "instance_profile_arn",
+                "model_name": "model_name",
+                "model_version": "model_version",
+                "name": "name",
+                "scale_to_zero_enabled": false,
+                "state": {
+                    "deployment": "ENUM",
+                    "deployment_state_message": "deployment_state_message"
+                },
+                "workload_size": "workload_size",
+                "workload_type": "ENUM"
+            }
+        ],
+        "traffic_config": {
+            "routes": [
+                {
+                    "served_model_name": "served_model_name",
+                    "traffic_percentage": 42
+                }
+            ]
+        }
+    },
     "creation_timestamp": 42,
     "creator": "creator",
-    "entity_name": "entity_name",
-    "entity_version": "entity_version",
-    "environment_vars": {
-},
-    "external_model": {
-    "ai21labs_config": {
-    "ai21labs_api_key": "ai21labs_api_key",
-    "ai21labs_api_key_plaintext": "ai21labs_api_key_plaintext"},
-    "amazon_bedrock_config": {
-    "aws_access_key_id": "aws_access_key_id",
-    "aws_access_key_id_plaintext": "aws_access_key_id_plaintext",
-    "aws_region": "aws_region",
-    "aws_secret_access_key": "aws_secret_access_key",
-    "aws_secret_access_key_plaintext": "aws_secret_access_key_plaintext",
-    "bedrock_provider": "ENUM",
-    "instance_profile_arn": "instance_profile_arn"},
-    "anthropic_config": {
-    "anthropic_api_key": "anthropic_api_key",
-    "anthropic_api_key_plaintext": "anthropic_api_key_plaintext"},
-    "cohere_config": {
-    "cohere_api_base": "cohere_api_base",
-    "cohere_api_key": "cohere_api_key",
-    "cohere_api_key_plaintext": "cohere_api_key_plaintext"},
-    "databricks_model_serving_config": {
-    "databricks_api_token": "databricks_api_token",
-    "databricks_api_token_plaintext": "databricks_api_token_plaintext",
-    "databricks_workspace_url": "databricks_workspace_url"},
-    "google_cloud_vertex_ai_config": {
-    "private_key": "private_key",
-    "private_key_plaintext": "private_key_plaintext",
-    "project_id": "project_id",
-    "region": "region"},
-    "name": "name",
-    "openai_config": {
-    "microsoft_entra_client_id": "microsoft_entra_client_id",
-    "microsoft_entra_client_secret": "microsoft_entra_client_secret",
-    "microsoft_entra_client_secret_plaintext": "microsoft_entra_client_secret_plaintext",
-    "microsoft_entra_tenant_id": "microsoft_entra_tenant_id",
-    "openai_api_base": "openai_api_base",
-    "openai_api_key": "openai_api_key",
-    "openai_api_key_plaintext": "openai_api_key_plaintext",
-    "openai_api_type": "openai_api_type",
-    "openai_api_version": "openai_api_version",
-    "openai_deployment_name": "openai_deployment_name",
-    "openai_organization": "openai_organization"},
-    "palm_config": {
-    "palm_api_key": "palm_api_key",
-    "palm_api_key_plaintext": "palm_api_key_plaintext"},
-    "provider": "ENUM",
-    "task": "task"},
-    "foundation_model": {
-    "description": "description",
-    "display_name": "display_name",
-    "docs": "docs",
-    "name": "name"},
-    "instance_profile_arn": "instance_profile_arn",
-    "max_provisioned_throughput": 42,
-    "min_provisioned_throughput": 42,
-    "name": "name",
-    "scale_to_zero_enabled": false,
-    "state": {
-    "deployment": "ENUM",
-    "deployment_state_message": "deployment_state_message"},
-    "workload_size": "workload_size",
-    "workload_type": "ENUM"}],
-    "served_models": [
-    {
-    "creation_timestamp": 42,
-    "creator": "creator",
-    "environment_vars": {
-},
-    "instance_profile_arn": "instance_profile_arn",
-    "model_name": "model_name",
-    "model_version": "model_version",
-    "name": "name",
-    "scale_to_zero_enabled": false,
-    "state": {
-    "deployment": "ENUM",
-    "deployment_state_message": "deployment_state_message"},
-    "workload_size": "workload_size",
-    "workload_type": "ENUM"}],
-    "traffic_config": {
-    "routes": [
-    {
-    "served_model_name": "served_model_name",
-    "traffic_percentage": 42}]}},
-    
-    "creation_timestamp": 42,
-    
-    "creator": "creator",
-    
     "data_plane_info": {
-    "query_info": {
-    "authorization_details": "authorization_details",
-    "endpoint_url": "endpoint_url"}},
-    
+        "query_info": {
+            "authorization_details": "authorization_details",
+            "endpoint_url": "endpoint_url"
+        }
+    },
     "endpoint_url": "endpoint_url",
-    
     "id": "id",
-    
     "last_updated_timestamp": 42,
-    
     "name": "name",
-    
     "pending_config": {
-    "auto_capture_config": {
-    "catalog_name": "catalog_name",
-    "enabled": false,
-    "schema_name": "schema_name",
-    "state": {
-    "payload_table": {
-    "name": "name",
-    "status": "status",
-    "status_message": "status_message"}},
-    "table_name_prefix": "table_name_prefix"},
-    "config_version": 42,
-    "served_entities": [
-    {
-    "creation_timestamp": 42,
-    "creator": "creator",
-    "entity_name": "entity_name",
-    "entity_version": "entity_version",
-    "environment_vars": {
-},
-    "external_model": {
-    "ai21labs_config": {
-    "ai21labs_api_key": "ai21labs_api_key",
-    "ai21labs_api_key_plaintext": "ai21labs_api_key_plaintext"},
-    "amazon_bedrock_config": {
-    "aws_access_key_id": "aws_access_key_id",
-    "aws_access_key_id_plaintext": "aws_access_key_id_plaintext",
-    "aws_region": "aws_region",
-    "aws_secret_access_key": "aws_secret_access_key",
-    "aws_secret_access_key_plaintext": "aws_secret_access_key_plaintext",
-    "bedrock_provider": "ENUM",
-    "instance_profile_arn": "instance_profile_arn"},
-    "anthropic_config": {
-    "anthropic_api_key": "anthropic_api_key",
-    "anthropic_api_key_plaintext": "anthropic_api_key_plaintext"},
-    "cohere_config": {
-    "cohere_api_base": "cohere_api_base",
-    "cohere_api_key": "cohere_api_key",
-    "cohere_api_key_plaintext": "cohere_api_key_plaintext"},
-    "databricks_model_serving_config": {
-    "databricks_api_token": "databricks_api_token",
-    "databricks_api_token_plaintext": "databricks_api_token_plaintext",
-    "databricks_workspace_url": "databricks_workspace_url"},
-    "google_cloud_vertex_ai_config": {
-    "private_key": "private_key",
-    "private_key_plaintext": "private_key_plaintext",
-    "project_id": "project_id",
-    "region": "region"},
-    "name": "name",
-    "openai_config": {
-    "microsoft_entra_client_id": "microsoft_entra_client_id",
-    "microsoft_entra_client_secret": "microsoft_entra_client_secret",
-    "microsoft_entra_client_secret_plaintext": "microsoft_entra_client_secret_plaintext",
-    "microsoft_entra_tenant_id": "microsoft_entra_tenant_id",
-    "openai_api_base": "openai_api_base",
-    "openai_api_key": "openai_api_key",
-    "openai_api_key_plaintext": "openai_api_key_plaintext",
-    "openai_api_type": "openai_api_type",
-    "openai_api_version": "openai_api_version",
-    "openai_deployment_name": "openai_deployment_name",
-    "openai_organization": "openai_organization"},
-    "palm_config": {
-    "palm_api_key": "palm_api_key",
-    "palm_api_key_plaintext": "palm_api_key_plaintext"},
-    "provider": "ENUM",
-    "task": "task"},
-    "foundation_model": {
-    "description": "description",
-    "display_name": "display_name",
-    "docs": "docs",
-    "name": "name"},
-    "instance_profile_arn": "instance_profile_arn",
-    "max_provisioned_throughput": 42,
-    "min_provisioned_throughput": 42,
-    "name": "name",
-    "scale_to_zero_enabled": false,
-    "state": {
-    "deployment": "ENUM",
-    "deployment_state_message": "deployment_state_message"},
-    "workload_size": "workload_size",
-    "workload_type": "ENUM"}],
-    "served_models": [
-    {
-    "creation_timestamp": 42,
-    "creator": "creator",
-    "environment_vars": {
-},
-    "instance_profile_arn": "instance_profile_arn",
-    "model_name": "model_name",
-    "model_version": "model_version",
-    "name": "name",
-    "scale_to_zero_enabled": false,
-    "state": {
-    "deployment": "ENUM",
-    "deployment_state_message": "deployment_state_message"},
-    "workload_size": "workload_size",
-    "workload_type": "ENUM"}],
-    "start_time": 42,
-    "traffic_config": {
-    "routes": [
-    {
-    "served_model_name": "served_model_name",
-    "traffic_percentage": 42}]}},
-    
+        "auto_capture_config": {
+            "catalog_name": "catalog_name",
+            "enabled": false,
+            "schema_name": "schema_name",
+            "state": {
+                "payload_table": {
+                    "name": "name",
+                    "status": "status",
+                    "status_message": "status_message"
+                }
+            },
+            "table_name_prefix": "table_name_prefix"
+        },
+        "config_version": 42,
+        "served_entities": [
+            {
+                "creation_timestamp": 42,
+                "creator": "creator",
+                "entity_name": "entity_name",
+                "entity_version": "entity_version",
+                "environment_vars": {
+                },
+                "external_model": {
+                    "ai21labs_config": {
+                        "ai21labs_api_key": "ai21labs_api_key",
+                        "ai21labs_api_key_plaintext": "ai21labs_api_key_plaintext"
+                    },
+                    "amazon_bedrock_config": {
+                        "aws_access_key_id": "aws_access_key_id",
+                        "aws_access_key_id_plaintext": "aws_access_key_id_plaintext",
+                        "aws_region": "aws_region",
+                        "aws_secret_access_key": "aws_secret_access_key",
+                        "aws_secret_access_key_plaintext": "aws_secret_access_key_plaintext",
+                        "bedrock_provider": "ENUM",
+                        "instance_profile_arn": "instance_profile_arn"
+                    },
+                    "anthropic_config": {
+                        "anthropic_api_key": "anthropic_api_key",
+                        "anthropic_api_key_plaintext": "anthropic_api_key_plaintext"
+                    },
+                    "cohere_config": {
+                        "cohere_api_base": "cohere_api_base",
+                        "cohere_api_key": "cohere_api_key",
+                        "cohere_api_key_plaintext": "cohere_api_key_plaintext"
+                    },
+                    "databricks_model_serving_config": {
+                        "databricks_api_token": "databricks_api_token",
+                        "databricks_api_token_plaintext": "databricks_api_token_plaintext",
+                        "databricks_workspace_url": "databricks_workspace_url"
+                    },
+                    "google_cloud_vertex_ai_config": {
+                        "private_key": "private_key",
+                        "private_key_plaintext": "private_key_plaintext",
+                        "project_id": "project_id",
+                        "region": "region"
+                    },
+                    "name": "name",
+                    "openai_config": {
+                        "microsoft_entra_client_id": "microsoft_entra_client_id",
+                        "microsoft_entra_client_secret": "microsoft_entra_client_secret",
+                        "microsoft_entra_client_secret_plaintext": "microsoft_entra_client_secret_plaintext",
+                        "microsoft_entra_tenant_id": "microsoft_entra_tenant_id",
+                        "openai_api_base": "openai_api_base",
+                        "openai_api_key": "openai_api_key",
+                        "openai_api_key_plaintext": "openai_api_key_plaintext",
+                        "openai_api_type": "openai_api_type",
+                        "openai_api_version": "openai_api_version",
+                        "openai_deployment_name": "openai_deployment_name",
+                        "openai_organization": "openai_organization"
+                    },
+                    "palm_config": {
+                        "palm_api_key": "palm_api_key",
+                        "palm_api_key_plaintext": "palm_api_key_plaintext"
+                    },
+                    "provider": "ENUM",
+                    "task": "task"
+                },
+                "foundation_model": {
+                    "description": "description",
+                    "display_name": "display_name",
+                    "docs": "docs",
+                    "name": "name"
+                },
+                "instance_profile_arn": "instance_profile_arn",
+                "max_provisioned_throughput": 42,
+                "min_provisioned_throughput": 42,
+                "name": "name",
+                "scale_to_zero_enabled": false,
+                "state": {
+                    "deployment": "ENUM",
+                    "deployment_state_message": "deployment_state_message"
+                },
+                "workload_size": "workload_size",
+                "workload_type": "ENUM"
+            }
+        ],
+        "served_models": [
+            {
+                "creation_timestamp": 42,
+                "creator": "creator",
+                "environment_vars": {
+                },
+                "instance_profile_arn": "instance_profile_arn",
+                "model_name": "model_name",
+                "model_version": "model_version",
+                "name": "name",
+                "scale_to_zero_enabled": false,
+                "state": {
+                    "deployment": "ENUM",
+                    "deployment_state_message": "deployment_state_message"
+                },
+                "workload_size": "workload_size",
+                "workload_type": "ENUM"
+            }
+        ],
+        "start_time": 42,
+        "traffic_config": {
+            "routes": [
+                {
+                    "served_model_name": "served_model_name",
+                    "traffic_percentage": 42
+                }
+            ]
+        }
+    },
     "permission_level": "ENUM",
-    
     "route_optimized": false,
-    
     "state": {
-    "config_update": "ENUM",
-    "ready": "ENUM"},
-    
+        "config_update": "ENUM",
+        "ready": "ENUM"
+    },
     "tags": [
-    {
-    "key": "key",
-    "value": "value"}],
-    
+        {
+            "key": "key",
+            "value": "value"
+        }
+    ],
     "task": "task"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/serving-endpoints"
 Response.Body = '''
 {
     "endpoints": [
-    {
-    "ai_gateway": {
-    "guardrails": {
-    "input": {
-    "invalid_keywords": [
-    "_list"],
-    "pii": {
-    "behavior": "ENUM"},
-    "safety": false,
-    "valid_topics": [
-    "_list"]},
-    "output": {
-    "invalid_keywords": [
-    "_list"],
-    "pii": {
-    "behavior": "ENUM"},
-    "safety": false,
-    "valid_topics": [
-    "_list"]}},
-    "inference_table_config": {
-    "catalog_name": "catalog_name",
-    "enabled": false,
-    "schema_name": "schema_name",
-    "table_name_prefix": "table_name_prefix"},
-    "rate_limits": [
-    {
-    "calls": 42,
-    "key": "ENUM",
-    "renewal_period": "ENUM"}],
-    "usage_tracking_config": {
-    "enabled": false}},
-    "config": {
-    "served_entities": [
-    {
-    "entity_name": "entity_name",
-    "entity_version": "entity_version",
-    "external_model": {
-    "ai21labs_config": {
-    "ai21labs_api_key": "ai21labs_api_key",
-    "ai21labs_api_key_plaintext": "ai21labs_api_key_plaintext"},
-    "amazon_bedrock_config": {
-    "aws_access_key_id": "aws_access_key_id",
-    "aws_access_key_id_plaintext": "aws_access_key_id_plaintext",
-    "aws_region": "aws_region",
-    "aws_secret_access_key": "aws_secret_access_key",
-    "aws_secret_access_key_plaintext": "aws_secret_access_key_plaintext",
-    "bedrock_provider": "ENUM",
-    "instance_profile_arn": "instance_profile_arn"},
-    "anthropic_config": {
-    "anthropic_api_key": "anthropic_api_key",
-    "anthropic_api_key_plaintext": "anthropic_api_key_plaintext"},
-    "cohere_config": {
-    "cohere_api_base": "cohere_api_base",
-    "cohere_api_key": "cohere_api_key",
-    "cohere_api_key_plaintext": "cohere_api_key_plaintext"},
-    "databricks_model_serving_config": {
-    "databricks_api_token": "databricks_api_token",
-    "databricks_api_token_plaintext": "databricks_api_token_plaintext",
-    "databricks_workspace_url": "databricks_workspace_url"},
-    "google_cloud_vertex_ai_config": {
-    "private_key": "private_key",
-    "private_key_plaintext": "private_key_plaintext",
-    "project_id": "project_id",
-    "region": "region"},
-    "name": "name",
-    "openai_config": {
-    "microsoft_entra_client_id": "microsoft_entra_client_id",
-    "microsoft_entra_client_secret": "microsoft_entra_client_secret",
-    "microsoft_entra_client_secret_plaintext": "microsoft_entra_client_secret_plaintext",
-    "microsoft_entra_tenant_id": "microsoft_entra_tenant_id",
-    "openai_api_base": "openai_api_base",
-    "openai_api_key": "openai_api_key",
-    "openai_api_key_plaintext": "openai_api_key_plaintext",
-    "openai_api_type": "openai_api_type",
-    "openai_api_version": "openai_api_version",
-    "openai_deployment_name": "openai_deployment_name",
-    "openai_organization": "openai_organization"},
-    "palm_config": {
-    "palm_api_key": "palm_api_key",
-    "palm_api_key_plaintext": "palm_api_key_plaintext"},
-    "provider": "ENUM",
-    "task": "task"},
-    "foundation_model": {
-    "description": "description",
-    "display_name": "display_name",
-    "docs": "docs",
-    "name": "name"},
-    "name": "name"}],
-    "served_models": [
-    {
-    "model_name": "model_name",
-    "model_version": "model_version",
-    "name": "name"}]},
-    "creation_timestamp": 42,
-    "creator": "creator",
-    "id": "id",
-    "last_updated_timestamp": 42,
-    "name": "name",
-    "state": {
-    "config_update": "ENUM",
-    "ready": "ENUM"},
-    "tags": [
-    {
-    "key": "key",
-    "value": "value"}],
-    "task": "task"}]
-    
+        {
+            "ai_gateway": {
+                "guardrails": {
+                    "input": {
+                        "invalid_keywords": [
+                            "_list"
+                        ],
+                        "pii": {
+                            "behavior": "ENUM"
+                        },
+                        "safety": false,
+                        "valid_topics": [
+                            "_list"
+                        ]
+                    },
+                    "output": {
+                        "invalid_keywords": [
+                            "_list"
+                        ],
+                        "pii": {
+                            "behavior": "ENUM"
+                        },
+                        "safety": false,
+                        "valid_topics": [
+                            "_list"
+                        ]
+                    }
+                },
+                "inference_table_config": {
+                    "catalog_name": "catalog_name",
+                    "enabled": false,
+                    "schema_name": "schema_name",
+                    "table_name_prefix": "table_name_prefix"
+                },
+                "rate_limits": [
+                    {
+                        "calls": 42,
+                        "key": "ENUM",
+                        "renewal_period": "ENUM"
+                    }
+                ],
+                "usage_tracking_config": {
+                    "enabled": false
+                }
+            },
+            "config": {
+                "served_entities": [
+                    {
+                        "entity_name": "entity_name",
+                        "entity_version": "entity_version",
+                        "external_model": {
+                            "ai21labs_config": {
+                                "ai21labs_api_key": "ai21labs_api_key",
+                                "ai21labs_api_key_plaintext": "ai21labs_api_key_plaintext"
+                            },
+                            "amazon_bedrock_config": {
+                                "aws_access_key_id": "aws_access_key_id",
+                                "aws_access_key_id_plaintext": "aws_access_key_id_plaintext",
+                                "aws_region": "aws_region",
+                                "aws_secret_access_key": "aws_secret_access_key",
+                                "aws_secret_access_key_plaintext": "aws_secret_access_key_plaintext",
+                                "bedrock_provider": "ENUM",
+                                "instance_profile_arn": "instance_profile_arn"
+                            },
+                            "anthropic_config": {
+                                "anthropic_api_key": "anthropic_api_key",
+                                "anthropic_api_key_plaintext": "anthropic_api_key_plaintext"
+                            },
+                            "cohere_config": {
+                                "cohere_api_base": "cohere_api_base",
+                                "cohere_api_key": "cohere_api_key",
+                                "cohere_api_key_plaintext": "cohere_api_key_plaintext"
+                            },
+                            "databricks_model_serving_config": {
+                                "databricks_api_token": "databricks_api_token",
+                                "databricks_api_token_plaintext": "databricks_api_token_plaintext",
+                                "databricks_workspace_url": "databricks_workspace_url"
+                            },
+                            "google_cloud_vertex_ai_config": {
+                                "private_key": "private_key",
+                                "private_key_plaintext": "private_key_plaintext",
+                                "project_id": "project_id",
+                                "region": "region"
+                            },
+                            "name": "name",
+                            "openai_config": {
+                                "microsoft_entra_client_id": "microsoft_entra_client_id",
+                                "microsoft_entra_client_secret": "microsoft_entra_client_secret",
+                                "microsoft_entra_client_secret_plaintext": "microsoft_entra_client_secret_plaintext",
+                                "microsoft_entra_tenant_id": "microsoft_entra_tenant_id",
+                                "openai_api_base": "openai_api_base",
+                                "openai_api_key": "openai_api_key",
+                                "openai_api_key_plaintext": "openai_api_key_plaintext",
+                                "openai_api_type": "openai_api_type",
+                                "openai_api_version": "openai_api_version",
+                                "openai_deployment_name": "openai_deployment_name",
+                                "openai_organization": "openai_organization"
+                            },
+                            "palm_config": {
+                                "palm_api_key": "palm_api_key",
+                                "palm_api_key_plaintext": "palm_api_key_plaintext"
+                            },
+                            "provider": "ENUM",
+                            "task": "task"
+                        },
+                        "foundation_model": {
+                            "description": "description",
+                            "display_name": "display_name",
+                            "docs": "docs",
+                            "name": "name"
+                        },
+                        "name": "name"
+                    }
+                ],
+                "served_models": [
+                    {
+                        "model_name": "model_name",
+                        "model_version": "model_version",
+                        "name": "name"
+                    }
+                ]
+            },
+            "creation_timestamp": 42,
+            "creator": "creator",
+            "id": "id",
+            "last_updated_timestamp": 42,
+            "name": "name",
+            "state": {
+                "config_update": "ENUM",
+                "ready": "ENUM"
+            },
+            "tags": [
+                {
+                    "key": "key",
+                    "value": "value"
+                }
+            ],
+            "task": "task"
+        }
+    ]
 }
 '''

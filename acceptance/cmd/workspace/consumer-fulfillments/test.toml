@@ -10,33 +10,43 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.1/marketplace-consumer/listings/{listing_id}/content"
 Response.Body = '''
 {
     "next_page_token": "",
     "shared_data_objects": [
-    {
-    "data_object_type": "data_object_type",
-    "name": "name"}]
-    
+        {
+            "data_object_type": "data_object_type",
+            "name": "name"
+        }
+    ]
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.1/marketplace-consumer/listings/{listing_id}/fulfillments"
 Response.Body = '''
 {
     "fulfillments": [
-    {
-    "fulfillment_type": "ENUM",
-    "listing_id": "listing_id",
-    "recipient_type": "ENUM",
-    "repo_info": {
-    "git_repo_url": "git_repo_url"},
-    "share_info": {
-    "name": "name",
-    "type": "ENUM"}}],
-    
+        {
+            "fulfillment_type": "ENUM",
+            "listing_id": "listing_id",
+            "recipient_type": "ENUM",
+            "repo_info": {
+                "git_repo_url": "git_repo_url"
+            },
+            "share_info": {
+                "name": "name",
+                "type": "ENUM"
+            }
+        }
+    ],
     "next_page_token": ""
 }
 '''

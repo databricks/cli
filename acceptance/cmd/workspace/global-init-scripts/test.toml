@@ -10,44 +10,42 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/global-init-scripts/{script_id}"
 Response.Body = '''
 {
     "created_at": 42,
-    
     "created_by": "created_by",
-    
     "enabled": false,
-    
     "name": "name",
-    
     "position": 42,
-    
     "script": "script",
-    
     "script_id": "script_id",
-    
     "updated_at": 42,
-    
     "updated_by": "updated_by"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/global-init-scripts"
 Response.Body = '''
 {
     "scripts": [
-    {
-    "created_at": 42,
-    "created_by": "created_by",
-    "enabled": false,
-    "name": "name",
-    "position": 42,
-    "script_id": "script_id",
-    "updated_at": 42,
-    "updated_by": "updated_by"}]
-    
+        {
+            "created_at": 42,
+            "created_by": "created_by",
+            "enabled": false,
+            "name": "name",
+            "position": 42,
+            "script_id": "script_id",
+            "updated_at": 42,
+            "updated_by": "updated_by"
+        }
+    ]
 }
 '''

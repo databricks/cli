@@ -10,86 +10,112 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/clean-rooms/{clean_room_name}/assets/{asset_type}/{asset_full_name}"
 Response.Body = '''
 {
     "added_at": 42,
-    
     "asset_type": "ENUM",
-    
     "foreign_table": {
-    "columns": [
-    {}]},
-    
+        "columns": [
+            {
+            }
+        ]
+    },
     "foreign_table_local_details": {
-    "local_name": "local_name"},
-    
+        "local_name": "local_name"
+    },
     "name": "name",
-    
     "notebook": {
-    "etag": "etag",
-    "notebook_content": "notebook_content"},
-    
+        "etag": "etag",
+        "notebook_content": "notebook_content"
+    },
     "owner_collaborator_alias": "owner_collaborator_alias",
-    
     "status": "ENUM",
-    
     "table": {
-    "columns": [
-    {}]},
-    
+        "columns": [
+            {
+            }
+        ]
+    },
     "table_local_details": {
-    "local_name": "local_name",
-    "partitions": [
-    {}]},
-    
+        "local_name": "local_name",
+        "partitions": [
+            {
+            }
+        ]
+    },
     "view": {
-    "columns": [
-    {}]},
-    
+        "columns": [
+            {
+            }
+        ]
+    },
     "view_local_details": {
-    "local_name": "local_name"},
-    
+        "local_name": "local_name"
+    },
     "volume_local_details": {
-    "local_name": "local_name"}
-    
+        "local_name": "local_name"
+    }
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/clean-rooms/{clean_room_name}/assets"
 Response.Body = '''
 {
     "assets": [
-    {
-    "added_at": 42,
-    "asset_type": "ENUM",
-    "foreign_table": {
-    "columns": [
-    {}]},
-    "foreign_table_local_details": {
-    "local_name": "local_name"},
-    "name": "name",
-    "notebook": {
-    "etag": "etag",
-    "notebook_content": "notebook_content"},
-    "owner_collaborator_alias": "owner_collaborator_alias",
-    "status": "ENUM",
-    "table": {
-    "columns": [
-    {}]},
-    "table_local_details": {
-    "local_name": "local_name",
-    "partitions": [
-    {}]},
-    "view": {
-    "columns": [
-    {}]},
-    "view_local_details": {
-    "local_name": "local_name"},
-    "volume_local_details": {
-    "local_name": "local_name"}}],
-    
+        {
+            "added_at": 42,
+            "asset_type": "ENUM",
+            "foreign_table": {
+                "columns": [
+                    {
+                    }
+                ]
+            },
+            "foreign_table_local_details": {
+                "local_name": "local_name"
+            },
+            "name": "name",
+            "notebook": {
+                "etag": "etag",
+                "notebook_content": "notebook_content"
+            },
+            "owner_collaborator_alias": "owner_collaborator_alias",
+            "status": "ENUM",
+            "table": {
+                "columns": [
+                    {
+                    }
+                ]
+            },
+            "table_local_details": {
+                "local_name": "local_name",
+                "partitions": [
+                    {
+                    }
+                ]
+            },
+            "view": {
+                "columns": [
+                    {
+                    }
+                ]
+            },
+            "view_local_details": {
+                "local_name": "local_name"
+            },
+            "volume_local_details": {
+                "local_name": "local_name"
+            }
+        }
+    ],
     "next_page_token": ""
 }
 '''

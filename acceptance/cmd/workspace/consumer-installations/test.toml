@@ -10,38 +10,47 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.1/marketplace-consumer/installations"
 Response.Body = '''
 {
     "installations": [
-    {
-    "catalog_name": "catalog_name",
-    "error_message": "error_message",
-    "id": "id",
-    "installed_on": 42,
-    "listing_id": "listing_id",
-    "listing_name": "listing_name",
-    "recipient_type": "ENUM",
-    "repo_name": "repo_name",
-    "repo_path": "repo_path",
-    "share_name": "share_name",
-    "status": "ENUM",
-    "token_detail": {
-    "bearerToken": "bearerToken",
-    "endpoint": "endpoint",
-    "expirationTime": "expirationTime",
-    "shareCredentialsVersion": 42},
-    "tokens": [
-    {
-    "activation_url": "activation_url",
-    "created_at": 42,
-    "created_by": "created_by",
-    "expiration_time": 42,
-    "id": "id",
-    "updated_at": 42,
-    "updated_by": "updated_by"}]}],
-    
+        {
+            "catalog_name": "catalog_name",
+            "error_message": "error_message",
+            "id": "id",
+            "installed_on": 42,
+            "listing_id": "listing_id",
+            "listing_name": "listing_name",
+            "recipient_type": "ENUM",
+            "repo_name": "repo_name",
+            "repo_path": "repo_path",
+            "share_name": "share_name",
+            "status": "ENUM",
+            "token_detail": {
+                "bearerToken": "bearerToken",
+                "endpoint": "endpoint",
+                "expirationTime": "expirationTime",
+                "shareCredentialsVersion": 42
+            },
+            "tokens": [
+                {
+                    "activation_url": "activation_url",
+                    "created_at": 42,
+                    "created_by": "created_by",
+                    "expiration_time": 42,
+                    "id": "id",
+                    "updated_at": 42,
+                    "updated_by": "updated_by"
+                }
+            ]
+        }
+    ],
     "next_page_token": ""
 }
 '''

@@ -10,15 +10,21 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/instance-profiles/list"
 Response.Body = '''
 {
     "instance_profiles": [
-    {
-    "iam_role_arn": "iam_role_arn",
-    "instance_profile_arn": "instance_profile_arn",
-    "is_meta_instance_profile": false}]
-    
+        {
+            "iam_role_arn": "iam_role_arn",
+            "instance_profile_arn": "instance_profile_arn",
+            "is_meta_instance_profile": false
+        }
+    ]
 }
 '''

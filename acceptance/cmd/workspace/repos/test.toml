@@ -10,44 +10,48 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/repos/{repo_id}"
 Response.Body = '''
 {
     "branch": "branch",
-    
     "head_commit_id": "head_commit_id",
-    
     "id": 42,
-    
     "path": "path",
-    
     "provider": "provider",
-    
     "sparse_checkout": {
-    "patterns": [
-    "_list"]},
-    
+        "patterns": [
+            "_list"
+        ]
+    },
     "url": "url"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/repos"
 Response.Body = '''
 {
     "next_page_token": "",
     "repos": [
-    {
-    "branch": "branch",
-    "head_commit_id": "head_commit_id",
-    "id": 42,
-    "path": "path",
-    "provider": "provider",
-    "sparse_checkout": {
-    "patterns": [
-    "_list"]},
-    "url": "url"}]
-    
+        {
+            "branch": "branch",
+            "head_commit_id": "head_commit_id",
+            "id": 42,
+            "path": "path",
+            "provider": "provider",
+            "sparse_checkout": {
+                "patterns": [
+                    "_list"
+                ]
+            },
+            "url": "url"
+        }
+    ]
 }
 '''

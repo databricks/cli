@@ -10,20 +10,26 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/workspace/list"
 Response.Body = '''
 {
     "objects": [
-    {
-    "created_at": 42,
-    "language": "ENUM",
-    "modified_at": 42,
-    "object_id": 42,
-    "object_type": "ENUM",
-    "path": "path",
-    "resource_id": "resource_id",
-    "size": 42}]
-    
+        {
+            "created_at": 42,
+            "language": "ENUM",
+            "modified_at": 42,
+            "object_id": 42,
+            "object_type": "ENUM",
+            "path": "path",
+            "resource_id": "resource_id",
+            "size": 42
+        }
+    ]
 }
 '''

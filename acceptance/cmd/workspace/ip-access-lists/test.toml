@@ -10,42 +10,51 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/ip-access-lists/{ip_access_list_id}"
 Response.Body = '''
 {
     "ip_access_list": {
-    "address_count": 42,
-    "created_at": 42,
-    "created_by": 42,
-    "enabled": false,
-    "ip_addresses": [
-    "_list"],
-    "label": "label",
-    "list_id": "list_id",
-    "list_type": "ENUM",
-    "updated_at": 42,
-    "updated_by": 42}
-    
+        "address_count": 42,
+        "created_at": 42,
+        "created_by": 42,
+        "enabled": false,
+        "ip_addresses": [
+            "_list"
+        ],
+        "label": "label",
+        "list_id": "list_id",
+        "list_type": "ENUM",
+        "updated_at": 42,
+        "updated_by": 42
+    }
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/ip-access-lists"
 Response.Body = '''
 {
     "ip_access_lists": [
-    {
-    "address_count": 42,
-    "created_at": 42,
-    "created_by": 42,
-    "enabled": false,
-    "ip_addresses": [
-    "_list"],
-    "label": "label",
-    "list_id": "list_id",
-    "list_type": "ENUM",
-    "updated_at": 42,
-    "updated_by": 42}]
-    
+        {
+            "address_count": 42,
+            "created_at": 42,
+            "created_by": 42,
+            "enabled": false,
+            "ip_addresses": [
+                "_list"
+            ],
+            "label": "label",
+            "list_id": "list_id",
+            "list_type": "ENUM",
+            "updated_at": 42,
+            "updated_by": 42
+        }
+    ]
 }
 '''

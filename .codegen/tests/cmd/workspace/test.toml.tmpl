@@ -22,6 +22,10 @@ New="Date: (redacted)"
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
 
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 {{- $seen := list "" }}
 {{- $cmdGrp := .KebabName }}
 {{- if or .HasParent (or .IsAccounts (in $excludes .KebabName))  }}
@@ -32,6 +36,7 @@ New="Traceparent: (redacted)"
 {{- range .Methods}}
 {{- if in $supportedMethods .KebabName}}
 {{- $generated = true }}
+
 [[Server]]
 Pattern = "{{.Verb}} {{replaceAll "2.2" "2.1" .Path}}"
 Response.Body = '''
@@ -50,8 +55,8 @@ Response.Body = '''
     {{- $fields := .Response.Fields}}
     {{- range $i, $f := $fields}}
     {{- if (not (eq .SnakeName "next_page_token")) }}
-    "{{.SnakeName}}": {{ template "value" dict "Key" .SnakeName "Entity" .Entity "Seen" $seen}}{{if notLast $i $fields}},{{end}}
-    {{else}}
+    "{{.SnakeName}}": {{ template "value" dict "Key" .SnakeName "Entity" .Entity "Seen" $seen "Indent" 0}}{{if notLast $i $fields}},{{end}}
+    {{- else}}
     "{{.SnakeName}}": ""{{if notLast $i $fields}},{{end}}
     {{- end}}
     {{- end}}
@@ -60,6 +65,7 @@ Response.Body = '''
 
 {{- define "value" -}}
 {{- $seen := .Seen }}
+{{- $indent := add .Indent 4 }}
 {{- $key := .Key }}
 {{- if .Entity.IsString -}}
 "{{ $key }}"
@@ -73,9 +79,9 @@ false
 {
     {{- $fields := .Entity.Fields }}
     {{- range $i, $f := $fields}}
-    "{{.Name}}": {{template "value" dict "Key" .Name "Entity" .Entity.MapValue "Seen" $seen  }}{{if notLast $i $fields}},{{end}}
+    {{ indent $indent}}"{{.Name}}": {{template "value" dict "Key" .Name "Entity" .Entity.MapValue "Seen" $seen "Indent" $indent  }}{{if notLast $i $fields}},{{end}}
     {{- end }}
-}
+{{ indent $indent}}}
 {{- else if .Entity.IsObject -}}
 {
     {{- $objName := .Entity.KebabName }}
@@ -85,16 +91,16 @@ false
     {{- $seen := append $seen .KebabName }}
     {{- $fields := .Fields }}
     {{- range $i, $f := $fields}}
-    "{{.Name}}": {{ template "value" dict "Key" .Name "Entity" .Entity "Seen" $seen  }}{{if notLast $i $fields}},{{end}}
+    {{ indent $indent}}"{{.Name}}": {{ template "value" dict "Key" .Name "Entity" .Entity "Seen" $seen "Indent" $indent }}{{if notLast $i $fields}},{{end}}
     {{- end }}
     {{- end }}
     {{- end }}
-    {{- end -}}
-}
+    {{- end }}
+{{ indent $indent}}}
 {{- else if .Entity.IsArray -}}
 [
-    {{ template "value" dict "Key" .Entity.SnakeName "Entity" .Entity.ArrayValue "Seen" $seen  -}}
-]
+    {{ indent $indent}}{{ template "value" dict "Key" .Entity.SnakeName "Entity" .Entity.ArrayValue "Seen" $seen "Indent" $indent }}
+{{ indent $indent}}]
 {{- else -}}
 null
 {{- end }}

@@ -10,49 +10,46 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/lakeview/dashboards/{dashboard_id}"
 Response.Body = '''
 {
     "create_time": "create_time",
-    
     "dashboard_id": "dashboard_id",
-    
     "display_name": "display_name",
-    
     "etag": "etag",
-    
     "lifecycle_state": "ENUM",
-    
     "parent_path": "parent_path",
-    
     "path": "path",
-    
     "serialized_dashboard": "serialized_dashboard",
-    
     "update_time": "update_time",
-    
     "warehouse_id": "warehouse_id"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/lakeview/dashboards"
 Response.Body = '''
 {
     "dashboards": [
-    {
-    "create_time": "create_time",
-    "dashboard_id": "dashboard_id",
-    "display_name": "display_name",
-    "etag": "etag",
-    "lifecycle_state": "ENUM",
-    "parent_path": "parent_path",
-    "path": "path",
-    "serialized_dashboard": "serialized_dashboard",
-    "update_time": "update_time",
-    "warehouse_id": "warehouse_id"}],
-    
+        {
+            "create_time": "create_time",
+            "dashboard_id": "dashboard_id",
+            "display_name": "display_name",
+            "etag": "etag",
+            "lifecycle_state": "ENUM",
+            "parent_path": "parent_path",
+            "path": "path",
+            "serialized_dashboard": "serialized_dashboard",
+            "update_time": "update_time",
+            "warehouse_id": "warehouse_id"
+        }
+    ],
     "next_page_token": ""
 }
 '''

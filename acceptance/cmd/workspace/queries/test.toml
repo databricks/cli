@@ -10,139 +10,157 @@ New="Date: (redacted)"
 [[Repls]]
 Old="Traceparent: .*"
 New="Traceparent: (redacted)"
+
+[[Repls]]
+Old="User-Agent: .*"
+New="User-Agent: (redacted)"
+
 [[Server]]
 Pattern = "GET /api/2.0/sql/queries/{id}"
 Response.Body = '''
 {
     "apply_auto_limit": false,
-    
     "catalog": "catalog",
-    
     "create_time": "create_time",
-    
     "description": "description",
-    
     "display_name": "display_name",
-    
     "id": "id",
-    
     "last_modifier_user_name": "last_modifier_user_name",
-    
     "lifecycle_state": "ENUM",
-    
     "owner_user_name": "owner_user_name",
-    
     "parameters": [
-    {
-    "date_range_value": {
-    "date_range_value": {
-    "end": "end",
-    "start": "start"},
-    "dynamic_date_range_value": "ENUM",
-    "precision": "ENUM",
-    "start_day_of_week": 42},
-    "date_value": {
-    "date_value": "date_value",
-    "dynamic_date_value": "ENUM",
-    "precision": "ENUM"},
-    "enum_value": {
-    "enum_options": "enum_options",
-    "multi_values_options": {
-    "prefix": "prefix",
-    "separator": "separator",
-    "suffix": "suffix"},
-    "values": [
-    "_list"]},
-    "name": "name",
-    "numeric_value": {
-    "value": 42},
-    "query_backed_value": {
-    "multi_values_options": {
-    "prefix": "prefix",
-    "separator": "separator",
-    "suffix": "suffix"},
-    "query_id": "query_id",
-    "values": [
-    "_list"]},
-    "text_value": {
-    "value": "value"},
-    "title": "title"}],
-    
+        {
+            "date_range_value": {
+                "date_range_value": {
+                    "end": "end",
+                    "start": "start"
+                },
+                "dynamic_date_range_value": "ENUM",
+                "precision": "ENUM",
+                "start_day_of_week": 42
+            },
+            "date_value": {
+                "date_value": "date_value",
+                "dynamic_date_value": "ENUM",
+                "precision": "ENUM"
+            },
+            "enum_value": {
+                "enum_options": "enum_options",
+                "multi_values_options": {
+                    "prefix": "prefix",
+                    "separator": "separator",
+                    "suffix": "suffix"
+                },
+                "values": [
+                    "_list"
+                ]
+            },
+            "name": "name",
+            "numeric_value": {
+                "value": 42
+            },
+            "query_backed_value": {
+                "multi_values_options": {
+                    "prefix": "prefix",
+                    "separator": "separator",
+                    "suffix": "suffix"
+                },
+                "query_id": "query_id",
+                "values": [
+                    "_list"
+                ]
+            },
+            "text_value": {
+                "value": "value"
+            },
+            "title": "title"
+        }
+    ],
     "parent_path": "parent_path",
-    
     "query_text": "query_text",
-    
     "run_as_mode": "ENUM",
-    
     "schema": "schema",
-    
     "tags": [
-    "_list"],
-    
+        "_list"
+    ],
     "update_time": "update_time",
-    
     "warehouse_id": "warehouse_id"
-    
 }
 '''
+
 [[Server]]
 Pattern = "GET /api/2.0/sql/queries"
 Response.Body = '''
 {
     "next_page_token": "",
     "results": [
-    {
-    "apply_auto_limit": false,
-    "catalog": "catalog",
-    "create_time": "create_time",
-    "description": "description",
-    "display_name": "display_name",
-    "id": "id",
-    "last_modifier_user_name": "last_modifier_user_name",
-    "lifecycle_state": "ENUM",
-    "owner_user_name": "owner_user_name",
-    "parameters": [
-    {
-    "date_range_value": {
-    "date_range_value": {
-    "end": "end",
-    "start": "start"},
-    "dynamic_date_range_value": "ENUM",
-    "precision": "ENUM",
-    "start_day_of_week": 42},
-    "date_value": {
-    "date_value": "date_value",
-    "dynamic_date_value": "ENUM",
-    "precision": "ENUM"},
-    "enum_value": {
-    "enum_options": "enum_options",
-    "multi_values_options": {
-    "prefix": "prefix",
-    "separator": "separator",
-    "suffix": "suffix"},
-    "values": [
-    "_list"]},
-    "name": "name",
-    "numeric_value": {
-    "value": 42},
-    "query_backed_value": {
-    "multi_values_options": {
-    "prefix": "prefix",
-    "separator": "separator",
-    "suffix": "suffix"},
-    "query_id": "query_id",
-    "values": [
-    "_list"]},
-    "text_value": {
-    "value": "value"},
-    "title": "title"}],
-    "query_text": "query_text",
-    "run_as_mode": "ENUM",
-    "schema": "schema",
-    "tags": [
-    "_list"],
-    "update_time": "update_time",
-    "warehouse_id": "warehouse_id"}]
-    
+        {
+            "apply_auto_limit": false,
+            "catalog": "catalog",
+            "create_time": "create_time",
+            "description": "description",
+            "display_name": "display_name",
+            "id": "id",
+            "last_modifier_user_name": "last_modifier_user_name",
+            "lifecycle_state": "ENUM",
+            "owner_user_name": "owner_user_name",
+            "parameters": [
+                {
+                    "date_range_value": {
+                        "date_range_value": {
+                            "end": "end",
+                            "start": "start"
+                        },
+                        "dynamic_date_range_value": "ENUM",
+                        "precision": "ENUM",
+                        "start_day_of_week": 42
+                    },
+                    "date_value": {
+                        "date_value": "date_value",
+                        "dynamic_date_value": "ENUM",
+                        "precision": "ENUM"
+                    },
+                    "enum_value": {
+                        "enum_options": "enum_options",
+                        "multi_values_options": {
+                            "prefix": "prefix",
+                            "separator": "separator",
+                            "suffix": "suffix"
+                        },
+                        "values": [
+                            "_list"
+                        ]
+                    },
+                    "name": "name",
+                    "numeric_value": {
+                        "value": 42
+                    },
+                    "query_backed_value": {
+                        "multi_values_options": {
+                            "prefix": "prefix",
+                            "separator": "separator",
+                            "suffix": "suffix"
+                        },
+                        "query_id": "query_id",
+                        "values": [
+                            "_list"
+                        ]
+                    },
+                    "text_value": {
+                        "value": "value"
+                    },
+                    "title": "title"
+                }
+            ],
+            "query_text": "query_text",
+            "run_as_mode": "ENUM",
+            "schema": "schema",
+            "tags": [
+                "_list"
+            ],
+            "update_time": "update_time",
+            "warehouse_id": "warehouse_id"
+        }
+    ]
 }
 '''
