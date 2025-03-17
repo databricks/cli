@@ -40,7 +40,7 @@ type TestConfig struct {
 
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
-	Repls []testdiff.Replacement
+	Repls []testdiff.RegexReplacement
 
 	// List of server stubs to load. Example configuration:
 	//

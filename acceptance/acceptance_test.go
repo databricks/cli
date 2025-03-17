@@ -80,7 +80,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, InprocessMode, "workspace/jobs/create")
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -170,7 +170,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	repls.SetPath(cwd, "[TESTROOT]")
 
-	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
+	repls.Repls = append(repls.Repls, testdiff.RegexReplacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
 	// Matches defaultSparkVersion in ../integration/bundle/helpers_test.go
 	t.Setenv("DEFAULT_SPARK_VERSION", "13.3.x-snapshot-scala2.12")
@@ -317,9 +317,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
-	inputs := make(map[string]bool, 2)
-	outputs := make(map[string]bool, 2)
-	err = CopyDir(dir, tmpDir, inputs, outputs)
+	inputs, outputs, err := CopyDir(dir, tmpDir)
 	require.NoError(t, err)
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
@@ -417,7 +415,9 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	testdiff.PrepareReplacementsUUID(t, &repls)
 
 	// User replacements come last:
-	repls.Repls = append(repls.Repls, config.Repls...)
+	for _, repl := range config.Repls {
+		repls.Repls = append(repls.Repls, repl)
+	}
 
 	// Save replacements to temp test directory so that it can be read by diff.py
 	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
@@ -455,18 +455,22 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	printedRepls := false
 
 	// Compare expected outputs
-	for relPath := range outputs {
+	for _, relPath := range outputs {
 		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
 	files := ListDir(t, tmpDir)
 	unexpected := []string{}
+	expected := map[string]bool{}
+	for _, relPath := range inputs {
+		expected[relPath] = true
+	}
+	for _, relPath := range outputs {
+		expected[relPath] = true
+	}
 	for _, relPath := range files {
-		if _, ok := inputs[relPath]; ok {
-			continue
-		}
-		if _, ok := outputs[relPath]; ok {
+		if _, ok := expected[relPath]; ok {
 			continue
 		}
 		if _, ok := Ignored[relPath]; ok {
@@ -539,7 +543,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		*printedRepls = true
 		var items []string
 		for _, item := range repls.Repls {
-			items = append(items, fmt.Sprintf("REPL %s => %s", item.Old, item.New))
+			items = append(items, item.Debug())
 		}
 		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
@@ -667,8 +671,9 @@ func tryReading(t *testing.T, path string) (string, bool) {
 	return string(data), true
 }
 
-func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+func CopyDir(src, dst string) ([]string, []string, error) {
+	var inputs, outputs []string
+	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -681,11 +686,11 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 
 		if strings.HasPrefix(relPath, "out") {
 			if !info.IsDir() {
-				outputs[relPath] = true
+				outputs = append(outputs, relPath)
 			}
 			return nil
 		} else {
-			inputs[relPath] = true
+			inputs = append(inputs, relPath)
 		}
 
 		if _, ok := Scripts[name]; ok {
@@ -700,6 +705,15 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 
 		return copyFile(path, destPath)
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Sort the input and output files to make the order deterministic. This is important
+	// because some replacements are stateful when applied to the output files.
+	slices.Sort(inputs)
+	slices.Sort(outputs)
+	return inputs, outputs, nil
 }
 
 func ListDir(t *testing.T, src string) []string {

@@ -4,7 +4,7 @@
       "Bearer [DATABRICKS_TOKEN]"
     ],
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/jobs_create cmd-exec-id/[UUID] auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/jobs_create cmd-exec-id/[UUID-0] auth/pat"
     ]
   },
   "method": "POST",
