@@ -25,7 +25,17 @@ func TestReplacement_UUID(t *testing.T) {
 
 	PrepareReplacementsUUID(t, &repls)
 
-	assert.Equal(t, "[UUID]", repls.Replace("123e4567-e89b-12d3-a456-426614174000"))
+	text := `123e4567-e89b-12d3-a456-426614174000 123e4567-e89b-12d3-a456-426614174000
+481574F3-C361-4347-B45A-DB9D8FC86D21
+2370DD61-95E2-44A8-8BC5-CA28F2C303F8`
+
+	assert.Equal(t, `[UUID-0] [UUID-0]
+[UUID-1]
+[UUID-2]`, repls.Replace(text))
+
+	// State from a previous replacement should be retained.
+	text2 := `481574F3-C361-4347-B45A-DB9D8FC86D21 6FC87703-D9BD-4DFD-A7A7-88C423F3A124`
+	assert.Equal(t, `[UUID-1] [UUID-3]`, repls.Replace(text2))
 }
 
 func TestReplacement_Number(t *testing.T) {
