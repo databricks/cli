@@ -1,6 +1,6 @@
 {
   "method": "POST",
-  "path": "/api/2.1/jobs/create",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "name": "abc"
   }
