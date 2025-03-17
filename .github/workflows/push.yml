@@ -168,3 +168,19 @@ jobs:
           for file in ./bundle/internal/schema/testdata/fail/*.yml; do
             ajv test -s schema.json -d $file --invalid -c=./keywords.js
           done
+
+  validate-python-codegen:
+    needs: cleanups
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Verify that python/codegen is up to date
+	workdir: experimental/python
+        run: |
+          if ! ( make codegen && git diff --exit-code ); then
+            echo "Generated Python code is not up-to-date. Please run 'pushd experimental/python && make codegen' and commit the changes."
+            exit 1
+          fi

@@ -2,6 +2,12 @@ version = 1
 revision = 1
 requires-python = ">=3.10"
 
+[manifest]
+members = [
+    "codegen",
+    "databricks-bundles",
+]
+
 [[package]]
 name = "alabaster"
 version = "1.0.0"
@@ -89,6 +95,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/27/f2/4f9a69cc7712b9b5ad8fdb87039fd89abba997ad5cbe690d1835d40405b0/charset_normalizer-3.4.1-cp313-cp313-win_amd64.whl", hash = "sha256:b1ac5992a838106edb89654e0aebfc24f5848ae2547d22c2c3f66454daa11971", size = 102702 },
     { url = "https://files.pythonhosted.org/packages/0e/f6/65ecc6878a89bb1c23a086ea335ad4bf21a588990c3f535a227b9eea9108/charset_normalizer-3.4.1-py3-none-any.whl", hash = "sha256:d98b1668f06378c6dbefec3b92299716b931cd4e6061f3c875a71ced1780ab85", size = 49767 },
 ]
+
+[[package]]
+name = "codegen"
+version = "0.1.0"
+source = { virtual = "codegen" }
 
 [[package]]
 name = "colorama"
