@@ -1,2 +1,2 @@
 # Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
-trace errcode $CLI volumes list "input-catalog_name""input-schema_name"
+trace errcode $CLI volumes list "input-catalog_name" "input-schema_name" 

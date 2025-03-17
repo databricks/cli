@@ -1,2 +1,2 @@
 # Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
-trace errcode $CLI permissions get "input-request_object_type""input-request_object_id"
+trace errcode $CLI permissions get "input-request_object_type" "input-request_object_id" 

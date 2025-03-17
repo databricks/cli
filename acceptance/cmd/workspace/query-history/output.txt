@@ -1,5 +1,5 @@
 
 >>> errcode [CLI] query-history list
-Error: template: command:1:8: executing "command" at <.>: range can't iterate over {false  [{0x140000bb980 42 endpoint_id error_message 42 executed_as_user_name 42 false lookup_key 0x14000524000 ENUM 42 query_id 42 query_text 42 spark_ui_url ENUM ENUM 42 user_name warehouse_id [Duration EndpointId ErrorMessage ExecutedAsUserId ExecutedAsUserName ExecutionEndTimeMs IsFinal LookupKey PlansState QueryEndTimeMs QueryId QueryStartTimeMs QueryText RowsProduced SparkUiUrl StatementType Status UserId UserName WarehouseId]}] [HasNextPage NextPageToken]}
+Error: template: command:1:8: executing "command" at <.>: range can't iterate over {false  [{0x1400063cc40 42 endpoint_id error_message 42 executed_as_user_name 42 false lookup_key 0x1400065fa00 ENUM 42 query_id 42 query_text 42 spark_ui_url ENUM ENUM 42 user_name warehouse_id [Duration EndpointId ErrorMessage ExecutedAsUserId ExecutedAsUserName ExecutionEndTimeMs IsFinal LookupKey PlansState QueryEndTimeMs QueryId QueryStartTimeMs QueryText RowsProduced SparkUiUrl StatementType Status UserId UserName WarehouseId]}] [HasNextPage NextPageToken]}
 
 Exit code: 1

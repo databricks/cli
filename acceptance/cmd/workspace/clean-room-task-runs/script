@@ -1,2 +1,2 @@
 # Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
-trace errcode $CLI clean-room-task-runs list "input-clean_room_name"
+trace errcode $CLI clean-room-task-runs list "input-clean_room_name" 

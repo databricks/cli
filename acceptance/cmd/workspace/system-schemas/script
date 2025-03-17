@@ -1,2 +1,2 @@
 # Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
-trace errcode $CLI system-schemas list "input-metastore_id"
+trace errcode $CLI system-schemas list "input-metastore_id" 

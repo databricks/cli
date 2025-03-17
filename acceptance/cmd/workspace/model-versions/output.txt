@@ -1,23 +1,42 @@
 
->>> errcode [CLI] model-versions get input-full_name42
-Error: accepts 2 arg(s), received 1
-
-Usage:
-  databricks model-versions get FULL_NAME VERSION [flags]
-
-Flags:
-  -h, --help              help for get
-      --include-aliases   Whether to include aliases associated with the model version in the response.
-      --include-browse    Whether to include model versions in the response for which the principal can only access selective metadata for.
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-
-
-Exit code: 1
+>>> errcode [CLI] model-versions get input-full_name 42
+{
+  "aliases": [
+    {
+      "alias_name":"alias_name",
+      "version_num":42
+    }
+  ],
+  "browse_only":false,
+  "catalog_name":"catalog_name",
+  "comment":"comment",
+  "created_at":42,
+  "created_by":"created_by",
+  "id":"id",
+  "metastore_id":"metastore_id",
+  "model_name":"model_name",
+  "model_version_dependencies": {
+    "dependencies": [
+      {
+        "function": {
+          "function_full_name":"function_full_name"
+        },
+        "table": {
+          "table_full_name":"table_full_name"
+        }
+      }
+    ]
+  },
+  "run_id":"run_id",
+  "run_workspace_id":42,
+  "schema_name":"schema_name",
+  "source":"source",
+  "status":"ENUM",
+  "storage_location":"storage_location",
+  "updated_at":42,
+  "updated_by":"updated_by",
+  "version":42
+}
 
 >>> errcode [CLI] model-versions list input-full_name
 [

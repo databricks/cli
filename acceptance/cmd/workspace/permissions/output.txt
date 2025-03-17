@@ -1,18 +1,23 @@
 
->>> errcode [CLI] permissions get input-request_object_typeinput-request_object_id
-Error: accepts 2 arg(s), received 1
-
-Usage:
-  databricks permissions get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID [flags]
-
-Flags:
-  -h, --help   help for get
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-
-
-Exit code: 1
+>>> errcode [CLI] permissions get input-request_object_type input-request_object_id
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "inherited_from_object": [
+            "_list"
+          ],
+          "permission_level":"ENUM"
+        }
+      ],
+      "display_name":"display_name",
+      "group_name":"group_name",
+      "service_principal_name":"service_principal_name",
+      "user_name":"user_name"
+    }
+  ],
+  "object_id":"object_id",
+  "object_type":"object_type"
+}

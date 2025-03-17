@@ -103,28 +103,6 @@
   }
 }
 
->>> errcode [CLI] tables list input-catalog_nameinput-schema_name
-Error: accepts 2 arg(s), received 1
-
-Usage:
-  databricks tables list CATALOG_NAME SCHEMA_NAME [flags]
-
-Flags:
-  -h, --help                            help for list
-      --include-browse                  Whether to include tables in the response for which the principal can only access selective metadata for.
-      --include-delta-metadata          Whether delta metadata should be included in the response.
-      --include-manifest-capabilities   Whether to include a manifest containing capabilities the table has.
-      --max-results int                 Maximum number of tables to return.
-      --omit-columns                    Whether to omit the columns of the table from the response or not.
-      --omit-properties                 Whether to omit the properties of the table from the response or not.
-      --omit-username                   Whether to omit the username of the table (e.g.
-      --page-token string               Opaque token to send for the next page of results (pagination).
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-
-
-Exit code: 1
+>>> errcode [CLI] tables list input-catalog_name input-schema_name
+Full Name  Table Type
+full_name  ENUM

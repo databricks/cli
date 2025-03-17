@@ -1,21 +1,46 @@
 
->>> errcode [CLI] clean-room-assets get input-clean_room_nameENUMinput-asset_full_name
-Error: accepts 3 arg(s), received 1
-
-Usage:
-  databricks clean-room-assets get CLEAN_ROOM_NAME ASSET_TYPE ASSET_FULL_NAME [flags]
-
-Flags:
-  -h, --help   help for get
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-
-
-Exit code: 1
+>>> errcode [CLI] clean-room-assets get input-clean_room_name ENUM input-asset_full_name
+{
+  "added_at":42,
+  "asset_type":"ENUM",
+  "foreign_table": {
+    "columns": [
+      {}
+    ]
+  },
+  "foreign_table_local_details": {
+    "local_name":"local_name"
+  },
+  "name":"name",
+  "notebook": {
+    "etag":"etag",
+    "notebook_content":"notebook_content"
+  },
+  "owner_collaborator_alias":"owner_collaborator_alias",
+  "status":"ENUM",
+  "table": {
+    "columns": [
+      {}
+    ]
+  },
+  "table_local_details": {
+    "local_name":"local_name",
+    "partitions": [
+      {}
+    ]
+  },
+  "view": {
+    "columns": [
+      {}
+    ]
+  },
+  "view_local_details": {
+    "local_name":"local_name"
+  },
+  "volume_local_details": {
+    "local_name":"local_name"
+  }
+}
 
 >>> errcode [CLI] clean-room-assets list input-clean_room_name
 [

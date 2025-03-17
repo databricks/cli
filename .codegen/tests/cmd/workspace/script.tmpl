@@ -29,7 +29,7 @@ trace errcode $CLI {{$cmdGrp}} {{.KebabName}} {{ template "required-input" . }}
 {{- end}}
 
 {{- define "required-input" -}}
-{{- range .RequiredPositionalArguments }}{{ template "param-value" . }} {{- end }}
+{{- range .RequiredPositionalArguments }}{{ template "param-value" . }} {{ end }}
 {{- end -}}
 
 {{- define "param-value" -}}
