@@ -31,15 +31,14 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "dashboards",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Add methods
 	cmd.AddCommand(newCreateMessage())
+	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGetMessage())
+	cmd.AddCommand(newGetMessageAttachmentQueryResult())
 	cmd.AddCommand(newGetMessageQueryResult())
 	cmd.AddCommand(newGetMessageQueryResultByAttachment())
 	cmd.AddCommand(newGetSpace())
@@ -158,6 +157,71 @@ func newCreateMessage() *cobra.Command {
 	return cmd
 }
 
+// start execute-message-attachment-query command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var executeMessageAttachmentQueryOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieExecuteMessageAttachmentQueryRequest,
+)
+
+func newExecuteMessageAttachmentQuery() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var executeMessageAttachmentQueryReq dashboards.GenieExecuteMessageAttachmentQueryRequest
+
+	// TODO: short flags
+
+	cmd.Use = "execute-message-attachment-query SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
+	cmd.Short = `Execute message attachment SQL query.`
+	cmd.Long = `Execute message attachment SQL query.
+  
+  Execute the SQL for a message query attachment. Use this API when the query
+  attachment has expired and needs to be re-executed.
+
+  Arguments:
+    SPACE_ID: Genie space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+    ATTACHMENT_ID: Attachment ID`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := command.WorkspaceClient(ctx)
+
+		executeMessageAttachmentQueryReq.SpaceId = args[0]
+		executeMessageAttachmentQueryReq.ConversationId = args[1]
+		executeMessageAttachmentQueryReq.MessageId = args[2]
+		executeMessageAttachmentQueryReq.AttachmentId = args[3]
+
+		response, err := w.Genie.ExecuteMessageAttachmentQuery(ctx, executeMessageAttachmentQueryReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range executeMessageAttachmentQueryOverrides {
+		fn(cmd, &executeMessageAttachmentQueryReq)
+	}
+
+	return cmd
+}
+
 // start execute-message-query command
 
 // Slice with functions to override default command behavior.
@@ -175,8 +239,8 @@ func newExecuteMessageQuery() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "execute-message-query SPACE_ID CONVERSATION_ID MESSAGE_ID"
-	cmd.Short = `Execute SQL query in a conversation message.`
-	cmd.Long = `Execute SQL query in a conversation message.
+	cmd.Short = `[Deprecated] Execute SQL query in a conversation message.`
+	cmd.Long = `[Deprecated] Execute SQL query in a conversation message.
   
   Execute the SQL query in the message.
 
@@ -184,6 +248,9 @@ func newExecuteMessageQuery() *cobra.Command {
     SPACE_ID: Genie space ID
     CONVERSATION_ID: Conversation ID
     MESSAGE_ID: Message ID`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -284,6 +351,72 @@ func newGetMessage() *cobra.Command {
 	return cmd
 }
 
+// start get-message-attachment-query-result command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMessageAttachmentQueryResultOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetMessageAttachmentQueryResultRequest,
+)
+
+func newGetMessageAttachmentQueryResult() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMessageAttachmentQueryResultReq dashboards.GenieGetMessageAttachmentQueryResultRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-message-attachment-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
+	cmd.Short = `Get message attachment SQL query result.`
+	cmd.Long = `Get message attachment SQL query result.
+  
+  Get the result of SQL query if the message has a query attachment. This is
+  only available if a message has a query attachment and the message status is
+  EXECUTING_QUERY OR COMPLETED.
+
+  Arguments:
+    SPACE_ID: Genie space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+    ATTACHMENT_ID: Attachment ID`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := command.WorkspaceClient(ctx)
+
+		getMessageAttachmentQueryResultReq.SpaceId = args[0]
+		getMessageAttachmentQueryResultReq.ConversationId = args[1]
+		getMessageAttachmentQueryResultReq.MessageId = args[2]
+		getMessageAttachmentQueryResultReq.AttachmentId = args[3]
+
+		response, err := w.Genie.GetMessageAttachmentQueryResult(ctx, getMessageAttachmentQueryResultReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMessageAttachmentQueryResultOverrides {
+		fn(cmd, &getMessageAttachmentQueryResultReq)
+	}
+
+	return cmd
+}
+
 // start get-message-query-result command
 
 // Slice with functions to override default command behavior.
@@ -312,6 +445,9 @@ func newGetMessageQueryResult() *cobra.Command {
     SPACE_ID: Genie space ID
     CONVERSATION_ID: Conversation ID
     MESSAGE_ID: Message ID`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -365,8 +501,8 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-message-query-result-by-attachment SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
-	cmd.Short = `Get conversation message SQL query result.`
-	cmd.Long = `Get conversation message SQL query result.
+	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
+	cmd.Long = `[Deprecated] Get conversation message SQL query result.
   
   Get the result of SQL query if the message has a query attachment. This is
   only available if a message has a query attachment and the message status is
@@ -377,6 +513,9 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
     CONVERSATION_ID: Conversation ID
     MESSAGE_ID: Message ID
     ATTACHMENT_ID: Attachment ID`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -431,10 +570,10 @@ func newGetSpace() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-space SPACE_ID"
-	cmd.Short = `Get details of a Genie Space.`
-	cmd.Long = `Get details of a Genie Space.
+	cmd.Short = `Get Genie Space.`
+	cmd.Long = `Get Genie Space.
   
-  Get a Genie Space.
+  Get details of a Genie Space.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space`
