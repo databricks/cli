@@ -1,17 +1,6 @@
 
 >>> uv run --python 3.10 --with databricks-bundles==0.7.2 -q [CLI] bundle validate --output json
 {
-  "bundle": {
-    "environment": "default",
-    "git": {
-      "bundle_root_path": "."
-    },
-    "name": "my_project",
-    "target": "default",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    }
-  },
   "experimental": {
     "python": {
       "resources": [
@@ -36,107 +25,5 @@
         "tags": {}
       }
     }
-  },
-  "sync": {
-    "paths": [
-      "."
-    ]
-  },
-  "targets": null,
-  "variables": {
-    "bool_variable_false": {
-      "default": false,
-      "value": false
-    },
-    "bool_variable_true": {
-      "default": true,
-      "value": true
-    },
-    "complex_list_variable": {
-      "default": [
-        {
-          "notebook_task": {
-            "notebook_path": "cde"
-          },
-          "task_key": "abc"
-        },
-        {
-          "notebook_task": {
-            "notebook_path": "ghi"
-          },
-          "task_key": "def"
-        }
-      ],
-      "value": [
-        {
-          "notebook_task": {
-            "notebook_path": "cde"
-          },
-          "task_key": "abc"
-        },
-        {
-          "notebook_task": {
-            "notebook_path": "ghi"
-          },
-          "task_key": "def"
-        }
-      ]
-    },
-    "complex_variable": {
-      "default": {
-        "notebook_task": {
-          "notebook_path": "cde"
-        },
-        "task_key": "abc"
-      },
-      "value": {
-        "notebook_task": {
-          "notebook_path": "cde"
-        },
-        "task_key": "abc"
-      }
-    },
-    "dict_variable": {
-      "default": {
-        "a": 1,
-        "b": 2
-      },
-      "value": {
-        "a": 1,
-        "b": 2
-      }
-    },
-    "int_variable": {
-      "default": 42,
-      "value": 42
-    },
-    "list_variable": {
-      "default": [
-        1,
-        2,
-        3
-      ],
-      "value": [
-        1,
-        2,
-        3
-      ]
-    },
-    "string_variable": {
-      "default": "abc",
-      "value": "abc"
-    }
-  },
-  "workspace": {
-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/artifacts",
-    "current_user": {
-      "id": "[USERID]",
-      "short_name": "[USERNAME]",
-      "userName": "[USERNAME]"
-    },
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/files",
-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/resources",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default",
-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state"
   }
 }

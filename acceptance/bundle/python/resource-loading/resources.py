@@ -1,7 +1,4 @@
-from databricks.bundles.core import Bundle, Resources
-
-# databricks.yml defines the order of resource loading
-
+from databricks.bundles.core import Resources
 
 def load_resources_2() -> Resources:
     resources = Resources()
