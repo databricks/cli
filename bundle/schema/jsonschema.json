@@ -569,6 +569,10 @@
                         "description": "The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig"
                       },
+                      "budget_policy_id": {
+                        "description": "The budget policy to be applied to the serving endpoint.",
+                        "$ref": "#/$defs/string"
+                      },
                       "config": {
                         "description": "The core config of the serving endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput"

@@ -155,6 +155,11 @@ func AddHandlers(server *testserver.Server) {
 		return req.Workspace.JobsGet(jobId)
 	})
 
+	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
+		jobId := req.URL.Query().Get("job_id")
+		return req.Workspace.JobsGet(jobId)
+	})
+
 	server.Handle("GET", "/api/2.1/jobs/list", func(req testserver.Request) any {
 		return req.Workspace.JobsList()
 	})

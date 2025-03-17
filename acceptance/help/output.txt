@@ -97,6 +97,7 @@ Vector Search
   vector-search-indexes                  **Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.
 
 Dashboards
+  genie                                  Genie provides a no-code experience for business users, powered by AI/BI.
   lakeview                               These APIs provide specific management operations for Lakeview dashboards.
 
 Marketplace
