@@ -24,6 +24,9 @@ dev-dependencies = [
   "typing_extensions==4.12.2",
 ]
 
+[tool.uv.workspace]
+members = ["codegen"]
+
 [tool.setuptools]
 py-modules = ["databricks"]
 
