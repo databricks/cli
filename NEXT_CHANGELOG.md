@@ -4,6 +4,7 @@
 
 ### CLI
 * Fixed "can't evaluate field Name in type interface{}" for "databricks queries list" command ([#2451](https://github.com/databricks/cli/pull/2451))
+* Fixed `query-history list` command failing with 'executing "command" at <.>: range cant iterate over' ([#2506](https://github.com/databricks/cli/pull/2506))
 
 ### Bundles
 
