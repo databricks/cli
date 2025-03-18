@@ -39,11 +39,11 @@ func (s *WebsocketServer) Addr() string {
 
 func (s *WebsocketServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
-	s.conn = conn
 	if err != nil {
 		s.t.Log(err)
 		return
 	}
+	s.conn = conn
 	defer conn.Close()
 
 	for {

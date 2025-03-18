@@ -3,6 +3,7 @@ package appproxy
 import (
 	"context"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -120,7 +121,10 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// If the error is not EOF, then there was a problem
 		if err != io.EOF {
-			http.Error(w, "Error copying messages", http.StatusInternalServerError)
+			// Log the error and perform cleanup
+			log.Printf("Error copying messages: %v", err)
+			middlewareConn.Close()
+			targetServerConn.Close()
 		}
 	}
 }

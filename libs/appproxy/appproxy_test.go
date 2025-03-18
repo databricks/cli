@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -83,9 +84,6 @@ func TestProxyStart(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, code)
 	require.Contains(t, string(body), "Not Found")
 
-	// Close the test server
-	server.Close()
-
 	code, body = sendTestRequest(t, "/")
 	require.Equal(t, http.StatusInternalServerError, code)
 	require.Contains(t, string(body), fmt.Sprintf("Error forwarding request: Get \"http://%s/\": dial tcp %s", serverAddr, serverAddr))
@@ -136,5 +134,8 @@ func TestProxyHandleWebSocket(t *testing.T) {
 
 	_, _, err = conn.ReadMessage()
 	require.Error(t, err)
-	require.ErrorContains(t, err, "websocket: close 1006 (abnormal closure)")
+	if !strings.Contains(err.Error(), "websocket: close 1006 (abnormal closure)") &&
+		!strings.Contains(err.Error(), "An established connection was aborted by the software in your host machine") {
+		t.Errorf("Expected abnormal closure or An established connection was aborted, got %s", err)
+	}
 }
