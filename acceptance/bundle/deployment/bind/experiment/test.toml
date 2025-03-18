@@ -1,6 +1,32 @@
-Local = false
+Local = true
 Cloud = true
 
 [[Repls]]
 Old = "[0-9]{3,}"
 New = "[NUMID]"
+
+[[Server]]
+Pattern = "POST /api/2.0/mlflow/experiments/create"
+Response.Body = '''
+{
+    "experiment_id":"1234567890"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/experiments/get"
+Response.Body = '''
+{
+    "experiment_id": "1234567890",
+    "experiment": {
+        "name": "/Users/[USERNAME]/test-experiment6260d50f-e8ff-4905-8f28-812345678903",
+        "lifecycle_stage": "active"
+    }
+}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/mlflow/experiments/update"
+
+[[Server]]
+Pattern = "POST /api/2.0/mlflow/experiments/delete"
