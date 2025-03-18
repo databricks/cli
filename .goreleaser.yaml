@@ -41,13 +41,13 @@ builds:
   binary: databricks
 
 archives:
-- format: zip
+  - formats: ["zip"]
 
-  # Include version in archive only for release builds and not for snapshot builds.
-  # Snapshot archives must have a stable file name such that the artifacts in the nightly
-  # release are automatically overwritten. If the snapshot version is included in the
-  # file name then additional logic to clean up older builds would be needed.
-  name_template: 'databricks_cli_{{ if not .IsSnapshot }}{{ .Version }}_{{ end }}{{ .Os }}_{{ .Arch }}'
+    # Include version in archive only for release builds and not for snapshot builds.
+    # Snapshot archives must have a stable file name such that the artifacts in the nightly
+    # release are automatically overwritten. If the snapshot version is included in the
+    # file name then additional logic to clean up older builds would be needed.
+    name_template: 'databricks_cli_{{ if not .IsSnapshot }}{{ .Version }}_{{ end }}{{ .Os }}_{{ .Arch }}'
 
 dockers:
   - id: arm64
