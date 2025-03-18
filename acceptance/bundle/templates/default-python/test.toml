@@ -1,5 +1,0 @@
-# diff.py does not support ordered representations of UUID so we override UUID
-# replacement to always be [UUID].
-[[Repls]]
-Old = "\\[UUID-[0-9]+\\]"
-New = "[UUID]"
