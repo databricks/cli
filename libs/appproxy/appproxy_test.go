@@ -58,7 +58,7 @@ func TestProxyStart(t *testing.T) {
 		"X-Test-Header":  "test",
 		"X-Test-Header2": "test2",
 	})
-	defer server.Close()
+
 	go func() {
 		server.Start()
 	}()
@@ -83,6 +83,9 @@ func TestProxyStart(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, code)
 	require.Contains(t, string(body), "Not Found")
+
+	// Close the test server
+	server.Close()
 
 	code, body = sendTestRequest(t, "/")
 	require.Equal(t, http.StatusInternalServerError, code)
