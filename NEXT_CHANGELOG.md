@@ -10,3 +10,7 @@
 ### Internal
 
 ### API Changes
+* Added `databricks genie execute-message-attachment-query` command.
+* Added `databricks genie get-message-attachment-query-result` command.
+* `databricks genie execute-message-query` marked as Deprecated.
+* `databricks genie get-message-query-result-by-attachment` marked as Deprecated.

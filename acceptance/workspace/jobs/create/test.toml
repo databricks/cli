@@ -2,7 +2,7 @@ RecordRequests = true
 IncludeRequestHeaders = ["Authorization", "User-Agent"]
 
 [[Server]]
-Pattern = "POST /api/2.1/jobs/create"
+Pattern = "POST /api/2.2/jobs/create"
 Response.Body = '''
 {
     "job_id": 1111
