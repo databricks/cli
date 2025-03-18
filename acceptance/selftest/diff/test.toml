@@ -1,2 +1,2 @@
 # diff.py does not support stateful comparison of UUIDs.
-ComparableUuidReplacement = false
+DisableComparableUuidReplacement = true

@@ -413,10 +413,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Must be added after PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	// for service principal users.
-	if isTruePtr(config.ComparableUuidReplacement) {
-		testdiff.PrepareReplacementsUUIDComparable(t, &repls)
-	} else {
+	if isTruePtr(config.DisableComparableUuidReplacement) {
+		// bin/diff.py does not support stateful replacements. We provide a flag
+		// thus to disable this in cases where diff.py is used.
 		testdiff.PrepareReplacementsUUID(t, &repls)
+	} else {
+		testdiff.PrepareReplacementsUUIDComparable(t, &repls)
 	}
 
 	// User replacements come last:

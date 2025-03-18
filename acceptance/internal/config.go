@@ -69,7 +69,7 @@ type TestConfig struct {
 	// and ensure that the same UUIDs are replaced with the same replacement.
 	// This is useful for cases where we want to ensure UUID values are consistent
 	// in different contexts (API requests log vs output files for example).
-	ComparableUuidReplacement *bool
+	DisableComparableUuidReplacement *bool
 }
 
 type ServerStub struct {
