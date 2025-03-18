@@ -68,7 +68,7 @@ type TestConfig struct {
 
 	// Environment variables matrix.
 	// For each key you can specify zero, one or more values.
-	// If you specify zero, the key is omitted, as if it was not defined at all. 
+	// If you specify zero, the key is omitted, as if it was not defined at all.
 	// Otherwise, for each value, you will get a new test with that environment variable
 	// set to that value (and replacement configured to match the value).
 	// If there are multiple variables defined, all combinations of tests are created,
