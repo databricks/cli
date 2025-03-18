@@ -364,6 +364,7 @@ def test_mutators_unmodified():
     assert new_resources._locations[("resources", "jobs", "job_0")] == expected_location
     assert new_resources.jobs["job_0"].description == "updated description"
 
+
 def test_load_resources():
     bundle = Bundle(target="default")
 
