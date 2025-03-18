@@ -27,5 +27,5 @@ Destroy complete!
   "lifecycle_stage": "active"
 }
 
-=== Test cleanup:
+=== Test cleanup: 
 === Delete the pre-defined experiment: 0
