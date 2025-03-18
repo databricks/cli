@@ -2,7 +2,6 @@ package testdiff
 
 import (
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -28,51 +27,9 @@ var (
 	devVersionRegex = regexp.MustCompile(`0\.0\.0-dev(\+[a-f0-9]{10,16})?`)
 )
 
-type ReplacementX interface {
-	// Perform the replacement on the input string and return the result.
-	Replace(s string) string
-
-	// Returns debug string that enumerates the replacement.
-	Debug() string
-}
-
 type Replacement struct {
 	Old *regexp.Regexp
 	New string
-}
-
-func (r Replacement) Replace(s string) string {
-	return r.Old.ReplaceAllString(s, r.New)
-}
-
-func (r Replacement) Debug() string {
-	return fmt.Sprintf("replace matches of regex %s with %s", r.Old, r.New)
-}
-
-type UuidReplacement struct {
-	seen map[string]int
-}
-
-func (r UuidReplacement) Replace(s string) string {
-	matches := uuidRegex.FindAllString(s, -1)
-	for _, match := range matches {
-		if _, ok := r.seen[match]; !ok {
-			r.seen[match] = len(r.seen)
-		}
-
-		s = strings.ReplaceAll(s, match, fmt.Sprintf("[UUID-%d]", r.seen[match]))
-	}
-
-	return s
-}
-
-func (r UuidReplacement) Debug() string {
-	s := ""
-	for uuid, i := range r.seen {
-		s += fmt.Sprintf("replace uuid %s with [UUID-%d]\n", uuid, i)
-	}
-
-	return s
 }
 
 type ReplacementsContext struct {
@@ -83,7 +40,6 @@ func (r *ReplacementsContext) Clone() ReplacementsContext {
 	return ReplacementsContext{Repls: slices.Clone(r.Repls)}
 }
 
-// TODO CONTINUE: Moving the replacement on level up the stack.
 func (r *ReplacementsContext) Replace(s string) string {
 	// QQQ Should probably only replace whole words
 	for _, repl := range r.Repls {
