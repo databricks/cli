@@ -560,7 +560,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		*printedRepls = true
 		var items []string
 		for _, item := range repls.Repls {
-			items = append(items, item.Debug())
+			items = append(items, fmt.Sprintf("REPL %s => %s", item.Old, item.New))
 		}
 		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
