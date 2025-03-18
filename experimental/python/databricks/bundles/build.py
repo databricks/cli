@@ -128,6 +128,7 @@ def _apply_mutators(
                             ("resources", "jobs", resource_name), location
                         )
                     resources.jobs[resource_name] = new_job
+                    job = new_job
             except Exception as exc:
                 mutator_name = mutator.function.__name__
 
