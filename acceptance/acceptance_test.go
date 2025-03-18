@@ -412,9 +412,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	// User replacements come last:
-	for _, repl := range config.Repls {
-		repls.Repls = append(repls.Repls, repl)
-	}
+	repls.Repls = append(repls.Repls, config.Repls...)
 
 	// Save replacements to temp test directory so that it can be read by diff.py
 	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
