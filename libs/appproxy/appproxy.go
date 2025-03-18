@@ -1,4 +1,4 @@
-package httpproxy
+package appproxy
 
 import (
 	"context"
@@ -17,9 +17,9 @@ type Proxy struct {
 	headerToInject map[string]string
 }
 
-// NewProxy creates a new proxy instance that will forward all requests to the targetURL
+// Creates a new proxy instance that will forward all requests to the targetURL
 // The targetURL should be a valid URL with a scheme and a host.
-func NewProxy(targetURL string) (*Proxy, error) {
+func New(targetURL string) (*Proxy, error) {
 	u, err := url.Parse(targetURL)
 	if err != nil {
 		return nil, err
@@ -33,9 +33,20 @@ func NewProxy(targetURL string) (*Proxy, error) {
 
 // Start starts the proxy server on the given address (host:port, e.g. localhost:8080)
 // The proxy will forward all requests to the targetURL
+func (p *Proxy) Listen(addr string) (net.Listener, error) {
+	return net.Listen("tcp", addr)
+}
+
+func (p *Proxy) Serve(ln net.Listener) error {
+	return p.server.Serve(ln)
+}
+
 func (p *Proxy) Start(addr string) error {
-	p.server.Addr = addr
-	return p.server.ListenAndServe()
+	ln, err := p.Listen(addr)
+	if err != nil {
+		return err
+	}
+	return p.Serve(ln)
 }
 
 func (p *Proxy) Stop() error {
@@ -79,7 +90,7 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// We need to hijack the connection to be able to proxy the request
 	// to the websocket server. We can use the hijacked connection to
-
+	// read and write messages back and forth from the client to the app.
 	middlewareConn, _, err := hj.Hijack()
 	if err != nil {
 		http.Error(w, "Hijacking failed", http.StatusInternalServerError)
@@ -105,7 +116,13 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Copy response messages from server to client
 	go cp(middlewareConn, targetServerConn)
 
-	<-errc
+	err = <-errc
+	if err != nil {
+		// If the error is not EOF, then there was a problem
+		if err != io.EOF {
+			http.Error(w, "Error copying messages", http.StatusInternalServerError)
+		}
+	}
 }
 
 func (p *Proxy) handleHTTP(w http.ResponseWriter, r *http.Request) {

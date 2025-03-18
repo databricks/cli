@@ -1,4 +1,4 @@
-package httpproxy
+package appproxy
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
@@ -39,15 +38,15 @@ func sendTestRequest(t *testing.T, path string) (int, []byte) {
 }
 
 func startProxy(t *testing.T, serverAddr string) *Proxy {
-	proxy, err := NewProxy("http://" + serverAddr)
+	proxy, err := New("http://" + serverAddr)
+	require.NoError(t, err)
+
+	ln, err := proxy.Listen(PROXY_ADDR)
 	require.NoError(t, err)
 
 	go func() {
-		_ = proxy.Start(PROXY_ADDR)
+		_ = proxy.Serve(ln)
 	}()
-
-	// Wait for the server to start
-	time.Sleep(100 * time.Millisecond)
 
 	return proxy
 }
@@ -104,9 +103,6 @@ func TestProxyHandleWebSocket(t *testing.T) {
 		err := proxy.Stop()
 		require.NoError(t, err)
 	}()
-
-	// Wait for the server to start
-	time.Sleep(100 * time.Millisecond)
 
 	conn, resp, err := websocket.DefaultDialer.Dial("ws://"+PROXY_ADDR, nil)
 	require.NoError(t, err)

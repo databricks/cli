@@ -2,7 +2,6 @@ package testserver
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,6 +15,7 @@ var upgrader = websocket.Upgrader{
 }
 
 type WebsocketServer struct {
+	t      *testing.T
 	server *httptest.Server
 	conn   *websocket.Conn
 }
@@ -25,8 +25,12 @@ func (s *WebsocketServer) Start() {
 }
 
 func (s *WebsocketServer) Close() {
-	s.conn.Close()
-	s.server.Close()
+	if s.conn != nil {
+		s.conn.Close()
+	}
+	if s.server != nil {
+		s.server.Close()
+	}
 }
 
 func (s *WebsocketServer) Addr() string {
@@ -37,7 +41,7 @@ func (s *WebsocketServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	s.conn = conn
 	if err != nil {
-		fmt.Println(err)
+		s.t.Log(err)
 		return
 	}
 	defer conn.Close()
@@ -45,13 +49,13 @@ func (s *WebsocketServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println(err)
+			s.t.Log(err)
 			return
 		}
 
 		err = conn.WriteMessage(websocket.TextMessage, bytes.NewBufferString("Message from client: "+string(message)).Bytes())
 		if err != nil {
-			fmt.Println(err)
+			s.t.Log(err)
 			return
 		}
 	}
@@ -60,7 +64,7 @@ func (s *WebsocketServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 // NewWebsocketServer creates a new httptest.Server that will handle websocket connections
 // and will echo back the message sent by the client with a prefix "Message from client: "
 func NewWebsocketServer(t *testing.T) *WebsocketServer {
-	w := &WebsocketServer{}
+	w := &WebsocketServer{t: t}
 	w.server = httptest.NewUnstartedServer(http.HandlerFunc(w.wsHandler))
 	return w
 }
