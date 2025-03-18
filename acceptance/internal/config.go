@@ -42,6 +42,9 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if a default test cluster is available in the cloud environment
 	RequiresCluster *bool
 
+	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
+	RequiresWarehouse *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement

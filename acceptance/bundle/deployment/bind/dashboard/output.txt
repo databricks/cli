@@ -1,0 +1,37 @@
+
+=== Bind dashboard test: 
+=== Substitute variables in the template: 
+=== Create a pre-defined dashboard: 
+=== Bind dashboard: Updating deployment state...
+Successfully bound databricks_dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UUID]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Read the pre-defined dashboard: {
+  "display_name": "test dashboard [UUID]",
+  "lifecycle_state": "ACTIVE",
+  "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
+  "parent_path": "/Users/[USERNAME]",
+  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page 1\"}]}"
+}
+
+=== Unbind the dashboard: Updating deployment state...
+
+=== Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UUID]/default
+
+Deleting files...
+Destroy complete!
+
+=== Read the pre-defined dashboard again (expecting it still exists and is not deleted): {
+  "display_name": "test dashboard [UUID]",
+  "lifecycle_state": "ACTIVE",
+  "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
+  "parent_path": "/Users/[USERNAME]",
+  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page 1\"}]}"
+}
+
+=== Test cleanup: 
+=== Delete the pre-defined dashboard [DASHBOARD_ID]: 0
