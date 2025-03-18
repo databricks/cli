@@ -25,6 +25,14 @@ func TestReplacement_UUID(t *testing.T) {
 
 	PrepareReplacementsUUID(t, &repls)
 
+	assert.Equal(t, "[UUID]", repls.Replace("123e4567-e89b-12d3-a456-426614174000"))
+}
+
+func TestReplacement_UUIDComparable(t *testing.T) {
+	var repls ReplacementsContext
+
+	PrepareReplacementsUUIDComparable(t, &repls)
+
 	text := `123e4567-e89b-12d3-a456-426614174000 123e4567-e89b-12d3-a456-426614174000
 481574F3-C361-4347-B45A-DB9D8FC86D21
 2370DD61-95E2-44A8-8BC5-CA28F2C303F8`

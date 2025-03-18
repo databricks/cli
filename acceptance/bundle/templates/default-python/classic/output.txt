@@ -28,13 +28,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/my_default_python/prod
 
 Validation OK!
-Traceback (most recent call last):
-  File "[TESTROOT]/bin/diff.py", line 56, in <module>
-    main()
-    ~~~~^^
-  File "[TESTROOT]/bin/diff.py", line 27, in main
-    c = re.compile(r["Old"])
-                   ~^^^^^^^
-KeyError: 'Old'
-
-Exit code: 1

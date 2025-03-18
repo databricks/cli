@@ -53,6 +53,27 @@ type UuidReplacement struct {
 	seen map[string]int
 }
 
+// We serialize replacements to feed them to diff.py for acceptance tests which
+// compare the diffs of two strings. In that case we just send a generic UUID regex
+// replacement to repls.json.
+// This means that the stateful replacements of UUID will not be supported when `diff.py`
+// is used.
+
+// We convert the stateful UUID replacement to a list of stateless regex replacements
+// that can be serialized to JSON.
+// This is useful for the diff.py script that we use in our acceptance tests to
+// only compare the diff
+// func (r UuidReplacement) ToRegexReplacement() []RegexReplacement {
+// 	var repls []RegexReplacement
+// 	for uuid, i := range r.seen {
+// 		repls = append(repls, RegexReplacement{
+// 			Old: regexp.MustCompile(uuid),
+// 			New: fmt.Sprintf("[UUID-%d]", i),
+// 		})
+// 	}
+// 	return repls
+// }
+
 func (r UuidReplacement) Replace(s string) string {
 	matches := uuidRegex.FindAllString(s, -1)
 	for _, match := range matches {
@@ -233,9 +254,14 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	}
 }
 
-func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {
+func PrepareReplacementsUUIDComparable(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.Repls = append(r.Repls, UuidReplacement{seen: make(map[string]int)})
+}
+
+func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.append(uuidRegex, "[UUID]")
 }
 
 func PrepareReplacementsNumber(t testutil.TestingT, r *ReplacementsContext) {

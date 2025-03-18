@@ -411,8 +411,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
-	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
-	testdiff.PrepareReplacementsUUID(t, &repls)
+	// Must be added after PrepareReplacementsUser, otherwise conflicts with [USERNAME]
+	// for service principal users.
+	if isTruePtr(config.ComparableUuidReplacement) {
+		testdiff.PrepareReplacementsUUIDComparable(t, &repls)
+	} else {
+		testdiff.PrepareReplacementsUUID(t, &repls)
+	}
 
 	// User replacements come last:
 	for _, repl := range config.Repls {

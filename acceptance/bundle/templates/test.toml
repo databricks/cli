@@ -1,2 +1,5 @@
 # At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
 Cloud = false
+
+# diff.py does not support stateful comparison of UUIDs.
+ComparableUuidReplacement = false

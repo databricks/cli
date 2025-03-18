@@ -1,12 +1,13 @@
 
 >>> diff.py out_dir_a out_dir_b
-Traceback (most recent call last):
-  File "[TESTROOT]/bin/diff.py", line 56, in <module>
-    main()
-    ~~~~^^
-  File "[TESTROOT]/bin/diff.py", line 27, in main
-    c = re.compile(r["Old"])
-                   ~^^^^^^^
-KeyError: 'Old'
-
-Exit code: 1
+Only in out_dir_a: only_in_a
+Only in out_dir_b: only_in_b
+--- out_dir_a/output.txt
++++ out_dir_b/output.txt
+@@ -1,5 +1,5 @@
+ Hello!
+ {
+-    "id": "[USERID]",
++    "id": "[UUID]",
+     "userName": "[USERNAME]"
+ }

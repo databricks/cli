@@ -1,6 +1,6 @@
 Hello!
 {
-    "id": "[UUID-0]",
+    "id": "[UUID]",
     "userName": "[USERNAME]"
 }
 

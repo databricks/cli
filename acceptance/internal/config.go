@@ -64,6 +64,12 @@ type TestConfig struct {
 	Ignore []string
 
 	CompiledIgnoreObject *ignore.GitIgnore
+
+	// If true, the acceptance test framework will replace all UUIDs with [UUID-0], [UUID-1], etc.
+	// and ensure that the same UUIDs are replaced with the same replacement.
+	// This is useful for cases where we want to ensure UUID values are consistent
+	// in different contexts (API requests log vs output files for example).
+	ComparableUuidReplacement *bool
 }
 
 type ServerStub struct {
