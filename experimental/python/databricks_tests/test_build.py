@@ -7,6 +7,7 @@ from databricks.bundles.build import (
     _Args,
     _Conf,
     _load_object,
+    _load_resources,
     _parse_args,
     _parse_bundle_info,
     _relativize_location,
@@ -296,3 +297,51 @@ def test_conf_from_dict():
         ],
         venv_path="venv",
     )
+
+
+def test_load_resources():
+    bundle = Bundle(target="default")
+
+    def load_resources_1() -> Resources:
+        resources = Resources()
+        resources.add_job(
+            resource_name="my_job_1",
+            job={"name": "Job 1"},
+            location=Location(file="my_job_1.py", line=42, column=1),
+        )
+
+        return resources
+
+    def load_resources_2() -> Resources:
+        resources = Resources()
+        resources.add_job(
+            resource_name="my_job_2",
+            job={"name": "Job 2"},
+            location=Location(file="my_job_2.py", line=42, column=1),
+        )
+
+        return resources
+
+    resources, diagnostics = _load_resources(
+        bundle=bundle,
+        functions=[
+            load_resources_1,
+            load_resources_2,
+        ],
+    )
+
+    assert not diagnostics.has_error()
+
+    assert resources.jobs == {
+        "my_job_1": Job(name="Job 1"),
+        "my_job_2": Job(name="Job 2"),
+    }
+
+    assert resources._locations == {
+        ("resources", "jobs", "my_job_1"): Location(
+            file="my_job_1.py", line=42, column=1
+        ),
+        ("resources", "jobs", "my_job_2"): Location(
+            file="my_job_2.py", line=42, column=1
+        ),
+    }
