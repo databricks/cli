@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 
@@ -64,6 +65,15 @@ type TestConfig struct {
 	Ignore []string
 
 	CompiledIgnoreObject *ignore.GitIgnore
+
+	// Environment variables matrix.
+	// For each key you can specify zero, one or more values.
+	// If you specify zero, the key is omitted, as if it was not defined at all.
+	// Otherwise, for each value, you will get a new test with that environment variable
+	// set to that value (and replacement configured to match the value).
+	// If there are multiple variables defined, all combinations of tests are created,
+	// similar to github actions matrix strategy.
+	EnvMatrix map[string][]string
 }
 
 type ServerStub struct {
@@ -148,4 +158,61 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	}
 
 	return config
+}
+
+// This function takes EnvMatrix and expands into a slice of environment configurations.
+// Each environment configuration is a slice of env vars in standard Golang format.
+// For example,
+//
+//	input: {"KEY": ["A", "B"], "OTHER": ["VALUE"]}
+//
+// output: [["KEY=A", "OTHER=VALUE"], ["KEY=B", "OTHER=VALUE"]]
+//
+// If any entries is an empty list, that variable is dropped from the matrix before processing.
+func ExpandEnvMatrix(matrix map[string][]string) [][]string {
+	result := [][]string{{}}
+
+	if len(matrix) == 0 {
+		return result
+	}
+
+	// Filter out keys with empty value slices
+	filteredMatrix := make(map[string][]string)
+	for key, values := range matrix {
+		if len(values) > 0 {
+			filteredMatrix[key] = values
+		}
+	}
+
+	if len(filteredMatrix) == 0 {
+		return result
+	}
+
+	keys := make([]string, 0, len(filteredMatrix))
+	for key := range filteredMatrix {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	// Build an expansion of all combinations.
+	// At each step we look at a given key and append each possible value to each
+	// possible result accumulated up to this point.
+
+	for _, key := range keys {
+		values := filteredMatrix[key]
+		var newResult [][]string
+
+		for _, env := range result {
+			for _, value := range values {
+				newEnv := make([]string, len(env)+1)
+				copy(newEnv, env)
+				newEnv[len(env)] = key + "=" + value
+				newResult = append(newResult, newEnv)
+			}
+		}
+
+		result = newResult
+	}
+
+	return result
 }
