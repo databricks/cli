@@ -28,7 +28,7 @@ var (
 	devVersionRegex = regexp.MustCompile(`0\.0\.0-dev(\+[a-f0-9]{10,16})?`)
 )
 
-type Replacement interface {
+type ReplacementX interface {
 	// Perform the replacement on the input string and return the result.
 	Replace(s string) string
 
@@ -36,43 +36,22 @@ type Replacement interface {
 	Debug() string
 }
 
-type RegexReplacement struct {
+type Replacement struct {
 	Old *regexp.Regexp
 	New string
 }
 
-func (r RegexReplacement) Replace(s string) string {
+func (r Replacement) Replace(s string) string {
 	return r.Old.ReplaceAllString(s, r.New)
 }
 
-func (r RegexReplacement) Debug() string {
+func (r Replacement) Debug() string {
 	return fmt.Sprintf("replace matches of regex %s with %s", r.Old, r.New)
 }
 
 type UuidReplacement struct {
 	seen map[string]int
 }
-
-// We serialize replacements to feed them to diff.py for acceptance tests which
-// compare the diffs of two strings. In that case we just send a generic UUID regex
-// replacement to repls.json.
-// This means that the stateful replacements of UUID will not be supported when `diff.py`
-// is used.
-
-// We convert the stateful UUID replacement to a list of stateless regex replacements
-// that can be serialized to JSON.
-// This is useful for the diff.py script that we use in our acceptance tests to
-// only compare the diff
-// func (r UuidReplacement) ToRegexReplacement() []RegexReplacement {
-// 	var repls []RegexReplacement
-// 	for uuid, i := range r.seen {
-// 		repls = append(repls, RegexReplacement{
-// 			Old: regexp.MustCompile(uuid),
-// 			New: fmt.Sprintf("[UUID-%d]", i),
-// 		})
-// 	}
-// 	return repls
-// }
 
 func (r UuidReplacement) Replace(s string) string {
 	matches := uuidRegex.FindAllString(s, -1)
@@ -104,16 +83,17 @@ func (r *ReplacementsContext) Clone() ReplacementsContext {
 	return ReplacementsContext{Repls: slices.Clone(r.Repls)}
 }
 
+// TODO CONTINUE: Moving the replacement on level up the stack.
 func (r *ReplacementsContext) Replace(s string) string {
 	// QQQ Should probably only replace whole words
 	for _, repl := range r.Repls {
-		s = repl.Replace(s)
+		s = repl.Old.ReplaceAllString(s, repl.New)
 	}
 	return s
 }
 
 func (r *ReplacementsContext) append(pattern *regexp.Regexp, replacement string) {
-	r.Repls = append(r.Repls, RegexReplacement{
+	r.Repls = append(r.Repls, Replacement{
 		Old: pattern,
 		New: replacement,
 	})
@@ -252,11 +232,6 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	for _, val := range u.Roles {
 		r.Set(val.Value, "[USERROLE]")
 	}
-}
-
-func PrepareReplacementsUUIDComparable(t testutil.TestingT, r *ReplacementsContext) {
-	t.Helper()
-	r.Repls = append(r.Repls, UuidReplacement{seen: make(map[string]int)})
 }
 
 func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {

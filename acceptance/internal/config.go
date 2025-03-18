@@ -40,7 +40,7 @@ type TestConfig struct {
 
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
-	Repls []testdiff.RegexReplacement
+	Repls []testdiff.Replacement
 
 	// List of server stubs to load. Example configuration:
 	//
@@ -64,12 +64,6 @@ type TestConfig struct {
 	Ignore []string
 
 	CompiledIgnoreObject *ignore.GitIgnore
-
-	// If true, the acceptance test framework will replace all UUIDs with [UUID-0], [UUID-1], etc.
-	// and ensure that the same UUIDs are replaced with the same replacement.
-	// This is useful for cases where we want to ensure UUID values are consistent
-	// in different contexts (API requests log vs output files for example).
-	DisableComparableUuidReplacement *bool
 }
 
 type ServerStub struct {

@@ -29,6 +29,16 @@ def main():
         except re.error as e:
             print(f"Regex error for pattern {r}: {e}", file=sys.stderr)
 
+    # The acceptance testing framework replaces UUIDs with [UUID-0], [UUID-1], etc
+    # for different values of the same UUID.
+    # Since the replacements on the acceptance testing framework side are stateful,
+    # we need to replace [UUID-0], [UUID-1], etc with [UUID] to make the diff work.
+    #
+    # Separately we also want to replace any UUIDs in the output files with [UUID]
+    # to make the diff work.
+    patterns.append((re.compile(r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"), "[UUID]"))
+    patterns.append((re.compile(r"\[UUID-(\d+)\]"), "[UUID]"))
+
     files1 = [str(p.relative_to(d1)) for p in d1.rglob("*") if p.is_file()]
     files2 = [str(p.relative_to(d2)) for p in d2.rglob("*") if p.is_file()]
 

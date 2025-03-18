@@ -170,7 +170,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	repls.SetPath(cwd, "[TESTROOT]")
 
-	repls.Repls = append(repls.Repls, testdiff.RegexReplacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
 
 	// Matches defaultSparkVersion in ../integration/bundle/helpers_test.go
 	t.Setenv("DEFAULT_SPARK_VERSION", "13.3.x-snapshot-scala2.12")
@@ -411,16 +411,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
-	// Must be added after PrepareReplacementsUser, otherwise conflicts with [USERNAME]
-	// for service principal users.
-	if isTruePtr(config.DisableComparableUuidReplacement) {
-		// bin/diff.py does not support stateful replacements. We provide a flag
-		// thus to disable this in cases where diff.py is used.
-		testdiff.PrepareReplacementsUUID(t, &repls)
-	} else {
-		testdiff.PrepareReplacementsUUIDComparable(t, &repls)
-	}
-
 	// User replacements come last:
 	for _, repl := range config.Repls {
 		repls.Repls = append(repls.Repls, repl)
@@ -460,6 +450,26 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	require.NoError(t, out.Close())
 
 	printedRepls := false
+
+	// Compute repls for UUIDs. For each unique UUID we compute a unique replacement.
+	uuidRegex := regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
+	seen := map[string]struct{}{}
+	uuidRepls := []testdiff.Replacement{}
+	for _, relPath := range outputs {
+		s := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
+		matches := uuidRegex.FindAllString(s, -1)
+		for _, match := range matches {
+			if _, ok := seen[match]; ok {
+				continue
+			}
+
+			uuidRepls = append(uuidRepls, testdiff.Replacement{Old: regexp.MustCompile(match), New: fmt.Sprintf("[UUID-%d]", len(uuidRepls))})
+			seen[match] = struct{}{}
+		}
+	}
+
+	// Prepend UUID replacements to the final list of replacements so that they are applied frst
+	repls.Repls = append(uuidRepls, repls.Repls...)
 
 	// Compare expected outputs
 	for _, relPath := range outputs {
