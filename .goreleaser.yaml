@@ -41,7 +41,7 @@ builds:
   binary: databricks
 
 archives:
-  - formats: ["zip"]
+  - formats: ["zip", "tar.gz"]
 
     # Include version in archive only for release builds and not for snapshot builds.
     # Snapshot archives must have a stable file name such that the artifacts in the nightly
