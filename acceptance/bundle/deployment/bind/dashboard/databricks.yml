@@ -7,6 +7,6 @@ resources:
       display_name: $DASHBOARD_DISPLAY_NAME
       warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
       embed_credentials: true
-      serialized_dashboard: '{"pages":[{"name":"02724bf2","displayName":"Page 1"}]}'
+      file_path: "sample-dashboard.lvdash.json"
       parent_path: /Users/$CURRENT_USER_NAME
 

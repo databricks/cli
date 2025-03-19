@@ -26,7 +26,7 @@ Response.Body = '''
     "lifecycle_state": "ACTIVE",
     "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
     "parent_path": "/Users/[USERNAME]",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page 1\"}]}"
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
 }
 '''
 
