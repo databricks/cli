@@ -17,3 +17,9 @@ HH:MM:SS Debug: POST /telemetry-ext
 <   "numProtoSuccess": 2
 < } pid=PID sdk=true
 HH:MM:SS Debug: All 2 logs uploaded successfully pid=PID
+
+>>> [CLI] current-user me
+{
+  "id":"[USERID]",
+  "userName":"[USERNAME]"
+}

@@ -1,5 +1,8 @@
 trace $CLI selftest send-telemetry --debug
 
+# Make another API call to assert that the same cmd-exec-id is used in all API calls.
+trace $CLI current-user me
+
 # Extract the cmd-exec-id from the request user agent and replace all occurrences
 # in the output request log.
 cat out.requests.txt | jq '.headers."User-Agent".[0]' | grep -o 'cmd-exec-id/[^ ]*' \
