@@ -79,6 +79,13 @@ func TestParseWheelFilename(t *testing.T) {
 			wantErr:          false,
 		},
 		{
+			filename:         "./myproj-0.1.0-py3-none-any.whl",
+			wantDistribution: "myproj",
+			wantVersion:      "0.1.0",
+			wantTags:         []string{"py3", "none", "any"},
+			wantErr:          false,
+		},
+		{
 			filename:         "myproj-0.1.0+20240303123456-py3-none-any.whl",
 			wantDistribution: "myproj",
 			wantVersion:      "0.1.0+20240303123456",
@@ -89,6 +96,13 @@ func TestParseWheelFilename(t *testing.T) {
 			filename:         "my_proj_with_parts-0.1.0-py3-none-any.whl",
 			wantDistribution: "my_proj_with_parts",
 			wantVersion:      "0.1.0",
+			wantTags:         []string{"py3", "none", "any"},
+			wantErr:          false,
+		},
+		{
+			filename:         "subdir/myproj-0.1.0+20240303123456-py3-none-any.whl",
+			wantDistribution: "myproj",
+			wantVersion:      "0.1.0+20240303123456",
 			wantTags:         []string{"py3", "none", "any"},
 			wantErr:          false,
 		},

@@ -1,12 +1,15 @@
 import sys
+from dataclasses import replace
 from io import StringIO
 from pathlib import Path
 
 from databricks.bundles.build import (
     _append_resources,
+    _apply_mutators,
     _Args,
     _Conf,
     _load_object,
+    _load_resources,
     _parse_args,
     _parse_bundle_info,
     _relativize_location,
@@ -20,6 +23,7 @@ from databricks.bundles.core import (
     Location,
     Resources,
     Severity,
+    job_mutator,
 )
 from databricks.bundles.jobs import Job
 
@@ -296,3 +300,114 @@ def test_conf_from_dict():
         ],
         venv_path="venv",
     )
+
+
+def test_mutators():
+    bundle = Bundle(target="default")
+    resources = Resources()
+    resources.add_job("job_0", Job(tags={"tag": "value"}))
+
+    @job_mutator
+    def add_first_tag(bundle: Bundle, job: Job) -> Job:
+        tags = bundle.resolve_variable(job.tags)
+
+        return replace(job, tags={"first": "tag", **tags})
+
+    @job_mutator
+    def add_second_tag(bundle: Bundle, job: Job) -> Job:
+        tags = bundle.resolve_variable(job.tags)
+
+        return replace(job, tags={"second": "tag", **tags})
+
+    new_resources, diagnostics = _apply_mutators(
+        bundle=bundle,
+        resources=resources,
+        mutator_functions=[add_first_tag, add_second_tag],
+    )
+
+    # add_second_tag is the last mutator that has modified a job
+    expected_location = Location.from_callable(add_second_tag.function)
+
+    assert not diagnostics.has_error()
+    assert new_resources._locations[("resources", "jobs", "job_0")] == expected_location
+    assert new_resources.jobs["job_0"].tags == {
+        "first": "tag",
+        "second": "tag",
+        "tag": "value",
+    }
+
+
+def test_mutators_unmodified():
+    bundle = Bundle(target="default")
+
+    resources = Resources()
+    resources.add_job("job_0", Job(description="description"))
+
+    @job_mutator
+    def mutator_1(job: Job) -> Job:
+        return replace(job, description="updated description")
+
+    @job_mutator
+    def mutator_2(job: Job) -> Job:
+        return job
+
+    new_resources, diagnostics = _apply_mutators(
+        bundle=bundle,
+        resources=resources,
+        mutator_functions=[mutator_1, mutator_2],
+    )
+
+    # despite mutator_2 being called last, it doesn't change the job, and we should use location of mutator_1
+    expected_location = Location.from_callable(mutator_1.function)
+
+    assert not diagnostics.has_error()
+    assert new_resources._locations[("resources", "jobs", "job_0")] == expected_location
+    assert new_resources.jobs["job_0"].description == "updated description"
+
+
+def test_load_resources():
+    bundle = Bundle(target="default")
+
+    def load_resources_1() -> Resources:
+        resources = Resources()
+        resources.add_job(
+            resource_name="my_job_1",
+            job={"name": "Job 1"},
+            location=Location(file="my_job_1.py", line=42, column=1),
+        )
+
+        return resources
+
+    def load_resources_2() -> Resources:
+        resources = Resources()
+        resources.add_job(
+            resource_name="my_job_2",
+            job={"name": "Job 2"},
+            location=Location(file="my_job_2.py", line=42, column=1),
+        )
+
+        return resources
+
+    resources, diagnostics = _load_resources(
+        bundle=bundle,
+        functions=[
+            load_resources_1,
+            load_resources_2,
+        ],
+    )
+
+    assert not diagnostics.has_error()
+
+    assert resources.jobs == {
+        "my_job_1": Job(name="Job 1"),
+        "my_job_2": Job(name="Job 2"),
+    }
+
+    assert resources._locations == {
+        ("resources", "jobs", "my_job_1"): Location(
+            file="my_job_1.py", line=42, column=1
+        ),
+        ("resources", "jobs", "my_job_2"): Location(
+            file="my_job_2.py", line=42, column=1
+        ),
+    }

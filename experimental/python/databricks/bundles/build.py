@@ -128,6 +128,7 @@ def _apply_mutators(
                             ("resources", "jobs", resource_name), location
                         )
                     resources.jobs[resource_name] = new_job
+                    job = new_job
             except Exception as exc:
                 mutator_name = mutator.function.__name__
 
@@ -241,9 +242,11 @@ def _load_resources(
 
     for function in functions:
         try:
-            resources, diagnostics = diagnostics.extend_tuple(
+            function_resources, diagnostics = diagnostics.extend_tuple(
                 _load_resources_from_function(bundle, function)
             )
+
+            resources.add_resources(function_resources)
         except Exception as exc:
             diagnostics = diagnostics.extend(
                 Diagnostics.from_exception(
@@ -342,7 +345,7 @@ def _explain_common_import_error(exc: Exception) -> Diagnostics:
     # a common case when default name of the module is not found
     # we can give a hint to the user how to fix it
     explanation = """Make sure to create a new Python file at resources/__init__.py with contents:
-    
+
 from databricks.bundles.core import load_resources_from_current_package_module
 
 
