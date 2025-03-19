@@ -8,6 +8,7 @@
 * Include tarballs in releases ([#2515](https://github.com/databricks/cli/pull/2515))
 
 ### Bundles
+* Support all version identifiers as per PEP440 in environment deps ([#2522](https://github.com/databricks/cli/pull/2522))
 
 ### API Changes
 * Added `databricks genie execute-message-attachment-query` command.
