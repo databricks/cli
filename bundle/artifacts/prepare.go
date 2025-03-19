@@ -73,7 +73,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			diags = diags.Extend(diag.Errorf("misconfigured artifact: please specify 'build' or 'files' property"))
 		}
 
-		if len(artifact.Files) > 0 {
+		if len(artifact.Files) > 0 && artifact.BuildCommand == "" {
 			diags = diags.Extend(expandGlobs(ctx, b, artifactName))
 		}
 
