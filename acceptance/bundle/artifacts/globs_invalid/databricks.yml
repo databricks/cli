@@ -1,0 +1,10 @@
+bundle:
+  name: expand_globs
+
+artifacts:
+  test:
+    files:
+      - source: "a[.txt"
+      - source: "./a[.txt"
+      - source: "../a[.txt"
+      - source: "subdir/a[.txt"
