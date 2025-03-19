@@ -1,6 +1,7 @@
 package libraries
 
 import (
+	"fmt"
 	"net/url"
 	"path"
 	"regexp"
@@ -81,13 +82,17 @@ func containsPipFlag(input string) bool {
 	return re.MatchString(input)
 }
 
+// pep440Regex is a regular expression that matches PEP 440 version specifiers.
+// https://peps.python.org/pep-0440/#public-version-identifiers
+const pep440Regex = `(?P<epoch>\d+!)?(?P<release>\d+(\.\d+)*)(?P<pre>[-_.]?(a|b|rc)\d+)?(?P<post>[-_.]?post\d+)?(?P<dev>[-_.]?dev\d+)?(?P<local>\+[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*)?`
+
 // ^[a-zA-Z0-9\-_]+: Matches the package name, allowing alphanumeric characters, dashes (-), and underscores (_).
 // \[.*\])?: Optionally matches any extras specified in square brackets, e.g., [security].
-// ((==|!=|<=|>=|~=|>|<)\d+(\.\d+){0,2}(\.\*)?): Optionally matches version specifiers, supporting various operators (==, !=, etc.) followed by a version number (e.g., 2.25.1).
+// ((==|!=|<=|>=|~=|>|<)\s?pep440Regex): Optionally matches version specifiers, supporting various operators (==, !=, etc.) followed by a version number as per PEP440 spec.
 // ,?: Optionally matches a comma (,) at the end of the specifier which is used to separate multiple specifiers.
 // There can be multiple version specifiers separated by commas or no specifiers.
 // Spec for package name and version specifier: https://pip.pypa.io/en/stable/reference/requirement-specifiers/
-var packageRegex = regexp.MustCompile(`^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?\d+(\.\d+){0,2}(\.\*)?,?)*$`)
+var packageRegex = regexp.MustCompile(fmt.Sprintf(`^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?%s,?)*$`, pep440Regex))
 
 func isPackage(name string) bool {
 	if packageRegex.MatchString(name) {
