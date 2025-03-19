@@ -1,0 +1,87 @@
+
+>>> cp -r [TESTROOT]/bundle/integration_whl/serverless/../base/setup.py [TESTROOT]/bundle/integration_whl/serverless/../base/my_test_code .
+
+>>> find .
+.
+./my_test_code
+./my_test_code/__init__.py
+./my_test_code/__main__.py
+./script
+./setup.py
+./repls.json
+./databricks.yml.tmpl
+./databricks.yml
+./output.txt
+
+>>> cat databricks.yml
+bundle:
+  name: environment_key
+
+workspace:
+  root_path: "~/.bundle/[UNIQUE_NAME]"
+
+artifacts:
+    my_test_code:
+      type: whl
+      build: python3 setup.py bdist_wheel
+
+resources:
+  jobs:
+    some_other_job:
+      name: "My Wheel Job"
+      tasks:
+        - task_key: TestTask
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
+          environment_key:  "test_env"
+      environments:
+        - environment_key:  "test_env"
+          spec:
+            client: "1"
+            dependencies:
+              - ./dist/*.whl
+
+>>> [CLI] bundle deploy
+Building my_test_code...
+Uploading my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "My Wheel Job" RUNNING 
+[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS 
+Hello from my func
+Got arguments:
+['my_test_code']
+
+=== Make a change to code without version change and run the job again
+>>> [CLI] bundle deploy
+Building my_test_code...
+Uploading my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "My Wheel Job" RUNNING 
+[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS 
+UPDATED MY FUNC
+Got arguments:
+['my_test_code']
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job some_other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
