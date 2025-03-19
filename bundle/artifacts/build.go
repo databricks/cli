@@ -46,15 +46,16 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 
 		if err != nil {
-			// TODO: location
-			return diag.FromErr(err)
+			diags = diags.Extend(diag.FromErr(err))
+			if diags.HasError() {
+				break
+			}
 		}
 
 		out, err := executor.Exec(ctx, a.BuildCommand)
 		if err != nil {
 			return diag.Errorf("build failed %s, error: %v, output: %s", artifactName, err, out)
 		}
-		log.Infof(ctx, "Build succeeded")
 
 		if a.Type == "whl" {
 			dir := a.Path
@@ -68,6 +69,9 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 					Source: wheel,
 				})
 			}
+			log.Infof(ctx, "%s: Build succeeded, found %s", artifactName, wheels)
+		} else {
+			log.Infof(ctx, "%s: Build succeeded", artifactName)
 		}
 
 		// We need to expand glob reference after build mutator is applied because
