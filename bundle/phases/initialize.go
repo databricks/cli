@@ -97,7 +97,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.TranslatePaths(),
 		trampoline.WrapperWarning(),
 
-		artifacts.Validate(),
+		artifacts.Prepare(),
 
 		apps.Validate(),
 

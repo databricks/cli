@@ -14,17 +14,17 @@ import (
 	"github.com/databricks/cli/libs/python"
 )
 
-func Validate() bundle.Mutator {
-	return &validate{}
+func Prepare() bundle.Mutator {
+	return &prepare{}
 }
 
-type validate struct{}
+type prepare struct{}
 
-func (m *validate) Name() string {
-	return "artifacts.Validate"
+func (m *prepare) Name() string {
+	return "artifacts.Prepare"
 }
 
-func (m *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	err := InsertPythonArtifact(ctx, b)
