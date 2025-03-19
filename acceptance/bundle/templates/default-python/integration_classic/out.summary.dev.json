@@ -1,0 +1,187 @@
+{
+  "bundle": {
+    "name": "my_default_python_[UNIQUE_NAME]",
+    "target": "dev",
+    "environment": "dev",
+    "terraform": {
+      "exec_path": "[TERRAFORM]"
+    },
+    "git": {
+      "bundle_root_path": "."
+    },
+    "mode": "development",
+    "deployment": {
+      "lock": {
+        "enabled": false
+      }
+    },
+    "uuid": "[UUID]"
+  },
+  "include": [
+    "resources/my_default_python_[UNIQUE_NAME].job.yml",
+    "resources/my_default_python_[UNIQUE_NAME].pipeline.yml"
+  ],
+  "workspace": {
+    "host": "[DATABRICKS_URL]",
+    "current_user": {
+      "active": true,
+      "displayName": "[USERNAME]",
+      "emails": [
+        {
+          "primary": true,
+          "type": "work",
+          "value": "[USERNAME]"
+        }
+      ],
+      "entitlements": [
+        {
+          "value": "allow-cluster-create"
+        },
+        {
+          "value": "allow-instance-pool-create"
+        }
+      ],
+      "groups": [
+        {
+          "$ref": "Groups/[USERGROUP]",
+          "display": "admins",
+          "type": "direct",
+          "value": "[USERGROUP]"
+        }
+      ],
+      "id": "[USERID]",
+      "name": {
+        "givenName": "[USERNAME]"
+      },
+      "schemas": [
+        "urn:ietf:params:scim:schemas:core:2.0:User",
+        "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
+      ],
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/resources",
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/artifacts",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state"
+  },
+  "resources": {
+    "jobs": {
+      "my_default_python_[UNIQUE_NAME]_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "id": "261337390489690",
+        "job_clusters": [
+          {
+            "job_cluster_key": "job_cluster",
+            "new_cluster": {
+              "autoscale": {
+                "max_workers": 4,
+                "min_workers": 1
+              },
+              "data_security_mode": "SINGLE_USER",
+              "node_type_id": "[NODE_TYPE_ID]",
+              "spark_version": "15.4.x-scala2.12"
+            }
+          }
+        ],
+        "max_concurrent_runs": 4,
+        "name": "[dev [USERNAME]] my_default_python_[UNIQUE_NAME]_job",
+        "queue": {
+          "enabled": true
+        },
+        "tags": {
+          "dev": "[USERNAME]"
+        },
+        "tasks": [
+          {
+            "job_cluster_key": "job_cluster",
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files/src/notebook"
+            },
+            "task_key": "notebook_task"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "notebook_task"
+              }
+            ],
+            "pipeline_task": {
+              "pipeline_id": "${resources.pipelines.my_default_python_[UNIQUE_NAME]_pipeline.id}"
+            },
+            "task_key": "refresh_pipeline"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "refresh_pipeline"
+              }
+            ],
+            "job_cluster_key": "job_cluster",
+            "libraries": [
+              {
+                "whl": "dist/*.whl"
+              }
+            ],
+            "python_wheel_task": {
+              "entry_point": "main",
+              "package_name": "my_default_python_[UNIQUE_NAME]"
+            },
+            "task_key": "main_task"
+          }
+        ],
+        "trigger": {
+          "pause_status": "PAUSED",
+          "periodic": {
+            "interval": 1,
+            "unit": "DAYS"
+          }
+        },
+        "url": "[DATABRICKS_URL]/jobs/261337390489690?o=470576644108500"
+      }
+    },
+    "pipelines": {
+      "my_default_python_[UNIQUE_NAME]_pipeline": {
+        "configuration": {
+          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files/src"
+        },
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state/metadata.json"
+        },
+        "development": true,
+        "id": "[UUID]",
+        "libraries": [
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
+            }
+          }
+        ],
+        "name": "[dev [USERNAME]] my_default_python_[UNIQUE_NAME]_pipeline",
+        "schema": "my_default_python_[UNIQUE_NAME]_dev",
+        "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=470576644108500"
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "presets": {
+    "name_prefix": "[dev [USERNAME]] ",
+    "pipelines_development": true,
+    "trigger_pause_status": "PAUSED",
+    "jobs_max_concurrent_runs": 4,
+    "tags": {
+      "dev": "[USERNAME]"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+Cloud = true
+Local = false
+
+[[Server]]
+Pattern = "POST /api/2.0/pipelines"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "DELETE /api/2.0/pipelines/"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/"
+Response.Body = '{}'
