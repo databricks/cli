@@ -21,7 +21,7 @@ func Validate() bundle.Mutator {
 type validate struct{}
 
 func (m *validate) Name() string {
-	return "artifacts.Validate()"
+	return "artifacts.Validate"
 }
 
 func (m *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

@@ -21,7 +21,7 @@ func Build() bundle.Mutator {
 type build struct{}
 
 func (m *build) Name() string {
-	return "artifacts.Build()"
+	return "artifacts.Build"
 }
 
 func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
