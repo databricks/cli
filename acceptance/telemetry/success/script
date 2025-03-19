@@ -1,1 +1,6 @@
 trace $CLI selftest send-telemetry --debug
+
+# Extract the cmd-exec-id from the request user agent and replace all occurrences
+# in the output request log.
+cat out.requests.txt | jq '.headers."User-Agent".[0]' | grep -o 'cmd-exec-id/[^ ]*' \
+ | cut -d '/' -f2 | xargs -I {} sed -i '' 's|{}|[CMD-EXEC-ID]|g' out.requests.txt
