@@ -265,18 +265,26 @@ func TestParseWheelFilename(t *testing.T) {
 		},
 	}
 
+	prefixes := []string{
+		"",
+		"./",
+		"hello/world/",
+	}
+
 	for _, tt := range tests {
-		t.Run(tt.filename, func(t *testing.T) {
-			info, err := ParseWheelFilename(tt.filename)
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.wantDistribution, info.Distribution, "distribution mismatch")
-				require.Equal(t, tt.wantVersion, info.Version, "version mismatch")
-				require.Equal(t, tt.wantTags, info.Tags, "tags mismatch")
-			}
-		})
+		for _, prefix := range prefixes {
+			t.Run(prefix+tt.filename, func(t *testing.T) {
+				info, err := ParseWheelFilename(tt.filename)
+				if tt.wantErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+					require.Equal(t, tt.wantDistribution, info.Distribution, "distribution mismatch")
+					require.Equal(t, tt.wantVersion, info.Version, "version mismatch")
+					require.Equal(t, tt.wantTags, info.Tags, "tags mismatch")
+				}
+			})
+		}
 	}
 }
 
