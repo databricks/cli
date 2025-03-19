@@ -366,13 +366,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 					reqJson, err := json.MarshalIndent(req, "", "  ")
 					assert.NoErrorf(t, err, "Failed to indent: %#v", req)
 
-					reqJsonWithRepls := repls.Replace(string(reqJson))
-
 					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 					assert.NoError(t, err)
 					defer f.Close()
 
-					_, err = f.WriteString(reqJsonWithRepls + "\n")
+					_, err = f.WriteString(string(reqJson) + "\n")
 					assert.NoError(t, err)
 				}
 			}
