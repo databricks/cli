@@ -80,15 +80,15 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "bundle/templates/telemetry/default-python")
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
-	require.Equal(t, 1, testAccept(t, true, "bundle/templates/telemetry/default-python"))
-	// require.Equal(t, 1, testAccept(t, true, "selftest/server"))
+	require.Equal(t, 1, testAccept(t, true, ""))
+	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {

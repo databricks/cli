@@ -1,15 +1,6 @@
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
-[[Server]]
-Pattern = "POST /telemetry-ext"
-Response.Body = '''
-{
-    "errors": [],
-    "numProtoSuccess": 2
-}
-'''
-
 [[Repls]]
 Old = '17\d{11}'
 New = '"UNIX_TIME_MILLIS"'

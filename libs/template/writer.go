@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -202,6 +203,11 @@ func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
 
 		}
 	}
+
+	// Sort the arguments by key for deterministic telemetry logging
+	sort.Slice(args, func(i, j int) bool {
+		return args[i].Key < args[j].Key
+	})
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleInitEvent: &protos.BundleInitEvent{
