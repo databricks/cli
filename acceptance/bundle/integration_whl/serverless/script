@@ -1,7 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 trace cp -r $TESTDIR/../base/{setup.py,my_test_code} .
-trace find .
-trace cat databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy
 trace $CLI bundle run some_other_job
