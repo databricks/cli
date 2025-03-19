@@ -79,6 +79,13 @@ func TestParseWheelFilename(t *testing.T) {
 			wantErr:          false,
 		},
 		{
+			filename:         "./myproj-0.1.0-py3-none-any.whl",
+			wantDistribution: "myproj",
+			wantVersion:      "0.1.0",
+			wantTags:         []string{"py3", "none", "any"},
+			wantErr:          false,
+		},
+		{
 			filename:         "myproj-0.1.0+20240303123456-py3-none-any.whl",
 			wantDistribution: "myproj",
 			wantVersion:      "0.1.0+20240303123456",
@@ -89,6 +96,13 @@ func TestParseWheelFilename(t *testing.T) {
 			filename:         "my_proj_with_parts-0.1.0-py3-none-any.whl",
 			wantDistribution: "my_proj_with_parts",
 			wantVersion:      "0.1.0",
+			wantTags:         []string{"py3", "none", "any"},
+			wantErr:          false,
+		},
+		{
+			filename:         "subdir/myproj-0.1.0+20240303123456-py3-none-any.whl",
+			wantDistribution: "myproj",
+			wantVersion:      "0.1.0+20240303123456",
 			wantTags:         []string{"py3", "none", "any"},
 			wantErr:          false,
 		},
@@ -265,26 +279,18 @@ func TestParseWheelFilename(t *testing.T) {
 		},
 	}
 
-	prefixes := []string{
-		"",
-		"./",
-		"hello/world/",
-	}
-
 	for _, tt := range tests {
-		for _, prefix := range prefixes {
-			t.Run(prefix+tt.filename, func(t *testing.T) {
-				info, err := ParseWheelFilename(tt.filename)
-				if tt.wantErr {
-					require.Error(t, err)
-				} else {
-					require.NoError(t, err)
-					require.Equal(t, tt.wantDistribution, info.Distribution, "distribution mismatch")
-					require.Equal(t, tt.wantVersion, info.Version, "version mismatch")
-					require.Equal(t, tt.wantTags, info.Tags, "tags mismatch")
-				}
-			})
-		}
+		t.Run(tt.filename, func(t *testing.T) {
+			info, err := ParseWheelFilename(tt.filename)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.wantDistribution, info.Distribution, "distribution mismatch")
+				require.Equal(t, tt.wantVersion, info.Version, "version mismatch")
+				require.Equal(t, tt.wantTags, info.Tags, "tags mismatch")
+			}
+		})
 	}
 }
 
