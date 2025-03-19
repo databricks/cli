@@ -39,11 +39,7 @@ func TestExpandGlobs_Nominal(t *testing.T) {
 	bundletest.SetLocation(b, "artifacts", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	ctx := context.Background()
-	diags := bundle.ApplySeq(ctx, b,
-		// Run prepare first to make paths absolute.
-		&prepare{"test"},
-		&expandGlobs{"test"},
-	)
+	diags := expandGlobs(ctx, b, "text")
 	require.NoError(t, diags.Error())
 
 	// Assert that the expanded paths are correct.
@@ -80,11 +76,7 @@ func TestExpandGlobs_InvalidPattern(t *testing.T) {
 	bundletest.SetLocation(b, "artifacts", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	ctx := context.Background()
-	diags := bundle.ApplySeq(ctx, b,
-		// Run prepare first to make paths absolute.
-		&prepare{"test"},
-		&expandGlobs{"test"},
-	)
+	diags := expandGlobs(ctx, b, "test")
 
 	assert.Len(t, diags, 4)
 	assert.Equal(t, filepath.Clean("a[.txt")+": syntax error in pattern", diags[0].Summary)
@@ -128,11 +120,7 @@ func TestExpandGlobs_NoMatches(t *testing.T) {
 	bundletest.SetLocation(b, "artifacts", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	ctx := context.Background()
-	diags := bundle.ApplySeq(ctx, b,
-		// Run prepare first to make paths absolute.
-		&prepare{"test"},
-		&expandGlobs{"test"},
-	)
+	diags := expandGlobs(ctx, b, "test")
 
 	assert.Len(t, diags, 2)
 	assert.Equal(t, "c*.txt: no matching files", diags[0].Summary)
