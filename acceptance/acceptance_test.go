@@ -44,7 +44,7 @@ var (
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
-// the test name there, e..g "bundle/variables/empty".
+// the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs

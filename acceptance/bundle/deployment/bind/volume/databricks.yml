@@ -1,0 +1,9 @@
+bundle:
+  name: bind-dashboard-test-$BUNDLE_NAME_SUFFIX
+
+resources:
+  volumes:
+    volume1:
+      name: $VOLUME_NAME
+      schema_name: $SCHEMA_NAME
+      catalog_name: $CATALOG_NAME

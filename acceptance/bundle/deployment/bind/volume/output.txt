@@ -1,0 +1,40 @@
+
+=== Bind volume test: 
+=== Substitute variables in the template: 
+=== Create a pre-defined schema (volume requires a schema): {
+  "full_name": "main.test-schema-[UUID]",
+  "catalog_name": "main"
+}
+
+=== Create a pre-defined volume: 
+=== Bind volume: Updating deployment state...
+Successfully bound databricks_volume with an id 'main.test-schema-[UUID].volume-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UUID]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Read the pre-defined dashboard: {
+  "catalog_name": "main",
+  "full_name": "main.test-schema-[UUID].volume-[UUID]",
+  "schema_name": "test-schema-[UUID]",
+  "volume_type": "MANAGED"
+}
+
+=== Unbind the dashboard: Updating deployment state...
+
+=== Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UUID]/default
+
+Deleting files...
+Destroy complete!
+
+=== Read the pre-defined volume again (expecting it still exists): {
+  "catalog_name": "main",
+  "full_name": "main.test-schema-[UUID].volume-[UUID]",
+  "schema_name": "test-schema-[UUID]",
+  "volume_type": "MANAGED"
+}
+
+=== Test cleanup: 
+=== Delete the pre-defined volume main.test-schema-[UUID].volume-[UUID]: 0
