@@ -24,8 +24,9 @@ dev-dependencies = [
   "typing_extensions==4.12.2",
 ]
 
-[tool.setuptools]
-py-modules = ["databricks"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["databricks.bundles*"]
 
 [tool.setuptools.package-data]
 "databricks.bundles" = ["py.typed"]

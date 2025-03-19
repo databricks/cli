@@ -101,6 +101,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// Download terraform and provider and create config; this also creates build directory.
 	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
 
+	wheelPath, err := buildDatabricksBundlesWheel(t, buildDir)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
+	repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
+
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
 	if coverDir != "" {
@@ -453,7 +458,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	for _, keyvalue := range customEnv {
-		items := strings.Split(keyvalue, "=")
+		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
 		cmd.Env = append(cmd.Env, keyvalue)
 		repls.Set(items[1], "["+items[0]+"]")
@@ -876,5 +881,35 @@ func getNodeTypeID(cloudEnv string) string {
 		return "local-fake-node"
 	default:
 		return "unknown-cloudEnv-" + cloudEnv
+	}
+}
+
+// buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
+// It's used to cache the wheel build between acceptance tests, because one build takes ~10 seconds.
+func buildDatabricksBundlesWheel(t *testing.T, buildDir string) (string, error) {
+	RunCommand(t, []string{"uv", "build", "--wheel", "--out-dir", buildDir}, "../experimental/python")
+
+	files, err := os.ReadDir(buildDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read directory %s: %s", buildDir, err)
+	}
+
+	// we can't control output file name, so we have to search for it
+
+	var wheelName string
+	for _, file := range files {
+		if strings.HasPrefix(file.Name(), "databricks_bundles-") && strings.HasSuffix(file.Name(), ".whl") {
+			if wheelName != "" {
+				return "", fmt.Errorf("multiple wheels found: %s and %s", wheelName, file.Name())
+			} else {
+				wheelName = file.Name()
+			}
+		}
+	}
+
+	if wheelName != "" {
+		return filepath.Join(buildDir, wheelName), nil
+	} else {
+		return "", fmt.Errorf("databricks-bundles wheel not found in %s", buildDir)
 	}
 }
