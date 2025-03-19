@@ -1,0 +1,10 @@
+$CLI bundle init default-python --config-file input.json --output-dir output
+
+cmd_exec_id=$(cat out.requests.txt | jq '.headers."User-Agent".[0]'| head -n 1 | grep -o 'cmd-exec-id/[^ ]*' | cut -d '/' -f2)
+trace echo $cmd_exec_id | ghead -c 3
+
+update_file.py out.requests.txt $cmd_exec_id  '[CMD-EXEC-ID]'
+
+mv output/my_default_python/databricks.yml out.databricks.yml
+
+rm -r output
