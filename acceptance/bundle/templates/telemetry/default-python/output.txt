@@ -6,6 +6,3 @@ Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): [D
 
 Please refer to the README.md file for "getting started" instructions.
 See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
-
->>> echo [UUID]
-[UU
