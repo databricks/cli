@@ -1,0 +1,67 @@
+
+>>> [CLI] bundle validate -o json
+Warn: processing map[test:%!s(*config.Artifact=&{  [{a*.txt } {subdir/*.txt }]  })]
+Warn: processing test
+Error: a*.txt: no matching files
+  at artifacts.test.files[0].source
+  in databricks.yml:7:17
+
+Error: subdir/*.txt: no matching files
+  at artifacts.test.files[1].source
+  in databricks.yml:8:17
+
+
+Exit code: 1
+{
+  "test": {
+    "files": [
+      {
+        "source": "a*.txt"
+      },
+      {
+        "source": "subdir/*.txt"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle validate -o json
+Warn: processing map[test:%!s(*config.Artifact=&{  [{a*.txt } {subdir/*.txt }]  })]
+Warn: processing test
+Error: subdir/*.txt: no matching files
+  at artifacts.test.files[1].source
+  in databricks.yml:8:17
+
+
+Exit code: 1
+{
+  "test": {
+    "files": [
+      {
+        "source": "a*.txt"
+      },
+      {
+        "source": "subdir/*.txt"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle validate -o json
+Warn: processing map[test:%!s(*config.Artifact=&{  [{a*.txt } {subdir/*.txt }]  })]
+Warn: processing test
+{
+  "test": {
+    "files": [
+      {
+        "source": "a1.txt"
+      },
+      {
+        "source": "a2.txt"
+      },
+      {
+        "source": "subdir/hello.txt"
+      }
+    ]
+  }
+}
