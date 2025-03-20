@@ -1,26 +1,17 @@
 {
-  "artifacts": {
-    "python_artifact": {
-      "build": "python3 setup.py bdist_wheel",
-      "path": "[TEST_TMP_DIR]/my_default_python_[UNIQUE_NAME]",
-      "type": "whl"
-    }
-  },
   "bundle": {
-    "deployment": {
-      "lock": {
-        "enabled": false
-      }
-    },
+    "name": "my_default_python_[UNIQUE_NAME]",
+    "target": "dev",
     "environment": "dev",
+    "terraform": {},
     "git": {
       "bundle_root_path": "."
     },
     "mode": "development",
-    "name": "my_default_python_[UNIQUE_NAME]",
-    "target": "dev",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
+    "deployment": {
+      "lock": {
+        "enabled": false
+      }
     },
     "uuid": "[UUID]"
   },
@@ -28,14 +19,20 @@
     "resources/my_default_python_[UNIQUE_NAME].job.yml",
     "resources/my_default_python_[UNIQUE_NAME].pipeline.yml"
   ],
-  "presets": {
-    "jobs_max_concurrent_runs": 4,
-    "name_prefix": "[dev [USERNAME]] ",
-    "pipelines_development": true,
-    "tags": {
-      "dev": "[USERNAME]"
-    },
-    "trigger_pause_status": "PAUSED"
+  "workspace": {
+    "host": "[DATABRICKS_URL]",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/resources",
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/artifacts",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state"
+  },
+  "artifacts": {
+    "python_artifact": {
+      "type": "whl",
+      "path": "[TEST_TMP_DIR]/my_default_python_[UNIQUE_NAME]",
+      "build": "python3 setup.py bdist_wheel"
+    }
   },
   "resources": {
     "jobs": {
@@ -46,6 +43,7 @@
         },
         "edit_mode": "UI_LOCKED",
         "format": "MULTI_TASK",
+        "id": "[NUMBER]",
         "job_clusters": [
           {
             "job_cluster_key": "job_cluster",
@@ -62,7 +60,6 @@
         ],
         "max_concurrent_runs": 4,
         "name": "[dev [USERNAME]] my_default_python_[UNIQUE_NAME]_job",
-        "permissions": [],
         "queue": {
           "enabled": true
         },
@@ -113,7 +110,8 @@
             "interval": 1,
             "unit": "DAYS"
           }
-        }
+        },
+        "url": "[DATABRICKS_URL]/jobs/[NUMBER]?o=[NUMBER]"
       }
     },
     "pipelines": {
@@ -126,6 +124,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state/metadata.json"
         },
         "development": true,
+        "id": "[UUID]",
         "libraries": [
           {
             "notebook": {
@@ -134,8 +133,8 @@
           }
         ],
         "name": "[dev [USERNAME]] my_default_python_[UNIQUE_NAME]_pipeline",
-        "permissions": [],
-        "schema": "my_default_python_[UNIQUE_NAME]_dev"
+        "schema": "my_default_python_[UNIQUE_NAME]_dev",
+        "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMBER]"
       }
     }
   },
@@ -144,50 +143,13 @@
       "."
     ]
   },
-  "targets": null,
-  "workspace": {
-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/artifacts",
-    "current_user": {
-      "active": true,
-      "displayName": "[USERNAME]",
-      "emails": [
-        {
-          "primary": true,
-          "type": "work",
-          "value": "[USERNAME]"
-        }
-      ],
-      "entitlements": [
-        {
-          "value": "allow-cluster-create"
-        },
-        {
-          "value": "allow-instance-pool-create"
-        }
-      ],
-      "groups": [
-        {
-          "$ref": "Groups/[USERGROUP]",
-          "display": "admins",
-          "type": "direct",
-          "value": "[USERGROUP]"
-        }
-      ],
-      "id": "[USERID]",
-      "name": {
-        "givenName": "[USERNAME]"
-      },
-      "schemas": [
-        "urn:ietf:params:scim:schemas:core:2.0:User",
-        "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
-      ],
-      "short_name": "[USERNAME]",
-      "userName": "[USERNAME]"
-    },
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files",
-    "host": "[DATABRICKS_URL]",
-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/resources",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev",
-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state"
+  "presets": {
+    "name_prefix": "[dev [USERNAME]] ",
+    "pipelines_development": true,
+    "trigger_pause_status": "PAUSED",
+    "jobs_max_concurrent_runs": 4,
+    "tags": {
+      "dev": "[USERNAME]"
+    }
   }
 }
