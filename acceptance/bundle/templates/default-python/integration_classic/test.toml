@@ -1,6 +1,10 @@
 Cloud = true
 Local = false
 
+Ignore = [
+    '.venv',
+]
+
 [EnvMatrix]
 PYTHON_VERSION = [
     "3.9",
