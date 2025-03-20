@@ -1,7 +1,7 @@
 
 >>> cat databricks.yml
 bundle:
-  name: bind-cluster-test-[UUID]
+  name: bind-cluster-test-[UNIQUE_NAME]
 
 resources:
   clusters:
@@ -21,4 +21,3 @@ Successfully bound databricks_cluster with an id '[CLUSTER-ID]'. Run 'bundle dep
 
 >>> [CLI] bundle deployment unbind cluster1
 Updating deployment state...
-0
