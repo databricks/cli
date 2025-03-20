@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -142,10 +143,23 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
+	sources := make([]string, 0, len(libs))
+	for source := range libs {
+		sources = append(sources, source)
+	}
+	sort.Strings(sources)
+
 	errs, errCtx := errgroup.WithContext(ctx)
 	errs.SetLimit(maxFilesRequestsInFlight)
 
-	for source := range libs {
+	for _, source := range sources {
+		relPath, err := filepath.Rel(b.SyncRootPath, source)
+		if err != nil {
+			relPath = source
+		} else {
+			relPath = filepath.ToSlash(relPath)
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
 			return UploadFile(errCtx, source, u.client)
 		})
@@ -156,7 +170,8 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Update all the config paths to point to the uploaded location
-	for source, locations := range libs {
+	for _, source := range sources {
+		locations := libs[source]
 		err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 			remotePath := path.Join(uploadPath, filepath.Base(source))
 
@@ -188,7 +203,6 @@ func (u *upload) Name() string {
 // Function to upload file (a library, artifact and etc) to Workspace or UC volume
 func UploadFile(ctx context.Context, file string, client filer.Filer) error {
 	filename := filepath.Base(file)
-	cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", filename))
 
 	f, err := os.Open(file)
 	if err != nil {
