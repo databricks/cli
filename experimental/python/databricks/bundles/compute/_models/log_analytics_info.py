@@ -15,12 +15,12 @@ class LogAnalyticsInfo:
 
     log_analytics_primary_key: VariableOrOptional[str] = None
     """
-    <needs content added>
+    The primary key for the Azure Log Analytics agent configuration
     """
 
     log_analytics_workspace_id: VariableOrOptional[str] = None
     """
-    <needs content added>
+    The workspace ID for the Azure Log Analytics agent configuration
     """
 
     @classmethod
@@ -36,12 +36,12 @@ class LogAnalyticsInfoDict(TypedDict, total=False):
 
     log_analytics_primary_key: VariableOrOptional[str]
     """
-    <needs content added>
+    The primary key for the Azure Log Analytics agent configuration
     """
 
     log_analytics_workspace_id: VariableOrOptional[str]
     """
-    <needs content added>
+    The workspace ID for the Azure Log Analytics agent configuration
     """
 
 

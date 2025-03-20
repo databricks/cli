@@ -43,8 +43,7 @@ class InitScriptInfo:
 
     abfss: VariableOrOptional[Adlsgen2Info] = None
     """
-    destination needs to be provided. e.g.
-    `{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }`
+    Contains the Azure Data Lake Storage destination path
     """
 
     dbfs: VariableOrOptional[DbfsStorageInfo] = None
@@ -98,8 +97,7 @@ class InitScriptInfoDict(TypedDict, total=False):
 
     abfss: VariableOrOptional[Adlsgen2InfoParam]
     """
-    destination needs to be provided. e.g.
-    `{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }
+    Contains the Azure Data Lake Storage destination path
     """
 
     dbfs: VariableOrOptional[DbfsStorageInfoParam]

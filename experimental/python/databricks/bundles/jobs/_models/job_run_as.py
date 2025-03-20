@@ -19,7 +19,7 @@ class JobRunAs:
 
     service_principal_name: VariableOrOptional[str] = None
     """
-    Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+    The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
     """
 
     user_name: VariableOrOptional[str] = None
@@ -51,7 +51,7 @@ class JobRunAsDict(TypedDict, total=False):
 
     service_principal_name: VariableOrOptional[str]
     """
-    Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+    The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
     """
 
     user_name: VariableOrOptional[str]
