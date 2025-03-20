@@ -38,9 +38,13 @@ trap "trace $CLI bundle destroy -t prod --auto-approve" EXIT
 
 trace $CLI bundle validate -t prod
 trace $CLI bundle validate -t prod -o json | jq "del($JQ_DELETE)" > ../out.validate.prod.json
+trace diff.py ../out.validate.dev.json ../out.validate.prod.json
+rm ../out.validate.prod.json
 trace $CLI bundle deploy -t prod
 trace $CLI bundle summary -t prod
 trace $CLI bundle summary -t prod -o json | jq "del($JQ_DELETE)" > ../out.summary.prod.json
+trace diff.py ../out.summary.dev.json ../out.summary.prod.json
+rm ../out.summary.prod.json
 trace $CLI bundle destroy -t prod --auto-approve
 trap "true" EXIT
 
