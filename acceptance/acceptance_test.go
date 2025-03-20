@@ -315,7 +315,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	id := uuid.New()
-	uniqueName := strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "=")
+	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
@@ -330,7 +330,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	repls.SetPathWithParents(tmpDir, "[TMPDIR]")
+	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -344,6 +344,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
+	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
 	var workspaceClient *databricks.WorkspaceClient
 	var user iam.User

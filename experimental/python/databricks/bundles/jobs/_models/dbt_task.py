@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
@@ -14,14 +14,14 @@ if TYPE_CHECKING:
 class DbtTask:
     """"""
 
-    commands: VariableOrList[str]
-    """
-    A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
-    """
-
     catalog: VariableOrOptional[str] = None
     """
     Optional name of the catalog to use. The value is the top level in the 3-level namespace of Unity Catalog (catalog / schema / relation). The catalog value can only be specified if a warehouse_id is specified. Requires dbt-databricks >= 1.1.1.
+    """
+
+    commands: VariableOrList[str] = field(default_factory=list)
+    """
+    A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
     """
 
     profiles_directory: VariableOrOptional[str] = None
@@ -66,14 +66,14 @@ class DbtTask:
 class DbtTaskDict(TypedDict, total=False):
     """"""
 
-    commands: VariableOrList[str]
-    """
-    A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
-    """
-
     catalog: VariableOrOptional[str]
     """
     Optional name of the catalog to use. The value is the top level in the 3-level namespace of Unity Catalog (catalog / schema / relation). The catalog value can only be specified if a warehouse_id is specified. Requires dbt-databricks >= 1.1.1.
+    """
+
+    commands: VariableOrList[str]
+    """
+    A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
     """
 
     profiles_directory: VariableOrOptional[str]

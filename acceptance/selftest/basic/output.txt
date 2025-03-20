@@ -18,13 +18,13 @@ Exit code: 7
 
 === Capturing pwd
 >>> python3 -c import os; print(os.getcwd())
-[TMPDIR]
+[TEST_TMP_DIR]
 
 === Capturing subdir
 >>> mkdir -p subdir/a/b/c
 
 >>> withdir subdir/a/b/c python3 -c import os; print(os.getcwd())
-[TMPDIR]/subdir/a/b/c
+[TEST_TMP_DIR]/subdir/a/b/c
 
 === Custom output files - everything starting with out is captured and compared
 >>> echo HELLO

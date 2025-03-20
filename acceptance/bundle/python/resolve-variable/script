@@ -1,0 +1,4 @@
+trace uv run --python 3.10 --with databricks-bundles==0.7.2 -q $CLI bundle validate --output json | \
+  jq "pick(.experimental.python, .resources)"
+
+rm -fr .databricks __pycache__

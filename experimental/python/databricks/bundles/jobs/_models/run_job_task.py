@@ -3,7 +3,15 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr, VariableOrDict
+from databricks.bundles.core._variable import (
+    VariableOr,
+    VariableOrDict,
+    VariableOrOptional,
+)
+from databricks.bundles.jobs._models.pipeline_params import (
+    PipelineParams,
+    PipelineParamsParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -21,6 +29,11 @@ class RunJobTask:
     job_parameters: VariableOrDict[str] = field(default_factory=dict)
     """
     Job-level parameters used to trigger the job.
+    """
+
+    pipeline_params: VariableOrOptional[PipelineParams] = None
+    """
+    Controls whether the pipeline should perform a full refresh
     """
 
     @classmethod
@@ -42,6 +55,11 @@ class RunJobTaskDict(TypedDict, total=False):
     job_parameters: VariableOrDict[str]
     """
     Job-level parameters used to trigger the job.
+    """
+
+    pipeline_params: VariableOrOptional[PipelineParamsParam]
+    """
+    Controls whether the pipeline should perform a full refresh
     """
 
 

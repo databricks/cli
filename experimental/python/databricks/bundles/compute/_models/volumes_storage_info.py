@@ -15,7 +15,7 @@ class VolumesStorageInfo:
 
     destination: VariableOr[str]
     """
-    Unity Catalog Volumes file destination, e.g. `/Volumes/my-init.sh`
+    Unity Catalog volumes file destination, e.g. `/Volumes/catalog/schema/volume/dir/file`
     """
 
     @classmethod
@@ -31,7 +31,7 @@ class VolumesStorageInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    Unity Catalog Volumes file destination, e.g. `/Volumes/my-init.sh`
+    Unity Catalog volumes file destination, e.g. `/Volumes/catalog/schema/volume/dir/file`
     """
 
 

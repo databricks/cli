@@ -17,7 +17,10 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
+from databricks.bundles.jobs._models.git_source import (
+    GitSource,
+    GitSourceParam,
+)
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -39,6 +42,10 @@ from databricks.bundles.jobs._models.job_run_as import JobRunAs, JobRunAsParam
 from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRules,
     JobsHealthRulesParam,
+)
+from databricks.bundles.jobs._models.performance_target import (
+    PerformanceTarget,
+    PerformanceTargetParam,
 )
 from databricks.bundles.jobs._models.permission import Permission, PermissionParam
 from databricks.bundles.jobs._models.queue_settings import (
@@ -107,6 +114,7 @@ class Job(Resource):
     job_clusters: VariableOrList[JobCluster] = field(default_factory=list)
     """
     A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
+    If more than 100 job clusters are available, you can paginate through them using :method:jobs/get.
     """
 
     max_concurrent_runs: VariableOrOptional[int] = None
@@ -134,6 +142,11 @@ class Job(Resource):
     Job-level parameter definitions
     """
 
+    performance_target: VariableOrOptional[PerformanceTarget] = None
+    """
+    PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
+    """
+
     permissions: VariableOrList[Permission] = field(default_factory=list)
 
     queue: VariableOrOptional[QueueSettings] = None
@@ -156,6 +169,7 @@ class Job(Resource):
     tasks: VariableOrList[Task] = field(default_factory=list)
     """
     A list of task specifications to be executed by this job.
+    If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
     """
 
     timeout_seconds: VariableOrOptional[int] = None
@@ -228,6 +242,7 @@ class JobDict(TypedDict, total=False):
     job_clusters: VariableOrList[JobClusterParam]
     """
     A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
+    If more than 100 job clusters are available, you can paginate through them using :method:jobs/get.
     """
 
     max_concurrent_runs: VariableOrOptional[int]
@@ -255,6 +270,11 @@ class JobDict(TypedDict, total=False):
     Job-level parameter definitions
     """
 
+    performance_target: VariableOrOptional[PerformanceTargetParam]
+    """
+    PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
+    """
+
     permissions: VariableOrList[PermissionParam]
 
     queue: VariableOrOptional[QueueSettingsParam]
@@ -277,6 +297,7 @@ class JobDict(TypedDict, total=False):
     tasks: VariableOrList[TaskParam]
     """
     A list of task specifications to be executed by this job.
+    If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
     """
 
     timeout_seconds: VariableOrOptional[int]
