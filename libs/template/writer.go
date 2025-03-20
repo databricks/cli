@@ -172,7 +172,6 @@ func (tmpl *defaultWriter) LogTelemetry(ctx context.Context) {
 			TemplateName: string(tmpl.name),
 		},
 	})
-	return
 }
 
 type writerWithFullTelemetry struct {
@@ -216,5 +215,4 @@ func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
 			TemplateEnumArgs: args,
 		},
 	})
-	return
 }
