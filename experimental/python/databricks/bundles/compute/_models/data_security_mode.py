@@ -7,7 +7,7 @@ class DataSecurityMode(Enum):
     Data security mode decides what data governance model to use when accessing data
     from a cluster.
 
-    The following modes can only be used with `kind`.
+    The following modes can only be used when `kind = CLASSIC_PREVIEW`.
     * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
     * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
     * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.

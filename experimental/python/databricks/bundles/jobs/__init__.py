@@ -72,9 +72,6 @@ __all__ = [
     "GcsStorageInfoParam",
     "GitProvider",
     "GitProviderParam",
-    "GitSnapshot",
-    "GitSnapshotDict",
-    "GitSnapshotParam",
     "GitSource",
     "GitSourceDict",
     "GitSourceParam",
@@ -129,6 +126,8 @@ __all__ = [
     "NotebookTaskParam",
     "PauseStatus",
     "PauseStatusParam",
+    "PerformanceTarget",
+    "PerformanceTargetParam",
     "PeriodicTriggerConfiguration",
     "PeriodicTriggerConfigurationDict",
     "PeriodicTriggerConfigurationParam",
@@ -137,6 +136,9 @@ __all__ = [
     "Permission",
     "PermissionDict",
     "PermissionParam",
+    "PipelineParams",
+    "PipelineParamsDict",
+    "PipelineParamsParam",
     "PipelineTask",
     "PipelineTaskDict",
     "PipelineTaskParam",
@@ -403,11 +405,6 @@ from databricks.bundles.jobs._models.for_each_task import (
     ForEachTaskParam,
 )
 from databricks.bundles.jobs._models.git_provider import GitProvider, GitProviderParam
-from databricks.bundles.jobs._models.git_snapshot import (
-    GitSnapshot,
-    GitSnapshotDict,
-    GitSnapshotParam,
-)
 from databricks.bundles.jobs._models.git_source import (
     GitSource,
     GitSourceDict,
@@ -468,6 +465,10 @@ from databricks.bundles.jobs._models.notebook_task import (
     NotebookTaskParam,
 )
 from databricks.bundles.jobs._models.pause_status import PauseStatus, PauseStatusParam
+from databricks.bundles.jobs._models.performance_target import (
+    PerformanceTarget,
+    PerformanceTargetParam,
+)
 from databricks.bundles.jobs._models.periodic_trigger_configuration import (
     PeriodicTriggerConfiguration,
     PeriodicTriggerConfigurationDict,
@@ -481,6 +482,11 @@ from databricks.bundles.jobs._models.permission import (
     Permission,
     PermissionDict,
     PermissionParam,
+)
+from databricks.bundles.jobs._models.pipeline_params import (
+    PipelineParams,
+    PipelineParamsDict,
+    PipelineParamsParam,
 )
 from databricks.bundles.jobs._models.pipeline_task import (
     PipelineTask,
@@ -583,6 +589,7 @@ def _resolve_recursive_imports():
     import typing
 
     from databricks.bundles.core._variable import VariableOr
+    from databricks.bundles.jobs._models.task import Task
 
     ForEachTask.__annotations__ = typing.get_type_hints(
         ForEachTask,
