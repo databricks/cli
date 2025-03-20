@@ -2,7 +2,7 @@
   "artifacts": {
     "python_artifact": {
       "build": "python3 setup.py bdist_wheel",
-      "path": "[TEST_TMP_DIR]/my_default_python_[UNIQUE_NAME]",
+      "path": "[TEST_TMP_DIR]/project_name_[UNIQUE_NAME]",
       "type": "whl"
     }
   },
@@ -17,7 +17,7 @@
       "bundle_root_path": "."
     },
     "mode": "development",
-    "name": "my_default_python_[UNIQUE_NAME]",
+    "name": "project_name_[UNIQUE_NAME]",
     "target": "dev",
     "terraform": {
       "exec_path": "[TERRAFORM]"
@@ -25,8 +25,8 @@
     "uuid": "[UUID]"
   },
   "include": [
-    "resources/my_default_python_[UNIQUE_NAME].job.yml",
-    "resources/my_default_python_[UNIQUE_NAME].pipeline.yml"
+    "resources/project_name_[UNIQUE_NAME].job.yml",
+    "resources/project_name_[UNIQUE_NAME].pipeline.yml"
   ],
   "presets": {
     "jobs_max_concurrent_runs": 4,
@@ -39,10 +39,10 @@
   },
   "resources": {
     "jobs": {
-      "my_default_python_[UNIQUE_NAME]_job": {
+      "project_name_[UNIQUE_NAME]_job": {
         "deployment": {
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
         },
         "edit_mode": "UI_LOCKED",
         "format": "MULTI_TASK",
@@ -61,7 +61,7 @@
           }
         ],
         "max_concurrent_runs": 4,
-        "name": "[dev [USERNAME]] my_default_python_[UNIQUE_NAME]_job",
+        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
         "permissions": [],
         "queue": {
           "enabled": true
@@ -73,7 +73,7 @@
           {
             "job_cluster_key": "job_cluster",
             "notebook_task": {
-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files/src/notebook"
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
             },
             "task_key": "notebook_task"
           },
@@ -84,7 +84,7 @@
               }
             ],
             "pipeline_task": {
-              "pipeline_id": "${resources.pipelines.my_default_python_[UNIQUE_NAME]_pipeline.id}"
+              "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
             },
             "task_key": "refresh_pipeline"
           },
@@ -102,7 +102,7 @@
             ],
             "python_wheel_task": {
               "entry_point": "main",
-              "package_name": "my_default_python_[UNIQUE_NAME]"
+              "package_name": "project_name_[UNIQUE_NAME]"
             },
             "task_key": "main_task"
           }
@@ -117,25 +117,25 @@
       }
     },
     "pipelines": {
-      "my_default_python_[UNIQUE_NAME]_pipeline": {
+      "project_name_[UNIQUE_NAME]_pipeline": {
         "configuration": {
-          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files/src"
+          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
         },
         "deployment": {
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
         },
         "development": true,
         "libraries": [
           {
             "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
             }
           }
         ],
-        "name": "[dev [USERNAME]] my_default_python_[UNIQUE_NAME]_pipeline",
+        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
         "permissions": [],
-        "schema": "my_default_python_[UNIQUE_NAME]_dev"
+        "schema": "project_name_[UNIQUE_NAME]_dev"
       }
     }
   },
@@ -146,7 +146,7 @@
   },
   "targets": null,
   "workspace": {
-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/artifacts",
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
     "current_user": {
       "active": true,
       "displayName": "[USERNAME]",
@@ -184,10 +184,10 @@
       "short_name": "[USERNAME]",
       "userName": "[USERNAME]"
     },
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",
     "host": "[DATABRICKS_URL]",
-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/resources",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev",
-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state"
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state"
   }
 }

@@ -10,15 +10,15 @@ envsubst < input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json --output-dir .
 rm input.json
 
-cd my_default_python*
+cd project_name_*
 
 export JQ_DELETE='
   .bundle.terraform.exec_path,
-  .resources.jobs["my_default_python_[UNIQUE_NAME]_job"].email_notifications,
-  .resources.jobs["my_default_python_[UNIQUE_NAME]_job"].job_clusters[0].new_cluster.node_type_id,
-  .resources.jobs["my_default_python_[UNIQUE_NAME]_job"].url,
-  .resources.pipelines["my_default_python_[UNIQUE_NAME]_pipeline"].catalog,
-  .resources.pipelines["my_default_python_[UNIQUE_NAME]_pipeline"].url,
+  .resources.jobs["project_name_[UNIQUE_NAME]_job"].email_notifications,
+  .resources.jobs["project_name_[UNIQUE_NAME]_job"].job_clusters[0].new_cluster.node_type_id,
+  .resources.jobs["project_name_[UNIQUE_NAME]_job"].url,
+  .resources.pipelines["project_name_[UNIQUE_NAME]_pipeline"].catalog,
+  .resources.pipelines["project_name_[UNIQUE_NAME]_pipeline"].url,
   .workspace.current_user
 '
 
@@ -50,4 +50,4 @@ trace $CLI bundle destroy -t prod --auto-approve
 trap "true" EXIT
 
 cd ..
-rm -fr my_default_python*
+rm -fr project_name_*
