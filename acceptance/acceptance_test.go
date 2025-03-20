@@ -1,7 +1,9 @@
 package acceptance_test
 
 import (
+	"bufio"
 	"context"
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -22,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
@@ -36,12 +39,13 @@ var (
 	KeepTmp     bool
 	NoRepl      bool
 	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail        bool
+	Forcerun    bool
 )
 
-// In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
-// Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
-// example: var SingleTest = "bundle/variables/empty"
-var SingleTest = ""
+// In order to debug CLI running under acceptance test, search for TestInprocessMode and update
+// the test name there, e..g "bundle/variables/empty".
+// Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -49,9 +53,11 @@ var SingleTest = ""
 var InprocessMode bool
 
 func init() {
-	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
+	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
+	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 }
 
 const (
@@ -74,11 +80,11 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, SingleTest)
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
-	if InprocessMode {
+	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
 	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
@@ -107,7 +113,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	execPath := ""
 
 	if InprocessMode {
-		cmdServer := StartCmdServer(t)
+		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
@@ -132,7 +138,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		defaultServer := testserver.New(t)
-		AddHandlers(defaultServer)
+		internal.AddHandlers(defaultServer)
 		t.Setenv("DATABRICKS_DEFAULT_HOST", defaultServer.URL)
 
 		homeDir := t.TempDir()
@@ -156,6 +162,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
 
+	repls.Set(os.Getenv("TEST_INSTANCE_POOL_ID"), "[TEST_INSTANCE_POOL_ID]")
+
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
@@ -163,6 +171,13 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	repls.SetPath(cwd, "[TESTROOT]")
 
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
+
+	// Matches defaultSparkVersion in ../integration/bundle/helpers_test.go
+	t.Setenv("DEFAULT_SPARK_VERSION", "13.3.x-snapshot-scala2.12")
+
+	nodeTypeID := getNodeTypeID(cloudEnv)
+	t.Setenv("NODE_TYPE_ID", nodeTypeID)
+	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
@@ -174,15 +189,47 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
 	}
 
+	skippedDirs := 0
+	totalDirs := 0
+	selectedDirs := 0
+
 	for _, dir := range testDirs {
+		totalDirs += 1
+
 		t.Run(dir, func(t *testing.T) {
+			selectedDirs += 1
+
+			config, configPath := internal.LoadConfig(t, dir)
+			skipReason := getSkipReason(&config, configPath)
+
+			if skipReason != "" {
+				skippedDirs += 1
+				t.Skip(skipReason)
+			}
+
 			if !InprocessMode {
 				t.Parallel()
 			}
 
-			runTest(t, dir, coverDir, repls.Clone())
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
+
+			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
+			} else {
+				for _, envset := range expanded {
+					envname := strings.Join(envset, "/")
+					t.Run(envname, func(t *testing.T) {
+						if !InprocessMode {
+							t.Parallel()
+						}
+						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset)
+					})
+				}
+			}
 		})
 	}
+
+	t.Logf("Summary: %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return len(testDirs)
 }
@@ -208,26 +255,64 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
-	config, configPath := LoadConfig(t, dir)
+// Return a reason to skip the test. Empty string means "don't skip".
+func getSkipReason(config *internal.TestConfig, configPath string) string {
+	if Forcerun {
+		return ""
+	}
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
-		t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
-	if !isTruePtr(config.Local) && cloudEnv == "" {
-		t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-	}
+	isRunningOnCloud := cloudEnv != ""
 
-	if !isTruePtr(config.Cloud) && cloudEnv != "" {
-		t.Skipf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-	} else {
+	if isRunningOnCloud {
+		if isTruePtr(config.CloudSlow) {
+			if testing.Short() {
+				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+			}
+		}
+
+		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
+		if !isCloudEnabled {
+			return fmt.Sprintf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
+				configPath,
+				cloudEnv,
+				isTruePtr(config.Cloud),
+				isTruePtr(config.CloudSlow),
+			)
+		}
+
 		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			t.Skipf("Skipping on non-UC workspaces")
+			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+		}
+
+	} else {
+		// Local run
+		if !isTruePtr(config.Local) {
+			return fmt.Sprintf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 		}
 	}
+
+	return ""
+}
+
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string, customEnv []string) {
+	tailOutput := Tail
+	cloudEnv := os.Getenv("CLOUD_ENV")
+	isRunningOnCloud := cloudEnv != ""
+
+	if isRunningOnCloud && isTruePtr(config.CloudSlow) && testing.Verbose() {
+		// Combination of CloudSlow and -v auto-enables -tail
+		tailOutput = true
+	}
+
+	id := uuid.New()
+	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
+	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
 	var err error
@@ -241,7 +326,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	repls.SetPathWithParents(tmpDir, "[TMPDIR]")
+	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -254,6 +339,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
+	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
 	var workspaceClient *databricks.WorkspaceClient
 	var user iam.User
@@ -262,7 +349,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// specifies a custom server stubs.
 	var server *testserver.Server
 
-	if cloudEnv == "" {
+	if !isRunningOnCloud {
 		// Start a new server for this test if either:
 		// 1. A custom server spec is defined in the test configuration.
 		// 2. The test is configured to record requests and assert on them. We need
@@ -280,13 +367,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 					reqJson, err := json.MarshalIndent(req, "", "  ")
 					assert.NoErrorf(t, err, "Failed to indent: %#v", req)
 
-					reqJsonWithRepls := repls.Replace(string(reqJson))
-
 					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 					assert.NoError(t, err)
 					defer f.Close()
 
-					_, err = f.WriteString(reqJsonWithRepls + "\n")
+					_, err = f.WriteString(string(reqJson) + "\n")
 					assert.NoError(t, err)
 				}
 			}
@@ -300,12 +385,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 				items := strings.Split(stub.Pattern, " ")
 				require.Len(t, items, 2)
 				server.Handle(items[0], items[1], func(req testserver.Request) any {
+					if stub.DelaySeconds != nil {
+						time.Sleep(time.Duration((*stub.DelaySeconds) * float64(time.Second)))
+					}
+
 					return stub.Response
 				})
 			}
 
 			// The earliest handlers take precedence, add default handlers last
-			AddHandlers(server)
+			internal.AddHandlers(server)
 			databricksLocalHost = server.URL
 		}
 
@@ -324,7 +413,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		// For the purposes of replacements, use testUser.
 		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-		user = testUser
+		user = internal.TestUser
 	} else {
 		// Use whatever authentication mechanism is configured by the test runner.
 		workspaceClient, err = databricks.NewWorkspaceClient(&databricks.Config{})
@@ -358,17 +447,26 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
+	for _, keyvalue := range customEnv {
+		items := strings.Split(keyvalue, "=")
+		require.Len(t, items, 2)
+		cmd.Env = append(cmd.Env, keyvalue)
+		repls.Set(items[1], "["+items[0]+"]")
+	}
+
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
-
-	// Write combined output to a file
-	out, err := os.Create(filepath.Join(tmpDir, "output.txt"))
-	require.NoError(t, err)
-	cmd.Stdout = out
-	cmd.Stderr = out
+	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
+	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	cmd.Dir = tmpDir
-	err = cmd.Run()
+
+	outputPath := filepath.Join(tmpDir, "output.txt")
+	out, err := os.Create(outputPath)
+	require.NoError(t, err)
+	defer out.Close()
+
+	err = runWithLog(t, cmd, out, tailOutput)
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -717,4 +815,61 @@ func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
+}
+
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
+	r, w := io.Pipe()
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	start := time.Now()
+	err := cmd.Start()
+	require.NoError(t, err)
+
+	processErrCh := make(chan error, 1)
+	go func() {
+		processErrCh <- cmd.Wait()
+		w.Close()
+	}()
+
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadString('\n')
+		if tail {
+			msg := strings.TrimRight(line, "\n")
+			if len(msg) > 0 {
+				d := time.Since(start)
+				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+			}
+		}
+		if len(line) > 0 {
+			_, err = out.WriteString(line)
+			require.NoError(t, err)
+		}
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+	}
+
+	return <-processErrCh
+}
+
+func getNodeTypeID(cloudEnv string) string {
+	switch cloudEnv {
+	// no idea why, but
+	// aws-prod-ucws sets CLOUD_ENV to "ucws"
+	// gcp-prod-ucws sets CLOUD_ENV to "gcp-ucws"
+	// azure-prod-ucws sets CLOUD_ENV to "azure"
+	case "aws", "ucws":
+		return "i3.xlarge"
+	case "azure":
+		return "Standard_DS4_v2"
+	case "gcp", "gcp-ucws":
+		return "n1-standard-4"
+	case "":
+		return "local-fake-node"
+	default:
+		return "unknown-cloudEnv-" + cloudEnv
+	}
 }

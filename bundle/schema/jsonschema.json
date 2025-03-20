@@ -65,6 +65,7 @@
                     "type": "object",
                     "properties": {
                       "active_deployment": {
+                        "description": "The active deployment of the app. A deployment is considered active when it has been deployed\nto the app compute.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment"
                       },
                       "app_status": {
@@ -80,15 +81,19 @@
                         "$ref": "#/$defs/map/interface"
                       },
                       "create_time": {
+                        "description": "The creation time of the app. Formatted timestamp in ISO 6801.",
                         "$ref": "#/$defs/string"
                       },
                       "creator": {
+                        "description": "The email of the user that created the app.",
                         "$ref": "#/$defs/string"
                       },
                       "default_source_code_path": {
+                        "description": "The default workspace file system path of the source code from which app deployment are\ncreated. This field tracks the workspace source code path of the last active deployment.",
                         "$ref": "#/$defs/string"
                       },
                       "description": {
+                        "description": "The description of the app.",
                         "$ref": "#/$defs/string"
                       },
                       "effective_budget_policy_id": {
@@ -99,15 +104,18 @@
                         "$ref": "#/$defs/string"
                       },
                       "name": {
+                        "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
                         "$ref": "#/$defs/string"
                       },
                       "pending_deployment": {
+                        "description": "The pending deployment of the app. A deployment is considered pending when it is being prepared\nfor deployment to the app compute.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
                       },
                       "resources": {
+                        "description": "Resources for the app.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
                       },
                       "service_principal_client_id": {
@@ -123,12 +131,15 @@
                         "$ref": "#/$defs/string"
                       },
                       "update_time": {
+                        "description": "The update time of the app. Formatted timestamp in ISO 6801.",
                         "$ref": "#/$defs/string"
                       },
                       "updater": {
+                        "description": "The email of the user that last updated the app.",
                         "$ref": "#/$defs/string"
                       },
                       "url": {
+                        "description": "The URL of the app once it is deployed.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -568,6 +579,10 @@
                       "ai_gateway": {
                         "description": "The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig"
+                      },
+                      "budget_policy_id": {
+                        "description": "The budget policy to be applied to the serving endpoint.",
+                        "$ref": "#/$defs/string"
                       },
                       "config": {
                         "description": "The core config of the serving endpoint.",

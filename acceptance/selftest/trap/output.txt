@@ -1,0 +1,6 @@
+run first
+
+>>> [CLI] missing-command
+Error: unknown command "missing-command" for "databricks"
+
+Exit code: 1

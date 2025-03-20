@@ -1,0 +1,2 @@
+trace $CLI bundle validate -t dev -o json --include-locations | jq .__locations > output.dev.json
+trace $CLI bundle validate -t prod -o json --include-locations | jq .__locations > output.prod.json

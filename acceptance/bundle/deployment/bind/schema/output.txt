@@ -3,8 +3,7 @@
 === Substitute variables in the template: 
 === Create a pre-defined schema: {
   "full_name": "main.test-schema-[UUID]",
-  "catalog_name": "main",
-  "comment": null
+  "catalog_name": "main"
 }
 
 === Bind schema: Updating deployment state...

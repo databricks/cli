@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -170,7 +169,7 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 func TestGetAccountAuthStatus(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockAccountClient(t)
-	ctx = root.SetAccountClient(ctx, m.AccountClient)
+	ctx = cmdctx.SetAccountClient(ctx, m.AccountClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)

@@ -14,4 +14,9 @@ printf '{\n    "id": "7d639bad-ac6d-4e6f-abd7-9522a86b0239",\n    "userName": "[
 # Unlike regular diff, diff.py will apply replacements first before doing the comparison
 errcode trace diff.py out_dir_a out_dir_b
 
+# Test that it works from non-root directory:
+cd out_dir_a
+errcode trace diff.py . ../out_dir_b
+cd ..
+
 rm out_dir_a/only_in_a out_dir_b/only_in_b
