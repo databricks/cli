@@ -3,7 +3,8 @@ bundle:
 
 artifacts:
   artifact_with_custom_dist:
-    # commenting out 'type: whl' here actually makes 'bundle deploy' to work
+    # commenting out 'type: whl' here actually makes 'bundle deploy' to build and upload correct wheel,
+    # because for non-whl types it does respect 'files' section.
     type: whl
     build: python setup.py bdist_wheel --dist-dir mydist
     files:
