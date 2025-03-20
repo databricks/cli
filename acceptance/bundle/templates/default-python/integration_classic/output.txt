@@ -51,6 +51,8 @@ Resources:
 
 >>> [CLI] bundle summary -t dev -o json
 
+>>> diff.py ../out.validate.dev.json ../out.summary.dev.json
+
 >>> [CLI] bundle destroy -t dev --auto-approve
 The following resources will be deleted:
   delete job my_default_python_[UNIQUE_NAME]_job
