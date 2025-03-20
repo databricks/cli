@@ -1,0 +1,12 @@
+errcode trace $CLI bundle validate -o json | jq .artifacts
+
+touch a1.txt
+touch a2.txt
+
+errcode trace $CLI bundle validate -o json | jq .artifacts
+
+mkdir -p subdir
+touch subdir/hello.txt
+errcode trace $CLI bundle validate -o json | jq .artifacts
+
+rm -fr a1.txt a2.txt subdir
