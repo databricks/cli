@@ -156,6 +156,8 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		relPath, err := filepath.Rel(b.SyncRootPath, source)
 		if err != nil {
 			relPath = source
+		} else {
+			relPath = filepath.ToSlash(relPath)
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
