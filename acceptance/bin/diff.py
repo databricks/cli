@@ -2,6 +2,7 @@
 """This script implements "diff -r -U2 dir1 dir2" but applies replacements first"""
 
 import sys
+import os
 import difflib
 import json
 import re
@@ -19,7 +20,7 @@ def main():
     d1, d2 = Path(d1), Path(d2)
 
     repls_json = Path(os.environ["TMPDIR"]) / "repls.json"
-    repls = json.load(repls_json.read_text())
+    repls = json.loads(repls_json.read_text())
 
     patterns = []
     for r in repls:
