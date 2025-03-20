@@ -290,6 +290,10 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
 		}
 
+		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
+			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID=%s)", configPath, os.Getenv("TEST_DEFAULT_CLUSTER_ID"))
+		}
+
 	} else {
 		// Local run
 		if !isTruePtr(config.Local) {

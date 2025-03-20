@@ -1,0 +1,17 @@
+BUNDLE_NAME_SUFFIX=$(uuid)
+export BUNDLE_NAME_SUFFIX
+
+CLUSTER_ID="0123-456789-cluster0"
+if [ -n "${TEST_DEFAULT_CLUSTER_ID:-}" ]; then
+    CLUSTER_ID=${TEST_DEFAULT_CLUSTER_ID}
+fi
+export CLUSTER_ID
+envsubst < databricks.yml.tmpl > databricks.yml
+trace cat databricks.yml
+
+trace $CLI clusters get ${CLUSTER_ID} | jq '{cluster_name}'
+
+trace $CLI bundle deployment bind cluster1 "${CLUSTER_ID}" --auto-approve
+
+trace $CLI bundle deployment unbind cluster1
+echo $?

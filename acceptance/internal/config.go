@@ -39,6 +39,9 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if unity catalog is available in the cloud environment
 	RequiresUnityCatalog *bool
 
+	// If true and Cloud=true, run this test only if a default test is available in the cloud environment
+	RequiresCluster *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
