@@ -1,26 +1,46 @@
+export PYTHONDONTWRITEBYTECODE=1
+
+uv venv -q --python $PYTHON_VERSION .venv
+venv_activate
+uv pip install -q setuptools
+
+trace which python  # should point to .venv
+
 envsubst < input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json --output-dir .
 rm input.json
 
-trace diff.py $TESTDIR/../classic/output/my_default_python my_default_python*
-
 cd my_default_python*
 
+export JQ_DELETE='
+  .bundle.terraform.exec_path,
+  .resources.jobs["my_default_python_[UNIQUE_NAME]_job"].email_notifications,
+  .resources.jobs["my_default_python_[UNIQUE_NAME]_job"].job_clusters[0].new_cluster.node_type_id,
+  .resources.jobs["my_default_python_[UNIQUE_NAME]_job"].url,
+  .resources.pipelines["my_default_python_[UNIQUE_NAME]_pipeline"].catalog,
+  .resources.pipelines["my_default_python_[UNIQUE_NAME]_pipeline"].url,
+  .workspace.current_user
+'
+
+# Usage:
+# cat out.validate.dev.json | jq "del($JQ_DELETE)"
+
 trap "trace $CLI bundle destroy -t dev --auto-approve" EXIT
+
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t dev -o json > ../out.validate.dev.json
 trace $CLI bundle deploy -t dev
 trace $CLI bundle summary -t dev
-trace $CLI bundle summary -t dev -o json > ../out.summary.dev.json
+trace $CLI bundle summary -t dev -o json | jq "del($JQ_DELETE)" > ../out.summary.dev.json
 
 trace $CLI bundle destroy -t dev --auto-approve
 trap "trace $CLI bundle destroy -t prod --auto-approve" EXIT
 
 trace $CLI bundle validate -t prod
-trace $CLI bundle validate -t prod -o json > ../out.validate.prod.json
+trace $CLI bundle validate -t prod -o json | jq "del($JQ_DELETE)" > ../out.validate.prod.json
 trace $CLI bundle deploy -t prod
 trace $CLI bundle summary -t prod
-trace $CLI bundle summary -t prod -o json > ../out.summary.prod.json
+trace $CLI bundle summary -t prod -o json | jq "del($JQ_DELETE)" > ../out.summary.prod.json
 trace $CLI bundle destroy -t prod --auto-approve
 trap "true" EXIT
 

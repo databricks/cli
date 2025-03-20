@@ -1,6 +1,23 @@
 Cloud = true
 Local = false
 
+[EnvMatrix]
+PYTHON_VERSION = [
+    "3.9",
+    "3.10",
+    "3.11",
+    "3.12",
+    "3.13",
+]
+
+[[Repls]]
+Old = '\d{6,}'
+New = '[NUMBER]'
+
+[[Repls]]
+Old = '20\d{6}.'
+New = '[DATE]'
+
 [[Server]]
 Pattern = "POST /api/2.0/pipelines"
 Response.Body = '{}'

@@ -3,9 +3,7 @@
     "name": "my_default_python_[UNIQUE_NAME]",
     "target": "dev",
     "environment": "dev",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    },
+    "terraform": {},
     "git": {
       "bundle_root_path": "."
     },
@@ -23,48 +21,18 @@
   ],
   "workspace": {
     "host": "[DATABRICKS_URL]",
-    "current_user": {
-      "active": true,
-      "displayName": "[USERNAME]",
-      "emails": [
-        {
-          "primary": true,
-          "type": "work",
-          "value": "[USERNAME]"
-        }
-      ],
-      "entitlements": [
-        {
-          "value": "allow-cluster-create"
-        },
-        {
-          "value": "allow-instance-pool-create"
-        }
-      ],
-      "groups": [
-        {
-          "$ref": "Groups/[USERGROUP]",
-          "display": "admins",
-          "type": "direct",
-          "value": "[USERGROUP]"
-        }
-      ],
-      "id": "[USERID]",
-      "name": {
-        "givenName": "[USERNAME]"
-      },
-      "schemas": [
-        "urn:ietf:params:scim:schemas:core:2.0:User",
-        "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
-      ],
-      "short_name": "[USERNAME]",
-      "userName": "[USERNAME]"
-    },
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev",
     "file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files",
     "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/resources",
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/artifacts",
     "state_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/state"
+  },
+  "artifacts": {
+    "python_artifact": {
+      "type": "whl",
+      "path": "[TMPDIR]/my_default_python_[UNIQUE_NAME]",
+      "build": "python3 setup.py bdist_wheel"
+    }
   },
   "resources": {
     "jobs": {
@@ -75,7 +43,7 @@
         },
         "edit_mode": "UI_LOCKED",
         "format": "MULTI_TASK",
-        "id": "261337390489690",
+        "id": "[NUMBER]",
         "job_clusters": [
           {
             "job_cluster_key": "job_cluster",
@@ -143,7 +111,7 @@
             "unit": "DAYS"
           }
         },
-        "url": "[DATABRICKS_URL]/jobs/261337390489690?o=470576644108500"
+        "url": "[DATABRICKS_URL]/jobs/[NUMBER]?o=[NUMBER]"
       }
     },
     "pipelines": {
@@ -166,7 +134,7 @@
         ],
         "name": "[dev [USERNAME]] my_default_python_[UNIQUE_NAME]_pipeline",
         "schema": "my_default_python_[UNIQUE_NAME]_dev",
-        "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=470576644108500"
+        "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMBER]"
       }
     }
   },
