@@ -1,4 +1,7 @@
 
+>>> which python
+[TMPDIR]/.venv/bin/python
+
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir .
 
 Welcome to the default Python template for Databricks Asset Bundles!
@@ -23,86 +26,26 @@ Validation OK!
 
 >>> [CLI] bundle deploy -t dev
 Building python_artifact...
-Uploading my_default_python_[UNIQUE_NAME]-0.0.1+[NUMBER].[NUMBER]-py3-none-any.whl...
+Uploading my_default_python_pzbz7rhrtjds5asgf5x6ogxdhm-0.0.1+[NUMBER].[NUMBER]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Error: exit status 1
 
->>> [CLI] bundle summary -t dev
-Name: my_default_python_[UNIQUE_NAME]
-Target: dev
-Workspace:
-  Host: [DATABRICKS_URL]
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev
-Resources:
-  Jobs:
-    my_default_python_[UNIQUE_NAME]_job:
-      Name: [dev [USERNAME]] my_default_python_[UNIQUE_NAME]_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMBER]?o=[NUMBER]
-  Pipelines:
-    my_default_python_[UNIQUE_NAME]_pipeline:
-      Name: [dev [USERNAME]] my_default_python_[UNIQUE_NAME]_pipeline
-      URL:  [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMBER]
+Error: failed to read schema for databricks_pipeline.my_default_python_[UNIQUE_NAME]_pipeline in registry.terraform.io/databricks/databricks: failed to instantiate provider "registry.terraform.io/databricks/databricks" to obtain schema: Unrecognized remote plugin message: 
 
->>> [CLI] bundle summary -t dev -o json
+This usually means that the plugin is either invalid or simply
+needs to be recompiled to support the latest protocol.
+
+
+
 
 >>> [CLI] bundle destroy -t dev --auto-approve
-The following resources will be deleted:
-  delete job my_default_python_[UNIQUE_NAME]_job
-  delete pipeline my_default_python_[UNIQUE_NAME]_pipeline
+Error: exit status 1
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/dev
+Error: failed to read schema for databricks_pipeline.my_default_python_[UNIQUE_NAME]_pipeline in registry.terraform.io/databricks/databricks: failed to instantiate provider "registry.terraform.io/databricks/databricks" to obtain schema: Unrecognized remote plugin message: 
 
-Deleting files...
-Destroy complete!
+This usually means that the plugin is either invalid or simply
+needs to be recompiled to support the latest protocol.
 
->>> [CLI] bundle validate -t prod
-Name: my_default_python_[UNIQUE_NAME]
-Target: prod
-Workspace:
-  Host: [DATABRICKS_URL]
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/prod
 
-Validation OK!
 
->>> [CLI] bundle validate -t prod -o json
-
->>> [CLI] bundle deploy -t prod
-Building python_artifact...
-Uploading my_default_python_[UNIQUE_NAME]-0.0.1+[NUMBER].[NUMBER]-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/prod/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
->>> [CLI] bundle summary -t prod
-Name: my_default_python_[UNIQUE_NAME]
-Target: prod
-Workspace:
-  Host: [DATABRICKS_URL]
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/prod
-Resources:
-  Jobs:
-    my_default_python_[UNIQUE_NAME]_job:
-      Name: my_default_python_[UNIQUE_NAME]_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMBER]?o=[NUMBER]
-  Pipelines:
-    my_default_python_[UNIQUE_NAME]_pipeline:
-      Name: my_default_python_[UNIQUE_NAME]_pipeline
-      URL:  [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMBER]
-
->>> [CLI] bundle summary -t prod -o json
-
->>> [CLI] bundle destroy -t prod --auto-approve
-The following resources will be deleted:
-  delete job my_default_python_[UNIQUE_NAME]_job
-  delete pipeline my_default_python_[UNIQUE_NAME]_pipeline
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/my_default_python_[UNIQUE_NAME]/prod
-
-Deleting files...
-Destroy complete!
+Exit code: 1
