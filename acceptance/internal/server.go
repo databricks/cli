@@ -164,6 +164,10 @@ func AddHandlers(server *testserver.Server) {
 		return req.Workspace.JobsList()
 	})
 
+	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
+		return req.Workspace.JobsList()
+	})
+
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ testserver.Request) any {
 		return map[string]string{
 			"authorization_endpoint": server.URL + "oidc/v1/authorize",
