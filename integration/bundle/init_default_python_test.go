@@ -126,6 +126,8 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 		[]string{"bundle", "summary", "--output", "json"},
 		testutil.TestData("testdata/default_python/bundle_summary.txt"),
 		[]string{
+			"/artifacts/python_artifact/build",
+			"/artifacts/python_artifact/path",
 			"/bundle/terraform/exec_path",
 			"/resources/jobs/project_name_$UNIQUE_PRJ_job/email_notifications",
 			"/resources/jobs/project_name_$UNIQUE_PRJ_job/job_clusters/0/new_cluster/node_type_id",
