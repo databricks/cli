@@ -196,7 +196,7 @@ func newExecuteMessageAttachmentQuery() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		executeMessageAttachmentQueryReq.SpaceId = args[0]
 		executeMessageAttachmentQueryReq.ConversationId = args[1]
@@ -391,7 +391,7 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getMessageAttachmentQueryResultReq.SpaceId = args[0]
 		getMessageAttachmentQueryResultReq.ConversationId = args[1]
