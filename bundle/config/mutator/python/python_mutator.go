@@ -519,12 +519,14 @@ func createLoadResourcesOverrideVisitor(ctx context.Context) merge.OverrideVisit
 			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			// insert 'resources' or 'resources.jobs' if it didn't exist before
-			if valuePath.Equal(resourcesPath) || valuePath.Equal(jobsPath) {
+			hasResourcesPrefix := valuePath.HasPrefix(resourcesPath)
+
+			// insert 'resources' or 'resources.<resource_type>' if it didn't exist before
+			if hasResourcesPrefix && len(valuePath) <= len(resourcesPath)+1 {
 				return right, nil
 			}
 
-			if !valuePath.HasPrefix(jobsPath) {
+			if !hasResourcesPrefix {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
 
@@ -585,16 +587,19 @@ func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) mer
 			return nil
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			// insert 'resources' or 'resources.jobs' if it didn't exist before
-			if valuePath.Equal(resourcesPath) || valuePath.Equal(jobsPath) {
+			hasResourcesPrefix := valuePath.HasPrefix(resourcesPath)
+
+			// insert 'resources' or 'resources.<resource_type>' if it didn't exist before
+			if hasResourcesPrefix && len(valuePath) <= len(resourcesPath)+1 {
 				return right, nil
 			}
 
-			if !valuePath.HasPrefix(jobsPath) {
+			if !hasResourcesPrefix {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
 
-			insertResource := len(valuePath) == len(jobsPath)+1
+			// valuePath has 3 elements: 'resources.<resource_type>.<resource_name>'
+			insertResource := len(valuePath) == len(resourcesPath)+2
 			if mode == insertResourceModeDisallow && insertResource {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
