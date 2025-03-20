@@ -1,12 +1,11 @@
 # NEXT CHANGELOG
 
-## Release v0.243.1
+## Release v0.245.0
 
 ### CLI
-* Fixed "can't evaluate field Name in type interface{}" for "databricks queries list" command ([#2451](https://github.com/databricks/cli/pull/2451))
 
 ### Bundles
 
-### Internal
+* Processing 'artifacts' section is now done in "bundle validate" (adding defaults, inferring "build", asserting required fields) ([#2526])(https://github.com/databricks/cli/pull/2526))
 
 ### API Changes

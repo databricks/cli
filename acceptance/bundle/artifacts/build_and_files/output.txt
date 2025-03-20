@@ -1,0 +1,11 @@
+{
+  "custom": {
+    "build": "touch built.txt",
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/built.txt"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]"
+  }
+}

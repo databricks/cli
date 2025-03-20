@@ -1,0 +1,5 @@
+cp -r $TESTDIR/../whl_explicit/my_test_code/{setup.py,src} .
+trace $CLI bundle validate
+# I expect this deploy to work because I explicitly told where to find the wheel, but it does not:
+trace errcode $CLI bundle deploy
+rm mydist/my_test_code-0.0.1-py3-none-any.whl setup.py src/*.py

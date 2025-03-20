@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
@@ -42,10 +43,9 @@ var (
 	Forcerun    bool
 )
 
-// In order to debug CLI running under acceptance test, set this to full subtest name, e.g. "bundle/variables/empty"
-// Then install your breakpoints and click "debug test" near TestAccept in VSCODE.
-// example: var SingleTest = "bundle/variables/empty"
-var SingleTest = ""
+// In order to debug CLI running under acceptance test, search for TestInprocessMode and update
+// the test name there, e..g "bundle/variables/empty".
+// Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -53,7 +53,7 @@ var SingleTest = ""
 var InprocessMode bool
 
 func init() {
-	flag.BoolVar(&InprocessMode, "inprocess", SingleTest != "", "Run CLI in the same process as test (for debugging)")
+	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
@@ -80,7 +80,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, SingleTest)
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -113,7 +113,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	execPath := ""
 
 	if InprocessMode {
-		cmdServer := StartCmdServer(t)
+		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
@@ -138,7 +138,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		defaultServer := testserver.New(t)
-		AddHandlers(defaultServer)
+		internal.AddHandlers(defaultServer)
 		t.Setenv("DATABRICKS_DEFAULT_HOST", defaultServer.URL)
 
 		homeDir := t.TempDir()
@@ -189,15 +189,47 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
 	}
 
+	skippedDirs := 0
+	totalDirs := 0
+	selectedDirs := 0
+
 	for _, dir := range testDirs {
+		totalDirs += 1
+
 		t.Run(dir, func(t *testing.T) {
+			selectedDirs += 1
+
+			config, configPath := internal.LoadConfig(t, dir)
+			skipReason := getSkipReason(&config, configPath)
+
+			if skipReason != "" {
+				skippedDirs += 1
+				t.Skip(skipReason)
+			}
+
 			if !InprocessMode {
 				t.Parallel()
 			}
 
-			runTest(t, dir, coverDir, repls.Clone())
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
+
+			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
+			} else {
+				for _, envset := range expanded {
+					envname := strings.Join(envset, "/")
+					t.Run(envname, func(t *testing.T) {
+						if !InprocessMode {
+							t.Parallel()
+						}
+						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset)
+					})
+				}
+			}
 		})
 	}
+
+	t.Logf("Summary: %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return len(testDirs)
 }
@@ -223,57 +255,63 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext) {
-	config, configPath := LoadConfig(t, dir)
+// Return a reason to skip the test. Empty string means "don't skip".
+func getSkipReason(config *internal.TestConfig, configPath string) string {
+	if Forcerun {
+		return ""
+	}
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
-		if !Forcerun {
-			t.Skipf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
-		}
+		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
+
+	if isRunningOnCloud {
+		if isTruePtr(config.CloudSlow) {
+			if testing.Short() {
+				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+			}
+		}
+
+		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
+		if !isCloudEnabled {
+			return fmt.Sprintf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
+				configPath,
+				cloudEnv,
+				isTruePtr(config.Cloud),
+				isTruePtr(config.CloudSlow),
+			)
+		}
+
+		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
+			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+		}
+
+	} else {
+		// Local run
+		if !isTruePtr(config.Local) {
+			return fmt.Sprintf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
+		}
+	}
+
+	return ""
+}
+
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string, customEnv []string) {
 	tailOutput := Tail
+	cloudEnv := os.Getenv("CLOUD_ENV")
+	isRunningOnCloud := cloudEnv != ""
 
 	if isRunningOnCloud && isTruePtr(config.CloudSlow) && testing.Verbose() {
 		// Combination of CloudSlow and -v auto-enables -tail
 		tailOutput = true
 	}
 
-	if !Forcerun {
-		if isRunningOnCloud {
-			if isTruePtr(config.CloudSlow) {
-				if testing.Short() {
-					t.Skipf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
-				}
-			}
-
-			isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
-			if !isCloudEnabled {
-				t.Skipf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
-					configPath,
-					cloudEnv,
-					isTruePtr(config.Cloud),
-					isTruePtr(config.CloudSlow),
-				)
-			}
-
-			if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-				t.Skipf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
-			}
-
-		} else {
-			// Local run
-			if !isTruePtr(config.Local) {
-				t.Skipf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-			}
-		}
-	}
-
 	id := uuid.New()
-	uniqueName := strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "=")
+	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
@@ -288,7 +326,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		tmpDir = t.TempDir()
 	}
 
-	repls.SetPathWithParents(tmpDir, "[TMPDIR]")
+	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
@@ -302,6 +340,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
+	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
 	var workspaceClient *databricks.WorkspaceClient
 	var user iam.User
@@ -328,13 +367,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 					reqJson, err := json.MarshalIndent(req, "", "  ")
 					assert.NoErrorf(t, err, "Failed to indent: %#v", req)
 
-					reqJsonWithRepls := repls.Replace(string(reqJson))
-
 					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 					assert.NoError(t, err)
 					defer f.Close()
 
-					_, err = f.WriteString(reqJsonWithRepls + "\n")
+					_, err = f.WriteString(string(reqJson) + "\n")
 					assert.NoError(t, err)
 				}
 			}
@@ -357,7 +394,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			}
 
 			// The earliest handlers take precedence, add default handlers last
-			AddHandlers(server)
+			internal.AddHandlers(server)
 			databricksLocalHost = server.URL
 		}
 
@@ -376,7 +413,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 		// For the purposes of replacements, use testUser.
 		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-		user = testUser
+		user = internal.TestUser
 	} else {
 		// Use whatever authentication mechanism is configured by the test runner.
 		workspaceClient, err = databricks.NewWorkspaceClient(&databricks.Config{})
@@ -410,10 +447,18 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
+	for _, keyvalue := range customEnv {
+		items := strings.Split(keyvalue, "=")
+		require.Len(t, items, 2)
+		cmd.Env = append(cmd.Env, keyvalue)
+		repls.Set(items[1], "["+items[0]+"]")
+	}
+
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
+	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	cmd.Dir = tmpDir
 
 	outputPath := filepath.Join(tmpDir, "output.txt")

@@ -1,7 +1,7 @@
 RecordRequests = true
 
 [[Server]]
-Pattern = "POST /api/2.1/jobs/create"
+Pattern = "POST /api/2.2/jobs/create"
 Response.Body = '''
 {
     "error_code": "PERMISSION_DENIED",

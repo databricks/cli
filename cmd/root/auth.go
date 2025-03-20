@@ -15,11 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Placeholders to use as unique keys in context.Context.
-var (
-	accountClient int
-)
-
 type ErrNoWorkspaceProfiles struct {
 	path string
 }
@@ -145,7 +140,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx = context.WithValue(ctx, &accountClient, a)
+	ctx = command.SetAccountClient(ctx, a)
 	cmd.SetContext(ctx)
 	return nil
 }
@@ -233,10 +228,6 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
-	return context.WithValue(ctx, &accountClient, a)
-}
-
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	profiler := profile.GetProfiler(ctx)
 	path, err := profiler.GetPath(ctx)
@@ -314,12 +305,4 @@ func emptyHttpRequest(ctx context.Context) *http.Request {
 		panic(err)
 	}
 	return req
-}
-
-func AccountClient(ctx context.Context) *databricks.AccountClient {
-	a, ok := ctx.Value(&accountClient).(*databricks.AccountClient)
-	if !ok {
-		panic("cannot get *databricks.AccountClient. Please report it as a bug")
-	}
-	return a
 }
