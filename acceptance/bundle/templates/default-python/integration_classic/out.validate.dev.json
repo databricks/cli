@@ -1,4 +1,11 @@
 {
+  "artifacts": {
+    "python_artifact": {
+      "build": "python3 setup.py bdist_wheel",
+      "path": "[TMPDIR]/my_default_python_[UNIQUE_NAME]",
+      "type": "whl"
+    }
+  },
   "bundle": {
     "deployment": {
       "lock": {
