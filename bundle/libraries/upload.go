@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -122,8 +123,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 		return nil, err
 	}
 
-	// AI: sort libs
-
+	// Sort the libraries by their source path for deterministic processing order
 	return libs, nil
 }
 
@@ -144,10 +144,16 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
+	sources := make([]string, 0, len(libs))
+	for source := range libs {
+		sources = append(sources, source)
+	}
+	sort.Strings(sources)
+
 	errs, errCtx := errgroup.WithContext(ctx)
 	errs.SetLimit(maxFilesRequestsInFlight)
 
-	for source := range libs {
+	for _, source := range sources {
 		relPath, err := filepath.Rel(b.SyncRootPath, source)
 		if err != nil {
 			relPath = source
@@ -163,7 +169,9 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Update all the config paths to point to the uploaded location
-	for source, locations := range libs {
+	// Process sources in sorted order for deterministic behavior
+	for _, source := range sources {
+		locations := libs[source]
 		err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 			remotePath := path.Join(uploadPath, filepath.Base(source))
 
