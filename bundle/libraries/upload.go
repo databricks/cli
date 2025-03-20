@@ -123,7 +123,6 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 		return nil, err
 	}
 
-	// Sort the libraries by their source path for deterministic processing order
 	return libs, nil
 }
 
@@ -169,7 +168,6 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Update all the config paths to point to the uploaded location
-	// Process sources in sorted order for deterministic behavior
 	for _, source := range sources {
 		locations := libs[source]
 		err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
