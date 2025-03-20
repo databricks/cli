@@ -2,6 +2,10 @@ Local = true
 Cloud = true
 RequiresUnityCatalog = true
 
+Ignore = [
+    "databricks.yml",
+]
+
 [[Server]]
 Pattern = "POST /api/2.1/unity-catalog/schemas"
 Response.Body = '''
