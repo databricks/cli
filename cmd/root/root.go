@@ -171,7 +171,7 @@ Stack Trace:
 
 	ctx = cmd.Context()
 	telemetryErr := telemetry.Upload(ctx, protos.ExecutionContext{
-		CmdExecID:       command.ExecId(ctx),
+		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
 		Command:         commandString(cmd),
 		OperatingSystem: runtime.GOOS,
