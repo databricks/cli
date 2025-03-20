@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 )
 
 func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
@@ -30,6 +31,19 @@ func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 }
 
 func expandGlobs(ctx context.Context, b *bundle.Bundle, name string) diag.Diagnostics {
+	err := b.Config.MarkMutatorEntry(ctx)
+	if err != nil {
+		log.Errorf(ctx, "entry error: %s", err)
+		return diag.Errorf("entry error: %s", err)
+	}
+
+	defer func() {
+		err := b.Config.MarkMutatorExit(ctx)
+		if err != nil {
+			log.Errorf(ctx, "exit error: %s", err)
+		}
+	}()
+
 	// Base path for this mutator.
 	// This path is set with the list of expanded globs when done.
 	base := dyn.NewPath(
@@ -45,7 +59,7 @@ func expandGlobs(ctx context.Context, b *bundle.Bundle, name string) diag.Diagno
 	)
 
 	var diags diag.Diagnostics
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var output []dyn.Value
 		_, err := dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			if v.Kind() != dyn.KindString {

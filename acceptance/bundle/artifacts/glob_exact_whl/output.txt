@@ -4,15 +4,15 @@
   "my_prebuilt_whl": {
     "files": [
       {
-        "source": "prebuilt/other_test_code-0.0.1-py3-none-any.whl"
+        "source": "[TEST_TMP_DIR]/prebuilt/other_test_code-0.0.1-py3-none-any.whl"
       }
     ],
+    "path": "[TEST_TMP_DIR]",
     "type": "whl"
   }
 }
 
 >>> [CLI] bundle deploy
-Uploading prebuilt/other_test_code-0.0.1-py3-none-any.whl...
 Uploading prebuilt/other_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
 Deploying resources...

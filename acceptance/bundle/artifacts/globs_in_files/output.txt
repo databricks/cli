@@ -14,12 +14,13 @@ Exit code: 1
   "test": {
     "files": [
       {
-        "source": "a*.txt"
+        "source": "[TEST_TMP_DIR]/a*.txt"
       },
       {
-        "source": "subdir/*.txt"
+        "source": "[TEST_TMP_DIR]/subdir/*.txt"
       }
-    ]
+    ],
+    "path": "[TEST_TMP_DIR]"
   }
 }
 
@@ -34,12 +35,13 @@ Exit code: 1
   "test": {
     "files": [
       {
-        "source": "a*.txt"
+        "source": "[TEST_TMP_DIR]/a*.txt"
       },
       {
-        "source": "subdir/*.txt"
+        "source": "[TEST_TMP_DIR]/subdir/*.txt"
       }
-    ]
+    ],
+    "path": "[TEST_TMP_DIR]"
   }
 }
 
@@ -48,14 +50,15 @@ Exit code: 1
   "test": {
     "files": [
       {
-        "source": "a1.txt"
+        "source": "[TEST_TMP_DIR]/a1.txt"
       },
       {
-        "source": "a2.txt"
+        "source": "[TEST_TMP_DIR]/a2.txt"
       },
       {
-        "source": "subdir/hello.txt"
+        "source": "[TEST_TMP_DIR]/subdir/hello.txt"
       }
-    ]
+    ],
+    "path": "[TEST_TMP_DIR]"
   }
 }
