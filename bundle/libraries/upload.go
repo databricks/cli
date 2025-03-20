@@ -122,6 +122,8 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 		return nil, err
 	}
 
+	// AI: sort libs
+
 	return libs, nil
 }
 
@@ -146,6 +148,11 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	errs.SetLimit(maxFilesRequestsInFlight)
 
 	for source := range libs {
+		relPath, err := filepath.Rel(b.SyncRootPath, source)
+		if err != nil {
+			relPath = source
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
 			return UploadFile(errCtx, source, u.client)
 		})
@@ -188,7 +195,6 @@ func (u *upload) Name() string {
 // Function to upload file (a library, artifact and etc) to Workspace or UC volume
 func UploadFile(ctx context.Context, file string, client filer.Filer) error {
 	filename := filepath.Base(file)
-	cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", filename))
 
 	f, err := os.Open(file)
 	if err != nil {
