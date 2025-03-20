@@ -21,15 +21,3 @@ New = '[NUMBER]'
 [[Repls]]
 Old = '20\d{6}.'
 New = '[DATE]'
-
-[[Server]]
-Pattern = "POST /api/2.0/pipelines"
-Response.Body = '{}'
-
-[[Server]]
-Pattern = "DELETE /api/2.0/pipelines/"
-Response.Body = '{}'
-
-[[Server]]
-Pattern = "GET /api/2.0/pipelines/"
-Response.Body = '{}'
