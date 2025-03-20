@@ -340,6 +340,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
+	cmd.Env = append(cmd.Env, "TMPDIR="+tmpDir)
 
 	var workspaceClient *databricks.WorkspaceClient
 	var user iam.User

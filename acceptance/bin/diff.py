@@ -18,8 +18,8 @@ def main():
     d1, d2 = sys.argv[1:]
     d1, d2 = Path(d1), Path(d2)
 
-    with open("repls.json") as f:
-        repls = json.load(f)
+    repls_json = Path(os.environ["TMPDIR"]) / "repls.json"
+    repls = json.load(repls_json.read_text())
 
     patterns = []
     for r in repls:
