@@ -11,7 +11,6 @@ import (
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
@@ -107,7 +106,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		metadata.AnnotateJobs(),
 		metadata.AnnotatePipelines(),
-		terraform.Initialize(),
 		scripts.Execute(config.ScriptPostInit),
 	)
 }

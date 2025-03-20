@@ -13,7 +13,7 @@ type ReadOnlyMutator interface {
 
 	// This is just tag, to differentiate this interface from bundle.Mutator
 	// This prevents non-readonly mutators being passed to ApplyParallel().
-	IsRO()
+	// IsRO()
 }
 
 // Helper to mark the mutator as "read-only"

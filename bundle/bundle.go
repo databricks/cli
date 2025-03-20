@@ -168,7 +168,7 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 // Scoped to the bundle's target.
 func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) {
 	if b.Config.Bundle.Target == "" {
-		panic("target not set")
+		b.Config.Bundle.Target = "default"
 	}
 
 	cacheDirName, exists := env.TempDir(ctx)

@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"runtime"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/command"
@@ -186,7 +189,22 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
-	cfg := &config.Config{}
+	cfg := &config.Config{
+		// TODO: This should not show up on auth describe.
+		HTTPTransport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+			IdleConnTimeout:       180 * time.Second,
+			TLSHandshakeTimeout:   30 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	profile, hasProfileFlag := profileFlagValue(cmd)

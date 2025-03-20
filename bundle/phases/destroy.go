@@ -116,6 +116,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
 	}()
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+		terraform.Initialize(),
 		terraform.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),

@@ -133,3 +133,5 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 func StatePull() bundle.Mutator {
 	return &statePull{deploy.StateFiler}
 }
+
+func (l *statePull) IsRO() {}
