@@ -88,7 +88,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	}
 
 	if isAccount {
-		a := command.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		// Doing a simple API call to check if the auth is valid
 		_, err := a.Workspaces.List(ctx)

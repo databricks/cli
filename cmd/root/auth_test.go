@@ -293,7 +293,7 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, isAccount)
 
-	a := command.AccountClient(cmd.Context())
+	a := cmdctx.AccountClient(cmd.Context())
 	require.NotNil(t, a)
 }
 

@@ -140,7 +140,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx = command.SetAccountClient(ctx, a)
+	ctx = cmdctx.SetAccountClient(ctx, a)
 	cmd.SetContext(ctx)
 	return nil
 }

@@ -13,7 +13,7 @@ func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.
 func AccountClient(ctx context.Context) *databricks.AccountClient {
 	a, ok := ctx.Value(accountClientKey).(*databricks.AccountClient)
 	if !ok {
-		panic("command.AccountClient called without calling command.SetAccountClient first")
+		panic("cmdctx.AccountClient called without calling cmdctx.SetAccountClient first")
 	}
 	return a
 }
