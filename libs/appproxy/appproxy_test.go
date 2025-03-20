@@ -2,13 +2,14 @@ package appproxy
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/cli/libs/appproxy/testutil"
 	"github.com/stretchr/testify/require"
 
 	"github.com/gorilla/websocket"
@@ -39,21 +40,21 @@ func sendTestRequest(t *testing.T, path string) (int, []byte) {
 }
 
 func startProxy(t *testing.T, serverAddr string) *Proxy {
-	proxy, err := New("http://" + serverAddr)
+	proxy, err := New(context.Background(), "http://"+serverAddr)
 	require.NoError(t, err)
 
-	ln, err := proxy.Listen(PROXY_ADDR)
+	ln, err := proxy.listen(PROXY_ADDR)
 	require.NoError(t, err)
 
 	go func() {
-		_ = proxy.Serve(ln)
+		_ = proxy.serve(ln)
 	}()
 
 	return proxy
 }
 
 func TestProxyStart(t *testing.T) {
-	server := testserver.NewHttpServer(t, map[string]string{
+	server := testutil.NewHttpServer(t, map[string]string{
 		"Content-Type":   "application/json",
 		"X-Test-Header":  "test",
 		"X-Test-Header2": "test2",
@@ -93,7 +94,7 @@ func TestProxyStart(t *testing.T) {
 }
 
 func TestProxyHandleWebSocket(t *testing.T) {
-	server := testserver.NewWebsocketServer(t)
+	server := testutil.NewWebsocketServer(t)
 	defer server.Close()
 	go func() {
 		server.Start()

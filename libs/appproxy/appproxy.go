@@ -20,34 +20,34 @@ type Proxy struct {
 
 // Creates a new proxy instance that will forward all requests to the targetURL
 // The targetURL should be a valid URL with a scheme and a host.
-func New(targetURL string) (*Proxy, error) {
+func New(ctx context.Context, targetURL string) (*Proxy, error) {
 	u, err := url.Parse(targetURL)
 	if err != nil {
 		return nil, err
 	}
-	proxy := Proxy{targetURL: u, client: &http.Client{}, ctx: context.Background()}
+	proxy := Proxy{targetURL: u, client: &http.Client{}, ctx: ctx}
 	server := &http.Server{}
 	server.Handler = http.HandlerFunc(proxy.proxyHandler)
 	proxy.server = server
 	return &proxy, nil
 }
 
-// Start starts the proxy server on the given address (host:port, e.g. localhost:8080)
-// The proxy will forward all requests to the targetURL
-func (p *Proxy) Listen(addr string) (net.Listener, error) {
+func (p *Proxy) listen(addr string) (net.Listener, error) {
 	return net.Listen("tcp", addr)
 }
 
-func (p *Proxy) Serve(ln net.Listener) error {
+func (p *Proxy) serve(ln net.Listener) error {
 	return p.server.Serve(ln)
 }
 
-func (p *Proxy) Start(addr string) error {
-	ln, err := p.Listen(addr)
+// ListenAndServe starts the proxy server on the given address (host:port, e.g. localhost:8080)
+// The proxy will forward all requests to the targetURL
+func (p *Proxy) ListenAndServe(addr string) error {
+	ln, err := p.listen(addr)
 	if err != nil {
 		return err
 	}
-	return p.Serve(ln)
+	return p.serve(ln)
 }
 
 func (p *Proxy) Stop() error {

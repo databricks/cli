@@ -1,4 +1,4 @@
-package testserver
+package testutil
 
 import (
 	"io"
