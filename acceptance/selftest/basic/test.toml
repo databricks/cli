@@ -19,5 +19,5 @@ New = "CUSTOM_NUMBER_REGEX"
 
 [[Repls]]
 # Fix path with reverse slashes in the output for Windows.
-Old = 'TMPDIR]\\subdir\\a\\b\\c'
-New = 'TMPDIR]/subdir/a/b/c'
+Old = 'TEST_TMP_DIR]\\subdir\\a\\b\\c'
+New = 'TEST_TMP_DIR]/subdir/a/b/c'
