@@ -1,5 +1,5 @@
 10:07:59 Info: start pid=12345 version=[DEV_VERSION] args="[CLI], bundle, validate, --debug"
-10:07:59 Debug: Found bundle root at [TMPDIR] (file [TMPDIR]/databricks.yml) pid=12345
+10:07:59 Debug: Found bundle root at [TEST_TMP_DIR] (file [TEST_TMP_DIR]/databricks.yml) pid=12345
 10:07:59 Info: Phase: load pid=12345
 10:07:59 Debug: Apply pid=12345 mutator=EntryPoint
 10:07:59 Debug: Apply pid=12345 mutator=scripts.preinit
