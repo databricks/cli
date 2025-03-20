@@ -12,3 +12,15 @@ New = '[OS]'
 [[Repls]]
 Old = 'execution_time_ms\\\":\d{1,5},'
 New = 'execution_time_ms\":\"SMALL_INT\",'
+
+[[Repls]]
+Old = " upstream/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " upstream-version/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""
