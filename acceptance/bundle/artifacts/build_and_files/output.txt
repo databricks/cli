@@ -3,9 +3,9 @@
     "build": "touch built.txt",
     "files": [
       {
-        "source": "[TMPDIR]/built.txt"
+        "source": "[TEST_TMP_DIR]/built.txt"
       }
     ],
-    "path": "[TMPDIR]"
+    "path": "[TEST_TMP_DIR]"
   }
 }

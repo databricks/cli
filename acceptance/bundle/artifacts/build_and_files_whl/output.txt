@@ -10,7 +10,7 @@ Validation OK!
 
 >>> errcode [CLI] bundle deploy
 Building artifact_with_custom_dist...
-Error: cannot find built wheel in [TMPDIR] for package artifact_with_custom_dist
+Error: cannot find built wheel in [TEST_TMP_DIR] for package artifact_with_custom_dist
 
 
 Exit code: 1
