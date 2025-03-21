@@ -20,8 +20,8 @@ export JQ_DELETE='
   .resources.pipelines["project_name_[UNIQUE_NAME]_pipeline"].catalog,
   .resources.pipelines["project_name_[UNIQUE_NAME]_pipeline"].url,
   .workspace.current_user,
-  .entitlements,
-  .externalId
+  .workspace.entitlements,
+  .workspace.externalId
 '
 
 # Usage:
