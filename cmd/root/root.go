@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -133,7 +133,7 @@ Stack Trace:
 	ctx = dbr.DetectRuntime(ctx)
 
 	// Set a command execution ID value in the context
-	ctx = command.GenerateExecId(ctx)
+	ctx = cmdctx.GenerateExecId(ctx)
 
 	startTime := time.Now()
 
@@ -171,7 +171,7 @@ Stack Trace:
 
 	ctx = cmd.Context()
 	telemetryErr := telemetry.Upload(ctx, protos.ExecutionContext{
-		CmdExecID:       command.ExecId(ctx),
+		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
 		Command:         commandString(cmd),
 		OperatingSystem: runtime.GOOS,

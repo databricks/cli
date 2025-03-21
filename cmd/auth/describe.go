@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -58,7 +58,7 @@ func newDescribeCommand() *cobra.Command {
 		var err error
 		status, err = getAuthStatus(cmd, args, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 			isAccount, err := root.MustAnyClient(cmd, args)
-			return command.ConfigUsed(cmd.Context()), isAccount, err
+			return cmdctx.ConfigUsed(cmd.Context()), isAccount, err
 		})
 		if err != nil {
 			return err
@@ -88,7 +88,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	}
 
 	if isAccount {
-		a := command.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		// Doing a simple API call to check if the auth is valid
 		_, err := a.Workspaces.List(ctx)
@@ -110,7 +110,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		return &status, nil
 	}
 
-	w := command.WorkspaceClient(ctx)
+	w := cmdctx.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return &authStatus{

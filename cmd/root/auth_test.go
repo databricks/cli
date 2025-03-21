@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -264,7 +264,7 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 	require.False(t, isAccount)
 	require.NoError(t, err)
 
-	w := command.WorkspaceClient(cmd.Context())
+	w := cmdctx.WorkspaceClient(cmd.Context())
 	require.NotNil(t, w)
 }
 
@@ -293,7 +293,7 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, isAccount)
 
-	a := command.AccountClient(cmd.Context())
+	a := cmdctx.AccountClient(cmd.Context())
 	require.NotNil(t, a)
 }
 

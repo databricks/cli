@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
@@ -105,7 +105,7 @@ func newCreateMessage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createMessageJson.Unmarshal(&createMessageReq)
@@ -196,7 +196,7 @@ func newExecuteMessageAttachmentQuery() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		executeMessageAttachmentQueryReq.SpaceId = args[0]
 		executeMessageAttachmentQueryReq.ConversationId = args[1]
@@ -262,7 +262,7 @@ func newExecuteMessageQuery() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		executeMessageQueryReq.SpaceId = args[0]
 		executeMessageQueryReq.ConversationId = args[1]
@@ -326,7 +326,7 @@ func newGetMessage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getMessageReq.SpaceId = args[0]
 		getMessageReq.ConversationId = args[1]
@@ -391,7 +391,7 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getMessageAttachmentQueryResultReq.SpaceId = args[0]
 		getMessageAttachmentQueryResultReq.ConversationId = args[1]
@@ -459,7 +459,7 @@ func newGetMessageQueryResult() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getMessageQueryResultReq.SpaceId = args[0]
 		getMessageQueryResultReq.ConversationId = args[1]
@@ -527,7 +527,7 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getMessageQueryResultByAttachmentReq.SpaceId = args[0]
 		getMessageQueryResultByAttachmentReq.ConversationId = args[1]
@@ -588,7 +588,7 @@ func newGetSpace() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getSpaceReq.SpaceId = args[0]
 
@@ -662,7 +662,7 @@ func newStartConversation() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := startConversationJson.Unmarshal(&startConversationReq)

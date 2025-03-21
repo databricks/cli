@@ -1,4 +1,4 @@
-package command
+package cmdctx
 
 import (
 	"context"
@@ -33,7 +33,7 @@ const (
 
 func GenerateExecId(ctx context.Context) context.Context {
 	if v := ctx.Value(execIdKey); v != nil {
-		panic("command.SetExecId called twice on the same context")
+		panic("cmdctx.SetExecId called twice on the same context")
 	}
 	return context.WithValue(ctx, execIdKey, uuid.New().String())
 }
@@ -44,7 +44,7 @@ func GenerateExecId(ctx context.Context) context.Context {
 func ExecId(ctx context.Context) string {
 	v := ctx.Value(execIdKey)
 	if v == nil {
-		panic("command.ExecId called without calling command.SetExecId first")
+		panic("cmdctx.ExecId called without calling command.SetExecId first")
 	}
 	return v.(string)
 }

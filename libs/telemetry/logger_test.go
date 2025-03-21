@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/cli/libs/command"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -46,7 +46,7 @@ func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 		},
 	})
 
-	ctx = command.SetConfigUsed(ctx, &config.Config{
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
 	})
@@ -95,7 +95,7 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 			Name: protos.DummyCliEnumValue2,
 		},
 	})
-	ctx = command.SetConfigUsed(ctx, &config.Config{
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
 	})
@@ -144,7 +144,7 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 		},
 	})
 
-	ctx = command.SetConfigUsed(ctx, &config.Config{
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{
 		Host:  server.URL,
 		Token: "token",
 	})

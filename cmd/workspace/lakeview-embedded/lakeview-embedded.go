@@ -4,7 +4,7 @@ package lakeview_embedded
 
 import (
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/command"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
 )
@@ -73,7 +73,7 @@ func newGetPublishedDashboardEmbedded() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getPublishedDashboardEmbeddedReq.DashboardId = args[0]
 

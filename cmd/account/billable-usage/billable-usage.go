@@ -4,8 +4,8 @@ package billable_usage
 
 import (
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
@@ -86,7 +86,7 @@ func newDownload() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := command.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		downloadReq.StartMonth = args[0]
 		downloadReq.EndMonth = args[1]
