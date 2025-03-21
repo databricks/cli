@@ -74,7 +74,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		}
 
 		if len(artifact.Files) > 0 && artifact.BuildCommand == "" {
-			diags = diags.Extend(expandGlobs(ctx, b, artifactName))
+			diags = diags.Extend(bundle.Apply(ctx, b, expandGlobs{name: artifactName}))
 		}
 
 		if diags.HasError() {

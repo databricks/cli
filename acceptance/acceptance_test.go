@@ -44,7 +44,7 @@ var (
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
-// the test name there, e..g "bundle/variables/empty".
+// the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
@@ -288,6 +288,10 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 
 		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
 			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+		}
+
+		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
+			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID=%s)", configPath, os.Getenv("TEST_DEFAULT_CLUSTER_ID"))
 		}
 
 	} else {

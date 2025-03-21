@@ -15,7 +15,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDaemon(t *testing.T) {
+// This test is inherently flaky because it relies on a timeout to wait for
+// the server process to start. While it's expected to be rare, we have evidence of
+// this triggering in CI (where this failure is more likely due to machine virtualization)
+// ref: https://github.com/databricks/cli/pull/2526#issuecomment-2739524677
+//
+// We can trigger this test back on once we actually start using the daemon package.
+// That may never happen in which case we can remove this entire package at some point
+// in the future.
+// Date this test was disabled: 20th March 2025.
+func DisabledTestDaemon(t *testing.T) {
 	tmpDir := t.TempDir()
 	cmd := exec.Command("go", "run", "internal/parent_process/main.go", tmpDir)
 

@@ -4,7 +4,7 @@ Error: a[.txt: syntax error in pattern
   at artifacts.test.files[0].source
   in databricks.yml:7:17
 
-Error: ./a[.txt: syntax error in pattern
+Error: a[.txt: syntax error in pattern
   at artifacts.test.files[1].source
   in databricks.yml:8:17
 
@@ -22,17 +22,18 @@ Exit code: 1
   "test": {
     "files": [
       {
-        "source": "a[.txt"
+        "source": "[TEST_TMP_DIR]/a[.txt"
       },
       {
-        "source": "./a[.txt"
+        "source": "[TEST_TMP_DIR]/a[.txt"
       },
       {
-        "source": "../a[.txt"
+        "source": "[TEST_TMP_DIR]_PARENT/a[.txt"
       },
       {
-        "source": "subdir/a[.txt"
+        "source": "[TEST_TMP_DIR]/subdir/a[.txt"
       }
-    ]
+    ],
+    "path": "[TEST_TMP_DIR]"
   }
 }
