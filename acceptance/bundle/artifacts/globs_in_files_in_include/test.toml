@@ -1,0 +1,6 @@
+Badness = "Glob expansion is performed within cwd, not relative to where path is defined"
+RecordRequests = false
+
+[[Repls]]
+Old = '\\\\'
+New = '/'

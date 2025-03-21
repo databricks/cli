@@ -1,0 +1,58 @@
+
+>>> [CLI] bundle validate -o json
+Error: subdir/*.txt: no matching files
+  at artifacts.test.files[1].source
+  in resources/artifacts.yml:5:17
+
+
+Exit code: 1
+{
+  "test": {
+    "files": [
+      {
+        "source": "a*.txt"
+      },
+      {
+        "source": "subdir/*.txt"
+      }
+    ]
+  }
+}
+
+>>> withdir resources [CLI] bundle validate -o json
+{
+  "test": {
+    "files": [
+      {
+        "source": "a1.txt"
+      },
+      {
+        "source": "subdir/hello.txt"
+      }
+    ]
+  }
+}
+
+>>> withdir other_dir [CLI] bundle validate -o json
+Error: a*.txt: no matching files
+  at artifacts.test.files[0].source
+  in resources/artifacts.yml:4:17
+
+Error: subdir/*.txt: no matching files
+  at artifacts.test.files[1].source
+  in resources/artifacts.yml:5:17
+
+
+Exit code: 1
+{
+  "test": {
+    "files": [
+      {
+        "source": "a*.txt"
+      },
+      {
+        "source": "subdir/*.txt"
+      }
+    ]
+  }
+}
