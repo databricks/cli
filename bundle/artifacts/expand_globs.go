@@ -29,12 +29,20 @@ func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 	}
 }
 
-func expandGlobs(ctx context.Context, b *bundle.Bundle, name string) diag.Diagnostics {
+type expandGlobs struct {
+	name string
+}
+
+func (e expandGlobs) Name() string {
+	return "expandGlobs"
+}
+
+func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Base path for this mutator.
 	// This path is set with the list of expanded globs when done.
 	base := dyn.NewPath(
 		dyn.Key("artifacts"),
-		dyn.Key(name),
+		dyn.Key(e.name),
 		dyn.Key("files"),
 	)
 

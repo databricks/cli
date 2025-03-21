@@ -1,0 +1,5 @@
+artifacts:
+  test:
+    files:
+      - source: a*.txt
+      - source: subdir/*.txt

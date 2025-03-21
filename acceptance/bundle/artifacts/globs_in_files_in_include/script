@@ -1,0 +1,12 @@
+touch resources/a1.txt
+touch a2.txt
+mkdir -p resources/subdir
+touch resources/subdir/hello.txt
+
+errcode trace $CLI bundle validate -o json | jq .artifacts
+errcode trace withdir resources $CLI bundle validate -o json | jq .artifacts
+
+mkdir other_dir
+errcode trace withdir other_dir $CLI bundle validate -o json | jq .artifacts
+
+rm -fr resources/a1.txt a2.txt resources/subdir
