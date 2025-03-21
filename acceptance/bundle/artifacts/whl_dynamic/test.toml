@@ -1,0 +1,7 @@
+[[Repls]]
+Old = '1\d{18}'
+New = '[TIMESTAMP_NS]'
+
+[[Server]]
+Pattern = "POST /api/2.1/jobs/reset"
+Response.Body = '{}'
