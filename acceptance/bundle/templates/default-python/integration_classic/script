@@ -19,7 +19,9 @@ export JQ_DELETE='
   .resources.jobs["project_name_[UNIQUE_NAME]_job"].url,
   .resources.pipelines["project_name_[UNIQUE_NAME]_pipeline"].catalog,
   .resources.pipelines["project_name_[UNIQUE_NAME]_pipeline"].url,
-  .workspace.current_user
+  .workspace.current_user,
+  .entitlements,
+  .externalId
 '
 
 # Usage:
