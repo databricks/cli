@@ -1,0 +1,5 @@
+Ignore = [
+    '.gitignore',
+    '.databricks',
+    '__pycache__',
+]
