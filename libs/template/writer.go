@@ -5,13 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"path/filepath"
-	"strings"
-
-	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
-	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/filer"
 )
 
 const (
@@ -32,14 +25,20 @@ type Writer interface {
 }
 
 type defaultWriter struct {
-	configPath  string
-	outputFiler filer.Filer
+	configPath string
+	Output     map[string]string
 
 	// Internal state
 	config   *config
 	renderer *renderer
+
+	configValues map[string]any
+
+	// helpers like user_name, short_name, host:
+	helperValues map[string]string
 }
 
+/*
 func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, error) {
 	outputDir, err := filepath.Abs(outputDir)
 	if err != nil {
@@ -59,17 +58,21 @@ func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, e
 
 	return filer.NewLocalClient(outputDir)
 }
+*/
 
 func (tmpl *defaultWriter) Configure(ctx context.Context, configPath, outputDir string) error {
-	tmpl.configPath = configPath
-
-	outputFiler, err := constructOutputFiler(ctx, outputDir)
-	if err != nil {
-		return err
-	}
-
-	tmpl.outputFiler = outputFiler
 	return nil
+	/*
+		tmpl.configPath = configPath
+
+		outputFiler, err := constructOutputFiler(ctx, outputDir)
+		if err != nil {
+			return err
+		}
+
+		tmpl.outputFiler = outputFiler
+		return nil
+	*/
 }
 
 func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) error {
@@ -92,9 +95,11 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 		if err != nil {
 			return err
 		}
+	} else if tmpl.configValues != nil {
+		tmpl.config.values = tmpl.configValues
 	}
 
-	helpers := loadHelpers(ctx)
+	helpers := loadHelpers(ctx, tmpl.helperValues)
 	tmpl.renderer, err = newRenderer(ctx, tmpl.config.values, helpers, readerFs, templateDirName, libraryDirName)
 	if err != nil {
 		return err
@@ -107,7 +112,7 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 		if err != nil {
 			return err
 		}
-		cmdio.LogString(ctx, welcome)
+		// cmdio.LogString(ctx, welcome)
 	}
 
 	// Prompt user for any missing config values. Assign default values if
@@ -122,7 +127,7 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 func (tmpl *defaultWriter) printSuccessMessage(ctx context.Context) error {
 	success := tmpl.config.schema.SuccessMessage
 	if success == "" {
-		cmdio.LogString(ctx, "✨ Successfully initialized template")
+		// cmdio.LogString(ctx, "✨ Successfully initialized template")
 		return nil
 	}
 
@@ -130,7 +135,7 @@ func (tmpl *defaultWriter) printSuccessMessage(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	cmdio.LogString(ctx, success)
+	// cmdio.LogString(ctx, success)
 	return nil
 }
 
@@ -147,8 +152,12 @@ func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error
 		return err
 	}
 
+	if tmpl.Output == nil {
+		tmpl.Output = make(map[string]string)
+	}
+
 	// Flush the output files to disk.
-	err = tmpl.renderer.persistToDisk(ctx, tmpl.outputFiler)
+	err = tmpl.renderer.persistToDisk(ctx, tmpl.Output)
 	if err != nil {
 		return err
 	}
