@@ -1,7 +1,4 @@
 
->>> which python
-[TEST_TMP_DIR]/.venv/bin/python
-
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir .
 
 Welcome to the default Python template for Databricks Asset Bundles!

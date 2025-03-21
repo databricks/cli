@@ -29,3 +29,8 @@ New = '[NODE_TYPE_ID]'
 [[Repls]]
 Old = '\\\\'
 New = '/'
+
+[[Repls]]
+# python is used on Windows
+Old = "python setup.py bdist_wheel"
+New = "python3 setup.py bdist_wheel"
