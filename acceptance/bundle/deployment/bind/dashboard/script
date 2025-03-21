@@ -1,9 +1,3 @@
-title "Bind dashboard test: "
-
-title "Substitute variables in the template: "
-BUNDLE_NAME_SUFFIX=$(uuid)
-export BUNDLE_NAME_SUFFIX
-
 DASHBOARD_DISPLAY_NAME="test dashboard $(uuid)"
 if [ -z "$CLOUD_ENV" ]; then
     DASHBOARD_DISPLAY_NAME="test dashboard 6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
@@ -11,33 +5,25 @@ if [ -z "$CLOUD_ENV" ]; then
 fi
 
 export DASHBOARD_DISPLAY_NAME
-envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
+envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Create a pre-defined dashboard: "
 DASHBOARD_ID=$($CLI lakeview create --display-name "${DASHBOARD_DISPLAY_NAME}" --warehouse-id "${TEST_DEFAULT_WAREHOUSE_ID}" --serialized-dashboard '{"pages":[{"name":"02724bf2","displayName":"Untitled page"}]}' | jq -r '.dashboard_id')
 
 cleanupRemoveDashboard() {
-    title "Test cleanup: "
-    title "Delete the pre-defined dashboard ${DASHBOARD_ID}: "
     $CLI lakeview trash "${DASHBOARD_ID}"
-    echo $?
 }
 trap cleanupRemoveDashboard EXIT
 
-title "Bind dashboard: "
-$CLI bundle deployment bind dashboard1 "${DASHBOARD_ID}" --auto-approve
+trace $CLI bundle deployment bind dashboard1 "${DASHBOARD_ID}" --auto-approve
 
-title "Deploy bundle: "
-$CLI bundle deploy
+trace $CLI bundle deploy
 
-title "Read the pre-defined dashboard: "
-$CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name, lifecycle_state, path, parent_path, serialized_dashboard}'
+trace $CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name, lifecycle_state, path, parent_path, serialized_dashboard}'
 
-title "Unbind the dashboard: "
-$CLI bundle deployment unbind dashboard1
+trace $CLI bundle deployment unbind dashboard1
 
-title "Destroy the bundle: "
-$CLI bundle destroy --auto-approve
+trace $CLI bundle destroy --auto-approve
 
-title "Read the pre-defined dashboard again (expecting it still exists and is not deleted): "
-$CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name, lifecycle_state, path, parent_path, serialized_dashboard}'
+# Read the pre-defined dashboard again (expecting it still exists and is not deleted):
+trace $CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name, lifecycle_state, path, parent_path, serialized_dashboard}'

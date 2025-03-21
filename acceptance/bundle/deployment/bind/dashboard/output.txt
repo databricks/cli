@@ -1,16 +1,17 @@
 
-=== Bind dashboard test: 
-=== Substitute variables in the template: 
 === Create a pre-defined dashboard: 
-=== Bind dashboard: Updating deployment state...
+>>> [CLI] bundle deployment bind dashboard1 [DASHBOARD_ID] --auto-approve
+Updating deployment state...
 Successfully bound databricks_dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to deploy changes to your workspace
 
-=== Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UUID]/default/files...
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Read the pre-defined dashboard: {
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
   "display_name": "test dashboard [UUID]",
   "lifecycle_state": "ACTIVE",
   "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
@@ -18,20 +19,20 @@ Deployment complete!
   "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
 }
 
-=== Unbind the dashboard: Updating deployment state...
+>>> [CLI] bundle deployment unbind dashboard1
+Updating deployment state...
 
-=== Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UUID]/default
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
 
-=== Read the pre-defined dashboard again (expecting it still exists and is not deleted): {
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
   "display_name": "test dashboard [UUID]",
   "lifecycle_state": "ACTIVE",
   "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
   "parent_path": "/Users/[USERNAME]",
   "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
 }
-
-=== Test cleanup: 
-=== Delete the pre-defined dashboard [DASHBOARD_ID]: 0

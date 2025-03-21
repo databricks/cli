@@ -2,6 +2,10 @@ Local = true
 Cloud = true
 RequiresWarehouse = true
 
+Ignore = [
+    "databricks.yml",
+]
+
 [[Repls]]
 Old = "[0-9a-f]{32}"
 New = "[DASHBOARD_ID]"
