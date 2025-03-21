@@ -38,13 +38,13 @@ import (
 var (
 	KeepTmp     bool
 	NoRepl      bool
-	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
 	Tail        bool
 	Forcerun    bool
+	VerboseTest = os.Getenv("VERBOSE_TEST") != ""
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
-// the test name there, e..g "bundle/variables/empty".
+// the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
@@ -214,7 +214,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
 
 			if len(expanded) == 1 && len(expanded[0]) == 0 {
-				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
+				runTest(t, dir, coverDir, repls.Clone(), config, expanded[0])
 			} else {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -222,7 +222,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 						if !InprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset)
+						runTest(t, dir, coverDir, repls.Clone(), config, envset)
 					})
 				}
 			}
@@ -304,7 +304,7 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	return ""
 }
 
-func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string, customEnv []string) {
+func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, customEnv []string) {
 	tailOutput := Tail
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
@@ -337,7 +337,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
-	err = CopyDir(dir, tmpDir, inputs, outputs)
+	err = CopyDir(t, dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
@@ -373,7 +373,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 					assert.NoError(t, err)
-					defer f.Close()
+					defer closeFile(t, f)
 
 					_, err = f.WriteString(string(reqJson) + "\n")
 					assert.NoError(t, err)
@@ -468,12 +468,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	outputPath := filepath.Join(tmpDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
-	defer out.Close()
+	defer closeFile(t, out)
 
 	err = runWithLog(t, cmd, out, tailOutput)
 
 	// Include exit code in output (if non-zero)
-	formatOutput(out, err)
+	formatOutput(t, out, err)
 	require.NoError(t, out.Close())
 
 	printedRepls := false
@@ -485,7 +485,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Make sure there are not unaccounted for new files
 	files := ListDir(t, tmpDir)
-	unexpected := []string{}
+	var unexpected []string
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -542,7 +542,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	}
 
 	// The test produced an unexpected output file.
-	if !okRef && okNew {
+	if !okRef {
 		t.Errorf("Unexpected output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
 		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
 		if testdiff.OverwriteMode {
@@ -578,8 +578,8 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	// directory only affects the main script and not cleanup.
 	scriptContents = "(\n" + scriptContents + ")\n"
 
-	prepares := []string{}
-	cleanups := []string{}
+	var prepares []string
+	var cleanups []string
 
 	for {
 		x, ok := tryReading(t, filepath.Join(dir, CleanupScript))
@@ -633,32 +633,34 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 	return execPath
 }
 
-func copyFile(src, dst string) error {
+func copyFile(t *testing.T, src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer closeFile(t, in)
 
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer closeFile(t, out)
 
 	_, err = io.Copy(out, in)
 	return err
 }
 
-func formatOutput(w io.Writer, err error) {
+func formatOutput(t *testing.T, w io.Writer, err error) {
 	if err == nil {
 		return
 	}
-	if exiterr, ok := err.(*exec.ExitError); ok {
-		exitCode := exiterr.ExitCode()
-		fmt.Fprintf(w, "\nExit code: %d\n", exitCode)
-	} else {
-		fmt.Fprintf(w, "\nError: %s\n", err)
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
+		exitCode := exitError.ExitCode()
+		_, err := fmt.Fprintf(w, "\nExit code: %d\n", exitCode)
+		if err != nil {
+			t.Logf("Warning: failed to write exit code to the output: %v", err)
+		}
 	}
 }
 
@@ -691,7 +693,7 @@ func tryReading(t *testing.T, path string) (string, bool) {
 	return string(data), true
 }
 
-func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
+func CopyDir(t *testing.T, src, dst string, inputs, outputs map[string]bool) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -722,7 +724,7 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 			return os.MkdirAll(destPath, info.Mode())
 		}
 
-		return copyFile(path, destPath)
+		return copyFile(t, path, destPath)
 	})
 }
 
@@ -833,7 +835,10 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	processErrCh := make(chan error, 1)
 	go func() {
 		processErrCh <- cmd.Wait()
-		w.Close()
+		err := w.Close()
+		if err != nil {
+			t.Logf("Warning: failed to close pipe writer: %v", err)
+		}
 	}()
 
 	reader := bufio.NewReader(r)
@@ -875,5 +880,12 @@ func getNodeTypeID(cloudEnv string) string {
 		return "local-fake-node"
 	default:
 		return "unknown-cloudEnv-" + cloudEnv
+	}
+}
+
+func closeFile(t *testing.T, file *os.File) {
+	err := file.Close()
+	if err != nil {
+		t.Logf("Warning: failed to close file %s: %v", file.Name(), err)
 	}
 }
