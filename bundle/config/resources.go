@@ -124,12 +124,6 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
-	for k := range r.Volumes {
-		if k == key {
-			found = append(found, r.Volumes[k])
-    }
-  }
-
 	for k := range r.Clusters {
 		if k == key {
 			found = append(found, r.Clusters[k])
