@@ -27,11 +27,11 @@ type Resources struct {
 }
 
 type ConfigResource interface {
-	// Function to assert if the resource exists in the workspace configured in
+	// Exists returns true if the resource exists in the workspace configured in
 	// the input workspace client.
 	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
 
-	// Terraform equivalent name of the resource. For example "databricks_job"
+	// TerraformResourceName returns an equivalent name of the resource. For example "databricks_job"
 	// for jobs and "databricks_pipeline" for pipelines.
 	TerraformResourceName() string
 
@@ -60,16 +60,16 @@ func collectResourceMap[T ConfigResource](
 	description ResourceDescription,
 	input map[string]T,
 ) ResourceGroup {
-	resources := make(map[string]ConfigResource)
+	r := make(map[string]ConfigResource)
 	for key, resource := range input {
 		if resource.IsNil() {
 			continue
 		}
-		resources[key] = resource
+		r[key] = resource
 	}
 	return ResourceGroup{
 		Description: description,
-		Resources:   resources,
+		Resources:   r,
 	}
 }
 
@@ -157,7 +157,7 @@ type ResourceDescription struct {
 	TerraformResourceName string
 }
 
-// The keys of the map corresponds to the resource key in the bundle configuration.
+// SupportedResources returns a map which keys correspond to the resource key in the bundle configuration.
 func SupportedResources() map[string]ResourceDescription {
 	return map[string]ResourceDescription{
 		"jobs": {
