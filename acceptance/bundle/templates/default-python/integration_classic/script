@@ -4,8 +4,6 @@ uv venv -q --python $PYTHON_VERSION .venv
 venv_activate
 uv pip install -q setuptools
 
-trace which python  # should point to .venv
-
 envsubst < input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json --output-dir .
 rm input.json
