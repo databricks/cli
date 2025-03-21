@@ -19,18 +19,13 @@ export JQ_DELETE='
   .resources.jobs["project_name_[UNIQUE_NAME]_job"].url,
   .resources.pipelines["project_name_[UNIQUE_NAME]_pipeline"].catalog,
   .resources.pipelines["project_name_[UNIQUE_NAME]_pipeline"].url,
-  .workspace.current_user,
-  .workspace.entitlements,
-  .workspace.externalId
+  .workspace.current_user
 '
-
-# Usage:
-# cat out.validate.dev.json | jq "del($JQ_DELETE)"
 
 trap "trace $CLI bundle destroy -t dev --auto-approve" EXIT
 
 trace $CLI bundle validate -t dev
-trace $CLI bundle validate -t dev -o json > ../out.validate.dev.json
+trace $CLI bundle validate -t dev -o json | jq "del($JQ_DELETE)" > ../out.validate.dev.json
 trace $CLI bundle deploy -t dev
 trace $CLI bundle summary -t dev
 trace $CLI bundle summary -t dev -o json | jq "del($JQ_DELETE)" > ../out.summary.dev.json

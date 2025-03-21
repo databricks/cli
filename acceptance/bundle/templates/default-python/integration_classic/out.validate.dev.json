@@ -19,9 +19,7 @@
     "mode": "development",
     "name": "project_name_[UNIQUE_NAME]",
     "target": "dev",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    },
+    "terraform": {},
     "uuid": "[UUID]"
   },
   "include": [
@@ -147,43 +145,6 @@
   "targets": null,
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
-    "current_user": {
-      "active": true,
-      "displayName": "[USERNAME]",
-      "emails": [
-        {
-          "primary": true,
-          "type": "work",
-          "value": "[USERNAME]"
-        }
-      ],
-      "entitlements": [
-        {
-          "value": "allow-cluster-create"
-        },
-        {
-          "value": "allow-instance-pool-create"
-        }
-      ],
-      "groups": [
-        {
-          "$ref": "Groups/[USERGROUP]",
-          "display": "admins",
-          "type": "direct",
-          "value": "[USERGROUP]"
-        }
-      ],
-      "id": "[USERID]",
-      "name": {
-        "givenName": "[USERNAME]"
-      },
-      "schemas": [
-        "urn:ietf:params:scim:schemas:core:2.0:User",
-        "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
-      ],
-      "short_name": "[USERNAME]",
-      "userName": "[USERNAME]"
-    },
     "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",
     "host": "[DATABRICKS_URL]",
     "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/resources",
