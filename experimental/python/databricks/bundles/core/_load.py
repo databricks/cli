@@ -7,7 +7,7 @@ from textwrap import dedent
 from types import ModuleType
 from typing import Any, Iterable
 
-from databricks.bundles.core import Diagnostics
+from databricks.bundles.core._diagnostics import Diagnostics
 from databricks.bundles.core._location import Location
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resources import Resources
