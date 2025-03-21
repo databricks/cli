@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -14,8 +13,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/cli/libs/log"
 )
 
 var versionKey []byte = []byte("Version:")
@@ -104,25 +101,24 @@ func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash
 //
 // The function is idempotent: repeated calls with the same input will produce the same output.
 // If the target wheel already exists, it returns the path to the existing wheel without redoing the patching.
-func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
+func PatchWheel(path, outputDir string) (string, bool, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	wheelMtime := fileInfo.ModTime().UTC()
 
 	filename := filepath.Base(path)
 	wheelInfo, err := ParseWheelFilename(filename)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	newVersion, newFilename := calculateNewVersion(wheelInfo, wheelMtime)
 	outpath := filepath.Join(outputDir, newFilename)
 
 	if _, err := os.Stat(outpath); err == nil {
-		log.Debugf(ctx, "Skipping patching of %s, already exists: %s", path, outpath)
-		return outpath, nil
+		return outpath, false, nil
 	}
 
 	tmpFilename := outpath + fmt.Sprintf(".tmp%d", os.Getpid())
@@ -137,30 +133,30 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 
 	r, err := zip.OpenReader(path)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	defer r.Close()
 
 	oldDistInfoPrefix := wheelInfo.Distribution + "-" + wheelInfo.Version + ".dist-info/"
 	metadataFile := findFile(r, oldDistInfoPrefix+"METADATA")
 	if metadataFile == nil {
-		return "", fmt.Errorf("wheel %s missing %sMETADATA", path, oldDistInfoPrefix)
+		return "", false, fmt.Errorf("wheel %s missing %sMETADATA", path, oldDistInfoPrefix)
 	}
 
 	recordFile := findFile(r, oldDistInfoPrefix+"RECORD")
 	if recordFile == nil {
-		return "", fmt.Errorf("wheel %s missing %sRECORD file", path, oldDistInfoPrefix)
+		return "", false, fmt.Errorf("wheel %s missing %sRECORD file", path, oldDistInfoPrefix)
 	}
 
 	metadataReader, err := metadataFile.Open()
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	defer metadataReader.Close()
 
 	newMetadata, err := patchMetadata(metadataReader, wheelInfo.Version, newVersion)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	h := sha256.New()
@@ -171,23 +167,23 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 	// Compute the new dist-info directory prefix.
 	newDistInfoPrefix := strings.Replace(oldDistInfoPrefix, wheelInfo.Version, newVersion, 1)
 	if newDistInfoPrefix == oldDistInfoPrefix {
-		return "", fmt.Errorf("unexpected dist-info directory format: %s (version=%s)", oldDistInfoPrefix, wheelInfo.Version)
+		return "", false, fmt.Errorf("unexpected dist-info directory format: %s (version=%s)", oldDistInfoPrefix, wheelInfo.Version)
 	}
 
 	recordReader, err := recordFile.Open()
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	defer recordReader.Close()
 
 	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	outFile, err := os.Create(tmpFilename)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	defer outFile.Close()
 
@@ -214,55 +210,55 @@ func PatchWheel(ctx context.Context, path, outputDir string) (string, error) {
 
 		writer, err := zipw.CreateHeader(header)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 
 		if f.Name == metadataFile.Name {
 			_, err = writer.Write(newMetadata)
 			if err != nil {
-				return "", err
+				return "", false, err
 			}
 			metadataUpdated += 1
 		} else if f.Name == recordFile.Name {
 			_, err = writer.Write(newRecord)
 			if err != nil {
-				return "", err
+				return "", false, err
 			}
 			recordUpdated += 1
 		} else {
 			rc, err := f.Open()
 			if err != nil {
-				return "", err
+				return "", false, err
 			}
 			_, err = io.Copy(writer, rc)
 			if err != nil {
 				rc.Close()
-				return "", err
+				return "", false, err
 			}
 			if err := rc.Close(); err != nil {
-				return "", err
+				return "", false, err
 			}
 		}
 	}
 
 	if err := zipw.Close(); err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	outFile.Close()
 
 	if metadataUpdated != 1 {
-		return "", errors.New("Could not update METADATA")
+		return "", false, errors.New("Could not update METADATA")
 	}
 
 	if recordUpdated != 1 {
-		return "", errors.New("Could not update RECORD")
+		return "", false, errors.New("Could not update RECORD")
 	}
 
 	if err := os.Rename(tmpFilename, outpath); err != nil {
-		return "", err
+		return "", false, err
 	}
 	needRemoval = false
 
-	return outpath, nil
+	return outpath, true, nil
 }
