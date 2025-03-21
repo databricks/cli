@@ -80,11 +80,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "bundle/deployment/bind/dashboard")
-}
-
-func TestAcceptLocal(t *testing.T) {
-	testAccept(t, InprocessMode, "bundle/deployment/bind/dashboard")
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
