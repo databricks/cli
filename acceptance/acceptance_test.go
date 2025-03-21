@@ -389,10 +389,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 				items := strings.Split(stub.Pattern, " ")
 				require.Len(t, items, 2)
 				server.Handle(items[0], items[1], func(req testserver.Request) any {
-					if stub.DelaySeconds != nil {
-						time.Sleep(time.Duration((*stub.DelaySeconds) * float64(time.Second)))
-					}
-
+					time.Sleep(stub.Delay)
 					return stub.Response
 				})
 			}

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"dario.cat/mergo"
 	"github.com/BurntSushi/toml"
@@ -88,8 +89,10 @@ type ServerStub struct {
 	// The response body to return.
 	Response testserver.Response
 
-	// Artificial delay in seconds to simulate slow responses.
-	DelaySeconds *float64
+	// Artificial delay to simulate slow responses.
+	// Configure as "1ms", "2s", "3m", etc.
+	// See [time.ParseDuration] for details.
+	Delay time.Duration
 }
 
 // FindConfigs finds all the config relevant for this test,
