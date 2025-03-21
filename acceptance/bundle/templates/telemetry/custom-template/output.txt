@@ -1,0 +1,3 @@
+
+>>> [CLI] bundle init . --config-file input.json --output-dir output
+✨ Successfully initialized template
