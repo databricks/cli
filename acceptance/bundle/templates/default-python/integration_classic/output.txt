@@ -40,11 +40,11 @@ Resources:
   Jobs:
     project_name_[UNIQUE_NAME]_job:
       Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMBER]?o=[NUMBER]
+      URL:  [DATABRICKS_URL]/jobs/[NUMBER]
   Pipelines:
     project_name_[UNIQUE_NAME]_pipeline:
       Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline
-      URL:  [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMBER]
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]
 
 >>> [CLI] bundle summary -t dev -o json
 
@@ -93,11 +93,11 @@ Resources:
   Jobs:
     project_name_[UNIQUE_NAME]_job:
       Name: project_name_[UNIQUE_NAME]_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMBER]?o=[NUMBER]
+      URL:  [DATABRICKS_URL]/jobs/[NUMBER]
   Pipelines:
     project_name_[UNIQUE_NAME]_pipeline:
       Name: project_name_[UNIQUE_NAME]_pipeline
-      URL:  [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMBER]
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]
 
 >>> [CLI] bundle summary -t prod -o json
 

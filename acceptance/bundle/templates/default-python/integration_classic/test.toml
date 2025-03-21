@@ -34,3 +34,7 @@ New = '/'
 # python is used on Windows
 Old = "python setup.py bdist_wheel"
 New = "python3 setup.py bdist_wheel"
+
+[[Repls]]
+Old = '\?o=\[NUMBER\]'
+New = ''
