@@ -69,9 +69,10 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	schemaActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_schema")
 	dltActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_pipeline")
 	volumeActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_volume")
+	dashboardActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_dashboard")
 
 	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 {
+	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
 		return true, nil
 	}
 
@@ -105,6 +106,17 @@ cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:`
 		cmdio.LogString(ctx, msg)
 		for _, action := range volumeActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more dashboards is being recreated.
+	if len(dashboardActions) != 0 {
+		msg := `
+This action will result in the deletion or recreation of the following dashboards.
+This will result in changed IDs and permanent URLs of the dashboards that will be recreated:`
+		cmdio.LogString(ctx, msg)
+		for _, action := range dashboardActions {
 			cmdio.Log(ctx, action)
 		}
 	}

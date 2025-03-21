@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle deployment bind dashboard1 [DASHBOARD_ID] --auto-approve
+Updating deployment state...
+Successfully bound databricks_dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-recreation-test-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following dashboards.
+This will result in changed IDs and permanent URLs of the dashboards that will be recreated:
+  recreate dashboard dashboard1
+Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
+
+
+Exit code: 1
+
+>>> [CLI] bundle deployment unbind dashboard1
+Updating deployment state...
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-recreation-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
+  "display_name": "test dashboard [UUID]",
+  "lifecycle_state": "ACTIVE"
+}
