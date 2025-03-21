@@ -1,2 +1,9 @@
 Local = true
 Cloud = false # tests don't interact with APIs
+
+[EnvMatrix]
+UV_ARGS = [
+  "--with databricks-bundles==0.7.3",
+  # NB: test runner doesn't support substitutions, they are expanded in the script
+  "--with [DATABRICKS_BUNDLES_WHEEL]",
+]

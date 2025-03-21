@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.10"
 
 [[package]]
@@ -166,7 +167,7 @@ toml = [
 [[package]]
 name = "databricks-bundles"
 version = "0.243.0.dev0"
-source = { virtual = "." }
+source = { editable = "." }
 
 [package.dev-dependencies]
 dev = [
