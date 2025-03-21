@@ -14,6 +14,10 @@ license = { name = "Databricks License", file = "LICENSE" }
 dependencies = [
 ]
 
+[build-system]
+requires = ["flit_core >=3.11,<4"]
+build-backend = "flit_core.buildapi"
+
 [tool.uv]
 dev-dependencies = [
   "pyright==1.1.380",
@@ -24,12 +28,9 @@ dev-dependencies = [
   "typing_extensions==4.12.2",
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["databricks.bundles*"]
-
-[tool.setuptools.package-data]
-"databricks.bundles" = ["py.typed"]
+[tool.flit.module]
+name = "databricks"
+packages = ["databricks"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q -vv"
