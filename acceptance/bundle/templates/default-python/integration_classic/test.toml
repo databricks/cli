@@ -25,3 +25,7 @@ New = '[DATE]'
 [[Repls]]
 Old = 'Standard_D3_v2'
 New = '[NODE_TYPE_ID]'
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
