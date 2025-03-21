@@ -22,6 +22,9 @@ Response.Body = '''
 Pattern = "POST /api/2.0/lakeview/dashboards/{dashboard_id}/published"
 
 [[Server]]
+Pattern = "PATCH /api/2.0/lakeview/dashboards/{dashboard_id}"
+
+[[Server]]
 Pattern = "GET /api/2.0/lakeview/dashboards/{dashboard_id}"
 Response.Body = '''
 {
@@ -29,7 +32,7 @@ Response.Body = '''
     "display_name": "test dashboard 6260d50f-e8ff-4905-8f28-812345678903",
     "lifecycle_state": "ACTIVE",
     "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
-    "parent_path": "/Users/[USERNAME]",
+    "parent_path": "/Users/tester@databricks.com",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
 }
 '''

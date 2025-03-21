@@ -1,5 +1,4 @@
 
-=== Create a pre-defined dashboard: 
 >>> [CLI] bundle deployment bind dashboard1 [DASHBOARD_ID] --auto-approve
 Updating deployment state...
 Successfully bound databricks_dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to deploy changes to your workspace
