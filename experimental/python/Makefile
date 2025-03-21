@@ -16,6 +16,15 @@ lint:
 	uv run pyright
 	uv run ruff format --diff
 
+codegen:
+	find databricks -name _models | xargs rm -rf
+
+	cd codegen; uv run -m pytest codegen_tests
+	cd codegen; uv run -m codegen.main --output ..
+
+	uv run ruff check --fix $(sources) || true
+	uv run ruff format
+
 test:
 	uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv
 
@@ -23,4 +32,4 @@ build:
 	rm -rf build dist
 	uv build .
 
-.PHONY: fmt docs lint test build
+.PHONY: fmt docs lint codegen test build
