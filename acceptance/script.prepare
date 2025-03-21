@@ -63,3 +63,11 @@ withdir() {
 uuid() {
     python3 -c 'import uuid; print(uuid.uuid4())'
 }
+
+venv_activate() {
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        source .venv/Scripts/activate
+    else
+        source .venv/bin/activate
+    fi
+}
