@@ -451,6 +451,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// User replacements come last:
 	repls.Repls = append(repls.Repls, config.Repls...)
 
+	if NoRepl {
+		repls.Repls = []testdiff.Replacement{}
+	}
+
 	// Save replacements to temp test directory so that it can be read by diff.py
 	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
 	require.NoError(t, err)
@@ -649,6 +653,7 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 }
 
 func copyFile(src, dst string) error {
+	// AI TODO: minimal fix this to copy file permissions as well
 	in, err := os.Open(src)
 	if err != nil {
 		return err
