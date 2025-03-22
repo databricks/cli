@@ -653,7 +653,12 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 }
 
 func copyFile(src, dst string) error {
-	// AI TODO: minimal fix this to copy file permissions as well
+	// Get source file info to copy permissions
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -667,7 +672,12 @@ func copyFile(src, dst string) error {
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
-	return err
+	if err != nil {
+		return err
+	}
+	
+	// Copy file permissions from source to destination
+	return os.Chmod(dst, srcInfo.Mode())
 }
 
 func formatOutput(w io.Writer, err error) {
