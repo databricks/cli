@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/command"
@@ -93,6 +94,8 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 	if diags.HasError() {
 		return b, diags
 	}
+
+	diags = diags.Extend(bundle.Apply(ctx, b, validate.NoInterpolationInAuthConfig()))
 
 	// Set the auth configuration in the command context. This can be used
 	// downstream to initialize a API client.
