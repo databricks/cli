@@ -1,10 +1,12 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/workspace"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -148,7 +150,32 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 		}
 	}
 
+	if w.Host != "" && w.Profile == "" {
+		err := validateConfigAndEnvHost(cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+}
+
+func validateConfigAndEnvHost(cfg *config.Config) error {
+	var hostEnvName, hostEnvVal string
+	for _, attr := range config.ConfigAttributes {
+		if attr.Name == "host" {
+			hostEnvVal, hostEnvName = attr.ReadEnv()
+			break
+		}
+	}
+	if hostEnvName == "" || hostEnvVal == "" {
+		return nil
+	}
+
+	if workspace.NormalizeHost(hostEnvVal) != workspace.NormalizeHost(cfg.Host) {
+		return fmt.Errorf("config host mismatch: %s is defined as %s, but CLI configured to use %s", hostEnvName, hostEnvVal, cfg.Host)
+	}
+	return nil
 }
 
 func init() {
