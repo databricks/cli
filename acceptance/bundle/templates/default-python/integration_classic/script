@@ -8,7 +8,7 @@ envsubst < input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json --output-dir .
 rm input.json
 
-cd project_name_*
+cd project_name_${UNIQUE_NAME}
 
 export JQ_DELETE='
   .bundle.terraform.exec_path,
@@ -40,4 +40,4 @@ trace $CLI bundle destroy -t prod --auto-approve
 trap "true" EXIT
 
 cd ..
-rm -fr project_name_*
+rm -fr project_name_${UNIQUE_NAME}
