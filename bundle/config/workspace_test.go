@@ -149,3 +149,34 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		assert.ErrorContains(t, err, "config host mismatch")
 	})
 }
+
+func TestWorkspaceValidateConfigAndEnvHost(t *testing.T) {
+	t.Run("host from env mismatch", func(t *testing.T) {
+		w := Workspace{
+			Host: "https://abc.cloud.databricks.com",
+		}
+		setupWorkspaceTest(t)
+		t.Setenv("DATABRICKS_HOST", "https://def.cloud.databricks.com")
+		_, err := w.Client()
+		assert.ErrorContains(t, err, "config host mismatch: DATABRICKS_HOST is defined as https://def.cloud.databricks.com, but CLI configured to use https://abc.cloud.databricks.com")
+	})
+
+	t.Run("with profile defined", func(t *testing.T) {
+		w := Workspace{
+			Host:    "https://abc.cloud.databricks.com",
+			Profile: "abc",
+		}
+
+		setupWorkspaceTest(t)
+		// This works if there is a config file with a matching profile.
+		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
+			Profile: "abc",
+			Host:    "https://abc.cloud.databricks.com",
+		})
+		require.NoError(t, err)
+
+		t.Setenv("DATABRICKS_HOST", "https://def.cloud.databricks.com")
+		_, err = w.Client()
+		require.NoError(t, err)
+	})
+}

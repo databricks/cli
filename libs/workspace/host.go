@@ -1,10 +1,10 @@
-package databrickscfg
+package workspace
 
 import "net/url"
 
-// normalizeHost returns the string representation of only
+// NormalizeHost returns the string representation of only
 // the scheme and host part of the specified host.
-func normalizeHost(host string) string {
+func NormalizeHost(host string) string {
 	u, err := url.Parse(host)
 	if err != nil {
 		return host

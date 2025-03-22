@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspace"
 	"github.com/databricks/databricks-sdk-go/config"
 	"gopkg.in/ini.v1"
 )
@@ -74,7 +75,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		return fmt.Errorf("cannot parse config file: %w", err)
 	}
 	// Normalized version of the configured host.
-	host := normalizeHost(cfg.Host)
+	host := workspace.NormalizeHost(cfg.Host)
 	match, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
 		key, err := s.GetKey("host")
 		if err != nil {
@@ -83,7 +84,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		}
 
 		// Check if this section matches the normalized host
-		return normalizeHost(key.Value()) == host
+		return workspace.NormalizeHost(key.Value()) == host
 	})
 	if err == errNoMatchingProfiles {
 		return nil
