@@ -1,67 +1,3 @@
-github.com/databricks/cli/bundle/config/resources.App:
-  "active_deployment":
-    "description": |-
-      PLACEHOLDER
-  "app_status":
-    "description": |-
-      PLACEHOLDER
-  "budget_policy_id":
-    "description": |-
-      PLACEHOLDER
-  "compute_status":
-    "description": |-
-      PLACEHOLDER
-  "config":
-    "description": |-
-      PLACEHOLDER
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "creator":
-    "description": |-
-      PLACEHOLDER
-  "default_source_code_path":
-    "description": |-
-      PLACEHOLDER
-  "description":
-    "description": |-
-      PLACEHOLDER
-  "effective_budget_policy_id":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "pending_deployment":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "resources":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_client_id":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_id":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "source_code_path":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-  "updater":
-    "description": |-
-      PLACEHOLDER
-  "url":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
     "markdown_description": |-
@@ -477,6 +413,14 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
     "description": |-
       PLACEHOLDER
   "state": {}
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
+  "granularities":
+    "description": |-
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
+  "granularities":
+    "description": |-
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
 github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
   "availability":
     "description": |-
@@ -508,10 +452,25 @@ github.com/databricks/databricks-sdk-go/service/compute.DockerImage:
   "basic_auth":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.Environment:
+  "dependencies":
+    "description": |-
+      List of pip dependencies, as supported by the version of pip in this environment.
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "availability":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
+  "abfss":
+    "description": |-
+      Contains the Azure Data Lake Storage destination path
+github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
+  "log_analytics_primary_key":
+    "description": |-
+      The primary key for the Azure Log Analytics agent configuration
+  "log_analytics_workspace_id":
+    "description": |-
+      The workspace ID for the Azure Log Analytics agent configuration
 github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
   "compute":
     "description": |-
@@ -579,26 +538,3 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
   "model_version":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
-  "abfss":
-    "description": |-
-      Contains the Azure Data Lake Storage destination path
-github.com/databricks/databricks-sdk-go/service/compute.Environment:
-  "dependencies":
-    "description": |-
-      List of pip dependencies, as supported by the version of pip in this environment.
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
-  "granularities":
-    "description": |-
-      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
-  "granularities":
-    "description": |-
-      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
-github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
-  "log_analytics_primary_key":
-    "description": |-
-      The primary key for the Azure Log Analytics agent configuration
-  "log_analytics_workspace_id":
-    "description": |-
-      The workspace ID for the Azure Log Analytics agent configuration

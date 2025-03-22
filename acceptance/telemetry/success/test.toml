@@ -1,0 +1,13 @@
+IncludeRequestHeaders = ["User-Agent"]
+
+[[Repls]]
+Old = " upstream/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " upstream-version/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""

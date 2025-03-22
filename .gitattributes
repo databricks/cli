@@ -67,6 +67,7 @@ cmd/workspace/disable-legacy-dbfs/disable-legacy-dbfs.go linguist-generated=true
 cmd/workspace/enhanced-security-monitoring/enhanced-security-monitoring.go linguist-generated=true
 cmd/workspace/experiments/experiments.go linguist-generated=true
 cmd/workspace/external-locations/external-locations.go linguist-generated=true
+cmd/workspace/forecasting/forecasting.go linguist-generated=true
 cmd/workspace/functions/functions.go linguist-generated=true
 cmd/workspace/genie/genie.go linguist-generated=true
 cmd/workspace/git-credentials/git-credentials.go linguist-generated=true

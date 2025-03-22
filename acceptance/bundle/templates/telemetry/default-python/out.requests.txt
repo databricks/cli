@@ -1,0 +1,34 @@
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_init cmd-exec-id/[CMD-EXEC-ID] auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_init cmd-exec-id/[CMD-EXEC-ID] auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/current-metastore-assignment"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_init cmd-exec-id/[CMD-EXEC-ID] auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": "UNIX_TIME_MILLIS",
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[CMD-EXEC-ID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_init\",\"operating_system\":\"[OS]\",\"execution_time_ms\":\"SMALL_INT\",\"exit_code\":0},\"bundle_init_event\":{\"bundle_uuid\":\"[BUNDLE-UUID]\",\"template_name\":\"default-python\",\"template_enum_args\":[{\"key\":\"include_dlt\",\"value\":\"no\"},{\"key\":\"include_notebook\",\"value\":\"yes\"},{\"key\":\"include_python\",\"value\":\"yes\"},{\"key\":\"serverless\",\"value\":\"no\"}]}}}}"
+    ]
+  }
+}

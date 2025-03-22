@@ -4,7 +4,7 @@ package {{(.TrimPrefix "account").SnakeName}}
 
 import (
     "github.com/databricks/cli/libs/cmdio"
-    "github.com/databricks/cli/libs/command"
+    "github.com/databricks/cli/libs/cmdctx"
     "github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/cmd/root"
@@ -241,7 +241,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.PreRunE = root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := command.WorkspaceClient(ctx){{end}}
+		{{if .Service.IsAccounts}}a := cmdctx.AccountClient(ctx){{else}}w := cmdctx.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
 			{{ if $canUseJson }}
 			if cmd.Flags().Changed("json") {

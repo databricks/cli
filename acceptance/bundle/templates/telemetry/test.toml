@@ -1,0 +1,26 @@
+RecordRequests = true
+IncludeRequestHeaders = ["User-Agent"]
+
+[[Repls]]
+Old = '17\d{11}'
+New = '"UNIX_TIME_MILLIS"'
+
+[[Repls]]
+Old = 'darwin|linux|windows'
+New = '[OS]'
+
+[[Repls]]
+Old = 'execution_time_ms\\\":\d{1,5},'
+New = 'execution_time_ms\":\"SMALL_INT\",'
+
+[[Repls]]
+Old = " upstream/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " upstream-version/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""

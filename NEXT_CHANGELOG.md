@@ -1,12 +1,14 @@
 # NEXT CHANGELOG
 
-## Release v0.243.1
+## Release v0.245.0
 
 ### CLI
-* Fixed "can't evaluate field Name in type interface{}" for "databricks queries list" command ([#2451](https://github.com/databricks/cli/pull/2451))
 
 ### Bundles
 
-### Internal
+* Processing 'artifacts' section is now done in "bundle validate" (adding defaults, inferring "build", asserting required fields) ([#2526])(https://github.com/databricks/cli/pull/2526))
+* When uploading artifacts, include relative path in log message ([#2539])(https://github.com/databricks/cli/pull/2539))
+* Added support for clusters in deployment bind/unbind commands ([#2536](https://github.com/databricks/cli/pull/2536))
+* Added support for volumes in deployment bind/unbind commands ([#2527](https://github.com/databricks/cli/pull/2527))
 
 ### API Changes

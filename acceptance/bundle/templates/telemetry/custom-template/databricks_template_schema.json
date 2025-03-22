@@ -1,0 +1,17 @@
+{
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "description": "The name of the project"
+        },
+        "some_enum": {
+            "type": "string",
+            "enum": [
+                "v1",
+                "v2",
+                "v3"
+            ],
+            "description": "An enum"
+        }
+    }
+}

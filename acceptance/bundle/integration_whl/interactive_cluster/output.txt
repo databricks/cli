@@ -1,15 +1,4 @@
 
->>> cat input.json
-{
-    "project_name": "my_test_code",
-    "spark_version": "13.3.x-snapshot-scala2.12",
-    "node_type_id": "[NODE_TYPE_ID]",
-    "unique_id": "[UNIQUE_NAME]",
-    "python_wheel_wrapper": false,
-    "instance_pool_id": "[TEST_INSTANCE_POOL_ID]"
-}
-✨ Successfully initialized template
-
 >>> cat databricks.yml
 bundle:
   name: wheel-task
@@ -43,7 +32,25 @@ resources:
 
 >>> [CLI] bundle deploy
 Building python_artifact...
-Uploading my_test_code-0.0.1-py3-none-any.whl...
+Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING 
+[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS 
+Hello from my func
+Got arguments:
+['my_test_code', 'one', 'two']
+
+=== Make a change to code without version change and run the job again
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
 Updating deployment state...

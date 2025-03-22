@@ -10,14 +10,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type expandGlobs struct {
-	name string
-}
-
-func (m *expandGlobs) Name() string {
-	return fmt.Sprintf("artifacts.ExpandGlobs(%s)", m.name)
-}
-
 func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 	// The pattern contained in v is an absolute path.
 	// Make it relative to the value's location to make it more readable.
@@ -37,12 +29,20 @@ func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 	}
 }
 
-func (m *expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+type expandGlobs struct {
+	name string
+}
+
+func (e expandGlobs) Name() string {
+	return "expandGlobs"
+}
+
+func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Base path for this mutator.
 	// This path is set with the list of expanded globs when done.
 	base := dyn.NewPath(
 		dyn.Key("artifacts"),
-		dyn.Key(m.name),
+		dyn.Key(e.name),
 		dyn.Key("files"),
 	)
 

@@ -1,0 +1,6 @@
+{
+    "project_name": "my_dbt_sql",
+    "http_path": "/sql/2.0/warehouses/f00dcafe",
+    "default_catalog": "main",
+    "personal_schemas": "yes, use a schema based on the current user name during development"
+}

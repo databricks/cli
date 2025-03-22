@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/command"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/filer/completer"
 	"github.com/spf13/cobra"
@@ -36,7 +36,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	}
 
 	path := parts[1]
-	w := command.WorkspaceClient(ctx)
+	w := cmdctx.WorkspaceClient(ctx)
 
 	// If the specified path has the "Volumes" prefix, use the Files API.
 	if strings.HasPrefix(path, "/Volumes/") {

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/databricks/cli/libs/command"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -76,7 +76,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		protoLogs[i] = string(b)
 	}
 
-	apiClient, err := client.New(command.ConfigUsed(ctx))
+	apiClient, err := client.New(cmdctx.ConfigUsed(ctx))
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}

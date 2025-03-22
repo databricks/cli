@@ -1,4 +1,4 @@
-Error: path "[TMPDIR]" is not within repository root "[TMPDIR]/myrepo"
+Error: path "[TEST_TMP_DIR]" is not within repository root "[TEST_TMP_DIR]/myrepo"
 
 Name: test-bundle
 Target: default

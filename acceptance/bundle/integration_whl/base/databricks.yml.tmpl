@@ -1,0 +1,29 @@
+bundle:
+  name: wheel-task
+
+workspace:
+  root_path: "~/.bundle/$UNIQUE_NAME"
+
+include:
+  - $EXTRA_CONFIG
+
+resources:
+  jobs:
+    some_other_job:
+      name: "[${bundle.target}] Test Wheel Job $UNIQUE_NAME"
+      tasks:
+        - task_key: TestTask
+          new_cluster:
+            num_workers: 1
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            data_security_mode: USER_ISOLATION
+            instance_pool_id: $TEST_INSTANCE_POOL_ID
+          python_wheel_task:
+            package_name: my_test_code
+            entry_point: run
+            parameters:
+              - "one"
+              - "two"
+          libraries:
+          - whl: ./dist/*.whl

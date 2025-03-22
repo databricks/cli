@@ -59,6 +59,13 @@
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/artifacts",
     "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_$UNIQUE_PRJ/dev/state"
   },
+  "artifacts": {
+    "python_artifact": {
+      "type": "whl",
+      "path": "/tmp/.../project_name_$UNIQUE_PRJ",
+      "build": "python3 setup.py bdist_wheel"
+    }
+  },
   "resources": {
     "jobs": {
       "project_name_$UNIQUE_PRJ_job": {

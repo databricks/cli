@@ -1,9 +1,6 @@
 package config
 
 import (
-	"context"
-	"errors"
-
 	"github.com/databricks/cli/libs/exec"
 )
 
@@ -33,23 +30,4 @@ type Artifact struct {
 	BuildCommand string         `json:"build,omitempty"`
 
 	Executable exec.ExecutableType `json:"executable,omitempty"`
-}
-
-func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
-	if a.BuildCommand == "" {
-		return nil, errors.New("no build property defined")
-	}
-
-	var e *exec.Executor
-	var err error
-	if a.Executable != "" {
-		e, err = exec.NewCommandExecutorWithExecutable(a.Path, a.Executable)
-	} else {
-		e, err = exec.NewCommandExecutor(a.Path)
-		a.Executable = e.ShellType()
-	}
-	if err != nil {
-		return nil, err
-	}
-	return e.Exec(ctx, a.BuildCommand)
 }
