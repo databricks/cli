@@ -665,8 +665,8 @@ func copyFile(src, dst string) error {
 	}
 	defer in.Close()
 
-	// AI TODO: Use OpenFile to create file with the right permissions and avoid Chmod below
-	out, err := os.Create(dst)
+	// Create file with the same permissions as the source file
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
 	if err != nil {
 		return err
 	}
@@ -677,8 +677,7 @@ func copyFile(src, dst string) error {
 		return err
 	}
 
-	// Copy file permissions from source to destination
-	return os.Chmod(dst, srcInfo.Mode())
+	return nil
 }
 
 func formatOutput(w io.Writer, err error) {
