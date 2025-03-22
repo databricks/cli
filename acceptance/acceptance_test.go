@@ -658,13 +658,14 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer in.Close()
 
+	// AI TODO: Use OpenFile to create file with the right permissions and avoid Chmod below
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
@@ -675,7 +676,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Copy file permissions from source to destination
 	return os.Chmod(dst, srcInfo.Mode())
 }
@@ -715,7 +716,6 @@ func tryReading(t *testing.T, path string) (string, bool) {
 
 	if !utf8.Valid(data) {
 		t.Errorf("%s: not valid utf-8", path)
-		return "", false
 	}
 
 	return string(data), true
