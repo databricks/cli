@@ -126,7 +126,7 @@ def extract_mutator_calls(initialize_file):
 
 def run_aider(initialize_file, doc_file, mutator_file, mutator_name):
     cmd = [
-        "aider",
+        "aider", "--no-show-release-notes", "--no-check-update", "--no-repo-map",
         initialize_file, doc_file, mutator_file,
         "--message", f"Update comments for {mutator_name} in initialize.go according to the documentation in mutator_documentation.md. Only update the comments for this specific mutator call, don't change anything else."
     ]
