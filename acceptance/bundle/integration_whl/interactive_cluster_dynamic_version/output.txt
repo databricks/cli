@@ -1,0 +1,45 @@
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading .databricks/bundle/default/patched_wheels/python_artifact_my_test_code/my_test_code-0.0.1+[NUMID]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING 
+[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS 
+Hello from my func
+Got arguments:
+['my_test_code', 'one', 'two']
+
+=== Make a change to code without version change and run the job again
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading .databricks/bundle/default/patched_wheels/python_artifact_my_test_code/my_test_code-0.0.1+[NUMID]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING 
+[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS 
+UPDATED MY FUNC
+Got arguments:
+['my_test_code', 'one', 'two']
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete cluster test_cluster
+  delete job some_other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
