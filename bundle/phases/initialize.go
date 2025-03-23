@@ -26,17 +26,27 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	log.Info(ctx, "Phase: initialize")
 
 	return bundle.ApplySeq(ctx, b,
+		// Reads (dynamic): resource.*.*
+		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
 
-		// Update all path fields in the sync block to be relative to the bundle root path.
+		// Reads (dynamic): workspace.{host,profile,...} (ensure that there are no variable references)
+		validate.NoInterpolationInAuthConfig(),
+
+		// Updates (dynamic): sync.{path,include,exclude}  (makes them relative to bundle root rather than to definition file)
 		mutator.RewriteSyncPaths(),
 
+		// Reads (dynamic): sync.paths (checks that it is absent)
+		// Updates (static): b.Config.Sync.Path (default set to ["."])
 		// Configure the default sync path to equal the bundle root if not explicitly configured.
 		// By default, this means all files in the bundle root directory are synchronized.
 		mutator.SyncDefaultPath(),
 
 		// Figure out if the sync root path is identical or an ancestor of the bundle root path.
 		// If it is an ancestor, this updates all paths to be relative to the sync root path.
+		// Reads (static): b.Config.Sync.Paths (calculates longest common parent together with bundle root).
+		// Updates (static) b.{SyncRoot,SyncRootPath}  (set to calculate sync root, which is either bundle root or some parent of bundle root)
+		// Updates (static) b.Config.{Sync,Include,Exclude} they set to be relative to SyncRootPath instead of bundle root
 		mutator.SyncInferRoot(),
 
 		mutator.PopulateCurrentUser(),
