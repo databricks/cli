@@ -1,5 +1,6 @@
 
-// AI TODO: run this, capture output,. pass to create_mutator_map
+// AI TODO: run this, capture output,. pass to create_mutator_map.
+// Do not capture stderr and not capture CalledProcessError exception, let it crash
 // git grep '^func [A-Z].*Mutator {' '*.go' '(:exclude)*_test.go'
 
 def create_mutator_map(git_grep_output):
