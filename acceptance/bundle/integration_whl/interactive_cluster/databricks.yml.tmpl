@@ -4,14 +4,6 @@ bundle:
 workspace:
   root_path: "~/.bundle/$UNIQUE_NAME"
 
-artifacts:
-  python_artifact:
-    type: whl
-    build: python setup.py bdist_wheel
-    files:
-      - source: dist/*.whl
-    dynamic_version: true
-
 resources:
   clusters:
     test_cluster:
