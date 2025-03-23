@@ -42,6 +42,11 @@ def create_mutator_map(git_grep_output):
 
 
 def extract_mutator_calls(initialize_file):
+    # AI simplify this function as follows:
+    # it should receive mutator_map
+    # for each line in initialize_file check if it matches \b<package>.<Mutator>\b for each mutator in the map. use the first match.
+    # return matching mutators in the order the appear, together with line number where they match. 
+    # use this line later in the code instead of finding it from scratch.
     """
     Extract mutator calls from initialize.go
 
