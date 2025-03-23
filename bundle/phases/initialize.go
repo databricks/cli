@@ -50,6 +50,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (static) b.Config.{Sync,Include,Exclude} they set to be relative to SyncRootPath instead of bundle root
 		mutator.SyncInferRoot(),
 
+		// Reads (static): b.Config.Workspace.CurrentUser (checks if it's already set)
+		// Updates (static): b.Config.Workspace.CurrentUser (sets user information from API)
+		// Updates (static): b.Tagging (configures tagging object based on workspace client)
 		mutator.PopulateCurrentUser(),
 		mutator.LoadGitDetails(),
 
