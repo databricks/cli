@@ -83,7 +83,7 @@ def extract_mutator_calls(initialize_file):
         content = f.read()
     
     # Find the ApplySeq block
-    apply_seq_match = re.search(r'bundle\.ApplySeq\(ctx, b,(.*?)\)', content, re.DOTALL)
+    apply_seq_match = re.search(r'return bundle\.ApplySeq\(ctx, b,(.*?)\)', content, re.DOTALL)
     if not apply_seq_match:
         print("Could not find ApplySeq block in initialize.go")
         return []
@@ -93,29 +93,37 @@ def extract_mutator_calls(initialize_file):
     # Extract mutator calls
     mutator_calls = []
     
-    # Pattern to match mutator calls like mutator.SomeFunction(), or pythonmutator.PythonMutator(...)
-    pattern = r'(\w+)\.(\w+)\(.*?\)'
-    
-    for match in re.finditer(pattern, apply_seq_block):
-        package_name = match.group(1)
-        func_name = match.group(2)
-        
-        # Skip non-mutator functions like bundle.ApplySeq
-        if func_name == "ApplySeq":
+    # Pattern to match lines with mutator calls
+    # This handles both function calls with parentheses and trailing commas
+    lines = apply_seq_block.split('\n')
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('//'):
             continue
             
-        # Handle special cases
-        if package_name == "pythonmutator" and func_name == "PythonMutator":
-            # Extract the phase parameter
-            phase_match = re.search(r'PythonMutator\(pythonmutator\.(\w+)\)', match.group(0))
-            if phase_match:
-                phase = phase_match.group(1)
-                mutator_calls.append(f"{package_name}.{func_name}({phase})")
+        # Look for package.Function() pattern
+        match = re.search(r'(\w+)\.(\w+)\(', line)
+        if match:
+            package_name = match.group(1)
+            func_name = match.group(2)
+            
+            # Skip non-mutator functions
+            if package_name == "bundle" or func_name in ["ApplySeq", "Apply"]:
+                continue
+                
+            # Handle special cases
+            if package_name == "pythonmutator" and func_name == "PythonMutator":
+                # Extract the phase parameter
+                phase_match = re.search(r'PythonMutator\(pythonmutator\.(\w+)\)', line)
+                if phase_match:
+                    phase = phase_match.group(1)
+                    mutator_calls.append(f"{package_name}.{func_name}({phase})")
+                else:
+                    mutator_calls.append(f"{package_name}.{func_name}")
             else:
                 mutator_calls.append(f"{package_name}.{func_name}")
-        else:
-            mutator_calls.append(f"{package_name}.{func_name}")
     
+    print(f"Debug: Found these mutator calls: {mutator_calls}")
     return mutator_calls
 
 def run_aider(initialize_file, doc_file, mutator_file, mutator_name):
@@ -141,6 +149,12 @@ def main():
     # Path to initialize.go
     initialize_file = "bundle/phases/initialize.go"
     
+    # Check if the file exists
+    if not os.path.exists(initialize_file):
+        print(f"Error: {initialize_file} does not exist.")
+        print("Make sure you're running this script from the root of the repository.")
+        return
+    
     # Path to mutator_documentation.md
     doc_file = "bundle/phases/mutator_documentation.md"
     
@@ -148,10 +162,20 @@ def main():
     git_grep_output = run_git_grep()
     mutator_map = create_mutator_map(git_grep_output)
     
+    print(f"Found {len(mutator_map)} potential mutators in the codebase")
+    
     # Extract mutator calls from initialize.go
     mutator_calls = extract_mutator_calls(initialize_file)
     
     print(f"Found {len(mutator_calls)} mutator calls in {initialize_file}")
+    
+    if not mutator_calls:
+        print("\nNo mutator calls were found. This could be because:")
+        print("1. The initialize.go file doesn't contain any mutator calls")
+        print("2. The pattern used to detect mutator calls doesn't match the format in the file")
+        print("\nTry running this command to see the content of initialize.go:")
+        print(f"cat {initialize_file}")
+        return
     
     # Process each mutator call
     for mutator_call in mutator_calls:
