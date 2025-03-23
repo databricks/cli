@@ -41,63 +41,46 @@ def create_mutator_map(git_grep_output):
     return mutator_map
 
 
-def extract_mutator_calls(initialize_file):
-    # AI simplify this function as follows:
-    # it should receive mutator_map
-    # for each line in initialize_file check if it matches \b<package>.<Mutator>\b for each mutator in the map. use the first match.
-    # return matching mutators in the order the appear, together with line number where they match. 
-    # use this line later in the code instead of finding it from scratch.
+def extract_mutator_calls(initialize_file, mutator_map):
     """
-    Extract mutator calls from initialize.go
-
+    Extract mutator calls from initialize.go with their line numbers
+    
     Args:
         initialize_file (str): Path to initialize.go
-
+        mutator_map (dict): Map of qualified mutator names to file paths
+        
     Returns:
-        list: List of mutator calls
+        list: List of tuples (mutator_call, line_number)
     """
-    with open(initialize_file, "r") as f:
-        content = f.read()
-
-    # Extract mutator calls directly from the file
     mutator_calls = []
-
-    # Get all lines in the file
-    lines = content.split("\n")
-
-    # Find all lines with mutator calls
+    
+    with open(initialize_file, "r") as f:
+        lines = f.readlines()
+    
     for i, line in enumerate(lines):
-        line = line.strip()
-        if not line:
+        line_stripped = line.strip()
+        if not line_stripped:
             continue
-
-        # Look for package.FunctionName pattern
-        match = re.search(r"(\w+)\.([A-Z]\w+)\(", line)
-        if match:
-            package_name = match.group(1)
-            func_name = match.group(2)
-
-            # Skip non-mutator functions and common package prefixes
-            if package_name == "bundle" and func_name in ["ApplySeq", "Apply"]:
-                continue
-
-            # Skip validation functions
-            if package_name == "validate" and not func_name.endswith("Mutator"):
-                continue
-
-            # Handle special cases
-            if package_name == "pythonmutator" and func_name == "PythonMutator":
-                # Extract the phase parameter if present
-                phase_match = re.search(r"PythonMutator\(pythonmutator\.(\w+)\)", line)
-                if phase_match:
-                    phase = phase_match.group(1)
-                    mutator_calls.append(f"{package_name}.{func_name}({phase})")
+            
+        # Check for matches against mutators in the map
+        for qualified_name in mutator_map:
+            package_name, func_name = qualified_name.split(".")
+            pattern = rf"\b{package_name}\.{func_name}\b"
+            
+            if re.search(pattern, line_stripped):
+                # Handle special case for PythonMutator
+                if package_name == "pythonmutator" and func_name == "PythonMutator":
+                    phase_match = re.search(r"PythonMutator\(pythonmutator\.(\w+)\)", line_stripped)
+                    if phase_match:
+                        phase = phase_match.group(1)
+                        mutator_calls.append((f"{package_name}.{func_name}({phase})", i))
+                    else:
+                        mutator_calls.append((f"{package_name}.{func_name}", i))
                 else:
-                    mutator_calls.append(f"{package_name}.{func_name}")
-            else:
-                mutator_calls.append(f"{package_name}.{func_name}")
-
-    print(f"Debug: Found these mutator calls: {mutator_calls}")
+                    mutator_calls.append((f"{package_name}.{func_name}", i))
+                break  # Use first match only
+    
+    print(f"Debug: Found these mutator calls: {[call for call, _ in mutator_calls]}")
     return mutator_calls
 
 
@@ -142,7 +125,7 @@ def main():
     initialize_file = "bundle/phases/initialize.go"
 
     # Check if the file exists
-    if not os.path.exists(initialize_file):
+    if not Path(initialize_file).exists():
         print(f"Error: {initialize_file} does not exist.")
         print("Make sure you're running this script from the root of the repository.")
         return
@@ -156,13 +139,13 @@ def main():
 
     print(f"Found {len(mutator_map)} potential mutators in the codebase")
 
-    # Extract mutator calls from initialize.go
-    mutator_calls = extract_mutator_calls(initialize_file)
+    # Extract mutator calls from initialize.go with line numbers
+    mutator_calls_with_lines = extract_mutator_calls(initialize_file, mutator_map)
 
-    print(f"Found {len(mutator_calls)} mutator calls in {initialize_file}")
+    print(f"Found {len(mutator_calls_with_lines)} mutator calls in {initialize_file}")
 
     # If no mutator calls were found, run debug function
-    if not mutator_calls:
+    if not mutator_calls_with_lines:
         debug_apply_seq_block(initialize_file)
         print("\nNo mutator calls were found. This could be because:")
         print("1. The initialize.go file doesn't contain any mutator calls")
@@ -172,7 +155,7 @@ def main():
         return
 
     # Process each mutator call
-    for mutator_call in mutator_calls:
+    for mutator_call, line_idx in mutator_calls_with_lines:
         # Extract package and function name
         parts = mutator_call.split("(")[0].split(".")
         package_name = parts[0]
@@ -188,29 +171,20 @@ def main():
             print(f"Could not find source file for {qualified_name}")
             continue
 
-        # Ask user if they want to process this mutator
-        # Print relevant source code context
+        # Use the line number we already found
         with open(initialize_file, "r") as f:
             lines = f.readlines()
 
-        # Find the line with the mutator call
-        mutator_line_idx = None
-        for i, line in enumerate(lines):
-            if qualified_name in line:
-                mutator_line_idx = i
-                break
+        # Get context: 8 lines before and 3 lines after
+        start_idx = max(0, line_idx - 8)
+        end_idx = min(len(lines), line_idx + 4)
 
-        if mutator_line_idx is not None:
-            # Get context: 8 lines before and 3 lines after
-            start_idx = max(0, mutator_line_idx - 8)
-            end_idx = min(len(lines), mutator_line_idx + 4)
-
-            print("\nContext in initialize.go:")
-            print("-------------------------")
-            for i in range(start_idx, end_idx):
-                prefix = ">" if i == mutator_line_idx else " "
-                print(f"{prefix} {i+1:4d}: {lines[i].rstrip()}")
-            print("-------------------------\n")
+        print("\nContext in initialize.go:")
+        print("-------------------------")
+        for i in range(start_idx, end_idx):
+            prefix = ">" if i == line_idx else " "
+            print(f"{prefix} {i+1:4d}: {lines[i].rstrip()}")
+        print("-------------------------\n")
 
         response = input(f"Process {qualified_name} from {mutator_file}? (y/n): ")
 
