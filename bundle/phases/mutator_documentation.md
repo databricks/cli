@@ -4,7 +4,6 @@ If there already is a description, consider that it is being reviewed and vetted
 
 The format is like this:
 
-<ensure there is empty line here>
 // Reads (dynamic): list of fields that are being read dynamically (short description of why they are read)
 // Reads (static): list of fields that are being read statically (short description of why they are read)
 // Updates (dynamic): list of fields that are being written to dynamically (short description of the update logic)
@@ -13,9 +12,18 @@ The format is like this:
 
 Make sure to skip the last part - "free form summary" if it does not add any new information to what's already described in Reads and Writes line
 
+Make sure there is an empty space before the first comment and preceeding code.
+
 Omit empty Reads and Updates lines.
 
+Use {a,b} shorthand if it helps to reduce the line length. For example, instead of
+		// Updates (static): b.Config.Workspace.FilePath, b.Config.Workspace.ResourcePath, b.Config.Workspace.ArtifactPath, b.Config.Workspace.StatePath (sets default paths if not already set)
+write
+		// Updates (static): b.Config.Workspace.{FilePath,ResourcePath,ArtifactPath,StatePath} (sets default paths if not already set)
+
+
 Example:
+    <empty line>
 	// Reads (dynamic): sync.paths (checks that it is really absent)
 	// Updates (static): b.Config.Sync.Path (set to ["."] if not set already)
 	// Configure the default sync path to equal the bundle root if not explicitly configured.
