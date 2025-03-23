@@ -37,13 +37,13 @@ prebuilt/other_test_code-0.0.1-py3-none-any.whl
 
 === Verify contents, there should be no new_module.py
 >>> find.py --expect 1 .databricks/.*my_test_code.*whl
-src/__init__.py 48
-src/__main__.py 242
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/METADATA 313
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/WHEEL 91
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/entry_points.txt 34
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/top_level.txt 4
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD 657
+src/__init__.py
+src/__main__.py
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/METADATA
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/WHEEL
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/entry_points.txt
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/top_level.txt
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
 
 === Expecting 2 wheels in libraries section in /jobs/create
 >>> jq -s .[] | select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
@@ -85,14 +85,14 @@ Deployment complete!
 
 === Verify contents, there should have new_module.py
 >>> find.py --expect 1 .databricks/.*my_test_code.*whl
-src/__init__.py 48
-src/__main__.py 242
-src/new_module.py 0
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/METADATA 313
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/WHEEL 91
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/entry_points.txt 34
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/top_level.txt 4
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD 728
+src/__init__.py
+src/__main__.py
+src/new_module.py
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/METADATA
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/WHEEL
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/entry_points.txt
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/top_level.txt
+my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
 
 === Expecting 2 wheels in libraries section in /jobs/reset
 >>> jq -s .[] | select(.path=="/api/2.1/jobs/reset") | .body.new_settings.tasks out.requests.txt
