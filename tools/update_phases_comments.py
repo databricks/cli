@@ -1,6 +1,7 @@
 import subprocess
 import re
 import os
+import sys
 from pathlib import Path
 
 def run_git_grep():
@@ -124,14 +125,14 @@ def extract_mutator_calls(initialize_file):
     return mutator_calls
 
 def run_aider(initialize_file, doc_file, mutator_file, mutator_name):
-    # AI TODO: print to stderr command prefixed by +
     cmd = [
         "aider",
         initialize_file, doc_file, mutator_file,
         "--message", f"Update comments for {mutator_name} in initialize.go according to the documentation in mutator_documentation.md. Only update the comments for this specific mutator call, don't change anything else."
     ]
     
-    print(f"Running: {' '.join(cmd)}")
+    cmd_str = ' '.join(cmd)
+    print(f"+ {cmd_str}", file=sys.stderr)
     subprocess.run(cmd)
 
 def debug_apply_seq_block(initialize_file):
@@ -202,7 +203,29 @@ def main():
             continue
         
         # Ask user if they want to process this mutator
-        # AI TODO: print relevant source code lines here: mutator call and related context: 8 lines before and 3 lines after
+        # Print relevant source code context
+        with open(initialize_file, 'r') as f:
+            lines = f.readlines()
+        
+        # Find the line with the mutator call
+        mutator_line_idx = None
+        for i, line in enumerate(lines):
+            if qualified_name in line:
+                mutator_line_idx = i
+                break
+        
+        if mutator_line_idx is not None:
+            # Get context: 8 lines before and 3 lines after
+            start_idx = max(0, mutator_line_idx - 8)
+            end_idx = min(len(lines), mutator_line_idx + 4)
+            
+            print("\nContext in initialize.go:")
+            print("-------------------------")
+            for i in range(start_idx, end_idx):
+                prefix = ">" if i == mutator_line_idx else " "
+                print(f"{prefix} {i+1:4d}: {lines[i].rstrip()}")
+            print("-------------------------\n")
+        
         response = input(f"Process {qualified_name} from {mutator_file}? (y/n): ")
         
         if response.lower() == 'y':
