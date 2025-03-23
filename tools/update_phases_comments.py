@@ -1,7 +1,16 @@
+import subprocess
+from pathlib import Path
 
-// AI TODO: run this, capture output,. pass to create_mutator_map.
-// Do not capture stderr and not capture CalledProcessError exception, let it crash
-// git grep '^func [A-Z].*Mutator {' '*.go' '(:exclude)*_test.go'
+def run_git_grep():
+    """
+    Run git grep command to find mutator functions and return the output.
+    
+    Returns:
+        str: Output from git grep command
+    """
+    cmd = ["git", "grep", "^func [A-Z].*Mutator {", "*.go", "(:exclude)*_test.go"]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    return result.stdout
 
 def create_mutator_map(git_grep_output):
     """
@@ -59,20 +68,9 @@ def create_mutator_map(git_grep_output):
     
     return mutator_map
 
-# Example usage:
+# Main execution
 if __name__ == "__main__":
-    git_grep_output = """~/work/cli-main/bundle % git grep '^func [A-Z].*Mutator {' '*.go' '(:exclude)*_test.go' | head -n 10
-apps/interpolate_variables.go:func InterpolateVariables() bundle.Mutator {
-apps/upload_config.go:func UploadConfig() bundle.Mutator {
-apps/validate.go:func Validate() bundle.Mutator {
-artifacts/build.go:func Build() bundle.Mutator {
-artifacts/prepare.go:func Prepare() bundle.Mutator {
-artifacts/upload.go:func CleanUp() bundle.Mutator {
-config/loader/entry_point.go:func EntryPoint() bundle.Mutator {
-config/loader/process_include.go:func ProcessInclude(fullPath, relPath string) bundle.Mutator {
-config/loader/process_root_includes.go:func ProcessRootIncludes() bundle.Mutator {
-config/mutator/capture_schema_dependency.go:func CaptureSchemaDependency() bundle.Mutator {"""
-
+    git_grep_output = run_git_grep()
     mutator_map = create_mutator_map(git_grep_output)
     for key, value in mutator_map.items():
         print(f'"{key}" -> {value}')
