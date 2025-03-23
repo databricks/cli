@@ -79,6 +79,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// searches for strings with variable references in them.
 		mutator.RewriteWorkspacePrefix(),
 
+		// Reads (dynamic): variables.* (checks for existing values, defaults, and lookup references)
+		// Updates (dynamic): variables.*.value (sets values from environment variables, variable files, or defaults)
+		// Resolves and sets values for bundle variables from environment variables, variable files, or defaults
 		mutator.SetVariables(),
 
 		// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
