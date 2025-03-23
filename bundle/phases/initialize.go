@@ -60,6 +60,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// because it affects how workspace variables are resolved.
 		mutator.ApplySourceLinkedDeploymentPreset(),
 
+		// Reads (static): b.Config.Workspace.RootPath (checks if it's already set)
+		// Reads (static): b.Config.Bundle.Name, b.Config.Bundle.Target (used to construct default path)
+		// Updates (static): b.Config.Workspace.RootPath (sets to ~/.bundle/{name}/{target} if not set)
 		mutator.DefineDefaultWorkspaceRoot(),
 		mutator.ExpandWorkspaceRoot(),
 		mutator.DefineDefaultWorkspacePaths(),
