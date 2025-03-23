@@ -1098,6 +1098,10 @@
                       "description": "An optional set of build commands to run locally before deployment.",
                       "$ref": "#/$defs/string"
                     },
+                    "dynamic_version": {
+                      "description": "Whether to patch the wheel version with dynamic component, based on timestamp of whl file. This ensures that the new code is deployed without having to update version in setup.py / pyproject.toml. Only applies to type=whl.",
+                      "$ref": "#/$defs/bool"
+                    },
                     "executable": {
                       "description": "The executable type. Valid values are `bash`, `sh`, and `cmd`.",
                       "$ref": "#/$defs/github.com/databricks/cli/libs/exec.ExecutableType"

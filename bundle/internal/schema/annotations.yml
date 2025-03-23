@@ -2,12 +2,12 @@ github.com/databricks/cli/bundle/config.Artifact:
   "build":
     "description": |-
       An optional set of build commands to run locally before deployment.
-  "executable":
-    "description": |-
-      The executable type. Valid values are `bash`, `sh`, and `cmd`.
   "dynamic_version":
     "description": |-
       Whether to patch the wheel version with dynamic component, based on timestamp of whl file. This ensures that the new code is deployed without having to update version in setup.py / pyproject.toml. Only applies to type=whl.
+  "executable":
+    "description": |-
+      The executable type. Valid values are `bash`, `sh`, and `cmd`.
   "files":
     "description": |-
       The relative or absolute path to the built artifact files.
