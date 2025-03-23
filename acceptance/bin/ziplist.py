@@ -9,6 +9,6 @@ from pathlib import Path
 
 
 for zip_path in sys.argv[1:]:
-    with zipfile.ZipFile(zip_path) as z:
+    with zipfile.ZipFile(zip_path.strip()) as z:
         for info in z.infolist():
             print(f"{info.filename} {info.file_size}")

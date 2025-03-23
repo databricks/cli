@@ -1,4 +1,8 @@
 [[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Repls]]
 Old = '1\d{18}'
 New = '[TIMESTAMP_NS]'
 
