@@ -33,7 +33,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): workspace.{host,profile,...} (ensure that there are no variable references)
 		validate.NoInterpolationInAuthConfig(),
 
-		// Updates (dynamic): sync.{path,include,exclude}  (makes them relative to bundle root rather than to definition file)
+		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
+		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
 		mutator.RewriteSyncPaths(),
 
 		// Reads (dynamic): sync.paths (checks that it is absent)
