@@ -82,54 +82,42 @@ def extract_mutator_calls(initialize_file):
     with open(initialize_file, 'r') as f:
         content = f.read()
     
-    # Find the ApplySeq block
-    apply_seq_match = re.search(r'bundle\.ApplySeq\(ctx, b,(.*?)\)', content, re.DOTALL)
-    if not apply_seq_match:
-        print("Could not find ApplySeq block in initialize.go")
-        return []
-    
-    apply_seq_block = apply_seq_match.group(1)
-    
-    # Extract mutator calls
+    # Extract mutator calls directly from the file
     mutator_calls = []
     
-    # Pattern to match lines with mutator calls
-    lines = apply_seq_block.split('\n')
-    for line in lines:
+    # Get all lines in the file
+    lines = content.split('\n')
+    
+    # Find all lines with mutator calls
+    for i, line in enumerate(lines):
         line = line.strip()
-        if not line or line.startswith('//'):
+        if not line:
             continue
             
-        # Look for package.Function() pattern
-        match = re.search(r'(\w+)\.(\w+)\(\)', line)
+        # Look for package.FunctionName pattern
+        match = re.search(r'(\w+)\.([A-Z]\w+)\(', line)
         if match:
             package_name = match.group(1)
             func_name = match.group(2)
             
-            # Skip non-mutator functions
-            if package_name == "bundle" or func_name in ["ApplySeq", "Apply"]:
+            # Skip non-mutator functions and common package prefixes
+            if package_name == "bundle" and func_name in ["ApplySeq", "Apply"]:
+                continue
+            
+            # Skip validation functions
+            if package_name == "validate" and not func_name.endswith("Mutator"):
                 continue
                 
-            mutator_calls.append(f"{package_name}.{func_name}")
-        
-        # Handle pythonmutator.PythonMutator separately
-        elif "pythonmutator.PythonMutator" in line:
-            phase_match = re.search(r'pythonmutator\.PythonMutator\(pythonmutator\.(\w+)\)', line)
-            if phase_match:
-                phase = phase_match.group(1)
-                mutator_calls.append(f"pythonmutator.PythonMutator({phase})")
-        
-        # Handle other package.Function() patterns that might have arguments
-        elif "(" in line and ")" in line and "." in line:
-            pkg_func_match = re.search(r'(\w+)\.(\w+)\(', line)
-            if pkg_func_match:
-                package_name = pkg_func_match.group(1)
-                func_name = pkg_func_match.group(2)
-                
-                # Skip non-mutator functions
-                if package_name == "bundle" or func_name in ["ApplySeq", "Apply"]:
-                    continue
-                    
+            # Handle special cases
+            if package_name == "pythonmutator" and func_name == "PythonMutator":
+                # Extract the phase parameter if present
+                phase_match = re.search(r'PythonMutator\(pythonmutator\.(\w+)\)', line)
+                if phase_match:
+                    phase = phase_match.group(1)
+                    mutator_calls.append(f"{package_name}.{func_name}({phase})")
+                else:
+                    mutator_calls.append(f"{package_name}.{func_name}")
+            else:
                 mutator_calls.append(f"{package_name}.{func_name}")
     
     print(f"Debug: Found these mutator calls: {mutator_calls}")
@@ -197,8 +185,6 @@ def main():
     # If no mutator calls were found, run debug function
     if not mutator_calls:
         debug_apply_seq_block(initialize_file)
-    
-    if not mutator_calls:
         print("\nNo mutator calls were found. This could be because:")
         print("1. The initialize.go file doesn't contain any mutator calls")
         print("2. The pattern used to detect mutator calls doesn't match the format in the file")
