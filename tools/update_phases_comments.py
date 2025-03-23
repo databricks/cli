@@ -202,6 +202,7 @@ def main():
             continue
         
         # Ask user if they want to process this mutator
+        # AI TODO: print relevant source code lines here: mutator call and related context: 8 lines before and 3 lines after
         response = input(f"Process {qualified_name} from {mutator_file}? (y/n): ")
         
         if response.lower() == 'y':
