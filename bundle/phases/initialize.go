@@ -90,6 +90,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
+
+		// Reads (dynamic): variables.*.lookup (checks for variable references in lookup fields)
+		// Updates (dynamic): variables.*.lookup (resolves variable references in lookup fields)
+		// Prevents circular references between lookup variables
 		mutator.ResolveVariableReferencesInLookup(),
 		mutator.ResolveResourceReferences(),
 		mutator.ResolveVariableReferences(
