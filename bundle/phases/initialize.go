@@ -68,6 +68,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (static): b.Config.Workspace.CurrentUser (used to expand ~ in path)
 		// Updates (static): b.Config.Workspace.RootPath (expands ~ to user's home directory if present)
 		mutator.ExpandWorkspaceRoot(),
+		// Reads (static): b.Config.Workspace.RootPath (used to construct default paths)
+		// Updates (static): b.Config.Workspace.FilePath, b.Config.Workspace.ResourcePath, b.Config.Workspace.ArtifactPath, b.Config.Workspace.StatePath (sets default paths if not already set)
 		mutator.DefineDefaultWorkspacePaths(),
 		mutator.PrependWorkspacePrefix(),
 
