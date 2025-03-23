@@ -124,17 +124,9 @@ def extract_mutator_calls(initialize_file):
     return mutator_calls
 
 def run_aider(initialize_file, doc_file, mutator_file, mutator_name):
-    """
-    Run aider to update comments for a mutator
-    
-    Args:
-        initialize_file (str): Path to initialize.go
-        doc_file (str): Path to mutator_documentation.md
-        mutator_file (str): Path to the mutator source file
-        mutator_name (str): Name of the mutator
-    """
+    # AI TODO: print to stderr command prefixed by +
     cmd = [
-        "aider", "-m",
+        "aider",
         initialize_file, doc_file, mutator_file,
         "--message", f"Update comments for {mutator_name} in initialize.go according to the documentation in mutator_documentation.md. Only update the comments for this specific mutator call, don't change anything else."
     ]

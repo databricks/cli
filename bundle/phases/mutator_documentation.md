@@ -1,5 +1,6 @@
 Each mutator invocation in this directory should be prepended with a short description and information on what bundle fields it reads and writes.
-If there already is a description, consider that it is being reviewed and vetted, so only propose changes if you believe it is not factual anymore.
+
+If there already is a description, consider that it is being reviewed and vetted, so use those examples and only propose changes if you believe it is not factual anymore.
 
 The format is like this:
 
@@ -8,7 +9,9 @@ The format is like this:
 // Reads (static): list of fields that are being read statically (short description of why they are read)
 // Updates (dynamic): list of fields that are being written to dynamically (short description of the update logic)
 // Updates (static): list of fields that are being written to statically (short description of the update logic)
-// <free form short summary, 1 or 2 lines, precise, does not need to repeat the above information, could be a summary of explaining the overral purpose>
+// <free form short summary, 1 or 2 lines, precise>
+
+Make sure to skip the last part - "free form summary" if it does not add any new information to what's already described in Reads and Writes line
 
 Omit empty Reads and Updates lines.
 
