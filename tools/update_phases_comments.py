@@ -83,7 +83,7 @@ def extract_mutator_calls(initialize_file):
         content = f.read()
     
     # Find the ApplySeq block
-    apply_seq_match = re.search(r'return bundle\.ApplySeq\(ctx, b,(.*?)\)', content, re.DOTALL)
+    apply_seq_match = re.search(r'bundle\.ApplySeq\(ctx, b,(.*?)\)', content, re.DOTALL)
     if not apply_seq_match:
         print("Could not find ApplySeq block in initialize.go")
         return []
@@ -94,7 +94,6 @@ def extract_mutator_calls(initialize_file):
     mutator_calls = []
     
     # Pattern to match lines with mutator calls
-    # This handles both function calls with parentheses and trailing commas
     lines = apply_seq_block.split('\n')
     for line in lines:
         line = line.strip()
@@ -102,7 +101,7 @@ def extract_mutator_calls(initialize_file):
             continue
             
         # Look for package.Function() pattern
-        match = re.search(r'(\w+)\.(\w+)\(', line)
+        match = re.search(r'(\w+)\.(\w+)\(\)', line)
         if match:
             package_name = match.group(1)
             func_name = match.group(2)
@@ -111,16 +110,26 @@ def extract_mutator_calls(initialize_file):
             if package_name == "bundle" or func_name in ["ApplySeq", "Apply"]:
                 continue
                 
-            # Handle special cases
-            if package_name == "pythonmutator" and func_name == "PythonMutator":
-                # Extract the phase parameter
-                phase_match = re.search(r'PythonMutator\(pythonmutator\.(\w+)\)', line)
-                if phase_match:
-                    phase = phase_match.group(1)
-                    mutator_calls.append(f"{package_name}.{func_name}({phase})")
-                else:
-                    mutator_calls.append(f"{package_name}.{func_name}")
-            else:
+            mutator_calls.append(f"{package_name}.{func_name}")
+        
+        # Handle pythonmutator.PythonMutator separately
+        elif "pythonmutator.PythonMutator" in line:
+            phase_match = re.search(r'pythonmutator\.PythonMutator\(pythonmutator\.(\w+)\)', line)
+            if phase_match:
+                phase = phase_match.group(1)
+                mutator_calls.append(f"pythonmutator.PythonMutator({phase})")
+        
+        # Handle other package.Function() patterns that might have arguments
+        elif "(" in line and ")" in line and "." in line:
+            pkg_func_match = re.search(r'(\w+)\.(\w+)\(', line)
+            if pkg_func_match:
+                package_name = pkg_func_match.group(1)
+                func_name = pkg_func_match.group(2)
+                
+                # Skip non-mutator functions
+                if package_name == "bundle" or func_name in ["ApplySeq", "Apply"]:
+                    continue
+                    
                 mutator_calls.append(f"{package_name}.{func_name}")
     
     print(f"Debug: Found these mutator calls: {mutator_calls}")
@@ -145,6 +154,22 @@ def run_aider(initialize_file, doc_file, mutator_file, mutator_name):
     print(f"Running: {' '.join(cmd)}")
     subprocess.run(cmd)
 
+def debug_apply_seq_block(initialize_file):
+    """Debug function to print the ApplySeq block content"""
+    with open(initialize_file, 'r') as f:
+        content = f.read()
+    
+    apply_seq_match = re.search(r'bundle\.ApplySeq\(ctx, b,(.*?)\)', content, re.DOTALL)
+    if not apply_seq_match:
+        print("Could not find ApplySeq block in initialize.go")
+        return
+    
+    apply_seq_block = apply_seq_match.group(1)
+    print("\nApplySeq block content:")
+    print("----------------------")
+    print(apply_seq_block)
+    print("----------------------")
+
 def main():
     # Path to initialize.go
     initialize_file = "bundle/phases/initialize.go"
@@ -168,6 +193,10 @@ def main():
     mutator_calls = extract_mutator_calls(initialize_file)
     
     print(f"Found {len(mutator_calls)} mutator calls in {initialize_file}")
+    
+    # If no mutator calls were found, run debug function
+    if not mutator_calls:
+        debug_apply_seq_block(initialize_file)
     
     if not mutator_calls:
         print("\nNo mutator calls were found. This could be because:")
