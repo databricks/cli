@@ -278,7 +278,6 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	slices.Sort(dashboardIds)
 
 	// If the bundle UUID is not set, we use a default 0 value.
-	// TODO: test the nil value as well in acceptance tests.
 	bundleUuid := "00000000-0000-0000-0000-000000000000"
 	if b.Config.Bundle.Uuid != "" {
 		bundleUuid = b.Config.Bundle.Uuid
