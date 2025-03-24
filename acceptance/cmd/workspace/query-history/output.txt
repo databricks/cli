@@ -1,0 +1,3 @@
+
+>>> errcode [CLI] query-history list
+user_name  ENUM  query_text

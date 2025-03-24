@@ -54,21 +54,21 @@ jobs:
           args: release --snapshot --skip docker
 
       - name: Upload macOS binaries
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: cli_darwin_snapshot
           path: |
             dist/*_darwin_*/
 
       - name: Upload Linux binaries
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: cli_linux_snapshot
           path: |
             dist/*_linux_*/
 
       - name: Upload Windows binaries
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: cli_windows_snapshot
           path: |
@@ -88,7 +88,7 @@ jobs:
         # Snapshot release may only be updated for commits to the main branch.
         if: github.ref == 'refs/heads/main'
 
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
         with:
           name: Snapshot
           prerelease: true
@@ -96,3 +96,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             dist/databricks_cli_*.zip
+            dist/databricks_cli_*.tar.gz

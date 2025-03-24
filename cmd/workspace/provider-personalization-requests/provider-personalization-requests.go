@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/marketplace"
@@ -76,7 +77,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ProviderPersonalizationRequests.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -139,7 +140,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

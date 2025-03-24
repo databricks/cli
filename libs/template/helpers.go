@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"text/template"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -45,7 +45,7 @@ var (
 var bundleUuid = uuid.New().String()
 
 func loadHelpers(ctx context.Context) template.FuncMap {
-	w := root.WorkspaceClient(ctx)
+	w := cmdctx.WorkspaceClient(ctx)
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}

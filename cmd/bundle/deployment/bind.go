@@ -53,15 +53,15 @@ func newBindCommand() *cobra.Command {
 			return nil
 		})
 
-		diags = bundle.Apply(ctx, b, bundle.Seq(
-			phases.Initialize(),
-			phases.Bind(&terraform.BindOptions{
+		diags = phases.Initialize(ctx, b)
+		if !diags.HasError() {
+			diags = diags.Extend(phases.Bind(ctx, b, &terraform.BindOptions{
 				AutoApprove:  autoApprove,
 				ResourceType: resource.TerraformResourceName(),
 				ResourceKey:  args[0],
 				ResourceId:   args[1],
-			}),
-		))
+			}))
+		}
 		if err := diags.Error(); err != nil {
 			return fmt.Errorf("failed to bind the resource, err: %w", err)
 		}

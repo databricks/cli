@@ -6,12 +6,18 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -73,9 +79,6 @@ func New(ctx context.Context) *cobra.Command {
 		// get the context back
 		ctx = cmd.Context()
 
-		// Detect if the CLI is running on DBR and store this on the context.
-		ctx = dbr.DetectRuntime(ctx)
-
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
@@ -96,11 +99,46 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, cmd *cobra.Command) error {
-	// TODO: deferred panic recovery
+func Execute(ctx context.Context, cmd *cobra.Command) (err error) {
+	defer func() {
+		r := recover()
+
+		// No panic. Return normally.
+		if r == nil {
+			return
+		}
+
+		version := build.GetInfo().Version
+		trace := debug.Stack()
+
+		// Set the error so that the CLI exits with a non-zero exit code.
+		err = fmt.Errorf("panic: %v", r)
+
+		fmt.Fprintf(cmd.ErrOrStderr(), `The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: %s
+
+Panic Payload: %v
+
+Stack Trace:
+%s`, version, r, string(trace))
+	}()
+
+	// Configure a telemetry logger and store it in the context.
+	ctx = telemetry.WithNewLogger(ctx)
+
+	// Detect if the CLI is running on DBR and store this on the context.
+	ctx = dbr.DetectRuntime(ctx)
+
+	// Set a command execution ID value in the context
+	ctx = cmdctx.GenerateExecId(ctx)
+
+	startTime := time.Now()
 
 	// Run the command
-	cmd, err := cmd.ExecuteContextC(ctx)
+	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
 		// If cmdio logger initialization succeeds, then this function logs with the
 		// initialized cmdio logger, otherwise with the default cmdio logger
@@ -124,6 +162,25 @@ func Execute(ctx context.Context, cmd *cobra.Command) error {
 				slog.String("error", err.Error()),
 			)
 		}
+	}
+
+	exitCode := 0
+	if err != nil {
+		exitCode = 1
+	}
+
+	ctx = cmd.Context()
+	telemetryErr := telemetry.Upload(ctx, protos.ExecutionContext{
+		CmdExecID:       cmdctx.ExecId(ctx),
+		Version:         build.GetInfo().Version,
+		Command:         commandString(cmd),
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      dbr.RuntimeVersion(ctx),
+		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
+		ExitCode:        int64(exitCode),
+	})
+	if telemetryErr != nil {
+		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)
 	}
 
 	return err

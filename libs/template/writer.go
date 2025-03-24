@@ -6,12 +6,17 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
 const (
@@ -29,9 +34,13 @@ type Writer interface {
 
 	// Materialize the template to the local file system.
 	Materialize(ctx context.Context, r Reader) error
+
+	// Log telemetry for the template initialization event.
+	LogTelemetry(ctx context.Context)
 }
 
 type defaultWriter struct {
+	name        TemplateName
 	configPath  string
 	outputFiler filer.Filer
 
@@ -54,7 +63,7 @@ func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, e
 	// when running the CLI on DBR and initializing a template to the workspace.
 	//
 	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		return filer.NewWorkspaceFilesExtensionsClient(root.WorkspaceClient(ctx), outputDir)
+		return filer.NewWorkspaceFilesExtensionsClient(cmdctx.WorkspaceClient(ctx), outputDir)
 	}
 
 	return filer.NewLocalClient(outputDir)
@@ -156,16 +165,54 @@ func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error
 	return tmpl.printSuccessMessage(ctx)
 }
 
-func (tmpl *defaultWriter) LogTelemetry(ctx context.Context) error {
-	// TODO, only log the template name and uuid.
-	return nil
+func (tmpl *defaultWriter) LogTelemetry(ctx context.Context) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		BundleInitEvent: &protos.BundleInitEvent{
+			BundleUuid:   bundleUuid,
+			TemplateName: string(tmpl.name),
+		},
+	})
 }
 
 type writerWithFullTelemetry struct {
 	defaultWriter
 }
 
-func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) error {
-	// TODO, log template name, uuid and enum args as well.
-	return nil
+func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
+	args := []protos.BundleInitTemplateEnumArg{}
+	for k, v := range tmpl.config.values {
+		s := tmpl.config.schema.Properties[k]
+
+		switch {
+		case s.Type == jsonschema.BooleanType:
+			args = append(args, protos.BundleInitTemplateEnumArg{
+				Key:   k,
+				Value: strconv.FormatBool(v.(bool)),
+			})
+
+		case len(s.Enum) > 0:
+			args = append(args, protos.BundleInitTemplateEnumArg{
+				Key:   k,
+				Value: v.(string),
+			})
+
+		default:
+			// Do nothing
+			// We only log enum or boolean values
+
+		}
+	}
+
+	// Sort the arguments by key for deterministic telemetry logging
+	sort.Slice(args, func(i, j int) bool {
+		return args[i].Key < args[j].Key
+	})
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		BundleInitEvent: &protos.BundleInitEvent{
+			BundleUuid:       bundleUuid,
+			TemplateName:     string(tmpl.name),
+			TemplateEnumArgs: args,
+		},
+	})
 }

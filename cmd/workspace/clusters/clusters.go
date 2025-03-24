@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -131,7 +132,7 @@ func newChangeOwner() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := changeOwnerJson.Unmarshal(&changeOwnerReq)
@@ -223,7 +224,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: gcp_attributes
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
-	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used with kind.`)
+	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	cmd.Flags().Var(&createReq.Kind, "kind", `The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
@@ -233,7 +234,7 @@ func newCreate() *cobra.Command {
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
-	cmd.Flags().BoolVar(&createReq.UseMlRuntime, "use-ml-runtime", createReq.UseMlRuntime, `This field can only be used with kind.`)
+	cmd.Flags().BoolVar(&createReq.UseMlRuntime, "use-ml-runtime", createReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	// TODO: complex arg: workload_type
 
 	cmd.Use = "create SPARK_VERSION"
@@ -277,7 +278,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -377,7 +378,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteJson.Unmarshal(&deleteReq)
@@ -493,7 +494,7 @@ func newEdit() *cobra.Command {
 	// TODO: complex arg: gcp_attributes
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
-	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used with kind.`)
+	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	cmd.Flags().Var(&editReq.Kind, "kind", `The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
@@ -503,7 +504,7 @@ func newEdit() *cobra.Command {
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
-	cmd.Flags().BoolVar(&editReq.UseMlRuntime, "use-ml-runtime", editReq.UseMlRuntime, `This field can only be used with kind.`)
+	cmd.Flags().BoolVar(&editReq.UseMlRuntime, "use-ml-runtime", editReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	// TODO: complex arg: workload_type
 
 	cmd.Use = "edit CLUSTER_ID SPARK_VERSION"
@@ -546,7 +547,7 @@ func newEdit() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := editJson.Unmarshal(&editReq)
@@ -650,7 +651,7 @@ func newEvents() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := eventsJson.Unmarshal(&eventsReq)
@@ -736,7 +737,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -806,7 +807,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -877,7 +878,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -956,7 +957,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Clusters.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -997,7 +998,7 @@ func newListNodeTypes() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListNodeTypes(ctx)
 		if err != nil {
 			return err
@@ -1040,7 +1041,7 @@ func newListZones() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListZones(ctx)
 		if err != nil {
 			return err
@@ -1108,7 +1109,7 @@ func newPermanentDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := permanentDeleteJson.Unmarshal(&permanentDeleteReq)
@@ -1206,7 +1207,7 @@ func newPin() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := pinJson.Unmarshal(&pinReq)
@@ -1311,7 +1312,7 @@ func newResize() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := resizeJson.Unmarshal(&resizeReq)
@@ -1427,7 +1428,7 @@ func newRestart() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := restartJson.Unmarshal(&restartReq)
@@ -1528,7 +1529,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1603,7 +1604,7 @@ func newSparkVersions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		response, err := w.Clusters.SparkVersions(ctx)
 		if err != nil {
 			return err
@@ -1678,7 +1679,7 @@ func newStart() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := startJson.Unmarshal(&startReq)
@@ -1788,7 +1789,7 @@ func newUnpin() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := unpinJson.Unmarshal(&unpinReq)
@@ -1906,7 +1907,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -1993,7 +1994,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)

@@ -40,9 +40,6 @@ func TestGetFileSet(t *testing.T) {
 	fileSet, err := git.NewFileSetAtRoot(root)
 	require.NoError(t, err)
 
-	err = fileSet.EnsureValidGitIgnoreExists()
-	require.NoError(t, err)
-
 	inc, err := fileset.NewGlobSet(root, []string{})
 	require.NoError(t, err)
 
@@ -59,7 +56,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 10)
+	require.Len(t, fileList, 9)
 
 	inc, err = fileset.NewGlobSet(root, []string{})
 	require.NoError(t, err)
@@ -77,7 +74,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 2)
+	require.Len(t, fileList, 1)
 
 	inc, err = fileset.NewGlobSet(root, []string{"./.databricks/*.go"})
 	require.NoError(t, err)
@@ -95,7 +92,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 11)
+	require.Len(t, fileList, 10)
 }
 
 func TestRecursiveExclude(t *testing.T) {
@@ -104,9 +101,6 @@ func TestRecursiveExclude(t *testing.T) {
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
 	fileSet, err := git.NewFileSetAtRoot(root)
-	require.NoError(t, err)
-
-	err = fileSet.EnsureValidGitIgnoreExists()
 	require.NoError(t, err)
 
 	inc, err := fileset.NewGlobSet(root, []string{})
@@ -125,7 +119,7 @@ func TestRecursiveExclude(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 7)
+	require.Len(t, fileList, 6)
 }
 
 func TestNegateExclude(t *testing.T) {
@@ -134,9 +128,6 @@ func TestNegateExclude(t *testing.T) {
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
 	fileSet, err := git.NewFileSetAtRoot(root)
-	require.NoError(t, err)
-
-	err = fileSet.EnsureValidGitIgnoreExists()
 	require.NoError(t, err)
 
 	inc, err := fileset.NewGlobSet(root, []string{})

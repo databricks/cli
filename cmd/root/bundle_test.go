@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,7 +79,7 @@ func TestBundleConfigureDefault(t *testing.T) {
 	err := setupWithHost(t, cmd, "https://x.com")
 	require.NoError(t, err)
 
-	assert.Equal(t, "https://x.com", ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "https://x.com", cmdctx.ConfigUsed(cmd.Context()).Host)
 }
 
 func TestBundleConfigureWithMultipleMatches(t *testing.T) {
@@ -120,8 +121,8 @@ func TestBundleConfigureWithCorrectProfile(t *testing.T) {
 	err = setupWithHost(t, cmd, "https://a.com")
 
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "PROFILE-1", ConfigUsed(cmd.Context()).Profile)
+	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "PROFILE-1", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
@@ -144,8 +145,8 @@ func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
 
 	err = setupWithHost(t, cmd, "https://a.com")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "PROFILE-1", ConfigUsed(cmd.Context()).Profile)
+	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "PROFILE-1", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureProfileDefault(t *testing.T) {
@@ -156,9 +157,9 @@ func TestBundleConfigureProfileDefault(t *testing.T) {
 
 	err := setupWithProfile(t, cmd, "PROFILE-1")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "a", ConfigUsed(cmd.Context()).Token)
-	assert.Equal(t, "PROFILE-1", ConfigUsed(cmd.Context()).Profile)
+	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "a", cmdctx.ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-1", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureProfileFlag(t *testing.T) {
@@ -171,9 +172,9 @@ func TestBundleConfigureProfileFlag(t *testing.T) {
 
 	err = setupWithProfile(t, cmd, "PROFILE-1")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "b", ConfigUsed(cmd.Context()).Token)
-	assert.Equal(t, "PROFILE-2", ConfigUsed(cmd.Context()).Profile)
+	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureProfileEnvVariable(t *testing.T) {
@@ -185,9 +186,9 @@ func TestBundleConfigureProfileEnvVariable(t *testing.T) {
 
 	err := setupWithProfile(t, cmd, "PROFILE-1")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "b", ConfigUsed(cmd.Context()).Token)
-	assert.Equal(t, "PROFILE-2", ConfigUsed(cmd.Context()).Profile)
+	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
@@ -201,9 +202,9 @@ func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
 
 	err = setupWithProfile(t, cmd, "PROFILE-1")
 	require.NoError(t, err)
-	assert.Equal(t, "https://a.com", ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "b", ConfigUsed(cmd.Context()).Token)
-	assert.Equal(t, "PROFILE-2", ConfigUsed(cmd.Context()).Profile)
+	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
 func TestTargetFlagFull(t *testing.T) {
@@ -212,7 +213,7 @@ func TestTargetFlagFull(t *testing.T) {
 	cmd.SetArgs([]string{"version", "--target", "development"})
 
 	ctx := context.Background()
-	err := cmd.ExecuteContext(ctx)
+	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "development", getTarget(cmd))
@@ -224,7 +225,7 @@ func TestTargetFlagShort(t *testing.T) {
 	cmd.SetArgs([]string{"version", "-t", "production"})
 
 	ctx := context.Background()
-	err := cmd.ExecuteContext(ctx)
+	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "production", getTarget(cmd))
@@ -238,7 +239,7 @@ func TestTargetEnvironmentFlag(t *testing.T) {
 	cmd.SetArgs([]string{"version", "--environment", "development"})
 
 	ctx := context.Background()
-	err := cmd.ExecuteContext(ctx)
+	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "development", getTarget(cmd))

@@ -1,7 +1,7 @@
-LocalOnly = true  # This test needs to run against stubbed Databricks API
+Cloud = false  # This test needs to run against stubbed Databricks API
 
 [[Server]]
-Pattern = "GET /api/2.1/jobs/get"
+Pattern = "GET /api/2.2/jobs/get"
 Response.Body = '''
 {
     "job_id": 11223344,

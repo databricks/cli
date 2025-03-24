@@ -46,7 +46,7 @@ jobs:
       # QEMU is required to build cross platform docker images using buildx.
       # It allows virtualization of the CPU architecture at the application level.
       - name: Set up QEMU dependency
-        uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
       - name: Run GoReleaser
         id: releaser
@@ -107,7 +107,7 @@ jobs:
             artifacts = artifacts.filter(a => a.type == "Archive")
             artifacts = new Map(
               artifacts.map(a => [
-                a.goos + "_" + a.goarch,
+                a.goos + "_" + a.goarch + "_" + a.extra.Format,
                 a.extra.Checksum.replace("sha256:", "")
               ])
             )
@@ -119,10 +119,10 @@ jobs:
               ref: 'main',
               inputs: {
                 version: "${{ env.VERSION }}",
-                darwin_amd64_sha: artifacts.get('darwin_amd64'),
-                darwin_arm64_sha: artifacts.get('darwin_arm64'),
-                linux_amd64_sha: artifacts.get('linux_amd64'),
-                linux_arm64_sha: artifacts.get('linux_arm64')
+                darwin_amd64_sha: artifacts.get('darwin_amd64_zip'),
+                darwin_arm64_sha: artifacts.get('darwin_arm64_zip'),
+                linux_amd64_sha: artifacts.get('linux_amd64_zip'),
+                linux_arm64_sha: artifacts.get('linux_arm64_zip')
               }
             });
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -105,7 +106,7 @@ func newCreateExperiment() *cobra.Command {
   already exist and fails if another experiment with the same name already
   exists.
   
-  Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.
+  Throws RESOURCE_ALREADY_EXISTS if an experiment with the given name exists.
 
   Arguments:
     NAME: Experiment name.`
@@ -127,7 +128,7 @@ func newCreateExperiment() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createExperimentJson.Unmarshal(&createExperimentReq)
@@ -183,6 +184,7 @@ func newCreateRun() *cobra.Command {
 	cmd.Flags().Var(&createRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createRunReq.ExperimentId, "experiment-id", createRunReq.ExperimentId, `ID of the associated experiment.`)
+	cmd.Flags().StringVar(&createRunReq.RunName, "run-name", createRunReq.RunName, `The name of the run.`)
 	cmd.Flags().Int64Var(&createRunReq.StartTime, "start-time", createRunReq.StartTime, `Unix timestamp in milliseconds of when the run started.`)
 	// TODO: array: tags
 	cmd.Flags().StringVar(&createRunReq.UserId, "user-id", createRunReq.UserId, `ID of the user executing the run.`)
@@ -193,7 +195,7 @@ func newCreateRun() *cobra.Command {
   
   Creates a new run within an experiment. A run is usually a single execution of
   a machine learning or data ETL pipeline. MLflow uses runs to track the
-  mlflowParam, mlflowMetric and mlflowRunTag associated with a single
+  mlflowParam, mlflowMetric, and mlflowRunTag associated with a single
   execution.`
 
 	cmd.Annotations = make(map[string]string)
@@ -206,7 +208,7 @@ func newCreateRun() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createRunJson.Unmarshal(&createRunReq)
@@ -263,7 +265,7 @@ func newDeleteExperiment() *cobra.Command {
 	cmd.Long = `Delete an experiment.
   
   Marks an experiment and associated metadata, runs, metrics, params, and tags
-  for deletion. If the experiment uses FileStore, artifacts associated with
+  for deletion. If the experiment uses FileStore, artifacts associated with the
   experiment are also deleted.
 
   Arguments:
@@ -286,7 +288,7 @@ func newDeleteExperiment() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteExperimentJson.Unmarshal(&deleteExperimentReq)
@@ -367,7 +369,7 @@ func newDeleteRun() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteRunJson.Unmarshal(&deleteRunReq)
@@ -431,7 +433,6 @@ func newDeleteRuns() *cobra.Command {
   Bulk delete runs in an experiment that were created prior to or at the
   specified timestamp. Deletes at most max_runs per request. To call this API
   from a Databricks Notebook in Python, you can use the client code snippet on
-  https://learn.microsoft.com/en-us/azure/databricks/mlflow/runs#bulk-delete.
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment containing the runs to delete.
@@ -456,7 +457,7 @@ func newDeleteRuns() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteRunsJson.Unmarshal(&deleteRunsReq)
@@ -518,8 +519,8 @@ func newDeleteTag() *cobra.Command {
 	cmd.Flags().Var(&deleteTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-tag RUN_ID KEY"
-	cmd.Short = `Delete a tag.`
-	cmd.Long = `Delete a tag.
+	cmd.Short = `Delete a tag on a run.`
+	cmd.Long = `Delete a tag on a run.
   
   Deletes a tag on a run. Tags are run metadata that can be updated during a run
   and after a run completes.
@@ -545,7 +546,7 @@ func newDeleteTag() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteTagJson.Unmarshal(&deleteTagReq)
@@ -602,8 +603,8 @@ func newGetByName() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-by-name EXPERIMENT_NAME"
-	cmd.Short = `Get metadata.`
-	cmd.Long = `Get metadata.
+	cmd.Short = `Get an experiment by name.`
+	cmd.Long = `Get an experiment by name.
   
   Gets metadata for an experiment.
   
@@ -628,7 +629,7 @@ func newGetByName() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getByNameReq.ExperimentName = args[0]
 
@@ -686,7 +687,7 @@ func newGetExperiment() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getExperimentReq.ExperimentId = args[0]
 
@@ -731,8 +732,8 @@ func newGetHistory() *cobra.Command {
 	cmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
 
 	cmd.Use = "get-history METRIC_KEY"
-	cmd.Short = `Get history of a given metric within a run.`
-	cmd.Long = `Get history of a given metric within a run.
+	cmd.Short = `Get metric history for a run.`
+	cmd.Long = `Get metric history for a run.
   
   Gets a list of all values for the specified metric for a given run.
 
@@ -749,7 +750,7 @@ func newGetHistory() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getHistoryReq.MetricKey = args[0]
 
@@ -804,7 +805,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getPermissionLevelsReq.ExperimentId = args[0]
 
@@ -863,7 +864,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getPermissionsReq.ExperimentId = args[0]
 
@@ -928,7 +929,7 @@ func newGetRun() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getRunReq.RunId = args[0]
 
@@ -973,12 +974,11 @@ func newListArtifacts() *cobra.Command {
 	cmd.Flags().StringVar(&listArtifactsReq.RunUuid, "run-uuid", listArtifactsReq.RunUuid, `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
 
 	cmd.Use = "list-artifacts"
-	cmd.Short = `Get all artifacts.`
-	cmd.Long = `Get all artifacts.
+	cmd.Short = `List artifacts.`
+	cmd.Long = `List artifacts.
   
-  List artifacts for a run. Takes an optional artifact_path prefix. If it is
-  specified, the response contains only artifacts with the specified prefix.
-  This API does not support pagination when listing artifacts in UC Volumes. A
+  List artifacts for a run. Takes an optional artifact_path prefix which if
+  specified, the response contains only artifacts with the specified prefix. A
   maximum of 1000 artifacts will be retrieved for UC Volumes. Please call
   /api/2.0/fs/directories{directory_path} for listing artifacts in UC Volumes,
   which supports pagination. See [List directory contents | Files
@@ -994,7 +994,7 @@ func newListArtifacts() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Experiments.ListArtifacts(ctx, listArtifactsReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -1028,9 +1028,9 @@ func newListExperiments() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().IntVar(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
+	cmd.Flags().Int64Var(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
 	cmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
-	cmd.Flags().StringVar(&listExperimentsReq.ViewType, "view-type", listExperimentsReq.ViewType, `Qualifier for type of experiments to be returned.`)
+	cmd.Flags().Var(&listExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
 
 	cmd.Use = "list-experiments"
 	cmd.Short = `List experiments.`
@@ -1048,7 +1048,7 @@ func newListExperiments() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Experiments.ListExperiments(ctx, listExperimentsReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -1090,8 +1090,8 @@ func newLogBatch() *cobra.Command {
 	// TODO: array: tags
 
 	cmd.Use = "log-batch"
-	cmd.Short = `Log a batch.`
-	cmd.Long = `Log a batch.
+	cmd.Short = `Log a batch of metrics/params/tags for a run.`
+	cmd.Long = `Log a batch of metrics/params/tags for a run.
   
   Logs a batch of metrics, params, and tags for a run. If any data failed to be
   persisted, the server will respond with an error (non-200 status code).
@@ -1120,8 +1120,13 @@ func newLogBatch() *cobra.Command {
   Request Limits ------------------------------- A single JSON-serialized API
   request may be up to 1 MB in size and contain:
   
-  * No more than 1000 metrics, params, and tags in total * Up to 1000 metrics *
-  Up to 100 params * Up to 100 tags
+  * No more than 1000 metrics, params, and tags in total
+  
+  * Up to 1000 metrics
+  
+  * Up to 100 params
+  
+  * Up to 100 tags
   
   For example, a valid request might contain 900 metrics, 50 params, and 50
   tags, but logging 900 metrics, 50 params, and 51 tags is invalid.
@@ -1129,6 +1134,7 @@ func newLogBatch() *cobra.Command {
   The following limits also apply to metric, param, and tag keys and values:
   
   * Metric keys, param keys, and tag keys can be up to 250 characters in length
+  
   * Parameter and tag values can be up to 250 characters in length`
 
 	cmd.Annotations = make(map[string]string)
@@ -1141,7 +1147,7 @@ func newLogBatch() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := logBatchJson.Unmarshal(&logBatchReq)
@@ -1194,26 +1200,37 @@ func newLogInputs() *cobra.Command {
 	cmd.Flags().Var(&logInputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: datasets
-	cmd.Flags().StringVar(&logInputsReq.RunId, "run-id", logInputsReq.RunId, `ID of the run to log under.`)
 
-	cmd.Use = "log-inputs"
+	cmd.Use = "log-inputs RUN_ID"
 	cmd.Short = `Log inputs to a run.`
 	cmd.Long = `Log inputs to a run.
   
   **NOTE:** Experimental: This API may change or be removed in a future release
-  without warning.`
+  without warning.
+  
+  Logs inputs, such as datasets and models, to an MLflow Run.
+
+  Arguments:
+    RUN_ID: ID of the run to log under`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'run_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := logInputsJson.Unmarshal(&logInputsReq)
@@ -1226,6 +1243,9 @@ func newLogInputs() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if !cmd.Flags().Changed("json") {
+			logInputsReq.RunId = args[0]
 		}
 
 		err = w.Experiments.LogInputs(ctx, logInputsReq)
@@ -1270,11 +1290,11 @@ func newLogMetric() *cobra.Command {
 	cmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric.`)
 
 	cmd.Use = "log-metric KEY VALUE TIMESTAMP"
-	cmd.Short = `Log a metric.`
-	cmd.Long = `Log a metric.
+	cmd.Short = `Log a metric for a run.`
+	cmd.Long = `Log a metric for a run.
   
-  Logs a metric for a run. A metric is a key-value pair (string key, float
-  value) with an associated timestamp. Examples include the various metrics that
+  Log a metric for a run. A metric is a key-value pair (string key, float value)
+  with an associated timestamp. Examples include the various metrics that
   represent ML model accuracy. A metric can be logged multiple times.
 
   Arguments:
@@ -1299,7 +1319,7 @@ func newLogMetric() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := logMetricJson.Unmarshal(&logMetricReq)
@@ -1386,7 +1406,7 @@ func newLogModel() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := logModelJson.Unmarshal(&logModelReq)
@@ -1442,8 +1462,8 @@ func newLogParam() *cobra.Command {
 	cmd.Flags().StringVar(&logParamReq.RunUuid, "run-uuid", logParamReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
 
 	cmd.Use = "log-param KEY VALUE"
-	cmd.Short = `Log a param.`
-	cmd.Long = `Log a param.
+	cmd.Short = `Log a param for a run.`
+	cmd.Long = `Log a param for a run.
   
   Logs a param used for a run. A param is a key-value pair (string key, string
   value). Examples include hyperparameters used for ML model training and
@@ -1471,7 +1491,7 @@ func newLogParam() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := logParamJson.Unmarshal(&logParamReq)
@@ -1530,8 +1550,8 @@ func newRestoreExperiment() *cobra.Command {
 	cmd.Flags().Var(&restoreExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "restore-experiment EXPERIMENT_ID"
-	cmd.Short = `Restores an experiment.`
-	cmd.Long = `Restores an experiment.
+	cmd.Short = `Restore an experiment.`
+	cmd.Long = `Restore an experiment.
   
   Restore an experiment marked for deletion. This also restores associated
   metadata, runs, metrics, params, and tags. If experiment uses FileStore,
@@ -1560,7 +1580,7 @@ func newRestoreExperiment() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreExperimentJson.Unmarshal(&restoreExperimentReq)
@@ -1619,7 +1639,11 @@ func newRestoreRun() *cobra.Command {
 	cmd.Short = `Restore a run.`
 	cmd.Long = `Restore a run.
   
-  Restores a deleted run.
+  Restores a deleted run. This also restores associated metadata, runs, metrics,
+  params, and tags.
+  
+  Throws RESOURCE_DOES_NOT_EXIST if the run was never created or was
+  permanently deleted.
 
   Arguments:
     RUN_ID: ID of the run to restore.`
@@ -1641,7 +1665,7 @@ func newRestoreRun() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreRunJson.Unmarshal(&restoreRunReq)
@@ -1705,7 +1729,6 @@ func newRestoreRuns() *cobra.Command {
   Bulk restore runs in an experiment that were deleted no earlier than the
   specified timestamp. Restores at most max_runs per request. To call this API
   from a Databricks Notebook in Python, you can use the client code snippet on
-  https://learn.microsoft.com/en-us/azure/databricks/mlflow/runs#bulk-restore.
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment containing the runs to restore.
@@ -1730,7 +1753,7 @@ func newRestoreRuns() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreRunsJson.Unmarshal(&restoreRunsReq)
@@ -1813,7 +1836,7 @@ func newSearchExperiments() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := searchExperimentsJson.Unmarshal(&searchExperimentsReq)
@@ -1875,7 +1898,7 @@ func newSearchRuns() *cobra.Command {
   
   Searches for runs that satisfy expressions.
   
-  Search expressions can use mlflowMetric and mlflowParam keys.",`
+  Search expressions can use mlflowMetric and mlflowParam keys.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1887,7 +1910,7 @@ func newSearchRuns() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := searchRunsJson.Unmarshal(&searchRunsReq)
@@ -1937,18 +1960,16 @@ func newSetExperimentTag() *cobra.Command {
 	cmd.Flags().Var(&setExperimentTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-experiment-tag EXPERIMENT_ID KEY VALUE"
-	cmd.Short = `Set a tag.`
-	cmd.Long = `Set a tag.
+	cmd.Short = `Set a tag for an experiment.`
+	cmd.Long = `Set a tag for an experiment.
   
   Sets a tag on an experiment. Experiment tags are metadata that can be updated.
 
   Arguments:
     EXPERIMENT_ID: ID of the experiment under which to log the tag. Must be provided.
-    KEY: Name of the tag. Maximum size depends on storage backend. All storage
-      backends are guaranteed to support key values up to 250 bytes in size.
-    VALUE: String value of the tag being logged. Maximum size depends on storage
-      backend. All storage backends are guaranteed to support key values up to
-      5000 bytes in size.`
+    KEY: Name of the tag. Keys up to 250 bytes in size are supported.
+    VALUE: String value of the tag being logged. Values up to 64KB in size are
+      supported.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1967,7 +1988,7 @@ func newSetExperimentTag() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := setExperimentTagJson.Unmarshal(&setExperimentTagReq)
@@ -2051,7 +2072,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -2108,18 +2129,16 @@ func newSetTag() *cobra.Command {
 	cmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", setTagReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
 
 	cmd.Use = "set-tag KEY VALUE"
-	cmd.Short = `Set a tag.`
-	cmd.Long = `Set a tag.
+	cmd.Short = `Set a tag for a run.`
+	cmd.Long = `Set a tag for a run.
   
   Sets a tag on a run. Tags are run metadata that can be updated during a run
   and after a run completes.
 
   Arguments:
-    KEY: Name of the tag. Maximum size depends on storage backend. All storage
-      backends are guaranteed to support key values up to 250 bytes in size.
-    VALUE: String value of the tag being logged. Maximum size depends on storage
-      backend. All storage backends are guaranteed to support key values up to
-      5000 bytes in size.`
+    KEY: Name of the tag. Keys up to 250 bytes in size are supported.
+    VALUE: String value of the tag being logged. Values up to 64KB in size are
+      supported.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2138,7 +2157,7 @@ func newSetTag() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := setTagJson.Unmarshal(&setTagReq)
@@ -2224,7 +2243,7 @@ func newUpdateExperiment() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateExperimentJson.Unmarshal(&updateExperimentReq)
@@ -2301,7 +2320,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -2356,6 +2375,7 @@ func newUpdateRun() *cobra.Command {
 
 	cmd.Flags().Int64Var(&updateRunReq.EndTime, "end-time", updateRunReq.EndTime, `Unix timestamp in milliseconds of when the run ended.`)
 	cmd.Flags().StringVar(&updateRunReq.RunId, "run-id", updateRunReq.RunId, `ID of the run to update.`)
+	cmd.Flags().StringVar(&updateRunReq.RunName, "run-name", updateRunReq.RunName, `Updated name of the run.`)
 	cmd.Flags().StringVar(&updateRunReq.RunUuid, "run-uuid", updateRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to update.`)
 	cmd.Flags().Var(&updateRunReq.Status, "status", `Updated status of the run. Supported values: [FAILED, FINISHED, KILLED, RUNNING, SCHEDULED]`)
 
@@ -2375,7 +2395,7 @@ func newUpdateRun() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateRunJson.Unmarshal(&updateRunReq)

@@ -28,6 +28,7 @@ import (
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
+	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
@@ -191,6 +192,7 @@ func All() []*cobra.Command {
 	out = append(out, workspace.New())
 	out = append(out, workspace_bindings.New())
 	out = append(out, workspace_conf.New())
+	out = append(out, forecasting.New())
 
 	return out
 }

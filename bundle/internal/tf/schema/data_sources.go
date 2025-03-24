@@ -18,6 +18,7 @@ type DataSources struct {
 	CurrentConfig                   map[string]any `json:"databricks_current_config,omitempty"`
 	CurrentMetastore                map[string]any `json:"databricks_current_metastore,omitempty"`
 	CurrentUser                     map[string]any `json:"databricks_current_user,omitempty"`
+	Dashboards                      map[string]any `json:"databricks_dashboards,omitempty"`
 	DbfsFile                        map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                   map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                       map[string]any `json:"databricks_directory,omitempty"`
@@ -83,6 +84,7 @@ func NewDataSources() *DataSources {
 		CurrentConfig:                   make(map[string]any),
 		CurrentMetastore:                make(map[string]any),
 		CurrentUser:                     make(map[string]any),
+		Dashboards:                      make(map[string]any),
 		DbfsFile:                        make(map[string]any),
 		DbfsFilePaths:                   make(map[string]any),
 		Directory:                       make(map[string]any),

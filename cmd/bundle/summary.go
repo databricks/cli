@@ -26,7 +26,10 @@ func newSummaryCommand() *cobra.Command {
 	}
 
 	var forcePull bool
+	var includeLocations bool
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
+	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
+	cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -35,7 +38,7 @@ func newSummaryCommand() *cobra.Command {
 			return diags.Error()
 		}
 
-		diags = bundle.Apply(ctx, b, phases.Initialize())
+		diags = phases.Initialize(ctx, b)
 		if err := diags.Error(); err != nil {
 			return err
 		}
@@ -49,18 +52,26 @@ func newSummaryCommand() *cobra.Command {
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			diags = bundle.Apply(ctx, b, bundle.Seq(
+			diags = bundle.ApplySeq(ctx, b,
 				terraform.StatePull(),
 				terraform.Interpolate(),
 				terraform.Write(),
-			))
+			)
 			if err := diags.Error(); err != nil {
 				return err
 			}
 		}
 
-		diags = bundle.Apply(ctx, b,
-			bundle.Seq(terraform.Load(), mutator.InitializeURLs()))
+		diags = bundle.ApplySeq(ctx, b,
+			terraform.Load(),
+			mutator.InitializeURLs(),
+		)
+
+		// Include location information in the output if the flag is set.
+		if includeLocations {
+			diags = diags.Extend(bundle.Apply(ctx, b, mutator.PopulateLocations()))
+		}
+
 		if err := diags.Error(); err != nil {
 			return err
 		}

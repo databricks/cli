@@ -174,7 +174,7 @@ Specify one of the following fields: job_cluster_key, environment_key, existing_
 			}
 
 			b := createBundle(map[string]*resources.Job{"job1": job})
-			diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), JobTaskClusterSpec())
+			diags := JobTaskClusterSpec().Apply(context.Background(), b)
 
 			if tc.errorPath != "" || tc.errorDetail != "" || tc.errorSummary != "" {
 				assert.Len(t, diags, 1)

@@ -4,6 +4,7 @@ package {{(.TrimPrefix "account").SnakeName}}
 
 import (
     "github.com/databricks/cli/libs/cmdio"
+    "github.com/databricks/cli/libs/cmdctx"
     "github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/cmd/root"
@@ -179,7 +180,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
 	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt $request) (eq 1 (len $request.RequiredRequestBodyFields))  -}}
-	{{- $onlyPathArgsRequiredAsPositionalArguments := and $request (eq (len .RequiredPositionalArguments) (len $request.RequiredPathFields)) -}}
+	{{- $onlyPathArgsRequiredAsPositionalArguments := and .Request (eq (len .RequiredPositionalArguments) (len .Request.RequiredPathFields)) -}}
 	{{- $hasDifferentArgsWithJsonFlag := and (not $onlyPathArgsRequiredAsPositionalArguments) (and $canUseJson (or $request.HasRequiredRequestBodyFields )) -}}
 	{{- $hasCustomArgHandler := or $hasRequiredArgs $hasDifferentArgsWithJsonFlag -}}
 
@@ -218,12 +219,12 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		{{- if $hasDifferentArgsWithJsonFlag }}
 		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs({{len $request.RequiredPathFields}})(cmd, args)
+			err := root.ExactArgs({{len .Request.RequiredPathFields}})(cmd, args)
 			if err != nil {
-			{{- if eq 0 (len $request.RequiredPathFields) }}
+			{{- if eq 0 (len .Request.RequiredPathFields) }}
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide{{- range $index, $field := $request.RequiredFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
 			{{- else }}
-				return fmt.Errorf("when --json flag is specified, provide only{{- range $index, $field := $request.RequiredPathFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := $request.RequiredRequestBodyFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only{{- range $index, $field := .Request.RequiredPathFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := $request.RequiredRequestBodyFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
 			{{- end }}
 			}
 			return nil
@@ -240,7 +241,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.PreRunE = root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
+		{{if .Service.IsAccounts}}a := cmdctx.AccountClient(ctx){{else}}w := cmdctx.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
 			{{ if $canUseJson }}
 			if cmd.Flags().Changed("json") {

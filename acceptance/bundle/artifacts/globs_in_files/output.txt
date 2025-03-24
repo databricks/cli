@@ -1,0 +1,64 @@
+
+>>> [CLI] bundle validate -o json
+Error: a*.txt: no matching files
+  at artifacts.test.files[0].source
+  in databricks.yml:7:17
+
+Error: subdir/*.txt: no matching files
+  at artifacts.test.files[1].source
+  in databricks.yml:8:17
+
+
+Exit code: 1
+{
+  "test": {
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/a*.txt"
+      },
+      {
+        "source": "[TEST_TMP_DIR]/subdir/*.txt"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]"
+  }
+}
+
+>>> [CLI] bundle validate -o json
+Error: subdir/*.txt: no matching files
+  at artifacts.test.files[1].source
+  in databricks.yml:8:17
+
+
+Exit code: 1
+{
+  "test": {
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/a*.txt"
+      },
+      {
+        "source": "[TEST_TMP_DIR]/subdir/*.txt"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]"
+  }
+}
+
+>>> [CLI] bundle validate -o json
+{
+  "test": {
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/a1.txt"
+      },
+      {
+        "source": "[TEST_TMP_DIR]/a2.txt"
+      },
+      {
+        "source": "[TEST_TMP_DIR]/subdir/hello.txt"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]"
+  }
+}

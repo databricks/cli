@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -81,6 +82,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation.`)
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
+	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: complex arg: pending_deployment
@@ -113,7 +115,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.App)
@@ -204,7 +206,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		deleteReq.Name = args[0]
 
@@ -276,7 +278,7 @@ func newDeploy() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := deployJson.Unmarshal(&deployReq.AppDeployment)
@@ -365,7 +367,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getReq.Name = args[0]
 
@@ -425,7 +427,7 @@ func newGetDeployment() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getDeploymentReq.AppName = args[0]
 		getDeploymentReq.DeploymentId = args[1]
@@ -484,7 +486,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getPermissionLevelsReq.AppName = args[0]
 
@@ -543,7 +545,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getPermissionsReq.AppName = args[0]
 
@@ -601,7 +603,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Apps.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -657,7 +659,7 @@ func newListDeployments() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		listDeploymentsReq.AppName = args[0]
 
@@ -718,7 +720,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -793,7 +795,7 @@ func newStart() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		startReq.Name = args[0]
 
@@ -875,7 +877,7 @@ func newStop() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		stopReq.Name = args[0]
 
@@ -938,6 +940,7 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
+	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: complex arg: pending_deployment
@@ -956,13 +959,6 @@ func newUpdate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
-			}
-			return nil
-		}
 		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
@@ -970,7 +966,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.App)
@@ -1045,7 +1041,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)

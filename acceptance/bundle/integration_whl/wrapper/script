@@ -1,0 +1,12 @@
+# Installing wheels from Workspace file system is only supported starting from DBR 13.1+.
+# But before users used older DBRs and python wheel tasks but installed it from DBFS.
+# We still want to support older DBRs and did the trampoline workaround (https://github.com/databricks/cli/pull/635)
+# Hence this is to test that python wheel tasks in DABs are working for older DBRs
+export DEFAULT_SPARK_VERSION=12.2.x-scala2.12
+export EXTRA_CONFIG=python_wheel_wrapper.yml
+envsubst < $TESTDIR/../base/databricks.yml.tmpl > databricks.yml
+cp -r $TESTDIR/../base/{$EXTRA_CONFIG,setup.py,my_test_code} .
+trace cat databricks.yml
+trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
+trace $CLI bundle deploy
+trace $CLI bundle run some_other_job

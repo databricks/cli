@@ -1,0 +1,4 @@
+trace $CLI bundle validate
+trace $CLI bundle deploy
+jq 'select(.path | test("/api/2.0/workspace-files/import-file/Workspace/Users/.*/.bundle/apps_config_section/default/files/app/app.yml"))' out.requests.txt  > out.app.yml.txt
+rm out.requests.txt

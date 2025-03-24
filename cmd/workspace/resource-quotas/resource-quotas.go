@@ -4,6 +4,7 @@ package resource_quotas
 
 import (
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -85,7 +86,7 @@ func newGetQuota() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getQuotaReq.ParentSecurableType = args[0]
 		getQuotaReq.ParentFullName = args[1]
@@ -147,7 +148,7 @@ func newListQuotas() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ResourceQuotas.ListQuotas(ctx, listQuotasReq)
 		return cmdio.RenderIterator(ctx, response)

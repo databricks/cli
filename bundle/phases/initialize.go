@@ -1,8 +1,11 @@
 package phases
 
 import (
+	"context"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/apps"
+	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
@@ -12,95 +15,99 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/log"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
-func Initialize() bundle.Mutator {
-	return newPhase(
-		"initialize",
-		[]bundle.Mutator{
-			validate.AllResourcesHaveValues(),
+func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	log.Info(ctx, "Phase: initialize")
 
-			// Update all path fields in the sync block to be relative to the bundle root path.
-			mutator.RewriteSyncPaths(),
+	return bundle.ApplySeq(ctx, b,
+		validate.AllResourcesHaveValues(),
+		validate.NoInterpolationInAuthConfig(),
 
-			// Configure the default sync path to equal the bundle root if not explicitly configured.
-			// By default, this means all files in the bundle root directory are synchronized.
-			mutator.SyncDefaultPath(),
+		// Update all path fields in the sync block to be relative to the bundle root path.
+		mutator.RewriteSyncPaths(),
 
-			// Figure out if the sync root path is identical or an ancestor of the bundle root path.
-			// If it is an ancestor, this updates all paths to be relative to the sync root path.
-			mutator.SyncInferRoot(),
+		// Configure the default sync path to equal the bundle root if not explicitly configured.
+		// By default, this means all files in the bundle root directory are synchronized.
+		mutator.SyncDefaultPath(),
 
-			mutator.PopulateCurrentUser(),
-			mutator.LoadGitDetails(),
+		// Figure out if the sync root path is identical or an ancestor of the bundle root path.
+		// If it is an ancestor, this updates all paths to be relative to the sync root path.
+		mutator.SyncInferRoot(),
 
-			// This mutator needs to be run before variable interpolation and defining default workspace paths
-			// because it affects how workspace variables are resolved.
-			mutator.ApplySourceLinkedDeploymentPreset(),
+		mutator.PopulateCurrentUser(),
+		mutator.LoadGitDetails(),
 
-			mutator.DefineDefaultWorkspaceRoot(),
-			mutator.ExpandWorkspaceRoot(),
-			mutator.DefineDefaultWorkspacePaths(),
-			mutator.PrependWorkspacePrefix(),
+		// This mutator needs to be run before variable interpolation and defining default workspace paths
+		// because it affects how workspace variables are resolved.
+		mutator.ApplySourceLinkedDeploymentPreset(),
 
-			// This mutator needs to be run before variable interpolation because it
-			// searches for strings with variable references in them.
-			mutator.RewriteWorkspacePrefix(),
+		mutator.DefineDefaultWorkspaceRoot(),
+		mutator.ExpandWorkspaceRoot(),
+		mutator.DefineDefaultWorkspacePaths(),
+		mutator.PrependWorkspacePrefix(),
 
-			mutator.SetVariables(),
+		// This mutator needs to be run before variable interpolation because it
+		// searches for strings with variable references in them.
+		mutator.RewriteWorkspacePrefix(),
 
-			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
-			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
-			// See what is expected in PythonMutatorPhaseInit doc
-			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
-			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
-			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
-			mutator.ResolveVariableReferencesInLookup(),
-			mutator.ResolveResourceReferences(),
-			mutator.ResolveVariableReferences(
-				"bundle",
-				"workspace",
-				"variables",
-			),
+		mutator.SetVariables(),
 
-			mutator.MergeJobClusters(),
-			mutator.MergeJobParameters(),
-			mutator.MergeJobTasks(),
-			mutator.MergePipelineClusters(),
-			mutator.MergeApps(),
+		// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
+		// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
+		// See what is expected in PythonMutatorPhaseInit doc
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
+		mutator.ResolveVariableReferencesInLookup(),
+		mutator.ResolveResourceReferences(),
+		mutator.ResolveVariableReferences(
+			"bundle",
+			"workspace",
+			"variables",
+		),
 
-			mutator.CaptureSchemaDependency(),
+		mutator.MergeJobClusters(),
+		mutator.MergeJobParameters(),
+		mutator.MergeJobTasks(),
+		mutator.MergePipelineClusters(),
+		mutator.MergeApps(),
 
-			// Provide permission config errors & warnings after initializing all variables
-			permissions.PermissionDiagnostics(),
-			mutator.SetRunAs(),
-			mutator.OverrideCompute(),
-			mutator.ConfigureDashboardDefaults(),
-			mutator.ConfigureVolumeDefaults(),
-			mutator.ProcessTargetMode(),
-			mutator.ApplyPresets(),
-			mutator.DefaultQueueing(),
-			mutator.ExpandPipelineGlobPaths(),
+		mutator.CaptureSchemaDependency(),
 
-			// Configure use of WSFS for reads if the CLI is running on Databricks.
-			mutator.ConfigureWSFS(),
+		// Provide permission config errors & warnings after initializing all variables
+		permissions.PermissionDiagnostics(),
+		mutator.SetRunAs(),
+		mutator.OverrideCompute(),
+		mutator.ConfigureDashboardDefaults(),
+		mutator.ConfigureVolumeDefaults(),
+		mutator.ProcessTargetMode(),
+		mutator.ApplyPresets(),
+		mutator.DefaultQueueing(),
+		mutator.ExpandPipelineGlobPaths(),
 
-			mutator.TranslatePaths(),
-			trampoline.WrapperWarning(),
+		// Configure use of WSFS for reads if the CLI is running on Databricks.
+		mutator.ConfigureWSFS(),
 
-			apps.Validate(),
+		mutator.TranslatePaths(),
+		trampoline.WrapperWarning(),
 
-			permissions.ValidateSharedRootPermissions(),
-			permissions.ApplyBundlePermissions(),
-			permissions.FilterCurrentUser(),
+		artifacts.Prepare(),
 
-			metadata.AnnotateJobs(),
-			metadata.AnnotatePipelines(),
-			terraform.Initialize(),
-			scripts.Execute(config.ScriptPostInit),
-		},
+		apps.Validate(),
+
+		permissions.ValidateSharedRootPermissions(),
+		permissions.ApplyBundlePermissions(),
+		permissions.FilterCurrentUser(),
+
+		metadata.AnnotateJobs(),
+		metadata.AnnotatePipelines(),
+		terraform.Initialize(),
+		scripts.Execute(config.ScriptPostInit),
 	)
 }

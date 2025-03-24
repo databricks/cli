@@ -1,0 +1,4 @@
+trace $CLI bundle init default-python --config-file $TESTDIR/../serverless/input.json --output-dir output
+mv output/my_default_python/.gitignore output/my_default_python/out.gitignore
+trace diff.py $TESTDIR/../serverless/output output/
+rm -fr output

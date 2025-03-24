@@ -6,20 +6,17 @@ import (
 	"fmt"
 	"net/http"
 
+<<<<<<< HEAD
 	"github.com/databricks/cli/libs/auth"
+=======
+	"github.com/databricks/cli/libs/cmdctx"
+>>>>>>> main
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-)
-
-// Placeholders to use as unique keys in context.Context.
-var (
-	workspaceClient int
-	accountClient   int
-	configUsed      int
 )
 
 type ErrNoWorkspaceProfiles struct {
@@ -120,7 +117,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
-	ctx = context.WithValue(ctx, &configUsed, cfg)
+	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	profiler := profile.GetProfiler(ctx)
@@ -147,7 +144,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		return renderError(ctx, cfg, err)
 	}
 
-	ctx = context.WithValue(ctx, &accountClient, a)
+	ctx = cmdctx.SetAccountClient(ctx, a)
 	cmd.SetContext(ctx)
 	return nil
 }
@@ -196,8 +193,14 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	_, isTargetFlagSet := targetFlagValue(cmd)
+	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
+	if !isTargetFlagSet && hasProfileFlag {
+		cmd.SetContext(SkipLoadBundle(cmd.Context()))
+	}
+
 	ctx := cmd.Context()
-	ctx = context.WithValue(ctx, &configUsed, cfg)
+	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
@@ -208,7 +211,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		}
 
 		if b != nil {
-			ctx = context.WithValue(ctx, &configUsed, b.Config.Workspace.Config())
+			ctx = cmdctx.SetConfigUsed(ctx, b.Config.Workspace.Config())
 			cmd.SetContext(ctx)
 			client, err := b.WorkspaceClientE()
 			if err != nil {
@@ -224,17 +227,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		return renderError(ctx, cfg, err)
 	}
 
-	ctx = context.WithValue(ctx, &workspaceClient, w)
+	ctx = cmdctx.SetWorkspaceClient(ctx, w)
 	cmd.SetContext(ctx)
 	return nil
-}
-
-func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) context.Context {
-	return context.WithValue(ctx, &workspaceClient, w)
-}
-
-func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
-	return context.WithValue(ctx, &accountClient, a)
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {

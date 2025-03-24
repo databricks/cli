@@ -20,7 +20,7 @@ lintcheck:
 # formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
 # If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 fmt:
-	ruff format -q
+	ruff format -qn
 	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
 
 test:
@@ -62,5 +62,10 @@ integration: vendor
 
 integration-short: vendor
 	VERBOSE_TEST=1 $(INTEGRATION) -short
+
+generate:
+	genkit update-sdk
+	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
+	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 
 .PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs

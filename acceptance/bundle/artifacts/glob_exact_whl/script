@@ -1,0 +1,5 @@
+trap "rm -r prebuilt" EXIT
+mkdir prebuilt
+cp -r $TESTDIR/../whl_prebuilt_multiple/dist/lib/other_test_code-0.0.1-py3-none-any.whl prebuilt
+trace $CLI bundle validate -o json | jq .artifacts
+trace $CLI bundle deploy

@@ -81,6 +81,26 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) {
 		path = "/" + path
 	}
 	s.files[path] = body
+
+	// Add all directories in the path to the directories map
+	parts := strings.Split(path, "/")
+	currentPath := ""
+	for i, part := range parts {
+		// Skip empty parts and the last part (which is the file itself)
+		if part == "" || i == len(parts)-1 {
+			continue
+		}
+
+		currentPath = currentPath + "/" + part
+		s.directories[currentPath] = true
+	}
+}
+
+func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return s.files[path]
 }
 
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {

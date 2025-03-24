@@ -6,7 +6,9 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
 )
@@ -64,8 +66,12 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq oauth2.CreateServicePrincipalSecretRequest
+	var createJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createReq.Lifetime, "lifetime", createReq.Lifetime, `The lifetime of the secret in seconds.`)
 
 	cmd.Use = "create SERVICE_PRINCIPAL_ID"
 	cmd.Short = `Create service principal secret.`
@@ -86,8 +92,20 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
 		_, err = fmt.Sscan(args[0], &createReq.ServicePrincipalId)
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
@@ -148,7 +166,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &deleteReq.ServicePrincipalId)
 		if err != nil {
@@ -214,7 +232,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &listReq.ServicePrincipalId)
 		if err != nil {

@@ -1,0 +1,2 @@
+echo "FIRST=$FIRST"
+echo "SECOND=$SECOND"

@@ -1,0 +1,7 @@
+{
+    "project_name": "my_default_python",
+    "include_notebook": "yes",
+    "include_dlt": "yes",
+    "include_python": "yes",
+    "serverless": "yes"
+}

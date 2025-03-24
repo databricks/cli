@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/credentials/oauth"

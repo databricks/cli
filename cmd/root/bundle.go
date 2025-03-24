@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/diag"
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
@@ -14,26 +15,35 @@ import (
 
 // getTarget returns the name of the target to operate in.
 func getTarget(cmd *cobra.Command) (value string) {
+	target, isFlagSet := targetFlagValue(cmd)
+	if isFlagSet {
+		return target
+	}
+
+	// If it's not set, use the environment variable.
+	target, _ = env.Target(cmd.Context())
+	return target
+}
+
+func targetFlagValue(cmd *cobra.Command) (string, bool) {
 	// The command line flag takes precedence.
 	flag := cmd.Flag("target")
 	if flag != nil {
-		value = flag.Value.String()
+		value := flag.Value.String()
 		if value != "" {
-			return
+			return value, true
 		}
 	}
 
 	oldFlag := cmd.Flag("environment")
 	if oldFlag != nil {
-		value = oldFlag.Value.String()
+		value := oldFlag.Value.String()
 		if value != "" {
-			return
+			return value, true
 		}
 	}
 
-	// If it's not set, use the environment variable.
-	target, _ := env.Target(cmd.Context())
-	return target
+	return "", false
 }
 
 func getProfile(cmd *cobra.Command) (value string) {
@@ -65,16 +75,15 @@ func configureProfile(cmd *cobra.Command, b *bundle.Bundle) diag.Diagnostics {
 
 // configureBundle loads the bundle configuration and configures flag values, if any.
 func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag.Diagnostics) {
-	var m bundle.Mutator
-	if target := getTarget(cmd); target == "" {
-		m = phases.LoadDefaultTarget()
-	} else {
-		m = phases.LoadNamedTarget(target)
-	}
-
 	// Load bundle and select target.
 	ctx := cmd.Context()
-	diags := bundle.Apply(ctx, b, m)
+	var diags diag.Diagnostics
+	if target := getTarget(cmd); target == "" {
+		diags = phases.LoadDefaultTarget(ctx, b)
+	} else {
+		diags = phases.LoadNamedTarget(ctx, b, target)
+	}
+
 	if diags.HasError() {
 		return b, diags
 	}
@@ -94,7 +103,7 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 	if err != nil {
 		return b, diags.Extend(diag.FromErr(err))
 	}
-	ctx = context.WithValue(ctx, &configUsed, client.Config)
+	ctx = cmdctx.SetConfigUsed(ctx, client.Config)
 	cmd.SetContext(ctx)
 
 	return b, diags
@@ -150,7 +159,7 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 	}
 
 	// Load bundle but don't select a target (we're completing those).
-	diags := bundle.Apply(ctx, b, phases.Load())
+	diags := phases.Load(ctx, b)
 	if err := diags.Error(); err != nil {
 		cobra.CompErrorln(err.Error())
 		return nil, cobra.ShellCompDirectiveError

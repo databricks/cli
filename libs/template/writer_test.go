@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -31,8 +31,8 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 		t.Skip("Skipping test on Windows")
 	}
 
-	ctx := dbr.MockRuntime(context.Background(), true)
-	ctx = root.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{IsDbr: true, Version: "15.4"})
+	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
 	})
 	w := &defaultWriter{}

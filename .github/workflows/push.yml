@@ -53,12 +53,14 @@ jobs:
           go-version-file: go.mod
 
       - name: Setup Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: '3.9'
 
       - name: Install uv
-        uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
+        with:
+          version: "0.6.5"
 
       - name: Set go env
         run: |
@@ -95,7 +97,7 @@ jobs:
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@ec5d18412c0aeab7936cb16880d708ba2a64e1ae # v6.2.0
+        uses: golangci/golangci-lint-action@2226d7cb06a077cd73e56eedd38eecad18e5d837 # v6.5.0
         with:
           version: v1.63.4
           args: --timeout=15m
@@ -145,7 +147,10 @@ jobs:
           go run main.go bundle schema > schema.json
 
           # Add markdownDescription keyword to ajv
-          echo "module.exports=function(a){a.addKeyword('markdownDescription')}" >> keywords.js
+          echo "module.exports = function(a) {
+            a.addKeyword('markdownDescription');
+            a.addKeyword('deprecationMessage');
+          }" >> keywords.js
 
           for file in ./bundle/internal/schema/testdata/pass/*.yml; do
             ajv test -s schema.json -d $file --valid -c=./keywords.js

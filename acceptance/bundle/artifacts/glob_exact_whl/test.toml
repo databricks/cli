@@ -1,0 +1,6 @@
+Badness = 'Uploading the same wheel twice'
+RecordRequests = false
+
+[[Repls]]
+Old = '\\\\'
+New = '/'

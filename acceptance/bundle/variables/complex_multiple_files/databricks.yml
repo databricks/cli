@@ -17,6 +17,13 @@ variables:
   cluster1:
     type: complex
     description: "A cluster definition"
+    default:
+      spark_version: "default-version"
+      node_type_id: "default-node-type"
+      num_workers: 40
+      spark_conf:
+        spark.databricks.delta.retentionDurationCheck.enabled: true
+        spark.other.variable.shouldNotBeSeen: true
   cluster2:
     type: complex
     description: "A cluster definition"

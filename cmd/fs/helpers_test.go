@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -73,7 +73,7 @@ func mockMustWorkspaceClientFunc(cmd *cobra.Command, args []string) error {
 func setupCommand(t *testing.T) (*cobra.Command, *mocks.MockWorkspaceClient) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
