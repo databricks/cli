@@ -40,6 +40,14 @@ import (
   {{$element.Name}},{{end}}
 ]{{end}}{{end}}
 
+{{/* Same as printArray but with slightly different indentation */}}
+{{define "printArrayIndented" -}}
+{{if le (len .) 5 -}}
+	[{{range $index, $element := .}}{{if ne $index 0}}, {{end}}{{$element.Name}}{{end}}]
+{{- else -}}[{{range $index, $element := .}}
+      {{$element.Name}},{{end}}
+    ]{{end}}{{end}}
+
 {{define "service"}}
 {{- $excludeMethods := list "put-secret" -}}
 {{- $hideService := .IsPrivatePreview }}
@@ -202,7 +210,7 @@ func new{{.PascalName}}() *cobra.Command {
 
   Arguments:
     {{- range .RequiredPositionalArguments }}
-    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}{{- if .Entity.Enum }} Supported values: {{template "printArray" .Entity.Enum}} {{ end -}}
+    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}{{- if .Entity.Enum }} Supported values: {{template "printArrayIndented" .Entity.Enum}} {{ end -}}
     {{- end -}}
     {{- end -}}
 	`
