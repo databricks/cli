@@ -17,3 +17,41 @@ HH:MM:SS Debug: POST /telemetry-ext
 <   "numProtoSuccess": 2
 < } pid=PID sdk=true
 HH:MM:SS Debug: All 2 logs uploaded successfully pid=PID
+
+>>> cat out.requests.txt
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[CMD-EXEC-ID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE1"
+      }
+    }
+  }
+}
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[CMD-EXEC-ID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE2"
+      }
+    }
+  }
+}
