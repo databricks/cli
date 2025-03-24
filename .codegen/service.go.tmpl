@@ -41,7 +41,7 @@ import (
 ]{{end}}{{end}}
 
 {{/* Same as printArray but with slightly different indentation. Go text templates does not
-allow defining functions in the template itself so we cannot combine the two functions without
+allow defining functions in the template itself so we cannot combine the two subtemplates without
 creating a helper function in genkit */}}
 {{define "printArray2" -}}
 {{if le (len .) 5 -}}
