@@ -1,0 +1,46 @@
+
+>>> cp -r [TESTROOT]/bundle/integration_whl/serverless_dynamic_version/../base/setup.py [TESTROOT]/bundle/integration_whl/serverless_dynamic_version/../base/my_test_code .
+
+>>> [CLI] bundle deploy
+Building my_test_code...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[NUMID]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "My Wheel Job" RUNNING 
+[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS 
+Hello from my func
+Got arguments:
+['my_test_code']
+
+=== Make a change to code without version change and run the job again
+>>> [CLI] bundle deploy
+Building my_test_code...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[NUMID]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "My Wheel Job" RUNNING 
+[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS 
+UPDATED MY FUNC
+Got arguments:
+['my_test_code']
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job some_other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
