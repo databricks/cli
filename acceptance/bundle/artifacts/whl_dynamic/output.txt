@@ -35,7 +35,7 @@ Deployment complete!
 my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 prebuilt/other_test_code-0.0.1-py3-none-any.whl
 
-=== Verify contents, there should be no new_module.py
+=== Verify contents of the zip file
 >>> find.py --expect 1 .databricks/.*my_test_code.*whl
 src/__init__.py
 src/__main__.py
@@ -107,7 +107,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Verify contents, there should have new_module.py
+=== Verify contents, it should now have new_module.py
 >>> find.py --expect 1 .databricks/.*my_test_code.*whl
 src/__init__.py
 src/__main__.py
