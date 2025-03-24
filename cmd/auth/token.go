@@ -9,12 +9,12 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go/credentials/oauth"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
 
-func helpfulError(ctx context.Context, profile string, persistentAuth oauth.OAuthArgument) string {
+func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthArgument) string {
 	loginMsg := auth.BuildLoginCommand(ctx, profile, persistentAuth)
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
@@ -80,7 +80,7 @@ type loadTokenArgs struct {
 	profiler profile.Profiler
 
 	// persistentAuthOpts are the options to pass to the persistent auth client.
-	persistentAuthOpts []oauth.PersistentAuthOption
+	persistentAuthOpts []u2m.PersistentAuthOption
 }
 
 // loadToken loads an OAuth token from the persistent auth store. The host and account ID are read from
@@ -103,12 +103,12 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	persistentAuth, err := oauth.NewPersistentAuth(ctx, args.persistentAuthOpts...)
+	persistentAuth, err := u2m.NewPersistentAuth(ctx, args.persistentAuthOpts...)
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
-	t, err := persistentAuth.Load(ctx, oauthArgument)
+	t, err := persistentAuth.Token()
 	if err != nil {
 		if err, ok := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); ok {
 			return nil, err

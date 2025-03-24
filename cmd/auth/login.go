@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/credentials/oauth"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/spf13/cobra"
 )
 
@@ -111,7 +111,11 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
-		persistentAuth, err := oauth.NewPersistentAuth(ctx)
+		oauthArgument, err := authArguments.ToOAuthArgument()
+		if err != nil {
+			return err
+		}
+		persistentAuth, err := u2m.NewPersistentAuth(ctx, u2m.WithOAuthArgument(oauthArgument))
 		if err != nil {
 			return err
 		}
@@ -128,11 +132,7 @@ depends on the existing profiles you have set in your configuration file
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
-		oauthArgument, err := authArguments.ToOAuthArgument()
-		if err != nil {
-			return err
-		}
-		if _, err = persistentAuth.Challenge(ctx, oauthArgument); err != nil {
+		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
 

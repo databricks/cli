@@ -5,13 +5,13 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/credentials/oauth"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
 // RewriteAuthError rewrites the error message for invalid refresh token error.
 // It returns the rewritten error and a boolean indicating whether the error was rewritten.
 func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (error, bool) {
-	target := &oauth.InvalidRefreshTokenError{}
+	target := &u2m.InvalidRefreshTokenError{}
 	if errors.As(err, &target) {
 		oauthArgument, err := AuthArguments{host, accountId}.ToOAuthArgument()
 		if err != nil {
@@ -25,7 +25,7 @@ func RewriteAuthError(ctx context.Context, host, accountId, profile string, err 
 }
 
 // BuildLoginCommand builds the login command for the given OAuth argument or profile.
-func BuildLoginCommand(ctx context.Context, profile string, arg oauth.OAuthArgument) string {
+func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgument) string {
 	cmd := []string{
 		"databricks",
 		"auth",
@@ -35,10 +35,10 @@ func BuildLoginCommand(ctx context.Context, profile string, arg oauth.OAuthArgum
 		cmd = append(cmd, "--profile", profile)
 	} else {
 		switch arg := arg.(type) {
-		case oauth.AccountOAuthArgument:
-			cmd = append(cmd, "--host", arg.GetAccountHost(ctx), "--account-id", arg.GetAccountId(ctx))
-		case oauth.WorkspaceOAuthArgument:
-			cmd = append(cmd, "--host", arg.GetWorkspaceHost(ctx))
+		case u2m.AccountOAuthArgument:
+			cmd = append(cmd, "--host", arg.GetAccountHost(), "--account-id", arg.GetAccountId())
+		case u2m.WorkspaceOAuthArgument:
+			cmd = append(cmd, "--host", arg.GetWorkspaceHost())
 		}
 	}
 	return strings.Join(cmd, " ")

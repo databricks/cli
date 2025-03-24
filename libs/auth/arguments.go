@@ -2,7 +2,7 @@ package auth
 
 import (
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/credentials/oauth"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
 // AuthArguments is a struct that contains the common arguments passed to
@@ -13,13 +13,13 @@ type AuthArguments struct {
 }
 
 // ToOAuthArgument converts the AuthArguments to an OAuthArgument from the Go SDK.
-func (a AuthArguments) ToOAuthArgument() (oauth.OAuthArgument, error) {
+func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	cfg := &config.Config{
 		Host:      a.Host,
 		AccountID: a.AccountID,
 	}
 	if cfg.IsAccountClient() {
-		return oauth.NewBasicAccountOAuthArgument(cfg.Host, cfg.AccountID)
+		return u2m.NewBasicAccountOAuthArgument(cfg.Host, cfg.AccountID)
 	}
-	return oauth.NewBasicWorkspaceOAuthArgument(cfg.Host)
+	return u2m.NewBasicWorkspaceOAuthArgument(cfg.Host)
 }

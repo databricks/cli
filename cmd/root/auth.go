@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-<<<<<<< HEAD
 	"github.com/databricks/cli/libs/auth"
-=======
 	"github.com/databricks/cli/libs/cmdctx"
->>>>>>> main
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
@@ -309,30 +306,6 @@ func emptyHttpRequest(ctx context.Context) *http.Request {
 		panic(err)
 	}
 	return req
-}
-
-func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
-	w, ok := ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
-	if !ok {
-		panic("cannot get *databricks.WorkspaceClient. Please report it as a bug")
-	}
-	return w
-}
-
-func AccountClient(ctx context.Context) *databricks.AccountClient {
-	a, ok := ctx.Value(&accountClient).(*databricks.AccountClient)
-	if !ok {
-		panic("cannot get *databricks.AccountClient. Please report it as a bug")
-	}
-	return a
-}
-
-func ConfigUsed(ctx context.Context) *config.Config {
-	cfg, ok := ctx.Value(&configUsed).(*config.Config)
-	if !ok {
-		panic("cannot get *config.Config. Please report it as a bug")
-	}
-	return cfg
 }
 
 func renderError(ctx context.Context, cfg *config.Config, err error) error {

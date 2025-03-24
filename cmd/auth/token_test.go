@@ -6,11 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/cmd"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go/credentials/oauth"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -54,30 +52,23 @@ type MockApiClient struct {
 	RefreshTokenResponse http.RoundTripper
 }
 
-// GetAccountOAuthEndpoints implements oauth.OAuthClient.
-func (m *MockApiClient) GetAccountOAuthEndpoints(ctx context.Context, accountHost, accountId string) (*oauth.OAuthAuthorizationServer, error) {
-	return &oauth.OAuthAuthorizationServer{
+// GetAccountOAuthEndpoints implements u2m.OAuthEndpointSupplier.
+func (m *MockApiClient) GetAccountOAuthEndpoints(ctx context.Context, accountHost, accountId string) (*u2m.OAuthAuthorizationServer, error) {
+	return &u2m.OAuthAuthorizationServer{
 		TokenEndpoint:         accountHost + "/token",
 		AuthorizationEndpoint: accountHost + "/authorize",
 	}, nil
 }
 
-// GetHttpClient implements oauth.OAuthClient.
-func (m *MockApiClient) GetHttpClient(context.Context) *http.Client {
-	return &http.Client{
-		Transport: m.RefreshTokenResponse,
-	}
-}
-
-// GetWorkspaceOAuthEndpoints implements oauth.OAuthClient.
-func (m *MockApiClient) GetWorkspaceOAuthEndpoints(ctx context.Context, workspaceHost string) (*oauth.OAuthAuthorizationServer, error) {
-	return &oauth.OAuthAuthorizationServer{
+// GetWorkspaceOAuthEndpoints implements u2m.OAuthEndpointSupplier.
+func (m *MockApiClient) GetWorkspaceOAuthEndpoints(ctx context.Context, workspaceHost string) (*u2m.OAuthAuthorizationServer, error) {
+	return &u2m.OAuthAuthorizationServer{
 		TokenEndpoint:         workspaceHost + "/token",
 		AuthorizationEndpoint: workspaceHost + "/authorize",
 	}, nil
 }
 
-var _ oauth.OAuthClient = (*MockApiClient)(nil)
+var _ u2m.OAuthEndpointSupplier = (*MockApiClient)(nil)
 
 func TestToken_loadToken(t *testing.T) {
 	profiler := profile.InMemoryProfiler{
@@ -129,9 +120,9 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
-				persistentAuthOpts: []oauth.PersistentAuthOption{
-					oauth.WithTokenCache(tokenCache),
-					oauth.WithOAuthClient(makeApiClient(refreshFailureTokenResponse)),
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshFailureTokenResponse)),
 				},
 			},
 			wantErr: "a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run " +
@@ -148,9 +139,9 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
-				persistentAuthOpts: []oauth.PersistentAuthOption{
-					oauth.WithTokenCache(tokenCache),
-					oauth.WithOAuthClient(makeApiClient(refreshFailureTokenResponse)),
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshFailureTokenResponse)),
 				},
 			},
 			wantErr: "a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run " +
@@ -164,9 +155,9 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
-				persistentAuthOpts: []oauth.PersistentAuthOption{
-					oauth.WithTokenCache(tokenCache),
-					oauth.WithOAuthClient(makeApiClient(refreshFailureInvalidResponse)),
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshFailureInvalidResponse)),
 				},
 			},
 			wantErr: "token refresh: oauth2: cannot parse json: invalid character 'N' looking for beginning of value. Try logging in again with " +
@@ -180,9 +171,9 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
-				persistentAuthOpts: []oauth.PersistentAuthOption{
-					oauth.WithTokenCache(tokenCache),
-					oauth.WithOAuthClient(makeApiClient(refreshFailureOtherError)),
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshFailureOtherError)),
 				},
 			},
 			wantErr: "token refresh: Databricks is down (error code: other_error). Try logging in again with " +
@@ -196,9 +187,9 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
-				persistentAuthOpts: []oauth.PersistentAuthOption{
-					oauth.WithTokenCache(tokenCache),
-					oauth.WithOAuthClient(makeApiClient(refreshSuccessTokenResponse)),
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshSuccessTokenResponse)),
 				},
 			},
 			validateToken: validateToken,
@@ -211,9 +202,9 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
-				persistentAuthOpts: []oauth.PersistentAuthOption{
-					oauth.WithTokenCache(tokenCache),
-					oauth.WithOAuthClient(makeApiClient(refreshSuccessTokenResponse)),
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshSuccessTokenResponse)),
 				},
 			},
 			validateToken: validateToken,

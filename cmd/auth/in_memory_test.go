@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/databricks/databricks-sdk-go/credentials/cache"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"golang.org/x/oauth2"
 )
 
