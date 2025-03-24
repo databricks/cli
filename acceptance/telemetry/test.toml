@@ -16,6 +16,10 @@ New = '[OS]'
 Old = 'execution_time_ms\\\":\d{1,5},'
 New = 'execution_time_ms\":\"SMALL_INT\",'
 
+[[Repls]]
+Old = '"execution_time_ms": \d{1,5},'
+New = '"execution_time_ms": SMALL_INT,'
+
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''
