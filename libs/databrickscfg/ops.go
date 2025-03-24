@@ -68,7 +68,7 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 			return false
 		}
 		// Check if this section matches the normalized host
-		return workspace.NormalizeHost(host) == workspace.NormalizeHost(cfg.Host)
+		return workspace.MatchHost(host, cfg.Host)
 	})
 	if err == errNoMatchingProfiles {
 		section, err = configFile.NewSection(cfg.Profile)
@@ -148,7 +148,7 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	}
 
 	hostFromProfile := workspace.NormalizeHost(match.Key("host").Value())
-	if hostFromProfile != "" && host != "" && hostFromProfile != host {
+	if hostFromProfile != "" && host != "" && !workspace.MatchHost(hostFromProfile, host) {
 		return fmt.Errorf("config host mismatch: profile uses host %s, but CLI configured to use %s", hostFromProfile, host)
 	}
 

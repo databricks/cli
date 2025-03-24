@@ -24,3 +24,12 @@ func TestNormalizeHost(t *testing.T) {
 	// With anchor.
 	assert.Equal(t, "http://foo", NormalizeHost("http://foo#bar"))
 }
+
+func TestMatchHost(t *testing.T) {
+	assert.True(t, MatchHost("https://foo.com", "https://foo.com"))
+	assert.True(t, MatchHost("https://foo.com", "foo.com"))
+
+	assert.False(t, MatchHost("https://foo.com", "bar.com"))
+	assert.False(t, MatchHost("https://foo.com", "::invalid"))
+	assert.False(t, MatchHost("foo", "bar"))
+}

@@ -172,7 +172,7 @@ func validateConfigAndEnvHost(cfg *config.Config) error {
 		return nil
 	}
 
-	if workspace.NormalizeHost(hostEnvVal) != workspace.NormalizeHost(cfg.Host) {
+	if !workspace.MatchHost(hostEnvVal, cfg.Host) {
 		return fmt.Errorf("config host mismatch: %s is defined as %s, but CLI configured to use %s", hostEnvName, hostEnvVal, cfg.Host)
 	}
 	return nil
