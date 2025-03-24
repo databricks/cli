@@ -146,7 +146,7 @@ func newGetBindings() *cobra.Command {
   or an owner of the securable.
 
   Arguments:
-    SECURABLE_TYPE: The type of the securable to bind to a workspace.
+    SECURABLE_TYPE: The type of the securable to bind to a workspace. Supported values: [catalog, credential, external_location, storage_credential] 
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -288,7 +288,7 @@ func newUpdateBindings() *cobra.Command {
   admin or an owner of the securable.
 
   Arguments:
-    SECURABLE_TYPE: The type of the securable to bind to a workspace.
+    SECURABLE_TYPE: The type of the securable to bind to a workspace. Supported values: [catalog, credential, external_location, storage_credential] 
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)

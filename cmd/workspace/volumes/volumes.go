@@ -98,7 +98,7 @@ func newCreate() *cobra.Command {
     CATALOG_NAME: The name of the catalog where the schema and the volume are
     SCHEMA_NAME: The name of the schema where the volume is
     NAME: The name of the volume
-    VOLUME_TYPE: `
+    VOLUME_TYPE:  Supported values: [EXTERNAL, MANAGED] `
 
 	cmd.Annotations = make(map[string]string)
 

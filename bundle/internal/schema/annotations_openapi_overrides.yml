@@ -1,3 +1,34 @@
+github.com/databricks/cli/bundle/config/resources.App:
+  "app_status":
+    "description": |-
+      PLACEHOLDER
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "compute_status":
+    "description": |-
+      PLACEHOLDER
+  "config":
+    "description": |-
+      PLACEHOLDER
+  "effective_budget_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_client_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
     "markdown_description": |-

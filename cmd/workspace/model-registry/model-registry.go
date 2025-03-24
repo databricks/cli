@@ -118,7 +118,7 @@ func newApproveTransitionRequest() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage.
+      * Archived: Archived stage. Supported values: [Archived, None, Production, Staging] 
     ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target
       stage.`
 
@@ -496,7 +496,7 @@ func newCreateTransitionRequest() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage.`
+      * Archived: Archived stage. Supported values: [Archived, None, Production, Staging] `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -966,7 +966,7 @@ func newDeleteTransitionRequest() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage.
+      * Archived: Archived stage. Supported values: [Archived, None, Production, Staging] 
     CREATOR: Username of the user who created this request. Of the transition requests
       matching the specified details, only the one transition created by this
       user will be deleted.`
@@ -1650,7 +1650,7 @@ func newRejectTransitionRequest() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage.`
+      * Archived: Archived stage. Supported values: [Archived, None, Production, Staging] `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2315,7 +2315,7 @@ func newTransitionStage() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage.
+      * Archived: Archived stage. Supported values: [Archived, None, Production, Staging] 
     ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target
       stage.`
 
