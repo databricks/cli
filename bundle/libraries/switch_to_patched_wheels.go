@@ -26,9 +26,9 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 			continue
 		}
 
-		// resources.jobs.*.task[*].libraries[*]
-
 		for taskInd, task := range job.Tasks {
+
+			// Update resources.jobs.*.task[*].libraries[*].whl
 			for libInd, lib := range task.Libraries {
 				repl := replacements[lib.Whl]
 				if repl != "" {
@@ -37,10 +37,9 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 				}
 			}
 
-			// resources.jobs.*.task[*].for_each_task.task.libraries
+			// Update resources.jobs.*.task[*].for_each_task.task.libraries[*].whl
 
 			foreachptr := task.ForEachTask
-
 			if foreachptr != nil {
 				for libInd, lib := range foreachptr.Task.Libraries {
 					repl := replacements[lib.Whl]
@@ -50,9 +49,21 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 					}
 				}
 			}
+		}
 
-			// resources.jobs.*.environments.*.spec.dependencies
-
+		// Update resources.jobs.*.environments.*.spec.dependencies[*]
+		for envInd, env := range job.Environments {
+			specptr := env.Spec
+			if specptr == nil {
+				continue
+			}
+			for depInd, dep := range specptr.Dependencies {
+				repl := replacements[dep]
+				if repl != "" {
+					log.Debugf(ctx, "Updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s to %s", jobName, envInd, depInd, dep, repl)
+					specptr.Dependencies[depInd] = repl
+				}
+			}
 		}
 	}
 
