@@ -39,17 +39,21 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 
 			// resources.jobs.*.task[*].for_each_task.task.libraries
 
-			for libInd, lib := range task.ForEachTask.Task.Libraries {
-				repl := replacements[lib.Whl]
-				if repl != "" {
-					log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s to %s", jobName, taskInd, libInd, lib.Whl, repl)
-					job.Tasks[taskInd].ForEachTask.Task.Libraries[libInd].Whl = repl
+			foreachptr := task.ForEachTask
+
+			if foreachptr != nil {
+				for libInd, lib := range foreachptr.Task.Libraries {
+					repl := replacements[lib.Whl]
+					if repl != "" {
+						log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s to %s", jobName, taskInd, libInd, lib.Whl, repl)
+						foreachptr.Task.Libraries[libInd].Whl = repl
+					}
 				}
 			}
-		}
 
-		// resources.jobs.*.environments.*.spec.dependencies
-		// TODO
+			// resources.jobs.*.environments.*.spec.dependencies
+
+		}
 	}
 
 	return nil
