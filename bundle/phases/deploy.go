@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/apps"
@@ -20,8 +21,11 @@ import (
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	terraformlib "github.com/databricks/cli/libs/terraform"
 	tfjson "github.com/hashicorp/terraform-json"
 )
@@ -215,5 +219,93 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return diags
 	}
 
+	logTelemetry(ctx, b)
 	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostDeploy)))
+}
+
+func logTelemetry(ctx context.Context, b *bundle.Bundle) {
+	resourcesCount := int64(0)
+	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyIndex()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		resourcesCount++
+		return v, nil
+	})
+	if err != nil {
+		log.Debugf(ctx, "failed to count resources: %s", err)
+	}
+
+	jobsIds := make([]string, 0)
+	for _, job := range b.Config.Resources.Jobs {
+		// Do not include missing IDs in telemetry. We can still detect them
+		// by comparing against the resource count.
+		if job.ID == "" {
+			continue
+		}
+		jobsIds = append(jobsIds, job.ID)
+	}
+	pipelineIds := make([]string, 0)
+	for _, pipeline := range b.Config.Resources.Pipelines {
+		// Do not include missing IDs in telemetry. We can still detect them
+		// by comparing against the resource count.
+		if pipeline.ID == "" {
+			continue
+		}
+		pipelineIds = append(pipelineIds, pipeline.ID)
+	}
+	clusterIds := make([]string, 0)
+	for _, cluster := range b.Config.Resources.Clusters {
+		// Do not include missing IDs in telemetry. We can still detect them
+		// by comparing against the resource count.
+		if cluster.ID == "" {
+			continue
+		}
+		clusterIds = append(clusterIds, cluster.ID)
+	}
+	dashboardIds := make([]string, 0)
+	for _, dashboard := range b.Config.Resources.Dashboards {
+		// Do not include missing IDs in telemetry. We can still detect them
+		// by comparing against the resource count.
+		if dashboard.ID == "" {
+			continue
+		}
+		dashboardIds = append(dashboardIds, dashboard.ID)
+	}
+
+	// sort the IDs to make the record generated deterministic
+	// this is important for testing purposes
+	slices.Sort(jobsIds)
+	slices.Sort(pipelineIds)
+	slices.Sort(clusterIds)
+	slices.Sort(dashboardIds)
+
+	// If the bundle UUID is not set, we use a default 0 value.
+	// TODO: test the nil value as well in acceptance tests.
+	bundleUuid := "00000000-0000-0000-0000-000000000000"
+	if b.Config.Bundle.Uuid != "" {
+		bundleUuid = b.Config.Bundle.Uuid
+	}
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		BundleDeployEvent: &protos.BundleDeployEvent{
+			BundleUuid: bundleUuid,
+
+			ResourceCount:                     resourcesCount,
+			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
+			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
+			ResourceModelCount:                int64(len(b.Config.Resources.Models)),
+			ResourceExperimentCount:           int64(len(b.Config.Resources.Experiments)),
+			ResourceModelServingEndpointCount: int64(len(b.Config.Resources.ModelServingEndpoints)),
+			ResourceRegisteredModelCount:      int64(len(b.Config.Resources.RegisteredModels)),
+			ResourceQualityMonitorCount:       int64(len(b.Config.Resources.QualityMonitors)),
+			ResourceSchemaCount:               int64(len(b.Config.Resources.Schemas)),
+			ResourceVolumeCount:               int64(len(b.Config.Resources.Volumes)),
+			ResourceClusterCount:              int64(len(b.Config.Resources.Clusters)),
+			ResourceDashboardCount:            int64(len(b.Config.Resources.Dashboards)),
+			ResourceAppCount:                  int64(len(b.Config.Resources.Apps)),
+
+			ResourceJobIDs:       jobsIds,
+			ResourcePipelineIDs:  pipelineIds,
+			ResourceClusterIDs:   clusterIds,
+			ResourceDashboardIDs: dashboardIds,
+		},
+	})
 }
