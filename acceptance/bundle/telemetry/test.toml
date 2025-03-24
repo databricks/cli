@@ -1,4 +1,6 @@
 RecordRequests = true
+Cloud = false
+Local = true
 IncludeRequestHeaders = ["User-Agent"]
 
 [[Repls]]
