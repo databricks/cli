@@ -14,10 +14,10 @@ trace find.py --expect 4 whl
 title "Verify contents, there should be no new_module.py"
 trace find.py --expect 1 '.databricks/.*my_test_code.*whl' | xargs ziplist.py
 
-title "Expecting 2 wheels in libraries section in /jobs/create"
+title "Expecting 2 patched wheels in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
 
-title "Expecting 2 wheels to be uploaded"
+title "Expecting 2 patched wheels to be uploaded"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
 
 rm out.requests.txt
@@ -29,8 +29,8 @@ trace $CLI bundle deploy
 title "Verify contents, there should have new_module.py"
 trace find.py --expect 1 '.databricks/.*my_test_code.*whl' | xargs ziplist.py
 
-title "Expecting 2 wheels in libraries section in /jobs/reset"
+title "Expecting 2 patched wheels in libraries section in /jobs/reset"
 trace jq -s '.[] | select(.path=="/api/2.1/jobs/reset") | .body.new_settings.tasks' out.requests.txt
 
-title "Expecting 2 wheels to be uploaded (Bad: it is currently uploaded twice)"
+title "Expecting 2 pached wheels to be uploaded (Bad: it is currently uploaded twice)"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
