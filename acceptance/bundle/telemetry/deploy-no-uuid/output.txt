@@ -20,6 +20,7 @@ Deployment complete!
       },
       "bundle_deploy_event": {
         "bundle_uuid": "[ZERO_UUID]",
+        "resource_count": 1,
         "resource_job_count": 1,
         "resource_job_ids": [
           "1"

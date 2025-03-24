@@ -225,7 +225,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	resourcesCount := int64(0)
-	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyIndex()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		resourcesCount++
 		return v, nil
 	})
