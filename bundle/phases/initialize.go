@@ -81,8 +81,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (dynamic): workspace.{root_path,file_path,artifact_path,state_path,resource_path} (prepends "/Workspace" to paths that don't already have specific prefixes)
 		mutator.PrependWorkspacePrefix(),
 
-		// This mutator needs to be run before variable interpolation because it
-		// searches for strings with variable references in them.
+		// Reads (dynamic): * (strings) (searches for strings with workspace path variables prefixed with "/Workspace")
+		// Updates (dynamic): * (strings) (removes "/Workspace" prefix from workspace path variables)
+		// Finds and removes "/Workspace" prefix from workspace path variables in string values
 		mutator.RewriteWorkspacePrefix(),
 
 		// Reads (dynamic): variables.* (checks for existing values, defaults, and lookup references)
