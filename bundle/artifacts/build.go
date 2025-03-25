@@ -81,7 +81,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		if a.Type == "whl" && a.DynamicVersion && cacheDir != "" {
 			for ind, artifactFile := range a.Files {
-				patchedWheel, extraDiags := mkPatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)
+				patchedWheel, extraDiags := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)
 				log.Debugf(ctx, "Patching ind=%d artifactName=%s Source=%s patchedWheel=%s", ind, artifactName, artifactFile.Source, patchedWheel)
 				diags = append(diags, extraDiags...)
 				if patchedWheel != "" {
@@ -121,7 +121,7 @@ func doBuild(ctx context.Context, artifactName string, a *config.Artifact) error
 	return nil
 }
 
-func mkPatchedWheel(ctx context.Context, cacheDir, artifactName, wheel string) (string, diag.Diagnostics) {
+func makePatchedWheel(ctx context.Context, cacheDir, artifactName, wheel string) (string, diag.Diagnostics) {
 	msg := "Failed to patch wheel with dynamic version"
 	info, err := patchwheel.ParseWheelFilename(wheel)
 	if err != nil {
