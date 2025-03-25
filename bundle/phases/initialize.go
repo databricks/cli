@@ -146,6 +146,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as)
 		// Validates run_as configuration and sets run_as field for jobs
 		mutator.SetRunAs(),
+		// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
+		// Reads (dynamic): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
+		// Updates (typed): b.Config.Bundle.ClusterId (sets from environment if in development mode)
+		// Updates (dynamic): resources.jobs.*.tasks.*.{new_cluster,existing_cluster_id,job_cluster_key,environment_key} (replaces compute settings with specified cluster ID)
+		// Overrides job compute settings with a specified cluster ID for development or testing
 		mutator.OverrideCompute(),
 		mutator.ConfigureDashboardDefaults(),
 		mutator.ConfigureVolumeDefaults(),
