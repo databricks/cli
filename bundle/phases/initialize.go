@@ -182,6 +182,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (dynamic): resources.jobs.*.{notebook_task.notebook_path,spark_jar_task.main_class_name,spark_python_task.python_file}, resources.pipelines.*.{libraries.notebook.path,libraries.file.path}, resources.dashboards.*.definition, resources.apps.*.{package,resources.*.path} (converts local paths to workspace paths)
 		// Translates local file paths to workspace paths for notebooks, files, and directories
 		mutator.TranslatePaths(),
+		
+		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
+		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
+		// Provides warnings when Python wheel tasks require DBR 13.3+ or when wheel wrapper is incompatible with source-linked deployment
 		trampoline.WrapperWarning(),
 
 		// Reads (typed): b.SyncRoot (checks if bundle root is in /Workspace/)
