@@ -199,6 +199,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Prepares artifacts by cleaning build directories, expanding file globs, and configuring Python wheel builds
 		artifacts.Prepare(),
 
+		// Reads (dynamic): resources.apps.*.source_code_path, resources.apps.*.config (checks for duplicate source code paths and deprecated config sections)
+		// Updates (dynamic): None
+		// Validates app configurations by detecting duplicate source code paths and warning about deprecated config sections
 		apps.Validate(),
 
 		permissions.ValidateSharedRootPermissions(),
