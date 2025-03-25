@@ -17,15 +17,9 @@ resources:
           interval: 1
           unit: DAYS
 
-      {{- if not is_service_principal}}
-
-      email_notifications:
-        on_failure:
-          - {{user_name}}
-
-      {{else}}
-
-      {{end -}}
+      #email_notifications:
+      #  on_failure:
+      #    - your_email@example.com
 
       tasks:
         {{- if eq .include_notebook "yes" }}
