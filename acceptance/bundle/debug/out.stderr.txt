@@ -14,7 +14,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=validate:unique_resource_keys
 10:07:59 Debug: Apply pid=12345 mutator=SelectDefaultTarget
 10:07:59 Debug: Apply pid=12345 mutator=SelectDefaultTarget mutator=SelectTarget(default)
-10:07:59 Debug: Apply pid=12345 mutator=validate:interpolation_in_auth_config
 10:07:59 Debug: Apply pid=12345 mutator=<func>
 10:07:59 Info: Phase: initialize pid=12345
 10:07:59 Debug: Apply pid=12345 mutator=validate:AllResourcesHaveValues
