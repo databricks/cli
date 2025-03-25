@@ -2,7 +2,6 @@ package patchwheel
 
 import (
 	"bytes"
-	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -144,8 +143,9 @@ func TestPatchWheel(t *testing.T) {
 			distDir := filepath.Join(tempDir, "dist")
 			origWheel := getWheel(t, distDir)
 
-			patchedWheel, err := PatchWheel(context.Background(), origWheel, distDir)
+			patchedWheel, isBuilt, err := PatchWheel(origWheel, distDir)
 			require.NoError(t, err)
+			require.True(t, isBuilt)
 
 			patchedInfo, err := os.Stat(patchedWheel)
 			require.NoError(t, err)
@@ -153,8 +153,9 @@ func TestPatchWheel(t *testing.T) {
 
 			// Test idempotency - patching the same wheel again should produce the same result
 			// and should not recreate the file (file modification time should remain the same)
-			patchedWheel2, err := PatchWheel(context.Background(), origWheel, distDir)
+			patchedWheel2, isBuilt2, err := PatchWheel(origWheel, distDir)
 			require.NoError(t, err)
+			require.False(t, isBuilt2)
 			require.Equal(t, patchedWheel, patchedWheel2, "PatchWheel is not idempotent")
 
 			patchedInfo2, err := os.Stat(patchedWheel2)
@@ -169,8 +170,9 @@ func TestPatchWheel(t *testing.T) {
 			err = os.Chtimes(origWheel, newTime, newTime)
 			require.NoError(t, err)
 
-			patchedWheel3, err := PatchWheel(context.Background(), origWheel, distDir)
+			patchedWheel3, isBuilt3, err := PatchWheel(origWheel, distDir)
 			require.NoError(t, err)
+			require.True(t, isBuilt3)
 			require.Greater(t, patchedWheel3, patchedWheel)
 
 			// Now use regular pip to re-install the wheel. First install pip.
@@ -184,10 +186,10 @@ func TestPatchWheel(t *testing.T) {
 }
 
 func errPatchWheel(t *testing.T, name, out string) {
-	ctx := context.Background()
-	outname, err := PatchWheel(ctx, name, out)
+	outname, isBuilt, err := PatchWheel(name, out)
 	assert.Error(t, err, "PatchWheel(%s, %s) expected to error", name, out)
 	assert.Empty(t, outname)
+	assert.False(t, isBuilt)
 }
 
 func TestError(t *testing.T) {
