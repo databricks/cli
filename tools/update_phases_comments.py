@@ -1,6 +1,7 @@
 import subprocess
 import re
 import sys
+import argparse
 from pathlib import Path
 
 
@@ -36,10 +37,10 @@ def create_mutator_map(git_grep_output):
     return mutator_map
 
 
-def extract_mutator_calls(initialize_file, mutator_map):
+def extract_mutator_calls(target_file, mutator_map):
     mutator_calls = {}
 
-    with open(initialize_file, "r") as f:
+    with open(target_file, "r") as f:
         lines = f.readlines()
 
     for i, line in enumerate(lines):
@@ -66,14 +67,14 @@ def extract_mutator_calls(initialize_file, mutator_map):
     return mutator_calls
 
 
-def run_aider(initialize_file, doc_file, mutator_file, mutator_name):
+def run_aider(target_file, doc_file, mutator_file, mutator_name):
     cmd = [
         "aider",
         "--no-show-release-notes",
         "--no-check-update",
         "--map-tokens",
         "0",
-        initialize_file,
+        target_file,
         doc_file,
         mutator_file,
         "--message",
@@ -86,34 +87,31 @@ def run_aider(initialize_file, doc_file, mutator_file, mutator_name):
 
 
 def main():
-    # Path to initialize.go
-    initialize_file = "bundle/phases/initialize.go"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mutator", default="")
+    parser.add_argument("--target", default="bundle/phases/initialize.go")
+    args = parser.parse_args()
 
-    # Check if the file exists
-    if not Path(initialize_file).exists():
-        print(f"Error: {initialize_file} does not exist.")
-        print("Make sure you're running this script from the root of the repository.")
-        return
+    mutator_filter = args.mutator.lower()
+    target_file = args.target
 
-    # Path to mutator_documentation.md
+    assert Path(target_file).exists(), target_file
+
     doc_file = "bundle/phases/mutator_documentation.md"
 
-    # Get mutator map
     git_grep_output = run_git_grep()
     mutator_map = create_mutator_map(git_grep_output)
 
     print(f"Found {len(mutator_map)} potential mutators in the codebase")
-    import pprint
+    mutator_calls = list(extract_mutator_calls(target_file, mutator_map).keys())
 
-    pprint.pprint(mutator_map)
-
-    mutator_calls = list(extract_mutator_calls(initialize_file, mutator_map).keys())
-
-    print(f"Found {len(mutator_calls)} mutator calls in {initialize_file}")
+    print(f"Found {len(mutator_calls)} mutator calls in {target_file}")
     assert mutator_calls
 
     for qualified_name in mutator_calls:
-        mutator_calls_with_lines = extract_mutator_calls(initialize_file, mutator_map)
+        if mutator_filter not in qualified_name.lower():
+            continue
+        mutator_calls_with_lines = extract_mutator_calls(target_file, mutator_map)
         line_idx = mutator_calls_with_lines.get(qualified_name)
         if not line_idx:
             continue
@@ -123,7 +121,7 @@ def main():
             print(f"Could not find source file for {qualified_name}")
             continue
 
-        with open(initialize_file, "r") as f:
+        with open(target_file, "r") as f:
             lines = f.readlines()
 
         context_lines = set()
@@ -134,7 +132,7 @@ def main():
                     continue
                 context_lines.add(x)
 
-        print("\nContext in initialize.go:")
+        print(f"\nContext in {target_file}:")
         print("-------------------------")
         for i in sorted(context_lines):
             prefix = ">" if i in line_idx else " "
@@ -144,7 +142,7 @@ def main():
         response = input(f"Process {qualified_name} from {mutator_file}? (y/n): ")
 
         if response.lower() == "y":
-            run_aider(initialize_file, doc_file, mutator_file, qualified_name)
+            run_aider(target_file, doc_file, mutator_file, qualified_name)
 
 
 if __name__ == "__main__":
