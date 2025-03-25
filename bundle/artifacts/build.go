@@ -144,9 +144,9 @@ func mkPatchedWheel(ctx context.Context, cacheDir, artifactName, wheel string) (
 	}
 
 	if isBuilt {
-		log.Infof(ctx, "Patched wheel (cache) %s -> %s", wheel, patchedWheel)
-	} else {
 		log.Infof(ctx, "Patched wheel (built) %s -> %s", wheel, patchedWheel)
+	} else {
+		log.Infof(ctx, "Patched wheel (cache) %s -> %s", wheel, patchedWheel)
 	}
 
 	return patchedWheel, nil
