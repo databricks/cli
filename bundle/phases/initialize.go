@@ -218,6 +218,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
 		permissions.FilterCurrentUser(),
 
+		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
+		// Updates (typed): b.Config.Resources.Jobs[].JobSettings.{Deployment,EditMode,Format} (sets deployment metadata, locks UI editing, and sets format to multi-task)
+		// Annotates jobs with bundle deployment metadata and configures job settings for bundle deployments
 		metadata.AnnotateJobs(),
 		metadata.AnnotatePipelines(),
 		terraform.Initialize(),
