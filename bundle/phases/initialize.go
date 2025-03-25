@@ -156,6 +156,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (dynamic): resources.dashboards.*.parent_path (sets to workspace.resource_path if not set)
 		// Updates (dynamic): resources.dashboards.*.embed_credentials (sets to false if not set)
 		mutator.ConfigureDashboardDefaults(),
+		// Reads (dynamic): resources.volumes.* (checks for existing volume_type)
+		// Updates (dynamic): resources.volumes.*.volume_type (sets to "MANAGED" if not set)
 		mutator.ConfigureVolumeDefaults(),
 		mutator.ProcessTargetMode(),
 		mutator.ApplyPresets(),
