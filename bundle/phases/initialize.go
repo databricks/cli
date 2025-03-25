@@ -77,6 +77,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (typed): b.Config.Workspace.RootPath (used to construct default paths)
 		// Updates (typed): b.Config.Workspace.{FilePath,ResourcePath,ArtifactPath,StatePath} (sets default paths if not already set)
 		mutator.DefineDefaultWorkspacePaths(),
+		// Reads (dynamic): workspace.{root_path,file_path,artifact_path,state_path,resource_path} (reads paths to prepend prefix)
+		// Updates (dynamic): workspace.{root_path,file_path,artifact_path,state_path,resource_path} (prepends "/Workspace" to paths that don't already have specific prefixes)
 		mutator.PrependWorkspacePrefix(),
 
 		// This mutator needs to be run before variable interpolation because it
