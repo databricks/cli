@@ -204,6 +204,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Validates app configurations by detecting duplicate source code paths and warning about deprecated config sections
 		apps.Validate(),
 
+		// Reads (typed): b.Config.Workspace.RootPath (checks if path is in shared workspace)
+		// Reads (typed): b.Config.Permissions (checks if users group has CAN_MANAGE permission)
+		// Validates that when using a shared workspace path, appropriate permissions are configured
 		permissions.ValidateSharedRootPermissions(),
 		permissions.ApplyBundlePermissions(),
 		permissions.FilterCurrentUser(),
