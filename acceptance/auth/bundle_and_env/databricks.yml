@@ -1,0 +1,11 @@
+bundle:
+  name: test-auth
+
+targets:
+  match:
+    default: true
+    workspace:
+      host: $DATABRICKS_HOST
+  not_match:
+    workspace:
+      host: https://foo.com
