@@ -219,6 +219,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
 
 			if len(expanded) == 1 {
+				for _, envset := range expanded {
+					t.Logf("Running test with env %v", envset)
+				}
+
 				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
 			} else {
 				for _, envset := range expanded {
@@ -462,7 +466,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		require.Len(t, items, 2)
 		cmd.Env = append(cmd.Env, keyvalue)
 		repls.Set(items[1], "["+items[0]+"]")
-		t.Logf("Set env %v", keyvalue)
 	}
 
 	absDir, err := filepath.Abs(dir)
