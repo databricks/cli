@@ -142,7 +142,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
 		mutator.CaptureSchemaDependency(),
 
-		// Reads (dynamic): permissions.* (checks if current user or their groups have CAN_MANAGE permissions)
+		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
 		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions
 		permissions.PermissionDiagnostics(),
@@ -154,9 +154,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.SetRunAs(),
 
 		// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
-		// Reads (dynamic): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
+		// Reads (env): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
+		// Reads (typed): b.Config.Resources.Jobs.*.Tasks.*.ForEachTask
 		// Updates (typed): b.Config.Bundle.ClusterId (sets from environment if in development mode)
-		// Updates (dynamic): resources.jobs.*.tasks.*.{new_cluster,existing_cluster_id,job_cluster_key,environment_key} (replaces compute settings with specified cluster ID)
+		// Updates (typed): b.Config.Resources.Jobs.*.Tasks.*.{NewCluster,ExistingClusterId,JobClusterKey,EnvironmentKey} (replaces compute settings with specified cluster ID)
+		// OR corresponding fields on ForEachTask if that is present
 		// Overrides job compute settings with a specified cluster ID for development or testing
 		mutator.OverrideCompute(),
 
