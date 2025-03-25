@@ -114,6 +114,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			"variables",
 		),
 
+		// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)
+		// Updates (dynamic): resources.jobs.*.job_clusters (merges job clusters with the same job_cluster_key)
 		mutator.MergeJobClusters(),
 		mutator.MergeJobParameters(),
 		mutator.MergeJobTasks(),
