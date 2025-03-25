@@ -75,7 +75,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.ExpandWorkspaceRoot(),
 
 		// Reads (typed): b.Config.Workspace.RootPath (used to construct default paths)
-		// Updates (typed): b.Config.Workspace.FilePath, b.Config.Workspace.ResourcePath, b.Config.Workspace.ArtifactPath, b.Config.Workspace.StatePath (sets default paths if not already set)
+		// Updates (typed): b.Config.Workspace.{FilePath,ResourcePath,ArtifactPath,StatePath} (sets default paths if not already set)
 		mutator.DefineDefaultWorkspacePaths(),
 		mutator.PrependWorkspacePrefix(),
 
