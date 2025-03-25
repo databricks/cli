@@ -4,11 +4,6 @@ import sys
 from pathlib import Path
 
 
-ALIASES = {
-    "python": "pythonmutator",
-}
-
-
 def run_git_grep():
     cmd = ["git", "grep", "^func [A-Z].*Mutator {", "*.go", "(:exclude)*_test.go"]
     result = subprocess.run(cmd, stdout=subprocess.PIPE, encoding="utf-8", check=True)
@@ -63,7 +58,6 @@ def extract_mutator_calls(initialize_file, mutator_map):
 
         for qualified_name in mutator_map:
             package_name, func_name = qualified_name.split(".")
-            package_name = ALIASES.get(package_name, package_name)
             pattern = r"\b" + re.escape(qualified_name) + r"\("
 
             if re.search(pattern, line_stripped):
