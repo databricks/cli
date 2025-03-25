@@ -138,7 +138,7 @@ def main():
         print("-------------------------")
         for i in sorted(context_lines):
             prefix = ">" if i in line_idx else " "
-            print(f"{prefix} {i+1:4d}: {lines[i].rstrip()}")
+            print(f"{prefix} {i + 1:4d}: {lines[i].rstrip()}")
         print("-------------------------")
 
         response = input(f"Process {qualified_name} from {mutator_file}? (y/n): ")
