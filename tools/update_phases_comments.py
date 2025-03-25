@@ -117,13 +117,16 @@ def main():
 
     pprint.pprint(mutator_map)
 
-    mutator_calls_with_lines = extract_mutator_calls(initialize_file, mutator_map)
-    pprint.pprint(mutator_calls_with_lines)
+    mutator_calls = list(extract_mutator_calls(initialize_file, mutator_map).keys())
 
-    print(f"Found {len(mutator_calls_with_lines)} mutator calls in {initialize_file}")
-    assert mutator_calls_with_lines
+    print(f"Found {len(mutator_calls)} mutator calls in {initialize_file}")
+    assert mutator_calls
 
-    for qualified_name, line_idx in mutator_calls_with_lines.items():
+    for qualified_name in mutator_calls:
+        mutator_calls_with_lines = extract_mutator_calls(initialize_file, mutator_map)
+        line_idx = mutator_calls_with_lines.get(qualified_name)
+        if not line_idx:
+            continue
         mutator_file = mutator_map.get(qualified_name)
 
         if not mutator_file:
