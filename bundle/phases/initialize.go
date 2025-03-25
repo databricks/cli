@@ -159,6 +159,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resources.volumes.* (checks for existing volume_type)
 		// Updates (dynamic): resources.volumes.*.volume_type (sets to "MANAGED" if not set)
 		mutator.ConfigureVolumeDefaults(),
+		// Reads (typed): b.Config.Bundle.Mode, b.Config.Workspace.{RootPath,FilePath,ResourcePath,ArtifactPath,StatePath}, b.Config.Workspace.CurrentUser (validates paths and user info)
+		// Updates (typed): b.Config.Bundle.Deployment.Lock.Enabled, b.Config.Presets.{NamePrefix,Tags,JobsMaxConcurrentRuns,TriggerPauseStatus,PipelinesDevelopment} (configures development mode settings)
+		// Validates and configures bundle settings based on target mode (development or production)
 		mutator.ProcessTargetMode(),
 		mutator.ApplyPresets(),
 		mutator.DefaultQueueing(),
