@@ -128,6 +128,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resources.pipelines.*.clusters (reads pipeline clusters to merge)
 		// Updates (dynamic): resources.pipelines.*.clusters (merges pipeline clusters with the same label)
 		mutator.MergePipelineClusters(),
+		// Reads (dynamic): resources.apps.*.resources (reads app resources to merge)
+		// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
 		mutator.MergeApps(),
 
 		mutator.CaptureSchemaDependency(),
