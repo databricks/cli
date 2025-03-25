@@ -54,6 +54,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (static): b.Config.Workspace.CurrentUser (sets user information from API)
 		// Updates (static): b.Tagging (configures tagging object based on workspace client)
 		mutator.PopulateCurrentUser(),
+		// Updates (static): b.WorktreeRoot (sets to SyncRoot if no git repo found, otherwise to git worktree root)
+		// Updates (static): b.Config.Bundle.Git.{ActualBranch,Branch,Commit,OriginURL,BundleRootPath} (loads git repository details)
+		// Loads git repository information and updates bundle configuration with git details
 		mutator.LoadGitDetails(),
 
 		// This mutator needs to be run before variable interpolation and defining default workspace paths
