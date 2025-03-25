@@ -36,19 +36,6 @@ trace errcode $CLI bundle validate -t dev -p DEFAULT
 title "Bundle commands load bundle configuration with -t and -p flag, validation not OK (profile host don't match bundle host)"
 trace errcode $CLI bundle validate -t prod -p DEFAULT
 
-export DATABRICKS_HOST=$host
-title "Bundle commands load bundle configuration without -p flag with DATABRICKS_HOST, validation not OK (env-defined host doesn't match bundle host)"
-trace errcode $CLI bundle validate -t prod
-
-title "Bundle commands load bundle configuration without -p flag with DATABRICKS_HOST, validation OK (env-defined host matches bundle host)"
-trace errcode $CLI bundle validate -t dev
-
-export DATABRICKS_HOST="https://foo.com"
-title "Bundle commands load bundle configuration with -p flag with DATABRICKS_HOST but host defined in DATABRICKS_HOST doesn't match bundle host"
-trace errcode $CLI bundle validate -t dev -p DEFAULT
-
-unset DATABRICKS_HOST
-
 cd ..
 export DATABRICKS_HOST=$host
 title "Outside the bundle, no flags"

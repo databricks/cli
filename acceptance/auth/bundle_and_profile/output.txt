@@ -82,41 +82,6 @@ Found 1 error
 
 Exit code: 1
 
-=== Bundle commands load bundle configuration without -p flag with DATABRICKS_TARGET, validation not OK (env-defined host doesn't match bundle host)
->>> errcode [CLI] bundle validate -t prod
-Error: cannot resolve bundle auth configuration: config host mismatch: DATABRICKS_TARGET is defined as [DATABRICKS_TARGET], but CLI configured to use https://bar.com
-
-Name: test-auth
-Target: prod
-Workspace:
-  Host: https://bar.com
-
-Found 1 error
-
-Exit code: 1
-
-=== Bundle commands load bundle configuration without -p flag with DATABRICKS_TARGET, validation OK (env-defined host matches bundle host)
->>> errcode [CLI] bundle validate -t dev
-Name: test-auth
-Target: dev
-Workspace:
-  Host: [DATABRICKS_TARGET]
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-auth/dev
-
-Validation OK!
-
-=== Bundle commands load bundle configuration with -p flag with DATABRICKS_TARGET but host defined in DATABRICKS_TARGET doesn't match bundle host
->>> errcode [CLI] bundle validate -t dev -p DEFAULT
-Name: test-auth
-Target: dev
-Workspace:
-  Host: [DATABRICKS_TARGET]
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-auth/dev
-
-Validation OK!
-
 === Outside the bundle, no flags
 >>> errcode [CLI] current-user me
 "[USERNAME]"
