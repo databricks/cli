@@ -77,6 +77,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (typed): b.Config.Workspace.RootPath (used to construct default paths)
 		// Updates (typed): b.Config.Workspace.{FilePath,ResourcePath,ArtifactPath,StatePath} (sets default paths if not already set)
 		mutator.DefineDefaultWorkspacePaths(),
+
 		// Reads (dynamic): workspace.{root_path,file_path,artifact_path,state_path,resource_path} (reads paths to prepend prefix)
 		// Updates (dynamic): workspace.{root_path,file_path,artifact_path,state_path,resource_path} (prepends "/Workspace" to paths that don't already have specific prefixes)
 		mutator.PrependWorkspacePrefix(),
@@ -102,9 +103,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (dynamic): variables.*.lookup (resolves variable references in lookup fields)
 		// Prevents circular references between lookup variables
 		mutator.ResolveVariableReferencesInLookup(),
+
 		// Reads (dynamic): variables.*.lookup (checks for variables with lookup fields)
 		// Updates (dynamic): variables.*.value (sets values based on resolved lookups)
 		mutator.ResolveResourceReferences(),
+
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): * (strings) (resolves variable references to their actual values)
 		// Resolves variable references in configuration using bundle, workspace, and variables prefixes
@@ -125,9 +128,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resources.jobs.*.tasks (reads job tasks to merge)
 		// Updates (dynamic): resources.jobs.*.tasks (merges job tasks with the same task_key)
 		mutator.MergeJobTasks(),
+
 		// Reads (dynamic): resources.pipelines.*.clusters (reads pipeline clusters to merge)
 		// Updates (dynamic): resources.pipelines.*.clusters (merges pipeline clusters with the same label)
 		mutator.MergePipelineClusters(),
+
 		// Reads (dynamic): resources.apps.*.resources (reads app resources to merge)
 		// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
 		mutator.MergeApps(),
@@ -141,28 +146,34 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
 		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions
 		permissions.PermissionDiagnostics(),
+
 		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
 		// Reads (dynamic): run_as (checks if run_as is specified)
 		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as)
 		// Validates run_as configuration and sets run_as field for jobs
 		mutator.SetRunAs(),
+
 		// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
 		// Reads (dynamic): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
 		// Updates (typed): b.Config.Bundle.ClusterId (sets from environment if in development mode)
 		// Updates (dynamic): resources.jobs.*.tasks.*.{new_cluster,existing_cluster_id,job_cluster_key,environment_key} (replaces compute settings with specified cluster ID)
 		// Overrides job compute settings with a specified cluster ID for development or testing
 		mutator.OverrideCompute(),
+
 		// Reads (dynamic): resources.dashboards.* (checks for existing parent_path and embed_credentials)
 		// Updates (dynamic): resources.dashboards.*.parent_path (sets to workspace.resource_path if not set)
 		// Updates (dynamic): resources.dashboards.*.embed_credentials (sets to false if not set)
 		mutator.ConfigureDashboardDefaults(),
+
 		// Reads (dynamic): resources.volumes.* (checks for existing volume_type)
 		// Updates (dynamic): resources.volumes.*.volume_type (sets to "MANAGED" if not set)
 		mutator.ConfigureVolumeDefaults(),
+
 		// Reads (typed): b.Config.Bundle.Mode, b.Config.Workspace.{RootPath,FilePath,ResourcePath,ArtifactPath,StatePath}, b.Config.Workspace.CurrentUser (validates paths and user info)
 		// Updates (typed): b.Config.Bundle.Deployment.Lock.Enabled, b.Config.Presets.{NamePrefix,Tags,JobsMaxConcurrentRuns,TriggerPauseStatus,PipelinesDevelopment} (configures development mode settings)
 		// Validates and configures bundle settings based on target mode (development or production)
 		mutator.ProcessTargetMode(),
+
 		mutator.ApplyPresets(),
 
 		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
