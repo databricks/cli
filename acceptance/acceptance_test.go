@@ -451,10 +451,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	// User replacements come last:
 	repls.Repls = append(repls.Repls, config.Repls...)
 
-	if NoRepl {
-		repls.Repls = []testdiff.Replacement{}
-	}
-
 	// Save replacements to temp test directory so that it can be read by diff.py
 	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
 	require.NoError(t, err)
