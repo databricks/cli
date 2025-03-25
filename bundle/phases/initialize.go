@@ -222,6 +222,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Jobs[].JobSettings.{Deployment,EditMode,Format} (sets deployment metadata, locks UI editing, and sets format to multi-task)
 		// Annotates jobs with bundle deployment metadata and configures job settings for bundle deployments
 		metadata.AnnotateJobs(),
+		// Reads (typed): b.Config.Resources.Pipelines (checks pipeline configurations)
+		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
+		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
 		terraform.Initialize(),
 		scripts.Execute(config.ScriptPostInit),
