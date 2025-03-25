@@ -141,6 +141,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
 		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions
 		permissions.PermissionDiagnostics(),
+		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
+		// Reads (dynamic): run_as (checks if run_as is specified)
+		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as)
+		// Validates run_as configuration and sets run_as field for jobs
 		mutator.SetRunAs(),
 		mutator.OverrideCompute(),
 		mutator.ConfigureDashboardDefaults(),
