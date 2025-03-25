@@ -4,10 +4,10 @@ If there already is a description, consider that it is being reviewed and vetted
 
 The format is like this:
 
-// Reads (dynamic): list of fields that are being read dynamically (short description of why they are read)
-// Reads (static): list of fields that are being read statically (short description of why they are read)
-// Updates (dynamic): list of fields that are being written to dynamically (short description of the update logic)
-// Updates (static): list of fields that are being written to statically (short description of the update logic)
+// Reads (dynamic): list of fields that are being read dynamically - from b.Config.value (short description of why they are read)
+// Reads (typed): list of fields that are being read from typed structure - b.Config outside of b.Config.value (short description of why they are read)
+// Updates (dynamic): list of fields that are being written to dynamically - via b.Config.value (short description of the update logic)
+// Updates (typed): list of fields that are being written to typed structure - b.Config outside of b.Config.value (short description of the update logic)
 // <free form short summary, 1 or 2 lines, precise>
 
 Make sure to skip the last part - "free form summary" if it does not add any new information to what's already described in Reads and Writes line

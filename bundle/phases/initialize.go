@@ -38,24 +38,24 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.RewriteSyncPaths(),
 
 		// Reads (dynamic): sync.paths (checks that it is absent)
-		// Updates (static): b.Config.Sync.Paths (default set to ["."])
+		// Updates (typed): b.Config.Sync.Paths (default set to ["."])
 		// Configure the default sync path to equal the bundle root if not explicitly configured.
 		// By default, this means all files in the bundle root directory are synchronized.
 		mutator.SyncDefaultPath(),
 
 		// Figure out if the sync root path is identical or an ancestor of the bundle root path.
 		// If it is an ancestor, this updates all paths to be relative to the sync root path.
-		// Reads (static): b.Config.Sync.Paths (calculates longest common parent together with bundle root).
-		// Updates (static) b.{SyncRoot,SyncRootPath}  (set to calculate sync root, which is either bundle root or some parent of bundle root)
-		// Updates (static) b.Config.{Sync,Include,Exclude} they set to be relative to SyncRootPath instead of bundle root
+		// Reads (typed): b.Config.Sync.Paths (calculates longest common parent together with bundle root).
+		// Updates (typed) b.{SyncRoot,SyncRootPath}  (set to calculate sync root, which is either bundle root or some parent of bundle root)
+		// Updates (typed) b.Config.{Sync,Include,Exclude} they set to be relative to SyncRootPath instead of bundle root
 		mutator.SyncInferRoot(),
 
-		// Reads (static): b.Config.Workspace.CurrentUser (checks if it's already set)
-		// Updates (static): b.Config.Workspace.CurrentUser (sets user information from API)
-		// Updates (static): b.Tagging (configures tagging object based on workspace client)
+		// Reads (typed): b.Config.Workspace.CurrentUser (checks if it's already set)
+		// Updates (typed): b.Config.Workspace.CurrentUser (sets user information from API)
+		// Updates (typed): b.Tagging (configures tagging object based on workspace client)
 		mutator.PopulateCurrentUser(),
-		// Updates (static): b.WorktreeRoot (sets to SyncRoot if no git repo found, otherwise to git worktree root)
-		// Updates (static): b.Config.Bundle.Git.{ActualBranch,Branch,Commit,OriginURL,BundleRootPath} (loads git repository details)
+		// Updates (typed): b.WorktreeRoot (sets to SyncRoot if no git repo found, otherwise to git worktree root)
+		// Updates (typed): b.Config.Bundle.Git.{ActualBranch,Branch,Commit,OriginURL,BundleRootPath} (loads git repository details)
 		// Loads git repository information and updates bundle configuration with git details
 		mutator.LoadGitDetails(),
 
@@ -63,18 +63,18 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// because it affects how workspace variables are resolved.
 		mutator.ApplySourceLinkedDeploymentPreset(),
 
-		// Reads (static): b.Config.Workspace.RootPath (checks if it's already set)
-		// Reads (static): b.Config.Bundle.Name, b.Config.Bundle.Target (used to construct default path)
-		// Updates (static): b.Config.Workspace.RootPath (sets to ~/.bundle/{name}/{target} if not set)
+		// Reads (typed): b.Config.Workspace.RootPath (checks if it's already set)
+		// Reads (typed): b.Config.Bundle.Name, b.Config.Bundle.Target (used to construct default path)
+		// Updates (typed): b.Config.Workspace.RootPath (sets to ~/.bundle/{name}/{target} if not set)
 		mutator.DefineDefaultWorkspaceRoot(),
 
-		// Reads (static): b.Config.Workspace.RootPath (checks if it's already set)
-		// Reads (static): b.Config.Workspace.CurrentUser (used to expand ~ in path)
-		// Updates (static): b.Config.Workspace.RootPath (expands ~ to user's home directory if present)
+		// Reads (typed): b.Config.Workspace.RootPath (checks if it's already set)
+		// Reads (typed): b.Config.Workspace.CurrentUser (used to expand ~ in path)
+		// Updates (typed): b.Config.Workspace.RootPath (expands ~ to user's home directory if present)
 		mutator.ExpandWorkspaceRoot(),
 
-		// Reads (static): b.Config.Workspace.RootPath (used to construct default paths)
-		// Updates (static): b.Config.Workspace.FilePath, b.Config.Workspace.ResourcePath, b.Config.Workspace.ArtifactPath, b.Config.Workspace.StatePath (sets default paths if not already set)
+		// Reads (typed): b.Config.Workspace.RootPath (used to construct default paths)
+		// Updates (typed): b.Config.Workspace.FilePath, b.Config.Workspace.ResourcePath, b.Config.Workspace.ArtifactPath, b.Config.Workspace.StatePath (sets default paths if not already set)
 		mutator.DefineDefaultWorkspacePaths(),
 		mutator.PrependWorkspacePrefix(),
 
