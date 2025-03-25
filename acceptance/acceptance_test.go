@@ -649,31 +649,20 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 }
 
 func copyFile(src, dst string) error {
-	// Get source file info to copy permissions
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
 	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer in.Close()
 
-	// Create file with the same permissions as the source file
-	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
+	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func formatOutput(w io.Writer, err error) {
@@ -711,6 +700,7 @@ func tryReading(t *testing.T, path string) (string, bool) {
 
 	if !utf8.Valid(data) {
 		t.Errorf("%s: not valid utf-8", path)
+		return "", false
 	}
 
 	return string(data), true
