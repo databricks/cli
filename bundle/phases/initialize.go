@@ -98,6 +98,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (dynamic): variables.*.lookup (resolves variable references in lookup fields)
 		// Prevents circular references between lookup variables
 		mutator.ResolveVariableReferencesInLookup(),
+		// Reads (dynamic): variables.*.lookup (checks for variables with lookup fields)
+		// Updates (dynamic): variables.*.value (sets values based on resolved lookups)
 		mutator.ResolveResourceReferences(),
 		mutator.ResolveVariableReferences(
 			"bundle",
