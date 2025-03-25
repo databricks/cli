@@ -164,7 +164,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Validates and configures bundle settings based on target mode (development or production)
 		mutator.ProcessTargetMode(),
 		mutator.ApplyPresets(),
+
+		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
+		// Updates (typed): b.Config.Resources.Jobs[].Queue (sets Queue.Enabled to true for jobs without queue settings)
+		// Enable queueing for jobs by default, following the behavior from API 2.2+.
 		mutator.DefaultQueueing(),
+		
 		mutator.ExpandPipelineGlobPaths(),
 
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
