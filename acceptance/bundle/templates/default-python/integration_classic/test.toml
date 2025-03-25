@@ -1,6 +1,9 @@
 Cloud = true
 Local = false
 
+# Temporarily disabling due to IsServicePrincipal/email_notifications differences.
+CloudEnvs.gcp = false
+
 Ignore = [
     '.venv',
 ]
