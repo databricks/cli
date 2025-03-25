@@ -5,8 +5,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// AI TODO: Add support for GCP accounts based on regex of username: [^@]+@[^.@\s]+.iam.gserviceaccount.com
-
 // Determines whether a given user is a service principal.
 // This function uses a heuristic: if the user name is a UUID, then we assume
 // it's a service principal. Unfortunately, the service principal listing API is too
