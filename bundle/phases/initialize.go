@@ -137,7 +137,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
 		mutator.CaptureSchemaDependency(),
 
-		// Provide permission config errors & warnings after initializing all variables
+		// Reads (dynamic): permissions.* (checks if current user or their groups have CAN_MANAGE permissions)
+		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
+		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions
 		permissions.PermissionDiagnostics(),
 		mutator.SetRunAs(),
 		mutator.OverrideCompute(),
