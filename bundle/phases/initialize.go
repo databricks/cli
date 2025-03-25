@@ -152,6 +152,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (dynamic): resources.jobs.*.tasks.*.{new_cluster,existing_cluster_id,job_cluster_key,environment_key} (replaces compute settings with specified cluster ID)
 		// Overrides job compute settings with a specified cluster ID for development or testing
 		mutator.OverrideCompute(),
+		// Reads (dynamic): resources.dashboards.* (checks for existing parent_path and embed_credentials)
+		// Updates (dynamic): resources.dashboards.*.parent_path (sets to workspace.resource_path if not set)
+		// Updates (dynamic): resources.dashboards.*.embed_credentials (sets to false if not set)
 		mutator.ConfigureDashboardDefaults(),
 		mutator.ConfigureVolumeDefaults(),
 		mutator.ProcessTargetMode(),
