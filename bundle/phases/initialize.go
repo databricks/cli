@@ -174,6 +174,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Validates and configures bundle settings based on target mode (development or production)
 		mutator.ProcessTargetMode(),
 
+		// Reads (dynamic): resources.{jobs,pipelines,models,experiments,model_serving_endpoints,registered_models,quality_monitors,schemas,clusters,dashboards}.* (reads resource configurations)
+		// Updates (dynamic): resources.{jobs,pipelines,models,experiments,model_serving_endpoints,registered_models,quality_monitors,schemas,clusters,dashboards}.*.{name,tags,pause_status,development} (applies prefix to names, adds tags, sets pause status and development mode)
+		// Applies all presets to resources, including name prefixes, tags, and resource-specific settings like pause status
 		mutator.ApplyPresets(),
 
 		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
