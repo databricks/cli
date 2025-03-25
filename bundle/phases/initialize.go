@@ -117,11 +117,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)
 		// Updates (dynamic): resources.jobs.*.job_clusters (merges job clusters with the same job_cluster_key)
 		mutator.MergeJobClusters(),
-		
+
 		// Reads (dynamic): resources.jobs.*.parameters (reads job parameters to merge)
 		// Updates (dynamic): resources.jobs.*.parameters (merges job parameters with the same name)
 		mutator.MergeJobParameters(),
-		
+
 		// Reads (dynamic): resources.jobs.*.tasks (reads job tasks to merge)
 		// Updates (dynamic): resources.jobs.*.tasks (merges job tasks with the same task_key)
 		mutator.MergeJobTasks(),
@@ -169,7 +169,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Jobs[].Queue (sets Queue.Enabled to true for jobs without queue settings)
 		// Enable queueing for jobs by default, following the behavior from API 2.2+.
 		mutator.DefaultQueueing(),
-		
+
 		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
 		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
 		// Expands glob patterns in pipeline library paths to include all matching files
@@ -182,7 +182,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (dynamic): resources.jobs.*.{notebook_task.notebook_path,spark_jar_task.main_class_name,spark_python_task.python_file}, resources.pipelines.*.{libraries.notebook.path,libraries.file.path}, resources.dashboards.*.definition, resources.apps.*.{package,resources.*.path} (converts local paths to workspace paths)
 		// Translates local file paths to workspace paths for notebooks, files, and directories
 		mutator.TranslatePaths(),
-		
+
 		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
 		// Provides warnings when Python wheel tasks require DBR 13.3+ or when wheel wrapper is incompatible with source-linked deployment
@@ -200,7 +200,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		artifacts.Prepare(),
 
 		// Reads (dynamic): resources.apps.*.source_code_path, resources.apps.*.config (checks for duplicate source code paths and deprecated config sections)
-		// Updates (dynamic): None
 		// Validates app configurations by detecting duplicate source code paths and warning about deprecated config sections
 		apps.Validate(),
 
@@ -208,11 +207,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (typed): b.Config.Permissions (checks if users group has CAN_MANAGE permission)
 		// Validates that when using a shared workspace path, appropriate permissions are configured
 		permissions.ValidateSharedRootPermissions(),
+
 		// Reads (typed): b.Config.Permissions (validates permission levels)
 		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (reads existing permissions)
 		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
 		// Applies bundle-level permissions to all supported resources
 		permissions.ApplyBundlePermissions(),
+
 		// Reads (typed): b.Config.Workspace.CurrentUser.UserName (gets current user name)
 		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
@@ -222,18 +223,19 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Jobs[].JobSettings.{Deployment,EditMode,Format} (sets deployment metadata, locks UI editing, and sets format to multi-task)
 		// Annotates jobs with bundle deployment metadata and configures job settings for bundle deployments
 		metadata.AnnotateJobs(),
+
 		// Reads (typed): b.Config.Resources.Pipelines (checks pipeline configurations)
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
 		terraform.Initialize(),
 
-		// Reads (dynamic): experimental.scripts.post_init (checks if script is defined)
-		// Updates (dynamic): None (executes the post_init script if defined)
+		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
 		// Executes the post_init script hook defined in the bundle configuration
 		scripts.Execute(config.ScriptPostInit),
 	)
