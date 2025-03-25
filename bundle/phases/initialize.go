@@ -38,7 +38,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.RewriteSyncPaths(),
 
 		// Reads (dynamic): sync.paths (checks that it is absent)
-		// Updates (static): b.Config.Sync.Path (default set to ["."])
+		// Updates (static): b.Config.Sync.Paths (default set to ["."])
 		// Configure the default sync path to equal the bundle root if not explicitly configured.
 		// By default, this means all files in the bundle root directory are synchronized.
 		mutator.SyncDefaultPath(),
