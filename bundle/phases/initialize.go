@@ -208,6 +208,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (typed): b.Config.Permissions (checks if users group has CAN_MANAGE permission)
 		// Validates that when using a shared workspace path, appropriate permissions are configured
 		permissions.ValidateSharedRootPermissions(),
+		// Reads (typed): b.Config.Permissions (validates permission levels)
+		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (reads existing permissions)
+		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
+		// Applies bundle-level permissions to all supported resources
 		permissions.ApplyBundlePermissions(),
 		permissions.FilterCurrentUser(),
 
