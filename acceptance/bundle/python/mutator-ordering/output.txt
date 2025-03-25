@@ -1,5 +1,5 @@
 
->>> uv run --python 3.10 [UV_ARGS] -q [CLI] bundle validate --output json
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
 {
   "experimental": {
     "python": {

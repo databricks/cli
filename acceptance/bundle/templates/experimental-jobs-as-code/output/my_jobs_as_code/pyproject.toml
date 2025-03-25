@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "my_jobs_as_code"
-requires-python = ">=3.10"
+requires-python = ">=[UV_PYTHON]"
 description = "wheel file based on my_jobs_as_code"
 
 # Dependencies in case the output wheel file is used as a library dependency.
