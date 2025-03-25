@@ -12,11 +12,7 @@ def run_git_grep():
 
 def create_mutator_map(git_grep_output):
     mutator_map = {}
-
-    # Skip the first line which is the command itself
     lines = git_grep_output.strip().split("\n")
-    # if lines[0].startswith("~/"):
-    #    lines = lines[1:]
 
     for line in lines:
         parts = line.split(":", 1)
