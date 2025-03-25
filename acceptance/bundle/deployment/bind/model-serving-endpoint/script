@@ -1,0 +1,30 @@
+ENDPOINT_NAME="test-endpoint-$(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    ENDPOINT_NAME="test-endpoint-6260d50f-e8ff-4905-8f28-812345678903"
+fi
+export ENDPOINT_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+cat databricks.yml
+
+# Create a pre-defined serving endpoint:
+trace $CLI serving-endpoints create "${ENDPOINT_NAME}" | jq '{name, permission_level, route_optimized, state}'
+
+cleanup() {
+    trace $CLI serving-endpoints delete "${ENDPOINT_NAME}"
+}
+trap cleanup EXIT
+
+trace $CLI serving-endpoints get "${ENDPOINT_NAME}" | jq '{name, permission_level, route_optimized, state}'
+
+trace $CLI bundle deployment bind endpoint1 "${ENDPOINT_NAME}"
+
+trace $CLI bundle deploy
+
+trace $CLI serving-endpoints get "${ENDPOINT_NAME}" | jq '{name, permission_level, route_optimized, state}'
+
+trace $CLI bundle deployment unbind endpoint1
+
+trace $CLI bundle destroy --auto-approve
+
+# Read the pre-defined serving-endpoint again (expecting it still exists and is not deleted):
+trace $CLI serving-endpoints get "${ENDPOINT_NAME}" | jq '{name, permission_level, route_optimized, state}'

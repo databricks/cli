@@ -20,5 +20,6 @@ Previously ".internal" folder under artifact_path was not cleaned up as expected
 * Comment out email\_notifications section in builtin templates ([#2565](https://github.com/databricks/cli/pull/2565))
 * New DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION environment variable that rejects running scripts and Python code when it is set ([#2598](https://github.com/databricks/cli/pull/2598))
 * Upgrade TF provider to 1.71.0 ([#2611](https://github.com/databricks/cli/pull/2611))
+* Added support for model serving endpoints in deployment bind/unbind commands ([#2634](https://github.com/databricks/cli/pull/2634))
 
 ### API Changes
