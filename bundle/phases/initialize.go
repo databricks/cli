@@ -175,6 +175,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Expands glob patterns in pipeline library paths to include all matching files
 		mutator.ExpandPipelineGlobPaths(),
 
+		// Reads (typed): b.SyncRoot (checks if bundle root is in /Workspace/)
+		// Updates (typed): b.SyncRoot (replaces with extension-aware path when running on Databricks Runtime)
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
 		mutator.ConfigureWSFS(),
 
@@ -187,11 +189,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
 		// Provides warnings when Python wheel tasks require DBR 13.3+ or when wheel wrapper is incompatible with source-linked deployment
 		trampoline.WrapperWarning(),
-
-		// Reads (typed): b.SyncRoot (checks if bundle root is in /Workspace/)
-		// Updates (typed): b.SyncRoot (replaces with extension-aware path when running on Databricks Runtime)
-		// Configure use of WSFS for reads if the CLI is running on Databricks.
-		mutator.ConfigureWSFS(),
 
 		// Reads (typed): b.Config.Artifacts, b.BundleRootPath (checks artifact configurations and bundle path)
 		// Updates (typed): b.Config.Artifacts (auto-creates Python wheel artifact if none defined but setup.py exists)
