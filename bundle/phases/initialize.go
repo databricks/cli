@@ -170,6 +170,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Enable queueing for jobs by default, following the behavior from API 2.2+.
 		mutator.DefaultQueueing(),
 		
+		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
+		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
+		// Expands glob patterns in pipeline library paths to include all matching files
 		mutator.ExpandPipelineGlobPaths(),
 
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
