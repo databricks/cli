@@ -105,6 +105,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): variables.*.lookup (checks for variables with lookup fields)
 		// Updates (dynamic): variables.*.value (sets values based on resolved lookups)
 		mutator.ResolveResourceReferences(),
+		// Reads (dynamic): * (strings) (searches for variable references in string values)
+		// Updates (dynamic): * (strings) (resolves variable references to their actual values)
+		// Resolves variable references in configuration using bundle, workspace, and variables prefixes
 		mutator.ResolveVariableReferences(
 			"bundle",
 			"workspace",
