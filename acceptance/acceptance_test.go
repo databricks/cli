@@ -218,7 +218,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
 
-			if len(expanded) == 1 && len(expanded[0]) == 0 {
+			if len(expanded) == 1 {
+				// env vars aren't part of the test case name, so log them for debugging
+				t.Logf("Running test with env %v", expanded[0])
+
 				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
 			} else {
 				for _, envset := range expanded {
