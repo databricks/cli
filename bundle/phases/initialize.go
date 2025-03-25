@@ -231,6 +231,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
 		terraform.Initialize(),
+
+		// Reads (dynamic): experimental.scripts.post_init (checks if script is defined)
+		// Updates (dynamic): None (executes the post_init script if defined)
+		// Executes the post_init script hook defined in the bundle configuration
 		scripts.Execute(config.ScriptPostInit),
 	)
 }
