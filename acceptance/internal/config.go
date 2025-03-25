@@ -27,6 +27,11 @@ type TestConfig struct {
 	// If absent, default to true.
 	GOOS map[string]bool
 
+	// Which Clouds the test is enabled on. Allowed values: "aws", "azure", "gcp".
+	// If absent, default to true.
+	// Only checked if CLOUD_ENV is not empty.
+	CloudEnvs map[string]bool
+
 	// If true, run this test when running locally with a testserver
 	Local *bool
 
