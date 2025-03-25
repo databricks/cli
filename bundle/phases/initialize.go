@@ -226,6 +226,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
+		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
+		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
+		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
 		terraform.Initialize(),
 		scripts.Execute(config.ScriptPostInit),
 	)
