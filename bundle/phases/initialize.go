@@ -193,6 +193,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
 		mutator.ConfigureWSFS(),
 
+		// Reads (typed): b.Config.Artifacts, b.BundleRootPath (checks artifact configurations and bundle path)
+		// Updates (typed): b.Config.Artifacts (auto-creates Python wheel artifact if none defined but setup.py exists)
+		// Updates (dynamic): artifacts.*.{path,build_command,files.*.source} (sets default paths, build commands, and makes relative paths absolute)
+		// Prepares artifacts by cleaning build directories, expanding file globs, and configuring Python wheel builds
 		artifacts.Prepare(),
 
 		apps.Validate(),
