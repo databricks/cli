@@ -8,6 +8,7 @@ ALIASES = {
     "python": "pythonmutator",
 }
 
+
 def run_git_grep():
     cmd = ["git", "grep", "^func [A-Z].*Mutator {", "*.go", "(:exclude)*_test.go"]
     result = subprocess.run(cmd, stdout=subprocess.PIPE, encoding="utf-8", check=True)
@@ -19,7 +20,7 @@ def create_mutator_map(git_grep_output):
 
     # Skip the first line which is the command itself
     lines = git_grep_output.strip().split("\n")
-    #if lines[0].startswith("~/"):
+    # if lines[0].startswith("~/"):
     #    lines = lines[1:]
 
     for line in lines:
@@ -55,7 +56,7 @@ def extract_mutator_calls(initialize_file, mutator_map):
         if not line_stripped:
             continue
 
-        if line.startswith('//'):
+        if line.startswith("//"):
             continue
 
         matches_per_line = []
@@ -63,14 +64,14 @@ def extract_mutator_calls(initialize_file, mutator_map):
         for qualified_name in mutator_map:
             package_name, func_name = qualified_name.split(".")
             package_name = ALIASES.get(package_name, package_name)
-            pattern = r'\b' + re.escape(qualified_name) + r'\('
+            pattern = r"\b" + re.escape(qualified_name) + r"\("
 
             if re.search(pattern, line_stripped):
                 mutator_calls.setdefault(qualified_name, []).append(i)
                 matches_per_line.append(qualified_name)
 
         if len(matches_per_line) > 1:
-            print('Warning multiple matches in {line!r}\n{matches_per_line}', file=sys.stderr)
+            print("Warning multiple matches in {line!r}\n{matches_per_line}", file=sys.stderr)
 
     return mutator_calls
 
@@ -113,8 +114,8 @@ def main():
 
     print(f"Found {len(mutator_map)} potential mutators in the codebase")
     import pprint
-    pprint.pprint(mutator_map)
 
+    pprint.pprint(mutator_map)
 
     mutator_calls_with_lines = extract_mutator_calls(initialize_file, mutator_map)
     pprint.pprint(mutator_calls_with_lines)
