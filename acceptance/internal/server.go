@@ -157,7 +157,7 @@ func AddHandlers(server *testserver.Server) {
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return testserver.Response{
 				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
+				StatusCode: 400,
 			}
 		}
 
