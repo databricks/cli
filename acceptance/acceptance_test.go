@@ -80,7 +80,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "bundle/telemetry/deploy")
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -446,7 +446,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
-	// testdiff.PrepareReplacementsUUID(t, &repls)
+	testdiff.PrepareReplacementsUUID(t, &repls)
 
 	// User replacements come last:
 	repls.Repls = append(repls.Repls, config.Repls...)
