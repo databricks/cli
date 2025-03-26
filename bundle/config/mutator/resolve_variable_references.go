@@ -175,6 +175,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				}
 
 				// Perform resolution only if the path starts with one of the specified prefixes.
+				fmt.Printf("Testing path=%s\n", path)
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
 						// Skip resolution if there is a skip function and it returns true.
@@ -182,6 +183,8 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 							return dyn.InvalidValue, dynvar.ErrSkipResolution
 						}
 						hasUpdates = true
+						// printf for debugging
+						fmt.Printf("Resolving path=%s prefixes=%s\n", path, prefixes)
 						return m.lookupFn(normalized, path, b)
 					}
 				}

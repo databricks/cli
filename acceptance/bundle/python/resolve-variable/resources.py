@@ -22,9 +22,8 @@ def load_resources(bundle: Bundle) -> Resources:
     int_variable = bundle.resolve_variable(Variables.int_variable)
     assert int_variable == 42
 
-    # FIXME resolve variables before running PythonMutator
-    # nested_variable = bundle.resolve_variable(Variables.nested_variable)
-    # assert nested_variable == "abc 42"
+    nested_variable = bundle.resolve_variable(Variables.nested_variable)
+    assert nested_variable == "abc abc"
 
     bool_variable_true = bundle.resolve_variable(Variables.bool_variable_true)
     assert bool_variable_true

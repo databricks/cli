@@ -57,14 +57,27 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		mutator.SetVariables(),
 
-		// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
-		// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
-		// See what is expected in PythonMutatorPhaseInit doc
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
+		// PythonMutator operates on a bundle where all variable references are resolved
 		mutator.ResolveVariableReferencesInLookup(),
 		mutator.ResolveResourceReferences(),
+		mutator.ResolveVariableReferences(
+			"bundle",
+			"workspace",
+			"variables",
+		),
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
+		// PythonMutatorPhaseLoadResources can add new resources into a bundle,
+		// resolve variable references once again
+		mutator.ResolveVariableReferences(
+			"bundle",
+			"workspace",
+			"variables",
+		),
+
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
+		// PythonMutatorPhaseApplyMutators can mutate resources and add new variables into a bundle,
+		// resolve variable references once again
 		mutator.ResolveVariableReferences(
 			"bundle",
 			"workspace",

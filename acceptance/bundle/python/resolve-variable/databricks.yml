@@ -7,18 +7,17 @@ experimental:
   python:
     resources:
       - "resources:load_resources"
+    mutators:
+      - "mutators:test_variables_1"
+      - "mutators:test_variables_2"
 
 variables:
   string_variable:
     default: "abc"
   int_variable:
     default: 42
-  # FIXME doesn't work, resolve variables before running PythonMutator
-  #
-  # > cannot interpolate non-string value: ${var.int_variable}
-  #
-  # nested_variable:
-  #   default: ${var.string_variable} ${var.int_variable}
+  nested_variable:
+    default: ${var.string_variable} ${var.string_variable}
   bool_variable_true:
     default: true
   bool_variable_false:
