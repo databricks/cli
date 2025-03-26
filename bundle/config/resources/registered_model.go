@@ -48,6 +48,10 @@ func (s *RegisteredModel) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+func (*RegisteredModel) ResourceType() string {
+	return "registered_model"
+}
+
 func (s *RegisteredModel) TerraformResourceName() string {
 	return "databricks_registered_model"
 }

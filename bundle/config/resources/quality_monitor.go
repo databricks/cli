@@ -42,6 +42,10 @@ func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClie
 	return true, nil
 }
 
+func (*QualityMonitor) ResourceType() string {
+	return "quality monitor"
+}
+
 func (s *QualityMonitor) TerraformResourceName() string {
 	return "databricks_quality_monitor"
 }

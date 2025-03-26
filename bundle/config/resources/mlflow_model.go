@@ -38,6 +38,10 @@ func (s *MlflowModel) Exists(ctx context.Context, w *databricks.WorkspaceClient,
 	return true, nil
 }
 
+func (j *MlflowModel) ResourceType() string {
+	return "model"
+}
+
 func (s *MlflowModel) TerraformResourceName() string {
 	return "databricks_mlflow_model"
 }

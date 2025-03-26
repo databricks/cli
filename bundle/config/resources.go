@@ -31,6 +31,9 @@ type ConfigResource interface {
 	// the input workspace client.
 	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
 
+	// ResourceType returns a name of the resource type. For example "job" or "pipeline"
+	ResourceType() string
+
 	// TerraformResourceName returns an equivalent name of the resource. For example "databricks_job"
 	// for jobs and "databricks_pipeline" for pipelines.
 	TerraformResourceName() string
@@ -263,16 +266,4 @@ func SupportedResources() map[string]ResourceDescription {
 			TerraformResourceName: "databricks_app",
 		},
 	}
-}
-
-func GetResourceDescriptionByTerraformName(terraformResourceName string) (ResourceDescription, bool) {
-	r := SupportedResources()
-
-	for _, resourceDesc := range r {
-		if resourceDesc.TerraformResourceName == terraformResourceName {
-			return resourceDesc, true
-		}
-	}
-
-	return ResourceDescription{}, false
 }

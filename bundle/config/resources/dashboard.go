@@ -59,6 +59,10 @@ func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 	return true, nil
 }
 
+func (*Dashboard) ResourceType() string {
+	return "dashboard"
+}
+
 func (*Dashboard) TerraformResourceName() string {
 	return "databricks_dashboard"
 }

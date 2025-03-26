@@ -38,6 +38,10 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+func (j *MlflowExperiment) ResourceType() string {
+	return "experiment"
+}
+
 func (s *MlflowExperiment) TerraformResourceName() string {
 	return "databricks_mlflow_experiment"
 }

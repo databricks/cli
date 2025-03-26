@@ -48,6 +48,10 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
+func (*Schema) ResourceType() string {
+	return "schema"
+}
+
 func (s *Schema) TerraformResourceName() string {
 	return "databricks_schema"
 }

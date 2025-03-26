@@ -45,6 +45,10 @@ func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name st
 	return true, nil
 }
 
+func (*App) ResourceType() string {
+	return "app"
+}
+
 func (a *App) TerraformResourceName() string {
 	return "databricks_app"
 }
