@@ -111,8 +111,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 				return v, fmt.Errorf("expected string, got %s", v.Kind())
 			}
 
-			sv, ok = file.GetByString("patched")
-			if ok {
+			if sv, ok = file.GetByString("patched"); ok {
 				patched, ok := sv.AsString()
 				if ok && patched != "" {
 					source = patched
