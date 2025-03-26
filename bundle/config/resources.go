@@ -264,3 +264,15 @@ func SupportedResources() map[string]ResourceDescription {
 		},
 	}
 }
+
+func GetResourceDescriptionByTerraformName(terraformResourceName string) (ResourceDescription, bool) {
+	r := SupportedResources()
+
+	for _, resourceDesc := range r {
+		if resourceDesc.TerraformResourceName == terraformResourceName {
+			return resourceDesc, true
+		}
+	}
+
+	return ResourceDescription{}, false
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -13,6 +14,14 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/spf13/cobra"
 )
+
+func resourceType(terraformResourceName string) string {
+	d, found := config.GetResourceDescriptionByTerraformName(terraformResourceName)
+	if found {
+		return d.SingularName
+	}
+	return terraformResourceName
+}
 
 func newBindCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -44,8 +53,10 @@ func newBindCommand() *cobra.Command {
 			return fmt.Errorf("failed to fetch the resource, err: %w", err)
 		}
 
+		resourceTypeName := resourceType(resource.TerraformResourceName())
+
 		if !exists {
-			return fmt.Errorf("%s with an id '%s' is not found", resource.TerraformResourceName(), args[1])
+			return fmt.Errorf("%s with an id '%s' is not found", resourceTypeName, args[1])
 		}
 
 		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
@@ -66,7 +77,7 @@ func newBindCommand() *cobra.Command {
 			return fmt.Errorf("failed to bind the resource, err: %w", err)
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'. Run 'bundle deploy' to deploy changes to your workspace", resource.TerraformResourceName(), args[1]))
+		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'. Run 'bundle deploy' to deploy changes to your workspace", resourceTypeName, args[1]))
 		return nil
 	}
 
