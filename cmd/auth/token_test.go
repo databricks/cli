@@ -48,9 +48,7 @@ var refreshSuccessTokenResponse = fixtures.HTTPFixture{
 	},
 }
 
-type MockApiClient struct {
-	RefreshTokenResponse http.RoundTripper
-}
+type MockApiClient struct{}
 
 // GetAccountOAuthEndpoints implements u2m.OAuthEndpointSupplier.
 func (m *MockApiClient) GetAccountOAuthEndpoints(ctx context.Context, accountHost, accountId string) (*u2m.OAuthAuthorizationServer, error) {
@@ -96,11 +94,6 @@ func TestToken_loadToken(t *testing.T) {
 			},
 		},
 	}
-	makeApiClient := func(f fixtures.HTTPFixture) *MockApiClient {
-		return &MockApiClient{
-			RefreshTokenResponse: fixtures.SliceTransport{f},
-		}
-	}
 	validateToken := func(resp *oauth2.Token) {
 		assert.Equal(t, "new-access-token", resp.AccessToken)
 		assert.Equal(t, "Bearer", resp.TokenType)
@@ -122,11 +115,12 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
-					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshFailureTokenResponse)),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
 				},
 			},
-			wantErr: "a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run " +
-				"`databricks auth login --profile expired`",
+			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --profile expired`,
 		},
 		{
 			name: "prints helpful login message on refresh failure when host is specified",
@@ -141,11 +135,12 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
-					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshFailureTokenResponse)),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
 				},
 			},
-			wantErr: "a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run " +
-				"`databricks auth login --host https://accounts.cloud.databricks.com --account-id expired`",
+			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --host https://accounts.cloud.databricks.com --account-id expired`,
 		},
 		{
 			name: "prints helpful login message on invalid response",
@@ -157,7 +152,8 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
-					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshFailureInvalidResponse)),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureInvalidResponse}}),
 				},
 			},
 			wantErr: "token refresh: oauth2: cannot parse json: invalid character 'N' looking for beginning of value. Try logging in again with " +
@@ -173,7 +169,8 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
-					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshFailureOtherError)),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureOtherError}}),
 				},
 			},
 			wantErr: "token refresh: Databricks is down (error code: other_error). Try logging in again with " +
@@ -189,7 +186,8 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
-					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshSuccessTokenResponse)),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
 			},
 			validateToken: validateToken,
@@ -204,7 +202,8 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
-					u2m.WithOAuthEndpointSupplier(makeApiClient(refreshSuccessTokenResponse)),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
 			},
 			validateToken: validateToken,

@@ -103,7 +103,8 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	persistentAuth, err := u2m.NewPersistentAuth(ctx, args.persistentAuthOpts...)
+	allArgs := append(args.persistentAuthOpts, u2m.WithOAuthArgument(oauthArgument))
+	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)
