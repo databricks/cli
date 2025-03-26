@@ -31,8 +31,8 @@ type ConfigResource interface {
 	// the input workspace client.
 	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
 
-	// ResourceType returns a name of the resource type. For example "job" or "pipeline"
-	ResourceType() string
+	// ResourceDescription returns a struct containing strings describing a resource
+	ResourceDescription() resources.ResourceDescription
 
 	// TerraformResourceName returns an equivalent name of the resource. For example "databricks_job"
 	// for jobs and "databricks_pipeline" for pipelines.
@@ -54,13 +54,13 @@ type ConfigResource interface {
 // ResourceGroup represents a group of resources of the same type.
 // It includes a description of the resource type and a map of resources.
 type ResourceGroup struct {
-	Description ResourceDescription
+	Description resources.ResourceDescription
 	Resources   map[string]ConfigResource
 }
 
 // collectResourceMap collects resources of a specific type into a ResourceGroup.
 func collectResourceMap[T ConfigResource](
-	description ResourceDescription,
+	description resources.ResourceDescription,
 	input map[string]T,
 ) ResourceGroup {
 	r := make(map[string]ConfigResource)
@@ -166,104 +166,20 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 	return found[0], nil
 }
 
-type ResourceDescription struct {
-	// Singular and plural name when used to refer to the configuration.
-	SingularName string
-	PluralName   string
-
-	// Singular and plural title when used in summaries / terminal UI.
-	SingularTitle string
-	PluralTitle   string
-
-	TerraformResourceName string
-}
-
 // SupportedResources returns a map which keys correspond to the resource key in the bundle configuration.
-func SupportedResources() map[string]ResourceDescription {
-	return map[string]ResourceDescription{
-		"jobs": {
-			SingularName:          "job",
-			PluralName:            "jobs",
-			SingularTitle:         "Job",
-			PluralTitle:           "Jobs",
-			TerraformResourceName: "databricks_job",
-		},
-		"pipelines": {
-			SingularName:          "pipeline",
-			PluralName:            "pipelines",
-			SingularTitle:         "Pipeline",
-			PluralTitle:           "Pipelines",
-			TerraformResourceName: "databricks_pipeline",
-		},
-		"models": {
-			SingularName:          "model",
-			PluralName:            "models",
-			SingularTitle:         "Model",
-			PluralTitle:           "Models",
-			TerraformResourceName: "databricks_mlflow_model",
-		},
-		"experiments": {
-			SingularName:          "experiment",
-			PluralName:            "experiments",
-			SingularTitle:         "Experiment",
-			PluralTitle:           "Experiments",
-			TerraformResourceName: "databricks_mlflow_experiment",
-		},
-		"model_serving_endpoints": {
-			SingularName:          "model_serving_endpoint",
-			PluralName:            "model_serving_endpoints",
-			SingularTitle:         "Model Serving Endpoint",
-			PluralTitle:           "Model Serving Endpoints",
-			TerraformResourceName: "databricks_model_serving_endpoint",
-		},
-		"registered_models": {
-			SingularName:          "registered_model",
-			PluralName:            "registered_models",
-			SingularTitle:         "Registered Model",
-			PluralTitle:           "Registered Models",
-			TerraformResourceName: "databricks_registered_model",
-		},
-		"quality_monitors": {
-			SingularName:          "quality_monitor",
-			PluralName:            "quality_monitors",
-			SingularTitle:         "Quality Monitor",
-			PluralTitle:           "Quality Monitors",
-			TerraformResourceName: "databricks_quality_monitor",
-		},
-		"schemas": {
-			SingularName:          "schema",
-			PluralName:            "schemas",
-			SingularTitle:         "Schema",
-			PluralTitle:           "Schemas",
-			TerraformResourceName: "databricks_schema",
-		},
-		"clusters": {
-			SingularName:          "cluster",
-			PluralName:            "clusters",
-			SingularTitle:         "Cluster",
-			PluralTitle:           "Clusters",
-			TerraformResourceName: "databricks_cluster",
-		},
-		"dashboards": {
-			SingularName:          "dashboard",
-			PluralName:            "dashboards",
-			SingularTitle:         "Dashboard",
-			PluralTitle:           "Dashboards",
-			TerraformResourceName: "databricks_dashboard",
-		},
-		"volumes": {
-			SingularName:          "volume",
-			PluralName:            "volumes",
-			SingularTitle:         "Volume",
-			PluralTitle:           "Volumes",
-			TerraformResourceName: "databricks_volume",
-		},
-		"apps": {
-			SingularName:          "app",
-			PluralName:            "apps",
-			SingularTitle:         "App",
-			PluralTitle:           "Apps",
-			TerraformResourceName: "databricks_app",
-		},
+func SupportedResources() map[string]resources.ResourceDescription {
+	return map[string]resources.ResourceDescription{
+		"jobs":                    (&resources.Job{}).ResourceDescription(),
+		"pipelines":               (&resources.Pipeline{}).ResourceDescription(),
+		"models":                  (&resources.MlflowModel{}).ResourceDescription(),
+		"experiments":             (&resources.MlflowExperiment{}).ResourceDescription(),
+		"model_serving_endpoints": (&resources.ModelServingEndpoint{}).ResourceDescription(),
+		"registered_models":       (&resources.RegisteredModel{}).ResourceDescription(),
+		"quality_monitors":        (&resources.QualityMonitor{}).ResourceDescription(),
+		"schemas":                 (&resources.Schema{}).ResourceDescription(),
+		"clusters":                (&resources.Cluster{}).ResourceDescription(),
+		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
+		"volumes":                 (&resources.Volume{}).ResourceDescription(),
+		"apps":                    (&resources.App{}).ResourceDescription(),
 	}
 }

@@ -56,8 +56,14 @@ func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
-func (*Volume) ResourceType() string {
-	return "volume"
+func (*Volume) ResourceDescription() ResourceDescription {
+	return ResourceDescription{
+		SingularName:          "volume",
+		PluralName:            "volumes",
+		SingularTitle:         "Volume",
+		PluralTitle:           "Volumes",
+		TerraformResourceName: "databricks_volume",
+	}
 }
 
 func (v *Volume) TerraformResourceName() string {

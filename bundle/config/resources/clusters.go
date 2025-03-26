@@ -36,8 +36,14 @@ func (s *Cluster) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 	return true, nil
 }
 
-func (*Cluster) ResourceType() string {
-	return "cluster"
+func (*Cluster) ResourceDescription() ResourceDescription {
+	return ResourceDescription{
+		SingularName:          "cluster",
+		PluralName:            "clusters",
+		SingularTitle:         "Cluster",
+		PluralTitle:           "Clusters",
+		TerraformResourceName: "databricks_cluster",
+	}
 }
 
 func (s *Cluster) TerraformResourceName() string {

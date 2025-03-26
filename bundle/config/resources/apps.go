@@ -45,8 +45,14 @@ func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name st
 	return true, nil
 }
 
-func (*App) ResourceType() string {
-	return "app"
+func (*App) ResourceDescription() ResourceDescription {
+	return ResourceDescription{
+		SingularName:          "app",
+		PluralName:            "apps",
+		SingularTitle:         "App",
+		PluralTitle:           "Apps",
+		TerraformResourceName: "databricks_app",
+	}
 }
 
 func (a *App) TerraformResourceName() string {

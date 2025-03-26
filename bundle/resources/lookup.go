@@ -3,6 +3,8 @@ package resources
 import (
 	"fmt"
 
+	"github.com/databricks/cli/bundle/config/resources"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 )
@@ -17,7 +19,7 @@ type Reference struct {
 	KeyWithType string
 
 	// Description is the resource type description.
-	Description config.ResourceDescription
+	Description resources.ResourceDescription
 
 	// Resource is the resource itself.
 	Resource config.ConfigResource
