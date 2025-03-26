@@ -47,7 +47,7 @@ func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.Workspa
 }
 
 func (j *ModelServingEndpoint) ResourceType() string {
-	return "model serving endpoint"
+	return "model_serving_endpoint"
 }
 
 func (s *ModelServingEndpoint) TerraformResourceName() string {
