@@ -17,7 +17,7 @@ import (
 )
 
 func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
-	result := []pipelines.PipelineEvent{}
+	var result []pipelines.PipelineEvent
 	for i := range events {
 		if events[i].Origin.UpdateId == updateId {
 			result = append(result, events[i])

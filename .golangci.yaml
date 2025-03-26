@@ -16,6 +16,7 @@ linters:
     - mirror
     - perfsprint
     - unconvert
+    - gocritic
 linters-settings:
   govet:
     enable-all: true
@@ -51,6 +52,14 @@ linters-settings:
       - require-error
   copyloopvar:
     check-alias: true
+  gocritic:
+      disable-all: true
+      enabled-checks:
+        - ruleguard
+      settings:
+        ruleguard:
+          rules: '${base-path}/libs/ruleguard/rule-*.go'
+          failOn: all
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
   max-issues-per-linter: 1000

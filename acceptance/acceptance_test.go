@@ -500,7 +500,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Make sure there are not unaccounted for new files
 	files := ListDir(t, tmpDir)
-	unexpected := []string{}
+	var unexpected []string
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -593,8 +593,8 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	// directory only affects the main script and not cleanup.
 	scriptContents = "(\n" + scriptContents + ")\n"
 
-	prepares := []string{}
-	cleanups := []string{}
+	var prepares []string
+	var cleanups []string
 
 	for {
 		x, ok := tryReading(t, filepath.Join(dir, CleanupScript))

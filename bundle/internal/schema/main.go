@@ -131,7 +131,7 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 		return s
 	}
 
-	res := []string{}
+	var res []string
 	for _, r := range s.Required {
 		if r != "volume_type" {
 			res = append(res, r)

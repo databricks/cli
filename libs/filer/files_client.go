@@ -256,7 +256,7 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 
 	// The directory delete API returns a 400 if the directory is not empty
 	if aerr.StatusCode == http.StatusBadRequest {
-		reasons := []string{}
+		var reasons []string
 		details := aerr.ErrorDetails()
 		if details.ErrorInfo != nil {
 			reasons = append(reasons, details.ErrorInfo.Reason)
@@ -274,8 +274,8 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 
 func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
 	filerFS := NewFS(ctx, w)
-	dirsToDelete := make([]string, 0)
-	filesToDelete := make([]string, 0)
+	var dirsToDelete []string
+	var filesToDelete []string
 	callback := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

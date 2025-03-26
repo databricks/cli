@@ -27,7 +27,7 @@ import (
 )
 
 func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []terraformlib.Action {
-	res := make([]terraformlib.Action, 0)
+	var res []terraformlib.Action
 	for _, rc := range changes {
 		if rc.Type != resourceType {
 			continue

@@ -39,6 +39,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require github.com/quasilyte/go-ruleguard/dsl v0.3.22
+
 require (
 	cloud.google.com/go/auth v0.4.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect

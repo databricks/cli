@@ -93,7 +93,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
-	found := make([]ConfigResource, 0)
+	var found []ConfigResource
 	for k := range r.Jobs {
 		if k == key {
 			found = append(found, r.Jobs[k])

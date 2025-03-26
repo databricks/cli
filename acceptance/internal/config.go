@@ -107,7 +107,7 @@ type ServerStub struct {
 // ordered from the most outermost (at acceptance/) to current test directory (identified by dir).
 // Argument dir must be a relative path from the root of acceptance tests (<project_root>/acceptance/).
 func FindConfigs(t *testing.T, dir string) []string {
-	configs := []string{}
+	var configs []string
 	for {
 		path := filepath.Join(dir, configFilename)
 		_, err := os.Stat(path)

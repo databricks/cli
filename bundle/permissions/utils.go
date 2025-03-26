@@ -14,7 +14,7 @@ func convertPermissions(
 	resourceName string,
 	lm map[string]string,
 ) []resources.Permission {
-	permissions := make([]resources.Permission, 0)
+	var permissions []resources.Permission
 	for _, p := range bundlePermissions {
 		level, ok := lm[p.Level]
 		// If there is no bundle permission level defined in the map, it means
