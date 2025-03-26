@@ -85,7 +85,7 @@ type TestConfig struct {
 	// set to that value (and replacement configured to match the value).
 	// If there are multiple variables defined, all combinations of tests are created,
 	// similar to github actions matrix strategy.
-	EnvMatrix map[string][]string
+	EnvMatrix map[string]*[]string
 }
 
 type ServerStub struct {
@@ -183,7 +183,7 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 // output: [["KEY=A", "OTHER=VALUE"], ["KEY=B", "OTHER=VALUE"]]
 //
 // If any entries is an empty list, that variable is dropped from the matrix before processing.
-func ExpandEnvMatrix(matrix map[string][]string) [][]string {
+func ExpandEnvMatrix(matrix map[string]*[]string) [][]string {
 	result := [][]string{{}}
 
 	if len(matrix) == 0 {
@@ -193,8 +193,8 @@ func ExpandEnvMatrix(matrix map[string][]string) [][]string {
 	// Filter out keys with empty value slices
 	filteredMatrix := make(map[string][]string)
 	for key, values := range matrix {
-		if len(values) > 0 {
-			filteredMatrix[key] = values
+		if len(*values) > 0 {
+			filteredMatrix[key] = *values
 		}
 	}
 

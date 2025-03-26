@@ -11,3 +11,4 @@ See `What is Python support for Databricks Asset Bundles? (TBD) <#>`_.
 
    databricks.bundles.core
    databricks.bundles.jobs
+   databricks.bundles.pipelines
