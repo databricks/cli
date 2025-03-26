@@ -4,6 +4,9 @@ trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext
 
 cmd_exec_id=$(cat out.requests.txt | jq '.headers."User-Agent".[0]'| head -n 1 | grep -o 'cmd-exec-id/[^ ]*' | cut -d '/' -f2)
 
+echo $cmd_exec_id > out.cmd_exec_id.txt
+cat output.txt > out.original.txt
+
 update_file.py output.txt $cmd_exec_id  '[CMD-EXEC-ID]'
 update_file.py output.txt "11111111-2222-3333-4444-555555555555"  '[BUNDLE_UUID]'
 

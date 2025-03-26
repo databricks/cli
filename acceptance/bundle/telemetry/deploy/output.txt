@@ -7,7 +7,7 @@ Deployment complete!
 
 >>> cat out.requests.txt
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "6223f57d-50e1-400b-b19b-208c844de3ef",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
@@ -29,8 +29,8 @@ Deployment complete!
           "3"
         ],
         "resource_pipeline_ids": [
-          "[UUID]",
-          "[UUID]"
+          "bd1878f4-7596-441f-b6ab-4483695f8f1b",
+          "db89b45f-d872-49fc-b851-bc3c4f2ce4b3"
         ]
       }
     }
