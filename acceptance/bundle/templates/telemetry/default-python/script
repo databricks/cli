@@ -5,10 +5,7 @@ $CLI bundle init default-python --config-file input.json --output-dir output
 mv output/my_default_python/databricks.yml out.databricks.yml
 rm -r output
 
-# Disable pipefail. head will skip reading all input once it encounters a newline. Not disabling pipefail will trigger
-# a SIGPIPE in linux based systems if jq outputs more than one line.
-set +o pipefail
-cmd_exec_id=$(cat out.requests.txt | jq '.headers."User-Agent".[0]'| head -n 1 | grep -o 'cmd-exec-id/[^ ]*' | cut -d '/' -f2)
+cmd_exec_id=$(cat out.requests.txt | jq '.headers."User-Agent".[0]' | grep -o 'cmd-exec-id/[^ ]*' | cut -d '/' -f2)
 bundle_uuid=$(cat out.databricks.yml | grep -o 'uuid: [^\n]*' | cut -d ' ' -f2)
 
 update_file.py out.requests.txt $cmd_exec_id  '[CMD-EXEC-ID]'
