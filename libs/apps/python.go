@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -122,7 +123,12 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 
 	// if we are in a virtual environment, we need to change the command to point to the python binary in the virtual environment
 	if os.Getenv("VIRTUAL_ENV") != "" || p.venv {
-		spec.Command[0] = filepath.Join(p.venvPath(), "bin", spec.Command[0])
+		// On windows, the python binary is in Scripts directory
+		if runtime.GOOS == "windows" {
+			spec.Command[0] = filepath.Join(p.venvPath(), "Scripts", spec.Command[0])
+		} else {
+			spec.Command[0] = filepath.Join(p.venvPath(), "bin", spec.Command[0])
+		}
 	}
 
 	return spec.Command, nil
