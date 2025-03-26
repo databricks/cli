@@ -1,0 +1,16 @@
+bundle:
+  name: my_project
+
+sync: { paths: [ ] } # don't need to copy files
+
+experimental:
+  python:
+    resources:
+      - "resources:load_resources"
+    mutators:
+      - "mutators:update_pipeline"
+
+resources:
+  pipelines:
+    my_pipeline_2:
+      name: "My Pipeline 2"
