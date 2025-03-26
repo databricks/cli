@@ -1,0 +1,37 @@
+bundle:
+  name: wheel-task
+
+workspace:
+  root_path: "~/.bundle/$UNIQUE_NAME"
+
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+    files:
+      - source: dist/*.whl
+    dynamic_version: true
+
+resources:
+  clusters:
+    test_cluster:
+      cluster_name: "test-cluster-$UNIQUE_NAME"
+      spark_version: "$DEFAULT_SPARK_VERSION"
+      node_type_id: "$NODE_TYPE_ID"
+      num_workers: 1
+      data_security_mode: $DATA_SECURITY_MODE
+
+  jobs:
+    some_other_job:
+      name: "[${bundle.target}] Test Wheel Job $UNIQUE_NAME"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "${resources.clusters.test_cluster.cluster_id}"
+          python_wheel_task:
+            package_name: my_test_code
+            entry_point: run
+            parameters:
+              - "one"
+              - "two"
+          libraries:
+            - whl: ./dist/*.whl
