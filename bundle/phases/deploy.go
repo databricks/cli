@@ -249,7 +249,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	for _, job := range b.Config.Resources.Jobs {
 		// Do not include missing IDs in telemetry. We can still detect them
 		// by comparing against the resource count.
-		if job.ID == "" {
+		if job == nil || job.ID == "" {
 			continue
 		}
 		jobsIds = append(jobsIds, job.ID)
@@ -258,7 +258,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	for _, pipeline := range b.Config.Resources.Pipelines {
 		// Do not include missing IDs in telemetry. We can still detect them
 		// by comparing against the resource count.
-		if pipeline.ID == "" {
+		if pipeline == nil || pipeline.ID == "" {
 			continue
 		}
 		pipelineIds = append(pipelineIds, pipeline.ID)
@@ -267,7 +267,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	for _, cluster := range b.Config.Resources.Clusters {
 		// Do not include missing IDs in telemetry. We can still detect them
 		// by comparing against the resource count.
-		if cluster.ID == "" {
+		if cluster == nil || cluster.ID == "" {
 			continue
 		}
 		clusterIds = append(clusterIds, cluster.ID)
@@ -276,7 +276,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	for _, dashboard := range b.Config.Resources.Dashboards {
 		// Do not include missing IDs in telemetry. We can still detect them
 		// by comparing against the resource count.
-		if dashboard.ID == "" {
+		if dashboard == nil || dashboard.ID == "" {
 			continue
 		}
 		dashboardIds = append(dashboardIds, dashboard.ID)
