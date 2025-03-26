@@ -89,6 +89,22 @@ func (p Path) HasPrefix(q Path) bool {
 	return true
 }
 
+// HasSuffix returns true if the path has the specified suffix.
+// The empty path is a suffix of all paths.
+func (p Path) HasSuffix(q Path) bool {
+	pl := len(p)
+	ql := len(q)
+	if pl < ql {
+		return false
+	}
+	for i := range ql {
+		if p[pl-ql+i] != q[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // String returns a string representation of the path.
 func (p Path) String() string {
 	var buf bytes.Buffer

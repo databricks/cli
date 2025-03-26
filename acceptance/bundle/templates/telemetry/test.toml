@@ -14,6 +14,10 @@ Old = 'execution_time_ms\\\":\d{1,5},'
 New = 'execution_time_ms\":\"SMALL_INT\",'
 
 [[Repls]]
+Old = '"execution_time_ms": \d{1,5},'
+New = '"execution_time_ms": SMALL_INT,'
+
+[[Repls]]
 Old = " upstream/[A-Za-z0-9.-]+"
 New = ""
 

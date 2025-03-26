@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspace"
 	"github.com/databricks/databricks-sdk-go/config"
 	"gopkg.in/ini.v1"
 )
@@ -67,7 +68,7 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 			return false
 		}
 		// Check if this section matches the normalized host
-		return normalizeHost(host) == normalizeHost(cfg.Host)
+		return workspace.MatchHost(host, cfg.Host)
 	})
 	if err == errNoMatchingProfiles {
 		section, err = configFile.NewSection(cfg.Profile)
@@ -138,7 +139,7 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	}
 
 	// Normalized version of the configured host.
-	host := normalizeHost(cfg.Host)
+	host := workspace.NormalizeHost(cfg.Host)
 	match, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
 		return profile == s.Name()
 	})
@@ -146,8 +147,8 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 		return err
 	}
 
-	hostFromProfile := normalizeHost(match.Key("host").Value())
-	if hostFromProfile != "" && host != "" && hostFromProfile != host {
+	hostFromProfile := workspace.NormalizeHost(match.Key("host").Value())
+	if hostFromProfile != "" && host != "" && !workspace.MatchHost(hostFromProfile, host) {
 		return fmt.Errorf("config host mismatch: profile uses host %s, but CLI configured to use %s", hostFromProfile, host)
 	}
 

@@ -6,4 +6,4 @@ Response.Body = '''
     "numProtoSuccess": 2
 }
 '''
-DelaySeconds = 5
+Delay = "5s"
