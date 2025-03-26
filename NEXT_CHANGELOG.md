@@ -12,5 +12,6 @@
 * Added support for dashboards in deployment bind/unbind commands ([#2516](https://github.com/databricks/cli/pull/2516))
 * Added support for registered models in deployment bind/unbind commands ([#2556](https://github.com/databricks/cli/pull/2556))
 * Added a mismatch check when host is defined in config and as an env variable ([#2549](https://github.com/databricks/cli/pull/2549))
+* New attribute on artifacts entries: `dynamic_version`. When set to true, it patches the wheel with dynamic version suffix so it is always used by Databricks environments, even if original wheel version is the same. Intended for development loop on interactive clusters. ([#2520](https://github.com/databricks/cli/pull/2520))
 
 ### API Changes

@@ -195,6 +195,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// mutator is part of the deploy step rather than validate.
 		libraries.ExpandGlobReferences(),
 		libraries.CheckForSameNameLibraries(),
+		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
+		libraries.SwitchToPatchedWheels(),
 		libraries.Upload(),
 		trampoline.TransformWheelTask(),
 		files.Upload(outputHandler),
