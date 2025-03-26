@@ -48,7 +48,7 @@ func TestGetFilerForLibrariesCleanupValidWsfs(t *testing.T) {
 
 	client, uploadPath, diags := GetFilerForLibrariesCleanup(context.Background(), b)
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "/foo/bar/artifacts/", uploadPath)
+	assert.Equal(t, "/foo/bar/artifacts", uploadPath)
 
 	assert.IsType(t, &filer.WorkspaceFilesClient{}, client)
 }
@@ -88,7 +88,7 @@ func TestGetFilerForLibrariesCleanupValidUcVolume(t *testing.T) {
 
 	client, uploadPath, diags := GetFilerForLibrariesCleanup(context.Background(), b)
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "/Volumes/main/my_schema/my_volume/", uploadPath)
+	assert.Equal(t, "/Volumes/main/my_schema/my_volume", uploadPath)
 
 	assert.IsType(t, &filer.FilesClient{}, client)
 }

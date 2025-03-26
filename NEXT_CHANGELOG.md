@@ -2,6 +2,9 @@
 
 ## Release v0.245.0
 
+### Notable Changes
+Previously ".internal" folder under artifact_path was not cleaned up as expected. In this release this behaviour is fixed and now DABs cleans up this folder before uploading artifacts to it.
+
 ### CLI
 
 ### Bundles
@@ -12,5 +15,6 @@
 * Added support for dashboards in deployment bind/unbind commands ([#2516](https://github.com/databricks/cli/pull/2516))
 * Added support for registered models in deployment bind/unbind commands ([#2556](https://github.com/databricks/cli/pull/2556))
 * Added a mismatch check when host is defined in config and as an env variable ([#2549](https://github.com/databricks/cli/pull/2549))
+* Fixed cleaning up artifact path .internal folder ([#2572](https://github.com/databricks/cli/pull/2572))
 
 ### API Changes
