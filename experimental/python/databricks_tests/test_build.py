@@ -10,6 +10,7 @@ from databricks.bundles.build import (
     _Conf,
     _load_object,
     _load_resources,
+    _load_resources_from_input,
     _parse_args,
     _parse_bundle_info,
     _relativize_location,
@@ -25,7 +26,9 @@ from databricks.bundles.core import (
     Severity,
     job_mutator,
 )
+from databricks.bundles.core._resource_mutator import pipeline_mutator
 from databricks.bundles.jobs import Job
+from databricks.bundles.pipelines._models.pipeline import Pipeline
 
 
 def test_write_diagnostics():
@@ -200,13 +203,17 @@ def test_append_resources():
             "jobs": {
                 "job_0": {"name": "job_0"},
                 "job_1": {"name": "job_1"},
-            }
+            },
+            "pipelines": {
+                "pipeline_0": {"name": "pipeline_0"},
+            },
         },
     }
 
     resources = Resources()
     resources.add_job("job_1", Job(name="new name", description="new description"))
     resources.add_job("job_2", Job(name="job_2"))
+    resources.add_pipeline("pipeline_1", Pipeline(name="pipeline_1"))
 
     out = _append_resources(input, resources)
 
@@ -217,8 +224,41 @@ def test_append_resources():
                 "job_0": {"name": "job_0"},
                 "job_1": {"name": "new name", "description": "new description"},
                 "job_2": {"name": "job_2"},
-            }
+            },
+            "pipelines": {
+                "pipeline_0": {"name": "pipeline_0"},
+                "pipeline_1": {"name": "pipeline_1"},
+            },
         },
+    }
+
+
+def test_load_resources_from_input():
+    resources, diagnostics = _load_resources_from_input(
+        {
+            "resources": {
+                "jobs": {
+                    "job_0": {"name": "Job 0"},
+                    "job_1": {"name": "Job 1"},
+                },
+                "pipelines": {
+                    "pipeline_0": {"name": "Pipeline 0"},
+                    "pipeline_1": {"name": "Pipeline 1"},
+                },
+            },
+        },
+    )
+
+    assert diagnostics == Diagnostics()
+
+    assert resources.jobs == {
+        "job_0": Job(name="Job 0"),
+        "job_1": Job(name="Job 1"),
+    }
+
+    assert resources.pipelines == {
+        "pipeline_0": Pipeline(name="Pipeline 0"),
+        "pipeline_1": Pipeline(name="Pipeline 1"),
     }
 
 
@@ -302,7 +342,7 @@ def test_conf_from_dict():
     )
 
 
-def test_mutators():
+def test_job_mutators():
     bundle = Bundle(target="default")
     resources = Resources()
     resources.add_job("job_0", Job(tags={"tag": "value"}))
@@ -335,6 +375,33 @@ def test_mutators():
         "second": "tag",
         "tag": "value",
     }
+
+
+def test_pipeline_mutators():
+    bundle = Bundle(target="default")
+    resources = Resources()
+    resources.add_pipeline("pipeline_0", {"name": "My Pipeline"})
+
+    @pipeline_mutator
+    def update_pipeline_name(bundle: Bundle, pipeline: Pipeline) -> Pipeline:
+        name = bundle.resolve_variable(pipeline.name)
+
+        return replace(pipeline, name=f"{name} (updated)")
+
+    new_resources, diagnostics = _apply_mutators(
+        bundle=bundle,
+        resources=resources,
+        mutator_functions=[update_pipeline_name],
+    )
+
+    expected_location = Location.from_callable(update_pipeline_name.function)
+
+    assert not diagnostics.has_error()
+    assert (
+        new_resources._locations[("resources", "pipelines", "pipeline_0")]
+        == expected_location
+    )
+    assert new_resources.pipelines["pipeline_0"].name == "My Pipeline (updated)"
 
 
 def test_mutators_unmodified():
