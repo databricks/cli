@@ -17,7 +17,7 @@ resources:
 
 >>> [CLI] bundle deployment bind cluster1 [CLUSTER-ID] --auto-approve
 Updating deployment state...
-Successfully bound databricks_cluster with an id '[CLUSTER-ID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound cluster with an id '[CLUSTER-ID]'. Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deployment unbind cluster1
 Updating deployment state...

@@ -62,6 +62,10 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 		}
 		visited[k] = true
 
+		if v.Deprecated {
+			continue
+		}
+
 		v = resolveRefs(v, refs)
 		node := rootNode{
 			Title:       k,
@@ -173,7 +177,7 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[stri
 			typeString = "Any"
 		}
 		var reference string
-		if isReferenceType(v, refs, ownFields) && !circular {
+		if isReferenceType(v, refs, ownFields) && !circular && !v.Deprecated {
 			reference = prefix + "." + k
 		}
 		attributes = append(attributes, attributeNode{
@@ -190,6 +194,9 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[stri
 }
 
 func getDescription(s *jsonschema.Schema) string {
+	if s.DeprecationMessage != "" {
+		return s.DeprecationMessage
+	}
 	if s.MarkdownDescription != "" {
 		return s.MarkdownDescription
 	}
