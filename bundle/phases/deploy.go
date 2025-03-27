@@ -245,8 +245,18 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		log.Debugf(ctx, "failed to count resources: %s", err)
 	}
 
+	// If there are more than 1 thousand of a resource type, do not
+	// include more resources.
+	// Since we have a timeout of 3 seconds, we cap the maximum number of IDs
+	// we send in a single request to have reliable telemetry.
+	countLimit := 10000
+
 	jobsIds := make([]string, 0)
 	for _, job := range b.Config.Resources.Jobs {
+		if len(jobsIds) >= countLimit {
+			break
+		}
+
 		// Do not include missing IDs in telemetry. We can still detect them
 		// by comparing against the resource count.
 		if job == nil || job.ID == "" {
@@ -256,6 +266,10 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	}
 	pipelineIds := make([]string, 0)
 	for _, pipeline := range b.Config.Resources.Pipelines {
+		if len(pipelineIds) >= countLimit {
+			break
+		}
+
 		// Do not include missing IDs in telemetry. We can still detect them
 		// by comparing against the resource count.
 		if pipeline == nil || pipeline.ID == "" {
@@ -265,6 +279,10 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	}
 	clusterIds := make([]string, 0)
 	for _, cluster := range b.Config.Resources.Clusters {
+		if len(clusterIds) >= countLimit {
+			break
+		}
+
 		// Do not include missing IDs in telemetry. We can still detect them
 		// by comparing against the resource count.
 		if cluster == nil || cluster.ID == "" {
@@ -274,6 +292,10 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	}
 	dashboardIds := make([]string, 0)
 	for _, dashboard := range b.Config.Resources.Dashboards {
+		if len(dashboardIds) >= countLimit {
+			break
+		}
+
 		// Do not include missing IDs in telemetry. We can still detect them
 		// by comparing against the resource count.
 		if dashboard == nil || dashboard.ID == "" {
