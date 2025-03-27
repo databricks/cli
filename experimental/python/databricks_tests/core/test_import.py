@@ -18,6 +18,7 @@ def reset_sys_modules():
             if is_subpackage(module, databricks.bundles):
                 del sys.modules[module]
 
+        assert databricks.bundles.__package__
         del sys.modules[databricks.bundles.__package__]
 
         yield
