@@ -5,5 +5,5 @@ Cloud = false # tests don't interact with APIs
 UV_ARGS = [
   "--with databricks-bundles==0.7.3",
   # NB: test runner doesn't support substitutions, they are expanded in the script
-  "--with [DATABRICKS_BUNDLES_WHEEL]",
+  "--with [DATABRICKS_BUNDLES_WHEEL] --no-cache",
 ]
