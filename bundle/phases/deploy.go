@@ -235,6 +235,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostDeploy)))
 }
 
+// If there are more than 1 thousand of a resource type, do not
+// include more resources.
+// Since we have a timeout of 3 seconds, we cap the maximum number of IDs
+// we send in a single request to have reliable telemetry.
+const ResourceIdLimit = 1000
+
 func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -245,15 +251,9 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		log.Debugf(ctx, "failed to count resources: %s", err)
 	}
 
-	// If there are more than 1 thousand of a resource type, do not
-	// include more resources.
-	// Since we have a timeout of 3 seconds, we cap the maximum number of IDs
-	// we send in a single request to have reliable telemetry.
-	resourceIdLimit := 1000
-
-	jobsIds := make([]string, 0)
+	var jobsIds []string
 	for _, job := range b.Config.Resources.Jobs {
-		if len(jobsIds) >= resourceIdLimit {
+		if len(jobsIds) >= ResourceIdLimit {
 			break
 		}
 
@@ -264,9 +264,9 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		}
 		jobsIds = append(jobsIds, job.ID)
 	}
-	pipelineIds := make([]string, 0)
+	var pipelineIds []string
 	for _, pipeline := range b.Config.Resources.Pipelines {
-		if len(pipelineIds) >= resourceIdLimit {
+		if len(pipelineIds) >= ResourceIdLimit {
 			break
 		}
 
@@ -277,9 +277,9 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		}
 		pipelineIds = append(pipelineIds, pipeline.ID)
 	}
-	clusterIds := make([]string, 0)
+	var clusterIds []string
 	for _, cluster := range b.Config.Resources.Clusters {
-		if len(clusterIds) >= resourceIdLimit {
+		if len(clusterIds) >= ResourceIdLimit {
 			break
 		}
 
@@ -290,9 +290,9 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		}
 		clusterIds = append(clusterIds, cluster.ID)
 	}
-	dashboardIds := make([]string, 0)
+	var dashboardIds []string
 	for _, dashboard := range b.Config.Resources.Dashboards {
-		if len(dashboardIds) >= resourceIdLimit {
+		if len(dashboardIds) >= ResourceIdLimit {
 			break
 		}
 
