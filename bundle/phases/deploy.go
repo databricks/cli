@@ -249,7 +249,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	// include more resources.
 	// Since we have a timeout of 3 seconds, we cap the maximum number of IDs
 	// we send in a single request to have reliable telemetry.
-	countLimit := 10000
+	countLimit := 1000
 
 	jobsIds := make([]string, 0)
 	for _, job := range b.Config.Resources.Jobs {
