@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -137,7 +138,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
-		return err
+		return renderError(ctx, cfg, err)
 	}
 
 	ctx = cmdctx.SetAccountClient(ctx, a)
@@ -220,7 +221,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	w, err := workspaceClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
-		return err
+		return renderError(ctx, cfg, err)
 	}
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, w)
@@ -305,4 +306,9 @@ func emptyHttpRequest(ctx context.Context) *http.Request {
 		panic(err)
 	}
 	return req
+}
+
+func renderError(ctx context.Context, cfg *config.Config, err error) error {
+	err, _ = auth.RewriteAuthError(ctx, cfg.Host, cfg.AccountID, cfg.Profile, err)
+	return err
 }

@@ -22,14 +22,14 @@ Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
 GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	}
 
-	var perisistentAuth auth.PersistentAuth
-	cmd.PersistentFlags().StringVar(&perisistentAuth.Host, "host", perisistentAuth.Host, "Databricks Host")
-	cmd.PersistentFlags().StringVar(&perisistentAuth.AccountID, "account-id", perisistentAuth.AccountID, "Databricks Account ID")
+	var authArguments auth.AuthArguments
+	cmd.PersistentFlags().StringVar(&authArguments.Host, "host", "", "Databricks Host")
+	cmd.PersistentFlags().StringVar(&authArguments.AccountID, "account-id", "", "Databricks Account ID")
 
 	cmd.AddCommand(newEnvCommand())
-	cmd.AddCommand(newLoginCommand(&perisistentAuth))
+	cmd.AddCommand(newLoginCommand(&authArguments))
 	cmd.AddCommand(newProfilesCommand())
-	cmd.AddCommand(newTokenCommand(&perisistentAuth))
+	cmd.AddCommand(newTokenCommand(&authArguments))
 	cmd.AddCommand(newDescribeCommand())
 	return cmd
 }
