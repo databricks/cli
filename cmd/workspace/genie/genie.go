@@ -37,6 +37,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newCreateMessage())
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
+	cmd.AddCommand(newGenerateDownloadFullQueryResult())
 	cmd.AddCommand(newGetMessage())
 	cmd.AddCommand(newGetMessageAttachmentQueryResult())
 	cmd.AddCommand(newGetMessageQueryResult())
@@ -282,6 +283,75 @@ func newExecuteMessageQuery() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range executeMessageQueryOverrides {
 		fn(cmd, &executeMessageQueryReq)
+	}
+
+	return cmd
+}
+
+// start generate-download-full-query-result command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var generateDownloadFullQueryResultOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGenerateDownloadFullQueryResultRequest,
+)
+
+func newGenerateDownloadFullQueryResult() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var generateDownloadFullQueryResultReq dashboards.GenieGenerateDownloadFullQueryResultRequest
+
+	// TODO: short flags
+
+	cmd.Use = "generate-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
+	cmd.Short = `Generate full query result download.`
+	cmd.Long = `Generate full query result download.
+  
+  Initiate full SQL query result download and obtain a transient ID for tracking
+  the download progress. This call initiates a new SQL execution to generate the
+  query result.
+
+  Arguments:
+    SPACE_ID: Space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+    ATTACHMENT_ID: Attachment ID`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		generateDownloadFullQueryResultReq.SpaceId = args[0]
+		generateDownloadFullQueryResultReq.ConversationId = args[1]
+		generateDownloadFullQueryResultReq.MessageId = args[2]
+		generateDownloadFullQueryResultReq.AttachmentId = args[3]
+
+		response, err := w.Genie.GenerateDownloadFullQueryResult(ctx, generateDownloadFullQueryResultReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range generateDownloadFullQueryResultOverrides {
+		fn(cmd, &generateDownloadFullQueryResultReq)
 	}
 
 	return cmd
