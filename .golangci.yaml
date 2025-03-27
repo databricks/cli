@@ -58,7 +58,7 @@ linters-settings:
         - ruleguard
       settings:
         ruleguard:
-          rules: '${base-path}/libs/ruleguard/rule-*.go'
+          rules: 'libs/gorules/rule_*.go'
           failOn: all
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/

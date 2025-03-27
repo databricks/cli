@@ -28,6 +28,7 @@ require (
 	github.com/spf13/pflag v1.0.6 // BSD-3-Clause
 	github.com/stretchr/testify v1.10.0 // MIT
 	github.com/wI2L/jsondiff v0.6.1 // MIT
+	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // BSD 3-Clause
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/mod v0.24.0
 	golang.org/x/oauth2 v0.28.0
@@ -38,9 +39,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 	gopkg.in/yaml.v3 v3.0.1
 )
-
-require github.com/quasilyte/go-ruleguard/dsl v0.3.22
-
 require (
 	cloud.google.com/go/auth v0.4.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
