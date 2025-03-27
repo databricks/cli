@@ -59,6 +59,8 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]*jsonschema.Schema) *j
 	description := s.Description
 	markdownDescription := s.MarkdownDescription
 	examples := getExamples(s.Examples)
+	deprecated := s.Deprecated
+	deprecationMessage := s.DeprecationMessage
 
 	for node.Reference != nil {
 		ref := getRefType(node)
@@ -85,6 +87,8 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]*jsonschema.Schema) *j
 	newNode.Description = description
 	newNode.MarkdownDescription = markdownDescription
 	newNode.Examples = examples
+	newNode.Deprecated = deprecated
+	newNode.DeprecationMessage = deprecationMessage
 
 	return &newNode
 }
