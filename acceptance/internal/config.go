@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -191,27 +190,13 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 type mapTransformer struct{}
 
 func (t mapTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
-	if typ == reflect.TypeOf(map[string][]string{}) {
+	if typ.Kind() == reflect.Map {
 		return func(dst, src reflect.Value) error {
-			srcValues := src.Interface().(map[string][]string)
-			dstValues := dst.Interface().(map[string][]string)
-			newValues := make(map[string][]string)
-
-			for key, values := range dstValues {
-				newValues[key] = values
+			if dst.IsNil() {
+				dst.Set(reflect.MakeMap(typ))
 			}
 
-			for key, values := range srcValues {
-				newValues[key] = values
-			}
-
-			dst.Set(reflect.ValueOf(newValues))
-
-			return nil
-		}
-	} else if typ.Kind() == reflect.Map {
-		return func(dst, src reflect.Value) error {
-			return fmt.Errorf("unsupported map type %s", typ)
+			return mergo.Merge(dst.Addr().Interface(), src.Interface(), mergo.WithOverride)
 		}
 	}
 
