@@ -249,11 +249,11 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	// include more resources.
 	// Since we have a timeout of 3 seconds, we cap the maximum number of IDs
 	// we send in a single request to have reliable telemetry.
-	countLimit := 1000
+	resourceIdLimit := 1000
 
 	jobsIds := make([]string, 0)
 	for _, job := range b.Config.Resources.Jobs {
-		if len(jobsIds) >= countLimit {
+		if len(jobsIds) >= resourceIdLimit {
 			break
 		}
 
@@ -266,7 +266,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	}
 	pipelineIds := make([]string, 0)
 	for _, pipeline := range b.Config.Resources.Pipelines {
-		if len(pipelineIds) >= countLimit {
+		if len(pipelineIds) >= resourceIdLimit {
 			break
 		}
 
@@ -279,7 +279,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	}
 	clusterIds := make([]string, 0)
 	for _, cluster := range b.Config.Resources.Clusters {
-		if len(clusterIds) >= countLimit {
+		if len(clusterIds) >= resourceIdLimit {
 			break
 		}
 
@@ -292,7 +292,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	}
 	dashboardIds := make([]string, 0)
 	for _, dashboard := range b.Config.Resources.Dashboards {
-		if len(dashboardIds) >= countLimit {
+		if len(dashboardIds) >= resourceIdLimit {
 			break
 		}
 
