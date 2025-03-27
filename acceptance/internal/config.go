@@ -1,8 +1,10 @@
 package internal
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
@@ -145,7 +147,14 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 
 	for _, cfgName := range configs[1:] {
 		cfg := DoLoadConfig(t, cfgName)
-		err := mergo.Merge(&result, cfg, mergo.WithOverride, mergo.WithoutDereference, mergo.WithAppendSlice)
+		err := mergo.Merge(
+			&result,
+			cfg,
+			mergo.WithOverride,
+			mergo.WithoutDereference,
+			mergo.WithAppendSlice,
+			mergo.WithTransformers(mapTransformer{}),
+		)
 		if err != nil {
 			t.Fatalf("Error during config merge: %s: %s", cfgName, err)
 		}
@@ -172,6 +181,41 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	}
 
 	return config
+}
+
+// mapTransformer is a mergo transformer that merges two maps
+// by overriding values in the destination map with values from the source map.
+//
+// In our case, source map is located in test directory, and destination map is located
+// in a parent directory.
+type mapTransformer struct{}
+
+func (t mapTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+	if typ == reflect.TypeOf(map[string][]string{}) {
+		return func(dst, src reflect.Value) error {
+			srcValues := src.Interface().(map[string][]string)
+			dstValues := dst.Interface().(map[string][]string)
+			newValues := make(map[string][]string)
+
+			for key, values := range dstValues {
+				newValues[key] = values
+			}
+
+			for key, values := range srcValues {
+				newValues[key] = values
+			}
+
+			dst.Set(reflect.ValueOf(newValues))
+
+			return nil
+		}
+	} else if typ.Kind() == reflect.Map {
+		return func(dst, src reflect.Value) error {
+			return fmt.Errorf("unsupported map type %s", typ)
+		}
+	}
+
+	return nil
 }
 
 // This function takes EnvMatrix and expands into a slice of environment configurations.
