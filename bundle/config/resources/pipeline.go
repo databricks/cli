@@ -38,6 +38,16 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	return true, nil
 }
 
+func (j *Pipeline) ResourceDescription() ResourceDescription {
+	return ResourceDescription{
+		SingularName:          "pipeline",
+		PluralName:            "pipelines",
+		SingularTitle:         "Pipeline",
+		PluralTitle:           "Pipelines",
+		TerraformResourceName: "databricks_pipeline",
+	}
+}
+
 func (p *Pipeline) TerraformResourceName() string {
 	return "databricks_pipeline"
 }

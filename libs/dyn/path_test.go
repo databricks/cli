@@ -58,8 +58,37 @@ func TestPathHasPrefix(t *testing.T) {
 	p2 := dyn.NewPath(dyn.Key("bar"), dyn.Index(2))
 	assert.False(t, p1.HasPrefix(p2), "expected %q to not have prefix %q", p1, p2)
 
-	p3 := dyn.NewPath(dyn.Key("foo"))
-	assert.True(t, p1.HasPrefix(p3), "expected %q to have prefix %q", p1, p3)
+	p3 := dyn.NewPath(dyn.Key("foo"), dyn.Index(1), dyn.Key("bar"))
+	assert.False(t, p1.HasPrefix(p3), "expected %q to not have prefix %q", p1, p3)
+
+	p4 := dyn.NewPath(dyn.Key("foo"), dyn.Index(1))
+	assert.True(t, p1.HasPrefix(p4), "expected %q to have prefix %q", p1, p4)
+
+	p5 := dyn.NewPath(dyn.Key("foo"))
+	assert.True(t, p1.HasPrefix(p5), "expected %q to have prefix %q", p1, p5)
+}
+
+func TestPathHasSuffixEmpty(t *testing.T) {
+	empty := dyn.EmptyPath
+	nonEmpty := dyn.NewPath(dyn.Key("foo"))
+	assert.True(t, empty.HasSuffix(empty))
+	assert.True(t, nonEmpty.HasSuffix(empty))
+	assert.False(t, empty.HasSuffix(nonEmpty))
+}
+
+func TestPathHasSuffix(t *testing.T) {
+	p1 := dyn.NewPath(dyn.Key("foo"), dyn.Index(1))
+	p2 := dyn.NewPath(dyn.Key("bar"), dyn.Index(2))
+	assert.False(t, p1.HasSuffix(p2), "expected %q to not have suffix %q", p1, p2)
+
+	p3 := dyn.NewPath(dyn.Index(1))
+	assert.True(t, p1.HasSuffix(p3), "expected %q to have suffix %q", p1, p3)
+
+	p4 := dyn.NewPath(dyn.Key("foo"), dyn.Index(1))
+	assert.True(t, p1.HasSuffix(p4), "expected %q to have suffix %q", p1, p4)
+
+	p5 := dyn.NewPath(dyn.Key("bar"), dyn.Index(2), dyn.Key("baz"))
+	assert.False(t, p1.HasSuffix(p5), "expected %q to not have suffix %q", p1, p5)
 }
 
 func TestPathString(t *testing.T) {

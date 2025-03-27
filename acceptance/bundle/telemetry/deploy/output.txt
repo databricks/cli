@@ -1,0 +1,38 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/rabbit/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> cat out.requests.txt
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[CMD-EXEC-ID]",
+        "version": "[DEV_VERSION]",
+        "command": "bundle_deploy",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "bundle_deploy_event": {
+        "bundle_uuid": "[BUNDLE_UUID]",
+        "resource_count": 5,
+        "resource_job_count": 3,
+        "resource_pipeline_count": 2,
+        "resource_job_ids": [
+          "1",
+          "2",
+          "3"
+        ],
+        "resource_pipeline_ids": [
+          "[UUID]",
+          "[UUID]"
+        ]
+      }
+    }
+  }
+}

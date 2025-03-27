@@ -1,0 +1,5 @@
+[EnvMatrix]
+DATA_SECURITY_MODE = [
+    "USER_ISOLATION",
+    "SINGLE_USER",
+]
