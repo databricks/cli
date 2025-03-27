@@ -3,9 +3,11 @@ from dataclasses import replace
 from databricks.bundles.core import job_mutator, variables, Variable
 from databricks.bundles.jobs import Job
 
+
 @variables
 class Variables:
     string_variable: Variable[str]
+
 
 @job_mutator
 def test_variables_1(job: Job) -> Job:

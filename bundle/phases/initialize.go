@@ -3,7 +3,6 @@ package phases
 import (
 	"context"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
@@ -15,6 +14,8 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
+
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
@@ -25,11 +26,20 @@ import (
 func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	log.Info(ctx, "Phase: initialize")
 
-	return bundle.ApplySeq(ctx, b,
-		validate.AllResourcesHaveValues(),
-
+	nonIdempotentMutators0 := []bundle.Mutator{
 		// Update all path fields in the sync block to be relative to the bundle root path.
 		mutator.RewriteSyncPaths(),
+	}
+
+	// Mutator is idempotent, if it's idempotent on all possible inputs. For a given input:
+	//
+	// - if mutator returns an error, it's idempotent because errors interrupt execution
+	// - if mutator returns a warning, it should return 'diag = nil' for its output
+	// - if mutator is called for its output, it shouldn't change it
+
+	// idempotentMutators are
+	idempotentMutators := []bundle.Mutator{
+		validate.AllResourcesHaveValues(),
 
 		// Configure the default sync path to equal the bundle root if not explicitly configured.
 		// By default, this means all files in the bundle root directory are synchronized.
@@ -57,27 +67,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		mutator.SetVariables(),
 
-		// PythonMutator operates on a bundle where all variable references are resolved
 		mutator.ResolveVariableReferencesInLookup(),
 		mutator.ResolveResourceReferences(),
-		mutator.ResolveVariableReferences(
-			"bundle",
-			"workspace",
-			"variables",
-		),
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
-		// PythonMutatorPhaseLoadResources can add new resources into a bundle,
-		// resolve variable references once again
-		mutator.ResolveVariableReferences(
-			"bundle",
-			"workspace",
-			"variables",
-		),
-
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
-		// PythonMutatorPhaseApplyMutators can mutate resources and add new variables into a bundle,
-		// resolve variable references once again
 		mutator.ResolveVariableReferences(
 			"bundle",
 			"workspace",
@@ -103,23 +94,42 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.DefaultQueueing(),
 		mutator.ExpandPipelineGlobPaths(),
 
+		permissions.ApplyBundlePermissions(),
+		permissions.FilterCurrentUser(),
+	}
+
+	initializeBundle := func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		return bundle.ApplySeq(ctx, b, idempotentMutators...)
+	}
+
+	nonIdempotentMutators := []bundle.Mutator{
+		permissions.ValidateSharedRootPermissions(),
+
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit, initializeBundle),
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources, initializeBundle),
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators, initializeBundle),
+
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
 		mutator.ConfigureWSFS(),
 
 		mutator.TranslatePaths(),
 		trampoline.WrapperWarning(),
 
+		// artifacts.Prepare should be done after ConfigureWSFS and TranslatePaths
 		artifacts.Prepare(),
 
 		apps.Validate(),
 
-		permissions.ValidateSharedRootPermissions(),
-		permissions.ApplyBundlePermissions(),
-		permissions.FilterCurrentUser(),
-
+		// FIXME can't be part of idempotentMutators "annotate" mutator set deployment field that
+		// is not part of the bundle schema, and can't be input into Python code
 		metadata.AnnotateJobs(),
 		metadata.AnnotatePipelines(),
+
 		terraform.Initialize(),
 		scripts.Execute(config.ScriptPostInit),
-	)
+	}
+
+	mutators := append(nonIdempotentMutators0, append(idempotentMutators, nonIdempotentMutators...)...)
+
+	return bundle.ApplySeq(ctx, b, mutators...)
 }

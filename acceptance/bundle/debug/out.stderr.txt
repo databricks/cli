@@ -35,9 +35,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=PrependWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=RewriteWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=SetVariables
-10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(init)
-10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
-10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
@@ -56,15 +53,18 @@
 10:07:59 Debug: Apply pid=12345 mutator=ApplyPresets
 10:07:59 Debug: Apply pid=12345 mutator=DefaultQueueing
 10:07:59 Debug: Apply pid=12345 mutator=ExpandPipelineGlobPaths
+10:07:59 Debug: Apply pid=12345 mutator=ApplyBundlePermissions
+10:07:59 Debug: Apply pid=12345 mutator=FilterCurrentUserFromPermissions
+10:07:59 Debug: Apply pid=12345 mutator=ValidateSharedRootPermissions
+10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(init)
+10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
+10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
 10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
 10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonWrapperWarning
 10:07:59 Debug: Apply pid=12345 mutator=artifacts.Prepare
 10:07:59 Info: No local tasks in databricks.yml config, skipping auto detect pid=12345 mutator=artifacts.Prepare
 10:07:59 Debug: Apply pid=12345 mutator=apps.Validate
-10:07:59 Debug: Apply pid=12345 mutator=ValidateSharedRootPermissions
-10:07:59 Debug: Apply pid=12345 mutator=ApplyBundlePermissions
-10:07:59 Debug: Apply pid=12345 mutator=FilterCurrentUserFromPermissions
 10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotateJobs
 10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotatePipelines
 10:07:59 Debug: Apply pid=12345 mutator=terraform.Initialize

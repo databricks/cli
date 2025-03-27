@@ -17,12 +17,17 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-type applyPresets struct{}
+type applyPresets struct {
+	updatedJobs map[string]struct{}
+}
 
 // Apply all presets, e.g. the prefix presets that
 // adds a prefix to all names of all resources.
 func ApplyPresets() *applyPresets {
-	return &applyPresets{}
+	// TODO others
+	return &applyPresets{
+		updatedJobs: map[string]struct{}{},
+	}
 }
 
 type Tag struct {
@@ -48,6 +53,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Jobs presets: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
 	for key, j := range r.Jobs {
+		if _, ok := m.updatedJobs[key]; ok {
+			continue
+		} else {
+			m.updatedJobs[key] = struct{}{}
+		}
+
 		if j.JobSettings == nil {
 			diags = diags.Extend(diag.Errorf("job %s is not defined", key))
 			continue

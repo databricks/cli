@@ -108,12 +108,14 @@ const (
 )
 
 type pythonMutator struct {
-	phase phase
+	phase            phase
+	initializeBundle func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 }
 
-func PythonMutator(phase phase) bundle.Mutator {
+func PythonMutator(phase phase, initializeBundle func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics) bundle.Mutator {
 	return &pythonMutator{
-		phase: phase,
+		phase:            phase,
+		initializeBundle: initializeBundle,
 	}
 }
 
@@ -235,7 +237,9 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return mutateDiags
 	}
 
-	return mutateDiags.Extend(diag.FromErr(err))
+	initialDiags := m.initializeBundle(ctx, b)
+
+	return mutateDiags.Extend(diag.FromErr(err)).Extend(initialDiags)
 }
 
 func createCacheDir(ctx context.Context) (string, error) {
