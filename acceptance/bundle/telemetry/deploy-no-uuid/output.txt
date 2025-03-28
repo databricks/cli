@@ -22,6 +22,17 @@ Deployment complete!
         "bundle_uuid": "[ZERO_UUID]",
         "resource_count": 1,
         "resource_job_count": 1,
+        "resource_pipeline_count": 0,
+        "resource_model_count": 0,
+        "resource_experiment_count": 0,
+        "resource_model_serving_endpoint_count": 0,
+        "resource_registered_model_count": 0,
+        "resource_quality_monitor_count": 0,
+        "resource_schema_count": 0,
+        "resource_volume_count": 0,
+        "resource_cluster_count": 0,
+        "resource_dashboard_count": 0,
+        "resource_app_count": 0,
         "resource_job_ids": [
           "1"
         ]
