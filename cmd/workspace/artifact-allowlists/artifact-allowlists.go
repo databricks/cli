@@ -67,7 +67,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     ARTIFACT_TYPE: The artifact type of the allowlist. 
-      Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN] `
+      Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -133,7 +133,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     ARTIFACT_TYPE: The artifact type of the allowlist. 
-      Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN] `
+      Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -763,7 +763,7 @@ func newPutAcl() *cobra.Command {
     SCOPE: The name of the scope to apply permissions to.
     PRINCIPAL: The principal in which the permission is applied.
     PERMISSION: The permission level applied to the principal. 
-      Supported values: [MANAGE, READ, WRITE] `
+      Supported values: [MANAGE, READ, WRITE]`
 
 	cmd.Annotations = make(map[string]string)
 

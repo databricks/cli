@@ -355,7 +355,7 @@ func newPatchStatus() *cobra.Command {
       the configuration](#operation/patch-log-delivery-config-status) later.
       Deletion of a configuration is not supported, so disable a log delivery
       configuration that is no longer needed. 
-      Supported values: [DISABLED, ENABLED] `
+      Supported values: [DISABLED, ENABLED]`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -173,7 +173,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
     GROUP_ID: The sub-resource type (group ID) of the target resource. Note that to
       connect to workspace root storage (root DBFS), you need two endpoints, one
       for blob and one for dfs. 
-      Supported values: [blob, dfs, mysqlServer, sqlServer] `
+      Supported values: [blob, dfs, mysqlServer, sqlServer]`
 
 	cmd.Annotations = make(map[string]string)
 

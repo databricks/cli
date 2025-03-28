@@ -93,7 +93,7 @@ func newGet() *cobra.Command {
       STORAGE_CREDENTIAL,
       TABLE,
       VOLUME,
-    ] 
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -175,7 +175,7 @@ func newGetEffective() *cobra.Command {
       STORAGE_CREDENTIAL,
       TABLE,
       VOLUME,
-    ] 
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -259,7 +259,7 @@ func newUpdate() *cobra.Command {
       STORAGE_CREDENTIAL,
       TABLE,
       VOLUME,
-    ] 
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)

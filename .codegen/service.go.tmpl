@@ -209,7 +209,7 @@ func new{{.PascalName}}() *cobra.Command {
 
   Arguments:
     {{- range .RequiredPositionalArguments }}
-    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}{{- if .Entity.Enum }} {{template "supportedValuesPositionalArg" .Entity.Enum}} {{ end -}}
+    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}{{- if .Entity.Enum }} {{template "supportedValuesPositionalArg" .Entity.Enum}} {{- end -}}
     {{- end -}}
     {{- end -}}
 	`
