@@ -1,0 +1,43 @@
+Cloud = true
+Local = false
+
+# Temporarily disabling due to IsServicePrincipal/email_notifications differences.
+CloudEnvs.gcp = false
+
+Ignore = [
+    '.venv',
+]
+
+[EnvMatrix]
+UV_VERSION = [
+    "3.9",
+    "3.10",
+    "3.11",
+    "3.12",
+    "3.13",
+]
+
+[[Repls]]
+Old = '\d{6,}'
+New = '[NUMBER]'
+
+[[Repls]]
+Old = '20\d{6}.'
+New = '[DATE]'
+
+[[Repls]]
+Old = 'Standard_D3_v2'
+New = '[NODE_TYPE_ID]'
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Repls]]
+# python is used on Windows
+Old = "python setup.py bdist_wheel"
+New = "python3 setup.py bdist_wheel"
+
+[[Repls]]
+Old = '\?o=\[NUMBER\]'
+New = ''
