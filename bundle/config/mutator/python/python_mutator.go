@@ -424,14 +424,7 @@ func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocation
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
 	}
 
-	// paths are resolved relative to locations of their values, if we change location
-	// we have to update each path, until we simplify that, we don't update locations
-	// for such values, so we don't change how paths are resolved
-	//
-	// we can remove this once we:
-	// - add variable interpolation before and after PythonMutator
-	// - implement path normalization (aka path normal form)
-	_, err = paths.VisitJobPaths(generated, func(p dyn.Path, kind paths.PathKind, v dyn.Value) (dyn.Value, error) {
+	_, err = paths.VisitJobPaths(generated, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
 		putPythonLocation(locations, p, v.Location())
 		return v, nil
 	})

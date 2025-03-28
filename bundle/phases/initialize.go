@@ -71,6 +71,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			"variables",
 		),
 		mutator.NormalizePaths(),
+		mutator.ExpandPipelineGlobPaths(),
 
 		mutator.MergeJobClusters(),
 		mutator.MergeJobParameters(),
@@ -89,7 +90,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.ProcessTargetMode(),
 		mutator.ApplyPresets(),
 		mutator.DefaultQueueing(),
-		mutator.ExpandPipelineGlobPaths(),
 
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
 		mutator.ConfigureWSFS(),

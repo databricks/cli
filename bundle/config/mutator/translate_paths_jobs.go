@@ -26,7 +26,7 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 		}
 	}
 
-	return paths.VisitJobPaths(v, func(p dyn.Path, kind paths.PathKind, v dyn.Value) (dyn.Value, error) {
+	return paths.VisitJobPaths(v, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
 		key := p[2].Key()
 
 		// Skip path translation if the job is using git source.
@@ -35,17 +35,9 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 		}
 
 		// Job paths are already normalized in NormalizePath mutator, if it isn't true, there is a bug
-		dir, err := v.Directory()
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for a value at %s: %w", p.String(), err)
-		}
+		dir := v.Directory()
 		if dir != t.b.BundleRootPath {
 			return dyn.InvalidValue, fmt.Errorf("unexpected non-normalized path at %s", p.String())
-		}
-
-		mode, err := getJobTranslateMode(kind)
-		if err != nil {
-			return dyn.InvalidValue, err
 		}
 
 		opts := translateOptions{
@@ -70,21 +62,4 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 
 		return dyn.InvalidValue, err
 	})
-}
-
-func getJobTranslateMode(kind paths.PathKind) (TranslateMode, error) {
-	switch kind {
-	case paths.PathKindLibrary:
-		return TranslateModeLocalRelative, nil
-	case paths.PathKindNotebook:
-		return TranslateModeNotebook, nil
-	case paths.PathKindWorkspaceFile:
-		return TranslateModeFile, nil
-	case paths.PathKindDirectory:
-		return TranslateModeDirectory, nil
-	case paths.PathKindWithPrefix:
-		return TranslateModeLocalRelativeWithPrefix, nil
-	}
-
-	return TranslateMode(0), fmt.Errorf("unsupported path kind: %d", kind)
 }

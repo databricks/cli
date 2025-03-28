@@ -37,9 +37,9 @@ func (m *expandPipelineGlobPaths) expandLibrary(v dyn.Value) ([]dyn.Value, error
 			return []dyn.Value{v}, nil
 		}
 
-		dir, err := v.Directory()
-		if err != nil {
-			return nil, err
+		dir := pv.Directory()
+		if dir == "" {
+			return nil, fmt.Errorf("unable to determine directory for library: %s", path)
 		}
 
 		matches, err := filepath.Glob(filepath.Join(dir, path))
