@@ -29,8 +29,9 @@ func DefaultMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		ComputeIdToClusterId(),
 		InitializeVariables(),
 		DefineDefaultTarget(),
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
-
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+			return nil
+		}),
 		// Note: This mutator must run before the target overrides are merged.
 		// See the mutator for more details.
 		validate.UniqueResourceKeys(),

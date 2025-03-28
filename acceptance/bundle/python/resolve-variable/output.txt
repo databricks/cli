@@ -3,6 +3,10 @@
 {
   "experimental": {
     "python": {
+      "mutators": [
+        "mutators:test_variables_1",
+        "mutators:test_variables_2"
+      ],
       "resources": [
         "resources:load_resources"
       ]

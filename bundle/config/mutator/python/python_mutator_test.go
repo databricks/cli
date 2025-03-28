@@ -28,25 +28,25 @@ import (
 )
 
 func TestPythonMutator_Name_load(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseLoad)
+	mutator := PythonMutator(PythonMutatorPhaseLoad, nil)
 
 	assert.Equal(t, "PythonMutator(load)", mutator.Name())
 }
 
 func TestPythonMutator_Name_init(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseInit)
+	mutator := PythonMutator(PythonMutatorPhaseInit, nil)
 
 	assert.Equal(t, "PythonMutator(init)", mutator.Name())
 }
 
 func TestPythonMutator_Name_loadResources(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources, nil)
 
 	assert.Equal(t, "PythonMutator(load_resources)", mutator.Name())
 }
 
 func TestPythonMutator_Name_applyMutators(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseApplyMutators)
+	mutator := PythonMutator(PythonMutatorPhaseApplyMutators, nil)
 
 	assert.Equal(t, "PythonMutator(apply_mutators)", mutator.Name())
 }
@@ -107,7 +107,7 @@ resources:
 		{"path": "resources.pipelines.pipeline0", "file": "src/examples/pipeline0.py", "line": 7, "column": 9}`,
 	)
 
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources, nil)
 	diags := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diags.Error())
@@ -212,7 +212,7 @@ resources:
 			}
 		}`, "", "")
 
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources, nil)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.EqualError(t, diag.Error(), "unexpected change at \"resources.jobs.job0.description\" (insert)")
@@ -257,7 +257,7 @@ resources:
 			}
 		}`, "", "")
 
-	mutator := PythonMutator(PythonMutatorPhaseApplyMutators)
+	mutator := PythonMutator(PythonMutatorPhaseApplyMutators, nil)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diag.Error())
@@ -318,7 +318,7 @@ resources:
 			}
 		}`, "", "")
 
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources, nil)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.EqualError(t, diag.Error(), "unknown field: unknown_property")
@@ -328,7 +328,7 @@ func TestPythonMutator_disabled(t *testing.T) {
 	b := loadYaml("databricks.yml", ``)
 
 	ctx := context.Background()
-	mutator := PythonMutator(PythonMutatorPhaseLoad)
+	mutator := PythonMutator(PythonMutatorPhaseLoad, nil)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diag.Error())
@@ -344,7 +344,7 @@ experimental:
     resources:
       - "resources:load_resources"`)
 
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources, nil)
 	diag := bundle.Apply(context.Background(), b, mutator)
 
 	assert.EqualError(t, diag.Error(), expectedError)
