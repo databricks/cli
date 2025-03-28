@@ -32,11 +32,13 @@ rounds           time
 const maxResolutionRounds = 11
 
 type resolveVariableReferences struct {
-	prefixes    []string
-	pattern     dyn.Pattern
-	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
-	skipFn      func(dyn.Value) bool
-	extraRounds int
+	prefixes         []string
+	pattern          dyn.Pattern
+	lookupFn         func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
+	skipFn           func(dyn.Value) bool
+	extraRounds      int
+	excludeResources bool
+	onlyResources    bool
 }
 
 func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
@@ -44,6 +46,28 @@ func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
 		prefixes:    prefixes,
 		lookupFn:    lookup,
 		extraRounds: maxResolutionRounds - 1,
+	}
+}
+
+func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
+	return &resolveVariableReferences{
+		prefixes:         prefixes,
+		lookupFn:         lookup,
+		extraRounds:      maxResolutionRounds - 1,
+		excludeResources: false,
+		onlyResources:    true,
+		pattern:          dyn.NewPattern(dyn.Key("resources")),
+	}
+}
+
+func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
+	return &resolveVariableReferences{
+		prefixes:         prefixes,
+		lookupFn:         lookup,
+		extraRounds:      maxResolutionRounds - 1,
+		excludeResources: true,
+		onlyResources:    false,
+		pattern:          dyn.NewPattern(dyn.AnyKey()),
 	}
 }
 
@@ -157,6 +181,14 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 		// If the pattern is nil, we resolve references in the entire configuration.
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// FIXME do well
+			if m.excludeResources && p.HasPrefix(dyn.NewPath(dyn.Key("resources"))) {
+				return v, nil
+			}
+			if m.onlyResources && !p.HasPrefix(dyn.NewPath(dyn.Key("resources"))) {
+				return v, nil
+			}
+
 			// Resolve variable references in all values.
 			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
 				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.

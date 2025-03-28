@@ -1,4 +1,4 @@
-Error: cycle detected in field resolution: variables.a.default -> var.b -> var.a -> var.b
+Error: cycle detected in field resolution: a.default -> var.b -> var.a -> var.b
 
 {
   "a": {
