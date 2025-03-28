@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/mutator/paths"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
@@ -18,41 +20,10 @@ import (
 	"github.com/databricks/cli/libs/notebook"
 )
 
-// TranslateMode specifies how a path should be translated.
-type TranslateMode int
-
-const (
-	// TranslateModeNotebook translates a path to a remote notebook.
-	TranslateModeNotebook TranslateMode = iota
-
-	// TranslateModeFile translates a path to a remote regular file.
-	TranslateModeFile
-
-	// TranslateModeDirectory translates a path to a remote directory.
-	TranslateModeDirectory
-
-	// TranslateModeLocalAbsoluteFile translates a path to the local absolute file path.
-	// It returns an error if the path does not exist or is a directory.
-	TranslateModeLocalAbsoluteFile
-
-	// TranslateModeLocalAbsoluteDirectory translates a path to the local absolute directory path.
-	// It returns an error if the path does not exist or is not a directory.
-	TranslateModeLocalAbsoluteDirectory
-
-	// TranslateModeLocalRelative translates a path to be relative to the bundle sync root path.
-	// It does not check if the path exists, nor care if it is a file or directory.
-	TranslateModeLocalRelative
-
-	// TranslateModeLocalRelativeWithPrefix translates a path to be relative to the bundle sync root path.
-	// It a "./" prefix to the path if it does not already have one.
-	// This allows for disambiguating between paths and PyPI package names.
-	TranslateModeLocalRelativeWithPrefix
-)
-
 // translateOptions control path translation behavior.
 type translateOptions struct {
 	// Mode specifies how the path should be translated.
-	Mode TranslateMode
+	Mode paths.TranslateMode
 
 	// AllowPathOutsideSyncRoot can be set for paths that are not tied to the sync root path.
 	// This is the case for artifact paths, for example.
@@ -158,19 +129,19 @@ func (t *translateContext) rewritePath(
 	// Convert local path into workspace path via specified function.
 	var interp string
 	switch opts.Mode {
-	case TranslateModeNotebook:
+	case paths.TranslateModeNotebook:
 		interp, err = t.translateNotebookPath(ctx, input, localPath, localRelPath)
-	case TranslateModeFile:
+	case paths.TranslateModeFile:
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
-	case TranslateModeDirectory:
+	case paths.TranslateModeDirectory:
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
-	case TranslateModeLocalAbsoluteFile:
+	case paths.TranslateModeLocalAbsoluteFile:
 		interp, err = t.translateLocalAbsoluteFilePath(ctx, input, localPath, localRelPath)
-	case TranslateModeLocalAbsoluteDirectory:
+	case paths.TranslateModeLocalAbsoluteDirectory:
 		interp, err = t.translateLocalAbsoluteDirectoryPath(ctx, input, localPath, localRelPath)
-	case TranslateModeLocalRelative:
+	case paths.TranslateModeLocalRelative:
 		interp, err = t.translateLocalRelativePath(ctx, input, localPath, localRelPath)
-	case TranslateModeLocalRelativeWithPrefix:
+	case paths.TranslateModeLocalRelativeWithPrefix:
 		interp, err = t.translateLocalRelativeWithPrefixPath(ctx, input, localPath, localRelPath)
 	default:
 		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)

@@ -7,7 +7,7 @@ import (
 
 type jobRewritePattern struct {
 	pattern     dyn.Pattern
-	kind        PathKind
+	mode        TranslateMode
 	skipRewrite func(string) bool
 }
 
@@ -19,37 +19,37 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
 			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
-			PathKindNotebook,
+			TranslateModeNotebook,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
-			PathKindWorkspaceFile,
+			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
-			PathKindDirectory,
+			TranslateModeDirectory,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
-			PathKindWorkspaceFile,
+			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
-			PathKindLibrary,
+			TranslateModeLocalRelative,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
-			PathKindLibrary,
+			TranslateModeLocalRelative,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
-			PathKindWorkspaceFile,
+			TranslateModeFile,
 			noSkipRewrite,
 		},
 	}
@@ -78,7 +78,7 @@ func jobRewritePatterns() []jobRewritePattern {
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
-			PathKindWithPrefix,
+			TranslateModeLocalRelativeWithPrefix,
 			func(s string) bool {
 				return !libraries.IsLibraryLocal(s)
 			},
@@ -103,7 +103,7 @@ func VisitJobPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
 				return v, nil
 			}
 
-			return fn(p, rewritePattern.kind, v)
+			return fn(p, rewritePattern.mode, v)
 		})
 		if err != nil {
 			return dyn.InvalidValue, err
