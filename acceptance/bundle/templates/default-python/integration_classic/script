@@ -1,6 +1,6 @@
 export PYTHONDONTWRITEBYTECODE=1
 
-uv venv -q --python $PYTHON_VERSION .venv
+uv venv -q .venv
 venv_activate
 uv pip install -q setuptools
 
