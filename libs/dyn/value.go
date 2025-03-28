@@ -1,7 +1,9 @@
 package dyn
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 )
 
@@ -18,6 +20,8 @@ type Value struct {
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
 	anchor bool
+
+	directory *string
 }
 
 // InvalidValue is equal to the zero-value of Value.
@@ -52,6 +56,29 @@ func NewValue(v any, loc []Location) Value {
 	}
 }
 
+func (s Value) WithValue(v any) Value {
+	switch vin := v.(type) {
+	case map[string]Value:
+		v = newMappingFromGoMap(vin)
+	}
+
+	return Value{
+		v:         v,
+		k:         kindOf(v),
+		l:         s.l,
+		directory: s.directory,
+	}
+}
+
+func (v Value) WithDirectory(dir string) Value {
+	return Value{
+		v:         v.v,
+		k:         v.k,
+		l:         v.l,
+		directory: &dir,
+	}
+}
+
 // WithLocations returns a new Value with its location set to the given value.
 func (v Value) WithLocations(loc []Location) Value {
 	return Value{
@@ -60,7 +87,8 @@ func (v Value) WithLocations(loc []Location) Value {
 
 		// create a copy of the locations, so that mutations to the original slice
 		// don't affect new value.
-		l: slices.Clone(loc),
+		l:         slices.Clone(loc),
+		directory: v.directory,
 	}
 }
 
@@ -90,6 +118,20 @@ func (v Value) Location() Location {
 	}
 
 	return v.l[0]
+}
+
+func (v Value) Directory() (string, error) {
+	if v.directory == nil {
+		l := v.Location()
+
+		if l.File == "" {
+			return "", errors.New("no file in location")
+		}
+
+		return filepath.Dir(l.File), nil
+	}
+
+	return *v.directory, nil
 }
 
 func (v Value) IsValid() bool {

@@ -81,7 +81,7 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 			for _, match := range matches {
 				output = append(output, dyn.V(
 					map[string]dyn.Value{
-						"source": dyn.NewValue(match, v.Locations()),
+						"source": v.WithValue(match),
 					},
 				))
 			}

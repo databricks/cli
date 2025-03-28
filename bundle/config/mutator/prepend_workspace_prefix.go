@@ -55,7 +55,7 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 					}
 				}
 
-				return dyn.NewValue("/Workspace"+path, v.Locations()), nil
+				return v.WithValue("/Workspace" + path), nil
 			})
 			if err != nil {
 				return dyn.InvalidValue, err

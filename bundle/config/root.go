@@ -472,9 +472,9 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				// Rewrite the variable to a map with a single key called "default".
 				// This conforms to the variable type. Normalization back to the typed
 				// configuration will convert this to a string if necessary.
-				return dyn.NewValue(map[string]dyn.Value{
+				return variable.WithValue(map[string]dyn.Value{
 					"default": variable,
-				}, variable.Locations()), nil
+				}), nil
 
 			case dyn.KindMap, dyn.KindSequence:
 				// If it's a full variable definition, leave it as is.
@@ -488,16 +488,16 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				// and configuration is not merged yet.
 				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
 				if err == nil && typeV.MustString() == "complex" {
-					return dyn.NewValue(map[string]dyn.Value{
+					return variable.WithValue(map[string]dyn.Value{
 						"type":    typeV,
 						"default": variable,
-					}, variable.Locations()), nil
+					}), nil
 				}
 
 				// If it's a shorthand, rewrite it to a full variable definition.
-				return dyn.NewValue(map[string]dyn.Value{
+				return variable.WithValue(map[string]dyn.Value{
 					"default": variable,
-				}, variable.Locations()), nil
+				}), nil
 
 			default:
 				return variable, nil

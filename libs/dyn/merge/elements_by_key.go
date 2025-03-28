@@ -52,7 +52,7 @@ func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a, b dyn.Va
 		out = append(out, nv)
 	}
 
-	return dyn.NewValue(out, v.Locations()), nil
+	return v.WithValue(out), nil
 }
 
 func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {

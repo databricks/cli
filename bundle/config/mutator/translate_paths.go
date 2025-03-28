@@ -204,14 +204,14 @@ func (t *translateContext) translateNotebookPath(ctx context.Context, literal, l
 			literalWithExt := literal + ext
 			localRelPathWithExt := localRelPath + ext
 			if _, err := fs.Stat(t.b.SyncRoot, localRelPathWithExt); err == nil {
-				return "", fmt.Errorf(`notebook %s not found. Did you mean %s?
+				return "", fmt.Errorf(`notebook %q not found. Did you mean %s?
 Local notebook references are expected to contain one of the following
 file extensions: [%s]`, literal, literalWithExt, strings.Join(extensions, ", "))
 			}
 		}
 
 		// Return a generic error message if no matching possible file is found.
-		return "", fmt.Errorf(`notebook %s not found. Local notebook references are expected
+		return "", fmt.Errorf(`notebook %q not found. Local notebook references are expected
 to contain one of the following file extensions: [%s]`, literal, strings.Join(extensions, ", "))
 	}
 	if err != nil {
@@ -307,7 +307,7 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 		return v, nil
 	}
 
-	return dyn.NewValue(out, v.Locations()), nil
+	return v.WithValue(out), nil
 }
 
 func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -361,7 +361,7 @@ func gatherFallbackPaths(v dyn.Value, typ string) (map[string]string, error) {
 	// the original approach as fallback if the [dyn.Value] location cannot be resolved.
 	_, err := dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		key := p[2].Key()
-		dir, err := v.Location().Directory()
+		dir, err := v.Directory()
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for %s: %w", p, err)
 		}

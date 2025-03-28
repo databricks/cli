@@ -34,9 +34,13 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 			return v, nil
 		}
 
-		dir, err := v.Location().Directory()
+		// Job paths are already normalized in NormalizePath mutator, if it isn't true, there is a bug
+		dir, err := v.Directory()
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
+			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for a value at %s: %w", p.String(), err)
+		}
+		if dir != t.b.BundleRootPath {
+			return dyn.InvalidValue, fmt.Errorf("unexpected non-normalized path at %s", p.String())
 		}
 
 		mode, err := getJobTranslateMode(kind)

@@ -70,6 +70,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			"workspace",
 			"variables",
 		),
+		mutator.NormalizePaths(),
 
 		mutator.MergeJobClusters(),
 		mutator.MergeJobParameters(),

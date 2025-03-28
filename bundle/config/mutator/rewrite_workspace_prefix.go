@@ -56,7 +56,7 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 					})
 
 					// Remove the workspace prefix from the string.
-					return dyn.NewValue(newPath, v.Locations()), nil
+					return v.WithValue(newPath), nil
 				}
 			}
 

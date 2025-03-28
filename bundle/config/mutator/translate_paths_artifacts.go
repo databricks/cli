@@ -40,7 +40,7 @@ func (t *translateContext) applyArtifactTranslations(ctx context.Context, v dyn.
 	for _, rewritePattern := range t.artifactRewritePatterns() {
 		v, err = dyn.MapByPattern(v, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			key := p[1].Key()
-			dir, err := v.Location().Directory()
+			dir, err := v.Directory()
 			if err != nil {
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 			}

@@ -91,9 +91,9 @@ func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostic
 		}
 
 		for _, match := range matches {
-			output = append(output, dyn.NewValue(map[string]dyn.Value{
-				libType: dyn.NewValue(match, lib.Locations()),
-			}, lib.Locations()))
+			output = append(output, lib.WithValue(map[string]dyn.Value{
+				libType: lib.WithValue(match),
+			}))
 		}
 	}
 
@@ -120,7 +120,7 @@ func expandEnvironmentDeps(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diag
 		}
 
 		for _, match := range matches {
-			output = append(output, dyn.NewValue(match, dep.Locations()))
+			output = append(output, dep.WithValue(match))
 		}
 	}
 

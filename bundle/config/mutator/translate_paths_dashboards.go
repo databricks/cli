@@ -23,7 +23,7 @@ func (t *translateContext) applyDashboardTranslations(ctx context.Context, v dyn
 
 	return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		key := p[2].Key()
-		dir, err := v.Location().Directory()
+		dir, err := v.Directory()
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for dashboard %s: %w", key, err)
 		}

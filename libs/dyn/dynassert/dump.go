@@ -56,5 +56,6 @@ func dump(v dyn.Value, sb *strings.Builder) {
 		sb.WriteString(fmt.Sprintf("{File: %q, Line: %d, Column: %d},", l.File, l.Line, l.Column))
 	}
 	sb.WriteString("},\n")
+	// TODO add directory
 	sb.WriteString(")")
 }

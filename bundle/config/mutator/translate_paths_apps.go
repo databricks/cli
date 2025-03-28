@@ -23,7 +23,7 @@ func (t *translateContext) applyAppsTranslations(ctx context.Context, v dyn.Valu
 
 	return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		key := p[2].Key()
-		dir, err := v.Location().Directory()
+		dir, err := v.Directory()
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for app %s: %w", key, err)
 		}
