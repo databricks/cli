@@ -12,7 +12,7 @@ import (
 )
 
 func collectRelativePaths(files []File) []string {
-	relativePaths := make([]string, 0)
+	var relativePaths []string
 	for _, f := range files {
 		relativePaths = append(relativePaths, f.Relative)
 	}
@@ -72,7 +72,7 @@ func TestGlobFilesetWithRelativeRoot(t *testing.T) {
 
 func TestGlobFilesetRecursively(t *testing.T) {
 	root := vfs.MustNew("../git")
-	entries := make([]string, 0)
+	var entries []string
 	err := fs.WalkDir(root, "testdata", func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() {
 			entries = append(entries, path)
@@ -93,7 +93,7 @@ func TestGlobFilesetRecursively(t *testing.T) {
 
 func TestGlobFilesetDir(t *testing.T) {
 	root := vfs.MustNew("../git")
-	entries := make([]string, 0)
+	var entries []string
 	err := fs.WalkDir(root, "testdata/a", func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() {
 			entries = append(entries, path)
@@ -114,7 +114,7 @@ func TestGlobFilesetDir(t *testing.T) {
 
 func TestGlobFilesetDoubleQuotesWithFilePatterns(t *testing.T) {
 	root := vfs.MustNew("../git")
-	entries := make([]string, 0)
+	var entries []string
 	err := fs.WalkDir(root, "testdata", func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".txt") {
 			entries = append(entries, path)

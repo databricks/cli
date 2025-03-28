@@ -86,7 +86,7 @@ func toString(v any, T Type) (string, error) {
 }
 
 func toStringSlice(arr []any, T Type) ([]string, error) {
-	res := []string{}
+	var res []string
 	for _, v := range arr {
 		s, err := toString(v, T)
 		if err != nil {

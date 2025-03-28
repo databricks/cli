@@ -26,7 +26,7 @@ func fetchDirs(ctx context.Context, wsc *databricks.WorkspaceClient, path string
 
 		// Filter directories and repos.
 		// We're interested only in paths we can sync to.
-		dirs := []string{}
+		var dirs []string
 		for _, file := range files {
 			switch file.ObjectType {
 			case workspace.ObjectTypeDirectory, workspace.ObjectTypeRepo:

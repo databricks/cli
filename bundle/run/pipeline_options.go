@@ -37,7 +37,7 @@ func (o *PipelineOptions) Define(fs *flag.FlagSet) {
 
 // Validate returns if the combination of options is valid.
 func (o *PipelineOptions) Validate(pipeline *resources.Pipeline) error {
-	set := []string{}
+	var set []string
 	if o.RefreshAll {
 		set = append(set, "--refresh-all")
 	}

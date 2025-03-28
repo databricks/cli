@@ -64,7 +64,7 @@ func (c *completer) CompletePath(p string) ([]string, cobra.ShellCompDirective, 
 		return nil, cobra.ShellCompDirectiveError, err
 	}
 
-	completions := []string{}
+	var completions []string
 	for _, entry := range entries {
 		if c.onlyDirs && !entry.IsDir() {
 			continue

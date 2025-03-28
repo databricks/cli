@@ -142,7 +142,7 @@ func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key s
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
-	args := make([]string, 0)
+	var args []string
 	args = append(args, "bundle", "run", key)
 	args = append(args, params...)
 	c := testcli.NewRunner(t, ctx, args...)

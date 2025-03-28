@@ -23,6 +23,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // BSD-2-Clause
+	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // BSD 3-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.9.1 // Apache 2.0
 	github.com/spf13/pflag v1.0.6 // BSD-3-Clause

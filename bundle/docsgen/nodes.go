@@ -45,7 +45,7 @@ const MapType = "Map"
 // buildNodes converts JSON-schema to a flat list of rootNode items that are then used to generate markdown documentation
 // It recursively traverses the schema expanding the resulting list with new items for every properties of nodes `object` and `array` type
 func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFields map[string]bool) []rootNode {
-	rootProps := []rootProp{}
+	var rootProps []rootProp
 	for k, v := range s.Properties {
 		rootProps = append(rootProps, rootProp{k, v, true, false})
 	}
@@ -102,7 +102,7 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 		// Whether we should add new root props from the children of the current JSON-schema node to include their definitions to this document
 		shouldAddNewProps := !item.circular
 		if shouldAddNewProps {
-			newProps := []rootProp{}
+			var newProps []rootProp
 			// Adds node with definition for the properties. Example:
 			// bundle:
 			//  prop-name: <value>
@@ -169,7 +169,7 @@ func getHumanReadableType(t jsonschema.Type) string {
 }
 
 func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[string]bool, prefix string, circular bool) []attributeNode {
-	attributes := []attributeNode{}
+	var attributes []attributeNode
 	for k, v := range props {
 		v = resolveRefs(v, refs)
 		typeString := getHumanReadableType(v.Type)
@@ -214,7 +214,7 @@ func shouldExtract(ref string, ownFields map[string]bool) bool {
 // extractNodes returns a list of rootProp items for all properties of the json-schema node that should be extracted based on context
 // E.g. we extract all propert
 func extractNodes(prefix string, props, refs map[string]*jsonschema.Schema, ownFields map[string]bool) []rootProp {
-	nodes := []rootProp{}
+	var nodes []rootProp
 	for k, v := range props {
 		if v.Reference != nil && !shouldExtract(*v.Reference, ownFields) {
 			continue
