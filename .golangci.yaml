@@ -46,6 +46,7 @@ linters:
     testifylint:
       enable-all: true
       disable:
+        # good check, but we have too many assert.(No)?Errorf? so excluding for now
         - require-error
   exclusions:
     generated: lax
