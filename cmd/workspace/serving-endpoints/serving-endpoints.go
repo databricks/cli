@@ -931,6 +931,7 @@ func newPutAiGateway() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&putAiGatewayJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: fallback_config
 	// TODO: complex arg: guardrails
 	// TODO: complex arg: inference_table_config
 	// TODO: array: rate_limits

@@ -17,7 +17,7 @@ import (
 type functions struct{}
 
 func (f *functions) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
-	tasks := make([]TaskWithJobKey, 0)
+	var tasks []TaskWithJobKey
 	for k := range b.Config.Resources.Jobs["test"].Tasks {
 		tasks = append(tasks, TaskWithJobKey{
 			JobKey: "test",

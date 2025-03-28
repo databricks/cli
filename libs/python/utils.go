@@ -37,7 +37,7 @@ func FindFilesWithSuffixInPath(dir, suffix string) []string {
 		return nil
 	}
 
-	files := make([]string, 0)
+	var files []string
 	for _, child := range entries {
 		if !strings.HasSuffix(child.Name(), suffix) {
 			continue

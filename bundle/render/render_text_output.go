@@ -80,7 +80,7 @@ func pluralize(n int, singular, plural string) string {
 }
 
 func buildTrailer(diags diag.Diagnostics) string {
-	parts := []string{}
+	var parts []string
 	if errors := len(diags.Filter(diag.Error)); errors > 0 {
 		parts = append(parts, color.RedString(pluralize(errors, "error", "errors")))
 	}

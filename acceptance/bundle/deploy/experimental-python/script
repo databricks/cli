@@ -1,0 +1,3 @@
+trace uv run --quiet --with $DATABRICKS_BUNDLES_WHEEL -- $CLI bundle deploy
+
+trace $CLI jobs list --output json

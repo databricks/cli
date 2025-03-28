@@ -7,18 +7,13 @@ Warning: Variable interpolation is not supported for fields that configure authe
 Interpolation is not supported for the field workspace.host. Please set
 the DATABRICKS_HOST environment variable if you wish to configure this field at runtime.
 
-Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
+Error: cannot resolve bundle auth configuration: config host mismatch: DATABRICKS_HOST is defined as [DATABRICKS_URL], but CLI configured to use ${var.host}
 
 {
   "bundle": {
     "environment": "default",
     "name": "host",
     "target": "default"
-  },
-  "sync": {
-    "paths": [
-      "."
-    ]
   },
   "targets": null,
   "variables": {
@@ -41,7 +36,7 @@ Warning: Variable interpolation is not supported for fields that configure authe
 Interpolation is not supported for the field workspace.host. Please set
 the DATABRICKS_HOST environment variable if you wish to configure this field at runtime.
 
-Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
+Error: cannot resolve bundle auth configuration: config host mismatch: DATABRICKS_HOST is defined as [DATABRICKS_URL], but CLI configured to use ${var.host}
 
 Name: host
 Target: default

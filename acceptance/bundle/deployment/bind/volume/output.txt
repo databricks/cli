@@ -8,7 +8,7 @@
 === Create a pre-defined volume: 
 >>> [CLI] bundle deployment bind volume1 main.test-schema-[UUID].volume-[UUID] --auto-approve
 Updating deployment state...
-Successfully bound databricks_volume with an id 'main.test-schema-[UUID].volume-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound volume with an id 'main.test-schema-[UUID].volume-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default/files...

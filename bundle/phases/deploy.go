@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/apps"
@@ -20,14 +21,17 @@ import (
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	terraformlib "github.com/databricks/cli/libs/terraform"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
 func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []terraformlib.Action {
-	res := make([]terraformlib.Action, 0)
+	var res []terraformlib.Action
 	for _, rc := range changes {
 		if rc.Type != resourceType {
 			continue
@@ -195,6 +199,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// mutator is part of the deploy step rather than validate.
 		libraries.ExpandGlobReferences(),
 		libraries.CheckForSameNameLibraries(),
+		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
+		libraries.SwitchToPatchedWheels(),
 		libraries.Upload(),
 		trampoline.TransformWheelTask(),
 		files.Upload(outputHandler),
@@ -227,5 +233,114 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return diags
 	}
 
+	logTelemetry(ctx, b)
 	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostDeploy)))
+}
+
+// If there are more than 1 thousand of a resource type, do not
+// include more resources.
+// Since we have a timeout of 3 seconds, we cap the maximum number of IDs
+// we send in a single request to have reliable telemetry.
+const ResourceIdLimit = 1000
+
+func logTelemetry(ctx context.Context, b *bundle.Bundle) {
+	resourcesCount := int64(0)
+	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		resourcesCount++
+		return v, nil
+	})
+	if err != nil {
+		log.Debugf(ctx, "failed to count resources: %s", err)
+	}
+
+	var jobsIds []string
+	for _, job := range b.Config.Resources.Jobs {
+		if len(jobsIds) >= ResourceIdLimit {
+			break
+		}
+
+		// Do not include missing IDs in telemetry. We can still detect them
+		// by comparing against the resource count.
+		if job == nil || job.ID == "" {
+			continue
+		}
+		jobsIds = append(jobsIds, job.ID)
+	}
+	var pipelineIds []string
+	for _, pipeline := range b.Config.Resources.Pipelines {
+		if len(pipelineIds) >= ResourceIdLimit {
+			break
+		}
+
+		// Do not include missing IDs in telemetry. We can still detect them
+		// by comparing against the resource count.
+		if pipeline == nil || pipeline.ID == "" {
+			continue
+		}
+		pipelineIds = append(pipelineIds, pipeline.ID)
+	}
+	var clusterIds []string
+	for _, cluster := range b.Config.Resources.Clusters {
+		if len(clusterIds) >= ResourceIdLimit {
+			break
+		}
+
+		// Do not include missing IDs in telemetry. We can still detect them
+		// by comparing against the resource count.
+		if cluster == nil || cluster.ID == "" {
+			continue
+		}
+		clusterIds = append(clusterIds, cluster.ID)
+	}
+	var dashboardIds []string
+	for _, dashboard := range b.Config.Resources.Dashboards {
+		if len(dashboardIds) >= ResourceIdLimit {
+			break
+		}
+
+		// Do not include missing IDs in telemetry. We can still detect them
+		// by comparing against the resource count.
+		if dashboard == nil || dashboard.ID == "" {
+			continue
+		}
+		dashboardIds = append(dashboardIds, dashboard.ID)
+	}
+
+	// sort the IDs to make the record generated deterministic
+	// this is important for testing purposes
+	slices.Sort(jobsIds)
+	slices.Sort(pipelineIds)
+	slices.Sort(clusterIds)
+	slices.Sort(dashboardIds)
+
+	// If the bundle UUID is not set, we use a default 0 value.
+	bundleUuid := "00000000-0000-0000-0000-000000000000"
+	if b.Config.Bundle.Uuid != "" {
+		bundleUuid = b.Config.Bundle.Uuid
+	}
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		BundleDeployEvent: &protos.BundleDeployEvent{
+			BundleUuid: bundleUuid,
+
+			ResourceCount:                     resourcesCount,
+			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
+			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
+			ResourceModelCount:                int64(len(b.Config.Resources.Models)),
+			ResourceExperimentCount:           int64(len(b.Config.Resources.Experiments)),
+			ResourceModelServingEndpointCount: int64(len(b.Config.Resources.ModelServingEndpoints)),
+			ResourceRegisteredModelCount:      int64(len(b.Config.Resources.RegisteredModels)),
+			ResourceQualityMonitorCount:       int64(len(b.Config.Resources.QualityMonitors)),
+			ResourceSchemaCount:               int64(len(b.Config.Resources.Schemas)),
+			ResourceVolumeCount:               int64(len(b.Config.Resources.Volumes)),
+			ResourceClusterCount:              int64(len(b.Config.Resources.Clusters)),
+			ResourceDashboardCount:            int64(len(b.Config.Resources.Dashboards)),
+			ResourceAppCount:                  int64(len(b.Config.Resources.Apps)),
+
+			ResourceJobIDs:       jobsIds,
+			ResourcePipelineIDs:  pipelineIds,
+			ResourceClusterIDs:   clusterIds,
+			ResourceDashboardIDs: dashboardIds,
+		},
+	})
 }

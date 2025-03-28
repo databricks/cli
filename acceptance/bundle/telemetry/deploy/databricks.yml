@@ -1,0 +1,18 @@
+bundle:
+  name: rabbit
+  uuid: 11111111-2222-3333-4444-555555555555
+
+resources:
+  jobs:
+    job_one:
+      name: job one
+    job_two:
+      name: job two
+    job_three:
+      name: job three
+
+  pipelines:
+    pipeline_one:
+      name: pipeline one
+    pipeline_two:
+      name: pipeline two

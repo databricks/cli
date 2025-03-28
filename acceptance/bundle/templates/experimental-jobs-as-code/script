@@ -12,6 +12,11 @@ trace unzip -Z1 dist/my_jobs_as_code-0.0.1-py3-none-any.whl
 
 rm -fr .venv resources/__pycache__ uv.lock src/my_jobs_as_code.egg-info dist
 
+# remove requires-python because it doesn't pass ruff checks after we replace
+# requires-python=">=3.10" with requires-python=">=[UV_PYTHON]"
+cat pyproject.toml | grep -v requires-python > pyproject.toml.new
+mv pyproject.toml.new pyproject.toml
+
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore
 rm .databricks/.gitignore

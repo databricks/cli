@@ -371,7 +371,7 @@ func newPatch() *cobra.Command {
   specific user attributes.
 
   Arguments:
-    ID: Unique ID for a user in the Databricks account.`
+    ID: Unique ID in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -400,14 +400,14 @@ func newPatch() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
+			id, err := cmdio.Select(ctx, names, "Unique ID in the Databricks workspace")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a user in the databricks account")
+			return fmt.Errorf("expected to have unique id in the databricks workspace")
 		}
 		patchReq.Id = args[0]
 
@@ -467,8 +467,7 @@ func newUpdate() *cobra.Command {
   Replaces a user's information with the data supplied in request.
 
   Arguments:
-    ID: Databricks user ID. This is automatically set by Databricks. Any value
-      provided by the client will be ignored.`
+    ID: Databricks user ID.`
 
 	cmd.Annotations = make(map[string]string)
 

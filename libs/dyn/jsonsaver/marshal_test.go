@@ -70,7 +70,7 @@ func TestMarshal_Complex(t *testing.T) {
 	require.NoError(t, map1.Set(dyn.V("str1"), dyn.V("value1")))
 	require.NoError(t, map1.Set(dyn.V("str2"), dyn.V("value2")))
 
-	seq1 := []dyn.Value{}
+	var seq1 []dyn.Value
 	seq1 = append(seq1, dyn.V("value1"))
 	seq1 = append(seq1, dyn.V("value2"))
 
