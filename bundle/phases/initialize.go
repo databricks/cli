@@ -49,7 +49,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		// Reads (typed): b.Config.Workspace.CurrentUser (checks if it's already set)
 		// Updates (typed): b.Config.Workspace.CurrentUser (sets user information from API)
-		// Updates (typed): b.Tagging (configures tagging object based on workspace client)
+		// Updates (typed): b.Tagging (configures tagging object based on current cloud)
 		mutator.PopulateCurrentUser(),
 
 		// Updates (typed): b.WorktreeRoot (sets to SyncRoot if no git repo found, otherwise to git worktree root)
@@ -81,7 +81,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		// Reads (dynamic): * (strings) (searches for strings with workspace path variables prefixed with "/Workspace")
 		// Updates (dynamic): * (strings) (removes "/Workspace" prefix from workspace path variables)
-		// Finds and removes "/Workspace" prefix from workspace path variables in string values
+		// Finds and removes "/Workspace" prefix from all strings in bundle configuration
 		mutator.RewriteWorkspacePrefix(),
 
 		// Reads (dynamic): variables.* (checks for existing values, defaults, and lookup references)
