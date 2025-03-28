@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pig/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> cat out.requests.txt
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[CMD-EXEC-ID]",
+        "version": "[DEV_VERSION]",
+        "command": "bundle_deploy",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "bundle_deploy_event": {
+        "bundle_uuid": "[ZERO_UUID]",
+        "resource_count": 1,
+        "resource_job_count": 1,
+        "resource_job_ids": [
+          "1"
+        ]
+      }
+    }
+  }
+}

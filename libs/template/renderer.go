@@ -294,7 +294,7 @@ func (r *renderer) walk() error {
 func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 	// Accumulate files which we will persist, skipping files whose path matches
 	// any of the skip patterns
-	filesToPersist := make([]file, 0)
+	var filesToPersist []file
 	for _, file := range r.files {
 		match, err := isSkipped(file.RelPath(), r.skipPatterns)
 		if err != nil {

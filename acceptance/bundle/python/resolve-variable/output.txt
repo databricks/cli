@@ -1,5 +1,5 @@
 
->>> uv run --python 3.10 --with databricks-bundles==0.7.2 -q [CLI] bundle validate --output json
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
 {
   "experimental": {
     "python": {

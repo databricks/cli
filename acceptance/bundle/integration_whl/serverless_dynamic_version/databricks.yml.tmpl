@@ -1,0 +1,28 @@
+bundle:
+  name: environment_key
+
+workspace:
+  root_path: "~/.bundle/$UNIQUE_NAME"
+
+artifacts:
+    my_test_code:
+      type: whl
+      build: python3 setup.py bdist_wheel
+      dynamic_version: true
+
+resources:
+  jobs:
+    some_other_job:
+      name: "My Wheel Job"
+      tasks:
+        - task_key: TestTask
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
+          environment_key:  "test_env"
+      environments:
+        - environment_key:  "test_env"
+          spec:
+            client: "1"
+            dependencies:
+              - ./dist/*.whl

@@ -56,7 +56,7 @@ func (h *hook) runHook(cmd *cobra.Command) error {
 		return fmt.Errorf("prepare: %w", err)
 	}
 	libDir := h.EffectiveLibDir()
-	args := []string{}
+	var args []string
 	if strings.HasSuffix(h.Script, ".py") {
 		args = append(args, h.virtualEnvPython(ctx))
 	}

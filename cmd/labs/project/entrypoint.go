@@ -75,7 +75,7 @@ func (e *Entrypoint) Prepare(cmd *cobra.Command) (map[string]string, error) {
 	// so that we don't confuse SDKs
 	cfg.Profile = ""
 	cfg.ConfigFile = ""
-	varNames := []string{}
+	var varNames []string
 	for k, v := range e.environmentFromConfig(cfg) {
 		environment[k] = v
 		varNames = append(varNames, k)

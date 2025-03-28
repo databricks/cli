@@ -1,6 +1,6 @@
 export PYTHONDONTWRITEBYTECODE=1
 
-uv venv -q --python 3.12 .venv
+uv venv -q .venv
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
     source .venv/Scripts/activate
 else

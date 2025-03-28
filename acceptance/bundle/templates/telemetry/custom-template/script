@@ -6,9 +6,14 @@ mv output/my_custom_template/databricks.yml out.databricks.yml
 rm -r output
 
 
+# Disable pipefail. head can exit early if it encounters a new line. That would cause a SIGPIPE in linux systems.
+set +o pipefail
 cmd_exec_id=$(cat out.requests.txt | jq '.headers."User-Agent".[0]'| head -n 1 | grep -o 'cmd-exec-id/[^ ]*' | cut -d '/' -f2)
 bundle_uuid=$(cat out.databricks.yml | grep -o 'uuid: [^\n]*' | cut -d ' ' -f2)
 
 update_file.py out.requests.txt $cmd_exec_id  '[CMD-EXEC-ID]'
 update_file.py out.requests.txt $bundle_uuid '[BUNDLE-UUID]'
 update_file.py out.databricks.yml $bundle_uuid '[BUNDLE-UUID]'
+
+# pretty print the telemetry payload.
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs.[] | fromjson'

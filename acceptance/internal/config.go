@@ -3,10 +3,12 @@ package internal
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"dario.cat/mergo"
 	"github.com/BurntSushi/toml"
@@ -26,6 +28,11 @@ type TestConfig struct {
 	// If absent, default to true.
 	GOOS map[string]bool
 
+	// Which Clouds the test is enabled on. Allowed values: "aws", "azure", "gcp".
+	// If absent, default to true.
+	// Only checked if CLOUD_ENV is not empty.
+	CloudEnvs map[string]bool
+
 	// If true, run this test when running locally with a testserver
 	Local *bool
 
@@ -41,6 +48,9 @@ type TestConfig struct {
 
 	// If true and Cloud=true, run this test only if a default test cluster is available in the cloud environment
 	RequiresCluster *bool
+
+	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
+	RequiresWarehouse *bool
 
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
@@ -88,15 +98,17 @@ type ServerStub struct {
 	// The response body to return.
 	Response testserver.Response
 
-	// Artificial delay in seconds to simulate slow responses.
-	DelaySeconds *float64
+	// Artificial delay to simulate slow responses.
+	// Configure as "1ms", "2s", "3m", etc.
+	// See [time.ParseDuration] for details.
+	Delay time.Duration
 }
 
 // FindConfigs finds all the config relevant for this test,
 // ordered from the most outermost (at acceptance/) to current test directory (identified by dir).
 // Argument dir must be a relative path from the root of acceptance tests (<project_root>/acceptance/).
 func FindConfigs(t *testing.T, dir string) []string {
-	configs := []string{}
+	var configs []string
 	for {
 		path := filepath.Join(dir, configFilename)
 		_, err := os.Stat(path)
@@ -134,7 +146,14 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 
 	for _, cfgName := range configs[1:] {
 		cfg := DoLoadConfig(t, cfgName)
-		err := mergo.Merge(&result, cfg, mergo.WithOverride, mergo.WithoutDereference, mergo.WithAppendSlice)
+		err := mergo.Merge(
+			&result,
+			cfg,
+			mergo.WithOverride,
+			mergo.WithoutDereference,
+			mergo.WithAppendSlice,
+			mergo.WithTransformers(mapTransformer{}),
+		)
 		if err != nil {
 			t.Fatalf("Error during config merge: %s: %s", cfgName, err)
 		}
@@ -161,6 +180,27 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	}
 
 	return config
+}
+
+// mapTransformer is a mergo transformer that merges two maps
+// by overriding values in the destination map with values from the source map.
+//
+// In our case, source map is located in test directory, and destination map is located
+// in a parent directory.
+type mapTransformer struct{}
+
+func (t mapTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+	if typ.Kind() == reflect.Map {
+		return func(dst, src reflect.Value) error {
+			if dst.IsNil() {
+				dst.Set(reflect.MakeMap(typ))
+			}
+
+			return mergo.Merge(dst.Addr().Interface(), src.Interface(), mergo.WithOverride)
+		}
+	}
+
+	return nil
 }
 
 // This function takes EnvMatrix and expands into a slice of environment configurations.

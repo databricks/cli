@@ -9,7 +9,7 @@ import (
 
 func CollectUniqueWorkspacePathPrefixes(workspace config.Workspace) []string {
 	rootPath := workspace.RootPath
-	paths := []string{}
+	var paths []string
 	if !libraries.IsVolumesPath(rootPath) {
 		paths = append(paths, rootPath)
 	}

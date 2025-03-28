@@ -6,10 +6,10 @@ toolchain go1.23.7
 
 require (
 	dario.cat/mergo v1.0.1 // BSD 3-Clause
-	github.com/BurntSushi/toml v1.4.0 // MIT
+	github.com/BurntSushi/toml v1.5.0 // MIT
 	github.com/Masterminds/semver/v3 v3.3.1 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.60.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.61.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
@@ -22,7 +22,8 @@ require (
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
-	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // BSD-2-Clause
+	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // BSD 3-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.9.1 // Apache 2.0
 	github.com/spf13/pflag v1.0.6 // BSD-3-Clause

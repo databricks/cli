@@ -208,7 +208,7 @@ func (c *constructor) walk(typ reflect.Type) (string, error) {
 // struct to be given preference over a field with the same name defined at a lower
 // level embedded struct. For example see: TestHigherLevelEmbeddedFieldIsInSchema
 func getStructFields(typ reflect.Type) []reflect.StructField {
-	fields := []reflect.StructField{}
+	var fields []reflect.StructField
 	bfsQueue := list.New()
 
 	for i := range typ.NumField() {

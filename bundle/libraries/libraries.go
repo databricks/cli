@@ -48,7 +48,7 @@ func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.Task {
 	tasks := findAllTasks(b)
 	envs := FindAllEnvironments(b)
 
-	allTasks := make([]jobs.Task, 0)
+	var allTasks []jobs.Task
 	for k, jobTasks := range tasks {
 		for i := range jobTasks {
 			task := jobTasks[i]

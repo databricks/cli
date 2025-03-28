@@ -1,0 +1,53 @@
+bundle:
+  name: bind-registered-model-test-[UNIQUE_NAME]
+
+resources:
+  registered_models:
+    model1:
+      name: test-registered-model-[UUID]
+      catalog_name: main
+      schema_name: test-schema-rmodel-[UUID]
+
+
+>>> [CLI] schemas create test-schema-rmodel-[UUID] main
+{
+  "full_name": "main.test-schema-rmodel-[UUID]",
+  "catalog_name": "main"
+}
+
+>>> [CLI] bundle deployment bind model1 main.test-schema-rmodel-[UUID].test-registered-model-[UUID]
+Updating deployment state...
+Successfully bound registered_model with an id 'main.test-schema-rmodel-[UUID].test-registered-model-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-registered-model-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] registered-models get main.test-schema-rmodel-[UUID].test-registered-model-[UUID]
+{
+  "full_name": "main.test-schema-rmodel-[UUID].test-registered-model-[UUID]",
+  "schema_name": "test-schema-rmodel-[UUID]",
+  "name": "test-registered-model-[UUID]"
+}
+
+>>> [CLI] bundle deployment unbind model1
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-registered-model-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] registered-models get main.test-schema-rmodel-[UUID].test-registered-model-[UUID]
+{
+  "full_name": "main.test-schema-rmodel-[UUID].test-registered-model-[UUID]",
+  "schema_name": "test-schema-rmodel-[UUID]",
+  "name": "test-registered-model-[UUID]"
+}
+
+>>> [CLI] registered-models delete main.test-schema-rmodel-[UUID].test-registered-model-[UUID]
+
+>>> [CLI] schemas delete main.test-schema-rmodel-[UUID]

@@ -179,7 +179,7 @@ type writerWithFullTelemetry struct {
 }
 
 func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
-	args := []protos.BundleInitTemplateEnumArg{}
+	var args []protos.BundleInitTemplateEnumArg
 	for k, v := range tmpl.config.values {
 		s := tmpl.config.schema.Properties[k]
 
