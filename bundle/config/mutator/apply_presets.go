@@ -21,7 +21,7 @@ type applyPresets struct{}
 
 // Apply all presets, e.g. the prefix presets that
 // adds a prefix to all names of all resources.
-func ApplyPresets() *applyPresets {
+func ApplyPresets() bundle.Mutator {
 	return &applyPresets{}
 }
 

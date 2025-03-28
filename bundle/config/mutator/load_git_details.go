@@ -14,7 +14,7 @@ import (
 
 type loadGitDetails struct{}
 
-func LoadGitDetails() *loadGitDetails {
+func LoadGitDetails() bundle.Mutator {
 	return &loadGitDetails{}
 }
 
