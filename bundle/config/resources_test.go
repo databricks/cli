@@ -159,8 +159,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				App: &apps.App{},
 			},
 		},
+		QualityMonitors: map[string]*resources.QualityMonitor{
+			"my_quality_monitor": {
+				CreateMonitor: &catalog.CreateMonitor{},
+			},
+		},
 	}
-	unbindableResources := map[string]bool{"model": true, "model_serving_endpoint": true, "quality_monitor": true}
+	unbindableResources := map[string]bool{"model": true, "model_serving_endpoint": true}
 
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
@@ -173,6 +178,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
