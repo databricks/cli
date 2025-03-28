@@ -74,7 +74,8 @@ func newCreateEndpoint() *cobra.Command {
 
   Arguments:
     NAME: Name of endpoint
-    ENDPOINT_TYPE: Type of endpoint. Supported values: [STANDARD] `
+    ENDPOINT_TYPE: Type of endpoint. 
+      Supported values: [STANDARD] `
 
 	cmd.Annotations = make(map[string]string)
 

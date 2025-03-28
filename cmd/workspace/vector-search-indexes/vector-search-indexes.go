@@ -93,7 +93,8 @@ func newCreateIndex() *cobra.Command {
       Table, automatically and incrementally updating the index as the
       underlying data in the Delta Table changes. - DIRECT_ACCESS: An index
       that supports direct read and write of vectors and metadata through our
-      REST and SDK APIs. With this model, the user manages index updates. Supported values: [DELTA_SYNC, DIRECT_ACCESS] `
+      REST and SDK APIs. With this model, the user manages index updates. 
+      Supported values: [DELTA_SYNC, DIRECT_ACCESS] `
 
 	cmd.Annotations = make(map[string]string)
 

@@ -40,11 +40,8 @@ import (
   {{$element.Name}},{{end}}
 ]{{end}}{{end}}
 
-{{/* Same as printArray but with slightly different indentation. Go text templates does not
-allow defining functions in the template itself so we cannot combine the two subtemplates without
-creating a helper function in genkit */}}
-{{define "printArray2" -}}
-{{if le (len .) 5 -}}
+{{define "supportedValuesPositionalArg"}}
+      Supported values: {{if le (len .) 5 -}}
 	[{{range $index, $element := .}}{{if ne $index 0}}, {{end}}{{$element.Name}}{{end}}]
 {{- else -}}[{{range $index, $element := .}}
       {{$element.Name}},{{end}}
@@ -212,7 +209,7 @@ func new{{.PascalName}}() *cobra.Command {
 
   Arguments:
     {{- range .RequiredPositionalArguments }}
-    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}{{- if .Entity.Enum }} Supported values: {{template "printArray2" .Entity.Enum}} {{ end -}}
+    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}{{- if .Entity.Enum }} {{template "supportedValuesPositionalArg" .Entity.Enum}} {{ end -}}
     {{- end -}}
     {{- end -}}
 	`

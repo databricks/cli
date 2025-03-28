@@ -76,7 +76,8 @@ func newGet() *cobra.Command {
   Gets the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable. Supported values: [
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
       CATALOG,
       CLEAN_ROOM,
       CONNECTION,
@@ -157,7 +158,8 @@ func newGetEffective() *cobra.Command {
   Gets the effective permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable. Supported values: [
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
       CATALOG,
       CLEAN_ROOM,
       CONNECTION,
@@ -240,7 +242,8 @@ func newUpdate() *cobra.Command {
   Updates the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable. Supported values: [
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
       CATALOG,
       CLEAN_ROOM,
       CONNECTION,
