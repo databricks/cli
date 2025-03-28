@@ -37,9 +37,9 @@ func (m *expandPipelineGlobPaths) expandLibrary(v dyn.Value) ([]dyn.Value, error
 			return []dyn.Value{v}, nil
 		}
 
-		dir, err := v.Location().Directory()
-		if err != nil {
-			return nil, err
+		dir := pv.Directory()
+		if dir == "" {
+			return nil, fmt.Errorf("unable to determine directory for library: %s", path)
 		}
 
 		matches, err := filepath.Glob(filepath.Join(dir, path))
@@ -59,7 +59,7 @@ func (m *expandPipelineGlobPaths) expandLibrary(v dyn.Value) ([]dyn.Value, error
 			if err != nil {
 				return nil, err
 			}
-			nv, err := dyn.SetByPath(v, p, dyn.NewValue(m, pv.Locations()))
+			nv, err := dyn.SetByPath(v, p, pv.WithValue(m))
 			if err != nil {
 				return nil, err
 			}
@@ -90,7 +90,7 @@ func (m *expandPipelineGlobPaths) expandSequence(p dyn.Path, v dyn.Value) (dyn.V
 		vs = append(vs, v...)
 	}
 
-	return dyn.NewValue(vs, v.Locations()), nil
+	return v.WithValue(vs), nil
 }
 
 func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {

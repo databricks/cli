@@ -1,7 +1,9 @@
 package dyn
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 )
 
@@ -18,6 +20,8 @@ type Value struct {
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
 	anchor bool
+
+	directory *string
 }
 
 // InvalidValue is equal to the zero-value of Value.
@@ -42,6 +46,14 @@ func NewValue(v any, loc []Location) Value {
 		v = newMappingFromGoMap(vin)
 	}
 
+	if len(loc) != 0 {
+		return Value{
+			v: v,
+			k: kindOf(v),
+			l: slices.Clone(loc),
+		}
+	}
+
 	return Value{
 		v: v,
 		k: kindOf(v),
@@ -49,6 +61,29 @@ func NewValue(v any, loc []Location) Value {
 		// create a copy of the locations, so that mutations to the original slice
 		// don't affect new value.
 		l: slices.Clone(loc),
+	}
+}
+
+func (s Value) WithValue(v any) Value {
+	switch vin := v.(type) {
+	case map[string]Value:
+		v = newMappingFromGoMap(vin)
+	}
+
+	return Value{
+		v:         v,
+		k:         kindOf(v),
+		l:         s.l,
+		directory: s.directory,
+	}
+}
+
+func (v Value) WithDirectory(dir string) Value {
+	return Value{
+		v:         v.v,
+		k:         v.k,
+		l:         v.l,
+		directory: &dir,
 	}
 }
 
@@ -60,15 +95,17 @@ func (v Value) WithLocations(loc []Location) Value {
 
 		// create a copy of the locations, so that mutations to the original slice
 		// don't affect new value.
-		l: slices.Clone(loc),
+		l:         slices.Clone(loc),
+		directory: v.directory,
 	}
 }
 
 func (v Value) AppendLocationsFromValue(w Value) Value {
 	return Value{
-		v: v.v,
-		k: v.k,
-		l: append(v.l, w.l...),
+		v:         v.v,
+		k:         v.k,
+		l:         append(v.l, w.l...),
+		directory: v.directory,
 	}
 }
 
@@ -90,6 +127,24 @@ func (v Value) Location() Location {
 	}
 
 	return v.l[0]
+}
+
+func (v Value) Directory() (string, error) {
+	if v.directory == nil {
+		l := v.Location()
+
+		if l.File == "" {
+			return "", errors.New("no file in location")
+		}
+
+		return filepath.Dir(l.File), nil
+	}
+
+	return *v.directory, nil
+}
+
+func (v Value) DerivesDirectory() bool {
+	return v.directory != nil
 }
 
 func (v Value) IsValid() bool {
@@ -164,9 +219,10 @@ func (v Value) Index(i int) Value {
 
 func (v Value) MarkAnchor() Value {
 	return Value{
-		v: v.v,
-		k: v.k,
-		l: v.l,
+		v:         v.v,
+		k:         v.k,
+		l:         v.l,
+		directory: v.directory,
 
 		anchor: true,
 	}
@@ -185,6 +241,9 @@ func (v Value) eq(w Value) bool {
 		return false
 	}
 	if !slices.Equal(v.l, w.l) {
+		return false
+	}
+	if v.directory != w.directory {
 		return false
 	}
 

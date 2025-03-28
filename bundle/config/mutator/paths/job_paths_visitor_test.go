@@ -158,7 +158,7 @@ func TestVisitJobPaths_foreach(t *testing.T) {
 func visitJobPaths(t *testing.T, root config.Root) []dyn.Path {
 	var actual []dyn.Path
 	err := root.Mutate(func(value dyn.Value) (dyn.Value, error) {
-		return VisitJobPaths(value, func(p dyn.Path, kind PathKind, v dyn.Value) (dyn.Value, error) {
+		return VisitJobPaths(value, func(p dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
 			actual = append(actual, p)
 			return v, nil
 		})

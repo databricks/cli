@@ -96,7 +96,7 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 	}
 
 	// Preserve the location of the first value. Accumulate the locations of the second value.
-	return dyn.NewValue(out, a.Locations()).AppendLocationsFromValue(b), nil
+	return a.WithValue(out).AppendLocationsFromValue(b), nil
 }
 
 func mergeSequence(a, b dyn.Value) (dyn.Value, error) {
