@@ -133,6 +133,10 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	if a.MarkdownExamples != "" {
 		s.Examples = []string{a.MarkdownExamples}
 	}
+	if a.DeprecationMessage != "" {
+		s.Deprecated = true
+		s.DeprecationMessage = a.DeprecationMessage
+	}
 }
 
 func fillTemplateVariables(s string) string {

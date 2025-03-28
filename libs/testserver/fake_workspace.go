@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/google/uuid"
 )
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
@@ -19,6 +21,8 @@ type FakeWorkspace struct {
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
 	nextJobId int64
 	jobs      map[int64]jobs.Job
+
+	pipelines map[string]pipelines.PipelineSpec
 }
 
 func NewFakeWorkspace() *FakeWorkspace {
@@ -29,6 +33,8 @@ func NewFakeWorkspace() *FakeWorkspace {
 		files:     map[string][]byte{},
 		jobs:      map[int64]jobs.Job{},
 		nextJobId: 1,
+
+		pipelines: map[string]pipelines.PipelineSpec{},
 	}
 }
 
@@ -126,6 +132,18 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 	}
 }
 
+func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
+	pipelineId := uuid.New().String()
+
+	s.pipelines[pipelineId] = r
+
+	return Response{
+		Body: pipelines.CreatePipelineResponse{
+			PipelineId: pipelineId,
+		},
+	}
+}
+
 func (s *FakeWorkspace) JobsGet(jobId string) Response {
 	id := jobId
 
@@ -146,6 +164,22 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 
 	return Response{
 		Body: job,
+	}
+}
+
+func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
+	spec, ok := s.pipelines[pipelineId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	return Response{
+		Body: pipelines.GetPipelineResponse{
+			PipelineId: pipelineId,
+			Spec:       &spec,
+		},
 	}
 }
 

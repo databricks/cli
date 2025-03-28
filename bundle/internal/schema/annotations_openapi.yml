@@ -21,6 +21,9 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       The description of the app.
   "effective_budget_policy_id": {}
+  "effective_user_api_scopes":
+    "description": |-
+      The effective api scopes granted to the user access token.
   "id":
     "description": |-
       The unique identifier of the app.
@@ -28,6 +31,8 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.
       It must be unique within the workspace.
+  "oauth2_app_client_id": {}
+  "oauth2_app_integration_id": {}
   "pending_deployment":
     "description": |-
       The pending deployment of the app. A deployment is considered pending when it is being prepared
@@ -47,7 +52,11 @@ github.com/databricks/cli/bundle/config/resources.App:
   "url":
     "description": |-
       The URL of the app once it is deployed.
+  "user_api_scopes": {}
 github.com/databricks/cli/bundle/config/resources.Cluster:
+  "_":
+    "description": |-
+      Contains a snapshot of the latest user specified settings that were used to create/edit the cluster.
   "apply_policy_default_values":
     "description": |-
       When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied.
@@ -77,7 +86,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
       the destination of executor logs is `$destination/$clusterId/executor`.
   "cluster_name":
-    "description": |
+    "description": |-
       Cluster name requested by the user. This doesn't have to be unique.
       If not specified at creation, the cluster name will be an empty string.
   "custom_tags":
@@ -89,7 +98,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
 
       - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
   "data_security_mode":
-    "description": |
+    "description": |-
       Data security mode decides what data governance model to use when accessing data
       from a cluster.
 
@@ -110,17 +119,22 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
       * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
       * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
-  "docker_image": {}
+  "docker_image":
+    "description": |-
+      Custom docker image BYOC
   "driver_instance_pool_id":
     "description": |-
       The optional ID of the instance pool for the driver of the cluster belongs.
       The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
       assigned.
   "driver_node_type_id":
-    "description": |
-      The node type of the Spark driver. Note that this field is optional;
-      if unset, the driver node type will be set as the same value
+    "description": |-
+      The node type of the Spark driver.
+      Note that this field is optional; if unset, the driver node type will be set as the same value
       as `node_type_id` defined above.
+
+      This field, along with node_type_id, should not be set if virtual_cluster_size is set.
+      If both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.
   "enable_elastic_disk":
     "description": |-
       Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
@@ -135,17 +149,19 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       If not specified at cluster creation, a set of default values will be used.
   "init_scripts":
     "description": |-
-      The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
+      The configuration for storing init scripts. Any number of destinations can be specified.
+      The scripts are executed sequentially in the order provided.
+      If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
   "instance_pool_id":
     "description": |-
       The optional ID of the instance pool to which the cluster belongs.
   "is_single_node":
-    "description": |
+    "description": |-
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
   "kind":
-    "description": |
+    "description": |-
       The kind of compute described by this compute specification.
 
       Depending on `kind`, different validations and default values will be applied.
@@ -157,7 +173,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
 
       By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   "node_type_id":
-    "description": |
+    "description": |-
       This field encodes, through a single value, the resources available to each of
       the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
       and optimized for memory or compute intensive workloads. A list of available node
@@ -176,7 +192,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
     "description": |-
       The ID of the cluster policy used to create the cluster if applicable.
   "runtime_engine":
-    "description": |
+    "description": |-
       Determines the cluster's runtime engine, either standard or Photon.
 
       This field is not compatible with legacy `spark_version` values that contain `-photon-`.
@@ -188,7 +204,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
     "description": |-
       Single user name if data_security_mode is `SINGLE_USER`
   "spark_conf":
-    "description": |
+    "description": |-
       An object containing a set of optional, user-specified Spark configuration key-value pairs.
       Users can also pass in a string of extra JVM options to the driver and the executors via
       `spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.
@@ -206,7 +222,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       `{"SPARK_WORKER_MEMORY": "28000m", "SPARK_LOCAL_DIRS": "/local_disk0"}` or
       `{"SPARK_DAEMON_JAVA_OPTS": "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
   "spark_version":
-    "description": |
+    "description": |-
       The Spark version of the cluster, e.g. `3.3.x-scala2.11`.
       A list of available Spark versions can be retrieved by using
       the :method:clusters/sparkVersions API call.
@@ -216,11 +232,13 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       corresponding private keys can be used to login with the user name `ubuntu` on port `2200`.
       Up to 10 keys can be specified.
   "use_ml_runtime":
-    "description": |
+    "description": |-
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
-  "workload_type": {}
+  "workload_type":
+    "description": |-
+      Cluster Attributes showing for clusters workload types.
 github.com/databricks/cli/bundle/config/resources.Dashboard:
   "create_time":
     "description": |-
@@ -462,6 +480,9 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "edition":
     "description": |-
       Pipeline product edition.
+  "event_log":
+    "description": |-
+      Event log configuration for this pipeline
   "filters":
     "description": |-
       Filters on which Pipeline packages to include in the deployed graph.
@@ -473,7 +494,7 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Unique identifier for this pipeline.
   "ingestion_definition":
     "description": |-
-      The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'target' or 'catalog' settings.
+      The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.
   "libraries":
     "description": |-
       Libraries or code needed by this deployment.
@@ -496,7 +517,7 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
   "schema":
     "description": |-
-      The default schema (database) where tables are read from or published to. The presence of this field implies that the pipeline is in direct publishing mode.
+      The default schema (database) where tables are read from or published to.
   "serverless":
     "description": |-
       Whether serverless compute is enabled for this pipeline.
@@ -505,7 +526,7 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       DBFS root directory for storing checkpoints and tables.
   "target":
     "description": |-
-      Target schema (database) to add tables in this pipeline to. If not specified, no data is published to the Hive metastore or Unity Catalog. To publish to Unity Catalog, also specify `catalog`.
+      Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
   "trigger":
     "description": |-
       Which pipeline trigger to use. Deprecated: Use `continuous` instead.
@@ -920,6 +941,9 @@ github.com/databricks/databricks-sdk-go/service/catalog.VolumeType:
       - |-
         MANAGED
 github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info:
+  "_":
+    "description": |-
+      A storage location in Adls Gen2
   "destination":
     "description": |-
       abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
@@ -933,8 +957,11 @@ github.com/databricks/databricks-sdk-go/service/compute.AutoScale:
       The minimum number of workers to which the cluster can scale down when underutilized.
       It is also the initial number of workers the cluster will have after creation.
 github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
+  "_":
+    "description": |-
+      Attributes set during cluster creation which are related to Amazon Web Services.
   "availability":
-    "description": |
+    "description": |-
       Availability type used for all subsequent nodes past the `first_on_demand` ones.
 
       Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
@@ -987,8 +1014,6 @@ github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
       administrator.
 
       This feature may only be available to certain customer plans.
-
-      If this field is ommitted, we will pull in the default from the conf if it exists.
   "spot_bid_price_percent":
     "description": |-
       The bid price for AWS spot instances, as a percentage of the corresponding instance type's
@@ -1000,9 +1025,6 @@ github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
       When spot instances are requested for this cluster, only spot instances whose bid price
       percentage matches this field will be considered.
       Note that, for safety, we enforce this field to be no more than 10000.
-
-      The default value and documentation here should be kept consistent with
-      CommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent.
   "zone_id":
     "description": |-
       Identifier for the availability zone/datacenter in which the cluster resides.
@@ -1012,11 +1034,12 @@ github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
       This is an optional field at cluster creation, and if not specified, a default zone will be used.
       If the zone specified is "auto", will try to place cluster in a zone with high availability,
       and will retry placement in a different AZ if there is not enough capacity.
+
       The list of available zones as well as the default value can be found by using the
       `List Zones` method.
 github.com/databricks/databricks-sdk-go/service/compute.AwsAvailability:
   "_":
-    "description": |
+    "description": |-
       Availability type used for all subsequent nodes past the `first_on_demand` ones.
 
       Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
@@ -1028,10 +1051,13 @@ github.com/databricks/databricks-sdk-go/service/compute.AwsAvailability:
       - |-
         SPOT_WITH_FALLBACK
 github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes:
+  "_":
+    "description": |-
+      Attributes set during cluster creation which are related to Microsoft Azure.
   "availability":
     "description": |-
       Availability type used for all subsequent nodes past the `first_on_demand` ones.
-      Note: If `first_on_demand` is zero (which only happens on pool clusters), this availability
+      Note: If `first_on_demand` is zero, this availability
       type will be used for the entire cluster.
   "first_on_demand":
     "description": |-
@@ -1055,8 +1081,7 @@ github.com/databricks/databricks-sdk-go/service/compute.AzureAvailability:
   "_":
     "description": |-
       Availability type used for all subsequent nodes past the `first_on_demand` ones.
-      Note: If `first_on_demand` is zero (which only happens on pool clusters), this availability
-      type will be used for the entire cluster.
+      Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
     "enum":
       - |-
         SPOT_AZURE
@@ -1072,6 +1097,9 @@ github.com/databricks/databricks-sdk-go/service/compute.ClientsTypes:
     "description": |-
       With notebooks set, this cluster can be used for notebooks
 github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf:
+  "_":
+    "description": |-
+      Cluster log delivery config
   "dbfs":
     "description": |-
       destination needs to be provided. e.g.
@@ -1084,9 +1112,12 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf:
       `instance_profile_arn` has permission to write data to the s3 destination.
   "volumes":
     "description": |-
-      destination needs to be provided. e.g.
-      `{ "volumes" : { "destination" : "/Volumes/catalog/schema/volume/cluster_log" } }`
+      destination needs to be provided, e.g.
+      `{ "volumes": { "destination": "/Volumes/catalog/schema/volume/cluster_log" } }`
 github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
+  "_":
+    "description": |-
+      Contains a snapshot of the latest user specified settings that were used to create/edit the cluster.
   "apply_policy_default_values":
     "description": |-
       When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied.
@@ -1116,7 +1147,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
       the destination of executor logs is `$destination/$clusterId/executor`.
   "cluster_name":
-    "description": |
+    "description": |-
       Cluster name requested by the user. This doesn't have to be unique.
       If not specified at creation, the cluster name will be an empty string.
   "custom_tags":
@@ -1128,7 +1159,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
 
       - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
   "data_security_mode":
-    "description": |
+    "description": |-
       Data security mode decides what data governance model to use when accessing data
       from a cluster.
 
@@ -1149,17 +1180,22 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
       * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
       * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
-  "docker_image": {}
+  "docker_image":
+    "description": |-
+      Custom docker image BYOC
   "driver_instance_pool_id":
     "description": |-
       The optional ID of the instance pool for the driver of the cluster belongs.
       The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
       assigned.
   "driver_node_type_id":
-    "description": |
-      The node type of the Spark driver. Note that this field is optional;
-      if unset, the driver node type will be set as the same value
+    "description": |-
+      The node type of the Spark driver.
+      Note that this field is optional; if unset, the driver node type will be set as the same value
       as `node_type_id` defined above.
+
+      This field, along with node_type_id, should not be set if virtual_cluster_size is set.
+      If both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.
   "enable_elastic_disk":
     "description": |-
       Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
@@ -1174,17 +1210,19 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       If not specified at cluster creation, a set of default values will be used.
   "init_scripts":
     "description": |-
-      The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
+      The configuration for storing init scripts. Any number of destinations can be specified.
+      The scripts are executed sequentially in the order provided.
+      If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
   "instance_pool_id":
     "description": |-
       The optional ID of the instance pool to which the cluster belongs.
   "is_single_node":
-    "description": |
+    "description": |-
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
   "kind":
-    "description": |
+    "description": |-
       The kind of compute described by this compute specification.
 
       Depending on `kind`, different validations and default values will be applied.
@@ -1196,7 +1234,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
 
       By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   "node_type_id":
-    "description": |
+    "description": |-
       This field encodes, through a single value, the resources available to each of
       the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
       and optimized for memory or compute intensive workloads. A list of available node
@@ -1215,7 +1253,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
     "description": |-
       The ID of the cluster policy used to create the cluster if applicable.
   "runtime_engine":
-    "description": |
+    "description": |-
       Determines the cluster's runtime engine, either standard or Photon.
 
       This field is not compatible with legacy `spark_version` values that contain `-photon-`.
@@ -1227,7 +1265,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
     "description": |-
       Single user name if data_security_mode is `SINGLE_USER`
   "spark_conf":
-    "description": |
+    "description": |-
       An object containing a set of optional, user-specified Spark configuration key-value pairs.
       Users can also pass in a string of extra JVM options to the driver and the executors via
       `spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.
@@ -1245,7 +1283,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       `{"SPARK_WORKER_MEMORY": "28000m", "SPARK_LOCAL_DIRS": "/local_disk0"}` or
       `{"SPARK_DAEMON_JAVA_OPTS": "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
   "spark_version":
-    "description": |
+    "description": |-
       The Spark version of the cluster, e.g. `3.3.x-scala2.11`.
       A list of available Spark versions can be retrieved by using
       the :method:clusters/sparkVersions API call.
@@ -1255,14 +1293,16 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       corresponding private keys can be used to login with the user name `ubuntu` on port `2200`.
       Up to 10 keys can be specified.
   "use_ml_runtime":
-    "description": |
+    "description": |-
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
-  "workload_type": {}
+  "workload_type":
+    "description": |-
+      Cluster Attributes showing for clusters workload types.
 github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode:
   "_":
-    "description": |
+    "description": |-
       Data security mode decides what data governance model to use when accessing data
       from a cluster.
 
@@ -1285,12 +1325,6 @@ github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode:
       * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
     "enum":
       - |-
-        DATA_SECURITY_MODE_AUTO
-      - |-
-        DATA_SECURITY_MODE_STANDARD
-      - |-
-        DATA_SECURITY_MODE_DEDICATED
-      - |-
         NONE
       - |-
         SINGLE_USER
@@ -1304,7 +1338,16 @@ github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode:
         LEGACY_SINGLE_USER
       - |-
         LEGACY_SINGLE_USER_STANDARD
+      - |-
+        DATA_SECURITY_MODE_STANDARD
+      - |-
+        DATA_SECURITY_MODE_DEDICATED
+      - |-
+        DATA_SECURITY_MODE_AUTO
 github.com/databricks/databricks-sdk-go/service/compute.DbfsStorageInfo:
+  "_":
+    "description": |-
+      A storage location in DBFS
   "destination":
     "description": |-
       dbfs destination, e.g. `dbfs:/my/path`
@@ -1325,7 +1368,8 @@ github.com/databricks/databricks-sdk-go/service/compute.DockerImage:
 github.com/databricks/databricks-sdk-go/service/compute.EbsVolumeType:
   "_":
     "description": |-
-      The type of EBS volumes that will be launched with this cluster.
+      All EBS volume types that Databricks supports.
+      See https://aws.amazon.com/ebs/details/ for details.
     "enum":
       - |-
         GENERAL_PURPOSE_SSD
@@ -1349,13 +1393,16 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
       E.g. dependencies: ["foo==0.0.1", "-r /Workspace/test/requirements.txt"]
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
+  "_":
+    "description": |-
+      Attributes set during cluster creation which are related to GCP.
   "availability":
     "description": |-
-      This field determines whether the instance pool will contain preemptible
+      This field determines whether the spark executors will be scheduled to run on preemptible
       VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
   "boot_disk_size":
     "description": |-
-      boot disk size in GB
+      Boot disk size in GB
   "google_service_account":
     "description": |-
       If provided, the cluster will impersonate the google service account when accessing
@@ -1364,18 +1411,23 @@ github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
       administrator.
   "local_ssd_count":
     "description": |-
-      If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type.
+      If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached.
+      Each local SSD is 375GB in size.
+      Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds)
+      for the supported number of local SSDs for each instance type.
   "use_preemptible_executors":
     "description": |-
-      This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).
-      Note: Soon to be deprecated, use the availability field instead.
+      This field determines whether the spark executors will be scheduled to run on preemptible
+      VMs (when set to true) versus standard compute engine VMs (when set to false; default).
+      Note: Soon to be deprecated, use the 'availability' field instead.
   "zone_id":
     "description": |-
       Identifier for the availability zone in which the cluster resides.
       This can be one of the following:
-      - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default]
+      - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default].
       - "AUTO" => Databricks picks an availability zone to schedule the cluster on.
-      - A GCP availability zone => Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones.
+      - A GCP availability zone => Pick One of the available zones for (machine type + region) from
+      https://cloud.google.com/compute/docs/regions-zones.
 github.com/databricks/databricks-sdk-go/service/compute.GcpAvailability:
   "_":
     "description": |-
@@ -1389,40 +1441,47 @@ github.com/databricks/databricks-sdk-go/service/compute.GcpAvailability:
       - |-
         PREEMPTIBLE_WITH_FALLBACK_GCP
 github.com/databricks/databricks-sdk-go/service/compute.GcsStorageInfo:
+  "_":
+    "description": |-
+      A storage location in Google Cloud Platform's GCS
   "destination":
     "description": |-
       GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
 github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
+  "_":
+    "description": |-
+      Config for an individual init script
+      Next ID: 11
   "abfss":
     "description": |-
-      destination needs to be provided. e.g.
-      `{ "abfss" : { "destination" : "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>" } }
+      destination needs to be provided, e.g.
+      `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`
   "dbfs":
     "description": |-
       destination needs to be provided. e.g.
-      `{ "dbfs" : { "destination" : "dbfs:/home/cluster_log" } }`
+      `{ "dbfs": { "destination" : "dbfs:/home/cluster_log" } }`
   "file":
     "description": |-
-      destination needs to be provided. e.g.
-      `{ "file" : { "destination" : "file:/my/local/file.sh" } }`
+      destination needs to be provided, e.g.
+      `{ "file": { "destination": "file:/my/local/file.sh" } }`
   "gcs":
     "description": |-
-      destination needs to be provided. e.g.
+      destination needs to be provided, e.g.
       `{ "gcs": { "destination": "gs://my-bucket/file.sh" } }`
   "s3":
     "description": |-
       destination and either the region or endpoint need to be provided. e.g.
-      `{ "s3": { "destination" : "s3://cluster_log_bucket/prefix", "region" : "us-west-2" } }`
+      `{ \"s3\": { \"destination\": \"s3://cluster_log_bucket/prefix\", \"region\": \"us-west-2\" } }`
       Cluster iam role is used to access s3, please make sure the cluster iam role in
       `instance_profile_arn` has permission to write data to the s3 destination.
   "volumes":
     "description": |-
       destination needs to be provided. e.g.
-      `{ "volumes" : { "destination" : "/Volumes/my-init.sh" } }`
+      `{ \"volumes\" : { \"destination\" : \"/Volumes/my-init.sh\" } }`
   "workspace":
     "description": |-
-      destination needs to be provided. e.g.
-      `{ "workspace" : { "destination" : "/Users/user1@databricks.com/my-init.sh" } }`
+      destination needs to be provided, e.g.
+      `{ "workspace": { "destination": "/cluster-init-scripts/setup-datadog.sh" } }`
 github.com/databricks/databricks-sdk-go/service/compute.Library:
   "cran":
     "description": |-
@@ -1461,12 +1520,8 @@ github.com/databricks/databricks-sdk-go/service/compute.LocalFileInfo:
     "description": |-
       local file destination, e.g. `file:/my/local/file.sh`
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
-  "log_analytics_primary_key":
-    "description": |-
-      <needs content added>
-  "log_analytics_workspace_id":
-    "description": |-
-      <needs content added>
+  "log_analytics_primary_key": {}
+  "log_analytics_workspace_id": {}
 github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary:
   "coordinates":
     "description": |-
@@ -1499,14 +1554,6 @@ github.com/databricks/databricks-sdk-go/service/compute.RCranLibrary:
       The repository where the package can be found. If not specified, the default CRAN repo is used.
 github.com/databricks/databricks-sdk-go/service/compute.RuntimeEngine:
   "_":
-    "description": |
-      Determines the cluster's runtime engine, either standard or Photon.
-
-      This field is not compatible with legacy `spark_version` values that contain `-photon-`.
-      Remove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.
-
-      If left unspecified, the runtime engine defaults to standard unless the spark_version
-      contains -photon-, in which case Photon will be used.
     "enum":
       - |-
         NULL
@@ -1515,6 +1562,9 @@ github.com/databricks/databricks-sdk-go/service/compute.RuntimeEngine:
       - |-
         PHOTON
 github.com/databricks/databricks-sdk-go/service/compute.S3StorageInfo:
+  "_":
+    "description": |-
+      A storage location in Amazon S3
   "canned_acl":
     "description": |-
       (Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.
@@ -1548,17 +1598,27 @@ github.com/databricks/databricks-sdk-go/service/compute.S3StorageInfo:
       S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If both are set,
       endpoint will be used.
 github.com/databricks/databricks-sdk-go/service/compute.VolumesStorageInfo:
+  "_":
+    "description": |-
+      A storage location back by UC Volumes.
   "destination":
     "description": |-
-      Unity Catalog volumes file destination, e.g. `/Volumes/catalog/schema/volume/dir/file`
+      UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
+      or `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
 github.com/databricks/databricks-sdk-go/service/compute.WorkloadType:
+  "_":
+    "description": |-
+      Cluster Attributes showing for clusters workload types.
   "clients":
-    "description": |2-
-       defined what type of clients can use the cluster. E.g. Notebooks, Jobs
+    "description": |-
+      defined what type of clients can use the cluster. E.g. Notebooks, Jobs
 github.com/databricks/databricks-sdk-go/service/compute.WorkspaceStorageInfo:
+  "_":
+    "description": |-
+      A storage location in Workspace Filesystem (WSFS)
   "destination":
     "description": |-
-      workspace files destination, e.g. `/Users/user1@databricks.com/my-init.sh`
+      wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
 github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState:
   "_":
     "enum":
@@ -2015,6 +2075,8 @@ github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget:
         PERFORMANCE_OPTIMIZED
       - |-
         COST_OPTIMIZED
+      - |-
+        BALANCED
 github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfiguration:
   "interval":
     "description": |-
@@ -2583,6 +2645,19 @@ github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind:
     "enum":
       - |-
         BUNDLE
+github.com/databricks/databricks-sdk-go/service/pipelines.EventLogSpec:
+  "_":
+    "description": |-
+      Configurable event log parameters.
+  "catalog":
+    "description": |-
+      The UC catalog the event log is published under.
+  "name":
+    "description": |-
+      The name the event log is published to in UC.
+  "schema":
+    "description": |-
+      The UC schema the event log is published under.
 github.com/databricks/databricks-sdk-go/service/pipelines.FileLibrary:
   "path":
     "description": |-
@@ -2920,6 +2995,10 @@ github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
       must provide an API key using one of the following fields:
       `ai21labs_api_key` or `ai21labs_api_key_plaintext`.
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig:
+  "fallback_config":
+    "description": |-
+      Configuration for traffic fallback which auto fallbacks to other served entities if the request to a served
+      entity fails with certain error codes, to increase availability.
   "guardrails":
     "description": |-
       Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.
@@ -3078,6 +3157,18 @@ github.com/databricks/databricks-sdk-go/service/serving.AnthropicConfig:
       reference your key using Databricks Secrets, see `anthropic_api_key`. You
       must provide an API key using one of the following fields:
       `anthropic_api_key` or `anthropic_api_key_plaintext`.
+github.com/databricks/databricks-sdk-go/service/serving.ApiKeyAuth:
+  "key":
+    "description": |-
+      The name of the API key parameter used for authentication.
+  "value":
+    "description": |-
+      The Databricks secret key reference for an API Key.
+      If you prefer to paste your token directly, see `value_plaintext`.
+  "value_plaintext":
+    "description": |-
+      The API Key provided as a plaintext string. If you prefer to reference your
+      token using Databricks Secrets, see `value`.
 github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput:
   "catalog_name":
     "description": |-
@@ -3091,6 +3182,15 @@ github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput:
   "table_name_prefix":
     "description": |-
       The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled.
+github.com/databricks/databricks-sdk-go/service/serving.BearerTokenAuth:
+  "token":
+    "description": |-
+      The Databricks secret key reference for a token.
+      If you prefer to paste your token directly, see `token_plaintext`.
+  "token_plaintext":
+    "description": |-
+      The token provided as a plaintext string. If you prefer to reference your
+      token using Databricks Secrets, see `token`.
 github.com/databricks/databricks-sdk-go/service/serving.CohereConfig:
   "cohere_api_base":
     "description": |-
@@ -3108,6 +3208,21 @@ github.com/databricks/databricks-sdk-go/service/serving.CohereConfig:
       reference your key using Databricks Secrets, see `cohere_api_key`. You
       must provide an API key using one of the following fields:
       `cohere_api_key` or `cohere_api_key_plaintext`.
+github.com/databricks/databricks-sdk-go/service/serving.CustomProviderConfig:
+  "_":
+    "description": |-
+      Configs needed to create a custom provider model route.
+  "api_key_auth":
+    "description": |-
+      This is a field to provide API key authentication for the custom provider API.
+      You can only specify one authentication method.
+  "bearer_token_auth":
+    "description": |-
+      This is a field to provide bearer token authentication for the custom provider API.
+      You can only specify one authentication method.
+  "custom_provider_url":
+    "description": |-
+      This is a field to provide the URL of the custom provider API.
 github.com/databricks/databricks-sdk-go/service/serving.DatabricksModelServingConfig:
   "databricks_api_token":
     "description": |-
@@ -3165,6 +3280,9 @@ github.com/databricks/databricks-sdk-go/service/serving.ExternalModel:
   "cohere_config":
     "description": |-
       Cohere Config. Only required if the provider is 'cohere'.
+  "custom_provider_config":
+    "description": |-
+      Custom Provider Config. Only required if the provider is 'custom'.
   "databricks_model_serving_config":
     "description": |-
       Databricks Model Serving Config. Only required if the provider is 'databricks-model-serving'.
@@ -3205,6 +3323,15 @@ github.com/databricks/databricks-sdk-go/service/serving.ExternalModelProvider:
         openai
       - |-
         palm
+      - |-
+        custom
+github.com/databricks/databricks-sdk-go/service/serving.FallbackConfig:
+  "enabled":
+    "description": |-
+      Whether to enable traffic fallback. When a served entity in the serving endpoint returns specific error
+      codes (e.g. 500), the request will automatically be round-robin attempted with other served entities in the same
+      endpoint, following the order of served entity list, until a successful response is returned.
+      If all attempts fail, return the last response with the error code.
 github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
   "private_key":
     "description": |-
@@ -3415,6 +3542,8 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkload
         Large
 github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadType:
   "_":
+    "description": |-
+      Please keep this in sync with with workload types in InferenceEndpointEntities.scala
     "enum":
       - |-
         CPU
@@ -3428,6 +3557,8 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkload
         MULTIGPU_MEDIUM
 github.com/databricks/databricks-sdk-go/service/serving.ServingModelWorkloadType:
   "_":
+    "description": |-
+      Please keep this in sync with with workload types in InferenceEndpointEntities.scala
     "enum":
       - |-
         CPU

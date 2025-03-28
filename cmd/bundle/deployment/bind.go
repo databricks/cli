@@ -45,7 +45,7 @@ func newBindCommand() *cobra.Command {
 		}
 
 		if !exists {
-			return fmt.Errorf("%s with an id '%s' is not found", resource.TerraformResourceName(), args[1])
+			return fmt.Errorf("%s with an id '%s' is not found", resource.ResourceDescription().SingularName, args[1])
 		}
 
 		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
@@ -66,7 +66,7 @@ func newBindCommand() *cobra.Command {
 			return fmt.Errorf("failed to bind the resource, err: %w", err)
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'. Run 'bundle deploy' to deploy changes to your workspace", resource.TerraformResourceName(), args[1]))
+		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'. Run 'bundle deploy' to deploy changes to your workspace", resource.ResourceDescription().SingularName, args[1]))
 		return nil
 	}
 

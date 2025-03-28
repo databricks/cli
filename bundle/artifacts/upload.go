@@ -21,18 +21,18 @@ func (m *cleanUp) Name() string {
 }
 
 func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	client, uploadPath, diags := libraries.GetFilerForLibraries(ctx, b)
+	client, uploadPath, diags := libraries.GetFilerForLibrariesCleanup(ctx, b)
 	if diags.HasError() {
 		return diags
 	}
 
 	// We intentionally ignore the error because it is not critical to the deployment
-	err := client.Delete(ctx, ".", filer.DeleteRecursively)
+	err := client.Delete(ctx, libraries.InternalDirName, filer.DeleteRecursively)
 	if err != nil {
 		log.Debugf(ctx, "failed to delete %s: %v", uploadPath, err)
 	}
 
-	err = client.Mkdir(ctx, ".")
+	err = client.Mkdir(ctx, libraries.InternalDirName)
 	if err != nil {
 		return diag.Errorf("unable to create directory for %s: %v", uploadPath, err)
 	}
