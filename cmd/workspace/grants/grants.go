@@ -76,7 +76,24 @@ func newGet() *cobra.Command {
   Gets the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
+      CATALOG,
+      CLEAN_ROOM,
+      CONNECTION,
+      CREDENTIAL,
+      EXTERNAL_LOCATION,
+      FUNCTION,
+      METASTORE,
+      PIPELINE,
+      PROVIDER,
+      RECIPIENT,
+      SCHEMA,
+      SHARE,
+      STORAGE_CREDENTIAL,
+      TABLE,
+      VOLUME,
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -141,7 +158,24 @@ func newGetEffective() *cobra.Command {
   Gets the effective permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
+      CATALOG,
+      CLEAN_ROOM,
+      CONNECTION,
+      CREDENTIAL,
+      EXTERNAL_LOCATION,
+      FUNCTION,
+      METASTORE,
+      PIPELINE,
+      PROVIDER,
+      RECIPIENT,
+      SCHEMA,
+      SHARE,
+      STORAGE_CREDENTIAL,
+      TABLE,
+      VOLUME,
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -208,7 +242,24 @@ func newUpdate() *cobra.Command {
   Updates the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
+      CATALOG,
+      CLEAN_ROOM,
+      CONNECTION,
+      CREDENTIAL,
+      EXTERNAL_LOCATION,
+      FUNCTION,
+      METASTORE,
+      PIPELINE,
+      PROVIDER,
+      RECIPIENT,
+      SCHEMA,
+      SHARE,
+      STORAGE_CREDENTIAL,
+      TABLE,
+      VOLUME,
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
