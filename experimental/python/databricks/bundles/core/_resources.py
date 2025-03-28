@@ -7,6 +7,7 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.jobs._models.job import Job, JobParam
+    from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineParam
 
 __all__ = ["Resources"]
 
@@ -55,12 +56,17 @@ class Resources:
 
     def __init__(self):
         self._jobs = dict[str, "Job"]()
+        self._pipelines = dict[str, "Pipeline"]()
         self._locations = dict[tuple[str, ...], Location]()
         self._diagnostics = Diagnostics()
 
     @property
     def jobs(self) -> dict[str, "Job"]:
         return self._jobs
+
+    @property
+    def pipelines(self) -> dict[str, "Pipeline"]:
+        return self._pipelines
 
     @property
     def diagnostics(self) -> Diagnostics:
@@ -86,12 +92,15 @@ class Resources:
         """
 
         from databricks.bundles.jobs import Job
+        from databricks.bundles.pipelines import Pipeline
 
         location = location or Location.from_stack_frame(depth=1)
 
         match resource:
             case Job():
                 self.add_job(resource_name, resource, location=location)
+            case Pipeline():
+                self.add_pipeline(resource_name, resource, location=location)
             case _:
                 raise ValueError(f"Unsupported resource type: {type(resource)}")
 
@@ -126,6 +135,38 @@ class Resources:
                 self.add_location(path, location)
 
             self._jobs[resource_name] = job
+
+    def add_pipeline(
+        self,
+        resource_name: str,
+        pipeline: "PipelineParam",
+        *,
+        location: Optional[Location] = None,
+    ) -> None:
+        """
+        Adds a pipeline to the collection of resources. Resource name must be unique across all pipelines.
+
+        :param resource_name: unique identifier for the pipeline
+        :param pipeline: the pipeline to add, can be Pipeline or dict
+        :param location: optional location of the pipeline in the source code
+        """
+        from databricks.bundles.pipelines import Pipeline
+
+        pipeline = _transform(Pipeline, pipeline)
+        path = ("resources", "pipelines", resource_name)
+        location = location or Location.from_stack_frame(depth=1)
+
+        if self._pipelines.get(resource_name):
+            self.add_diagnostic_error(
+                msg=f"Duplicate resource name '{resource_name}' for a pipeline. Resource names must be unique.",
+                location=location,
+                path=path,
+            )
+        else:
+            if location:
+                self.add_location(path, location)
+
+            self._pipelines[resource_name] = pipeline
 
     def add_location(self, path: tuple[str, ...], location: Location) -> None:
         """
@@ -199,6 +240,9 @@ class Resources:
         """
         for name, job in other.jobs.items():
             self.add_job(name, job)
+
+        for name, pipeline in other.pipelines.items():
+            self.add_pipeline(name, pipeline)
 
         for path, location in other._locations.items():
             self.add_location(path, location)
