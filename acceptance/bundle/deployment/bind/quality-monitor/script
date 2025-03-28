@@ -1,2 +1,2 @@
-trace $CLI bundle deployment bind monitor1 "catalog.schema.table" --auto-approve
+trace $CLI bundle deployment bind monitor1 "catalog.schema.table"
 trace $CLI bundle deploy

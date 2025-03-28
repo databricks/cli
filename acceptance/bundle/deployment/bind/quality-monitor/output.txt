@@ -1,5 +1,5 @@
 
->>> [CLI] bundle deployment bind monitor1 catalog.schema.table --auto-approve
+>>> [CLI] bundle deployment bind monitor1 catalog.schema.table
 Updating deployment state...
 Successfully bound quality_monitor with an id 'catalog.schema.table'. Run 'bundle deploy' to deploy changes to your workspace
 
