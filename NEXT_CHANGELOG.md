@@ -6,6 +6,7 @@
 Previously ".internal" folder under artifact_path was not cleaned up as expected. In this release this behaviour is fixed and now DABs cleans up this folder before uploading artifacts to it.
 
 ### CLI
+* Include supported values for enum positional args in docs ([#2557](https://github.com/databricks/cli/pull/2557))
 * Upgrade Go SDK to 0.61.0 ([#2575](https://github.com/databricks/cli/pull/2575))
 
 ### Bundles
