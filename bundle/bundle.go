@@ -31,6 +31,10 @@ import (
 
 const internalFolder = ".internal"
 
+type Metrics struct {
+	ConfigurationFileCount int64
+}
+
 type Bundle struct {
 	// BundleRootPath is the local path to the root directory of the bundle.
 	// It is set when we instantiate a new bundle instance.
@@ -93,6 +97,8 @@ type Bundle struct {
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud
+
+	Metrics Metrics
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
