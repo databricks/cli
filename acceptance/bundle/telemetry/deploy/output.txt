@@ -41,7 +41,14 @@ Deployment complete!
         "resource_pipeline_ids": [
           "[UUID]",
           "[UUID]"
-        ]
+        ],
+        "experimental": {
+          "configuration_file_count": 1,
+          "variable_count": 0,
+          "complex_variable_count": 0,
+          "lookup_variable_count": 0,
+          "target_count": 0
+        }
       }
     }
   }
