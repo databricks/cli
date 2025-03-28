@@ -1,0 +1,5 @@
+bundle:
+  name: foobar
+
+workspace:
+  profile: someprofile

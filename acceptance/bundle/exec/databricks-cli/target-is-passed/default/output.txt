@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle exec -- [CLI] current-user me
+{
+  "id":"[USERID]",
+  "userName":"[USERNAME]"
+}
