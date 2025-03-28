@@ -124,9 +124,10 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		m = m.Clone()
 		m.Set(V(component.key), nv) //nolint:errcheck
 		return Value{
-			v: m,
-			k: KindMap,
-			l: v.l,
+			v:         m,
+			k:         KindMap,
+			l:         v.l,
+			directory: v.directory,
 		}, nil
 
 	case component.isIndex():
@@ -163,9 +164,10 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		s = slices.Clone(s)
 		s[component.index] = nv
 		return Value{
-			v: s,
-			k: KindSequence,
-			l: v.l,
+			v:         s,
+			k:         KindSequence,
+			l:         v.l,
+			directory: v.directory,
 		}, nil
 
 	default:

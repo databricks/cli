@@ -46,6 +46,14 @@ func NewValue(v any, loc []Location) Value {
 		v = newMappingFromGoMap(vin)
 	}
 
+	if len(loc) != 0 {
+		return Value{
+			v: v,
+			k: kindOf(v),
+			l: slices.Clone(loc),
+		}
+	}
+
 	return Value{
 		v: v,
 		k: kindOf(v),
@@ -94,9 +102,10 @@ func (v Value) WithLocations(loc []Location) Value {
 
 func (v Value) AppendLocationsFromValue(w Value) Value {
 	return Value{
-		v: v.v,
-		k: v.k,
-		l: append(v.l, w.l...),
+		v:         v.v,
+		k:         v.k,
+		l:         append(v.l, w.l...),
+		directory: v.directory,
 	}
 }
 
@@ -132,6 +141,10 @@ func (v Value) Directory() (string, error) {
 	}
 
 	return *v.directory, nil
+}
+
+func (v Value) DerivesDirectory() bool {
+	return v.directory != nil
 }
 
 func (v Value) IsValid() bool {
@@ -206,9 +219,10 @@ func (v Value) Index(i int) Value {
 
 func (v Value) MarkAnchor() Value {
 	return Value{
-		v: v.v,
-		k: v.k,
-		l: v.l,
+		v:         v.v,
+		k:         v.k,
+		l:         v.l,
+		directory: v.directory,
 
 		anchor: true,
 	}
@@ -227,6 +241,9 @@ func (v Value) eq(w Value) bool {
 		return false
 	}
 	if !slices.Equal(v.l, w.l) {
+		return false
+	}
+	if v.directory != w.directory {
 		return false
 	}
 
