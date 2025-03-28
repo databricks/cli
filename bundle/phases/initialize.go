@@ -30,9 +30,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
 
-		// Reads (dynamic): workspace.{host,profile,...} (ensure that there are no variable references)
-		validate.NoInterpolationInAuthConfig(),
-
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
 		mutator.RewriteSyncPaths(),
@@ -196,9 +193,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
 		mutator.ConfigureWSFS(),
 
-		// Reads (dynamic): resources.jobs.*.{notebook_task.notebook_path,spark_jar_task.main_class_name,spark_python_task.python_file}, resources.pipelines.*.{libraries.notebook.path,libraries.file.path}, resources.dashboards.*.definition, resources.apps.*.{package,resources.*.path}
-		// Updates (dynamic): resources.jobs.*.{notebook_task.notebook_path,spark_jar_task.main_class_name,spark_python_task.python_file}, resources.pipelines.*.{libraries.notebook.path,libraries.file.path}, resources.dashboards.*.definition, resources.apps.*.{package,resources.*.path} (converts local paths to workspace paths)
-		// Translates local file paths to workspace paths for notebooks, files, and directories
 		mutator.TranslatePaths(),
 
 		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
