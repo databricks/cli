@@ -156,7 +156,8 @@ func newDelete() *cobra.Command {
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
-    ASSET_TYPE: The type of the asset.
+    ASSET_TYPE: The type of the asset. 
+      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     ASSET_FULL_NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
 
@@ -222,7 +223,8 @@ func newGet() *cobra.Command {
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
-    ASSET_TYPE: The type of the asset.
+    ASSET_TYPE: The type of the asset. 
+      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     ASSET_FULL_NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
 
@@ -358,7 +360,8 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
-    ASSET_TYPE: The type of the asset.
+    ASSET_TYPE: The type of the asset. 
+      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: A fully qualified name that uniquely identifies the asset within the clean
       room. This is also the name displayed in the clean room UI.
       

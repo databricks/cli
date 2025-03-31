@@ -1,0 +1,399 @@
+
+>>> python -c import sys; print("%s.%s" % sys.version_info[:2])
+[UV_PYTHON]
+
+>>> [CLI] bundle init default-python --config-file ./input.json --output-dir .
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'project_name_[UNIQUE_NAME]/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'project_name_[UNIQUE_NAME]' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> [CLI] bundle validate -t dev
+Name: project_name_[UNIQUE_NAME]
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+
+Validation OK!
+
+>>> [CLI] bundle validate -t dev -o json
+
+>>> [CLI] bundle deploy -t dev
+Building python_artifact...
+Uploading dist/project_name_[UNIQUE_NAME]-0.0.1+[NUMBER].[NUMBER]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary -t dev
+Name: project_name_[UNIQUE_NAME]
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+Resources:
+  Jobs:
+    project_name_[UNIQUE_NAME]_job:
+      Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_job
+      URL:  [DATABRICKS_URL]/jobs/[NUMBER]
+  Pipelines:
+    project_name_[UNIQUE_NAME]_pipeline:
+      Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]
+
+>>> [CLI] bundle summary -t dev -o json
+
+>>> diff.py ../out.validate.dev.json ../out.summary.dev.json
+--- ../out.validate.dev.json
++++ ../out.summary.dev.json
+@@ -45,4 +45,5 @@
+         "edit_mode": "UI_LOCKED",
+         "format": "MULTI_TASK",
++        "id": "[NUMBER]",
+         "job_clusters": [
+           {
+@@ -61,5 +62,4 @@
+         "max_concurrent_runs": 4,
+         "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
+-        "permissions": [],
+         "queue": {
+           "enabled": true
+@@ -112,5 +112,6 @@
+             "unit": "DAYS"
+           }
+-        }
++        },
++        "url": "[DATABRICKS_URL]/jobs/[NUMBER]"
+       }
+     },
+@@ -125,4 +126,5 @@
+         },
+         "development": true,
++        "id": "[UUID]",
+         "libraries": [
+           {
+@@ -133,6 +135,6 @@
+         ],
+         "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
+-        "permissions": [],
+-        "schema": "project_name_[UNIQUE_NAME]_dev"
++        "schema": "project_name_[UNIQUE_NAME]_dev",
++        "url": "[DATABRICKS_URL]/pipelines/[UUID]"
+       }
+     }
+@@ -143,5 +145,4 @@
+     ]
+   },
+-  "targets": null,
+   "workspace": {
+     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
+
+>>> [CLI] bundle destroy -t dev --auto-approve
+The following resources will be deleted:
+  delete job project_name_[UNIQUE_NAME]_job
+  delete pipeline project_name_[UNIQUE_NAME]_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] bundle validate -t prod
+Name: project_name_[UNIQUE_NAME]
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
+
+Validation OK!
+
+>>> [CLI] bundle validate -t prod -o json
+
+>>> diff.py ../out.validate.dev.json ../out.validate.prod.json
+--- ../out.validate.dev.json
++++ ../out.validate.prod.json
+@@ -8,16 +8,11 @@
+   },
+   "bundle": {
+-    "deployment": {
+-      "lock": {
+-        "enabled": false
+-      }
+-    },
+-    "environment": "dev",
++    "environment": "prod",
+     "git": {
+       "bundle_root_path": "."
+     },
+-    "mode": "development",
++    "mode": "production",
+     "name": "project_name_[UNIQUE_NAME]",
+-    "target": "dev",
++    "target": "prod",
+     "terraform": {},
+     "uuid": "[UUID]"
+@@ -27,13 +22,10 @@
+     "resources/project_name_[UNIQUE_NAME].pipeline.yml"
+   ],
+-  "presets": {
+-    "jobs_max_concurrent_runs": 4,
+-    "name_prefix": "[dev [USERNAME]] ",
+-    "pipelines_development": true,
+-    "tags": {
+-      "dev": "[USERNAME]"
+-    },
+-    "trigger_pause_status": "PAUSED"
+-  },
++  "permissions": [
++    {
++      "level": "CAN_MANAGE",
++      "service_principal_name": "[USERNAME]"
++    }
++  ],
+   "resources": {
+     "jobs": {
+@@ -41,5 +33,5 @@
+         "deployment": {
+           "kind": "BUNDLE",
+-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
++          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
+         },
+         "edit_mode": "UI_LOCKED",
+@@ -59,18 +51,15 @@
+           }
+         ],
+-        "max_concurrent_runs": 4,
+-        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
++        "name": "project_name_[UNIQUE_NAME]_job",
+         "permissions": [],
+         "queue": {
+           "enabled": true
+         },
+-        "tags": {
+-          "dev": "[USERNAME]"
+-        },
++        "tags": {},
+         "tasks": [
+           {
+             "job_cluster_key": "job_cluster",
+             "notebook_task": {
+-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
++              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
+             },
+             "task_key": "notebook_task"
+@@ -107,5 +96,4 @@
+         ],
+         "trigger": {
+-          "pause_status": "PAUSED",
+           "periodic": {
+             "interval": 1,
+@@ -118,21 +106,20 @@
+       "project_name_[UNIQUE_NAME]_pipeline": {
+         "configuration": {
+-          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
++          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src"
+         },
+         "deployment": {
+           "kind": "BUNDLE",
+-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
++          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
+         },
+-        "development": true,
+         "libraries": [
+           {
+             "notebook": {
+-              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
++              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/dlt_pipeline"
+             }
+           }
+         ],
+-        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
++        "name": "project_name_[UNIQUE_NAME]_pipeline",
+         "permissions": [],
+-        "schema": "project_name_[UNIQUE_NAME]_dev"
++        "schema": "project_name_[UNIQUE_NAME]_prod"
+       }
+     }
+@@ -145,10 +132,10 @@
+   "targets": null,
+   "workspace": {
+-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
+-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",
++    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/artifacts",
++    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files",
+     "host": "[DATABRICKS_URL]",
+-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/resources",
+-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev",
+-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state"
++    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/resources",
++    "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod",
++    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state"
+   }
+ }
+
+>>> [CLI] bundle deploy -t prod
+Building python_artifact...
+Uploading dist/project_name_[UNIQUE_NAME]-0.0.1+[NUMBER].[NUMBER]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary -t prod
+Name: project_name_[UNIQUE_NAME]
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
+Resources:
+  Jobs:
+    project_name_[UNIQUE_NAME]_job:
+      Name: project_name_[UNIQUE_NAME]_job
+      URL:  [DATABRICKS_URL]/jobs/[NUMBER]
+  Pipelines:
+    project_name_[UNIQUE_NAME]_pipeline:
+      Name: project_name_[UNIQUE_NAME]_pipeline
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]
+
+>>> [CLI] bundle summary -t prod -o json
+
+>>> diff.py ../out.summary.dev.json ../out.summary.prod.json
+--- ../out.summary.dev.json
++++ ../out.summary.prod.json
+@@ -9,15 +9,13 @@
+   "bundle": {
+     "deployment": {
+-      "lock": {
+-        "enabled": false
+-      }
++      "lock": {}
+     },
+-    "environment": "dev",
++    "environment": "prod",
+     "git": {
+       "bundle_root_path": "."
+     },
+-    "mode": "development",
++    "mode": "production",
+     "name": "project_name_[UNIQUE_NAME]",
+-    "target": "dev",
++    "target": "prod",
+     "terraform": {},
+     "uuid": "[UUID]"
+@@ -27,13 +25,11 @@
+     "resources/project_name_[UNIQUE_NAME].pipeline.yml"
+   ],
+-  "presets": {
+-    "jobs_max_concurrent_runs": 4,
+-    "name_prefix": "[dev [USERNAME]] ",
+-    "pipelines_development": true,
+-    "tags": {
+-      "dev": "[USERNAME]"
+-    },
+-    "trigger_pause_status": "PAUSED"
+-  },
++  "permissions": [
++    {
++      "level": "CAN_MANAGE",
++      "service_principal_name": "[USERNAME]"
++    }
++  ],
++  "presets": {},
+   "resources": {
+     "jobs": {
+@@ -41,5 +37,5 @@
+         "deployment": {
+           "kind": "BUNDLE",
+-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
++          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
+         },
+         "edit_mode": "UI_LOCKED",
+@@ -60,11 +56,7 @@
+           }
+         ],
+-        "max_concurrent_runs": 4,
+-        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
++        "name": "project_name_[UNIQUE_NAME]_job",
+         "queue": {
+           "enabled": true
+-        },
+-        "tags": {
+-          "dev": "[USERNAME]"
+         },
+         "tasks": [
+@@ -72,5 +64,5 @@
+             "job_cluster_key": "job_cluster",
+             "notebook_task": {
+-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
++              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
+             },
+             "task_key": "notebook_task"
+@@ -107,5 +99,4 @@
+         ],
+         "trigger": {
+-          "pause_status": "PAUSED",
+           "periodic": {
+             "interval": 1,
+@@ -119,21 +110,20 @@
+       "project_name_[UNIQUE_NAME]_pipeline": {
+         "configuration": {
+-          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
++          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src"
+         },
+         "deployment": {
+           "kind": "BUNDLE",
+-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
++          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
+         },
+-        "development": true,
+         "id": "[UUID]",
+         "libraries": [
+           {
+             "notebook": {
+-              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
++              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/dlt_pipeline"
+             }
+           }
+         ],
+-        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
+-        "schema": "project_name_[UNIQUE_NAME]_dev",
++        "name": "project_name_[UNIQUE_NAME]_pipeline",
++        "schema": "project_name_[UNIQUE_NAME]_prod",
+         "url": "[DATABRICKS_URL]/pipelines/[UUID]"
+       }
+@@ -146,10 +136,10 @@
+   },
+   "workspace": {
+-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
+-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",
++    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/artifacts",
++    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files",
+     "host": "[DATABRICKS_URL]",
+-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/resources",
+-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev",
+-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state"
++    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/resources",
++    "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod",
++    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state"
+   }
+ }
+
+>>> [CLI] bundle destroy -t prod --auto-approve
+The following resources will be deleted:
+  delete job project_name_[UNIQUE_NAME]_job
+  delete pipeline project_name_[UNIQUE_NAME]_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
+
+Deleting files...
+Destroy complete!
