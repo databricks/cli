@@ -6,12 +6,6 @@ import glob
 import subprocess
 
 
-IGNORED_EXTENSIONS = [
-    "whl",
-    "zip",
-]
-
-
 def load_ignores():
     ignores = set()
     fail = False
@@ -21,7 +15,7 @@ def load_ignores():
             continue
         if line.startswith("#"):
             continue
-        expanded = glob.glob(line)
+        expanded = glob.glob(line, recursive=True)
         if len(expanded) == 0:
             print(f".wsignore:{ind + 1}: No matches for line: {line}")
             fail = True
@@ -83,10 +77,6 @@ def main():
             n_skipped += 1
             continue
         if f in ignores:
-            n_skipped += 1
-            continue
-        ext = os.path.basename(f).split(".")[-1]
-        if ext in IGNORED_EXTENSIONS:
             n_skipped += 1
             continue
         data = open(f, "rb").read()

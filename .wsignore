@@ -4,8 +4,12 @@
 .release_metadata.json
 bundle/schema/jsonschema.json
 experimental/python/docs/images/databricks-logo.svg
-acceptance/cmd/patchwhl/output/my_test_code-0.0.1+1741187253123456700.dist-info/METADATA
-acceptance/cmd/patchwhl/output/my_test_code-0.0.1+1741187253123456700.dist-info/WHEEL
+**/*.dist-info/METADATA
+**/*.dist-info/WHEEL
+
+# Binary files
+**/*.zip
+**/*.whl
 
 # "bundle run" has trailing whitespace:
 acceptance/bundle/integration_whl/*/output.txt
