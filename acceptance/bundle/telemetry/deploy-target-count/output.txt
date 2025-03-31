@@ -1,8 +1,7 @@
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/rabbit/default/files...
+>>> [CLI] bundle deploy -t one
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ox/one/files...
 Deploying resources...
-Updating deployment state...
 Deployment complete!
 
 >>> cat out.requests.txt
@@ -19,10 +18,10 @@ Deployment complete!
         "exit_code": 0
       },
       "bundle_deploy_event": {
-        "bundle_uuid": "[BUNDLE_UUID]",
-        "resource_count": 5,
-        "resource_job_count": 3,
-        "resource_pipeline_count": 2,
+        "bundle_uuid": "[UUID]",
+        "resource_count": 0,
+        "resource_job_count": 0,
+        "resource_pipeline_count": 0,
         "resource_model_count": 0,
         "resource_experiment_count": 0,
         "resource_model_serving_endpoint_count": 0,
@@ -33,21 +32,12 @@ Deployment complete!
         "resource_cluster_count": 0,
         "resource_dashboard_count": 0,
         "resource_app_count": 0,
-        "resource_job_ids": [
-          "1",
-          "2",
-          "3"
-        ],
-        "resource_pipeline_ids": [
-          "[UUID]",
-          "[UUID]"
-        ],
         "experimental": {
           "configuration_file_count": 1,
           "variable_count": 0,
           "complex_variable_count": 0,
           "lookup_variable_count": 0,
-          "target_count": 1
+          "target_count": 3
         }
       }
     }
