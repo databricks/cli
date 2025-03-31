@@ -1,5 +1,4 @@
 Cloud = true
-CloudSlow = false
 Local = false
 
 # Temporarily disabling due to IsServicePrincipal/email_notifications differences.
