@@ -2,6 +2,7 @@ export PYTHONDONTWRITEBYTECODE=1
 
 uv venv -q .venv
 venv_activate
+trace python3 -c 'import sys; print("%s.%s" % sys.version_info[:2])'
 uv pip install -q setuptools
 
 envsubst < input.json.tmpl > input.json

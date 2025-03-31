@@ -10,7 +10,7 @@ Ignore = [
 ]
 
 [EnvMatrix]
-UV_VERSION = [
+UV_PYTHON = [
     "3.9",
     "3.10",
     "3.11",
