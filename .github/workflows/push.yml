@@ -96,11 +96,19 @@ jobs:
         run: |
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
-      - name: golangci-lint
+      - name: golangci-lint (lint check)
         uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7.0.0
         with:
           version: v2.0.2
           args: --timeout=15m
+      - name: golangci-lint (fmt check)
+        run: |
+          make fmtcheck
+      - name: golangci-lint (fmt)
+        run: |
+          make fmt
+          # Exit with status code 1 if there are differences (i.e. unformatted files)
+          git diff --exit-code
       - name: Run ruff
         uses: astral-sh/ruff-action@f14634c415d3e63ffd4d550a22f037df4c734a60 # v3.1.0
         with:
