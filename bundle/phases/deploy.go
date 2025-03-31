@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -319,6 +320,18 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		bundleUuid = b.Config.Bundle.Uuid
 	}
 
+	variableCount := len(b.Config.Variables)
+	complexVariableCount := int64(0)
+	lookupVariableCount := int64(0)
+	for _, v := range b.Config.Variables {
+		if v.Type == variable.VariableTypeComplex {
+			complexVariableCount++
+		}
+		if v.Lookup != nil {
+			lookupVariableCount++
+		}
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid: bundleUuid,
@@ -341,6 +354,12 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourcePipelineIDs:  pipelineIds,
 			ResourceClusterIDs:   clusterIds,
 			ResourceDashboardIDs: dashboardIds,
+
+			Experimental: &protos.BundleDeployExperimental{
+				VariableCount:        int64(variableCount),
+				ComplexVariableCount: complexVariableCount,
+				LookupVariableCount:  lookupVariableCount,
+			},
 		},
 	})
 }
