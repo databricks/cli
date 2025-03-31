@@ -15,6 +15,11 @@ my_jobs_as_code_job = Job.from_dict(
                 "unit": "DAYS",
             },
         },
+        # "email_notifications": {
+        #     "on_failure": [
+        #         "[USERNAME]",
+        #     ],
+        # },
         "tasks": [
             {
                 "task_key": "notebook_task",

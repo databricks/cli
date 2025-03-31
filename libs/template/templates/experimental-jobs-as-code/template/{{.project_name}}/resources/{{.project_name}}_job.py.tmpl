@@ -21,6 +21,11 @@ This job runs {{.project_name}}_pipeline on a schedule.
                 "unit": "DAYS",
             },
         },
+        # "email_notifications": {
+        #     "on_failure": [
+        #         "{{user_name}}",
+        #     ],
+        # },
         "tasks": [
             {{- if eq .include_notebook "yes" -}}
             {{- "\n            " -}}
