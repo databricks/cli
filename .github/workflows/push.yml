@@ -107,6 +107,8 @@ jobs:
       - name: golangci-lint (fmt)
         run: |
           make fmt
+      - name: Fail on fmt differences
+        run: |
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
       - name: Run ruff
