@@ -96,23 +96,20 @@ jobs:
         run: |
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
-      - name: golangci-lint (lint check)
+      - name: Run lint checks
         uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7.0.0
         with:
           version: v2.0.2
           args: --timeout=15m
-      - name: golangci-lint (fmt check)
-        run: |
-          make fmtcheck
-      - name: Run ruff
+      - name: Run ruff (Python linter and formatter)
         uses: astral-sh/ruff-action@f14634c415d3e63ffd4d550a22f037df4c734a60 # v3.1.0
         with:
           version: "0.9.1"
           args: "format --check"
-      - name: golangci-lint (fmt)
+      - name: Run formatting
         run: |
           make fmt
-      - name: Fail on fmt differences
+      - name: Fail on formatting differences
         run: |
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
