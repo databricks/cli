@@ -138,7 +138,7 @@ func TestProxyHandleWebSocket(t *testing.T) {
 		"websocket: close 1006 (abnormal closure)",
 		"An established connection was aborted by the software in your host machine",
 		"connection reset by peer",
-		"An existing connection was forcibly closed by the remote host"
+		"An existing connection was forcibly closed by the remote host",
 	}
 	for _, msg := range potentialErrMessages {
 		if strings.Contains(err.Error(), msg) {
