@@ -88,6 +88,8 @@ func TestDeployBundleWithApp(t *testing.T) {
 	require.NoError(t, err)
 
 	content := string(data)
+	// Replace windows line endings with unix line endings
+	content = testutil.ReplaceWindowsLineEndings(content)
 	require.Contains(t, content, `command:
   - flask
   - --app
