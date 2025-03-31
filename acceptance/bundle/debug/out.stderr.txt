@@ -41,6 +41,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences(resources)
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobClusters
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobParameters
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobTasks

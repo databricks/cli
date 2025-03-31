@@ -37,9 +37,22 @@ type resolveVariableReferences struct {
 	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
 	skipFn      func(dyn.Value) bool
 	extraRounds int
+
+	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
+	includeResources bool
 }
 
-func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
+func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
+	return &resolveVariableReferences{
+		prefixes:         prefixes,
+		lookupFn:         lookup,
+		extraRounds:      maxResolutionRounds - 1,
+		pattern:          dyn.NewPattern(dyn.Key("resources")),
+		includeResources: true,
+	}
+}
+
+func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:    prefixes,
 		lookupFn:    lookup,
@@ -90,8 +103,12 @@ func lookupForVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value
 	return lookup(v, path, b)
 }
 
-func (*resolveVariableReferences) Name() string {
-	return "ResolveVariableReferences"
+func (m *resolveVariableReferences) Name() string {
+	if m.includeResources {
+		return "ResolveVariableReferences(resources)"
+	} else {
+		return "ResolveVariableReferences"
+	}
 }
 
 func (m *resolveVariableReferences) Validate(ctx context.Context, b *bundle.Bundle) error {
@@ -139,7 +156,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	hasUpdates := false
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := m.selectivelyMutate(b, func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
 		// This enables users to interpolate variable references to fields that haven't
@@ -204,4 +221,44 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 	}
 
 	return hasUpdates, diags
+}
+
+// If includeResources is true, the 'resources' config is mutation, otherwise, it is excluded.
+func (m *resolveVariableReferences) selectivelyMutate(b *bundle.Bundle, fn func(value dyn.Value) (dyn.Value, error)) error {
+	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		rootMap := root.MustMap()
+		newMapping := dyn.NewMapping()
+
+		var resources dyn.Pair
+		var hasResources bool
+		for _, pair := range rootMap.Pairs() {
+			if !m.includeResources && pair.Key.MustString() == "resources" {
+				hasResources = true
+				resources = pair
+			} else {
+				err := newMapping.Set(pair.Key, pair.Value)
+				if err != nil {
+					return dyn.InvalidValue, err
+				}
+			}
+		}
+
+		result, err := fn(dyn.NewValue(newMapping, root.Locations()))
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		if hasResources {
+			newResult := dyn.NewMapping()
+			newResult.Merge(result.MustMap())
+			err := newResult.Set(resources.Key, resources.Value)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+
+			return dyn.NewValue(newResult, root.Locations()), nil
+		} else {
+			return result, nil
+		}
+	})
 }
