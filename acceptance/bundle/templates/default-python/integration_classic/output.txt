@@ -1,5 +1,5 @@
 
->>> python3 -c import sys; print("%s.%s" % sys.version_info[:2])
+>>> python -c import sys; print("%s.%s" % sys.version_info[:2])
 [UV_PYTHON]
 
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir .
