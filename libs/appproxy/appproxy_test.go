@@ -140,12 +140,16 @@ func TestProxyHandleWebSocket(t *testing.T) {
 		"connection reset by peer",
 		"An existing connection was forcibly closed by the remote host",
 	}
+	found := false
 	for _, msg := range potentialErrMessages {
 		if strings.Contains(err.Error(), msg) {
-			return
+			found = true
+			break
 		}
 	}
 
 	// If none of the expected error messages are found, fail the test
-	t.Errorf("Expected one of the expected errors, got %s", err)
+	if !found {
+		t.Errorf("Expected one of the expected errors, got %s", err)
+	}
 }
