@@ -3,6 +3,7 @@ from databricks.bundles.jobs import Job, Task
 from databricks.bundles.core import job_mutator, Bundle
 import os
 
+
 @job_mutator
 def read_envs(bundle: Bundle, job: Job) -> Job:
     value = os.getenv("SOME_ENV_VAR", "default")
