@@ -67,6 +67,7 @@ def validate_contents(data):
 
 
 def main():
+    quiet = "-q" in sys.argv
     files = subprocess.check_output(["git", "ls-files"], encoding="utf-8").split()
     ignores = load_ignores()
     n_checked = 0
@@ -87,7 +88,8 @@ def main():
         n_checked += 1
         n_errored += 1 if error else 0
 
-    sys.stderr.write(f"{n_checked} checked, {n_skipped} skipped, {n_errored} failed.\n")
+    if not quiet:
+        sys.stderr.write(f"{n_checked} checked, {n_skipped} skipped, {n_errored} failed.\n")
     sys.exit(1 if n_errored else 0)
 
 
