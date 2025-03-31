@@ -21,7 +21,7 @@ lintcheck:
 # If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 fmt:
 	ruff format -qn
-	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
+	golangci-lint fmt
 
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
