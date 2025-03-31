@@ -1,5 +1,5 @@
 
-=== Bind experiment test: 
+=== Bind experiment test:
 === Substitute variables in the template
 === Create a pre-defined experiment
 === Bind experiment: Updating deployment state...
@@ -27,5 +27,5 @@ Destroy complete!
   "lifecycle_stage": "active"
 }
 
-=== Test cleanup: 
+=== Test cleanup:
 === Delete the pre-defined experiment: 0

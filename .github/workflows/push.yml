@@ -106,6 +106,8 @@ jobs:
         with:
           version: "0.9.1"
           args: "format --check"
+      - name: Run whitespace check
+        run: python tools/validate_whitespace.py
 
   validate-bundle-schema:
     needs: cleanups

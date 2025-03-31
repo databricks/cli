@@ -1,4 +1,4 @@
-title "Bind experiment test: "
+title "Bind experiment test:"
 
 title "Substitute variables in the template"
 BUNDLE_NAME_SUFFIX=$(uuid)
@@ -16,7 +16,7 @@ title "Create a pre-defined experiment"
 EXPERIMENT_ID=$($CLI experiments create-experiment "${EXPERIMENT_NAME}" | jq -r '.experiment_id')
 
 cleanupRemoveExperiment() {
-    title "Test cleanup: "
+    title "Test cleanup:"
     title "Delete the pre-defined experiment: "
     $CLI experiments delete-experiment ${EXPERIMENT_ID}
     echo $?

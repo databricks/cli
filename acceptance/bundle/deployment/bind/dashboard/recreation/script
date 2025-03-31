@@ -24,6 +24,3 @@ trace $CLI bundle deployment unbind dashboard1
 trace $CLI bundle deploy --auto-approve
 
 trace $CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name, lifecycle_state}'
-
-
-
