@@ -1,5 +1,5 @@
 
-=== Without RESTRICTED_CODE_EXECUTION, all envs are accessible
+=== Without DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION, all envs are accessible
 >>> errcode [CLI] bundle deploy
 Executing 'preinit' script
 from myscript.py 0 preinit: env: value_from_env
@@ -17,9 +17,9 @@ Deployment complete!
 Executing 'postdeploy' script
 from myscript.py 0 postdeploy: env: value_from_env
 
-=== With RESTRICTED_CODE_EXECUTION=1, no envs are accessible
->>> RESTRICTED_CODE_EXECUTION=1 errcode [CLI] bundle deploy
-Error: failed to execute script: Running scripts is disabled when RESTRICTED_CODE_EXECUTION is set
+=== With DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1, no envs are accessible
+>>> DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1 errcode [CLI] bundle deploy
+Error: failed to execute script: Running scripts is disabled when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set
 
 
 Exit code: 1

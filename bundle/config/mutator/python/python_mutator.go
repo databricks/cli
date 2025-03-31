@@ -193,9 +193,9 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return nil
 	}
 
-	// Don't run any arbitrary code when RESTRICTED_CODE_EXECUTION is set.
-	if os.Getenv("RESTRICTED_CODE_EXECUTION") != "" {
-		return diag.Errorf("Running python code is disabled when RESTRICTED_CODE_EXECUTION is set")
+	// Don't run any arbitrary code when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set.
+	if os.Getenv("DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION") != "" {
+		return diag.Errorf("Running python code is disabled when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set")
 	}
 
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'

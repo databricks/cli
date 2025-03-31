@@ -1,7 +1,7 @@
 export SOME_ENV_VAR="value_from_env"
 
-title "Without RESTRICTED_CODE_EXECUTION, all envs are accessible"
+title "Without DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION, all envs are accessible"
 trace errcode $CLI bundle deploy
 
-title "With RESTRICTED_CODE_EXECUTION=1, no envs are accessible"
-trace RESTRICTED_CODE_EXECUTION=1 errcode $CLI bundle deploy
+title "With DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1, no envs are accessible"
+trace DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1 errcode $CLI bundle deploy

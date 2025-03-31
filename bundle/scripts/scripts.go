@@ -3,6 +3,7 @@ package scripts
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -68,9 +69,9 @@ func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle,
 		return nil, nil, nil
 	}
 
-	// Don't run any arbitrary code when RESTRICTED_CODE_EXECUTION is set.
-	if os.Getenv("RESTRICTED_CODE_EXECUTION") != "" {
-		return nil, nil, fmt.Errorf("Running scripts is disabled when RESTRICTED_CODE_EXECUTION is set")
+	// Don't run any arbitrary code when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set.
+	if os.Getenv("DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION") != "" {
+		return nil, nil, errors.New("Running scripts is disabled when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set")
 	}
 
 	cmd, err := executor.StartCommand(ctx, string(command))
