@@ -1,0 +1,9 @@
+command:
+  - flask
+  - --app
+  - app
+  - run
+  - --debug
+env:
+  - name: JOB_ID
+    valueFrom: "app-job"

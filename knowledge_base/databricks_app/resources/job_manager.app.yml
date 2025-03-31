@@ -7,19 +7,6 @@ resources:
       # The location of the source code for the app.
       source_code_path: ../src/app
 
-      # The configuration for the app. This allows to pass environment variables to the app and
-      # configure how to run the app.
-      config:
-        command:
-          - flask
-          - --app
-          - app
-          - run
-          - --debug
-        env:
-          - name: JOB_ID
-            value: ${resources.jobs.hello_world.id}
-
       # The resources which this app have an access to.
       resources:
         - name: "app-job"
