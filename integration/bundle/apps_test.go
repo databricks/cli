@@ -87,36 +87,15 @@ func TestDeployBundleWithApp(t *testing.T) {
 	data, err := io.ReadAll(reader)
 	require.NoError(t, err)
 
-	job, err := wt.W.Jobs.GetBySettingsName(ctx, "test-job-with-cluster-"+uniqueId)
-	require.NoError(t, err)
-
 	content := string(data)
-	require.Contains(t, content, fmt.Sprintf(`command:
+	require.Contains(t, content, `command:
   - flask
   - --app
   - app
   - run
 env:
   - name: JOB_ID
-    value: "%d"`, job.JobId))
-
-	// Redeploy bundle with changed config env for app and confirm it's updated in app.yaml
-	deployBundleWithArgs(t, ctx, root, `--var="env_var_name=ANOTHER_JOB_ID"`, "--force-lock", "--auto-approve")
-	reader, err = wt.W.Workspace.Download(ctx, pathToAppYml)
-	require.NoError(t, err)
-
-	data, err = io.ReadAll(reader)
-	require.NoError(t, err)
-
-	content = string(data)
-	require.Contains(t, content, fmt.Sprintf(`command:
-  - flask
-  - --app
-  - app
-  - run
-env:
-  - name: ANOTHER_JOB_ID
-    value: "%d"`, job.JobId))
+    valueFrom: "app-job"`)
 
 	if testing.Short() {
 		t.Log("Skip the app run in short mode")

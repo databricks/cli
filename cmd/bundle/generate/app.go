@@ -62,18 +62,13 @@ func NewGenerateAppCommand() *cobra.Command {
 			return err
 		}
 
-		appConfig, err := getAppConfig(ctx, app, w)
-		if err != nil {
-			return fmt.Errorf("failed to get app config: %w", err)
-		}
-
 		// Making sure the source code path is relative to the config directory.
 		rel, err := filepath.Rel(configDir, sourceDir)
 		if err != nil {
 			return err
 		}
 
-		v, err := generate.ConvertAppToValue(app, filepath.ToSlash(rel), appConfig)
+		v, err := generate.ConvertAppToValue(app, filepath.ToSlash(rel))
 		if err != nil {
 			return err
 		}
@@ -89,12 +84,6 @@ func NewGenerateAppCommand() *cobra.Command {
 					appKey: v,
 				}),
 			}),
-		}
-
-		// If there are app.yaml or app.yml files in the source code path, they will be downloaded but we don't want to include them in the bundle.
-		// We include this configuration inline, so we need to remove these files.
-		for _, configFile := range []string{"app.yml", "app.yaml"} {
-			delete(downloader.files, filepath.Join(sourceDir, configFile))
 		}
 
 		err = downloader.FlushToDisk(ctx, force)
