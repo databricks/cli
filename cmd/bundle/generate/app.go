@@ -1,11 +1,7 @@
 package generate
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"io"
-	"io/fs"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/generate"
@@ -13,13 +9,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
-
-	"gopkg.in/yaml.v3"
 )
 
 func NewGenerateAppCommand() *cobra.Command {
@@ -104,43 +96,4 @@ func NewGenerateAppCommand() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func getAppConfig(ctx context.Context, app *apps.App, w *databricks.WorkspaceClient) (map[string]any, error) {
-	sourceCodePath := app.DefaultSourceCodePath
-
-	f, err := filer.NewWorkspaceFilesClient(w, sourceCodePath)
-	if err != nil {
-		return nil, err
-	}
-
-	// The app config is stored in app.yml or app.yaml file in the source code path.
-	configFileNames := []string{"app.yml", "app.yaml"}
-	for _, configFile := range configFileNames {
-		r, err := f.Read(ctx, configFile)
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				continue
-			}
-			return nil, err
-		}
-		defer r.Close()
-
-		cmdio.LogString(ctx, "Reading app configuration from "+configFile)
-		content, err := io.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
-
-		var appConfig map[string]any
-		err = yaml.Unmarshal(content, &appConfig)
-		if err != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("Failed to parse app configuration:\n%s\nerr: %v", string(content), err))
-			return nil, nil
-		}
-
-		return appConfig, nil
-	}
-
-	return nil, nil
 }
