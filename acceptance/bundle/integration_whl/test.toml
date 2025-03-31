@@ -1,4 +1,5 @@
 Local = false
+CloudSlow = true
 Ignore = [
     ".databricks",
     "build",
