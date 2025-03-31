@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -65,6 +66,11 @@ func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle,
 	command := getCommmand(b, hook)
 	if command == "" {
 		return nil, nil, nil
+	}
+
+	// Don't run any arbitrary code when RESTRICTED_CODE_EXECUTION is set.
+	if os.Getenv("RESTRICTED_CODE_EXECUTION") != "" {
+		return nil, nil, fmt.Errorf("Running scripts is disabled when RESTRICTED_CODE_EXECUTION is set")
 	}
 
 	cmd, err := executor.StartCommand(ctx, string(command))

@@ -1,0 +1,19 @@
+
+=== Without RESTRICTED_CODE_EXECUTION, all envs are accessible
+>>> uv run [UV_ARGS] -q [CLI] bundle summary -o json
+{
+  "pydabs": {},
+  "python": {
+    "resources": null,
+    "mutators": [
+      "mutators:read_envs"
+    ]
+  }
+}
+value_from_env
+
+=== With RESTRICTED_CODE_EXECUTION=1, no envs are accessible
+>>> RESTRICTED_CODE_EXECUTION=1 uv run [UV_ARGS] -q [CLI] bundle summary
+Error: Running python code is disabled when RESTRICTED_CODE_EXECUTION is set
+
+Exit code: 1
