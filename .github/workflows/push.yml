@@ -104,6 +104,11 @@ jobs:
       - name: golangci-lint (fmt check)
         run: |
           make fmtcheck
+      - name: Run ruff
+        uses: astral-sh/ruff-action@f14634c415d3e63ffd4d550a22f037df4c734a60 # v3.1.0
+        with:
+          version: "0.9.1"
+          args: "format --check"
       - name: golangci-lint (fmt)
         run: |
           make fmt
@@ -111,11 +116,6 @@ jobs:
         run: |
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
-      - name: Run ruff
-        uses: astral-sh/ruff-action@f14634c415d3e63ffd4d550a22f037df4c734a60 # v3.1.0
-        with:
-          version: "0.9.1"
-          args: "format --check"
       - name: Run whitespace check
         run: python tools/validate_whitespace.py
 
