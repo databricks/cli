@@ -8,6 +8,7 @@ GOTESTSUM_CMD ?= gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped
 
 lint:
 	golangci-lint run --fix
+	golangci-lint fmt
 
 tidy:
 	@# not part of golangci-lint, apparently
@@ -15,6 +16,7 @@ tidy:
 
 lintcheck:
 	golangci-lint run ./...
+	golangci-lint fmt -d
 
 # Note 'make lint' will do formatting as well. However, if there are compilation errors,
 # formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
