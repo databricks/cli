@@ -1,10 +1,10 @@
 package mutator
 
 import (
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/stretchr/testify/require"
 )
 
 type getResourceKeyTestCase struct {
@@ -39,10 +39,10 @@ func TestGetResourceKey(t *testing.T) {
 		t.Run(tc.path, func(t *testing.T) {
 			key, err := getResourceKey(dyn.MustPathFromString(tc.path))
 			if tc.err {
-				require.Error(t, err)
+				assert.Error(t, err)
 			} else {
-				require.NoError(t, err)
-				require.Equal(t, tc.key, key)
+				assert.NoError(t, err)
+				assert.Equal(t, tc.key, key)
 			}
 		})
 	}
@@ -53,8 +53,8 @@ func TestResourceKeySet_AddPath(t *testing.T) {
 
 	err := set.AddPath(dyn.MustPathFromString("resources.jobs.job_1"))
 
-	require.NoError(t, err)
-	require.Equal(t, []ResourceKey{
+	assert.NoError(t, err)
+	assert.Equal(t, []ResourceKey{
 		{
 			Type: "jobs",
 			Name: "job_1",
@@ -77,7 +77,7 @@ func TestResourceKeySet_AddPattern(t *testing.T) {
 					"name": dyn.V("job_1"),
 				}),
 				"job_2": dyn.V(map[string]dyn.Value{
-					"name": dyn.V("job_1"),
+					"name": dyn.V("job_2"),
 				}),
 			}),
 		}),
@@ -118,8 +118,8 @@ func TestResourceKeySet_AddPattern(t *testing.T) {
 
 			err := set.AddPattern(tc.pattern, tc.root)
 
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, set.ToArray())
+			assert.NoError(t, err)
+			assert.ElementsMatch(t, tc.expected, set.ToArray())
 		})
 	}
 }

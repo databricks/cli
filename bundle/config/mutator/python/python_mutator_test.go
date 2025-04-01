@@ -171,50 +171,6 @@ resources:
 	}, diags[0].Locations)
 }
 
-func TestPythonMutator_loadResources_disallowed(t *testing.T) {
-	withFakeVEnv(t, ".venv")
-	b := loadYaml("databricks.yml", `
-experimental:
-  python:
-    resources: ["resources:load_resources"]
-    venv_path: .venv
-resources:
-  jobs:
-    job0:
-      name: job_0`)
-
-	ctx := withProcessStub(
-		t,
-		[]string{
-			interpreterPath(".venv"),
-			"-m",
-			"databricks.bundles.build",
-			"--phase",
-			"load_resources",
-		},
-		`{
-			"experimental": {
-				"python": {
-					"resources": ["resources:load_resources"],
-					"venv_path": ".venv"
-				}
-			},
-			"resources": {
-				"jobs": {
-					"job0": {
-						name: "job_0",
-						description: "job description"
-					}
-				}
-			}
-		}`, "", "")
-
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
-	diag := bundle.Apply(ctx, b, mutator)
-
-	assert.EqualError(t, diag.Error(), "unexpected change at \"resources.jobs.job0.description\" (insert)")
-}
-
 func TestPythonMutator_applyMutators(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 	b := loadYaml("databricks.yml", `

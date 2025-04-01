@@ -11,7 +11,7 @@ type ResourceKey struct {
 	// Type is the type of the resource. E.g. "jobs", "dashboards", etc.
 	Type string
 
-	// Path is the path to the resource.
+	// Name is the resource name of the resource. E.g. "my_job"
 	Name string
 }
 
