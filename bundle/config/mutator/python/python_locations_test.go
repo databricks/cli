@@ -166,7 +166,7 @@ func TestLoadOutput(t *testing.T) {
 }
 
 func TestParsePythonLocations_absolutePath(t *testing.T) {
-	// output can contain absolute path that is outside of the bundle input
+	// output can contain absolute path that is outside of the bundle root
 	expected := dyn.Location{File: "/Shared/foo.py", Line: 1, Column: 2}
 
 	input := `{"path": "foo", "file": "/Shared/foo.py", "line": 1, "column": 2}`

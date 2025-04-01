@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/log"
 	"io"
 	"io/fs"
 	"os"
@@ -229,15 +230,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 
 		for _, resourceKey := range result.AddedResources.ToArray() {
-			logger.Debugf(ctx, "added resource at 'resources.%s.%s'", resourceKey.Type, resourceKey.Name)
+			log.Debugf(ctx, "added resource at 'resources.%s.%s'", resourceKey.Type, resourceKey.Name)
 		}
 
 		for _, resourceKey := range result.UpdatedResources.ToArray() {
-			logger.Debugf(ctx, "updated resource at 'resources.%s.%s'", resourceKey.Type, resourceKey.Name)
+			log.Debugf(ctx, "updated resource at 'resources.%s.%s'", resourceKey.Type, resourceKey.Name)
 		}
 
 		for _, resourceKey := range result.DeletedResources.ToArray() {
-			logger.Debugf(ctx, "deleted resource at 'resources.%s.%s'", resourceKey.Type, resourceKey.Name)
+			log.Debugf(ctx, "deleted resource at 'resources.%s.%s'", resourceKey.Type, resourceKey.Name)
 		}
 
 		if !result.DeletedResources.IsEmpty() {

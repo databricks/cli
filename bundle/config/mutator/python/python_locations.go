@@ -117,7 +117,7 @@ func parsePythonLocations(bundleRoot string, input io.Reader) (*pythonLocations,
 			return nil, fmt.Errorf("failed to parse python location: %s", err)
 		}
 
-		// Output can contain both relative paths and absolute paths outside of bundle input.
+		// Output can contain both relative paths and absolute paths outside of bundle root.
 		// Mutator pipeline expects all path to be absolute at this point, so make all paths absolute.
 		if !pathlib.IsAbs(entry.File) {
 			entry.File = filepath.Join(bundleRoot, entry.File)
