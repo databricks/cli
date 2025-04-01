@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.opencensus.io/resource/resourcekeys"
 	"io"
 	"io/fs"
 	"os"
