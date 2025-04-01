@@ -1,6 +1,5 @@
 bundle:
   name: scripts
-  uuid: "a1b2c3d4-e5f6-4a5b-9c8d-1e2f3a4b5c6d7"  # Unique UUID for scripts test
 
 experimental:
   scripts:
