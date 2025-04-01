@@ -1,13 +1,19 @@
 
->>> [CLI] bundle deploy -t one
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sheep/one/files...
+>>> [CLI] bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/monkey/dev/files...
 Deploying resources...
 Deployment complete!
 
->>> [CLI] bundle deploy -t two
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sheep/two/files...
+>>> [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/monkey/prod/files...
 Deploying resources...
 Deployment complete!
+Recommendation: target with 'mode: production' should set 'workspace.root_path' to make sure only one copy is deployed
+
+A common practice is to use a username or principal name in this path, i.e. use
+
+  root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+
 
 >>> cat out.requests.txt
 {
@@ -31,7 +37,7 @@ Deployment complete!
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
     "target_count": 0,
-    "bundle_mode": "TYPE_UNSPECIFIED",
+    "bundle_mode": "DEVELOPMENT",
     "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
   }
 }
@@ -56,7 +62,7 @@ Deployment complete!
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
     "target_count": 0,
-    "bundle_mode": "TYPE_UNSPECIFIED",
-    "workspace_artifact_path_type": "UC_VOLUME"
+    "bundle_mode": "PRODUCTION",
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
   }
 }
