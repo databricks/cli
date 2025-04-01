@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"errors"
+
 	"github.com/databricks/cli/libs/dyn"
 )
 

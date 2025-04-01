@@ -2,6 +2,7 @@ package python
 
 import (
 	"fmt"
+
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -26,7 +27,7 @@ func mergeOutput(root, output dyn.Value) (dyn.Value, mergeResult, error) {
 	return merged, result, nil
 }
 
-func createOverrideVisitor(leftRoot dyn.Value, rightRoot dyn.Value) (mergeResult, merge.OverrideVisitor) {
+func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (mergeResult, merge.OverrideVisitor) {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	deleted := mutator.NewResourceKeySet()
 	updated := mutator.NewResourceKeySet()

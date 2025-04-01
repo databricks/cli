@@ -1,8 +1,9 @@
 package python
 
 import (
-	"github.com/databricks/cli/libs/dyn/merge"
 	"testing"
+
+	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/dyn"
