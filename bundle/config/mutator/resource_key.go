@@ -21,7 +21,7 @@ func NewResourceKeySet() ResourceKeySet {
 	return make(map[string]map[string]struct{})
 }
 
-// Add adds a resource key to the set.
+// AddResourceKey adds a resource key to the set.
 func (r ResourceKeySet) AddResourceKey(key ResourceKey) {
 	if _, ok := r[key.Type]; !ok {
 		r[key.Type] = make(map[string]struct{})
@@ -34,8 +34,9 @@ func (r ResourceKeySet) IsEmpty() bool {
 	return len(r) == 0
 }
 
+// AddPath adds a resource key from a path of a resource or a resource field.
 func (r ResourceKeySet) AddPath(path dyn.Path) error {
-	resourceKey, err := GetResourceKey(path)
+	resourceKey, err := getResourceKey(path)
 	if err != nil {
 		return err
 	}
@@ -44,13 +45,14 @@ func (r ResourceKeySet) AddPath(path dyn.Path) error {
 	return nil
 }
 
-func (r ResourceKeySet) AddPattern(pattern dyn.Pattern, value dyn.Value) error {
+// AddPattern adds all resource keys that match the pattern.
+func (r ResourceKeySet) AddPattern(pattern dyn.Pattern, root dyn.Value) error {
 	if len(pattern) != 3 {
 		return errors.New("pattern must have 3 keys")
 	}
 
-	_, err := dyn.MapByPattern(value, pattern, func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
-		parsed, err := GetResourceKey(path)
+	_, err := dyn.MapByPattern(root, pattern, func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
+		parsed, err := getResourceKey(path)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -79,7 +81,7 @@ func (r ResourceKeySet) ToArray() []ResourceKey {
 	return result
 }
 
-func GetResourceKey(path dyn.Path) (ResourceKey, error) {
+func getResourceKey(path dyn.Path) (ResourceKey, error) {
 	if len(path) < 3 {
 		return ResourceKey{}, errors.New("can't parse resource key")
 	}

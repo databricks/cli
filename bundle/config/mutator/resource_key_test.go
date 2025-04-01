@@ -37,7 +37,7 @@ func TestGetResourceKey(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.path, func(t *testing.T) {
-			key, err := GetResourceKey(dyn.MustPathFromString(tc.path))
+			key, err := getResourceKey(dyn.MustPathFromString(tc.path))
 			if tc.err {
 				require.Error(t, err)
 			} else {
@@ -48,19 +48,46 @@ func TestGetResourceKey(t *testing.T) {
 	}
 }
 
+func TestResourceKeySet_AddPath(t *testing.T) {
+	set := NewResourceKeySet()
+
+	err := set.AddPath(dyn.MustPathFromString("resources.jobs.job_1"))
+
+	require.NoError(t, err)
+	require.Equal(t, []ResourceKey{
+		{
+			Type: "jobs",
+			Name: "job_1",
+		},
+	}, set.ToArray())
+}
+
 type resourceKeySetAddTestCase struct {
-	path     string
-	value    dyn.Value
+	name     string
+	pattern  dyn.Pattern
+	root     dyn.Value
 	expected []ResourceKey
 }
 
-func TestResourceKeySet_add(t *testing.T) {
+func TestResourceKeySet_AddPattern(t *testing.T) {
+	root := dyn.V(map[string]dyn.Value{
+		"resources": dyn.V(map[string]dyn.Value{
+			"jobs": dyn.V(map[string]dyn.Value{
+				"job_1": dyn.V(map[string]dyn.Value{
+					"name": dyn.V("job_1"),
+				}),
+				"job_2": dyn.V(map[string]dyn.Value{
+					"name": dyn.V("job_1"),
+				}),
+			}),
+		}),
+	})
+
 	testCases := []resourceKeySetAddTestCase{
 		{
-			path: "resources.jobs.job_1",
-			value: dyn.V(map[string]any{
-				"name": dyn.V("job_1"),
-			}),
+			name:    "one job pattern",
+			pattern: dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key("job_1")),
+			root:    root,
 			expected: []ResourceKey{
 				{
 					Type: "jobs",
@@ -69,20 +96,9 @@ func TestResourceKeySet_add(t *testing.T) {
 			},
 		},
 		{
-			path: "resources",
-			value: dyn.V(map[string]any{
-				"jobs": dyn.V(
-					map[string]any{
-						"job_1": dyn.V(
-							map[string]any{
-								"name": dyn.V("job_1"),
-							}),
-						"job_2": dyn.V(
-							map[string]any{
-								"name": dyn.V("job_1"),
-							}),
-					}),
-			}),
+			name:    "all resources pattern",
+			pattern: dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+			root:    root,
 			expected: []ResourceKey{
 				{
 					Type: "jobs",
@@ -97,9 +113,11 @@ func TestResourceKeySet_add(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.path, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			set := NewResourceKeySet()
-			err := set.Add(dyn.MustPathFromString(tc.path), tc.value)
+
+			err := set.AddPattern(tc.pattern, tc.root)
+
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, set.ToArray())
 		})
