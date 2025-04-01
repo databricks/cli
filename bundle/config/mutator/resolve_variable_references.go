@@ -230,26 +230,23 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 // selectivelyMutate applies a function to a subset of the configuration
 func (m *resolveVariableReferences) selectivelyMutate(b *bundle.Bundle, fn func(value dyn.Value) (dyn.Value, error)) error {
-	included := []string{
-		"variables",
-		"bundle",
-		"include",
-		"workspace",
-		"artifacts",
-		"targets",
-		"environments",
-		"sync",
-		"run_as",
-		"presets",
-		"experimental",
-		"permissions",
-	}
-
-	if m.includeResources {
-		included = append(included, "resources")
-	}
-
 	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		allKeys, err := getAllKeys(root)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		var included []string
+		for _, key := range allKeys {
+			if key == "resources" {
+				if m.includeResources {
+					included = append(included, key)
+				}
+			} else {
+				included = append(included, key)
+			}
+		}
+
 		includedRoot, err := merge.Select(root, included)
 		if err != nil {
 			return dyn.InvalidValue, err
@@ -268,4 +265,20 @@ func (m *resolveVariableReferences) selectivelyMutate(b *bundle.Bundle, fn func(
 		// merge is recursive, but it doesn't matter because keys are mutually exclusive
 		return merge.Merge(updatedRoot, excludedRoot)
 	})
+}
+
+func getAllKeys(root dyn.Value) ([]string, error) {
+	var keys []string
+
+	if mapping, ok := root.AsMap(); ok {
+		for _, key := range mapping.Keys() {
+			if keyString, ok := key.AsString(); ok {
+				keys = append(keys, keyString)
+			} else {
+				return nil, fmt.Errorf("key is not a string: %v", key)
+			}
+		}
+	}
+
+	return keys, nil
 }
