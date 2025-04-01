@@ -10,7 +10,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=ComputeIdToClusterId
 10:07:59 Debug: Apply pid=12345 mutator=InitializeVariables
 10:07:59 Debug: Apply pid=12345 mutator=DefineDefaultTarget(default)
-10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load)
 10:07:59 Debug: Apply pid=12345 mutator=validate:unique_resource_keys
 10:07:59 Debug: Apply pid=12345 mutator=SelectDefaultTarget
 10:07:59 Debug: Apply pid=12345 mutator=SelectDefaultTarget mutator=SelectTarget(default)
@@ -35,6 +34,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=PrependWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=RewriteWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=SetVariables
+10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(init)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
