@@ -152,6 +152,18 @@ func AddHandlers(server *testserver.Server) {
 		return req.Workspace.JobsCreate(request)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/create", func(req testserver.Request) any {
+		var request jobs.CreateJob
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+
+		return req.Workspace.JobsCreate(request)
+	})
+
 	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
 		var request pipelines.PipelineSpec
 		if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -179,7 +191,7 @@ func AddHandlers(server *testserver.Server) {
 		return req.Workspace.PipelinesGet(pipelineId)
 	})
 
-	server.Handle("GET", "/api/2.1/jobs/list", func(req testserver.Request) any {
+	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
 		return req.Workspace.JobsList()
 	})
 
