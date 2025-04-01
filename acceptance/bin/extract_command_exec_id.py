@@ -8,7 +8,8 @@ from pathlib import Path
 def extract_cmd_exec_id():
     requests_file = Path("out.requests.txt")
 
-    # Read until we find a complete JSON object
+    # Read until we find a complete JSON object. This is required because we pretty
+    # print the JSON object (with new lines) in the out.requests.txt file.
     with requests_file.open("r") as f:
         json_str = ""
         while True:
