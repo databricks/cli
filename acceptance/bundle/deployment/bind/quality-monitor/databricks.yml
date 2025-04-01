@@ -1,0 +1,10 @@
+bundle:
+  name: bind-quality-monitor-test-localonly
+
+resources:
+  quality_monitors:
+    monitor1:
+      table_name: catalog.schema.table
+      assets_dir: /Users/user/databricks_lakehouse_monitoring
+      output_schema_name: catalog.schema
+      snapshot: {}
