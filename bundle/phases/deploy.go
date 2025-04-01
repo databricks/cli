@@ -332,6 +332,13 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		}
 	}
 
+	mode := protos.BundleModeUnspecified
+	if b.Config.Bundle.Mode == config.Development {
+		mode = protos.BundleModeDevelopment
+	} else if b.Config.Bundle.Mode == config.Production {
+		mode = protos.BundleModeProduction
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid: bundleUuid,
@@ -359,6 +366,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 				VariableCount:          int64(variableCount),
 				ComplexVariableCount:   complexVariableCount,
 				LookupVariableCount:    lookupVariableCount,
+				BundleMode:             mode,
 				ConfigurationFileCount: b.Metrics.ConfigurationFileCount,
 			},
 		},
