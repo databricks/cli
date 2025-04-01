@@ -341,6 +341,10 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourcePipelineIDs:  pipelineIds,
 			ResourceClusterIDs:   clusterIds,
 			ResourceDashboardIDs: dashboardIds,
+
+			Experimental: &protos.BundleDeployExperimental{
+				ConfigurationFileCount: b.Metrics.ConfigurationFileCount,
+			},
 		},
 	})
 }
