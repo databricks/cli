@@ -90,16 +90,8 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
 	s.files[filePath] = body
 
 	// Add all directories in the path to the directories map
-	parts := strings.Split(path.Dir(filePath), "/")
-	currentPath := ""
-	for _, part := range parts {
-		// Skip empty parts
-		if part == "" {
-			continue
-		}
-
-		currentPath = currentPath + "/" + part
-		s.directories[currentPath] = true
+	for dir := path.Dir(filePath); dir != "/"; dir = path.Dir(dir) {
+		s.directories[dir] = true
 	}
 }
 
