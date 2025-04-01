@@ -2,7 +2,7 @@ package mutator
 
 import (
 	"context"
-	pathlib "path"
+	"path/filepath"
 	"testing"
 
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
@@ -38,7 +38,7 @@ func TestNormalizePaths(t *testing.T) {
 	}
 
 	// update config as if 'notebook_path' property is defined in resources/job_1.yml
-	location := dyn.Location{File: pathlib.Join(tmpDir, "resources/job_1.yml")}
+	location := dyn.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
 	path := dyn.MustPathFromString("resources.jobs.job1.tasks[0].notebook_task.notebook_path")
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPath(v, path, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
@@ -52,7 +52,19 @@ func TestNormalizePaths(t *testing.T) {
 
 	newValue, err := dyn.GetByPath(b.Config.Value(), path)
 	require.NoError(t, err)
-	require.Equal(t, "src/notebook.py", newValue.MustString())
+	require.Equal(t, filepath.Join("src", "notebook.py"), newValue.MustString())
+}
+
+func TestNormalizePath_absolutePath(t *testing.T) {
+	value, err := normalizePath(filepath.Join("/", "notebook.py"), dyn.Location{}, "/tmp")
+	assert.NoError(t, err)
+	assert.Equal(t, filepath.Join("/", "notebook.py"), value)
+}
+
+func TestNormalizePath_url(t *testing.T) {
+	value, err := normalizePath("s3:///path/to/notebook.py", dyn.Location{}, "/tmp")
+	assert.NoError(t, err)
+	assert.Equal(t, "s3:///path/to/notebook.py", value)
 }
 
 func TestLocationDirectory(t *testing.T) {

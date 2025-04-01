@@ -122,8 +122,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	require.True(t, containsFile(libraries, filepath.Join("test", "test3.py")))
 
 	// These patterns are defined relative to "./relative"
-	require.True(t, containsFile(libraries, "relative/test4.py"))
-	require.True(t, containsFile(libraries, "relative/test5.py"))
+	require.True(t, containsFile(libraries, filepath.Join("relative", "test4.py")))
+	require.True(t, containsFile(libraries, filepath.Join("relative", "test5.py")))
 
 	// Making sure exact file references work as well
 	require.True(t, containsNotebook(libraries, "test1.ipynb"))
