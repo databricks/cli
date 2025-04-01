@@ -33,4 +33,3 @@ trace $CLI bundle destroy --auto-approve
 
 # Read the pre-defined model again (expecting it still exists and is not deleted):
 trace $CLI registered-models get "${MODEL_FULL_NAME}" | jq '{full_name, schema_name, name}'
-

@@ -10,7 +10,7 @@ docs:
 
 lint:
 	# check if lock matches the project metadata
-	uv lock --check 
+	uv lock --check
 
 	uv run ruff check $(sources)
 	uv run pyright

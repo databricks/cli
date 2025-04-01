@@ -9,7 +9,6 @@ resources:
       cluster_name: "DEFAULT Test Cluster"
       spark_version: '16.2.x-scala2.12'
 
-
 >>> [CLI] clusters get [CLUSTER-ID]
 {
   "cluster_name": "DEFAULT Test Cluster"
