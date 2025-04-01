@@ -1,3 +1,6 @@
+title "Apps create with correct input"
+trace $CLI apps create --json @input.json
+
 title "Apps update with correct input"
 trace $CLI apps update test-name --json @input.json
 

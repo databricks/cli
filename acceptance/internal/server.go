@@ -204,4 +204,40 @@ func AddHandlers(server *testserver.Server) {
 			NumProtoSuccess: 1,
 		}
 	})
+
+	// Quality monitors:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
+		return req.Workspace.QualityMonitorGet(req, req.Vars["table_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
+		return req.Workspace.QualityMonitorUpsert(req, req.Vars["table_name"], false)
+	})
+
+	server.Handle("PUT", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
+		return req.Workspace.QualityMonitorUpsert(req, req.Vars["table_name"], true)
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
+		return req.Workspace.QualityMonitorDelete(req, req.Vars["table_name"])
+	})
+
+	// Apps:
+
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		return req.Workspace.AppsGet(req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps", func(req testserver.Request) any {
+		return req.Workspace.AppsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		return req.Workspace.AppsUpsert(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		return req.Workspace.AppsDelete(req.Vars["name"])
+	})
 }
