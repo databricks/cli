@@ -25,7 +25,7 @@ func New() (*Schema, error) {
 	}
 
 	tmpdir := filepath.Join(wd, "./tmp")
-	err = os.MkdirAll(tmpdir, 0755)
+	err = os.MkdirAll(tmpdir, 0o755)
 	if err != nil {
 		return nil, err
 	}
