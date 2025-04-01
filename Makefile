@@ -16,9 +16,6 @@ tidy:
 lintcheck:
 	golangci-lint run ./...
 
-# Note 'make lint' will do formatting as well. However, if there are compilation errors,
-# formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
-# If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 fmt:
 	ruff format -qn
 	golangci-lint fmt

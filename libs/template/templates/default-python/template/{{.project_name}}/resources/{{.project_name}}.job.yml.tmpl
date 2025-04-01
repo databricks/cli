@@ -28,8 +28,9 @@ resources:
           job_cluster_key: job_cluster{{end}}
           notebook_task:
             notebook_path: ../src/notebook.ipynb
-        {{end -}}
+        {{- end -}}
         {{- if (eq .include_dlt "yes") }}
+
         - task_key: refresh_pipeline
           {{- if (eq .include_notebook "yes" )}}
           depends_on:
@@ -38,8 +39,9 @@ resources:
           pipeline_task:
             {{- /* TODO: we should find a way that doesn't use magics for the below, like ./{{project_name}}.pipeline.yml */}}
             pipeline_id: ${resources.pipelines.{{.project_name}}_pipeline.id}
-        {{end -}}
+        {{- end -}}
         {{- if (eq .include_python "yes") }}
+
         - task_key: main_task
           {{- if (eq .include_dlt "yes") }}
           depends_on:
