@@ -1,4 +1,7 @@
 
+>>> python -c import sys; print("%s.%s" % sys.version_info[:2])
+[UV_PYTHON]
+
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir .
 
 Welcome to the default Python template for Databricks Asset Bundles!

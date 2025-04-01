@@ -5,7 +5,7 @@
   "catalog_name": "main"
 }
 
-=== Create a pre-defined volume: 
+=== Create a pre-defined volume:
 >>> [CLI] bundle deployment bind volume1 main.test-schema-[UUID].volume-[UUID] --auto-approve
 Updating deployment state...
 Successfully bound volume with an id 'main.test-schema-[UUID].volume-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
