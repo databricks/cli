@@ -32,7 +32,7 @@ A common practice is to use a username or principal name in this path, i.e. use
   "resource_dashboard_count": 0,
   "resource_app_count": 0,
   "experimental": {
-    "configuration_file_count": 0,
+    "configuration_file_count": 1,
     "variable_count": 0,
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
@@ -56,7 +56,7 @@ A common practice is to use a username or principal name in this path, i.e. use
   "resource_dashboard_count": 0,
   "resource_app_count": 0,
   "experimental": {
-    "configuration_file_count": 0,
+    "configuration_file_count": 1,
     "variable_count": 0,
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
