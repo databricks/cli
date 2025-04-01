@@ -3,9 +3,11 @@ bundle:
 
 experimental:
   scripts:
-    preinit: "python3 ./myscript.py 0 preinit"
-    postinit: "python3 ./myscript.py 0 postinit"
-    prebuild: "python3 ./myscript.py 0 prebuild"
-    postbuild: "python3 ./myscript.py 0 postbuild"
-    predeploy: "python3 ./myscript.py 0 predeploy"
-    postdeploy: "python3 ./myscript.py 0 postdeploy"
+    # SOME_ENV_VAR is here to ensure that the envs are not accessible in the preinit script
+    # when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set
+    preinit: "echo \"preinit $SOME_ENV_VAR\""
+    postinit: "echo \"postinit $SOME_ENV_VAR\""
+    prebuild: "echo \"prebuild $SOME_ENV_VAR\""
+    postbuild: "echo \"postbuild $SOME_ENV_VAR\""
+    predeploy: "echo \"predeploy $SOME_ENV_VAR\""
+    postdeploy: "echo \"postdeploy $SOME_ENV_VAR\""

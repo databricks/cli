@@ -2,20 +2,20 @@
 === Without DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION, all envs are accessible
 >>> errcode [CLI] bundle deploy
 Executing 'preinit' script
-from myscript.py 0 preinit: env: value_from_env
+preinit value_from_env
 Executing 'postinit' script
-from myscript.py 0 postinit: env: value_from_env
+postinit value_from_env
 Executing 'prebuild' script
-from myscript.py 0 prebuild: env: value_from_env
+prebuild value_from_env
 Executing 'postbuild' script
-from myscript.py 0 postbuild: env: value_from_env
+postbuild value_from_env
 Executing 'predeploy' script
-from myscript.py 0 predeploy: env: value_from_env
+predeploy value_from_env
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts_with_restricted_execution/default/files...
 Deploying resources...
 Deployment complete!
 Executing 'postdeploy' script
-from myscript.py 0 postdeploy: env: value_from_env
+postdeploy value_from_env
 
 === With DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1, no envs are accessible
 >>> DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1 errcode [CLI] bundle deploy

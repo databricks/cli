@@ -10,6 +10,8 @@
     ]
   }
 }
+
+>>> cat envs.txt
 value_from_env
 
 === With DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1, no envs are accessible
