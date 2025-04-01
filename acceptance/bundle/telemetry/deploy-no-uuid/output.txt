@@ -41,7 +41,8 @@ Deployment complete!
           "variable_count": 0,
           "complex_variable_count": 0,
           "lookup_variable_count": 0,
-          "target_count": 0
+          "target_count": 0,
+          "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
         }
       }
     }

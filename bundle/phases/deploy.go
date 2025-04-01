@@ -319,6 +319,13 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		bundleUuid = b.Config.Bundle.Uuid
 	}
 
+	artifactPathType := protos.BundleDeployArtifactPathTypeUnspecified
+	if libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
+		artifactPathType = protos.BundleDeployArtifactPathTypeVolume
+	} else if libraries.IsWorkspacePath(b.Config.Workspace.ArtifactPath) {
+		artifactPathType = protos.BundleDeployArtifactPathTypeWorkspace
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid: bundleUuid,
@@ -343,7 +350,8 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourceDashboardIDs: dashboardIds,
 
 			Experimental: &protos.BundleDeployExperimental{
-				ConfigurationFileCount: b.Metrics.ConfigurationFileCount,
+				ConfigurationFileCount:    b.Metrics.ConfigurationFileCount,
+				WorkspaceArtifactPathType: artifactPathType,
 			},
 		},
 	})
