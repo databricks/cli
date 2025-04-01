@@ -13,6 +13,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/mutator"
+
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
 	"github.com/databricks/databricks-sdk-go/logger"
@@ -219,9 +221,9 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, mutateDiagsHasError
 		}
 
-		visitor, err := createOverrideVisitor(ctx, m.phase)
+		visitor, _, err := createOverrideVisitor(ctx, m.phase)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return dyn.InvalidValue, fmt.Errorf("failed to merge output: %w", err)
 		}
 
 		return merge.Override(leftRoot, rightRoot, visitor)
@@ -236,6 +238,20 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	}
 
 	return mutateDiags.Extend(diag.FromErr(err))
+}
+
+func mergeOutput(ctx context.Context, phase phase, root dyn.Value, output dyn.Value) (dyn.Value, visitorState, error) {
+	visitor, state, err := createOverrideVisitor(ctx, phase)
+	if err != nil {
+		return dyn.InvalidValue, state, err
+	}
+
+	merged, err := merge.Override(root, output, visitor)
+	if err != nil {
+		return dyn.InvalidValue, state, err
+	}
+
+	return merged, state, nil
 }
 
 func createCacheDir(ctx context.Context) (string, error) {
@@ -487,18 +503,30 @@ func loadDiagnosticsFile(path string) (diag.Diagnostics, error) {
 	return parsePythonDiagnostics(file)
 }
 
-func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisitor, error) {
+type visitorState struct {
+	AddedResources   mutator.ResourceKeySet
+	UpdatedResources mutator.ResourceKeySet
+}
+
+func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisitor, visitorState, error) {
 	switch phase {
 	case PythonMutatorPhaseLoad:
-		return createLoadResourcesOverrideVisitor(ctx), nil
+		return createLoadResourcesOverrideVisitor(ctx)
 	case PythonMutatorPhaseInit:
-		return createInitOverrideVisitor(ctx, insertResourceModeAllow), nil
+		return createInitOverrideVisitor(ctx, insertResourceModeAllow)
 	case PythonMutatorPhaseLoadResources:
-		return createLoadResourcesOverrideVisitor(ctx), nil
+		return createLoadResourcesOverrideVisitor(ctx)
 	case PythonMutatorPhaseApplyMutators:
-		return createInitOverrideVisitor(ctx, insertResourceModeDisallow), nil
+		return createInitOverrideVisitor(ctx, insertResourceModeDisallow)
 	default:
-		return merge.OverrideVisitor{}, fmt.Errorf("unknown phase: %s", phase)
+		return merge.OverrideVisitor{}, visitorState{}, fmt.Errorf("unknown phase: %s", phase)
+	}
+}
+
+func newVisitorState() visitorState {
+	return visitorState{
+		AddedResources:   mutator.NewResourceKeySet(),
+		UpdatedResources: mutator.NewResourceKeySet(),
 	}
 }
 
@@ -506,11 +534,12 @@ func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisi
 //
 // During load_resources, it's only possible to create new resources, and not modify or
 // delete existing ones.
-func createLoadResourcesOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+func createLoadResourcesOverrideVisitor(ctx context.Context) (merge.OverrideVisitor, visitorState, error) {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
-	return merge.OverrideVisitor{
+	state := newVisitorState()
+	visitor := merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
 			if isOmitemptyDelete(left) {
 				return merge.ErrOverrideUndoDelete
@@ -519,15 +548,18 @@ func createLoadResourcesOverrideVisitor(ctx context.Context) merge.OverrideVisit
 			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			hasResourcesPrefix := valuePath.HasPrefix(resourcesPath)
-
-			// insert 'resources' or 'resources.<resource_type>' if it didn't exist before
-			if hasResourcesPrefix && len(valuePath) <= len(resourcesPath)+1 {
-				return right, nil
+			if !valuePath.HasPrefix(resourcesPath) {
+				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
 
-			if !hasResourcesPrefix {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
+			err := state.AddedResources.Add(valuePath, right)
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
+			}
+
+			// insert 'resources' or 'resources.<resource_type>' if it didn't exist before
+			if len(valuePath) <= len(resourcesPath)+1 {
+				return right, nil
 			}
 
 			insertResource := len(valuePath) == len(jobsPath)+1
@@ -545,6 +577,8 @@ func createLoadResourcesOverrideVisitor(ctx context.Context) merge.OverrideVisit
 			return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
 		},
 	}
+
+	return visitor, state, nil
 }
 
 // insertResourceMode controls whether createInitOverrideVisitor allows or disallows inserting new resources.
@@ -561,11 +595,12 @@ const (
 // resources, but not delete existing resources.
 //
 // If mode is insertResourceModeDisallow, it matching expected behaviour of apply_mutators
-func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) merge.OverrideVisitor {
+func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) (merge.OverrideVisitor, visitorState, error) {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
-	return merge.OverrideVisitor{
+	state := newVisitorState()
+	visitor := merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
 			if isOmitemptyDelete(left) {
 				return merge.ErrOverrideUndoDelete
@@ -581,27 +616,39 @@ func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) mer
 				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
 
+			err := state.UpdatedResources.Add(valuePath, left)
+			if err != nil {
+				return fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
+			}
+
 			// deleting properties is allowed because it only changes an existing resource
 			log.Debugf(ctx, "Delete value at %q", valuePath.String())
 
 			return nil
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			hasResourcesPrefix := valuePath.HasPrefix(resourcesPath)
-
-			// insert 'resources' or 'resources.<resource_type>' if it didn't exist before
-			if hasResourcesPrefix && len(valuePath) <= len(resourcesPath)+1 {
-				return right, nil
-			}
-
-			if !hasResourcesPrefix {
+			if !valuePath.HasPrefix(resourcesPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
 
-			// valuePath has 3 elements: 'resources.<resource_type>.<resource_name>'
-			insertResource := len(valuePath) == len(resourcesPath)+2
-			if mode == insertResourceModeDisallow && insertResource {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
+			// for len = 3: insert 'resources.<resource_type>.<resource_name>'
+			// for len = 2: insert 'resources.<resource_type>' (added the first resource of type)
+			// for len = 1: insert 'resources' (added the first resource)
+			insertResource := len(valuePath) <= len(resourcesPath)+2
+			if insertResource {
+				if mode == insertResourceModeDisallow {
+					return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
+				}
+
+				err := state.AddedResources.Add(valuePath, right)
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
+				}
+			} else {
+				err := state.UpdatedResources.Add(valuePath, right)
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
+				}
 			}
 
 			log.Debugf(ctx, "Insert value at %q", valuePath.String())
@@ -609,8 +656,30 @@ func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) mer
 			return right, nil
 		},
 		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
-			if !valuePath.HasPrefix(jobsPath) {
+			if !valuePath.HasPrefix(resourcesPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
+			}
+
+			// update is similar to insert, the only difference is presence of left (previous) value
+
+			// for len = 3: insert 'resources.<resource_type>.<resource_name>'
+			// for len = 2: insert 'resources.<resource_type>' (added the first resource of type)
+			// for len = 1: insert 'resources' (added the first resource)
+			insertResource := len(valuePath) <= len(resourcesPath)+2
+			if insertResource {
+				if mode == insertResourceModeDisallow {
+					return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
+				}
+
+				err := state.AddedResources.Add(valuePath, right)
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
+				}
+			} else {
+				err := state.UpdatedResources.Add(valuePath, right)
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
+				}
 			}
 
 			log.Debugf(ctx, "Update value at %q", valuePath.String())
@@ -618,6 +687,8 @@ func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) mer
 			return right, nil
 		},
 	}
+
+	return visitor, state, nil
 }
 
 func isOmitemptyDelete(left dyn.Value) bool {

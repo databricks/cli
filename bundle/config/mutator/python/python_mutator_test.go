@@ -578,7 +578,7 @@ func TestCreateOverrideVisitor(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		visitor, err := createOverrideVisitor(context.Background(), tc.phase)
+		visitor, _, err := createOverrideVisitor(context.Background(), tc.phase)
 		if err != nil {
 			t.Fatalf("create visitor failed: %v", err)
 		}
@@ -695,7 +695,7 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 	for _, tc := range testCases {
 		for _, phase := range tc.phases {
 			t.Run(tc.name+"-"+string(phase), func(t *testing.T) {
-				visitor, err := createOverrideVisitor(context.Background(), phase)
+				visitor, _, err := createOverrideVisitor(context.Background(), phase)
 				require.NoError(t, err)
 
 				err = visitor.VisitDelete(tc.path, tc.left)
