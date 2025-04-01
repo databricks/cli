@@ -85,13 +85,18 @@ type DataSourceAppAppResources struct {
 type DataSourceAppApp struct {
 	ActiveDeployment         *DataSourceAppAppActiveDeployment  `json:"active_deployment,omitempty"`
 	AppStatus                *DataSourceAppAppAppStatus         `json:"app_status,omitempty"`
+	BudgetPolicyId           string                             `json:"budget_policy_id,omitempty"`
 	ComputeStatus            *DataSourceAppAppComputeStatus     `json:"compute_status,omitempty"`
 	CreateTime               string                             `json:"create_time,omitempty"`
 	Creator                  string                             `json:"creator,omitempty"`
 	DefaultSourceCodePath    string                             `json:"default_source_code_path,omitempty"`
 	Description              string                             `json:"description,omitempty"`
+	EffectiveBudgetPolicyId  string                             `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUserApiScopes   []string                           `json:"effective_user_api_scopes,omitempty"`
 	Id                       string                             `json:"id,omitempty"`
 	Name                     string                             `json:"name"`
+	Oauth2AppClientId        string                             `json:"oauth2_app_client_id,omitempty"`
+	Oauth2AppIntegrationId   string                             `json:"oauth2_app_integration_id,omitempty"`
 	PendingDeployment        *DataSourceAppAppPendingDeployment `json:"pending_deployment,omitempty"`
 	Resources                []DataSourceAppAppResources        `json:"resources,omitempty"`
 	ServicePrincipalClientId string                             `json:"service_principal_client_id,omitempty"`
@@ -100,6 +105,7 @@ type DataSourceAppApp struct {
 	UpdateTime               string                             `json:"update_time,omitempty"`
 	Updater                  string                             `json:"updater,omitempty"`
 	Url                      string                             `json:"url,omitempty"`
+	UserApiScopes            []string                           `json:"user_api_scopes,omitempty"`
 }
 
 type DataSourceApp struct {
