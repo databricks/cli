@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/databricks/cli/libs/log"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/databricks/cli/libs/log"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
@@ -220,10 +221,6 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 
 		result, visitor := createOverrideVisitor(leftRoot, rightRoot)
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("failed to merge output: %w", err)
-		}
-
 		merged, err := merge.Override(leftRoot, rightRoot, visitor)
 		if err != nil {
 			return dyn.InvalidValue, err

@@ -13,9 +13,8 @@ import (
 type mergeOutputTestCase struct {
 	name string
 
-	input    dyn.Value
-	output   dyn.Value
-	expected dyn.Value
+	input  dyn.Value
+	output dyn.Value
 
 	added   []mutator.ResourceKey
 	updated []mutator.ResourceKey

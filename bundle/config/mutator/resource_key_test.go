@@ -1,8 +1,9 @@
 package mutator
 
 import (
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"testing"
+
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 
 	"github.com/databricks/cli/libs/dyn"
 )
