@@ -109,8 +109,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 	bundletest.SetLocation(b, "resources.pipelines.pipeline.libraries[3]", []dyn.Location{{File: filepath.Join(dir, "relative", "resource.yml")}})
 
-	m := ExpandPipelineGlobPaths()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, NormalizePaths(), ExpandPipelineGlobPaths())
 	require.NoError(t, diags.Error())
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
@@ -123,8 +122,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	require.True(t, containsFile(libraries, filepath.Join("test", "test3.py")))
 
 	// These patterns are defined relative to "./relative"
-	require.True(t, containsFile(libraries, "test4.py"))
-	require.True(t, containsFile(libraries, "test5.py"))
+	require.True(t, containsFile(libraries, "relative/test4.py"))
+	require.True(t, containsFile(libraries, "relative/test5.py"))
 
 	// Making sure exact file references work as well
 	require.True(t, containsNotebook(libraries, "test1.ipynb"))
@@ -137,7 +136,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	// Making sure other libraries are not replaced
 	require.True(t, containsJar(libraries, "./*.jar"))
 	require.True(t, containsMaven(libraries, "org.jsoup:jsoup:1.7.2"))
-	require.True(t, containsNotebook(libraries, "./non-existent.ipynb"))
+	require.True(t, containsNotebook(libraries, "non-existent.ipynb"))
 }
 
 func containsNotebook(libraries []pipelines.PipelineLibrary, path string) bool {

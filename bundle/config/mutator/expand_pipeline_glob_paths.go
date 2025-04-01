@@ -17,7 +17,7 @@ func ExpandPipelineGlobPaths() bundle.Mutator {
 	return &expandPipelineGlobPaths{}
 }
 
-func (m *expandPipelineGlobPaths) expandLibrary(v dyn.Value) ([]dyn.Value, error) {
+func (m *expandPipelineGlobPaths) expandLibrary(dir string, v dyn.Value) ([]dyn.Value, error) {
 	// Probe for the path field in the library.
 	for _, p := range []dyn.Path{
 		dyn.NewPath(dyn.Key("notebook"), dyn.Key("path")),
@@ -35,11 +35,6 @@ func (m *expandPipelineGlobPaths) expandLibrary(v dyn.Value) ([]dyn.Value, error
 		path := pv.MustString()
 		if path == "" || !libraries.IsLocalPath(path) {
 			return []dyn.Value{v}, nil
-		}
-
-		dir, err := v.Location().Directory()
-		if err != nil {
-			return nil, err
 		}
 
 		matches, err := filepath.Glob(filepath.Join(dir, path))
@@ -74,7 +69,7 @@ func (m *expandPipelineGlobPaths) expandLibrary(v dyn.Value) ([]dyn.Value, error
 	return []dyn.Value{v}, nil
 }
 
-func (m *expandPipelineGlobPaths) expandSequence(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+func (m *expandPipelineGlobPaths) expandSequence(dir string, p dyn.Path, v dyn.Value) (dyn.Value, error) {
 	s, ok := v.AsSequence()
 	if !ok {
 		return dyn.InvalidValue, fmt.Errorf("expected sequence, got %s", v.Kind())
@@ -82,7 +77,7 @@ func (m *expandPipelineGlobPaths) expandSequence(p dyn.Path, v dyn.Value) (dyn.V
 
 	var vs []dyn.Value
 	for _, sv := range s {
-		v, err := m.expandLibrary(sv)
+		v, err := m.expandLibrary(dir, sv)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -103,7 +98,9 @@ func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) dia
 		)
 
 		// Visit each pipeline's "libraries" field and expand any glob patterns.
-		return dyn.MapByPattern(v, p, m.expandSequence)
+		return dyn.MapByPattern(v, p, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
+			return m.expandSequence(b.BundleRootPath, path, value)
+		})
 	})
 
 	return diag.FromErr(err)
