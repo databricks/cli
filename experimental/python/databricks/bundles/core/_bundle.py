@@ -28,11 +28,11 @@ class Bundle:
     """
     Values of bundle variables resolved for selected target. Bundle variables are defined in databricks.yml.
     For accessing variables as structured data, use :meth:`resolve_variable`.
-    
+
     Example:
-    
+
     .. code-block:: yaml
-    
+
         variables:
           default_dbr_version:
             description: Default version of Databricks Runtime

@@ -356,9 +356,10 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourceDashboardIDs: dashboardIds,
 
 			Experimental: &protos.BundleDeployExperimental{
-				VariableCount:        int64(variableCount),
-				ComplexVariableCount: complexVariableCount,
-				LookupVariableCount:  lookupVariableCount,
+				VariableCount:          int64(variableCount),
+				ComplexVariableCount:   complexVariableCount,
+				LookupVariableCount:    lookupVariableCount,
+				ConfigurationFileCount: b.Metrics.ConfigurationFileCount,
 			},
 		},
 	})

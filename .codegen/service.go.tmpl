@@ -40,6 +40,13 @@ import (
   {{$element.Name}},{{end}}
 ]{{end}}{{end}}
 
+{{define "supportedValuesForPositionalArg"}}
+      Supported values: {{if le (len .) 5 -}}
+	[{{range $index, $element := .}}{{if ne $index 0}}, {{end}}{{$element.Name}}{{end}}]
+{{- else -}}[{{range $index, $element := .}}
+        {{$element.Name}},{{end}}
+      ]{{end}}{{end}}
+
 {{define "service"}}
 {{- $excludeMethods := list "put-secret" -}}
 {{- $hideService := .IsPrivatePreview }}
@@ -202,7 +209,7 @@ func new{{.PascalName}}() *cobra.Command {
 
   Arguments:
     {{- range .RequiredPositionalArguments }}
-    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}
+    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}{{- if .Entity.Enum }} {{template "supportedValuesForPositionalArg" .Entity.Enum}} {{- end -}}
     {{- end -}}
     {{- end -}}
 	`

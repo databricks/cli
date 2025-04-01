@@ -218,10 +218,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
 
+			if testdiff.OverwriteMode && len(expanded) > 1 {
+				// All variants of the test are producing the same output,
+				// there is no need to run the concurrently when updating.
+				expanded = expanded[0:1]
+			}
+
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
 				t.Logf("Running test with env %v", expanded[0])
-
 				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
 			} else {
 				for _, envset := range expanded {

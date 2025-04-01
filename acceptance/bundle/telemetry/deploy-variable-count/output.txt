@@ -21,7 +21,7 @@ Deployment complete!
   "resource_dashboard_count": 0,
   "resource_app_count": 0,
   "experimental": {
-    "configuration_file_count": 0,
+    "configuration_file_count": 1,
     "variable_count": 6,
     "complex_variable_count": 1,
     "lookup_variable_count": 2,

@@ -134,9 +134,22 @@ func TestProxyHandleWebSocket(t *testing.T) {
 
 	_, _, err = conn.ReadMessage()
 	require.Error(t, err)
-	if !strings.Contains(err.Error(), "websocket: close 1006 (abnormal closure)") &&
-		!strings.Contains(err.Error(), "An established connection was aborted by the software in your host machine") &&
-		!strings.Contains(err.Error(), "connection reset by peer") {
-		t.Errorf("Expected abnormal closure, An established connection was aborted, or connection reset by peer, got %s", err)
+	potentialErrMessages := []string{
+		"websocket: close 1006 (abnormal closure)",
+		"An established connection was aborted by the software in your host machine",
+		"connection reset by peer",
+		"An existing connection was forcibly closed by the remote host",
+	}
+	found := false
+	for _, msg := range potentialErrMessages {
+		if strings.Contains(err.Error(), msg) {
+			found = true
+			break
+		}
+	}
+
+	// If none of the expected error messages are found, fail the test
+	if !found {
+		t.Errorf("Expected one of the expected errors, got %s", err)
 	}
 }

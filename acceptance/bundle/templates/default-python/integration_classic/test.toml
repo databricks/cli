@@ -9,7 +9,7 @@ Ignore = [
 ]
 
 [EnvMatrix]
-UV_VERSION = [
+UV_PYTHON = [
     "3.9",
     "3.10",
     "3.11",
@@ -18,7 +18,8 @@ UV_VERSION = [
 ]
 
 [[Repls]]
-Old = '\d{6,}'
+# for some reason leading number is lost converting "%H%M%S" 061234 to 61234
+Old = '\d{5,}'
 New = '[NUMBER]'
 
 [[Repls]]
