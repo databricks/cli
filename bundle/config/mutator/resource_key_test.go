@@ -58,7 +58,7 @@ func TestResourceKeySet_add(t *testing.T) {
 	testCases := []resourceKeySetAddTestCase{
 		{
 			path: "resources.jobs.job_1",
-			value: dyn.V(map[string]interface{}{
+			value: dyn.V(map[string]any{
 				"name": dyn.V("job_1"),
 			}),
 			expected: []ResourceKey{
@@ -70,15 +70,15 @@ func TestResourceKeySet_add(t *testing.T) {
 		},
 		{
 			path: "resources",
-			value: dyn.V(map[string]interface{}{
+			value: dyn.V(map[string]any{
 				"jobs": dyn.V(
-					map[string]interface{}{
+					map[string]any{
 						"job_1": dyn.V(
-							map[string]interface{}{
+							map[string]any{
 								"name": dyn.V("job_1"),
 							}),
 						"job_2": dyn.V(
-							map[string]interface{}{
+							map[string]any{
 								"name": dyn.V("job_1"),
 							}),
 					}),

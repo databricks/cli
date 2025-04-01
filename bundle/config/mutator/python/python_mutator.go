@@ -240,7 +240,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	return mutateDiags.Extend(diag.FromErr(err))
 }
 
-func mergeOutput(ctx context.Context, phase phase, root dyn.Value, output dyn.Value) (dyn.Value, visitorState, error) {
+func mergeOutput(ctx context.Context, phase phase, root, output dyn.Value) (dyn.Value, visitorState, error) {
 	visitor, state, err := createOverrideVisitor(ctx, phase)
 	if err != nil {
 		return dyn.InvalidValue, state, err
