@@ -1,9 +1,10 @@
 package merge
 
 import (
+	"testing"
+
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSelect(t *testing.T) {

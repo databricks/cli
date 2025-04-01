@@ -2,6 +2,7 @@ package merge
 
 import (
 	"fmt"
+
 	"github.com/databricks/cli/libs/dyn"
 )
 
