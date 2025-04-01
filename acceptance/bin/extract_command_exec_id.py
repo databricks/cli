@@ -15,7 +15,7 @@ def extract_cmd_exec_id():
         while True:
             line = f.readline()
             if not line:
-                return "Requests file is empty"
+                raise SystemExit("Requests file is empty")
 
             json_str += line
             try:
@@ -29,18 +29,15 @@ def extract_cmd_exec_id():
         user_agent = data["headers"]["User-Agent"][0]
 
         if not user_agent:
-            return "User-Agent header is empty"
+            raise SystemExit("User-Agent header is empty")
 
         match = re.search(r"cmd-exec-id/([^\s]+)", user_agent)
         if match:
-            print(match.group(1))
-            return None
+            return match.group(1)
 
-        return f"No command execution ID found in User-Agent: {user_agent}"
+        raise SystemExit(f"No command execution ID found in User-Agent: {user_agent}")
 
 
 if __name__ == "__main__":
-    error = extract_cmd_exec_id()
-    if error:
-        print(f"Error: {error}", file=sys.stderr)
-        sys.exit(1)
+    exec_id = extract_cmd_exec_id()
+    print(exec_id)
