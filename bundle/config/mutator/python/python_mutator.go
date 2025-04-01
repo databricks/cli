@@ -15,7 +15,7 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 
-	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/config/mutator"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
@@ -108,12 +108,14 @@ const (
 )
 
 type pythonMutator struct {
-	phase phase
+	phase             phase
+	resourceProcessor mutator.ResourceProcessor
 }
 
-func PythonMutator(phase phase) bundle.Mutator {
+func PythonMutator(phase phase, resourceProcessor mutator.ResourceProcessor) bundle.Mutator {
 	return &pythonMutator{
-		phase: phase,
+		phase:             phase,
+		resourceProcessor: resourceProcessor,
 	}
 }
 
@@ -200,6 +202,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
+	var result applyPythonOutputResult
 	mutateDiagsHasError := errors.New("unexpected error")
 
 	err = b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
@@ -224,9 +227,10 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, mutateDiagsHasError
 		}
 
-		newRoot, result, err := applyPythonOutput(leftRoot, rightRoot)
+		newRoot, result0, err := applyPythonOutput(leftRoot, rightRoot)
+		result = result0
 		if err != nil {
-			return dyn.InvalidValue, err
+			return dyn.InvalidValue, fmt.Errorf("failed to apply python output: %w", err)
 		}
 
 		for _, resourceKey := range result.AddedResources.ToArray() {
@@ -262,9 +266,20 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 
 		return mutateDiags
+	} else {
+		mutateDiags = mutateDiags.Extend(diag.FromErr(err))
 	}
 
-	return mutateDiags.Extend(diag.FromErr(err))
+	if mutateDiags.HasError() {
+		return mutateDiags
+	}
+
+	processorOpts := mutator.ResourceProcessorOpts{
+		AddedResources:   result.AddedResources,
+		UpdatedResources: result.UpdatedResources,
+	}
+
+	return mutateDiags.Extend(m.resourceProcessor.Process(ctx, b, processorOpts))
 }
 
 func createCacheDir(ctx context.Context) (string, error) {
@@ -451,21 +466,6 @@ func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocation
 	generated, err := yamlloader.LoadYAML(virtualPath, outputFile)
 	if err != nil {
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
-	}
-
-	// paths are resolved relative to locations of their values, if we change location
-	// we have to update each path, until we simplify that, we don't update locations
-	// for such values, so we don't change how paths are resolved
-	//
-	// we can remove this once we:
-	// - add variable interpolation before and after PythonMutator
-	// - implement path normalization (aka path normal form)
-	_, err = paths.VisitJobPaths(generated, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
-		putPythonLocation(locations, p, v.Location())
-		return v, nil
-	})
-	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to update locations: %w", err))
 	}
 
 	// generated has dyn.Location as if it comes from generated YAML file

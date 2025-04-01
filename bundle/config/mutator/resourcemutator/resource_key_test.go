@@ -110,3 +110,21 @@ func TestResourceKeySet_AddPattern(t *testing.T) {
 		})
 	}
 }
+
+func TestResourceKeySet_AddResourceKey(t *testing.T) {
+	set := NewResourceKeySet()
+
+	set.AddResourceKey(ResourceKey{Type: "jobs", Name: "job_1"})
+	set.AddResourceKey(ResourceKey{Type: "pipelines", Name: "pipeline_1"})
+
+	assert.ElementsMatch(t, []string{"jobs", "pipelines"}, set.Types())
+	assert.ElementsMatch(t, []string{"job_1"}, set.Names("jobs"))
+	assert.ElementsMatch(t, []string{"pipeline_1"}, set.Names("pipelines"))
+	assert.ElementsMatch(t,
+		[]ResourceKey{
+			{Type: "jobs", Name: "job_1"},
+			{Type: "pipelines", Name: "pipeline_1"},
+		},
+		set.ToArray(),
+	)
+}
