@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -82,18 +83,18 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(path string, body []byte) {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = "/" + filePath
 	}
-	s.files[path] = body
+	s.files[filePath] = body
 
 	// Add all directories in the path to the directories map
-	parts := strings.Split(path, "/")
+	parts := strings.Split(path.Dir(filePath), "/")
 	currentPath := ""
-	for i, part := range parts {
-		// Skip empty parts and the last part (which is the file itself)
-		if part == "" || i == len(parts)-1 {
+	for _, part := range parts {
+		// Skip empty parts
+		if part == "" {
 			continue
 		}
 
