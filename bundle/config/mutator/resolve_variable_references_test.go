@@ -59,7 +59,7 @@ func TestResolveVariableReferencesWithSourceLinkedDeployment(t *testing.T) {
 			},
 		}
 
-		diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("workspace"))
+		diags := bundle.Apply(context.Background(), b, ResolveVariableReferencesOnlyResources("workspace"))
 		require.NoError(t, diags.Error())
 		testCase.assert(t, b)
 	}
