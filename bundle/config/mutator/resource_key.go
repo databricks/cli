@@ -2,8 +2,6 @@ package mutator
 
 import (
 	"errors"
-	"fmt"
-
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -32,39 +30,37 @@ func (r ResourceKeySet) AddResourceKey(key ResourceKey) {
 	r[key.Type][key.Name] = struct{}{}
 }
 
-// Add adds resources associated with prefix/value to the set.
-//
-// prefix is a path to value in configuration.
-//
-// If prefix is a resource key ("resources.jobs.job_1"), it's added to the set.
-// If prefix is a resource value ("resources.jobs.job_1.foo"), resource key is extracted and added.
-// If prefix is a sub-tree ("resources" or "resources.jobs"), all resource keys are added.
-func (r ResourceKeySet) Add(prefix dyn.Path, value dyn.Value) error {
-	if len(prefix) >= 3 {
-		parsed, err := GetResourceKey(prefix)
+func (r ResourceKeySet) IsEmpty() bool {
+	return len(r) == 0
+}
+
+func (r ResourceKeySet) AddPath(path dyn.Path) error {
+	resourceKey, err := GetResourceKey(path)
+	if err != nil {
+		return err
+	}
+
+	r.AddResourceKey(resourceKey)
+	return nil
+}
+
+func (r ResourceKeySet) AddPattern(pattern dyn.Pattern, value dyn.Value) error {
+	if len(pattern) != 3 {
+		return errors.New("pattern must have 3 keys")
+	}
+
+	_, err := dyn.MapByPattern(value, pattern, func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
+		parsed, err := GetResourceKey(path)
 		if err != nil {
-			return err
+			return dyn.InvalidValue, err
 		}
 
 		r.AddResourceKey(parsed)
 
-		return nil
-	} else {
-		if value.Kind() != dyn.KindMap {
-			return fmt.Errorf("expected value to be a map, got %s", value.Kind())
-		}
+		return v, nil
+	})
 
-		for _, pair := range value.MustMap().Pairs() {
-			key := dyn.Key(pair.Key.MustString())
-
-			err := r.Add(prefix.Append(key), pair.Value)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
+	return err
 }
 
 // ToArray converts the set to an array of resource keys.

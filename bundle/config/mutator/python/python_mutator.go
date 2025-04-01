@@ -13,8 +13,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/bundle/config/mutator"
-
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
 	"github.com/databricks/databricks-sdk-go/logger"
@@ -31,7 +29,6 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 )
 
@@ -221,12 +218,29 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, mutateDiagsHasError
 		}
 
-		visitor, _, err := createOverrideVisitor(ctx, m.phase)
+		result, visitor := createOverrideVisitor(leftRoot, rightRoot)
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to merge output: %w", err)
 		}
 
-		return merge.Override(leftRoot, rightRoot, visitor)
+		merged, err := merge.Override(leftRoot, rightRoot, visitor)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		if !result.DeletedResources.IsEmpty() {
+			return dyn.InvalidValue, fmt.Errorf("unexpected deleted resources: %s", result.DeletedResources.ToArray())
+		}
+
+		if !result.AddedResources.IsEmpty() && m.phase == PythonMutatorPhaseApplyMutators {
+			return dyn.InvalidValue, fmt.Errorf("unexpected added resources: %s", result.AddedResources.ToArray())
+		}
+
+		if !result.UpdatedResources.IsEmpty() && m.phase == PythonMutatorPhaseLoadResources {
+			return dyn.InvalidValue, fmt.Errorf("unexpected updated resources: %s", result.UpdatedResources.ToArray())
+		}
+
+		return merged, nil
 	})
 
 	if err == mutateDiagsHasError {
@@ -238,20 +252,6 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	}
 
 	return mutateDiags.Extend(diag.FromErr(err))
-}
-
-func mergeOutput(ctx context.Context, phase phase, root, output dyn.Value) (dyn.Value, visitorState, error) {
-	visitor, state, err := createOverrideVisitor(ctx, phase)
-	if err != nil {
-		return dyn.InvalidValue, state, err
-	}
-
-	merged, err := merge.Override(root, output, visitor)
-	if err != nil {
-		return dyn.InvalidValue, state, err
-	}
-
-	return merged, state, nil
 }
 
 func createCacheDir(ctx context.Context) (string, error) {
@@ -425,9 +425,9 @@ func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocation
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
 	//
-	// virtualPath has to stay in bundleRootPath, because locations outside root path are not allowed:
+	// virtualPath has to stay in bundleRootPath, because locations outside input path are not allowed:
 	//
-	//   Error: path /var/folders/.../python/dist/*.whl is not contained in bundle root path
+	//   Error: path /var/folders/.../python/dist/*.whl is not contained in bundle input path
 	//
 	// for that, we pass virtualPath instead of outputPath as file location
 	virtualPath, err := filepath.Abs(filepath.Join(rootPath, generatedFileName))
@@ -501,215 +501,6 @@ func loadDiagnosticsFile(path string) (diag.Diagnostics, error) {
 	defer file.Close()
 
 	return parsePythonDiagnostics(file)
-}
-
-type visitorState struct {
-	AddedResources   mutator.ResourceKeySet
-	UpdatedResources mutator.ResourceKeySet
-}
-
-func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisitor, visitorState, error) {
-	switch phase {
-	case PythonMutatorPhaseLoad:
-		return createLoadResourcesOverrideVisitor(ctx)
-	case PythonMutatorPhaseInit:
-		return createInitOverrideVisitor(ctx, insertResourceModeAllow)
-	case PythonMutatorPhaseLoadResources:
-		return createLoadResourcesOverrideVisitor(ctx)
-	case PythonMutatorPhaseApplyMutators:
-		return createInitOverrideVisitor(ctx, insertResourceModeDisallow)
-	default:
-		return merge.OverrideVisitor{}, visitorState{}, fmt.Errorf("unknown phase: %s", phase)
-	}
-}
-
-func newVisitorState() visitorState {
-	return visitorState{
-		AddedResources:   mutator.NewResourceKeySet(),
-		UpdatedResources: mutator.NewResourceKeySet(),
-	}
-}
-
-// createLoadResourcesOverrideVisitor creates an override visitor for the load_resources phase.
-//
-// During load_resources, it's only possible to create new resources, and not modify or
-// delete existing ones.
-func createLoadResourcesOverrideVisitor(ctx context.Context) (merge.OverrideVisitor, visitorState, error) {
-	resourcesPath := dyn.NewPath(dyn.Key("resources"))
-	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
-
-	state := newVisitorState()
-	visitor := merge.OverrideVisitor{
-		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
-			if isOmitemptyDelete(left) {
-				return merge.ErrOverrideUndoDelete
-			}
-
-			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
-		},
-		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			if !valuePath.HasPrefix(resourcesPath) {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
-			}
-
-			err := state.AddedResources.Add(valuePath, right)
-			if err != nil {
-				return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
-			}
-
-			// insert 'resources' or 'resources.<resource_type>' if it didn't exist before
-			if len(valuePath) <= len(resourcesPath)+1 {
-				return right, nil
-			}
-
-			insertResource := len(valuePath) == len(jobsPath)+1
-
-			// adding a property into an existing resource is not allowed, because it changes it
-			if !insertResource {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
-			}
-
-			log.Debugf(ctx, "Insert value at %q", valuePath.String())
-
-			return right, nil
-		},
-		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
-			return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
-		},
-	}
-
-	return visitor, state, nil
-}
-
-// insertResourceMode controls whether createInitOverrideVisitor allows or disallows inserting new resources.
-type insertResourceMode int
-
-const (
-	insertResourceModeDisallow insertResourceMode = iota
-	insertResourceModeAllow    insertResourceMode = iota
-)
-
-// createInitOverrideVisitor creates an override visitor for the init phase.
-//
-// During the init phase it's possible to create new resources, modify existing
-// resources, but not delete existing resources.
-//
-// If mode is insertResourceModeDisallow, it matching expected behaviour of apply_mutators
-func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) (merge.OverrideVisitor, visitorState, error) {
-	resourcesPath := dyn.NewPath(dyn.Key("resources"))
-	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
-
-	state := newVisitorState()
-	visitor := merge.OverrideVisitor{
-		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
-			if isOmitemptyDelete(left) {
-				return merge.ErrOverrideUndoDelete
-			}
-
-			if !valuePath.HasPrefix(jobsPath) {
-				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
-			}
-
-			deleteResource := len(valuePath) == len(jobsPath)+1
-
-			if deleteResource {
-				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
-			}
-
-			err := state.UpdatedResources.Add(valuePath, left)
-			if err != nil {
-				return fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
-			}
-
-			// deleting properties is allowed because it only changes an existing resource
-			log.Debugf(ctx, "Delete value at %q", valuePath.String())
-
-			return nil
-		},
-		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			if !valuePath.HasPrefix(resourcesPath) {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
-			}
-
-			// for len = 3: insert 'resources.<resource_type>.<resource_name>'
-			// for len = 2: insert 'resources.<resource_type>' (added the first resource of type)
-			// for len = 1: insert 'resources' (added the first resource)
-			insertResource := len(valuePath) <= len(resourcesPath)+2
-			if insertResource {
-				if mode == insertResourceModeDisallow {
-					return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
-				}
-
-				err := state.AddedResources.Add(valuePath, right)
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
-				}
-			} else {
-				err := state.UpdatedResources.Add(valuePath, right)
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
-				}
-			}
-
-			log.Debugf(ctx, "Insert value at %q", valuePath.String())
-
-			return right, nil
-		},
-		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
-			if !valuePath.HasPrefix(resourcesPath) {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
-			}
-
-			// update is similar to insert, the only difference is presence of left (previous) value
-
-			// for len = 3: insert 'resources.<resource_type>.<resource_name>'
-			// for len = 2: insert 'resources.<resource_type>' (added the first resource of type)
-			// for len = 1: insert 'resources' (added the first resource)
-			insertResource := len(valuePath) <= len(resourcesPath)+2
-			if insertResource {
-				if mode == insertResourceModeDisallow {
-					return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
-				}
-
-				err := state.AddedResources.Add(valuePath, right)
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
-				}
-			} else {
-				err := state.UpdatedResources.Add(valuePath, right)
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to handle path (%s): %w", valuePath.String(), err)
-				}
-			}
-
-			log.Debugf(ctx, "Update value at %q", valuePath.String())
-
-			return right, nil
-		},
-	}
-
-	return visitor, state, nil
-}
-
-func isOmitemptyDelete(left dyn.Value) bool {
-	// Python output can omit empty sequences/mappings, because we don't track them as optional,
-	// there is no semantic difference between empty and missing, so we keep them as they were before
-	// Python mutator deleted them.
-
-	switch left.Kind() {
-	case dyn.KindMap:
-		return left.MustMap().Len() == 0
-
-	case dyn.KindSequence:
-		return len(left.MustSequence()) == 0
-
-	case dyn.KindNil:
-		// map/sequence can be nil, for instance, bad YAML like: `foo:<eof>`
-		return true
-
-	default:
-		return false
-	}
 }
 
 // detectExecutable lookups Python interpreter in virtual environment, or if not set, in PATH.
