@@ -5,4 +5,3 @@ resources:
   experiments:
     experiment1:
       name: $EXPERIMENT_NAME
-

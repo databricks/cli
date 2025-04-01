@@ -2,13 +2,12 @@ package resources
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"strings"
 
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -43,11 +42,8 @@ func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	if err != nil {
 		log.Debugf(ctx, "volume with fully qualified name %s does not exist: %v", fullyQualifiedName, err)
 
-		var aerr *apierr.APIError
-		if errors.As(err, &aerr) {
-			if aerr.StatusCode == 404 {
-				return false, nil
-			}
+		if apierr.IsMissing(err) {
+			return false, nil
 		}
 
 		return false, err

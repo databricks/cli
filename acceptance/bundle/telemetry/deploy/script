@@ -2,10 +2,7 @@ trace $CLI bundle deploy
 
 trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs.[] | fromjson'
 
-# Disable pipefail. head will skip reading all input once it encounters a newline. Not disabling pipefail will trigger
-# a SIGPIPE in linux based systems.
-set +o pipefail
-cmd_exec_id=$(cat out.requests.txt | jq '.headers."User-Agent".[0]'| head -n 1 | grep -o 'cmd-exec-id/[^ ]*' | cut -d '/' -f2)
+cmd_exec_id=$(extract_command_exec_id.py)
 
 update_file.py output.txt $cmd_exec_id  '[CMD-EXEC-ID]'
 update_file.py output.txt "11111111-2222-3333-4444-555555555555"  '[BUNDLE_UUID]'

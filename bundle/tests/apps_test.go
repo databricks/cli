@@ -15,7 +15,7 @@ func TestApps(t *testing.T) {
 
 	diags := bundle.ApplySeq(context.Background(), b,
 		mutator.SetVariables(),
-		mutator.ResolveVariableReferences("variables"),
+		mutator.ResolveVariableReferencesOnlyResources("variables"),
 	)
 	assert.Empty(t, diags)
 
@@ -38,7 +38,7 @@ func TestAppsOverride(t *testing.T) {
 
 	diags := bundle.ApplySeq(context.Background(), b,
 		mutator.SetVariables(),
-		mutator.ResolveVariableReferences("variables"),
+		mutator.ResolveVariableReferencesOnlyResources("variables"),
 	)
 	assert.Empty(t, diags)
 	app := b.Config.Resources.Apps["my_app"]

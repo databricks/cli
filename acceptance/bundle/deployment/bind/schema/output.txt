@@ -1,6 +1,6 @@
 
-=== Bind schema test: 
-=== Substitute variables in the template: 
+=== Bind schema test:
+=== Substitute variables in the template:
 === Create a pre-defined schema: {
   "full_name": "main.test-schema-[UUID]",
   "catalog_name": "main"
@@ -33,5 +33,5 @@ Destroy complete!
   "comment": "This schema was created from DABs"
 }
 
-=== Test cleanup: 
+=== Test cleanup:
 === Delete the pre-defined schema test-schema-[UUID]: 0

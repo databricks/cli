@@ -8,7 +8,6 @@ resources:
       catalog_name: main
       schema_name: test-schema-rmodel-[UUID]
 
-
 >>> [CLI] schemas create test-schema-rmodel-[UUID] main
 {
   "full_name": "main.test-schema-rmodel-[UUID]",

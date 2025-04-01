@@ -35,7 +35,7 @@ func makeCommand(method string) *cobra.Command {
 	var payload flags.JsonFlag
 
 	command := &cobra.Command{
-		Use:   strings.ToLower(method),
+		Use:   strings.ToLower(method) + " PATH",
 		Args:  root.ExactArgs(1),
 		Short: fmt.Sprintf("Perform %s request", method),
 		RunE: func(cmd *cobra.Command, args []string) error {
