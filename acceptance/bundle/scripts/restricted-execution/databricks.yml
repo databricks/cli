@@ -4,7 +4,7 @@ bundle:
 experimental:
   scripts:
     # SOME_ENV_VAR is here to ensure that the envs are not accessible in the preinit script
-    # when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set
+    # when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set
     preinit: "echo \"preinit $SOME_ENV_VAR\""
     postinit: "echo \"postinit $SOME_ENV_VAR\""
     prebuild: "echo \"prebuild $SOME_ENV_VAR\""

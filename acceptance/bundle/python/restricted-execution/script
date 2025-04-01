@@ -2,14 +2,14 @@ UV_ARGS="${UV_ARGS//\[\DATABRICKS_BUNDLES_WHEEL\]/$DATABRICKS_BUNDLES_WHEEL}"
 
 export SOME_ENV_VAR="value_from_env"
 
-title "Without DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION, all envs are accessible"
+title "Without DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION, all envs are accessible"
 trace uv run $UV_ARGS -q $CLI bundle summary -o json | jq '.experimental'
 trace cat envs.txt
 echo ""
 rm -rf envs.txt
 
-export DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1
-title "With DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION=1, no envs are accessible"
+export DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1
+title "With DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1, no envs are accessible"
 trace errcode uv run $UV_ARGS -q $CLI bundle summary | jq '.experimental'
 errcode cat envs.txt
 

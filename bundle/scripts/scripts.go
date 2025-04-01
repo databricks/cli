@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/exec"
@@ -69,9 +69,9 @@ func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle,
 		return nil, nil, nil
 	}
 
-	// Don't run any arbitrary code when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set.
-	if os.Getenv("DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION") != "" {
-		return nil, nil, errors.New("Running scripts is disabled when DATABRICKS_CLI_RESTRICTED_CODE_EXECUTION is set")
+	// Don't run any arbitrary code when restricted execution is enabled.
+	if _, ok := env.RestrictedExecution(ctx); ok {
+		return nil, nil, errors.New("Running scripts is disabled when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
 	}
 
 	cmd, err := executor.StartCommand(ctx, string(command))
