@@ -39,23 +39,14 @@ def validate_contents(data):
         yield f" Failed to decode utf-8: {ex}"
         return
 
-    count = 0
-    max_trailing_errors = 9
     for i, line in enumerate(text.split("\n")):
         if not line:
             continue
         if line.strip() == "":
-            count += 1
-            if count <= max_trailing_errors:
-                yield f"{i + 1}: Whitespace-only line"
+            yield f"{i + 1}: Whitespace-only line"
             continue
         if line.rstrip() != line:
-            count += 1
-            if count <= max_trailing_errors:
-                yield f"{i + 1}: Trailing whitespace {line[-200:]!r}"
-
-    if count > max_trailing_errors:
-        yield f" {count} cases of trailing whitespace"
+            yield f"{i + 1}: Trailing whitespace {line[-200:]!r}"
 
     newlines = count_trailing_newlines(text)
 
