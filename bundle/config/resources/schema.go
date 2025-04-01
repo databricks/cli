@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"strings"
 
@@ -36,11 +35,8 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	if err != nil {
 		log.Debugf(ctx, "schema with full name %s does not exist: %v", fullName, err)
 
-		var aerr *apierr.APIError
-		if errors.As(err, &aerr) {
-			if aerr.StatusCode == 404 {
-				return false, nil
-			}
+		if apierr.IsMissing(err) {
+			return false, nil
 		}
 
 		return false, err
