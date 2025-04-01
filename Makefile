@@ -20,9 +20,6 @@ fmt:
 	ruff format -qn
 	golangci-lint fmt
 
-fmtcheck:
-	golangci-lint fmt -d
-
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
 
