@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
+// Select returns a new map that contains only the keys specified in the included list.
 func Select(value dyn.Value, included []string) (dyn.Value, error) {
 	mapping, ok := value.AsMap()
 	if !ok {
@@ -27,6 +28,7 @@ func Select(value dyn.Value, included []string) (dyn.Value, error) {
 	return dyn.NewValue(newMapping, value.Locations()), nil
 }
 
+// AntiSelect returns a new map with all keys from the input map except for the ones in the excluded list.
 func AntiSelect(value dyn.Value, excluded []string) (dyn.Value, error) {
 	mapping, ok := value.AsMap()
 	if !ok {
