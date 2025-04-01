@@ -15,6 +15,8 @@ type ResourceKey struct {
 }
 
 // ResourceKeySet is a set of resource keys in configuration.
+//
+// ResourceKeySet is used to track how mutators modify resources.
 type ResourceKeySet map[string]map[string]struct{}
 
 func NewResourceKeySet() ResourceKeySet {

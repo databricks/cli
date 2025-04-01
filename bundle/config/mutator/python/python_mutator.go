@@ -425,9 +425,9 @@ func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocation
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
 	//
-	// virtualPath has to stay in bundleRootPath, because locations outside input path are not allowed:
+	// virtualPath has to stay in bundleRootPath, because locations outside root path are not allowed:
 	//
-	//   Error: path /var/folders/.../python/dist/*.whl is not contained in bundle input path
+	//   Error: path /var/folders/.../python/dist/*.whl is not contained in bundle root path
 	//
 	// for that, we pass virtualPath instead of outputPath as file location
 	virtualPath, err := filepath.Abs(filepath.Join(rootPath, generatedFileName))
