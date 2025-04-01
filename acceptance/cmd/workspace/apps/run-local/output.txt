@@ -2,6 +2,10 @@ Hello, world
 
 === Starting the app in background...Waiting for the app to start...
 
+>>> errcode tail -n0 -f out.run.txt
+
+Exit code: 141
+
 === Checking app is running...
 >>> curl -s -o - http://127.0.0.1:8001
 {"Accept":"*/*","Accept-Encoding":"gzip","Host":"127.0.0.1:8000","User-Agent":"curl/(version)","X-Forwarded-Email":"[USERNAME]","X-Forwarded-Host":"localhost","X-Forwarded-Preferred-Username":"","X-Forwarded-User":"[USERNAME]","X-Real-Ip":"127.0.0.1","X-Request-Id":"[UUID]"}

@@ -11,7 +11,7 @@ PID=$!
 cd ..
 
 echo Waiting for the app to start...
-sleep 7
+trace errcode tail -n0 -f out.run.txt | sed '/Python Flask app has started with/ q' > /dev/null
 
 title "Checking app is running..."
 trace curl -s -o - http://127.0.0.1:8001

@@ -3,9 +3,7 @@ package apps
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 )
@@ -25,7 +23,7 @@ var defaultLibraries = []string{
 type PythonApp struct {
 	config *Config
 	spec   *AppSpec
-	venv   bool
+	uvArgs []string
 }
 
 func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
@@ -36,51 +34,16 @@ func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
 // If not, it creates a virtual environment and installs the required libraries. It then installs the libraries from
 // requirements.txt if it exists.
 func (p *PythonApp) PrepareEnvironment() error {
-	// First check that we are not already in virtual environment when we execute CLI command
-	// by checking if VIRTUAL_ENV is set
-	if os.Getenv("VIRTUAL_ENV") == "" {
-		// Check if .venv exists
-		_, err := os.Stat(filepath.Join(p.config.AppPath, ".venv"))
-		if err != nil {
-			if !os.IsNotExist(err) {
-				return err
-			}
-
-			err := run([]string{"uv", "venv"}, nil)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	env := []string{"VIRTUAL_ENV=" + filepath.Join(p.config.AppPath, ".venv")}
-
-	// Install tools we need to run the app
-	args := append([]string{"uv", "pip", "install"}, defaultLibraries...)
-	err := run(args, env)
-	if err != nil {
-		return err
-	}
+	args := append([]string{"uv", "run", "--with"}, strings.Join(defaultLibraries, ","))
 
 	// Install the requirements from requirements.txt if exists
-	_, err = os.Stat(filepath.Join(p.config.AppPath, "requirements.txt"))
+	_, err := os.Stat(filepath.Join(p.config.AppPath, "requirements.txt"))
 	if err == nil {
-		err := run([]string{"uv", "pip", "install", "-r", "requirements.txt"}, env)
-		if err != nil {
-			return err
-		}
+		args = append(args, "--with-requirements", filepath.Join(p.config.AppPath, "requirements.txt"))
 	}
 
-	p.venv = true
+	p.uvArgs = args
 	return nil
-}
-
-func run(args, env []string) error {
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Env = append(os.Environ(), env...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
 
 // GetCommand returns the command to run the app. If the spec has a command, it is returned.
@@ -121,14 +84,8 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 		p.enableDebugging()
 	}
 
-	// if we are in a virtual environment, we need to change the command to point to the python binary in the virtual environment
-	if os.Getenv("VIRTUAL_ENV") != "" || p.venv {
-		// On windows, the python binary is in Scripts directory
-		if runtime.GOOS == "windows" {
-			spec.Command[0] = filepath.Join(p.venvPath(), "Scripts", spec.Command[0])
-		} else {
-			spec.Command[0] = filepath.Join(p.venvPath(), "bin", spec.Command[0])
-		}
+	if p.uvArgs != nil {
+		spec.Command = append(p.uvArgs, spec.Command...)
 	}
 
 	return spec.Command, nil
