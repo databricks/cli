@@ -66,7 +66,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 		mutator.ResolveVariableReferencesInLookup(),
 		mutator.ResolveResourceReferences(),
-		mutator.ResolveVariableReferences(
+		mutator.ResolveVariableReferencesWithoutResources(
+			"bundle",
+			"workspace",
+			"variables",
+		),
+		mutator.ResolveVariableReferencesOnlyResources(
 			"bundle",
 			"workspace",
 			"variables",
