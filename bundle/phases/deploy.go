@@ -357,9 +357,9 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourceDashboardIDs: dashboardIds,
 
 			Experimental: &protos.BundleDeployExperimental{
+				BundleMode:                mode,
 				ConfigurationFileCount:    b.Metrics.ConfigurationFileCount,
 				WorkspaceArtifactPathType: artifactPathType,
-				BundleMode:                mode,
 			},
 		},
 	})
