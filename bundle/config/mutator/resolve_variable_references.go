@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -39,6 +40,9 @@ type resolveVariableReferences struct {
 	extraRounds int
 
 	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
+	//
+	// includeResources can be used with appropriate pattern to avoid resolving variables
+	// outside of 'resources'.
 	includeResources bool
 }
 
@@ -223,42 +227,44 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 	return hasUpdates, diags
 }
 
-// If includeResources is true, the 'resources' config is mutation, otherwise, it is excluded.
+// selectivelyMutate applies a function to a subset of the configuration
 func (m *resolveVariableReferences) selectivelyMutate(b *bundle.Bundle, fn func(value dyn.Value) (dyn.Value, error)) error {
+	included := []string{
+		"variables",
+		"bundle",
+		"include",
+		"workspace",
+		"artifacts",
+		"targets",
+		"environments",
+		"sync",
+		"run_as",
+		"presets",
+		"experimental",
+		"permissions",
+	}
+
+	if m.includeResources {
+		included = append(included, "resources")
+	}
+
 	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		rootMap := root.MustMap()
-		newMapping := dyn.NewMapping()
-
-		var resources dyn.Pair
-		var hasResources bool
-		for _, pair := range rootMap.Pairs() {
-			if !m.includeResources && pair.Key.MustString() == "resources" {
-				hasResources = true
-				resources = pair
-			} else {
-				err := newMapping.Set(pair.Key, pair.Value)
-				if err != nil {
-					return dyn.InvalidValue, err
-				}
-			}
-		}
-
-		result, err := fn(dyn.NewValue(newMapping, root.Locations()))
+		includedRoot, err := merge.Select(root, included)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 
-		if hasResources {
-			newResult := dyn.NewMapping()
-			newResult.Merge(result.MustMap())
-			err := newResult.Set(resources.Key, resources.Value)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-
-			return dyn.NewValue(newResult, root.Locations()), nil
-		} else {
-			return result, nil
+		excludedRoot, err := merge.AntiSelect(root, included)
+		if err != nil {
+			return dyn.InvalidValue, err
 		}
+
+		updatedRoot, err := fn(includedRoot)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		// merge is recursive, but it doesn't matter because keys are mutually exclusive
+		return merge.Merge(updatedRoot, excludedRoot)
 	})
 }
