@@ -1,0 +1,12 @@
+trace $CLI bundle deploy
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs.[] | fromjson'
+
+# Disable pipefail. head will skip reading all input once it encounters a newline. Not disabling pipefail will trigger
+# a SIGPIPE in linux based systems.
+set +o pipefail
+cmd_exec_id=$(extract_command_exec_id.py)
+
+update_file.py output.txt $cmd_exec_id  '[CMD-EXEC-ID]'
+
+rm out.requests.txt

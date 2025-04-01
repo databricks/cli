@@ -85,8 +85,10 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
+	// TODO: array: effective_user_api_scopes
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	// TODO: array: user_api_scopes
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create an app.`
@@ -943,8 +945,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
+	// TODO: array: effective_user_api_scopes
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	// TODO: array: user_api_scopes
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`

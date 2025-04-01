@@ -1,0 +1,2 @@
+Local = true
+Cloud = false # need deterministic ids and clean workspace

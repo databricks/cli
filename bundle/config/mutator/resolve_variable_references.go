@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/libs/dyn/merge"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
@@ -37,9 +39,25 @@ type resolveVariableReferences struct {
 	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
 	skipFn      func(dyn.Value) bool
 	extraRounds int
+
+	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
+	//
+	// includeResources can be used with appropriate pattern to avoid resolving variables
+	// outside of 'resources'.
+	includeResources bool
 }
 
-func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
+func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
+	return &resolveVariableReferences{
+		prefixes:         prefixes,
+		lookupFn:         lookup,
+		extraRounds:      maxResolutionRounds - 1,
+		pattern:          dyn.NewPattern(dyn.Key("resources")),
+		includeResources: true,
+	}
+}
+
+func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:    prefixes,
 		lookupFn:    lookup,
@@ -90,8 +108,12 @@ func lookupForVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value
 	return lookup(v, path, b)
 }
 
-func (*resolveVariableReferences) Name() string {
-	return "ResolveVariableReferences"
+func (m *resolveVariableReferences) Name() string {
+	if m.includeResources {
+		return "ResolveVariableReferences(resources)"
+	} else {
+		return "ResolveVariableReferences"
+	}
 }
 
 func (m *resolveVariableReferences) Validate(ctx context.Context, b *bundle.Bundle) error {
@@ -139,7 +161,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	hasUpdates := false
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := m.selectivelyMutate(b, func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
 		// This enables users to interpolate variable references to fields that haven't
@@ -204,4 +226,59 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 	}
 
 	return hasUpdates, diags
+}
+
+// selectivelyMutate applies a function to a subset of the configuration
+func (m *resolveVariableReferences) selectivelyMutate(b *bundle.Bundle, fn func(value dyn.Value) (dyn.Value, error)) error {
+	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		allKeys, err := getAllKeys(root)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		var included []string
+		for _, key := range allKeys {
+			if key == "resources" {
+				if m.includeResources {
+					included = append(included, key)
+				}
+			} else {
+				included = append(included, key)
+			}
+		}
+
+		includedRoot, err := merge.Select(root, included)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		excludedRoot, err := merge.AntiSelect(root, included)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		updatedRoot, err := fn(includedRoot)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		// merge is recursive, but it doesn't matter because keys are mutually exclusive
+		return merge.Merge(updatedRoot, excludedRoot)
+	})
+}
+
+func getAllKeys(root dyn.Value) ([]string, error) {
+	var keys []string
+
+	if mapping, ok := root.AsMap(); ok {
+		for _, key := range mapping.Keys() {
+			if keyString, ok := key.AsString(); ok {
+				keys = append(keys, keyString)
+			} else {
+				return nil, fmt.Errorf("key is not a string: %v", key)
+			}
+		}
+	}
+
+	return keys, nil
 }

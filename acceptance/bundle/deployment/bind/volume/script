@@ -13,7 +13,7 @@ VOLUME_TYPE="MANAGED"
 
 trace $CLI schemas create "${SCHEMA_NAME}" ${CATALOG_NAME} | jq '{full_name, catalog_name}'
 
-title "Create a pre-defined volume: "
+title "Create a pre-defined volume:"
 VOLUME_FULL_NAME=$($CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${VOLUME_NAME}" "${VOLUME_TYPE}" | jq -r '.full_name')
 
 cleanupRemoveVolume() {

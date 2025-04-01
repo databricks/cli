@@ -69,7 +69,6 @@ func newCreateExperiment() *cobra.Command {
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createExperimentReq.CustomWeightsColumn, "custom-weights-column", createExperimentReq.CustomWeightsColumn, `Name of the column in the input training table used to customize the weight for each time series to calculate weighted metrics.`)
-	cmd.Flags().Int64Var(&createExperimentReq.DataGranularityQuantity, "data-granularity-quantity", createExperimentReq.DataGranularityQuantity, `The quantity of the input data granularity.`)
 	cmd.Flags().StringVar(&createExperimentReq.ExperimentPath, "experiment-path", createExperimentReq.ExperimentPath, `The path to the created experiment.`)
 	// TODO: array: holiday_regions
 	cmd.Flags().Int64Var(&createExperimentReq.MaxRuntime, "max-runtime", createExperimentReq.MaxRuntime, `The maximum duration in minutes for which the experiment is allowed to run.`)
@@ -80,7 +79,7 @@ func newCreateExperiment() *cobra.Command {
 	// TODO: array: timeseries_identifier_columns
 	// TODO: array: training_frameworks
 
-	cmd.Use = "create-experiment TRAIN_DATA_PATH TARGET_COLUMN TIME_COLUMN DATA_GRANULARITY_UNIT FORECAST_HORIZON"
+	cmd.Use = "create-experiment TRAIN_DATA_PATH TARGET_COLUMN TIME_COLUMN FORECAST_GRANULARITY FORECAST_HORIZON"
 	cmd.Short = `Create a forecasting experiment.`
 	cmd.Long = `Create a forecasting experiment.
   
@@ -94,16 +93,13 @@ func newCreateExperiment() *cobra.Command {
       truth for model training.
     TIME_COLUMN: Name of the column in the input training table that represents the
       timestamp of each row.
-    DATA_GRANULARITY_UNIT: The time unit of the input data granularity. Together with
-      data_granularity_quantity field, this defines the time interval between
-      consecutive rows in the time series data. Possible values: * 'W' (weeks) *
-      'D' / 'days' / 'day' * 'hours' / 'hour' / 'hr' / 'h' * 'm' / 'minute' /
-      'min' / 'minutes' / 'T' * 'S' / 'seconds' / 'sec' / 'second' * 'M' /
-      'month' / 'months' * 'Q' / 'quarter' / 'quarters' * 'Y' / 'year' / 'years'
+    FORECAST_GRANULARITY: The granularity of the forecast. This defines the time interval between
+      consecutive rows in the time series data. Possible values: '1 second', '1
+      minute', '5 minutes', '10 minutes', '15 minutes', '30 minutes', 'Hourly',
+      'Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'.
     FORECAST_HORIZON: The number of time steps into the future for which predictions should be
-      made. This value represents a multiple of data_granularity_unit and
-      data_granularity_quantity determining how far ahead the model will
-      forecast.`
+      made. This value represents a multiple of forecast_granularity determining
+      how far ahead the model will forecast.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -111,7 +107,7 @@ func newCreateExperiment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'train_data_path', 'target_column', 'time_column', 'data_granularity_unit', 'forecast_horizon' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'train_data_path', 'target_column', 'time_column', 'forecast_granularity', 'forecast_horizon' in your JSON input")
 			}
 			return nil
 		}
@@ -146,7 +142,7 @@ func newCreateExperiment() *cobra.Command {
 			createExperimentReq.TimeColumn = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
-			createExperimentReq.DataGranularityUnit = args[3]
+			createExperimentReq.ForecastGranularity = args[3]
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &createExperimentReq.ForecastHorizon)

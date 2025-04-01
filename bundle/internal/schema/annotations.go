@@ -174,7 +174,7 @@ func saveYamlWithStyle(outputPath string, annotations annotation.File) error {
 }
 
 func getAlphabeticalOrder[T any](mapping map[string]T) *yamlsaver.Order {
-	order := []string{}
+	var order []string
 	for k := range mapping {
 		order = append(order, k)
 	}

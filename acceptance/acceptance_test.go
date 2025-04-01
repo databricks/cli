@@ -218,10 +218,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
 
+			if testdiff.OverwriteMode && len(expanded) > 1 {
+				// All variants of the test are producing the same output,
+				// there is no need to run the concurrently when updating.
+				expanded = expanded[0:1]
+			}
+
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
 				t.Logf("Running test with env %v", expanded[0])
-
 				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
 			} else {
 				for _, envset := range expanded {
@@ -500,7 +505,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Make sure there are not unaccounted for new files
 	files := ListDir(t, tmpDir)
-	unexpected := []string{}
+	var unexpected []string
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -593,8 +598,8 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	// directory only affects the main script and not cleanup.
 	scriptContents = "(\n" + scriptContents + ")\n"
 
-	prepares := []string{}
-	cleanups := []string{}
+	var prepares []string
+	var cleanups []string
 
 	for {
 		x, ok := tryReading(t, filepath.Join(dir, CleanupScript))
@@ -912,7 +917,7 @@ func getNodeTypeID(cloudEnv string) string {
 // buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
 // It's used to cache the wheel build between acceptance tests, because one build takes ~10 seconds.
 func buildDatabricksBundlesWheel(t *testing.T, buildDir string) (string, error) {
-	RunCommand(t, []string{"uv", "build", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
+	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
 
 	files, err := os.ReadDir(buildDir)
 	if err != nil {

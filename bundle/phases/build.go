@@ -20,7 +20,10 @@ func Build(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		scripts.Execute(config.ScriptPreBuild),
 		artifacts.Build(),
 		scripts.Execute(config.ScriptPostBuild),
-		mutator.ResolveVariableReferences(
+		mutator.ResolveVariableReferencesWithoutResources(
+			"artifacts",
+		),
+		mutator.ResolveVariableReferencesOnlyResources(
 			"artifacts",
 		),
 	)

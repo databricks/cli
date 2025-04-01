@@ -22,7 +22,7 @@ func allResourceTypes(t *testing.T) []string {
 	rv, err := convert.FromTyped(r, dyn.NilValue)
 	require.NoError(t, err)
 	normalized, _ := convert.Normalize(r, rv, convert.IncludeMissingFields)
-	resourceTypes := []string{}
+	var resourceTypes []string
 	for _, k := range normalized.MustMap().Keys() {
 		resourceTypes = append(resourceTypes, k.MustString())
 	}

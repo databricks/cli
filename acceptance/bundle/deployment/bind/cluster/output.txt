@@ -9,7 +9,6 @@ resources:
       cluster_name: "DEFAULT Test Cluster"
       spark_version: '16.2.x-scala2.12'
 
-
 >>> [CLI] clusters get [CLUSTER-ID]
 {
   "cluster_name": "DEFAULT Test Cluster"
@@ -17,7 +16,7 @@ resources:
 
 >>> [CLI] bundle deployment bind cluster1 [CLUSTER-ID] --auto-approve
 Updating deployment state...
-Successfully bound databricks_cluster with an id '[CLUSTER-ID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound cluster with an id '[CLUSTER-ID]'. Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deployment unbind cluster1
 Updating deployment state...
