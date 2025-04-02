@@ -26,7 +26,8 @@ type Server struct {
 	fakeWorkspaces map[string]*FakeWorkspace
 	mu             *sync.Mutex
 
-	RecordRequestsCallback func(request *Request)
+	RequestCallback  func(request *Request)
+	ResponseCallback func(request *Request, response *EncodedResponse)
 }
 
 type Request struct {
@@ -44,7 +45,7 @@ type Response struct {
 	Body       any
 }
 
-type encodedResponse struct {
+type EncodedResponse struct {
 	StatusCode int
 	Headers    http.Header
 	Body       []byte
@@ -66,7 +67,7 @@ func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspa
 	}
 }
 
-func normalizeResponse(t testutil.TestingT, resp any) encodedResponse {
+func normalizeResponse(t testutil.TestingT, resp any) EncodedResponse {
 	result := normalizeResponseBody(t, resp)
 	if result.StatusCode == 0 {
 		result.StatusCode = 200
@@ -74,15 +75,15 @@ func normalizeResponse(t testutil.TestingT, resp any) encodedResponse {
 	return result
 }
 
-func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
+func normalizeResponseBody(t testutil.TestingT, resp any) EncodedResponse {
 	if isNil(resp) {
 		t.Errorf("Handler must not return nil")
-		return encodedResponse{StatusCode: 500}
+		return EncodedResponse{StatusCode: 500}
 	}
 
 	respBytes, ok := resp.([]byte)
 	if ok {
-		return encodedResponse{
+		return EncodedResponse{
 			Body:    respBytes,
 			Headers: getHeaders(respBytes),
 		}
@@ -90,7 +91,7 @@ func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 
 	respString, ok := resp.(string)
 	if ok {
-		return encodedResponse{
+		return EncodedResponse{
 			Body:    []byte(respString),
 			Headers: getHeaders([]byte(respString)),
 		}
@@ -99,7 +100,7 @@ func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 	respStruct, ok := resp.(Response)
 	if ok {
 		if isNil(respStruct.Body) {
-			return encodedResponse{
+			return EncodedResponse{
 				StatusCode: respStruct.StatusCode,
 				Headers:    respStruct.Headers,
 				Body:       []byte{},
@@ -108,7 +109,7 @@ func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 
 		bytesVal, isBytes := respStruct.Body.([]byte)
 		if isBytes {
-			return encodedResponse{
+			return EncodedResponse{
 				StatusCode: respStruct.StatusCode,
 				Headers:    respStruct.Headers,
 				Body:       bytesVal,
@@ -117,7 +118,7 @@ func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 
 		stringVal, isString := respStruct.Body.(string)
 		if isString {
-			return encodedResponse{
+			return EncodedResponse{
 				StatusCode: respStruct.StatusCode,
 				Headers:    respStruct.Headers,
 				Body:       []byte(stringVal),
@@ -127,7 +128,7 @@ func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 		respBytes, err := json.MarshalIndent(respStruct.Body, "", "    ")
 		if err != nil {
 			t.Errorf("JSON encoding error: %s", err)
-			return encodedResponse{
+			return EncodedResponse{
 				StatusCode: 500,
 				Body:       []byte("internal error"),
 			}
@@ -138,7 +139,7 @@ func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 			headers = getJsonHeaders()
 		}
 
-		return encodedResponse{
+		return EncodedResponse{
 			StatusCode: respStruct.StatusCode,
 			Headers:    headers,
 			Body:       respBytes,
@@ -148,13 +149,13 @@ func normalizeResponseBody(t testutil.TestingT, resp any) encodedResponse {
 	respBytes, err := json.MarshalIndent(resp, "", "    ")
 	if err != nil {
 		t.Errorf("JSON encoding error: %s", err)
-		return encodedResponse{
+		return EncodedResponse{
 			StatusCode: 500,
 			Body:       []byte("internal error"),
 		}
 	}
 
-	return encodedResponse{
+	return EncodedResponse{
 		Body:    respBytes,
 		Headers: getJsonHeaders(),
 	}
@@ -253,9 +254,11 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 		}
 
 		request := NewRequest(s.t, r, fakeWorkspace)
-		if s.RecordRequestsCallback != nil {
-			s.RecordRequestsCallback(&request)
+
+		if s.RequestCallback != nil {
+			s.RequestCallback(&request)
 		}
+
 		respAny := handler(request)
 		resp := normalizeResponse(s.t, respAny)
 
@@ -264,6 +267,10 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 		}
 
 		w.WriteHeader(resp.StatusCode)
+
+		if s.ResponseCallback != nil {
+			s.ResponseCallback(&request, &resp)
+		}
 
 		if _, err := w.Write(resp.Body); err != nil {
 			s.t.Errorf("Failed to write response: %s", err)
