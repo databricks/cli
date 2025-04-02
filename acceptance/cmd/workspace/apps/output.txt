@@ -1,17 +1,45 @@
 
+=== Apps create with correct input
+>>> [CLI] apps create --json @input.json
+{
+  "app_status": {
+    "message":"Application is running.",
+    "state":"RUNNING"
+  },
+  "compute_status": {
+    "message":"App compute is active.",
+    "state":"ACTIVE"
+  },
+  "description":"My app description.",
+  "id":"1000",
+  "name":"test-name",
+  "resources": [
+    {
+      "description":"API key for external service.",
+      "name":"api-key",
+      "secret": {
+        "key":"my-key",
+        "permission":"READ",
+        "scope":"my-scope"
+      }
+    }
+  ],
+  "url":"test-name-123.cloud.databricksapps.com"
+}
+
 === Apps update with correct input
 >>> [CLI] apps update test-name --json @input.json
 {
   "app_status": {
     "message":"Application is running.",
-    "state":"DEPLOYING"
+    "state":"RUNNING"
   },
   "compute_status": {
     "message":"App compute is active.",
-    "state":"ERROR"
+    "state":"ACTIVE"
   },
   "description":"My app description.",
-  "id":"12345",
+  "id":"1001",
   "name":"test-name",
   "resources": [
     {

@@ -1,0 +1,5 @@
+{
+  "assets_dir":"/Users/user/databricks_lakehouse_monitoring",
+  "output_schema_name":"catalog.schema",
+  "snapshot": {}
+}
