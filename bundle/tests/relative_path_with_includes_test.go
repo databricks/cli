@@ -13,8 +13,10 @@ import (
 func TestRelativePathsWithIncludes(t *testing.T) {
 	b := loadTarget(t, "./relative_path_with_includes", "default")
 
-	m := mutator.TranslatePaths()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b,
+		mutator.NormalizePaths(),
+		mutator.TranslatePaths(),
+	)
 	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, b.SyncRootPath+"/artifact_a", b.Config.Artifacts["test_a"].Path)
