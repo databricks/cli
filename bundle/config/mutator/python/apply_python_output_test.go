@@ -10,7 +10,7 @@ import (
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
-type mergeOutputTestCase struct {
+type applyPythonOutputTestCase struct {
 	name string
 
 	input  dyn.Value
@@ -21,11 +21,11 @@ type mergeOutputTestCase struct {
 	deleted []mutator.ResourceKey
 }
 
-func TestMergeOutput(t *testing.T) {
+func TestApplyPythonOutput(t *testing.T) {
 	job1 := mapOf("name", dyn.V("job 1"))
 	job2 := mapOf("name", dyn.V("job 2"))
 
-	testCases := []mergeOutputTestCase{
+	testCases := []applyPythonOutputTestCase{
 		{
 			name:   "add job (0)",
 			input:  emptyMap(),
@@ -144,7 +144,7 @@ func TestMergeOutput(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			merged, state, err := mergeOutput(tc.input, tc.output)
+			merged, state, err := applyPythonOutput(tc.input, tc.output)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.output, merged)
@@ -160,7 +160,7 @@ func TestMergeOutput_disallowDelete(t *testing.T) {
 	input := mapOf("not_resource", dyn.V("value"))
 	output := emptyMap()
 
-	_, _, err := mergeOutput(input, output)
+	_, _, err := applyPythonOutput(input, output)
 
 	assert.EqualError(t, err, `unexpected change at "not_resource" (delete)`)
 }
@@ -169,7 +169,7 @@ func TestMergeOutput_disallowInsert(t *testing.T) {
 	output := mapOf("not_resource", dyn.V("value"))
 	input := emptyMap()
 
-	_, _, err := mergeOutput(input, output)
+	_, _, err := applyPythonOutput(input, output)
 
 	assert.EqualError(t, err, `unexpected change at "not_resource" (insert)`)
 }
@@ -178,7 +178,7 @@ func TestMergeOutput_disallowUpdate(t *testing.T) {
 	output := mapOf("not_resource", dyn.V("value"))
 	input := mapOf("not_resource", dyn.V("new value"))
 
-	_, _, err := mergeOutput(input, output)
+	_, _, err := applyPythonOutput(input, output)
 
 	assert.EqualError(t, err, `unexpected change at "not_resource" (update)`)
 }

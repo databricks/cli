@@ -29,7 +29,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/process"
 )
@@ -220,8 +219,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, mutateDiagsHasError
 		}
 
-		result, visitor := createOverrideVisitor(leftRoot, rightRoot)
-		merged, err := merge.Override(leftRoot, rightRoot, visitor)
+		newRoot, result, err := applyPythonOutput(leftRoot, rightRoot)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -250,7 +248,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("unexpected updated resources: %s", result.UpdatedResources.ToArray())
 		}
 
-		return merged, nil
+		return newRoot, nil
 	})
 
 	if err == mutateDiagsHasError {

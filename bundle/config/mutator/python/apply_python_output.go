@@ -8,16 +8,22 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 )
 
-type mergeResult struct {
+// applyPythonOutputResult contains which resources where added, updated, or deleted by Python mutator.
+type applyPythonOutputResult struct {
 	AddedResources   mutator.ResourceKeySet
 	UpdatedResources mutator.ResourceKeySet
 	DeletedResources mutator.ResourceKeySet
 }
 
-// mergeOutput merges output of Python mutator with the input configuration.
+// applyPythonOutput applies output of Python mutator to bundle configuration before Python mutator.
 //
-// It records which resources have been added and updated into visitorState.
-func mergeOutput(root, output dyn.Value) (dyn.Value, mergeResult, error) {
+// It records applyPythonOutputResult containing which resources where added, updated, or deleted
+// by Python mutator.
+//
+// Return value is equivalent to output except for:
+// - if property is unchanged in output, it's original location will be preserved
+// - if empty sequence/mapping is deleted in output, it's original value will be preserved
+func applyPythonOutput(root, output dyn.Value) (dyn.Value, applyPythonOutputResult, error) {
 	result, visitor := createOverrideVisitor(root, output)
 	merged, err := merge.Override(root, output, visitor)
 	if err != nil {
@@ -27,7 +33,7 @@ func mergeOutput(root, output dyn.Value) (dyn.Value, mergeResult, error) {
 	return merged, result, nil
 }
 
-func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (mergeResult, merge.OverrideVisitor) {
+func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResult, merge.OverrideVisitor) {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	deleted := mutator.NewResourceKeySet()
 	updated := mutator.NewResourceKeySet()
@@ -165,7 +171,7 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (mergeResult, merge.Ov
 		},
 	}
 
-	return mergeResult{
+	return applyPythonOutputResult{
 		AddedResources:   added,
 		UpdatedResources: updated,
 		DeletedResources: deleted,
