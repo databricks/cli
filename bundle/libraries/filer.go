@@ -2,6 +2,7 @@ package libraries
 
 import (
 	"context"
+	"path"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -22,11 +23,28 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 		return nil, "", diag.Errorf("remote artifact path not configured")
 	}
 
+	uploadPath := path.Join(b.Config.Workspace.ArtifactPath, InternalDirName)
+
 	switch {
 	case IsVolumesPath(artifactPath):
-		return filerForVolume(b)
+		return filerForVolume(b, uploadPath)
 
 	default:
-		return filerForWorkspace(b)
+		return filerForWorkspace(b, uploadPath)
+	}
+}
+
+func GetFilerForLibrariesCleanup(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
+	artifactPath := b.Config.Workspace.ArtifactPath
+	if artifactPath == "" {
+		return nil, "", diag.Errorf("remote artifact path not configured")
+	}
+
+	switch {
+	case IsVolumesPath(artifactPath):
+		return filerForVolume(b, b.Config.Workspace.ArtifactPath)
+
+	default:
+		return filerForWorkspace(b, b.Config.Workspace.ArtifactPath)
 	}
 }

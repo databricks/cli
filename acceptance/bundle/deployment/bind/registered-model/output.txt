@@ -8,7 +8,6 @@ resources:
       catalog_name: main
       schema_name: test-schema-rmodel-[UUID]
 
-
 >>> [CLI] schemas create test-schema-rmodel-[UUID] main
 {
   "full_name": "main.test-schema-rmodel-[UUID]",
@@ -17,7 +16,7 @@ resources:
 
 >>> [CLI] bundle deployment bind model1 main.test-schema-rmodel-[UUID].test-registered-model-[UUID]
 Updating deployment state...
-Successfully bound databricks_registered_model with an id 'main.test-schema-rmodel-[UUID].test-registered-model-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound registered_model with an id 'main.test-schema-rmodel-[UUID].test-registered-model-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-registered-model-test-[UNIQUE_NAME]/default/files...

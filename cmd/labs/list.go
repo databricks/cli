@@ -41,7 +41,7 @@ func newListCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			info := []labsMeta{}
+			var info []labsMeta
 			for _, v := range repositories {
 				if v.IsArchived {
 					continue

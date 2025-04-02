@@ -60,7 +60,7 @@ def diff_files(patterns, p1, p2):
         p1_str = p1.as_posix()
         p2_str = p2.as_posix()
         for line in difflib.unified_diff(a, b, p1_str, p2_str, "", "", 2):
-            print(line, end="")
+            print(line.rstrip())
 
 
 if __name__ == "__main__":

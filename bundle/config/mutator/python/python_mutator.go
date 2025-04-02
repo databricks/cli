@@ -431,7 +431,7 @@ func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocation
 	// we can remove this once we:
 	// - add variable interpolation before and after PythonMutator
 	// - implement path normalization (aka path normal form)
-	_, err = paths.VisitJobPaths(generated, func(p dyn.Path, kind paths.PathKind, v dyn.Value) (dyn.Value, error) {
+	_, err = paths.VisitJobPaths(generated, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
 		putPythonLocation(locations, p, v.Location())
 		return v, nil
 	})

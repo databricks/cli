@@ -43,7 +43,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	deleteActions := make([]terraformlib.Action, 0)
+	var deleteActions []terraformlib.Action
 	for _, rc := range plan.ResourceChanges {
 		if rc.Change.Actions.Delete() {
 			deleteActions = append(deleteActions, terraformlib.Action{

@@ -87,7 +87,7 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 		return nil, err
 	}
 
-	result := make([]ProgressEvent, 0)
+	var result []ProgressEvent
 	// we iterate in reverse to return events in chronological order
 	for i := len(events) - 1; i >= 0; i-- {
 		event := events[i]

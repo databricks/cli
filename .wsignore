@@ -1,0 +1,40 @@
+# Files to exempt from whitespace check. Can contain patterns in Python's glob module format.
+# Generated files:
+.codegen/_openapi_sha
+.release_metadata.json
+bundle/schema/jsonschema.json
+experimental/python/docs/images/databricks-logo.svg
+**/*.dist-info/METADATA
+**/*.dist-info/WHEEL
+
+# Binary files
+**/*.zip
+**/*.whl
+
+# "bundle run" has trailing whitespace:
+acceptance/bundle/integration_whl/*/output.txt
+
+# "bundle init" has trailing whitespace:
+acceptance/bundle/templates-machinery/helpers-error/output.txt
+
+# "bundle deploy" with apps has trailing whitespace:
+acceptance/bundle/apps/config_section/output.txt
+integration/bundle/testdata/apps/bundle_deploy.txt
+
+# Extra whitespace in command help:
+acceptance/cmd/workspace/apps/output.txt
+
+# Extra whitespace in generated commands:
+cmd/workspace/**/*.go
+cmd/account/**/*.go
+
+# Extra whitespace in generated Python models
+experimental/python/databricks/bundles/*/_models/*.py
+
+# Developed elsewhere:
+internal/genkit/tagging.py
+
+# Docsgen:
+bundle/docsgen/output/resources.md
+bundle/docsgen/output/reference.md
+bundle/docsgen/testdata/anchors.md

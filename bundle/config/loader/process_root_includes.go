@@ -98,5 +98,9 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// Swap out the original includes list with the expanded globs.
 	b.Config.Include = files
 
+	// Track number of bundle YAML (or JSON) files in the configuration. The +1 is there
+	// to account for the root databricks.yaml file.
+	b.Metrics.ConfigurationFileCount = int64(len(files)) + 1
+
 	return bundle.ApplySeq(ctx, b, out...)
 }

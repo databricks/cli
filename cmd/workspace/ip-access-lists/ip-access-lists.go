@@ -112,7 +112,8 @@ func newCreate() *cobra.Command {
       
       * ALLOW: An allow list. Include this IP or range. * BLOCK: A block
       list. Exclude this IP or range. IP addresses in the block list are
-      excluded even if they are included in an allow list.`
+      excluded even if they are included in an allow list. 
+      Supported values: [ALLOW, BLOCK]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -398,7 +399,8 @@ func newReplace() *cobra.Command {
       
       * ALLOW: An allow list. Include this IP or range. * BLOCK: A block
       list. Exclude this IP or range. IP addresses in the block list are
-      excluded even if they are included in an allow list.
+      excluded even if they are included in an allow list. 
+      Supported values: [ALLOW, BLOCK]
     ENABLED: Specifies whether this IP access list is enabled.`
 
 	cmd.Annotations = make(map[string]string)
