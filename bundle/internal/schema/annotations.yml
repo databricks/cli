@@ -4,7 +4,7 @@ github.com/databricks/cli/bundle/config.Artifact:
       An optional set of build commands to run locally before deployment.
   "dynamic_version":
     "description": |-
-      Whether to patch the wheel version with dynamic component, based on timestamp of whl file. This ensures that the new code is deployed without having to update version in setup.py / pyproject.toml. Only applies to type=whl.
+      Whether to patch the wheel version dynamically based on the timestamp of the whl file. If this is set to `true`, new code can be deployed without having to update the version in `setup.py` or `pyproject.toml`. This setting is only valid when `type` is set to `whl`. See [\_](/dev-tools/bundles/settings.md#bundle-syntax-mappings-artifacts).
   "executable":
     "description": |-
       The executable type. Valid values are `bash`, `sh`, and `cmd`.
@@ -28,7 +28,7 @@ github.com/databricks/cli/bundle/config.Bundle:
     "description": |-
       The ID of a cluster to use to run the bundle.
     "markdown_description": |-
-      The ID of a cluster to use to run the bundle. See [_](/dev-tools/bundles/settings.md#cluster_id).
+      The ID of a cluster to use to run the bundle. See [\_](/dev-tools/bundles/settings.md#cluster_id).
   "compute_id":
     "description": |-
       Deprecated. The ID of the compute to use to run the bundle.
@@ -36,17 +36,17 @@ github.com/databricks/cli/bundle/config.Bundle:
     "description": |-
       The Databricks CLI version to use for the bundle.
     "markdown_description": |-
-      The Databricks CLI version to use for the bundle. See [_](/dev-tools/bundles/settings.md#databricks_cli_version).
+      The Databricks CLI version to use for the bundle. See [\_](/dev-tools/bundles/settings.md#databricks_cli_version).
   "deployment":
     "description": |-
       The definition of the bundle deployment
     "markdown_description": |-
-      The definition of the bundle deployment. For supported attributes see [_](/dev-tools/bundles/deployment-modes.md).
+      The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
     "markdown_description": |-
-      The Git version control details that are associated with your bundle. For supported attributes see [_](/dev-tools/bundles/settings.md#git).
+      The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
   "name":
     "description": |-
       The name of the bundle.
@@ -83,12 +83,12 @@ github.com/databricks/cli/bundle/config.Git:
     "description": |-
       The Git branch name.
     "markdown_description": |-
-      The Git branch name. See [_](/dev-tools/bundles/settings.md#git).
+      The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
   "origin_url":
     "description": |-
       The origin URL of the repository.
     "markdown_description": |-
-      The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git).
+      The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
 github.com/databricks/cli/bundle/config.Lock:
   "enabled":
     "description": |-
@@ -148,70 +148,70 @@ github.com/databricks/cli/bundle/config.Resources:
     "description": |-
       The app resource defines a Databricks app.
     "markdown_description": |-
-      The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [_](/dev-tools/databricks-apps/index.md).
+      The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
   "clusters":
     "description": |-
       The cluster definitions for the bundle, where each key is the name of a cluster.
     "markdown_description": |-
-      The cluster definitions for the bundle, where each key is the name of a cluster. See [_](/dev-tools/bundles/resources.md#clusters).
+      The cluster definitions for the bundle, where each key is the name of a cluster. See [\_](/dev-tools/bundles/resources.md#clusters).
   "dashboards":
     "description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
-      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [_](/dev-tools/bundles/resources.md#dashboards).
+      The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
   "experiments":
     "description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
-      The experiment definitions for the bundle, where each key is the name of the experiment. See [_](/dev-tools/bundles/resources.md#experiments).
+      The experiment definitions for the bundle, where each key is the name of the experiment. See [\_](/dev-tools/bundles/resources.md#experiments).
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
     "markdown_description": |-
-      The job definitions for the bundle, where each key is the name of the job. See [_](/dev-tools/bundles/resources.md#jobs).
+      The job definitions for the bundle, where each key is the name of the job. See [\_](/dev-tools/bundles/resources.md#jobs).
   "model_serving_endpoints":
     "description": |-
       The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
     "markdown_description": |-
-      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [_](/dev-tools/bundles/resources.md#model_serving_endpoints).
+      The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [\_](/dev-tools/bundles/resources.md#model_serving_endpoints).
   "models":
     "description": |-
       The model definitions for the bundle, where each key is the name of the model.
     "markdown_description": |-
-      The model definitions for the bundle, where each key is the name of the model. See [_](/dev-tools/bundles/resources.md#models).
+      The model definitions for the bundle, where each key is the name of the model. See [\_](/dev-tools/bundles/resources.md#models).
   "pipelines":
     "description": |-
       The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
-      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [_](/dev-tools/bundles/resources.md#pipelines).
+      The pipeline definitions for the bundle, where each key is the name of the pipeline. See [\_](/dev-tools/bundles/resources.md#pipelines).
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
     "markdown_description": |-
-      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [_](/dev-tools/bundles/resources.md#quality_monitors).
+      The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [\_](/dev-tools/bundles/resources.md#quality_monitors).
   "registered_models":
     "description": |-
       The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.
     "markdown_description": |-
-      The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [_](/dev-tools/bundles/resources.md#registered_models)
+      The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [\_](/dev-tools/bundles/resources.md#registered_models)
   "schemas":
     "description": |-
       The schema definitions for the bundle, where each key is the name of the schema.
     "markdown_description": |-
-      The schema definitions for the bundle, where each key is the name of the schema. See [_](/dev-tools/bundles/resources.md#schemas).
+      The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
     "markdown_description": |-
-      The volume definitions for the bundle, where each key is the name of the volume. See [_](/dev-tools/bundles/resources.md#volumes).
+      The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
 github.com/databricks/cli/bundle/config.Root:
   "artifacts":
     "description": |-
       Defines the attributes to build an artifact
     "markdown_description": |-
-      Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [_](/dev-tools/bundles/settings.md#artifacts).
+      Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [\_](/dev-tools/bundles/settings.md#artifacts).
 
-      Artifact settings defined in the top level of the bundle configuration can be overridden in the `targets` mapping. See [_](/dev-tools/bundles/artifact-overrides.md).
+      Artifact settings defined in the top level of the bundle configuration can be overridden in the `targets` mapping. See [\_](/dev-tools/bundles/artifact-overrides.md).
     "markdown_examples": |-
       ```yaml
       artifacts:
@@ -237,14 +237,14 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       Specifies a list of path globs that contain configuration files to include within the bundle.
     "markdown_description": |-
-      Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include).
+      Specifies a list of path globs that contain configuration files to include within the bundle. See [\_](/dev-tools/bundles/settings.md#include).
   "permissions":
     "description": |-
       Defines a permission for a specific entity.
     "markdown_description": |-
       A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.
 
-      See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
+      See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
     "markdown_examples": |-
       ```yaml
       permissions:
@@ -259,12 +259,12 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       Defines bundle deployment presets.
     "markdown_description": |-
-      Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.md#presets).
+      Defines bundle deployment presets. See [\_](/dev-tools/bundles/deployment-modes.md#presets).
   "resources":
     "description": |-
       A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
     "markdown_description": |-
-      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Databricks Asset Bundles supported resources, and resource definition reference, see [_](/dev-tools/bundles/resources.md).
+      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Databricks Asset Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
 
       ```yaml
       resources:
@@ -276,17 +276,17 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       The identity to use when running Databricks Asset Bundles workflows.
     "markdown_description": |-
-      The identity to use when running Databricks Asset Bundles workflows. See [_](/dev-tools/bundles/run-as.md).
+      The identity to use when running Databricks Asset Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
   "sync":
     "description": |-
       The files and file paths to include or exclude in the bundle.
     "markdown_description": |-
-      The files and file paths to include or exclude in the bundle. See [_](/dev-tools/bundles/settings.md#sync).
+      The files and file paths to include or exclude in the bundle. See [\_](/dev-tools/bundles/settings.md#sync).
   "targets":
     "description": |-
       Defines deployment targets for the bundle.
     "markdown_description": |-
-      Defines deployment targets for the bundle. See [_](/dev-tools/bundles/settings.md#targets)
+      Defines deployment targets for the bundle. See [\_](/dev-tools/bundles/settings.md#targets)
   "variables":
     "description": |-
       A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.
@@ -294,7 +294,7 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       Defines the Databricks workspace for the bundle.
     "markdown_description": |-
-      Defines the Databricks workspace for the bundle. See [_](/dev-tools/bundles/settings.md#workspace).
+      Defines the Databricks workspace for the bundle. See [\_](/dev-tools/bundles/settings.md#workspace).
 github.com/databricks/cli/bundle/config.Sync:
   "exclude":
     "description": |-
@@ -330,7 +330,7 @@ github.com/databricks/cli/bundle/config.Target:
     "description": |-
       The deployment mode for the target.
     "markdown_description": |-
-      The deployment mode for the target. Valid values are `development` or `production`. See [_](/dev-tools/bundles/deployment-modes.md).
+      The deployment mode for the target. Valid values are `development` or `production`. See [\_](/dev-tools/bundles/deployment-modes.md).
   "permissions":
     "description": |-
       The permissions for deploying and running the bundle in the target.
@@ -344,7 +344,7 @@ github.com/databricks/cli/bundle/config.Target:
     "description": |-
       The identity to use to run the bundle.
     "markdown_description": |-
-      The identity to use to run the bundle, see [_](/dev-tools/bundles/run-as.md).
+      The identity to use to run the bundle, see [\_](/dev-tools/bundles/run-as.md).
   "sync":
     "description": |-
       The local paths to sync to the target workspace when a bundle is run or deployed.
@@ -415,7 +415,7 @@ github.com/databricks/cli/bundle/config/resources.Permission:
     "description": |-
       Defines a permission for a specific entity.
     "markdown_description": |-
-      Defines a permission for a specific entity. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
   "group_name":
     "description": |-
       The name of the group that has the permission set in level.
@@ -486,7 +486,7 @@ github.com/databricks/cli/bundle/config/variable.Variable:
     "description": |-
       Defines a custom variable for the bundle.
     "markdown_description": |-
-      Defines a custom variable for the bundle. See [_](/dev-tools/bundles/settings.md#variables).
+      Defines a custom variable for the bundle. See [\_](/dev-tools/bundles/settings.md#variables).
   "default":
     "description": |-
       The default value for the variable.
