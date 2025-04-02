@@ -1,0 +1,8 @@
+bundle:
+  name: sync_patterns
+
+sync:
+  include:
+    - conf/dir/*.yml
+  exclude:
+    - conf/dir/*.txt
