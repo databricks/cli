@@ -16,6 +16,6 @@ Previously ".internal" folder under artifact_path was not cleaned up as expected
 ### Bundles
 * Fixed cleaning up artifact path .internal folder ([#2572](https://github.com/databricks/cli/pull/2572))
 * Added support for quality monitors in deployment bind/unbind commands ([#2583](https://github.com/databricks/cli/pull/2583))
-* New DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION environment variable which disables running scripts and python code when running bundle commands ([#2598](https://github.com/databricks/cli/pull/2598))
+* New DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION environment variable that rejects running scripts and Python code when it is set ([#2598](https://github.com/databricks/cli/pull/2598))
 
 ### API Changes
