@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -57,7 +58,11 @@ func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 				if err != nil {
 					return dyn.InvalidValue, err
 				}
-				return dyn.NewValue(filepath.ToSlash(relPath.MustString()), relPath.Locations()), nil
+				str, ok := relPath.AsString()
+				if !ok {
+					return dyn.InvalidValue, fmt.Errorf("expected string value but got %s", relPath.Kind())
+				}
+				return dyn.NewValue(filepath.ToSlash(str), relPath.Locations()), nil
 			}))
 			if err != nil {
 				return dyn.InvalidValue, err
@@ -68,7 +73,11 @@ func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 				if err != nil {
 					return dyn.InvalidValue, err
 				}
-				return dyn.NewValue(filepath.ToSlash(relPath.MustString()), relPath.Locations()), nil
+				str, ok := relPath.AsString()
+				if !ok {
+					return dyn.InvalidValue, fmt.Errorf("expected string value but got %s", relPath.Kind())
+				}
+				return dyn.NewValue(filepath.ToSlash(str), relPath.Locations()), nil
 			}))
 			if err != nil {
 				return dyn.InvalidValue, err
