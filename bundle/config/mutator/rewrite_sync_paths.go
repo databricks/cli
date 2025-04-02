@@ -51,10 +51,13 @@ func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 				return dyn.InvalidValue, err
 			}
 
-			// Convert include and exclude in the sync block to use Unix-style slashes.
+			makeRelativeFn := m.makeRelativeTo(b.BundleRootPath)
+
+			// Makes include and exclude paths relative to the bundle root first.
+			// Then converts them to use Unix-style slashes.
 			// This is required for the ignore.GitIgnore we use in libs/fileset to work correctly.
 			v, err = dyn.Map(v, "include", dyn.Foreach(func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
-				relPath, err := m.makeRelativeTo(b.BundleRootPath)(p, val)
+				relPath, err := makeRelativeFn(p, val)
 				if err != nil {
 					return dyn.InvalidValue, err
 				}
@@ -69,7 +72,7 @@ func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			}
 
 			v, err = dyn.Map(v, "exclude", dyn.Foreach(func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
-				relPath, err := m.makeRelativeTo(b.BundleRootPath)(p, val)
+				relPath, err := makeRelativeFn(p, val)
 				if err != nil {
 					return dyn.InvalidValue, err
 				}
