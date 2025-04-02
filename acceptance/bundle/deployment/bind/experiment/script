@@ -1,8 +1,6 @@
 title "Bind experiment test:"
 
 title "Substitute variables in the template"
-BUNDLE_NAME_SUFFIX=$(uuid)
-export BUNDLE_NAME_SUFFIX
 
 # double slash at the start prevents Windows to apply replacements to the path
 EXPERIMENT_NAME="//Workspace/Users/${CURRENT_USER_NAME}/test-experiment$(uuid)"
