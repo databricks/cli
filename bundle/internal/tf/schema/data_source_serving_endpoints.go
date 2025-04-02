@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceServingEndpointsEndpointsAiGatewayFallbackConfig struct {
+	Enabled bool `json:"enabled"`
+}
+
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsInputPii struct {
 	Behavior string `json:"behavior,omitempty"`
 }
@@ -47,6 +51,7 @@ type DataSourceServingEndpointsEndpointsAiGatewayUsageTrackingConfig struct {
 }
 
 type DataSourceServingEndpointsEndpointsAiGateway struct {
+	FallbackConfig       []DataSourceServingEndpointsEndpointsAiGatewayFallbackConfig       `json:"fallback_config,omitempty"`
 	Guardrails           []DataSourceServingEndpointsEndpointsAiGatewayGuardrails           `json:"guardrails,omitempty"`
 	InferenceTableConfig []DataSourceServingEndpointsEndpointsAiGatewayInferenceTableConfig `json:"inference_table_config,omitempty"`
 	RateLimits           []DataSourceServingEndpointsEndpointsAiGatewayRateLimits           `json:"rate_limits,omitempty"`
@@ -65,6 +70,7 @@ type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelAmazonB
 	AwsSecretAccessKey          string `json:"aws_secret_access_key,omitempty"`
 	AwsSecretAccessKeyPlaintext string `json:"aws_secret_access_key_plaintext,omitempty"`
 	BedrockProvider             string `json:"bedrock_provider"`
+	InstanceProfileArn          string `json:"instance_profile_arn,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelAnthropicConfig struct {
@@ -76,6 +82,23 @@ type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCohereC
 	CohereApiBase         string `json:"cohere_api_base,omitempty"`
 	CohereApiKey          string `json:"cohere_api_key,omitempty"`
 	CohereApiKeyPlaintext string `json:"cohere_api_key_plaintext,omitempty"`
+}
+
+type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCustomProviderConfigApiKeyAuth struct {
+	Key            string `json:"key"`
+	Value          string `json:"value,omitempty"`
+	ValuePlaintext string `json:"value_plaintext,omitempty"`
+}
+
+type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCustomProviderConfigBearerTokenAuth struct {
+	Token          string `json:"token,omitempty"`
+	TokenPlaintext string `json:"token_plaintext,omitempty"`
+}
+
+type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCustomProviderConfig struct {
+	ApiKeyAuth        []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCustomProviderConfigApiKeyAuth      `json:"api_key_auth,omitempty"`
+	BearerTokenAuth   []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCustomProviderConfigBearerTokenAuth `json:"bearer_token_auth,omitempty"`
+	CustomProviderUrl string                                                                                                    `json:"custom_provider_url"`
 }
 
 type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelDatabricksModelServingConfig struct {
@@ -115,6 +138,7 @@ type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModel struct
 	AmazonBedrockConfig          []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelAmazonBedrockConfig          `json:"amazon_bedrock_config,omitempty"`
 	AnthropicConfig              []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelAnthropicConfig              `json:"anthropic_config,omitempty"`
 	CohereConfig                 []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCohereConfig                 `json:"cohere_config,omitempty"`
+	CustomProviderConfig         []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCustomProviderConfig         `json:"custom_provider_config,omitempty"`
 	DatabricksModelServingConfig []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelDatabricksModelServingConfig `json:"databricks_model_serving_config,omitempty"`
 	GoogleCloudVertexAiConfig    []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelGoogleCloudVertexAiConfig    `json:"google_cloud_vertex_ai_config,omitempty"`
 	Name                         string                                                                                             `json:"name"`
@@ -162,6 +186,7 @@ type DataSourceServingEndpointsEndpointsTags struct {
 
 type DataSourceServingEndpointsEndpoints struct {
 	AiGateway            []DataSourceServingEndpointsEndpointsAiGateway `json:"ai_gateway,omitempty"`
+	BudgetPolicyId       string                                         `json:"budget_policy_id,omitempty"`
 	Config               []DataSourceServingEndpointsEndpointsConfig    `json:"config,omitempty"`
 	CreationTimestamp    int                                            `json:"creation_timestamp,omitempty"`
 	Creator              string                                         `json:"creator,omitempty"`

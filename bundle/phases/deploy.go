@@ -368,6 +368,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 				LookupVariableCount:    lookupVariableCount,
 				BundleMode:             mode,
 				ConfigurationFileCount: b.Metrics.ConfigurationFileCount,
+				TargetCount:            b.Metrics.TargetCount,
 			},
 		},
 	})

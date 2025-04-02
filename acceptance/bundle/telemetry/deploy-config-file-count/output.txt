@@ -37,7 +37,7 @@ Deployment complete!
           "variable_count": 0,
           "complex_variable_count": 0,
           "lookup_variable_count": 0,
-          "target_count": 0,
+          "target_count": 1,
           "bundle_mode": "TYPE_UNSPECIFIED"
         }
       }

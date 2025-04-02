@@ -9,8 +9,8 @@ type ResourceMwsNetworksErrorMessages struct {
 
 type ResourceMwsNetworksGcpNetworkInfo struct {
 	NetworkProjectId   string `json:"network_project_id"`
-	PodIpRangeName     string `json:"pod_ip_range_name"`
-	ServiceIpRangeName string `json:"service_ip_range_name"`
+	PodIpRangeName     string `json:"pod_ip_range_name,omitempty"`
+	ServiceIpRangeName string `json:"service_ip_range_name,omitempty"`
 	SubnetId           string `json:"subnet_id"`
 	SubnetRegion       string `json:"subnet_region"`
 	VpcId              string `json:"vpc_id"`

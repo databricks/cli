@@ -140,7 +140,7 @@ func AddHandlers(server *testserver.Server) {
 		}
 	})
 
-	server.Handle("POST", "/api/2.1/jobs/create", func(req testserver.Request) any {
+	server.Handle("POST", "/api/2.2/jobs/create", func(req testserver.Request) any {
 		var request jobs.CreateJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return testserver.Response{
@@ -164,11 +164,6 @@ func AddHandlers(server *testserver.Server) {
 		return req.Workspace.PipelinesCreate(request)
 	})
 
-	server.Handle("GET", "/api/2.1/jobs/get", func(req testserver.Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
-	})
-
 	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
 		jobId := req.URL.Query().Get("job_id")
 		return req.Workspace.JobsGet(jobId)
@@ -179,7 +174,7 @@ func AddHandlers(server *testserver.Server) {
 		return req.Workspace.PipelinesGet(pipelineId)
 	})
 
-	server.Handle("GET", "/api/2.1/jobs/list", func(req testserver.Request) any {
+	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
 		return req.Workspace.JobsList()
 	})
 

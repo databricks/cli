@@ -3,5 +3,5 @@ Old = '\\\\'
 New = '/'
 
 [[Server]]
-Pattern = "POST /api/2.1/jobs/reset"
+Pattern = "POST /api/2.2/jobs/reset"
 Response.Body = '{}'

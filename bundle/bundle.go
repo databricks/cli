@@ -33,6 +33,7 @@ const internalFolder = ".internal"
 
 type Metrics struct {
 	ConfigurationFileCount int64
+	TargetCount            int64
 }
 
 type Bundle struct {
