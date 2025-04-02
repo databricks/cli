@@ -22,7 +22,7 @@ acceptance/bundle/apps/config_section/output.txt
 integration/bundle/testdata/apps/bundle_deploy.txt
 
 # Extra whitespace in command help:
-acceptance/cmd/workspace/apps/update/output.txt
+acceptance/cmd/workspace/apps/output.txt
 
 # Extra whitespace in generated commands:
 cmd/workspace/**/*.go
