@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestVisitDashboardPaths(t *testing.T) {
@@ -21,22 +20,10 @@ func TestVisitDashboardPaths(t *testing.T) {
 		},
 	}
 
-	actual := visitDashboardPaths(t, root)
+	actual := collectVisitedPaths(t, root, VisitDashboardPaths)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.dashboards.dashboard0.file_path"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)
-}
-
-func visitDashboardPaths(t *testing.T, root config.Root) []dyn.Path {
-	var actual []dyn.Path
-	err := root.Mutate(func(value dyn.Value) (dyn.Value, error) {
-		return VisitDashboardPaths(value, func(p dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
-			actual = append(actual, p)
-			return v, nil
-		})
-	})
-	require.NoError(t, err)
-	return actual
 }

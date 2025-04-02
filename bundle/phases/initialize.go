@@ -60,12 +60,18 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 		// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
 		// See what is expected in PythonMutatorPhaseInit doc
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 		mutator.ResolveVariableReferencesInLookup(),
 		mutator.ResolveResourceReferences(),
-		mutator.ResolveVariableReferences(
+		mutator.ResolveVariableReferencesWithoutResources(
+			"bundle",
+			"workspace",
+			"variables",
+		),
+		mutator.ResolveVariableReferencesOnlyResources(
 			"bundle",
 			"workspace",
 			"variables",

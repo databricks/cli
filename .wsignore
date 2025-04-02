@@ -21,11 +21,6 @@ acceptance/bundle/templates-machinery/helpers-error/output.txt
 acceptance/bundle/apps/config_section/output.txt
 integration/bundle/testdata/apps/bundle_deploy.txt
 
-# Extra whitespace within the default template:
-acceptance/bundle/templates/default-python/classic/out.compare-vs-serverless.diff
-acceptance/bundle/templates/default-python/classic/output/my_default_python/resources/my_default_python.job.yml
-acceptance/bundle/templates/default-python/serverless/output/my_default_python/resources/my_default_python.job.yml
-
 # Extra whitespace in command help:
 acceptance/cmd/workspace/apps/output.txt
 

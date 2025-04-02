@@ -70,7 +70,10 @@ func newDestroyCommand() *cobra.Command {
 			// We need to resolve artifact variable (how we do it in build phase)
 			// because some of the to-be-destroyed resource might use this variable.
 			// Not resolving might lead to terraform "Reference to undeclared resource" error
-			bundle.Apply(ctx, b, mutator.ResolveVariableReferences("artifacts")),
+			bundle.ApplySeq(ctx, b,
+				mutator.ResolveVariableReferencesWithoutResources("artifacts"),
+				mutator.ResolveVariableReferencesOnlyResources("artifacts"),
+			),
 		)
 
 		if err := diags.Error(); err != nil {

@@ -46,7 +46,7 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/top_level.txt
 my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
 
 === Expecting 2 patched wheels in libraries section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
 [
   {
     "environment_key": "test_env",
@@ -119,7 +119,7 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/top_level.txt
 my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
 
 === Expecting 2 patched wheels in libraries section in /jobs/reset
->>> jq -s .[] | select(.path=="/api/2.1/jobs/reset") | .body.new_settings.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
 [
   {
     "environment_key": "test_env",
