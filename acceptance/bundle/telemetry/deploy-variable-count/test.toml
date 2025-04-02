@@ -1,0 +1,16 @@
+[[Server]]
+Pattern = "GET /api/2.1/clusters/list"
+Response.Body = '''
+{
+  "clusters": [
+    {
+      "cluster_id": "cls-1",
+      "cluster_name": "cluster_one"
+    },
+    {
+      "cluster_id": "cls-2",
+      "cluster_name": "cluster_two"
+    }
+  ]
+}
+'''
