@@ -8,6 +8,19 @@ Workspace:
 
 Validation OK!
 
+>>> [CLI] bundle validate -o json
+{
+  "exclude": [
+    "conf/dir/*.txt"
+  ],
+  "include": [
+    "conf/dir/*.yml"
+  ],
+  "paths": [
+    "."
+  ]
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sync_patterns/default/files...
 Deploying resources...
