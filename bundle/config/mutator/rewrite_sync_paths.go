@@ -49,11 +49,27 @@ func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
-			v, err = dyn.Map(v, "include", dyn.Foreach(m.makeRelativeTo(b.BundleRootPath)))
+
+			// Convert include and exclude in the sync block to use Unix-style slashes.
+			// This is required for the ignore.GitIgnore we use in libs/fileset to work correctly.
+			v, err = dyn.Map(v, "include", dyn.Foreach(func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
+				relPath, err := m.makeRelativeTo(b.BundleRootPath)(p, val)
+				if err != nil {
+					return dyn.InvalidValue, err
+				}
+				return dyn.NewValue(filepath.ToSlash(relPath.MustString()), relPath.Locations()), nil
+			}))
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
-			v, err = dyn.Map(v, "exclude", dyn.Foreach(m.makeRelativeTo(b.BundleRootPath)))
+
+			v, err = dyn.Map(v, "exclude", dyn.Foreach(func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
+				relPath, err := m.makeRelativeTo(b.BundleRootPath)(p, val)
+				if err != nil {
+					return dyn.InvalidValue, err
+				}
+				return dyn.NewValue(filepath.ToSlash(relPath.MustString()), relPath.Locations()), nil
+			}))
 			if err != nil {
 				return dyn.InvalidValue, err
 			}

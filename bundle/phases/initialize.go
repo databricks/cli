@@ -39,10 +39,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// If it is an ancestor, this updates all paths to be relative to the sync root path.
 		mutator.SyncInferRoot(),
 
-		// Convert include and exclude in the sync block to use Unix-style slashes.
-		// This is required for the ignore.GitIgnore we use in libs/fileset to work correctly.
-		mutator.SyncIncludeExcludeToSlash(),
-
 		mutator.PopulateCurrentUser(),
 		mutator.LoadGitDetails(),
 
