@@ -36,7 +36,7 @@ A common practice is to use a username or principal name in this path, i.e. use
     "variable_count": 0,
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
-    "target_count": 0,
+    "target_count": 2,
     "bundle_mode": "DEVELOPMENT"
   }
 }
@@ -60,7 +60,7 @@ A common practice is to use a username or principal name in this path, i.e. use
     "variable_count": 0,
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
-    "target_count": 0,
+    "target_count": 2,
     "bundle_mode": "PRODUCTION"
   }
 }
