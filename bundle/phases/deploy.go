@@ -319,6 +319,13 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		bundleUuid = b.Config.Bundle.Uuid
 	}
 
+	artifactPathType := protos.BundleDeployArtifactPathTypeUnspecified
+	if libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
+		artifactPathType = protos.BundleDeployArtifactPathTypeVolume
+	} else if libraries.IsWorkspacePath(b.Config.Workspace.ArtifactPath) {
+		artifactPathType = protos.BundleDeployArtifactPathTypeWorkspace
+	}
+
 	mode := protos.BundleModeUnspecified
 	if b.Config.Bundle.Mode == config.Development {
 		mode = protos.BundleModeDevelopment
@@ -350,9 +357,10 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourceDashboardIDs: dashboardIds,
 
 			Experimental: &protos.BundleDeployExperimental{
-				BundleMode:             mode,
-				ConfigurationFileCount: b.Metrics.ConfigurationFileCount,
-				TargetCount:            b.Metrics.TargetCount,
+				BundleMode:                mode,
+				ConfigurationFileCount:    b.Metrics.ConfigurationFileCount,
+				TargetCount:               b.Metrics.TargetCount,
+				WorkspaceArtifactPathType: artifactPathType,
 			},
 		},
 	})
