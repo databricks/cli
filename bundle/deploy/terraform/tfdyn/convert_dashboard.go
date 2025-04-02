@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
@@ -49,13 +50,20 @@ func convertDashboardResource(ctx context.Context, vin dyn.Value) (dyn.Value, er
 	}
 
 	// Include "serialized_dashboard" field if "file_path" is set.
-	// Note: the Terraform resource supports "file_path" natively, but its
-	// change detection mechanism doesn't work as expected at the time of writing (Sep 30).
+	// Pass the file contents directly instead of relying on Terraform's reading the passed file
 	if path, ok := vout.Get(filePathFieldName).AsString(); ok {
-		vout, err = dyn.Set(vout, serializedDashboardFieldName, dyn.V(fmt.Sprintf("${file(%q)}", path)))
+		// Read the file contents
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to read dashboard file %q: %w", path, err)
+		}
+
+		// Set the file contents as the serialized_dashboard
+		vout, err = dyn.Set(vout, serializedDashboardFieldName, dyn.V(string(contents)))
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to set serialized_dashboard: %w", err)
 		}
+
 		// Drop the "file_path" field. It is mutually exclusive with "serialized_dashboard".
 		vout, err = dyn.Walk(vout, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			switch len(p) {

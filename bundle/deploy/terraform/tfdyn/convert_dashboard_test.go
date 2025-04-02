@@ -2,6 +2,7 @@ package tfdyn
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -60,8 +61,19 @@ func TestConvertDashboard(t *testing.T) {
 }
 
 func TestConvertDashboardFilePath(t *testing.T) {
+	// Create a temporary file with dashboard content
+	content := `{"pages":[{"name":"test","displayName":"Test Page"}]}`
+	tmpfile, err := os.CreateTemp("", "dashboard-*.lvdash.json")
+	require.NoError(t, err)
+	defer os.Remove(tmpfile.Name())
+
+	_, err = tmpfile.WriteString(content)
+	require.NoError(t, err)
+	err = tmpfile.Close()
+	require.NoError(t, err)
+
 	src := resources.Dashboard{
-		FilePath: "some/path",
+		FilePath: tmpfile.Name(),
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)
@@ -72,38 +84,14 @@ func TestConvertDashboardFilePath(t *testing.T) {
 	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
 	require.NoError(t, err)
 
-	// Assert that the "serialized_dashboard" is included.
+	// Assert that the "serialized_dashboard" contains the file contents
 	assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
-		"serialized_dashboard": "${file(\"some/path\")}",
+		"serialized_dashboard": content,
 	})
 
 	// Assert that the "file_path" doesn't carry over.
 	assert.NotSubset(t, out.Dashboard["my_dashboard"], map[string]any{
-		"file_path": "some/path",
-	})
-}
-
-func TestConvertDashboardFilePathQuoted(t *testing.T) {
-	src := resources.Dashboard{
-		FilePath: `C:\foo\bar\baz\dashboard.lvdash.json`,
-	}
-
-	vin, err := convert.FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	out := schema.NewResources()
-	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
-	require.NoError(t, err)
-
-	// Assert that the "serialized_dashboard" is included.
-	assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
-		"serialized_dashboard": `${file("C:\\foo\\bar\\baz\\dashboard.lvdash.json")}`,
-	})
-
-	// Assert that the "file_path" doesn't carry over.
-	assert.NotSubset(t, out.Dashboard["my_dashboard"], map[string]any{
-		"file_path": `C:\foo\bar\baz\dashboard.lvdash.json`,
+		"file_path": tmpfile.Name(),
 	})
 }
 
