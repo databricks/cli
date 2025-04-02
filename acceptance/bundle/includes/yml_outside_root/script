@@ -1,3 +1,5 @@
 cd root
 trace $CLI bundle validate
 trace $CLI bundle validate -o json | jq '.resources.jobs[] | select(.name == "include_outside_root")'
+trace $CLI bundle validate -o json | jq '.sync'
+trace $CLI bundle validate -o json | jq '.bundle'

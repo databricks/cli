@@ -29,3 +29,23 @@ Validation OK!
     }
   ]
 }
+
+>>> [CLI] bundle validate -o json
+{
+  "paths": [
+    "."
+  ]
+}
+
+>>> [CLI] bundle validate -o json
+{
+  "environment": "default",
+  "git": {
+    "bundle_root_path": "."
+  },
+  "name": "yml_outside_root",
+  "target": "default",
+  "terraform": {
+    "exec_path": "[TERRAFORM]"
+  }
+}
