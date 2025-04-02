@@ -10,6 +10,8 @@ type DataSources struct {
 	AwsCrossaccountPolicy           map[string]any `json:"databricks_aws_crossaccount_policy,omitempty"`
 	AwsUnityCatalogAssumeRolePolicy map[string]any `json:"databricks_aws_unity_catalog_assume_role_policy,omitempty"`
 	AwsUnityCatalogPolicy           map[string]any `json:"databricks_aws_unity_catalog_policy,omitempty"`
+	BudgetPolicies                  map[string]any `json:"databricks_budget_policies,omitempty"`
+	BudgetPolicy                    map[string]any `json:"databricks_budget_policy,omitempty"`
 	Catalog                         map[string]any `json:"databricks_catalog,omitempty"`
 	Catalogs                        map[string]any `json:"databricks_catalogs,omitempty"`
 	Cluster                         map[string]any `json:"databricks_cluster,omitempty"`
@@ -76,6 +78,8 @@ func NewDataSources() *DataSources {
 		AwsCrossaccountPolicy:           make(map[string]any),
 		AwsUnityCatalogAssumeRolePolicy: make(map[string]any),
 		AwsUnityCatalogPolicy:           make(map[string]any),
+		BudgetPolicies:                  make(map[string]any),
+		BudgetPolicy:                    make(map[string]any),
 		Catalog:                         make(map[string]any),
 		Catalogs:                        make(map[string]any),
 		Cluster:                         make(map[string]any),

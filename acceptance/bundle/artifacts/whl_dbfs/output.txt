@@ -9,7 +9,7 @@ Deployment complete!
 >>> errcode find.py --expect 0 whl
 
 === Expecting 1 wheel in libraries section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.1/jobs/create") | .body.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
 [
   {
     "existing_cluster_id": "0717-132531-5opeqon1",
