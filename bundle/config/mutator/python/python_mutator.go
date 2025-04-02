@@ -193,6 +193,11 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return nil
 	}
 
+	// Don't run any arbitrary code when restricted execution is enabled.
+	if _, ok := env.RestrictedExecution(ctx); ok {
+		return diag.Errorf("Running Python code is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
+	}
+
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
 	mutateDiagsHasError := errors.New("unexpected error")
