@@ -3,6 +3,7 @@ package config_tests
 import (
 	"context"
 	"fmt"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -32,8 +33,8 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 	require.Equal(t, 11, diags[0].Locations[0].Column)
 
 	summaries := []string{
-		fmt.Sprintf("Pattern %s does not match any files", filepath.Join("src", "*")),
-		fmt.Sprintf("Pattern %s does not match any files", filepath.Join("tests", "*")),
+		fmt.Sprintf("Pattern %s does not match any files", path.Join("src", "*")),
+		fmt.Sprintf("Pattern %s does not match any files", path.Join("tests", "*")),
 	}
 
 	require.Equal(t, diag.Warning, diags[1].Severity)
