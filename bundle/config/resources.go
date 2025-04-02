@@ -151,6 +151,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
+	for k := range r.QualityMonitors {
+		if k == key {
+			found = append(found, r.QualityMonitors[k])
+		}
+	}
+
 	for k := range r.ModelServingEndpoints {
 		if k == key {
 			found = append(found, r.ModelServingEndpoints[k])
