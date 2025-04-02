@@ -52,7 +52,7 @@ func TestNormalizePaths(t *testing.T) {
 
 	newValue, err := dyn.GetByPath(b.Config.Value(), path)
 	require.NoError(t, err)
-	require.Equal(t, filepath.Join("src", "notebook.py"), newValue.MustString())
+	require.Equal(t, "src/notebook.py", newValue.MustString())
 }
 
 func TestNormalizePath_absolutePath(t *testing.T) {
