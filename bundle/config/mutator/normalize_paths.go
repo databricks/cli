@@ -29,8 +29,8 @@ func (a normalizePaths) Name() string {
 //   - Each path value is a string and has a location. Locations are absolute paths.
 //
 // Post-conditions:
-//   - All paths are normalized to be relative to the bundle root.
-//   - All paths are cleaned.
+//   - All relative paths are normalized to be relative to the bundle root.
+//   - All relative paths are using forward slashes (including Windows paths).
 func NormalizePaths() bundle.Mutator {
 	return &normalizePaths{}
 }
@@ -69,9 +69,9 @@ func normalizePath(path string, location dyn.Location, bundleRootPath string) (s
 		return path, nil
 	}
 
-	// absolute paths don't need to be relativized
+	// absolute paths don't need to be relativized, keep them as-is
 	if filepath.IsAbs(path) {
-		return filepath.Clean(path), nil
+		return path, nil
 	}
 
 	dir, err := locationDirectory(location)
@@ -84,7 +84,7 @@ func normalizePath(path string, location dyn.Location, bundleRootPath string) (s
 		return "", err
 	}
 
-	return filepath.Join(relDir, path), nil
+	return filepath.ToSlash(filepath.Join(relDir, path)), nil
 }
 
 func locationDirectory(l dyn.Location) (string, error) {

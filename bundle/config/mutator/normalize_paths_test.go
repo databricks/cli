@@ -56,9 +56,9 @@ func TestNormalizePaths(t *testing.T) {
 }
 
 func TestNormalizePath_absolutePath(t *testing.T) {
-	value, err := normalizePath(filepath.Join("/", "notebook.py"), dyn.Location{}, "/tmp")
+	value, err := normalizePath("/notebook.py", dyn.Location{}, "/tmp")
 	assert.NoError(t, err)
-	assert.Equal(t, filepath.Join("/", "notebook.py"), value)
+	assert.Equal(t, "/notebook.py", value)
 }
 
 func TestNormalizePath_url(t *testing.T) {
