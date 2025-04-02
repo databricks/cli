@@ -6,5 +6,9 @@ Cloud = true
 UV_PYTHON = ["3.10"]
 
 [[Repls]]
+Old = '2\d\d\d-\d\d-\d\d( |T)\d\d:\d\d:\d\d(\.\d{1,9})?Z?'
+New = "[TIMESTAMP]"
+
+[[Repls]]
 Old = '1\d{18}'
 New = '[TIMESTAMP_NS]'
