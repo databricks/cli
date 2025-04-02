@@ -2,10 +2,11 @@ package mutator
 
 import (
 	"context"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
