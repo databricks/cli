@@ -37,17 +37,6 @@ func (r ResourceKeySet) IsEmpty() bool {
 	return len(r) == 0
 }
 
-// AddPath adds a resource key from a path of a resource or a resource field.
-func (r ResourceKeySet) AddPath(path dyn.Path) error {
-	resourceKey, err := getResourceKey(path)
-	if err != nil {
-		return err
-	}
-
-	r.AddResourceKey(resourceKey)
-	return nil
-}
-
 // AddPattern adds all resource keys that match the pattern.
 func (r ResourceKeySet) AddPattern(pattern dyn.Pattern, root dyn.Value) error {
 	if len(pattern) != 3 {

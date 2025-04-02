@@ -49,20 +49,6 @@ func TestGetResourceKey(t *testing.T) {
 	}
 }
 
-func TestResourceKeySet_AddPath(t *testing.T) {
-	set := NewResourceKeySet()
-
-	err := set.AddPath(dyn.MustPathFromString("resources.jobs.job_1"))
-
-	assert.NoError(t, err)
-	assert.Equal(t, []ResourceKey{
-		{
-			Type: "jobs",
-			Name: "job_1",
-		},
-	}, set.ToArray())
-}
-
 type resourceKeySetAddTestCase struct {
 	name     string
 	pattern  dyn.Pattern

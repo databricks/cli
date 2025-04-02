@@ -75,12 +75,16 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				)
 			} else if len(valuePath) == 3 {
 				// Example: "resources.jobs.job_0"
+				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				deleted.AddResourceKey(resourceKey)
 
-				return deleted.AddPath(valuePath)
+				return nil
 			} else {
 				// Example: "resources.jobs.job_0.tags"
+				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				updated.AddResourceKey(resourceKey)
 
-				return updated.AddPath(valuePath)
+				return nil
 			}
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
@@ -118,12 +122,16 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				// valuePath: "resources.jobs"
 				// leftRoot:  {"resources": { "jobs": {               }}}
 				// rightRoot: {"resources": { "jobs": {"job_0": {...} }}}
+				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				added.AddResourceKey(resourceKey)
 
-				return right, added.AddPath(valuePath)
+				return right, nil
 			} else {
 				// Example: "resources.jobs.job_0.email_notifications"
+				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				updated.AddResourceKey(resourceKey)
 
-				return right, updated.AddPath(valuePath)
+				return right, nil
 			}
 		},
 		VisitUpdate: func(valuePath dyn.Path, _, right dyn.Value) (dyn.Value, error) {
@@ -161,12 +169,16 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				// valuePath: "resources.jobs.job_0"
 				// leftRoot:  {"resources": { "jobs": {"job_0": null  }}}
 				// rightRoot: {"resources": { "jobs": {"job_0": {...} }}}
+				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				added.AddResourceKey(resourceKey)
 
-				return right, added.AddPath(valuePath)
+				return right, nil
 			} else {
 				// Example: "resources.jobs.job_0.name"
+				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				updated.AddResourceKey(resourceKey)
 
-				return right, updated.AddPath(valuePath)
+				return right, nil
 			}
 		},
 	}
