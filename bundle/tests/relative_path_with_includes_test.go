@@ -2,7 +2,7 @@ package config_tests
 
 import (
 	"context"
-	"path/filepath"
+	"path"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -23,16 +23,16 @@ func TestRelativePathsWithIncludes(t *testing.T) {
 	assert.ElementsMatch(
 		t,
 		[]string{
-			filepath.Join("folder_a", "*.*"),
-			filepath.Join("subfolder", "folder_c", "*.*"),
+			path.Join("folder_a", "*.*"),
+			path.Join("subfolder", "folder_c", "*.*"),
 		},
 		b.Config.Sync.Include,
 	)
 	assert.ElementsMatch(
 		t,
 		[]string{
-			filepath.Join("folder_b", "*.*"),
-			filepath.Join("subfolder", "folder_d", "*.*"),
+			path.Join("folder_b", "*.*"),
+			path.Join("subfolder", "folder_d", "*.*"),
 		},
 		b.Config.Sync.Exclude,
 	)
