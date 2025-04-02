@@ -54,7 +54,7 @@ func (m *expandPipelineGlobPaths) expandLibrary(dir string, v dyn.Value) ([]dyn.
 			if err != nil {
 				return nil, err
 			}
-			nv, err := dyn.SetByPath(v, p, dyn.NewValue(m, pv.Locations()))
+			nv, err := dyn.SetByPath(v, p, dyn.NewValue(filepath.ToSlash(m), pv.Locations()))
 			if err != nil {
 				return nil, err
 			}
