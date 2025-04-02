@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	pathlib "path"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -71,6 +72,11 @@ func normalizePath(path string, location dyn.Location, bundleRootPath string) (s
 
 	// absolute paths don't need to be relativized, keep them as-is
 	if filepath.IsAbs(path) {
+		return path, nil
+	}
+
+	// if we use Windows, a path can be a POSIX path, and should remain as-is
+	if pathlib.IsAbs(path) {
 		return path, nil
 	}
 
