@@ -1,0 +1,12 @@
+bundle:
+  name: event_log
+
+resources:
+  pipelines:
+    test_pipeline:
+      name: test_pipeline
+      catalog: common
+      event_log:
+        catalog: common
+        schema: test_pipeline
+        name: test_event_log

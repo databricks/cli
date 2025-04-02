@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/event_log/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Checking event log configuration in pipeline create request
+>>> jq -s .[] | select(.path=="/api/2.0/pipelines") | .body out.requests.txt
+{
+  "catalog": "common",
+  "channel": "CURRENT",
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/event_log/default/state/metadata.json"
+  },
+  "edition": "ADVANCED",
+  "event_log": {
+    "catalog": "common",
+    "name": "test_event_log",
+    "schema": "test_pipeline"
+  },
+  "name": "test_pipeline"
+}

@@ -1,0 +1,6 @@
+trace $CLI bundle deploy
+
+title "Checking event log configuration in pipeline create request"
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines") | .body' out.requests.txt
+
+rm out.requests.txt
