@@ -59,7 +59,7 @@ type TestConfig struct {
 	// List of server stubs to load. Example configuration:
 	//
 	// [[Server]]
-	// Pattern = "POST /api/2.1/jobs/create"
+	// Pattern = "POST /api/2.2/jobs/create"
 	// Response.Body = '''
 	// {
 	// 	"job_id": 1111

@@ -15,6 +15,7 @@ type Resources struct {
 	AzureAdlsGen2Mount                           map[string]any `json:"databricks_azure_adls_gen2_mount,omitempty"`
 	AzureBlobMount                               map[string]any `json:"databricks_azure_blob_mount,omitempty"`
 	Budget                                       map[string]any `json:"databricks_budget,omitempty"`
+	BudgetPolicy                                 map[string]any `json:"databricks_budget_policy,omitempty"`
 	Catalog                                      map[string]any `json:"databricks_catalog,omitempty"`
 	CatalogWorkspaceBinding                      map[string]any `json:"databricks_catalog_workspace_binding,omitempty"`
 	Cluster                                      map[string]any `json:"databricks_cluster,omitempty"`
@@ -125,6 +126,7 @@ func NewResources() *Resources {
 		AzureAdlsGen2Mount:                     make(map[string]any),
 		AzureBlobMount:                         make(map[string]any),
 		Budget:                                 make(map[string]any),
+		BudgetPolicy:                           make(map[string]any),
 		Catalog:                                make(map[string]any),
 		CatalogWorkspaceBinding:                make(map[string]any),
 		Cluster:                                make(map[string]any),

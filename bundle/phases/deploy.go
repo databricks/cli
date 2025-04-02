@@ -359,6 +359,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                mode,
 				ConfigurationFileCount:    b.Metrics.ConfigurationFileCount,
+				TargetCount:               b.Metrics.TargetCount,
 				WorkspaceArtifactPathType: artifactPathType,
 			},
 		},
