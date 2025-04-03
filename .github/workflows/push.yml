@@ -71,7 +71,7 @@ jobs:
       - name: Pull external libraries
         run: |
           make vendor
-          pip3 install wheel
+          pip3 install wheel=0.45.1
 
       - name: Run tests with coverage
         run: make cover
