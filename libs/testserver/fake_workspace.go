@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -24,6 +26,8 @@ type FakeWorkspace struct {
 	jobs      map[int64]jobs.Job
 
 	pipelines map[string]pipelines.PipelineSpec
+	monitors  map[string]catalog.MonitorInfo
+	apps      map[string]apps.App
 }
 
 func NewFakeWorkspace() *FakeWorkspace {
@@ -36,6 +40,8 @@ func NewFakeWorkspace() *FakeWorkspace {
 		nextJobId: 1,
 
 		pipelines: map[string]pipelines.PipelineSpec{},
+		monitors:  map[string]catalog.MonitorInfo{},
+		apps:      map[string]apps.App{},
 	}
 }
 

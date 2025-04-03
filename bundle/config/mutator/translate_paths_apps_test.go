@@ -22,8 +22,9 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "src", "app", "app.py"))
 
 	b := &bundle.Bundle{
-		SyncRootPath: dir,
-		SyncRoot:     vfs.MustNew(dir),
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle/files",
@@ -45,7 +46,7 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 		File: filepath.Join(dir, "resources/app.yml"),
 	}})
 
-	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Assert that the file path for the app has been converted to its local absolute path.

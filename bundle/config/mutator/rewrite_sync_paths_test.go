@@ -46,10 +46,10 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 
 	assert.Equal(t, filepath.Clean("."), b.Config.Sync.Paths[0])
 	assert.Equal(t, filepath.Clean("../common"), b.Config.Sync.Paths[1])
-	assert.Equal(t, filepath.Clean("foo"), b.Config.Sync.Include[0])
-	assert.Equal(t, filepath.Clean("a/bar"), b.Config.Sync.Include[1])
-	assert.Equal(t, filepath.Clean("a/b/baz"), b.Config.Sync.Exclude[0])
-	assert.Equal(t, filepath.Clean("a/b/c/qux"), b.Config.Sync.Exclude[1])
+	assert.Equal(t, "foo", b.Config.Sync.Include[0])
+	assert.Equal(t, "a/bar", b.Config.Sync.Include[1])
+	assert.Equal(t, "a/b/baz", b.Config.Sync.Exclude[0])
+	assert.Equal(t, "a/b/c/qux", b.Config.Sync.Exclude[1])
 }
 
 func TestRewriteSyncPathsAbsolute(t *testing.T) {
@@ -85,10 +85,10 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 
 	assert.Equal(t, filepath.Clean("."), b.Config.Sync.Paths[0])
 	assert.Equal(t, filepath.Clean("../common"), b.Config.Sync.Paths[1])
-	assert.Equal(t, filepath.Clean("foo"), b.Config.Sync.Include[0])
-	assert.Equal(t, filepath.Clean("a/bar"), b.Config.Sync.Include[1])
-	assert.Equal(t, filepath.Clean("a/b/baz"), b.Config.Sync.Exclude[0])
-	assert.Equal(t, filepath.Clean("a/b/c/qux"), b.Config.Sync.Exclude[1])
+	assert.Equal(t, "foo", b.Config.Sync.Include[0])
+	assert.Equal(t, "a/bar", b.Config.Sync.Include[1])
+	assert.Equal(t, "a/b/baz", b.Config.Sync.Exclude[0])
+	assert.Equal(t, "a/b/c/qux", b.Config.Sync.Exclude[1])
 }
 
 func TestRewriteSyncPathsErrorPaths(t *testing.T) {

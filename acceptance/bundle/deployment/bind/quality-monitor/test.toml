@@ -1,21 +1,2 @@
 Local = true
 Cloud = false
-
-[[Server]]
-Pattern = "GET /api/2.1/unity-catalog/tables/catalog.schema.table/monitor"
-Response.Body = '''
-{
-  "assets_dir":"/Users/user/databricks_lakehouse_monitoring",
-  "dashboard_id":"01f00b1c15de19c7945fa190201813df",
-  "drift_metrics_table_name":"catalog.schema.table_drift_metrics",
-  "monitor_version":"0",
-  "output_schema_name":"catalog.schema",
-  "profile_metrics_table_name":"catalog.schema.table_profile_metrics",
-  "snapshot": {},
-  "status":"MONITOR_STATUS_ACTIVE",
-  "table_name":"catalog.schema.table"
-}
-'''
-
-[[Server]]
-Pattern = "PUT /api/2.1/unity-catalog/tables/users.user.table/monitor"

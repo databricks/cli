@@ -1,5 +1,5 @@
 bundle:
-  name: bind-ml-experiment-test-$BUNDLE_NAME_SUFFIX
+  name: bind-ml-experiment-test-$UNIQUE_NAME
 
 resources:
   experiments:

@@ -27,6 +27,7 @@ Deployment complete!
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
     "target_count": 3,
-    "bundle_mode": "TYPE_UNSPECIFIED"
+    "bundle_mode": "TYPE_UNSPECIFIED",
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
   }
 }

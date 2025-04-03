@@ -1,0 +1,13 @@
+bundle:
+  name: sheep
+
+workspace:
+  artifact_path: /Workspace/abc
+
+targets:
+  one:
+    default: true
+
+  two:
+    workspace:
+      artifact_path: /Volumes/main/a/b/c

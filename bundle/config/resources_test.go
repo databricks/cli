@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/serving"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -164,8 +166,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateMonitor: &catalog.CreateMonitor{},
 			},
 		},
+		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+			"my_model_serving_endpoint": {
+				CreateServingEndpoint: &serving.CreateServingEndpoint{},
+			},
+		},
 	}
-	unbindableResources := map[string]bool{"model": true, "model_serving_endpoint": true}
+	unbindableResources := map[string]bool{"model": true}
 
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
@@ -179,6 +186,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

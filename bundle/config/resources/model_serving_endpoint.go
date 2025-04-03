@@ -35,12 +35,12 @@ func (s ModelServingEndpoint) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.ServingEndpoints.Get(ctx, serving.GetServingEndpointRequest{
-		Name: id,
+		Name: name,
 	})
 	if err != nil {
-		log.Debugf(ctx, "serving endpoint %s does not exist", id)
+		log.Debugf(ctx, "serving endpoint %s does not exist", name)
 		return false, err
 	}
 	return true, nil
