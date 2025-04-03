@@ -140,7 +140,7 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 		"serverless":       "yes",
 	}
 	isServicePrincipal = false
-	// build = true
+	build = true
 
 	// On Windows, we can't always remove the resulting temp dir since background
 	// processes might have it open, so we use 'defer' for a best-effort cleanup
