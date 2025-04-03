@@ -122,6 +122,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			"variables",
 		),
 		mutator.NormalizePaths(),
+
+		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
+		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
+		// Expands glob patterns in pipeline library paths to include all matching files
 		mutator.ExpandPipelineGlobPaths(),
 
 		// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)
@@ -156,8 +160,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
 		// Reads (dynamic): run_as (checks if run_as is specified)
-		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as)
-		// Validates run_as configuration and sets run_as field for jobs
+		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as; only if Experimental.UseLegacyRunAs is set)
+		// Updates (typed): range b.Config.Resources.Pipelines[].Permissions (set permission based on bundle run_as; only if Experimental.UseLegacyRunAs is set)
 		mutator.SetRunAs(),
 
 		// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
@@ -193,11 +197,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Enable queueing for jobs by default, following the behavior from API 2.2+.
 		mutator.DefaultQueueing(),
 
-		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
-		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
-		// Expands glob patterns in pipeline library paths to include all matching files
-		mutator.ExpandPipelineGlobPaths(),
-
 		// Reads (typed): b.SyncRoot (checks if bundle root is in /Workspace/)
 		// Updates (typed): b.SyncRoot (replaces with extension-aware path when running on Databricks Runtime)
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
@@ -207,7 +206,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
-		// Provides warnings when Python wheel tasks require DBR 13.3+ or when wheel wrapper is incompatible with source-linked deployment
+		// Provides warnings when Python wheel tasks are used with DBR < 13.3 or when wheel wrapper is incompatible with source-linked deployment
 		trampoline.WrapperWarning(),
 
 		// Reads (typed): b.Config.Artifacts, b.BundleRootPath (checks artifact configurations and bundle path)
