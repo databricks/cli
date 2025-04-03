@@ -6,10 +6,10 @@ toolchain go1.23.7
 
 require (
 	dario.cat/mergo v1.0.1 // BSD 3-Clause
-	github.com/BurntSushi/toml v1.4.0 // MIT
+	github.com/BurntSushi/toml v1.5.0 // MIT
 	github.com/Masterminds/semver/v3 v3.3.1 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.60.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.61.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
@@ -80,5 +80,3 @@ require (
 	google.golang.org/grpc v1.64.1 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 )
-
-replace github.com/databricks/databricks-sdk-go => /Users/miles/databricks-sdk-go
