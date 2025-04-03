@@ -3,26 +3,27 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/iamutil"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 )
 
-type processTargetMode struct{}
+type configurePresetDefaults struct{}
 
 const developmentConcurrentRuns = 4
 
-func ProcessTargetMode() bundle.Mutator {
-	return &processTargetMode{}
+// ConfigurePresetDefaults configures the default values for presets in development mode.
+func ConfigurePresetDefaults() bundle.Mutator {
+	return &configurePresetDefaults{}
 }
 
-func (m *processTargetMode) Name() string {
-	return "ProcessTargetMode"
+func (m *configurePresetDefaults) Name() string {
+	return "ConfigurePresetDefaults"
 }
 
 // Mark all resources as being for 'development' purposes, i.e.
@@ -192,7 +193,7 @@ func isExplicitRootSet(b *bundle.Bundle) bool {
 	return b.Target != nil && b.Target.Workspace != nil && b.Target.Workspace.RootPath != ""
 }
 
-func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *configurePresetDefaults) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
 		diags := validateDevelopmentMode(b)

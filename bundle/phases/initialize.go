@@ -93,7 +93,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.OverrideCompute(),
 		mutator.ConfigureDashboardDefaults(),
 		mutator.ConfigureVolumeDefaults(),
-		mutator.ProcessTargetMode(),
+
+		// ConfigurePresetDefaults must run before ApplyPresets to set default values for 'presets' section
+		mutator.ConfigurePresetDefaults(),
 		mutator.ApplyPresets(),
 		mutator.DefaultQueueing(),
 
@@ -107,6 +109,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		apps.Validate(),
 
+		mutator.ValidateTargetMode(),
 		permissions.ValidateSharedRootPermissions(),
 		permissions.ApplyBundlePermissions(),
 		permissions.FilterCurrentUser(),
