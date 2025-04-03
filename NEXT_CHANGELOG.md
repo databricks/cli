@@ -9,5 +9,6 @@
 ### CLI
 
 ### Bundles
+* Added support for model serving endpoints in deployment bind/unbind commands ([#2634](https://github.com/databricks/cli/pull/2634))
 
 ### API Changes
