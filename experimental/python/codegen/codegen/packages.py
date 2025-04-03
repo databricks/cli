@@ -3,6 +3,7 @@ from typing import Optional
 
 RESOURCE_NAMESPACE_OVERRIDE = {
     "resources.Job": "jobs",
+    "resources.Pipeline": "pipelines",
     # FIXME this is not correct, other resource types can also have permissions
     # we should separate types for those
     "resources.Permission": "jobs",
@@ -11,6 +12,7 @@ RESOURCE_NAMESPACE_OVERRIDE = {
 # All supported resource types
 RESOURCE_TYPES = [
     "resources.Job",
+    "resources.Pipeline",
 ]
 
 # Namespaces to load from OpenAPI spec.
@@ -19,6 +21,7 @@ RESOURCE_TYPES = [
 LOADED_NAMESPACES = [
     "compute",
     "jobs",
+    "pipelines",
     "resources",
 ]
 

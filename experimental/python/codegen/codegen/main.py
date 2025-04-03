@@ -31,7 +31,13 @@ def main(output: str):
     _write_code(dataclasses, enums, output)
 
     for resource in packages.RESOURCE_TYPES:
-        _write_exports(resource, dataclasses, enums, output)
+        reachable = _collect_reachable_schemas([resource], schemas)
+
+        resource_dataclasses = {k: v for k, v in dataclasses.items() if k in reachable}
+
+        resource_enums = {k: v for k, v in enums.items() if k in reachable}
+
+        _write_exports(resource, resource_dataclasses, resource_enums, output)
 
 
 def _generate_code(
@@ -148,10 +154,10 @@ def _collect_typechecking_imports(
     return out
 
 
-def _remove_unused_schemas(
+def _collect_reachable_schemas(
     roots: list[str],
     schemas: dict[str, openapi.Schema],
-) -> dict[str, openapi.Schema]:
+) -> set[str]:
     """
     Remove schemas that are not reachable from the roots, because we
     don't want to generate code for them.
@@ -179,6 +185,20 @@ def _remove_unused_schemas(
 
                     if name not in reachable:
                         stack.append(name)
+
+    return reachable
+
+
+def _remove_unused_schemas(
+    roots: list[str],
+    schemas: dict[str, openapi.Schema],
+) -> dict[str, openapi.Schema]:
+    """
+    Remove schemas that are not reachable from the roots, because we
+    don't want to generate code for them.
+    """
+
+    reachable = _collect_reachable_schemas(roots, schemas)
 
     return {k: v for k, v in schemas.items() if k in reachable}
 
