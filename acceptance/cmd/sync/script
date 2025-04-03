@@ -1,0 +1,24 @@
+touch "app.yaml"
+touch "app.py"
+touch "query.sql"
+mkdir "ignored-folder" "ignored-folder/folder1"
+touch "ignored-folder/script.py"
+touch "ignored-folder/folder1/script.py"
+echo "ignored-folder/" > .gitignore
+echo "script" >> .gitignore
+echo "output.txt" >> .gitignore
+echo "repls.json" >> .gitignore
+
+cleanup() {
+  rm app.yaml app.py .gitignore query.sql
+  rm -rf ignored-folder
+}
+trap cleanup EXIT
+
+# Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
+trace $CLI sync . /Users/$CURRENT_USER_NAME | grep -v "^Action: " | sort
+trace $CLI sync . /Users/$CURRENT_USER_NAME --exclude 'app.*' | grep -v "^Action: " | sort
+trace $CLI sync . /Users/$CURRENT_USER_NAME --exclude 'app.*' --exclude 'query.sql' | grep -v "^Action: " | sort
+trace $CLI sync . /Users/$CURRENT_USER_NAME --exclude 'app.*' --exclude 'query.sql' --include 'ignored-folder/*.py' | grep -v "^Action: " | sort
+trace $CLI sync . /Users/$CURRENT_USER_NAME --exclude 'app.*' --exclude 'query.sql' --include 'ignored-folder/**/*.py' | grep -v "^Action: " | sort
+trace $CLI sync . /Users/$CURRENT_USER_NAME | grep -v "^Action: " | sort

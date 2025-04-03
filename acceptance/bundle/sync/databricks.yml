@@ -1,0 +1,8 @@
+bundle:
+  name: bundle-sync-test
+
+resources:
+  dashboards:
+    dashboard1:
+      display_name: My dashboard
+      file_path: "sample-dashboard.lvdash.json"

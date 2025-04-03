@@ -1,0 +1,38 @@
+
+>>> [CLI] bundle sync --output text
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded app.py
+Uploaded app.yaml
+Uploaded databricks.yml
+Uploaded query.sql
+Uploaded sample-dashboard.lvdash.json
+
+>>> [CLI] bundle sync --exclude app.* --output text
+Deleted app.py
+Deleted app.yaml
+Initial Sync Complete
+
+>>> [CLI] bundle sync --exclude app.* --exclude query.sql --output text
+Deleted query.sql
+Initial Sync Complete
+
+>>> [CLI] bundle sync --exclude app.* --exclude query.sql --include ignored-folder/*.py --output text
+Initial Sync Complete
+Uploaded ignored-folder
+Uploaded ignored-folder/script.py
+
+>>> [CLI] bundle sync --exclude app.* --exclude query.sql --include ignored-folder/**/*.py --output text
+Initial Sync Complete
+Uploaded ignored-folder/folder1
+Uploaded ignored-folder/folder1/script.py
+
+>>> [CLI] bundle sync --output text
+Deleted ignored-folder
+Deleted ignored-folder/folder1
+Deleted ignored-folder/folder1/script.py
+Deleted ignored-folder/script.py
+Initial Sync Complete
+Uploaded app.py
+Uploaded app.yaml
+Uploaded query.sql
