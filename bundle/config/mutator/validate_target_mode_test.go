@@ -25,7 +25,7 @@ func TestValidateProductionPipelines(t *testing.T) {
 		},
 	}
 
-	diags := validateProductionPipelines(b, false)
+	diags := validateProductionPipelines(b)
 
 	require.EqualError(t, diags.Error(), "target with 'mode: production' cannot include a pipeline with 'development: true'")
 }
