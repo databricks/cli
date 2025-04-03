@@ -1,9 +1,32 @@
 {
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "body": {
+    "description": "My app description.",
+    "name": "test-name",
+    "resources": [
+      {
+        "description": "API key for external service.",
+        "name": "api-key",
+        "secret": {
+          "key": "my-key",
+          "permission": "READ",
+          "scope": "my-scope"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/apps/test-name"
+}
+{
   "method": "PATCH",
   "path": "/api/2.0/apps/test-name",
   "body": {
     "description": "My app description.",
-    "name": "",
+    "name": "test-name",
     "resources": [
       {
         "description": "API key for external service.",

@@ -1,0 +1,35 @@
+SCHEMA_NAME="test-schema-rmodel-$(uuid)"
+MODEL_NAME="test-registered-model-$(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    SCHEMA_NAME="test-schema-rmodel-6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
+    MODEL_NAME="test-registered-model-6260d50f-e8ff-4905-8f28-812345678903"
+fi
+CATALOG_NAME=main
+export SCHEMA_NAME MODEL_NAME CATALOG_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+cat databricks.yml
+
+# Create a pre-defined schema:
+trace $CLI schemas create ${SCHEMA_NAME} ${CATALOG_NAME} | jq '{full_name, catalog_name}'
+
+# Create a pre-defined registered model:
+MODEL_FULL_NAME=$($CLI registered-models create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${MODEL_NAME}" | jq -r '.full_name')
+
+cleanup() {
+    trace $CLI registered-models delete "${MODEL_FULL_NAME}"
+    trace $CLI schemas delete ${CATALOG_NAME}.${SCHEMA_NAME}
+}
+trap cleanup EXIT
+
+trace $CLI bundle deployment bind model1 "${MODEL_FULL_NAME}"
+
+trace $CLI bundle deploy
+
+trace $CLI registered-models get "${MODEL_FULL_NAME}" | jq '{full_name, schema_name, name}'
+
+trace $CLI bundle deployment unbind model1
+
+trace $CLI bundle destroy --auto-approve
+
+# Read the pre-defined model again (expecting it still exists and is not deleted):
+trace $CLI registered-models get "${MODEL_FULL_NAME}" | jq '{full_name, schema_name, name}'

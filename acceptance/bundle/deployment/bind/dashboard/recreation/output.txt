@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deployment bind dashboard1 [DASHBOARD_ID] --auto-approve
 Updating deployment state...
-Successfully bound databricks_dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to deploy changes to your workspace
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-recreation-test-[UNIQUE_NAME]/default/files...

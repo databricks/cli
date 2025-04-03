@@ -46,6 +46,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 
 	b := &bundle.Bundle{
 		BundleRootPath: root,
+		SyncRootPath:   root,
 		SyncRoot:       vfs.MustNew(root),
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -72,12 +73,13 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 
 	mwc := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(mwc.WorkspaceClient)
-	bundletest.SetLocation(b, "resources.apps.my_app", []dyn.Location{{File: "./databricks.yml"}})
+	bundletest.SetLocation(b, "resources.apps.my_app", []dyn.Location{{File: filepath.Join(root, "./databricks.yml")}})
 
 	ctx := cmdio.MockDiscard(context.Background())
 
 	diags := bundle.ApplySeq(ctx, b,
 		mutator.DefineDefaultWorkspacePaths(),
+		mutator.NormalizePaths(),
 		mutator.TranslatePaths(),
 	)
 	require.Empty(t, diags)

@@ -111,7 +111,7 @@ func (cp *proxy) commandInput(cmd *cobra.Command) ([]string, error) {
 	if logLevelFlag != nil {
 		commandInput.Flags["log_level"] = logLevelFlag.Value.String()
 	}
-	args := []string{}
+	var args []string
 	ctx := cmd.Context()
 	if cp.IsPythonProject() {
 		args = append(args, cp.virtualEnvPython(ctx))

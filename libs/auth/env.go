@@ -52,7 +52,7 @@ func GetEnvFor(name string) (string, bool) {
 // variables to clean up the environment before configuring authentication for the
 // child process.
 func envVars() []string {
-	out := []string{}
+	var out []string
 
 	for _, attr := range config.ConfigAttributes {
 		if len(attr.EnvVars) == 0 {
@@ -72,7 +72,7 @@ func ProcessEnv(cfg *config.Config) []string {
 	// because they influence auth resolution.
 	base := os.Environ()
 
-	out := []string{}
+	var out []string
 	authEnvVars := envVars()
 
 	// Remove any existing auth environment variables. This is done because

@@ -7,10 +7,12 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -138,7 +140,7 @@ func AddHandlers(server *testserver.Server) {
 		}
 	})
 
-	server.Handle("POST", "/api/2.1/jobs/create", func(req testserver.Request) any {
+	server.Handle("POST", "/api/2.2/jobs/create", func(req testserver.Request) any {
 		var request jobs.CreateJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return testserver.Response{
@@ -150,9 +152,16 @@ func AddHandlers(server *testserver.Server) {
 		return req.Workspace.JobsCreate(request)
 	})
 
-	server.Handle("GET", "/api/2.1/jobs/get", func(req testserver.Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
+	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
+		var request pipelines.PipelineSpec
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 400,
+			}
+		}
+
+		return req.Workspace.PipelinesCreate(request)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
@@ -160,7 +169,16 @@ func AddHandlers(server *testserver.Server) {
 		return req.Workspace.JobsGet(jobId)
 	})
 
-	server.Handle("GET", "/api/2.1/jobs/list", func(req testserver.Request) any {
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		pipelineId := req.Vars["pipeline_id"]
+		return req.Workspace.PipelinesGet(pipelineId)
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
+		return req.Workspace.JobsList()
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
 		return req.Workspace.JobsList()
 	})
 
@@ -178,5 +196,48 @@ func AddHandlers(server *testserver.Server) {
 			"scope":        "all-apis",
 			"token_type":   "Bearer",
 		}
+	})
+
+	server.Handle("POST", "/telemetry-ext", func(_ testserver.Request) any {
+		return telemetry.ResponseBody{
+			Errors:          []telemetry.LogError{},
+			NumProtoSuccess: 1,
+		}
+	})
+
+	// Quality monitors:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
+		return req.Workspace.QualityMonitorGet(req, req.Vars["table_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
+		return req.Workspace.QualityMonitorUpsert(req, req.Vars["table_name"], false)
+	})
+
+	server.Handle("PUT", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
+		return req.Workspace.QualityMonitorUpsert(req, req.Vars["table_name"], true)
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
+		return req.Workspace.QualityMonitorDelete(req, req.Vars["table_name"])
+	})
+
+	// Apps:
+
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		return req.Workspace.AppsGet(req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps", func(req testserver.Request) any {
+		return req.Workspace.AppsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		return req.Workspace.AppsUpsert(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		return req.Workspace.AppsDelete(req.Vars["name"])
 	})
 }

@@ -1,0 +1,36 @@
+trap "rm -fr out.requests.txt databricks.yml my_test_code prebuilt" EXIT
+
+cp -r $TESTDIR/../whl_explicit/my_test_code .
+mkdir prebuilt
+cp -r $TESTDIR/../whl_prebuilt_multiple/dist/lib/other_test_code-0.0.1-py3-none-any.whl prebuilt
+
+trace $CLI bundle validate -o json | jq .artifacts
+
+trace $CLI bundle deploy
+
+title "There are 2 original wheels and 2 patched ones"
+trace find.py --expect 4 whl
+
+title "Verify contents of the zip file"
+trace find.py --expect 1 '.databricks/.*my_test_code.*whl' | xargs ziplist.py
+
+title "Expecting 2 patched wheels in libraries section in /jobs/create"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
+
+title "Expecting 2 patched wheels to be uploaded"
+trace jq .path < out.requests.txt | grep import | grep whl | sort
+
+rm out.requests.txt
+
+title "Updating the local wheel and deploying again"
+touch my_test_code/src/new_module.py
+trace $CLI bundle deploy
+
+title "Verify contents, it should now have new_module.py"
+trace find.py --expect 1 '.databricks/.*my_test_code.*whl' | xargs ziplist.py
+
+title "Expecting 2 patched wheels in libraries section in /jobs/reset"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt
+
+title "Expecting 2 pached wheels to be uploaded (Bad: it is currently uploaded twice)"
+trace jq .path < out.requests.txt | grep import | grep whl | sort

@@ -14,7 +14,7 @@ var (
 func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 	value := make(map[string]dyn.Value)
 	if job.Settings.Tasks != nil {
-		tasks := make([]dyn.Value, 0)
+		var tasks []dyn.Value
 		for _, task := range job.Settings.Tasks {
 			v, err := convertTaskToValue(task, taskOrder)
 			if err != nil {
@@ -28,7 +28,7 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 
 	// We're processing job.Settings.Parameters separately to retain empty default values.
 	if len(job.Settings.Parameters) > 0 {
-		params := make([]dyn.Value, 0)
+		var params []dyn.Value
 		for _, parameter := range job.Settings.Parameters {
 			p := map[string]dyn.Value{
 				"name":    dyn.NewValue(parameter.Name, []dyn.Location{{Line: 0}}), // We use Line: 0 to ensure that the name goes first.

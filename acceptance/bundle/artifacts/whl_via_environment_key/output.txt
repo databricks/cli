@@ -11,7 +11,7 @@ Deployment complete!
 my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 1 wheel in environments section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.1/jobs/create") | .body out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body out.requests.txt
 {
   "deployment": {
     "kind": "BUNDLE",

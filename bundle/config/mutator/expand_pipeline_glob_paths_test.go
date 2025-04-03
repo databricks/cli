@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -109,73 +111,88 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 	bundletest.SetLocation(b, "resources.pipelines.pipeline.libraries[3]", []dyn.Location{{File: filepath.Join(dir, "relative", "resource.yml")}})
 
-	m := ExpandPipelineGlobPaths()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b, NormalizePaths(), ExpandPipelineGlobPaths())
 	require.NoError(t, diags.Error())
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
 	require.Len(t, libraries, 13)
 
-	// Making sure glob patterns are expanded correctly
-	require.True(t, containsNotebook(libraries, filepath.Join("test", "test2.ipynb")))
-	require.True(t, containsNotebook(libraries, filepath.Join("test", "test3.ipynb")))
-	require.True(t, containsFile(libraries, filepath.Join("test", "test2.py")))
-	require.True(t, containsFile(libraries, filepath.Join("test", "test3.py")))
+	assert.ElementsMatch(
+		t,
+		collectNotebooks(libraries),
+		[]string{
+			// Making sure glob patterns are expanded correctly
+			"test/test2.ipynb",
+			"test/test3.ipynb",
+			// Making sure exact file references work as well
+			"test1.ipynb",
+			// Making sure absolute pass to remote FS file references work as well
+			"/Workspace/Users/me@company.com/test.ipynb",
+			"dbfs:/me@company.com/test.ipynb",
+			"/Repos/somerepo/test.ipynb",
+			// Making sure other libraries are not replaced
+			"non-existent.ipynb",
+		},
+	)
 
-	// These patterns are defined relative to "./relative"
-	require.True(t, containsFile(libraries, "test4.py"))
-	require.True(t, containsFile(libraries, "test5.py"))
-
-	// Making sure exact file references work as well
-	require.True(t, containsNotebook(libraries, "test1.ipynb"))
-
-	// Making sure absolute pass to remote FS file references work as well
-	require.True(t, containsNotebook(libraries, "/Workspace/Users/me@company.com/test.ipynb"))
-	require.True(t, containsNotebook(libraries, "dbfs:/me@company.com/test.ipynb"))
-	require.True(t, containsNotebook(libraries, "/Repos/somerepo/test.ipynb"))
+	assert.ElementsMatch(
+		t,
+		collectFiles(libraries),
+		[]string{
+			// Making sure glob patterns are expanded correctly
+			"test/test2.py",
+			"test/test3.py",
+			// These patterns are defined relative to "./relative"
+			"relative/test4.py",
+			"relative/test5.py",
+		},
+	)
 
 	// Making sure other libraries are not replaced
-	require.True(t, containsJar(libraries, "./*.jar"))
-	require.True(t, containsMaven(libraries, "org.jsoup:jsoup:1.7.2"))
-	require.True(t, containsNotebook(libraries, "./non-existent.ipynb"))
+	assert.ElementsMatch(t, collectJars(libraries), []string{"./*.jar"})
+	assert.ElementsMatch(t, collectMaven(libraries), []string{"org.jsoup:jsoup:1.7.2"})
 }
 
-func containsNotebook(libraries []pipelines.PipelineLibrary, path string) bool {
+func collectNotebooks(libraries []pipelines.PipelineLibrary) []string {
+	var paths []string
 	for _, l := range libraries {
-		if l.Notebook != nil && l.Notebook.Path == path {
-			return true
+		if l.Notebook != nil {
+			paths = append(paths, l.Notebook.Path)
 		}
 	}
 
-	return false
+	return paths
 }
 
-func containsJar(libraries []pipelines.PipelineLibrary, path string) bool {
+func collectJars(libraries []pipelines.PipelineLibrary) []string {
+	var paths []string
 	for _, l := range libraries {
-		if l.Jar == path {
-			return true
+		if l.Jar != "" {
+			paths = append(paths, l.Jar)
 		}
 	}
 
-	return false
+	return paths
 }
 
-func containsMaven(libraries []pipelines.PipelineLibrary, coordinates string) bool {
+func collectMaven(libraries []pipelines.PipelineLibrary) []string {
+	var coordinates []string
 	for _, l := range libraries {
-		if l.Maven != nil && l.Maven.Coordinates == coordinates {
-			return true
+		if l.Maven != nil {
+			coordinates = append(coordinates, l.Maven.Coordinates)
 		}
 	}
 
-	return false
+	return coordinates
 }
 
-func containsFile(libraries []pipelines.PipelineLibrary, path string) bool {
+func collectFiles(libraries []pipelines.PipelineLibrary) []string {
+	var paths []string
 	for _, l := range libraries {
-		if l.File != nil && l.File.Path == path {
-			return true
+		if l.File != nil {
+			paths = append(paths, l.File.Path)
 		}
 	}
 
-	return false
+	return paths
 }

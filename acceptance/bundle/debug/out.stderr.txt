@@ -10,14 +10,12 @@
 10:07:59 Debug: Apply pid=12345 mutator=ComputeIdToClusterId
 10:07:59 Debug: Apply pid=12345 mutator=InitializeVariables
 10:07:59 Debug: Apply pid=12345 mutator=DefineDefaultTarget(default)
-10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load)
 10:07:59 Debug: Apply pid=12345 mutator=validate:unique_resource_keys
 10:07:59 Debug: Apply pid=12345 mutator=SelectDefaultTarget
 10:07:59 Debug: Apply pid=12345 mutator=SelectDefaultTarget mutator=SelectTarget(default)
 10:07:59 Debug: Apply pid=12345 mutator=<func>
 10:07:59 Info: Phase: initialize pid=12345
 10:07:59 Debug: Apply pid=12345 mutator=validate:AllResourcesHaveValues
-10:07:59 Debug: Apply pid=12345 mutator=validate:interpolation_in_auth_config
 10:07:59 Debug: Apply pid=12345 mutator=RewriteSyncPaths
 10:07:59 Debug: Apply pid=12345 mutator=SyncDefaultPath
 10:07:59 Debug: Apply pid=12345 mutator=SyncInferRoot
@@ -36,12 +34,16 @@
 10:07:59 Debug: Apply pid=12345 mutator=PrependWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=RewriteWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=SetVariables
+10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(init)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences(resources)
+10:07:59 Debug: Apply pid=12345 mutator=NormalizePaths
+10:07:59 Debug: Apply pid=12345 mutator=ExpandPipelineGlobPaths
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobClusters
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobParameters
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobTasks
@@ -56,7 +58,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=ProcessTargetMode
 10:07:59 Debug: Apply pid=12345 mutator=ApplyPresets
 10:07:59 Debug: Apply pid=12345 mutator=DefaultQueueing
-10:07:59 Debug: Apply pid=12345 mutator=ExpandPipelineGlobPaths
 10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
 10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonWrapperWarning

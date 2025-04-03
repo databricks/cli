@@ -355,7 +355,7 @@ func newPatch() *cobra.Command {
   Partially updates the details of a group.
 
   Arguments:
-    ID: Unique ID for a group in the Databricks account.`
+    ID: Unique ID in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -384,14 +384,14 @@ func newPatch() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Groups drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks account")
+			id, err := cmdio.Select(ctx, names, "Unique ID in the Databricks workspace")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a group in the databricks account")
+			return fmt.Errorf("expected to have unique id in the databricks workspace")
 		}
 		patchReq.Id = args[0]
 

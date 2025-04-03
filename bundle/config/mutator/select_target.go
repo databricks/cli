@@ -51,6 +51,11 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 	// TODO: remove when Environments section is not supported anymore.
 	b.Config.Bundle.Environment = b.Config.Bundle.Target
 
+	// Record number of targets in the bundle. This is then used downstream during
+	// telemetry upload. This value is always >= 1 since if no targets are defined
+	// in YAML, we create a "default" placeholder target upstream.
+	b.Metrics.TargetCount = int64(len(b.Config.Targets))
+
 	// Cleanup the original targets and environments sections since they
 	// show up in the JSON output of the 'summary' and 'validate' commands.
 	b.Config.Targets = nil

@@ -2,7 +2,6 @@ package python
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,8 +10,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn/convert"
-
-	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/require"
@@ -57,14 +54,14 @@ func TestPythonMutator_loadResources(t *testing.T) {
 	rootPath := filepath.Join(t.TempDir(), "my_project")
 
 	b := loadYaml("databricks.yml", `
-      experimental:
-        python:
-          resources: ["resources:load_resources"]
-          venv_path: .venv
-      resources:
-        jobs:
-          job0:
-            name: job_0`)
+experimental:
+  python:
+    resources: ["resources:load_resources"]
+    venv_path: .venv
+resources:
+  jobs:
+    job0:
+      name: job_0`)
 
 	// set rootPath so that we can make absolute paths in dyn.Location
 	b.BundleRootPath = rootPath
@@ -93,12 +90,18 @@ func TestPythonMutator_loadResources(t *testing.T) {
 					"job1": {
 						name: "job_1"
 					},
+				},
+				"pipelines": {
+					"pipeline0": {
+						name: "pipeline_0"
+					},
 				}
 			}
 		}`,
 		`{"severity": "warning", "summary": "job doesn't have any tasks", "location": {"file": "src/examples/file.py", "line": 10, "column": 5}}`,
 		`{"path": "resources.jobs.job0", "file": "src/examples/job0.py", "line": 3, "column": 5}
-		{"path": "resources.jobs.job1", "file": "src/examples/job1.py", "line": 5, "column": 7}`,
+		{"path": "resources.jobs.job1", "file": "src/examples/job1.py", "line": 5, "column": 7}
+		{"path": "resources.pipelines.pipeline0", "file": "src/examples/pipeline0.py", "line": 7, "column": 9}`,
 	)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
@@ -116,20 +119,42 @@ func TestPythonMutator_loadResources(t *testing.T) {
 		assert.Equal(t, "job_1", job1.Name)
 	}
 
+	if pipeline0, ok := b.Config.Resources.Jobs["pipeline0"]; ok {
+		assert.Equal(t, "pipeline_0", pipeline0.Name)
+	}
+
 	// output of locations.json should be applied to underlying dyn.Value
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		name1, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job1.name"))
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
+		// location is databricks.yml, because output contains resource as-is
+		jobName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.name"))
+		require.NoError(t, err)
+		assert.Equal(t, []dyn.Location{
+			{
+				File:   "databricks.yml",
+				Line:   9,
+				Column: 13,
+			},
+		}, jobName0.Locations())
 
+		jobName1, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job1.name"))
+		require.NoError(t, err)
 		assert.Equal(t, []dyn.Location{
 			{
 				File:   filepath.Join(rootPath, "src/examples/job1.py"),
 				Line:   5,
 				Column: 7,
 			},
-		}, name1.Locations())
+		}, jobName1.Locations())
+
+		pipelineName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.pipelines.pipeline0.name"))
+		require.NoError(t, err)
+		assert.Equal(t, []dyn.Location{
+			{
+				File:   filepath.Join(rootPath, "src/examples/pipeline0.py"),
+				Line:   7,
+				Column: 9,
+			},
+		}, pipelineName0.Locations())
 
 		return v, nil
 	})
@@ -146,62 +171,18 @@ func TestPythonMutator_loadResources(t *testing.T) {
 	}, diags[0].Locations)
 }
 
-func TestPythonMutator_loadResources_disallowed(t *testing.T) {
-	withFakeVEnv(t, ".venv")
-	b := loadYaml("databricks.yml", `
-      experimental:
-        python:
-          resources: ["resources:load_resources"]
-          venv_path: .venv
-      resources:
-        jobs:
-          job0:
-            name: job_0`)
-
-	ctx := withProcessStub(
-		t,
-		[]string{
-			interpreterPath(".venv"),
-			"-m",
-			"databricks.bundles.build",
-			"--phase",
-			"load_resources",
-		},
-		`{
-			"experimental": {
-				"python": {
-					"resources": ["resources:load_resources"],
-					"venv_path": ".venv"
-				}
-			},
-			"resources": {
-				"jobs": {
-					"job0": {
-						name: "job_0",
-						description: "job description"
-					}
-				}
-			}
-		}`, "", "")
-
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
-	diag := bundle.Apply(ctx, b, mutator)
-
-	assert.EqualError(t, diag.Error(), "unexpected change at \"resources.jobs.job0.description\" (insert)")
-}
-
 func TestPythonMutator_applyMutators(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 	b := loadYaml("databricks.yml", `
-      experimental:
-        python:
-          venv_path: .venv
-          mutators:
-            - "mutators:add_description"
-      resources:
-        jobs:
-          job0:
-            name: job_0`)
+experimental:
+  python:
+    venv_path: .venv
+    mutators:
+      - "mutators:add_description"
+resources:
+  jobs:
+    job0:
+      name: job_0`)
 
 	ctx := withProcessStub(
 		t,
@@ -261,15 +242,15 @@ func TestPythonMutator_applyMutators(t *testing.T) {
 func TestPythonMutator_badOutput(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 	b := loadYaml("databricks.yml", `
-      experimental:
-        python:
-          venv_path: .venv
-          resources:
-            - "resources:load_resources"
-      resources:
-        jobs:
-          job0:
-            name: job_0`)
+experimental:
+  python:
+    venv_path: .venv
+    resources:
+      - "resources:load_resources"
+resources:
+  jobs:
+    job0:
+      name: job_0`)
 
 	ctx := withProcessStub(
 		t,
@@ -310,11 +291,11 @@ func TestPythonMutator_venvNotFound(t *testing.T) {
 	expectedError := fmt.Sprintf("failed to get Python interpreter path: can't find %q, check if virtualenv is created", interpreterPath("bad_path"))
 
 	b := loadYaml("databricks.yml", `
-      experimental:
-        python:
-          venv_path: bad_path
-          resources:
-            - "resources:load_resources"`)
+experimental:
+  python:
+    venv_path: bad_path
+    resources:
+      - "resources:load_resources"`)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(context.Background(), b, mutator)
@@ -361,275 +342,6 @@ func TestGetOps_empty(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, opts{enabled: false}, actual)
-}
-
-type createOverrideVisitorTestCase struct {
-	name        string
-	updatePath  dyn.Path
-	deletePath  dyn.Path
-	insertPath  dyn.Path
-	phase       phase
-	updateError error
-	deleteError error
-	insertError error
-}
-
-func TestCreateOverrideVisitor(t *testing.T) {
-	left := dyn.V(42)
-	right := dyn.V(1337)
-
-	testCases := []createOverrideVisitorTestCase{
-		{
-			name:        "load_resources: can't change an existing job",
-			phase:       PythonMutatorPhaseLoadResources,
-			updatePath:  dyn.MustPathFromString("resources.jobs.job0.name"),
-			deletePath:  dyn.MustPathFromString("resources.jobs.job0.name"),
-			insertPath:  dyn.MustPathFromString("resources.jobs.job0.name"),
-			deleteError: errors.New("unexpected change at \"resources.jobs.job0.name\" (delete)"),
-			insertError: errors.New("unexpected change at \"resources.jobs.job0.name\" (insert)"),
-			updateError: errors.New("unexpected change at \"resources.jobs.job0.name\" (update)"),
-		},
-		{
-			name:        "load_resources: can't delete an existing job",
-			phase:       PythonMutatorPhaseLoadResources,
-			deletePath:  dyn.MustPathFromString("resources.jobs.job0"),
-			deleteError: errors.New("unexpected change at \"resources.jobs.job0\" (delete)"),
-		},
-		{
-			name:        "load_resources: can insert 'resources'",
-			phase:       PythonMutatorPhaseLoadResources,
-			insertPath:  dyn.MustPathFromString("resources"),
-			insertError: nil,
-		},
-		{
-			name:        "load_resources: can insert 'resources.jobs'",
-			phase:       PythonMutatorPhaseLoadResources,
-			insertPath:  dyn.MustPathFromString("resources.jobs"),
-			insertError: nil,
-		},
-		{
-			name:        "load_resources: can insert a job",
-			phase:       PythonMutatorPhaseLoadResources,
-			insertPath:  dyn.MustPathFromString("resources.jobs.job0"),
-			insertError: nil,
-		},
-		{
-			name:        "load_resources: can't change include",
-			phase:       PythonMutatorPhaseLoadResources,
-			deletePath:  dyn.MustPathFromString("include[0]"),
-			insertPath:  dyn.MustPathFromString("include[0]"),
-			updatePath:  dyn.MustPathFromString("include[0]"),
-			deleteError: errors.New("unexpected change at \"include[0]\" (delete)"),
-			insertError: errors.New("unexpected change at \"include[0]\" (insert)"),
-			updateError: errors.New("unexpected change at \"include[0]\" (update)"),
-		},
-		{
-			name:        "init: can change an existing job",
-			phase:       PythonMutatorPhaseInit,
-			updatePath:  dyn.MustPathFromString("resources.jobs.job0.name"),
-			deletePath:  dyn.MustPathFromString("resources.jobs.job0.name"),
-			insertPath:  dyn.MustPathFromString("resources.jobs.job0.name"),
-			deleteError: nil,
-			insertError: nil,
-			updateError: nil,
-		},
-		{
-			name:        "init: can't delete an existing job",
-			phase:       PythonMutatorPhaseInit,
-			deletePath:  dyn.MustPathFromString("resources.jobs.job0"),
-			deleteError: errors.New("unexpected change at \"resources.jobs.job0\" (delete)"),
-		},
-		{
-			name:        "init: can insert 'resources'",
-			phase:       PythonMutatorPhaseInit,
-			insertPath:  dyn.MustPathFromString("resources"),
-			insertError: nil,
-		},
-		{
-			name:        "init: can insert 'resources.jobs'",
-			phase:       PythonMutatorPhaseInit,
-			insertPath:  dyn.MustPathFromString("resources.jobs"),
-			insertError: nil,
-		},
-		{
-			name:        "init: can insert a job",
-			phase:       PythonMutatorPhaseInit,
-			insertPath:  dyn.MustPathFromString("resources.jobs.job0"),
-			insertError: nil,
-		},
-		{
-			name:        "init: can't change include",
-			phase:       PythonMutatorPhaseInit,
-			deletePath:  dyn.MustPathFromString("include[0]"),
-			insertPath:  dyn.MustPathFromString("include[0]"),
-			updatePath:  dyn.MustPathFromString("include[0]"),
-			deleteError: errors.New("unexpected change at \"include[0]\" (delete)"),
-			insertError: errors.New("unexpected change at \"include[0]\" (insert)"),
-			updateError: errors.New("unexpected change at \"include[0]\" (update)"),
-		},
-		{
-			name:        "apply_mutators: can't delete an existing job",
-			phase:       PythonMutatorPhaseInit,
-			deletePath:  dyn.MustPathFromString("resources.jobs.job0"),
-			deleteError: errors.New("unexpected change at \"resources.jobs.job0\" (delete)"),
-		},
-		{
-			name:        "apply_mutators: can insert 'resources'",
-			phase:       PythonMutatorPhaseApplyMutators,
-			insertPath:  dyn.MustPathFromString("resources"),
-			insertError: nil,
-		},
-		{
-			name:        "apply_mutators: can insert 'resources.jobs'",
-			phase:       PythonMutatorPhaseApplyMutators,
-			insertPath:  dyn.MustPathFromString("resources.jobs"),
-			insertError: nil,
-		},
-		{
-			name:        "apply_mutators: can't insert a job",
-			phase:       PythonMutatorPhaseApplyMutators,
-			insertPath:  dyn.MustPathFromString("resources.jobs.job0"),
-			insertError: errors.New("unexpected change at \"resources.jobs.job0\" (insert)"),
-		},
-		{
-			name:        "apply_mutators: can't change include",
-			phase:       PythonMutatorPhaseApplyMutators,
-			deletePath:  dyn.MustPathFromString("include[0]"),
-			insertPath:  dyn.MustPathFromString("include[0]"),
-			updatePath:  dyn.MustPathFromString("include[0]"),
-			deleteError: errors.New("unexpected change at \"include[0]\" (delete)"),
-			insertError: errors.New("unexpected change at \"include[0]\" (insert)"),
-			updateError: errors.New("unexpected change at \"include[0]\" (update)"),
-		},
-	}
-
-	for _, tc := range testCases {
-		visitor, err := createOverrideVisitor(context.Background(), tc.phase)
-		if err != nil {
-			t.Fatalf("create visitor failed: %v", err)
-		}
-
-		if tc.updatePath != nil {
-			t.Run(tc.name+"-update", func(t *testing.T) {
-				out, err := visitor.VisitUpdate(tc.updatePath, left, right)
-
-				if tc.updateError != nil {
-					assert.Equal(t, tc.updateError, err)
-				} else {
-					assert.NoError(t, err)
-					assert.Equal(t, right, out)
-				}
-			})
-		}
-
-		if tc.deletePath != nil {
-			t.Run(tc.name+"-delete", func(t *testing.T) {
-				err := visitor.VisitDelete(tc.deletePath, left)
-
-				if tc.deleteError != nil {
-					assert.Equal(t, tc.deleteError, err)
-				} else {
-					assert.NoError(t, err)
-				}
-			})
-		}
-
-		if tc.insertPath != nil {
-			t.Run(tc.name+"-insert", func(t *testing.T) {
-				out, err := visitor.VisitInsert(tc.insertPath, right)
-
-				if tc.insertError != nil {
-					assert.Equal(t, tc.insertError, err)
-				} else {
-					assert.NoError(t, err)
-					assert.Equal(t, right, out)
-				}
-			})
-		}
-	}
-}
-
-type overrideVisitorOmitemptyTestCase struct {
-	name        string
-	path        dyn.Path
-	left        dyn.Value
-	phases      []phase
-	expectedErr error
-}
-
-func TestCreateOverrideVisitor_omitempty(t *testing.T) {
-	// Python output can omit empty sequences/mappings in output, because we don't track them as optional,
-	// there is no semantic difference between empty and missing, so we keep them as they were before
-	// Python code deleted them.
-
-	allPhases := []phase{PythonMutatorPhaseLoad, PythonMutatorPhaseInit}
-	location := dyn.Location{
-		File:   "databricks.yml",
-		Line:   10,
-		Column: 20,
-	}
-
-	testCases := []overrideVisitorOmitemptyTestCase{
-		{
-			// this is not happening, but adding for completeness
-			name:        "undo delete of empty variables",
-			path:        dyn.MustPathFromString("variables"),
-			left:        dyn.NewValue([]dyn.Value{}, []dyn.Location{location}),
-			expectedErr: merge.ErrOverrideUndoDelete,
-			phases:      allPhases,
-		},
-		{
-			name:        "undo delete of empty job clusters",
-			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{}, []dyn.Location{location}),
-			expectedErr: merge.ErrOverrideUndoDelete,
-			phases:      allPhases,
-		},
-		{
-			name:        "allow delete of non-empty job clusters",
-			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", []dyn.Location{location})}, []dyn.Location{location}),
-			expectedErr: nil,
-			// deletions aren't allowed in 'load' phase
-			phases: []phase{PythonMutatorPhaseInit},
-		},
-		{
-			name:        "undo delete of empty tags",
-			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{location}),
-			expectedErr: merge.ErrOverrideUndoDelete,
-			phases:      allPhases,
-		},
-		{
-			name: "allow delete of non-empty tags",
-			path: dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left: dyn.NewValue(map[string]dyn.Value{"dev": dyn.NewValue("true", []dyn.Location{location})}, []dyn.Location{location}),
-
-			expectedErr: nil,
-			// deletions aren't allowed in 'load' phase
-			phases: []phase{PythonMutatorPhaseInit},
-		},
-		{
-			name:        "undo delete of nil",
-			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NilValue.WithLocations([]dyn.Location{location}),
-			expectedErr: merge.ErrOverrideUndoDelete,
-			phases:      allPhases,
-		},
-	}
-
-	for _, tc := range testCases {
-		for _, phase := range tc.phases {
-			t.Run(tc.name+"-"+string(phase), func(t *testing.T) {
-				visitor, err := createOverrideVisitor(context.Background(), phase)
-				require.NoError(t, err)
-
-				err = visitor.VisitDelete(tc.path, tc.left)
-
-				assert.Equal(t, tc.expectedErr, err)
-			})
-		}
-	}
 }
 
 func TestLoadDiagnosticsFile_nonExistent(t *testing.T) {

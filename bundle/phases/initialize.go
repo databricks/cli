@@ -27,7 +27,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	return bundle.ApplySeq(ctx, b,
 		validate.AllResourcesHaveValues(),
-		validate.NoInterpolationInAuthConfig(),
 
 		// Update all path fields in the sync block to be relative to the bundle root path.
 		mutator.RewriteSyncPaths(),
@@ -61,16 +60,24 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 		// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
 		// See what is expected in PythonMutatorPhaseInit doc
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 		mutator.ResolveVariableReferencesInLookup(),
 		mutator.ResolveResourceReferences(),
-		mutator.ResolveVariableReferences(
+		mutator.ResolveVariableReferencesWithoutResources(
 			"bundle",
 			"workspace",
 			"variables",
 		),
+		mutator.ResolveVariableReferencesOnlyResources(
+			"bundle",
+			"workspace",
+			"variables",
+		),
+		mutator.NormalizePaths(),
+		mutator.ExpandPipelineGlobPaths(),
 
 		mutator.MergeJobClusters(),
 		mutator.MergeJobParameters(),
@@ -89,7 +96,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.ProcessTargetMode(),
 		mutator.ApplyPresets(),
 		mutator.DefaultQueueing(),
-		mutator.ExpandPipelineGlobPaths(),
 
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
 		mutator.ConfigureWSFS(),

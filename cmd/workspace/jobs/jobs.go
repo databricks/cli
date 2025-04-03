@@ -1355,7 +1355,7 @@ func newRunNow() *cobra.Command {
 	// TODO: map via StringToStringVar: job_parameters
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: array: only
-	cmd.Flags().Var(&runNowReq.PerformanceTarget, "performance-target", `PerformanceTarget defines how performant or cost efficient the execution of run on serverless compute should be. Supported values: [COST_OPTIMIZED, PERFORMANCE_OPTIMIZED]`)
+	cmd.Flags().Var(&runNowReq.PerformanceTarget, "performance-target", `PerformanceTarget defines how performant or cost efficient the execution of run on serverless compute should be. Supported values: [BALANCED, COST_OPTIMIZED, PERFORMANCE_OPTIMIZED]`)
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params

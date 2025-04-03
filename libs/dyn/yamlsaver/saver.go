@@ -83,7 +83,7 @@ func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, 
 			return pairs[i].Value.Location().Line < pairs[j].Value.Location().Line
 		})
 
-		content := make([]*yaml.Node, 0)
+		var content []*yaml.Node
 		for _, pair := range pairs {
 			pk := pair.Key
 			pv := pair.Value
@@ -105,7 +105,7 @@ func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, 
 		return &yaml.Node{Kind: yaml.MappingNode, Content: content, Style: style}, nil
 	case dyn.KindSequence:
 		seq, _ := v.AsSequence()
-		content := make([]*yaml.Node, 0)
+		var content []*yaml.Node
 		for _, item := range seq {
 			node, err := s.toYamlNodeWithStyle(item, style)
 			if err != nil {

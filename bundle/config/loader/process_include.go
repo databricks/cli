@@ -36,7 +36,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 		key   string
 	}
 
-	resources := []resource{}
+	var resources []resource
 	supportedResources := config.SupportedResources()
 
 	// Gather all resources defined in the resources block.
@@ -93,7 +93,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 
 	detail := strings.Builder{}
 	detail.WriteString("The following resources are defined or configured in this file:\n")
-	lines := []string{}
+	var lines []string
 	for _, r := range resources {
 		lines = append(lines, fmt.Sprintf("  - %s (%s)\n", r.key, r.typ))
 	}
@@ -107,8 +107,8 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 		detail.WriteString(l)
 	}
 
-	locations := []dyn.Location{}
-	paths := []dyn.Path{}
+	var locations []dyn.Location
+	var paths []dyn.Path
 	for _, rr := range resources {
 		locations = append(locations, rr.value.Locations()...)
 		paths = append(paths, rr.path)

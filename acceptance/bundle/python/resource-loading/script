@@ -1,4 +1,8 @@
-trace uv run --python 3.10 --with databricks-bundles==0.7.2 -q $CLI bundle validate --output json | \
-  jq "pick(.experimental.python, .resources)"
+UV_ARGS="${UV_ARGS//\[\DATABRICKS_BUNDLES_WHEEL\]/$DATABRICKS_BUNDLES_WHEEL}"
+
+# each job should record location where add_job function was called
+
+trace uv run $UV_ARGS -q $CLI bundle validate --output json --include-locations | \
+  jq "pick(.experimental.python, .resources, .__locations.files, .__locations.locations)"
 
 rm -fr .databricks __pycache__

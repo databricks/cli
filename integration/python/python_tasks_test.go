@@ -122,7 +122,7 @@ func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
 	w := tw.w
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
-	tasks := make([]jobs.SubmitTask, 0)
+	var tasks []jobs.SubmitTask
 	if opts.includeNotebookTasks {
 		tasks = append(tasks, GenerateNotebookTasks(tw.pyNotebookPath, sparkVersions, nodeTypeId)...)
 	}
@@ -264,7 +264,7 @@ func prepareRepoFiles(t *testing.T) *testFiles {
 }
 
 func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
-	tasks := make([]jobs.SubmitTask, 0)
+	var tasks []jobs.SubmitTask
 	for i := range versions {
 		task := jobs.SubmitTask{
 			TaskKey: "notebook_" + strings.ReplaceAll(versions[i], ".", "_"),
@@ -285,7 +285,7 @@ func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId st
 }
 
 func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
-	tasks := make([]jobs.SubmitTask, 0)
+	var tasks []jobs.SubmitTask
 	for i := range versions {
 		task := jobs.SubmitTask{
 			TaskKey: "spark_" + strings.ReplaceAll(versions[i], ".", "_"),
@@ -306,7 +306,7 @@ func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId
 }
 
 func GenerateWheelTasks(wheelPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
-	tasks := make([]jobs.SubmitTask, 0)
+	var tasks []jobs.SubmitTask
 	for i := range versions {
 		task := jobs.SubmitTask{
 			TaskKey: "whl_" + strings.ReplaceAll(versions[i], ".", "_"),

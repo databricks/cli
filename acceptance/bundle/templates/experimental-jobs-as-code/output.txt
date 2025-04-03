@@ -20,11 +20,6 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/state/metadata.json"
       },
       "edit_mode": "UI_LOCKED",
-      "email_notifications": {
-        "on_failure": [
-          "[USERNAME]"
-        ]
-      },
       "format": "MULTI_TASK",
       "job_clusters": [
         {

@@ -18,5 +18,5 @@ func TestExpandPipelineGlobPaths(t *testing.T) {
 
 func TestExpandPipelineGlobPathsWithNonExistent(t *testing.T) {
 	_, diags := initializeTarget(t, "./pipeline_glob_paths", "error")
-	require.ErrorContains(t, diags.Error(), "notebook ./non-existent not found")
+	require.ErrorContains(t, diags.Error(), `notebook "non-existent" not found`)
 }

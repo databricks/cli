@@ -174,7 +174,7 @@ func saveYamlWithStyle(outputPath string, annotations annotation.File) error {
 }
 
 func getAlphabeticalOrder[T any](mapping map[string]T) *yamlsaver.Order {
-	order := []string{}
+	var order []string
 	for k := range mapping {
 		order = append(order, k)
 	}
@@ -190,7 +190,7 @@ func convertLinksToAbsoluteUrl(s string) string {
 	referencePage := "/dev-tools/bundles/reference.html"
 
 	// Regular expression to match Markdown-style links like [_](link)
-	re := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)
+	re := regexp.MustCompile(`\[\\?(.*?)\]\((.*?)\)`)
 	result := re.ReplaceAllStringFunc(s, func(match string) string {
 		matches := re.FindStringSubmatch(match)
 		if len(matches) < 2 {

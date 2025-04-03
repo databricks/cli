@@ -100,7 +100,7 @@ func commonFilerRecursiveDeleteTest(t *testing.T, ctx context.Context, f filer.F
 	require.NoError(t, err)
 	assert.Len(t, entriesBeforeDelete, 4)
 
-	names := []string{}
+	var names []string
 	for _, e := range entriesBeforeDelete {
 		names = append(names, e.Name())
 	}
@@ -507,7 +507,7 @@ func TestFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 	// Read entries
 	entries, err := wf.ReadDir(ctx, ".")
 	require.NoError(t, err)
-	names := []string{}
+	var names []string
 	for _, e := range entries {
 		names = append(names, e.Name())
 	}

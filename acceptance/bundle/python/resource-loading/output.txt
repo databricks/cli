@@ -1,5 +1,5 @@
 
->>> uv run --python 3.10 --with databricks-bundles==0.7.2 -q [CLI] bundle validate --output json
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json --include-locations
 {
   "experimental": {
     "python": {
@@ -53,6 +53,70 @@
         },
         "tags": {}
       }
+    }
+  },
+  "__locations": {
+    "files": [
+      "databricks.yml",
+      "resources.py"
+    ],
+    "locations": {
+      "bundle": [
+        [
+          0,
+          2,
+          3
+        ]
+      ],
+      "experimental": [
+        [
+          0,
+          7,
+          3
+        ]
+      ],
+      "resources": [
+        [
+          0,
+          13,
+          3
+        ]
+      ],
+      "resources.jobs": [
+        [
+          0,
+          14,
+          5
+        ]
+      ],
+      "resources.jobs.my_job_1": [
+        [
+          1,
+          16,
+          1
+        ]
+      ],
+      "resources.jobs.my_job_2": [
+        [
+          1,
+          6,
+          1
+        ]
+      ],
+      "resources.jobs.my_job_3": [
+        [
+          0,
+          15,
+          7
+        ]
+      ],
+      "sync": [
+        [
+          0,
+          4,
+          7
+        ]
+      ]
     }
   }
 }

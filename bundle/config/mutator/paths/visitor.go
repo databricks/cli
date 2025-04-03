@@ -1,26 +1,29 @@
 package paths
 
-import "github.com/databricks/cli/libs/dyn"
-
-type PathKind int
-
-const (
-	// PathKindLibrary is a path to a library file
-	PathKindLibrary = iota
-
-	// PathKindNotebook is a path to a notebook file
-	PathKindNotebook
-
-	// PathKindWorkspaceFile is a path to a regular workspace file,
-	// notebooks are not allowed because they are uploaded a special
-	// kind of workspace object.
-	PathKindWorkspaceFile
-
-	// PathKindWithPrefix is a path that starts with './'
-	PathKindWithPrefix
-
-	// PathKindDirectory is a path to directory
-	PathKindDirectory
+import (
+	"github.com/databricks/cli/libs/dyn"
 )
 
-type VisitFunc func(path dyn.Path, kind PathKind, value dyn.Value) (dyn.Value, error)
+type VisitFunc func(path dyn.Path, mode TranslateMode, value dyn.Value) (dyn.Value, error)
+
+// VisitPaths visits all paths in bundle configuration
+func VisitPaths(root dyn.Value, fn VisitFunc) (dyn.Value, error) {
+	visitors := []func(dyn.Value, VisitFunc) (dyn.Value, error){
+		VisitJobPaths,
+		VisitAppPaths,
+		VisitArtifactPaths,
+		VisitDashboardPaths,
+		VisitPipelinePaths,
+	}
+
+	newRoot := root
+	for _, visitor := range visitors {
+		updatedRoot, err := visitor(newRoot, fn)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		newRoot = updatedRoot
+	}
+
+	return newRoot, nil
+}

@@ -1,0 +1,22 @@
+
+>>> [CLI] quality-monitors create catalog.schema.table --json @input.json
+{
+  "assets_dir":"/Users/user/databricks_lakehouse_monitoring",
+  "drift_metrics_table_name":"",
+  "monitor_version":"",
+  "output_schema_name":"catalog.schema",
+  "profile_metrics_table_name":"",
+  "snapshot": {},
+  "status":"MONITOR_STATUS_ACTIVE",
+  "table_name":"catalog.schema.table"
+}
+
+>>> [CLI] bundle deployment bind monitor1 catalog.schema.table
+Updating deployment state...
+Successfully bound quality_monitor with an id 'catalog.schema.table'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-quality-monitor-test-localonly/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

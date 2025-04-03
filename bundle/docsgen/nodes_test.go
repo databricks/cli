@@ -115,6 +115,33 @@ func TestBuildNodes_ChildExpansion(t *testing.T) {
 	}
 }
 
+func TestDeprecatedFields(t *testing.T) {
+	s := jsonschema.Schema{
+		Type: "object",
+		Properties: map[string]*jsonschema.Schema{
+			"deprecatedField": {Deprecated: true},
+			"notDeprecatedField": {
+				Properties: map[string]*jsonschema.Schema{
+					"nestedDeprecatedField": {
+						Deprecated:  true,
+						Description: "nested description",
+						Extension: jsonschema.Extension{
+							DeprecationMessage: "nested deprecation message",
+						},
+					},
+					"nestedNotDeprecatedField": {},
+				},
+			},
+		},
+	}
+	nodes := buildNodes(s, nil, nil)
+	assert.Len(t, nodes, 1)
+	assert.Equal(t, "notDeprecatedField", nodes[0].Title)
+
+	assert.Len(t, nodes[0].Attributes, 2)
+	assert.Equal(t, "nested deprecation message", nodes[0].Attributes[0].Description)
+}
+
 func strPtr(s string) *string {
 	return &s
 }

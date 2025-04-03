@@ -41,6 +41,7 @@ var (
 	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
 	Tail        bool
 	Forcerun    bool
+	LogRequests bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -58,6 +59,7 @@ func init() {
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
+	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 }
 
 const (
@@ -100,6 +102,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	// Download terraform and provider and create config; this also creates build directory.
 	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
+
+	wheelPath, err := buildDatabricksBundlesWheel(t, buildDir)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
+	repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
 
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
@@ -213,7 +220,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
 
-			if len(expanded) == 1 && len(expanded[0]) == 0 {
+			if testdiff.OverwriteMode && len(expanded) > 1 {
+				// All variants of the test are producing the same output,
+				// there is no need to run the concurrently when updating.
+				expanded = expanded[0:1]
+			}
+
+			if len(expanded) == 1 {
+				// env vars aren't part of the test case name, so log them for debugging
+				t.Logf("Running test with env %v", expanded[0])
 				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
 			} else {
 				for _, envset := range expanded {
@@ -270,6 +285,12 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	isRunningOnCloud := cloudEnv != ""
 
 	if isRunningOnCloud {
+		cloudEnvBase := getCloudEnvBase(cloudEnv)
+		isEnabled, isPresent := config.CloudEnvs[cloudEnvBase]
+		if isPresent && !isEnabled {
+			return fmt.Sprintf("Disabled via CloudEnvs.%s setting in %s (CLOUD_ENV=%s)", cloudEnvBase, configPath, cloudEnv)
+		}
+
 		if isTruePtr(config.CloudSlow) {
 			if testing.Short() {
 				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
@@ -287,15 +308,15 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		}
 
 		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID is empty)", configPath)
 		}
 
 		if isTruePtr(config.RequiresWarehouse) && os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresWarehouse setting in %s (TEST_DEFAULT_WAREHOUSE_ID=%s)", configPath, os.Getenv("TEST_DEFAULT_WAREHOUSE_ID"))
+			return fmt.Sprintf("Disabled via RequiresWarehouse setting in %s (TEST_DEFAULT_WAREHOUSE_ID is empty)", configPath)
 		}
 
 		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID=%s)", configPath, os.Getenv("TEST_DEFAULT_CLUSTER_ID"))
+			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
 		}
 
 	} else {
@@ -370,10 +391,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			server = testserver.New(t)
 			if isTruePtr(config.RecordRequests) {
 				requestsPath := filepath.Join(tmpDir, "out.requests.txt")
-				server.RecordRequestsCallback = func(request *testserver.Request) {
+				server.RequestCallback = func(request *testserver.Request) {
 					req := getLoggedRequest(request, config.IncludeRequestHeaders)
 					reqJson, err := json.MarshalIndent(req, "", "  ")
-					assert.NoErrorf(t, err, "Failed to indent: %#v", req)
+					assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
 
 					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 					assert.NoError(t, err)
@@ -381,6 +402,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 					_, err = f.WriteString(string(reqJson) + "\n")
 					assert.NoError(t, err)
+				}
+			}
+
+			if LogRequests {
+				server.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
+					t.Logf("%d %s %s\n%s\n%s",
+						response.StatusCode, request.Method, request.URL,
+						formatHeadersAndBody("> ", request.Headers, request.Body),
+						formatHeadersAndBody("# ", response.Headers, response.Body),
+					)
 				}
 			}
 
@@ -453,7 +484,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 
 	for _, keyvalue := range customEnv {
-		items := strings.Split(keyvalue, "=")
+		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
 		cmd.Env = append(cmd.Env, keyvalue)
 		repls.Set(items[1], "["+items[0]+"]")
@@ -486,7 +517,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Make sure there are not unaccounted for new files
 	files := ListDir(t, tmpDir)
-	unexpected := []string{}
+	var unexpected []string
 	for _, relPath := range files {
 		if _, ok := inputs[relPath]; ok {
 			continue
@@ -579,8 +610,8 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	// directory only affects the main script and not cleanup.
 	scriptContents = "(\n" + scriptContents + ")\n"
 
-	prepares := []string{}
-	cleanups := []string{}
+	var prepares []string
+	var cleanups []string
 
 	for {
 		x, ok := tryReading(t, filepath.Join(dir, CleanupScript))
@@ -860,21 +891,89 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	return <-processErrCh
 }
 
-func getNodeTypeID(cloudEnv string) string {
+func getCloudEnvBase(cloudEnv string) string {
 	switch cloudEnv {
 	// no idea why, but
 	// aws-prod-ucws sets CLOUD_ENV to "ucws"
 	// gcp-prod-ucws sets CLOUD_ENV to "gcp-ucws"
 	// azure-prod-ucws sets CLOUD_ENV to "azure"
 	case "aws", "ucws":
+		return "aws"
+	case "azure":
+		return "azure"
+	case "gcp", "gcp-ucws":
+		return "gcp"
+	case "":
+		return ""
+	default:
+		return "unknown-cloudEnv-" + cloudEnv
+	}
+}
+
+func getNodeTypeID(cloudEnv string) string {
+	base := getCloudEnvBase(cloudEnv)
+	switch base {
+	case "aws":
 		return "i3.xlarge"
 	case "azure":
 		return "Standard_DS4_v2"
-	case "gcp", "gcp-ucws":
+	case "gcp":
 		return "n1-standard-4"
 	case "":
 		return "local-fake-node"
 	default:
-		return "unknown-cloudEnv-" + cloudEnv
+		return "nodetype-" + cloudEnv
 	}
+}
+
+// buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
+// It's used to cache the wheel build between acceptance tests, because one build takes ~10 seconds.
+func buildDatabricksBundlesWheel(t *testing.T, buildDir string) (string, error) {
+	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
+
+	files, err := os.ReadDir(buildDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read directory %s: %s", buildDir, err)
+	}
+
+	// we can't control output file name, so we have to search for it
+
+	var wheelName string
+	for _, file := range files {
+		if strings.HasPrefix(file.Name(), "databricks_bundles-") && strings.HasSuffix(file.Name(), ".whl") {
+			if wheelName != "" {
+				return "", fmt.Errorf("multiple wheels found: %s and %s", wheelName, file.Name())
+			} else {
+				wheelName = file.Name()
+			}
+		}
+	}
+
+	if wheelName != "" {
+		return filepath.Join(buildDir, wheelName), nil
+	} else {
+		return "", fmt.Errorf("databricks-bundles wheel not found in %s", buildDir)
+	}
+}
+
+func formatHeadersAndBody(prefix string, headers http.Header, body []byte) string {
+	var result []string
+	for key, values := range headers {
+		if len(values) == 1 {
+			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values[0]))
+		} else {
+			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values))
+		}
+	}
+	if len(body) > 0 {
+		var s string
+		if utf8.Valid(body) {
+			s = string(body)
+		} else {
+			s = fmt.Sprintf("[Binary %d bytes]", len(body))
+		}
+		s = strings.ReplaceAll(s, "\n", "\n"+prefix)
+		result = append(result, prefix+s)
+	}
+	return strings.Join(result, "\n")
 }
