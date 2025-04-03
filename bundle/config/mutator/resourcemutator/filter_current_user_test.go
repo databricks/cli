@@ -29,7 +29,28 @@ var robot = resources.Permission{
 	ServicePrincipalName: "i-Robot",
 }
 
+var jobAlice = resources.JobPermission{
+	Level:    resources.JobPermissionLevelCanManage,
+	UserName: "alice@databricks.com",
+}
+
+var jobBob = resources.JobPermission{
+	Level:    resources.JobPermissionLevelCanView,
+	UserName: "bob@databricks.com",
+}
+
+var jobRobot = resources.JobPermission{
+	Level:                resources.JobPermissionLevelCanManageRun,
+	ServicePrincipalName: "i-Robot",
+}
+
 func testFixture(userName string) *bundle.Bundle {
+	jobPermissions := []resources.JobPermission{
+		jobAlice,
+		jobBob,
+		jobRobot,
+	}
+
 	p := []resources.Permission{
 		alice,
 		bob,
@@ -51,13 +72,13 @@ func testFixture(userName string) *bundle.Bundle {
 						JobSettings: &jobs.JobSettings{
 							Name: "job1",
 						},
-						Permissions: p,
+						Permissions: jobPermissions,
 					},
 					"job2": {
 						JobSettings: &jobs.JobSettings{
 							Name: "job2",
 						},
-						Permissions: p,
+						Permissions: jobPermissions,
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
@@ -102,12 +123,12 @@ func TestFilterCurrentUser(t *testing.T) {
 
 	// Assert current user is filtered out.
 	assert.Len(t, b.Config.Resources.Jobs["job1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, robot)
-	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, jobRobot)
+	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, jobBob)
 
 	assert.Len(t, b.Config.Resources.Jobs["job2"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, robot)
-	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobRobot)
+	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobBob)
 
 	assert.Len(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, robot)
@@ -137,12 +158,12 @@ func TestFilterCurrentServicePrincipal(t *testing.T) {
 
 	// Assert current user is filtered out.
 	assert.Len(t, b.Config.Resources.Jobs["job1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, alice)
-	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, jobAlice)
+	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, jobBob)
 
 	assert.Len(t, b.Config.Resources.Jobs["job2"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, alice)
-	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobAlice)
+	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobBob)
 
 	assert.Len(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, alice)

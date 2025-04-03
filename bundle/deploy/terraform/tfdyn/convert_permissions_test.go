@@ -14,17 +14,17 @@ import (
 
 func TestConvertPermissions(t *testing.T) {
 	src := resources.Job{
-		Permissions: []resources.Permission{
+		Permissions: []resources.JobPermission{
 			{
-				Level:    "CAN_VIEW",
+				Level:    resources.JobPermissionLevelCanView,
 				UserName: "jane@doe.com",
 			},
 			{
-				Level:     "CAN_MANAGE",
+				Level:     resources.JobPermissionLevelCanManage,
 				GroupName: "special admins",
 			},
 			{
-				Level:                "CAN_RUN",
+				Level:                resources.JobPermissionLevelCanManageRun,
 				ServicePrincipalName: "spn",
 			},
 		},
@@ -50,7 +50,7 @@ func TestConvertPermissions(t *testing.T) {
 			ServicePrincipalName: "",
 		},
 		{
-			PermissionLevel:      "CAN_RUN",
+			PermissionLevel:      "CAN_MANAGE_RUN",
 			UserName:             "",
 			GroupName:            "",
 			ServicePrincipalName: "spn",
@@ -73,7 +73,7 @@ func TestConvertPermissionsNil(t *testing.T) {
 
 func TestConvertPermissionsEmpty(t *testing.T) {
 	src := resources.Job{
-		Permissions: []resources.Permission{},
+		Permissions: []resources.JobPermission{},
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)

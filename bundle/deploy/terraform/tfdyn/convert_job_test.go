@@ -68,9 +68,9 @@ func TestConvertJob(t *testing.T) {
 				},
 			},
 		},
-		Permissions: []resources.Permission{
+		Permissions: []resources.JobPermission{
 			{
-				Level:    "CAN_VIEW",
+				Level:    resources.JobPermissionLevelCanView,
 				UserName: "jane@doe.com",
 			},
 		},

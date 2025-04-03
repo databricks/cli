@@ -49,13 +49,19 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	diags = validateProductionMode(b, false)
 	require.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
+	jobPermissions := []resources.JobPermission{
+		{
+			Level:    resources.JobPermissionLevelCanManage,
+			UserName: "user@company.com",
+		},
+	}
 	permissions := []resources.Permission{
 		{
 			Level:    "CAN_MANAGE",
 			UserName: "user@company.com",
 		},
 	}
-	b.Config.Resources.Jobs["job1"].Permissions = permissions
+	b.Config.Resources.Jobs["job1"].Permissions = jobPermissions
 	b.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
 	b.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
 	b.Config.Resources.Jobs["job3"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}

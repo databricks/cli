@@ -95,9 +95,9 @@ func TestBundleToTerraformJob(t *testing.T) {
 
 func TestBundleToTerraformJobPermissions(t *testing.T) {
 	src := resources.Job{
-		Permissions: []resources.Permission{
+		Permissions: []resources.JobPermission{
 			{
-				Level:    "CAN_VIEW",
+				Level:    resources.JobPermissionLevelCanView,
 				UserName: "jane@doe.com",
 			},
 		},
