@@ -410,6 +410,19 @@ github.com/databricks/cli/bundle/config/resources.Grant:
   "privileges":
     "description": |-
       The privileges to grant to the specified entity
+github.com/databricks/cli/bundle/config/resources.JobPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Permission:
   "-":
     "description": |-
