@@ -36,5 +36,6 @@ This CLI follows the Databricks Unified Authentication principles.
 
 You can find a detailed description at https://github.com/databricks/databricks-sdk-go#authentication.
 
+
 ## Privacy Notice
 Databricks CLI use is subject to the [Databricks License](https://github.com/databricks/cli/blob/main/LICENSE) and [Databricks Privacy Notice](https://www.databricks.com/legal/privacynotice), including any Usage Data provisions.
