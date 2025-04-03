@@ -3,8 +3,9 @@ package mutator
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/iamutil"
 	"strings"
+
+	"github.com/databricks/cli/libs/iamutil"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -17,13 +18,15 @@ type configurePresetDefaults struct{}
 
 const developmentConcurrentRuns = 4
 
-// ConfigurePresetDefaults configures the default values for presets in development mode.
-func ConfigurePresetDefaults() bundle.Mutator {
+// ApplyTargetMode configures the default values for presets in development mode,
+// and validates that bundle configuration (except resources) is adequate for
+// selected target mode before we can proceed with loading the bundle.
+func ApplyTargetMode() bundle.Mutator {
 	return &configurePresetDefaults{}
 }
 
 func (m *configurePresetDefaults) Name() string {
-	return "ConfigurePresetDefaults"
+	return "ApplyTargetMode"
 }
 
 // Mark all resources as being for 'development' purposes, i.e.

@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
@@ -9,8 +10,8 @@ import (
 
 type validateTargetMode struct{}
 
-// ValidateTargetMode validates that the bundle has an adequate configuration for
-// a selected target mode.
+// ValidateTargetMode validates that bundle resources have an adequate configuration
+// for a selected target mode.
 func ValidateTargetMode() bundle.Mutator {
 	return &validateTargetMode{}
 }

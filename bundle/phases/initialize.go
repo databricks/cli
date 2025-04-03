@@ -94,8 +94,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.ConfigureDashboardDefaults(),
 		mutator.ConfigureVolumeDefaults(),
 
-		// ConfigurePresetDefaults must run before ApplyPresets to set default values for 'presets' section
-		mutator.ConfigurePresetDefaults(),
+		// ApplyTargetMode must run before ApplyPresets to set default values for 'presets' section
+		mutator.ApplyTargetMode(),
 		mutator.ApplyPresets(),
 		mutator.DefaultQueueing(),
 
