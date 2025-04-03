@@ -230,6 +230,10 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "run_as":
     "description": |-
       PLACEHOLDER
+  "target":
+    "deprecation_message": This legacy field is deprecated for pipeline creation in favor of the schema field
+  "trigger":
+    "deprecation_message": Use continuous instead
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "_":
     "markdown_description": |-
@@ -567,6 +571,9 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "manual":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
+  "whl":
+    "deprecated": true
 github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
   "entity_version":
     "description": |-
