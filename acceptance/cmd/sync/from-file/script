@@ -19,4 +19,3 @@ trap cleanup EXIT
 
 # Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
 trace $CLI sync . /Users/$CURRENT_USER_NAME --exclude-from '.databricksignore' | grep -v "^Action: " | sort
-
