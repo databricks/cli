@@ -4,6 +4,9 @@ type BundleDeployEvent struct {
 	// UUID associated with the bundle itself. Set in the `bundle.uuid` field in the bundle configuration.
 	BundleUuid string `json:"bundle_uuid,omitempty"`
 
+	// UUID associated with the deployment.
+	DeploymentId string `json:"deployment_id,omitempty"`
+
 	ResourceCount                     int64 `json:"resource_count"`
 	ResourceJobCount                  int64 `json:"resource_job_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`

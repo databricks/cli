@@ -26,14 +26,18 @@ import (
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 const internalFolder = ".internal"
 
+// This struct is used as a communication channel to collect metrics
+// from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
 	ConfigurationFileCount int64
 	TargetCount            int64
+	DeploymentId           uuid.UUID
 }
 
 type Bundle struct {

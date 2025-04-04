@@ -19,6 +19,7 @@ Deployment complete!
       },
       "bundle_deploy_event": {
         "bundle_uuid": "[UUID]",
+        "deployment_id": "[UUID]",
         "resource_count": 0,
         "resource_job_count": 0,
         "resource_pipeline_count": 0,
