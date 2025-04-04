@@ -9,6 +9,7 @@ import (
 
 type Converter interface {
 	Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error
+	ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error)
 }
 
 var converters = map[string]Converter{}

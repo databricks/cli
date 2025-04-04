@@ -10,7 +10,9 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-func convertModelResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type modelConverter struct{}
+
+func (modelConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourceMlflowModel{}, vin)
 	for _, diag := range diags {
@@ -20,10 +22,8 @@ func convertModelResource(ctx context.Context, vin dyn.Value) (dyn.Value, error)
 	return vout, nil
 }
 
-type modelConverter struct{}
-
-func (modelConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertModelResource(ctx, vin)
+func (c modelConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
-func convertClusterResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type clusterConverter struct{}
+
+func (clusterConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(compute.ClusterSpec{}, vin)
 	for _, diag := range diags {
@@ -21,10 +23,8 @@ func convertClusterResource(ctx context.Context, vin dyn.Value) (dyn.Value, erro
 	return vout, nil
 }
 
-type clusterConverter struct{}
-
-func (clusterConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertClusterResource(ctx, vin)
+func (c clusterConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

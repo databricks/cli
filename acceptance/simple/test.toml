@@ -1,0 +1,10 @@
+RecordRequests = true
+
+[[Server]]
+Pattern = "POST /api/2.0/pipelines"
+Response.Body = '{"pipeline_id": "12345-123435"}'
+
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/12345-123435"
+Response.Body = '{"id": "12345-123435"}'

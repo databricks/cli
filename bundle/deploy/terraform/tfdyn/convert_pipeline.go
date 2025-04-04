@@ -10,7 +10,9 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type pipelineConverter struct{}
+
+func (pipelineConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Modify top-level keys.
 	vout, err := renameKeys(vin, map[string]string{
 		"libraries":     "library",
@@ -35,10 +37,8 @@ func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, err
 	return vout, err
 }
 
-type pipelineConverter struct{}
-
-func (pipelineConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertPipelineResource(ctx, vin)
+func (c pipelineConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

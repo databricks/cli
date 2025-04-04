@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"os"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -21,13 +22,15 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
+var withTerranova = os.Getenv("TERRANOVA") != ""
+
 // The initialize phase fills in defaults and connects to the workspace.
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	log.Info(ctx, "Phase: initialize")
 
-	return bundle.ApplySeq(ctx, b,
+	diags := bundle.ApplySeq(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -182,15 +185,19 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+	)
 
+	if !withTerranova {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-		terraform.Initialize(),
 
-		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-		// Executes the post_init script hook defined in the bundle configuration
-		scripts.Execute(config.ScriptPostInit),
-	)
+		diags = diags.Extend(bundle.Apply(ctx, b, terraform.Initialize()))
+	}
+
+	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+	// Executes the post_init script hook defined in the bundle configuration
+	diags = diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostInit)))
+	return diags
 }

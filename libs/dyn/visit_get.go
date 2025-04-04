@@ -23,3 +23,9 @@ func GetByPath(v Value, p Path) (Value, error) {
 	})
 	return out, err
 }
+
+func GetByString(v Value, p string) Value {
+	path := MustPathFromString(p)
+	value, _ := GetByPath(v, path)
+	return value
+}

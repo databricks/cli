@@ -12,7 +12,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type jobConverter struct{}
+
+func (jobConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the input value to the underlying job schema.
 	// This removes superfluous keys and adapts the input to the expected schema.
 	vin, diags := convert.Normalize(jobs.JobSettings{}, vin)
@@ -104,10 +106,8 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	return vout, err
 }
 
-type jobConverter struct{}
-
-func (jobConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertJobResource(ctx, vin)
+func (c jobConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

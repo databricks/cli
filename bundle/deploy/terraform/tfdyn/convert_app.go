@@ -11,7 +11,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
-func convertAppResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type appConverter struct{}
+
+func (appConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Check if the description is not set and if it's not, set it to an empty string.
 	// This is done to avoid TF drift because Apps API return empty string for description when if it's not set.
 	if _, err := dyn.Get(vin, "description"); err != nil {
@@ -30,10 +32,8 @@ func convertAppResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	return vout, nil
 }
 
-type appConverter struct{}
-
-func (appConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertAppResource(ctx, vin)
+func (c appConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

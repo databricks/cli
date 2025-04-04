@@ -10,7 +10,9 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-func convertRegisteredModelResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type registeredModelConverter struct{}
+
+func (registeredModelConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourceRegisteredModel{}, vin)
 	for _, diag := range diags {
@@ -20,10 +22,8 @@ func convertRegisteredModelResource(ctx context.Context, vin dyn.Value) (dyn.Val
 	return vout, nil
 }
 
-type registeredModelConverter struct{}
-
-func (registeredModelConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertRegisteredModelResource(ctx, vin)
+func (c registeredModelConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

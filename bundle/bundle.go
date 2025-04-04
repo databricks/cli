@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/terranova/db"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
@@ -112,6 +113,8 @@ type Bundle struct {
 	Tagging tags.Cloud
 
 	Metrics Metrics
+
+	ResourceDatabase *db.JSONFileDB
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {

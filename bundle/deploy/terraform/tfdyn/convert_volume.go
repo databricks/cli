@@ -10,7 +10,9 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-func convertVolumeResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type volumeConverter struct{}
+
+func (volumeConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourceVolume{}, vin)
 	for _, diag := range diags {
@@ -20,10 +22,8 @@ func convertVolumeResource(ctx context.Context, vin dyn.Value) (dyn.Value, error
 	return vout, nil
 }
 
-type volumeConverter struct{}
-
-func (volumeConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertVolumeResource(ctx, vin)
+func (c volumeConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

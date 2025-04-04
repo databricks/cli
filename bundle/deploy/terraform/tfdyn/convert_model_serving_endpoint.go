@@ -10,7 +10,9 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-func convertModelServingEndpointResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type modelServingEndpointConverter struct{}
+
+func (modelServingEndpointConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourceModelServing{}, vin)
 	for _, diag := range diags {
@@ -20,10 +22,8 @@ func convertModelServingEndpointResource(ctx context.Context, vin dyn.Value) (dy
 	return vout, nil
 }
 
-type modelServingEndpointConverter struct{}
-
-func (modelServingEndpointConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertModelServingEndpointResource(ctx, vin)
+func (c modelServingEndpointConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,6 @@
+trap 'rm out.requests.txt' EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+$CLI bundle deploy
+
+mv .databricks out-databricks

@@ -1,3 +1,17 @@
 # Default settings that apply to all tests unless overriden by test.toml files in inner directories.
 Local = true
 Cloud = false
+
+EnvMatrix.TERRANOVA = ["", "TERRANOVA_ENABLED"]
+
+[[Repls]]
+Old = '2\d\d\d-\d\d-\d\d( |T)\d\d:\d\d:\d\d(\.\d{1,9})?Z?'
+New = "[TIMESTAMP]"
+
+[[Repls]]
+Old = '2025/\d\d/\d\d \d\d:\d\d:\d\d \[DEBUG\] ConflictsWith skipped for.*\n'
+New = ''
+
+[[Repls]]
+Old = '2025/\d\d/\d\d \d\d:\d\d:\d\d \[TRACE\] over recursion limit.*\n'
+New = ''

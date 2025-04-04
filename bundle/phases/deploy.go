@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -59,6 +60,10 @@ func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceTyp
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+	if withTerranova {
+		return true, nil
+	}
+
 	tf := b.Terraform
 	if tf == nil {
 		return false, errors.New("terraform not initialized")
@@ -146,13 +151,25 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
-	diags := bundle.Apply(ctx, b, terraform.Apply())
 
-	// following original logic, continuing with sequence below even if terraform had errors
+	var diags diag.Diagnostics
+
+	if withTerranova {
+		diags = bundle.Apply(ctx, b, terranova.TerranovaDeploy())
+	} else {
+		diags = bundle.Apply(ctx, b, terraform.Apply())
+		// following original logic, continuing with sequence below even if terraform had errors
+		newDiags := bundle.ApplySeq(ctx, b,
+			terraform.StatePush(),
+			terraform.Load(),
+		)
+		diags = diags.Extend(newDiags)
+		if newDiags.HasError() {
+			return diags
+		}
+	}
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePush(),
-		terraform.Load(),
 		apps.InterpolateVariables(),
 		apps.UploadConfig(),
 		metadata.Compute(),
@@ -187,9 +204,18 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
 	}()
 
-	diags = bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
+	if !withTerranova {
+		diags = diags.Extend(bundle.ApplySeq(ctx, b,
+			terraform.StatePull(),
+			terraform.CheckDashboardsModifiedRemotely(),
+		))
+
+		if diags.HasError() {
+			return diags
+		}
+	}
+
+	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		terraform.CheckRunningResource(),
@@ -208,10 +234,20 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Plan(terraform.PlanGoal("deploy")),
-	)
+	))
+
+	if diags.HasError() {
+		return diags
+	}
+
+	if !withTerranova {
+		diags = diags.Extend(bundle.ApplySeq(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.CheckRunningResource(),
+			terraform.Plan(terraform.PlanGoal("deploy")),
+		))
+	}
 
 	if diags.HasError() {
 		return diags

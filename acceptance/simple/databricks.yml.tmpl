@@ -1,0 +1,13 @@
+bundle:
+  name: mypipeline
+
+workspace:
+  root_path: "~/.bundle/$UNIQUE_NAME"
+
+resources:
+  pipelines:
+    mypipeline:
+      name: mypipeline_$UNIQUE_NAME
+      libraries:
+        - file:
+            path: hello.py

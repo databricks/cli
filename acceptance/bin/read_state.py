@@ -32,7 +32,24 @@ def print_resource_terraform(section, name, *attrs):
                 print(section, name, " ".join(values))
                 found += 1
     if not found:
-        print(f"Resource {(resource_type, name)} not found. Available: {available}")
+        print(f"Resource {(section, name)} not found. Available: {available}")
 
 
-print_resource_terraform(*sys.argv[1:])
+def print_resource_terranova(section, name, *attrs):
+    filename = ".databricks/bundle/default/resourcedb.json"
+    data = json.load(open(filename))["resources"]
+    available = sorted(data.keys())
+    result = data.get(section + "." + name)
+    if result is None:
+        print(f"Resource {(section, name)} not found. Available: {available}")
+        return
+    config = json.loads(result["Config"])
+    config.setdefault("id", result.get("ResourceID"))
+    values = [f"{x}={config.get(x)!r}" for x in attrs]
+    print(section, name, " ".join(values))
+
+
+if os.environ.get("TERRANOVA"):
+    print_resource_terranova(*sys.argv[1:])
+else:
+    print_resource_terraform(*sys.argv[1:])

@@ -10,7 +10,9 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-func convertSchemaResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+type schemaConverter struct{}
+
+func (schemaConverter) ConvertDyn(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
 	v, diags := convert.Normalize(schema.ResourceSchema{}, vin)
 	for _, diag := range diags {
@@ -28,10 +30,8 @@ func convertSchemaResource(ctx context.Context, vin dyn.Value) (dyn.Value, error
 	return vout, nil
 }
 
-type schemaConverter struct{}
-
-func (schemaConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, err := convertSchemaResource(ctx, vin)
+func (c schemaConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	vout, err := c.ConvertDyn(ctx, vin)
 	if err != nil {
 		return err
 	}

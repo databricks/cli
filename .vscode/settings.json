@@ -20,5 +20,8 @@
     "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------",
     "files.associations": {
         "script": "shellscript"
-    }
+    },
+    "go.testEnvVars": {
+        "TERRANOVA": "1"
+    },
 }
