@@ -27,13 +27,18 @@ Initial Sync Complete
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 
->>> [CLI] sync . /Users/[USERNAME]
-Deleted ignored-folder
-Deleted ignored-folder/folder1
-Deleted ignored-folder/folder1/script.py
-Deleted ignored-folder/script.py
+>>> [CLI] sync . /Users/[USERNAME] --include ignored-folder/** --include !ignored-folder/folder1/big-blob
 Initial Sync Complete
+Uploaded ignored-folder/folder1/script.yaml
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml
 Uploaded project-folder/query.sql
+
+>>> [CLI] sync . /Users/[USERNAME]
+Deleted ignored-folder
+Deleted ignored-folder/folder1
+Deleted ignored-folder/folder1/script.py
+Deleted ignored-folder/folder1/script.yaml
+Deleted ignored-folder/script.py
+Initial Sync Complete
