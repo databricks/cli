@@ -182,14 +182,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (dynamic): resources.volumes.*.volume_type (sets to "MANAGED" if not set)
 		mutator.ConfigureVolumeDefaults(),
 
-		// Reads (typed): b.Config.Bundle.Mode, b.Config.Workspace.{RootPath,FilePath,ResourcePath,ArtifactPath,StatePath}, b.Config.Workspace.CurrentUser (validates paths and user info)
-		// Updates (typed): b.Config.Bundle.Deployment.Lock.Enabled, b.Config.Presets.{NamePrefix,Tags,JobsMaxConcurrentRuns,TriggerPauseStatus,PipelinesDevelopment} (configures development mode settings)
-		// Validates and configures bundle settings based on target mode (development or production)
-		mutator.ProcessTargetMode(),
-
-		// Reads (typed): b.Config.Presets.{NamePrefix,Tags,JobsMaxConcurrentRuns,TriggerPauseStatus,PipelinesDevelopment} (reads preset configurations)
-		// Updates (typed): b.Config.Resources.{Jobs,Pipelines,Models,Experiments,ModelServingEndpoints,RegisteredModels,QualityMonitors,Schemas,Clusters,Dashboards} (applies prefix to names, adds tags, sets pause status and development mode)
-		// Applies all presets to resources, including name prefixes, tags, and resource-specific settings like pause status
+		// ApplyTargetMode must run before ApplyPresets to set default values for 'presets' section
+		mutator.ApplyTargetMode(),
 		mutator.ApplyPresets(),
 
 		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
@@ -219,6 +213,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Validates app configurations by detecting duplicate source code paths and warning about deprecated config sections
 		apps.Validate(),
 
+		mutator.ValidateTargetMode(),
 		// Reads (typed): b.Config.Workspace.RootPath (checks if path is in shared workspace)
 		// Reads (typed): b.Config.Permissions (checks if users group has CAN_MANAGE permission)
 		// Validates that when using a shared workspace path, appropriate permissions are configured

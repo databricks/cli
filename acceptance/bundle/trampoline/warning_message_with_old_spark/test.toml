@@ -1,7 +1,5 @@
 # Since we use existing cluster id value which is not available in cloud envs, we need to stub the request
 # and run this test only locally
-Cloud = false
-
 [[Server]]
 Pattern = "GET /api/2.1/clusters/get"
 Response.Body = '''

@@ -1,6 +1,3 @@
-Local = true
-Cloud = true
-
 [EnvMatrix]
 # The lowest Python version we support. Alternative to "uv run --python 3.10"
 UV_PYTHON = ["3.10"]
