@@ -768,11 +768,15 @@
                       },
                       "target": {
                         "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
-                        "$ref": "#/$defs/string"
+                        "$ref": "#/$defs/string",
+                        "deprecationMessage": "This legacy field is deprecated for pipeline creation in favor of the schema field",
+                        "deprecated": true
                       },
                       "trigger": {
                         "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger",
+                        "deprecationMessage": "Use continuous instead",
+                        "deprecated": true
                       }
                     },
                     "additionalProperties": false,
@@ -5511,7 +5515,8 @@
                     },
                     "whl": {
                       "description": "URI of the whl to be installed.",
-                      "$ref": "#/$defs/string"
+                      "$ref": "#/$defs/string",
+                      "deprecated": true
                     }
                   },
                   "additionalProperties": false
