@@ -7,6 +7,7 @@
 ### Dependency updates
 
 ### CLI
+* Added exclude-from flag support to bundle sync command ([#2660](https://github.com/databricks/cli/pull/2660))
 
 ### Bundles
 
