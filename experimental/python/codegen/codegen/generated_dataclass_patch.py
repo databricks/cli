@@ -94,8 +94,14 @@ def add_oneofs(models: dict[str, GeneratedDataclass]):
         required=True,
     )
 
-    models["resources.Permission"] = _add_oneof(
-        models["resources.Permission"],
+    models["resources.JobPermission"] = _add_oneof(
+        models["resources.JobPermission"],
+        ["user_name", "service_principal_name", "group_name"],
+        required=True,
+    )
+
+    models["resources.PipelinePermission"] = _add_oneof(
+        models["resources.PipelinePermission"],
         ["user_name", "service_principal_name", "group_name"],
         required=True,
     )

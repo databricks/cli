@@ -7,10 +7,16 @@ from typing import Optional
 import codegen.packages as packages
 
 
+class Stage:
+    PRIVATE = "PRIVATE"
+
+
 @dataclass
 class Property:
     ref: str
     description: Optional[str] = None
+    deprecated: Optional[bool] = None
+    stage: Optional[str] = None
 
 
 class SchemaType(Enum):
@@ -25,6 +31,7 @@ class Schema:
     properties: dict[str, Property] = field(default_factory=dict)
     required: list[str] = field(default_factory=list)
     description: Optional[str] = None
+    stage: Optional[str] = None
 
     def __post_init__(self):
         match self.type:
@@ -87,6 +94,8 @@ def _parse_schema(schema: dict) -> Schema:
         prop = Property(
             ref=v["$ref"],
             description=v.get("description"),
+            deprecated=v.get("deprecated"),
+            stage=v.get("x-databricks-preview"),
         )
 
         properties[k] = prop
@@ -102,6 +111,7 @@ def _parse_schema(schema: dict) -> Schema:
         properties=properties,
         required=schema.get("required", []),
         description=schema.get("description"),
+        stage=schema.get("x-databricks-preview"),
     )
 
 

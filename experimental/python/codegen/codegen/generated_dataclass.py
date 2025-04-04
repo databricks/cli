@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 import codegen.packages as packages
 from codegen.code_builder import CodeBuilder
-from codegen.openapi import Property, Schema
+from codegen.openapi import Property, Schema, Stage
 from codegen.packages import is_resource
 
 
@@ -96,6 +96,12 @@ class GeneratedField:
     Factory method for creating a default value, used for lists and dicts.
     """
 
+    experimental: bool
+    """
+    If true, the field is experimental and should not be indexed in docs, and
+    be marked as experimental in docstring.
+    """
+
     def __post_init__(self):
         if self.default_factory is not None and self.default is not None:
             raise ValueError("Can't have both default and default_factory", self)
@@ -137,6 +143,7 @@ class GeneratedDataclass:
     fields: list[GeneratedField]
     extends: list[GeneratedType]
     one_ofs: list[GeneratedOneOf]
+    experimental: bool
 
 
 def generate_field(
@@ -160,6 +167,7 @@ def generate_field(
             default=None,
             default_factory="dict",
             create_func_default="None",
+            experimental=prop.stage == Stage.PRIVATE,
         )
     elif field_type.name == "VariableOrList":
         return GeneratedField(
@@ -171,6 +179,7 @@ def generate_field(
             default=None,
             default_factory="list",
             create_func_default="None",
+            experimental=prop.stage == Stage.PRIVATE,
         )
     elif is_required:
         return GeneratedField(
@@ -182,6 +191,7 @@ def generate_field(
             default=None,
             default_factory=None,
             create_func_default=None,
+            experimental=prop.stage == Stage.PRIVATE,
         )
     else:
         return GeneratedField(
@@ -193,6 +203,7 @@ def generate_field(
             default="None",
             default_factory=None,
             create_func_default="None",
+            experimental=prop.stage == Stage.PRIVATE,
         )
 
 
@@ -321,6 +332,7 @@ def generate_dataclass(schema_name: str, schema: Schema) -> GeneratedDataclass:
         description=schema.description,
         fields=fields,
         extends=extends,
+        experimental=schema.stage == Stage.PRIVATE,
         one_ofs=[],
     )
 
@@ -364,10 +376,10 @@ def _append_dataclass(b: CodeBuilder, generated: GeneratedDataclass):
     b.append(":").newline()
 
     # FIXME should contain class docstring
-    if not generated.description:
+    if not generated.description and not generated.experimental:
         b.indent().append_triple_quote().append_triple_quote().newline().newline()
     else:
-        _append_description(b, generated.description)
+        _append_description(b, generated.description, generated.experimental)
 
 
 def _append_field(b: CodeBuilder, field: GeneratedField):
@@ -485,11 +497,16 @@ def _append_typed_dict(b: CodeBuilder, generated: GeneratedDataclass):
     b.indent().append_triple_quote().append_triple_quote().newline().newline()
 
 
-def _append_description(b: CodeBuilder, description: Optional[str]):
-    if description:
+def _append_description(b: CodeBuilder, description: Optional[str], experimental: bool):
+    if description or experimental:
         b.indent().append_triple_quote().newline()
-        for line in description.split("\n"):
-            b.indent().append(line).newline()
+        if experimental:
+            b.indent().append(":meta private: [EXPERIMENTAL]").newline()
+            if description:
+                b.indent().newline()
+        if description:
+            for line in description.split("\n"):
+                b.indent().append(line).newline()
         b.indent().append_triple_quote().newline()
 
 
@@ -506,7 +523,7 @@ def get_code(generated: GeneratedDataclass) -> str:
 
     for field in generated.fields:
         _append_field(b, field)
-        _append_description(b, field.description)
+        _append_description(b, field.description, field.experimental)
 
         b.newline()
 
@@ -525,7 +542,7 @@ def get_code(generated: GeneratedDataclass) -> str:
 
     for field in generated.fields:
         _append_typed_dict_field(b, field)
-        _append_description(b, field.description)
+        _append_description(b, field.description, field.experimental)
 
         b.newline()
 

@@ -1,4 +1,5 @@
 import argparse
+from dataclasses import replace
 from pathlib import Path
 from textwrap import dedent
 
@@ -19,6 +20,9 @@ def main(output: str):
     schemas = openapi.get_schemas()
     schemas = openapi_patch.add_extra_required_fields(schemas)
     schemas = openapi_patch.remove_unsupported_fields(schemas)
+
+    # first remove deprecated fields so there are more unused schemas
+    schemas = _remove_deprecated_fields(schemas)
     schemas = _remove_unused_schemas(packages.RESOURCE_TYPES, schemas)
 
     dataclasses, enums = _generate_code(schemas)
@@ -38,6 +42,27 @@ def main(output: str):
         resource_enums = {k: v for k, v in enums.items() if k in reachable}
 
         _write_exports(resource, resource_dataclasses, resource_enums, output)
+
+
+def _remove_deprecated_fields(
+    schemas: dict[str, openapi.Schema],
+) -> dict[str, openapi.Schema]:
+    new_schemas = {}
+
+    for name, schema in schemas.items():
+        if schema.type == openapi.SchemaType.OBJECT:
+            new_properties = {}
+            for field_name, field in schema.properties.items():
+                if field.deprecated:
+                    continue
+
+                new_properties[field_name] = field
+
+            new_schemas[name] = replace(schema, properties=new_properties)
+        else:
+            new_schemas[name] = schema
+
+    return new_schemas
 
 
 def _generate_code(

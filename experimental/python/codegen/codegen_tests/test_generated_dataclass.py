@@ -66,8 +66,10 @@ def test_generate_dataclass():
                 field_name="task_key",
                 param_type_name=variable_or_type(str_type(), is_required=True),
                 type_name=variable_or_type(str_type(), is_required=True),
+                experimental=False,
             ),
         ],
+        experimental=False,
     )
 
 
