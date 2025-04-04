@@ -1,10 +1,14 @@
 package apps
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/appproxy"
@@ -145,9 +149,40 @@ func newRunLocal() *cobra.Command {
 			cmdio.LogString(ctx, "To debug your app, attach a debugger to port "+apps.DEBUG_PORT)
 		}
 
-		err = appCmd.Wait()
-		if err != nil {
-			return err
+		// Create a channel to handle graceful shutdown
+		done := make(chan error, 1)
+
+		// Handle interrupt signal
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+		// Wait for either command completion or interrupt
+		go func() {
+			done <- appCmd.Wait()
+		}()
+
+		select {
+		case err := <-done:
+			if err != nil {
+				return err
+			}
+		case <-sigChan:
+			// Give the process a chance to cleanup
+			if err := appCmd.Process.Signal(os.Interrupt); err != nil {
+				return fmt.Errorf("failed to send interrupt signal: %w", err)
+			}
+
+			// Wait for process to finish with timeout
+			select {
+			case err := <-done:
+				return err
+			case <-time.After(10 * time.Second):
+				// Force kill if timeout
+				if err := appCmd.Process.Kill(); err != nil {
+					return fmt.Errorf("failed to kill process: %w", err)
+				}
+				return errors.New("process killed after timeout")
+			}
 		}
 
 		return nil
