@@ -70,7 +70,7 @@ func newSyncCommand() *cobra.Command {
 	cmd.Flags().Var(&f.output, "output", "type of the output format")
 	cmd.Flags().StringSliceVar(&f.exclude, "exclude", nil, "patterns to exclude from sync (can be specified multiple times)")
 	cmd.Flags().StringSliceVar(&f.include, "include", nil, "patterns to include in sync (can be specified multiple times)")
-	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "show what would be uploaded/deleted without making any changes")
+	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()

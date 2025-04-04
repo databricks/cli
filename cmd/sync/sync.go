@@ -133,7 +133,7 @@ func New() *cobra.Command {
 	cmd.Flags().Var(&f.output, "output", "type of output format")
 	cmd.Flags().StringSliceVar(&f.exclude, "exclude", nil, "patterns to exclude from sync (can be specified multiple times)")
 	cmd.Flags().StringSliceVar(&f.include, "include", nil, "patterns to include in sync (can be specified multiple times)")
-	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "show what would be uploaded/deleted without making any changes")
+	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
 	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
