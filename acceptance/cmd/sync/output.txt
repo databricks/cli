@@ -1,6 +1,5 @@
 
 >>> [CLI] sync . /Users/[USERNAME]
-Warn: Failed to read git info: stat /.git: no such file or directory
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded project-folder
@@ -37,13 +36,13 @@ Uploaded project-folder/app.yaml
 Uploaded project-folder/query.sql
 
 >>> [CLI] sync . /Users/[USERNAME]
-Warn: Failed to read git info: stat /.git: no such file or directory
 Deleted ignored-folder
 Deleted ignored-folder/folder1
 Deleted ignored-folder/folder1/script.py
 Deleted ignored-folder/folder1/script.yaml
 Deleted ignored-folder/script.py
 Initial Sync Complete
-Uploaded app.py
-Uploaded app.yaml
-Uploaded query.sql
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
+Uploaded project-folder/query.sql

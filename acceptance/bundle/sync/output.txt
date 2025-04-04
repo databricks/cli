@@ -2,8 +2,6 @@
 >>> [CLI] bundle sync --output text
 Initial Sync Complete
 Uploaded .gitignore
-Uploaded app.py
-Uploaded app.yaml
 Uploaded databricks.yml
 Uploaded project-folder
 Uploaded project-folder/app.py
