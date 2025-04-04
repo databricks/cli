@@ -23,3 +23,12 @@ func GetByPath(v Value, p Path) (Value, error) {
 	})
 	return out, err
 }
+
+func GetByString(v Value, p string) Value {
+	path, err := NewPathFromString(p)
+	if err != nil {
+		return InvalidValue
+	}
+	value, _ := GetByPath(v, path)
+	return value
+}

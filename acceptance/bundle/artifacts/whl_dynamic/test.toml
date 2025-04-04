@@ -1,3 +1,6 @@
+# Terraform sorts tasks
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+
 [[Repls]]
 Old = '\\\\'
 New = '/'

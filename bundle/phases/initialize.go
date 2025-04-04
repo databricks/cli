@@ -2,6 +2,8 @@ package phases
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -27,7 +29,17 @@ import (
 func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	log.Info(ctx, "Phase: initialize")
 
-	return bundle.ApplySeq(ctx, b,
+	deployment := os.Getenv("DATABRICKS_CLI_DEPLOYMENT")
+	if deployment == "direct" {
+		b.DirectDeployment = true
+	} else if deployment == "terraform" || deployment == "" {
+		b.DirectDeployment = false
+	} else {
+		err := fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", deployment)
+		return diag.FromErr(err)
+	}
+
+	diags := bundle.ApplySeq(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -182,15 +194,29 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+	)
 
+	if diags.HasError() {
+		return diags
+	}
+
+	if b.DirectDeployment {
+		// For acceptance tests, initialize terraform map
+		bundle.ApplyFunc(ctx, b, func(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+			b.Config.Bundle.Terraform = &config.Terraform{ExecPath: " "}
+			return nil
+		})
+	} else {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-		terraform.Initialize(),
 
-		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-		// Executes the post_init script hook defined in the bundle configuration
-		scripts.Execute(config.ScriptPostInit),
-	)
+		diags = diags.Extend(bundle.Apply(ctx, b, terraform.Initialize()))
+	}
+
+	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+	// Executes the post_init script hook defined in the bundle configuration
+	diags = diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostInit)))
+	return diags
 }
