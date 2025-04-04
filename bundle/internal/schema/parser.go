@@ -147,13 +147,23 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
 
-			if ref.Description != "" || ref.Enum != nil {
-				pkg[RootTypeKey] = annotation.Descriptor{Description: ref.Description, Enum: ref.Enum}
+			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" {
+				pkg[RootTypeKey] = annotation.Descriptor{
+					Description:        ref.Description,
+					Enum:               ref.Enum,
+					Deprecated:         ref.Deprecated,
+					DeprecationMessage: ref.DeprecationMessage,
+				}
 			}
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Properties[k]; ok {
-					pkg[k] = annotation.Descriptor{Description: refProp.Description, Enum: refProp.Enum}
+					pkg[k] = annotation.Descriptor{
+						Description:        refProp.Description,
+						Enum:               refProp.Enum,
+						Deprecated:         refProp.Deprecated,
+						DeprecationMessage: refProp.DeprecationMessage,
+					}
 					if refProp.Description == "" {
 						addEmptyOverride(k, basePath, overrides)
 					}
