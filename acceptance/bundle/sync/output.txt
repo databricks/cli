@@ -7,4 +7,14 @@ Uploaded dryrun
 Uploaded dryrun/databricks.yml
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
-Uploaded ignored-folder/script.py
+
+>>> [CLI] bundle sync --output text
+Deleted ignored-folder
+Deleted ignored-folder/folder1
+Deleted ignored-folder/folder1/script.py
+Deleted ignored-folder/script.py
+Initial Sync Complete
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
+Uploaded project-folder/query.sql
