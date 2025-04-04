@@ -1,0 +1,22 @@
+mkdir "project-folder" "ignored-folder" "ignored-folder/folder1"
+touch "project-folder/app.yaml" "project-folder/app.py" "project-folder/query.sql"
+touch "ignored-folder/script.py" "ignored-folder/folder1/script.py"
+cat > .gitignore << EOF
+ignored-folder/
+script
+output.txt
+repls.json
+EOF
+
+cleanup() {
+  rm .gitignore
+  rm -rf project-folder ignored-folder .git .databricks
+}
+trap cleanup EXIT
+
+# Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
+trace $CLI bundle sync --dry-run --output text | grep -v "^[DRY-RUN] Action: " | sort
+trace $CLI bundle sync --dry-run --exclude 'project-folder/app.*' --output text | grep -v "^[DRY-RUN] Action: " | sort
+trace $CLI bundle sync --dry-run --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --output text | grep -v "^[DRY-RUN] Action: " | sort
+trace $CLI bundle sync --dry-run --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --include 'ignored-folder/*.py' --output text | grep -v "^[DRY-RUN] Action: " | sort
+trace $CLI bundle sync --dry-run --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --include 'ignored-folder/**/*.py' --output text | grep -v "^[DRY-RUN] Action: " | sort

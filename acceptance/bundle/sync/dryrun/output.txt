@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle sync --dry-run --output text
+grep: invalid character range
+
+Exit code: 2
