@@ -30,13 +30,15 @@ type EventBase struct {
 	Timestamp time.Time `json:"timestamp"`
 	Seq       int       `json:"seq"`
 	Type      EventType `json:"type"`
+	DryRun    bool      `json:"dry_run,omitempty"`
 }
 
-func newEventBase(seq int, typ EventType) *EventBase {
+func newEventBase(seq int, typ EventType, dryRun bool) *EventBase {
 	return &EventBase{
 		Timestamp: time.Now(),
 		Seq:       seq,
 		Type:      typ,
+		DryRun:    dryRun,
 	}
 }
 
@@ -70,12 +72,16 @@ func (e *EventStart) String() string {
 		return ""
 	}
 
+	if e.DryRun {
+		return "[DRY-RUN MODE] Action: " + e.EventChanges.String()
+	}
+
 	return "Action: " + e.EventChanges.String()
 }
 
-func newEventStart(seq int, put, delete []string) Event {
+func newEventStart(seq int, put, delete []string, dryRun bool) Event {
 	return &EventStart{
-		EventBase:    newEventBase(seq, EventTypeStart),
+		EventBase:    newEventBase(seq, EventTypeStart, dryRun),
 		EventChanges: &EventChanges{Put: put, Delete: delete},
 	}
 }
@@ -96,6 +102,17 @@ func (e *EventSyncProgress) String() string {
 		return ""
 	}
 
+	if e.DryRun {
+		switch e.Action {
+		case EventActionPut:
+			return "[DRY-RUN] Would upload: " + e.Path
+		case EventActionDelete:
+			return "[DRY-RUN] Would delete: " + e.Path
+		default:
+			panic("invalid action")
+		}
+	}
+
 	switch e.Action {
 	case EventActionPut:
 		return "Uploaded " + e.Path
@@ -106,9 +123,9 @@ func (e *EventSyncProgress) String() string {
 	}
 }
 
-func newEventProgress(seq int, action EventAction, path string, progress float32) Event {
+func newEventProgress(seq int, action EventAction, path string, progress float32, dryRun bool) Event {
 	return &EventSyncProgress{
-		EventBase: newEventBase(seq, EventTypeProgress),
+		EventBase: newEventBase(seq, EventTypeProgress, dryRun),
 
 		Action:   action,
 		Path:     path,
@@ -123,6 +140,9 @@ type EventSyncComplete struct {
 
 func (e *EventSyncComplete) String() string {
 	if e.Seq == 0 {
+		if e.DryRun {
+			return "[DRY-RUN] Initial Sync Complete"
+		}
 		return "Initial Sync Complete"
 	}
 
@@ -130,12 +150,16 @@ func (e *EventSyncComplete) String() string {
 		return ""
 	}
 
+	if e.DryRun {
+		return "[DRY-RUN] Complete"
+	}
+
 	return "Complete"
 }
 
-func newEventComplete(seq int, put, delete []string) Event {
+func newEventComplete(seq int, put, delete []string, dryRun bool) Event {
 	return &EventSyncComplete{
-		EventBase:    newEventBase(seq, EventTypeComplete),
+		EventBase:    newEventBase(seq, EventTypeComplete, dryRun),
 		EventChanges: &EventChanges{Put: put, Delete: delete},
 	}
 }

@@ -1,0 +1,6 @@
+
+>>> [CLI] sync . /Users/[USERNAME] --dry-run
+grep: invalid character range
+Warn: Running in DRY-RUN mode. No actual changes will be made.
+
+Exit code: 2
