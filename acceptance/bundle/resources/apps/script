@@ -1,5 +1,6 @@
 print_requests() {
-    jq 'select(.method != "GET" and (.path | contains("/apps")))' < out.requests.txt
+    # url is output-only field that terraform adds but that is ignored by the backend
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps"))) | (.body.url = null | del(.body.url))' < out.requests.txt
     rm out.requests.txt
 }
 
