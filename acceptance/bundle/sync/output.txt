@@ -7,7 +7,6 @@ Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml
 Uploaded project-folder/query.sql
-Uploaded sample-dashboard.lvdash.json
 
 >>> [CLI] bundle sync --exclude project-folder/app.* --output text
 Deleted project-folder/app.py
