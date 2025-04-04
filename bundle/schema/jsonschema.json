@@ -581,7 +581,9 @@
                       },
                       "performance_target": {
                         "description": "PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobPermission"
@@ -992,7 +994,9 @@
                     "properties": {
                       "budget_policy_id": {
                         "description": "Budget policy of this pipeline.",
-                        "$ref": "#/$defs/string"
+                        "$ref": "#/$defs/string",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "catalog": {
                         "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
@@ -1032,7 +1036,9 @@
                       },
                       "gateway_definition": {
                         "description": "The definition of a gateway pipeline to support change data capture.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "id": {
                         "description": "Unique identifier for this pipeline.",
@@ -1063,10 +1069,14 @@
                       },
                       "restart_window": {
                         "description": "Restart window of this pipeline.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "run_as": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "schema": {
                         "description": "The default schema (database) where tables are read from or published to.",
@@ -1165,7 +1175,9 @@
                       },
                       "data_classification_config": {
                         "description": "The data classification config for the monitor.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "inference_log": {
                         "description": "Configuration for monitoring inference logs.",
@@ -2493,7 +2505,9 @@
                       "$ref": "#/$defs/bool"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
                 },
                 {
                   "type": "string",
@@ -2653,7 +2667,9 @@
                     },
                     "on_new_classification_tag_detected": {
                       "description": "Who to send notifications to when new data classification tags are detected.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -4619,11 +4635,15 @@
                   "properties": {
                     "dbt_commands": {
                       "description": "An array of commands to execute for jobs with the dbt task, for example `\"dbt_commands\": [\"dbt deps\", \"dbt seed\", \"dbt deps\", \"dbt seed\", \"dbt run\"]`",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "jar_params": {
                       "description": "A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "job_id": {
                       "description": "ID of the job to trigger.",
@@ -4635,26 +4655,36 @@
                     },
                     "notebook_params": {
                       "description": "A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
-                      "$ref": "#/$defs/map/string"
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "pipeline_params": {
                       "description": "Controls whether the pipeline should perform a full refresh",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams"
                     },
                     "python_named_params": {
-                      "$ref": "#/$defs/map/string"
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "python_params": {
                       "description": "A list of parameters for jobs with Python tasks, for example `\"python_params\": [\"john doe\", \"35\"]`.\nThe parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite\nthe parameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "spark_submit_params": {
                       "description": "A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "sql_params": {
                       "description": "A map from keys to values for jobs with SQL task, for example `\"sql_params\": {\"name\": \"john doe\", \"age\": \"35\"}`. The SQL alert task does not support custom parameters.",
-                      "$ref": "#/$defs/map/string"
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -5008,7 +5038,9 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ForEachTask"
                     },
                     "gen_ai_compute_task": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "health": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules"
@@ -5209,10 +5241,14 @@
                     },
                     "table": {
                       "description": "Old table trigger settings name. Deprecated in favor of `table_update`.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "table_update": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -5861,11 +5897,15 @@
                     },
                     "jar": {
                       "description": "URI of the jar to be installed. Currently only DBFS is supported.\n",
-                      "$ref": "#/$defs/string"
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "maven": {
                       "description": "Specification of a maven library to be installed.\n",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "notebook": {
                       "description": "The path to a notebook that defines a pipeline and is stored in the Databricks workspace.\n",
@@ -6079,11 +6119,15 @@
                     },
                     "salesforce_include_formula_fields": {
                       "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector",
-                      "$ref": "#/$defs/bool"
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "scd_type": {
                       "description": "The SCD type to use to ingest the table.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "sequence_by": {
                       "description": "The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.",
