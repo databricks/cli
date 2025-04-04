@@ -6,6 +6,7 @@ Usage:
   databricks bundle sync [flags]
 
 Flags:
+      --dry-run             simulate sync execution without making actual changes
       --exclude strings     patterns to exclude from sync (can be specified multiple times)
       --full                perform full synchronization (default is incremental)
   -h, --help                help for sync
