@@ -52,11 +52,7 @@ func (c *FileTokenCache) Store(key string, t *oauth2.Token) error {
 		c.Tokens = map[string]*oauth2.Token{}
 	}
 	c.Tokens[key] = t
-	raw, err := json.MarshalIndent(c, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal: %w", err)
-	}
-	return os.WriteFile(c.fileLocation, raw, ownerReadWrite)
+	return c.write()
 }
 
 func (c *FileTokenCache) Lookup(key string) (*oauth2.Token, error) {
@@ -71,6 +67,24 @@ func (c *FileTokenCache) Lookup(key string) (*oauth2.Token, error) {
 		return nil, ErrNotConfigured
 	}
 	return t, nil
+}
+
+func (c *FileTokenCache) Delete(key string) error {
+	err := c.load()
+	if errors.Is(err, fs.ErrNotExist) {
+		return ErrNotConfigured
+	} else if err != nil {
+		return fmt.Errorf("load: %w", err)
+	}
+	if c.Tokens == nil {
+		c.Tokens = map[string]*oauth2.Token{}
+	}
+	_, ok := c.Tokens[key]
+	if !ok {
+		return ErrNotConfigured
+	}
+	delete(c.Tokens, key)
+	return c.write()
 }
 
 func (c *FileTokenCache) location() (string, error) {
@@ -103,6 +117,14 @@ func (c *FileTokenCache) load() error {
 			tokenCacheVersion, c.Version)
 	}
 	return nil
+}
+
+func (c *FileTokenCache) write() error {
+	raw, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal: %w", err)
+	}
+	return os.WriteFile(c.fileLocation, raw, ownerReadWrite)
 }
 
 var _ TokenCache = (*FileTokenCache)(nil)
