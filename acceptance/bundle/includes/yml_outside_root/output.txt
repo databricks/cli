@@ -1,0 +1,51 @@
+
+>>> [CLI] bundle validate
+Name: yml_outside_root
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/yml_outside_root/default
+
+Validation OK!
+
+>>> [CLI] bundle validate -o json
+{
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/yml_outside_root/default/state/metadata.json"
+  },
+  "edit_mode": "UI_LOCKED",
+  "format": "MULTI_TASK",
+  "name": "include_outside_root",
+  "permissions": [],
+  "queue": {
+    "enabled": true
+  },
+  "tags": {},
+  "tasks": [
+    {
+      "description": "task_description",
+      "task_key": "task_key"
+    }
+  ]
+}
+
+>>> [CLI] bundle validate -o json
+{
+  "paths": [
+    "."
+  ]
+}
+
+>>> [CLI] bundle validate -o json
+{
+  "environment": "default",
+  "git": {
+    "bundle_root_path": "."
+  },
+  "name": "yml_outside_root",
+  "target": "default",
+  "terraform": {
+    "exec_path": "[TERRAFORM]"
+  }
+}

@@ -3,12 +3,14 @@ package scripts
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/exec"
@@ -65,6 +67,11 @@ func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle,
 	command := getCommmand(b, hook)
 	if command == "" {
 		return nil, nil, nil
+	}
+
+	// Don't run any arbitrary code when restricted execution is enabled.
+	if _, ok := env.RestrictedExecution(ctx); ok {
+		return nil, nil, errors.New("Running scripts is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
 	}
 
 	cmd, err := executor.StartCommand(ctx, string(command))

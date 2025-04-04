@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
@@ -19,12 +18,6 @@ func (t *translateContext) applyArtifactTranslations(ctx context.Context, v dyn.
 			AllowPathOutsideSyncRoot: true,
 		}
 
-		key := p[1].Key()
-		dir, err := v.Location().Directory()
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
-		}
-
-		return t.rewriteValue(ctx, p, v, dir, opts)
+		return t.rewriteValue(ctx, p, v, t.b.BundleRootPath, opts)
 	})
 }
