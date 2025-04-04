@@ -1,0 +1,90 @@
+package terranova_resources
+
+import (
+	"context"
+	"fmt"
+	"reflect"
+
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/databricks-sdk-go"
+)
+
+type IResource interface {
+	Config() any
+
+	// Create the resource. Returns id of the resource.
+	DoCreate(ctx context.Context) (string, error)
+
+	// Update the resource. Returns id of the resource (might be updated).
+	DoUpdate(ctx context.Context, oldId string) (string, error)
+
+	DoDelete(ctx context.Context, oldId string) error
+
+	WaitAfterCreate(ctx context.Context) error
+	WaitAfterUpdate(ctx context.Context) error
+
+	// Get type of the struct that stores the state
+	GetType() reflect.Type
+
+	ClassifyChanges(changes []structdiff.Change) ChangeType
+}
+
+type ChangeType int
+
+func (c ChangeType) IsRecreate() bool { return c == ChangeTypeRecreate }
+func (c ChangeType) IsUpdate() bool   { return c == ChangeTypeUpdate }
+
+const (
+	ChangeTypeNone     ChangeType = 0
+	ChangeTypeUpdate   ChangeType = 1
+	ChangeTypeRecreate ChangeType = -1
+)
+
+func New(client *databricks.WorkspaceClient, section, name string, config any) (IResource, error) {
+	switch section {
+	case "jobs":
+		typedConfig, ok := config.(*resources.Job)
+		if !ok {
+			return nil, fmt.Errorf("unexpected config type for jobs: %T", config)
+		}
+		if typedConfig == nil {
+			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
+		}
+		r, err := NewResourceJob(client, *typedConfig)
+		return &r, err
+	case "pipelines":
+		typedConfig, ok := config.(*resources.Pipeline)
+		if !ok {
+			return nil, fmt.Errorf("unexpected config type for pipelines: %T", config)
+		}
+		if typedConfig == nil {
+			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
+		}
+		r, err := NewResourcePipeline(client, *typedConfig)
+		return &r, err
+	case "schemas":
+		typedConfig, ok := config.(*resources.Schema)
+		if !ok {
+			return nil, fmt.Errorf("unexpected config type for schemas: %T", config)
+		}
+		if typedConfig == nil {
+			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
+		}
+		r, err := NewResourceSchema(client, *typedConfig)
+		return &r, err
+	case "apps":
+		typedConfig, ok := config.(*resources.App)
+		if !ok {
+			return nil, fmt.Errorf("unexpected config type for apps: %T", config)
+		}
+		if typedConfig == nil {
+			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
+		}
+		r, err := NewResourceApp(client, *typedConfig)
+		return &r, err
+
+	default:
+		return nil, fmt.Errorf("unsupported resource type: %s", section)
+	}
+}

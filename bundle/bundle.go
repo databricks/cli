@@ -8,6 +8,7 @@ package bundle
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -15,10 +16,13 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/terranova/terranova_state"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -112,6 +116,11 @@ type Bundle struct {
 	Tagging tags.Cloud
 
 	Metrics Metrics
+
+	// If true, don't use terraform. Set by DATABRICKS_CLI_DEPLOYMENT=direct
+	DirectDeployment bool
+
+	ResourceDatabase terranova_state.TerranovaState
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -267,4 +276,56 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 
 	cfg := b.client.Config
 	return auth.Env(cfg), nil
+}
+
+func GetResourceConfigT[T any](b *Bundle, section, name string) (*T, bool) {
+	v, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key(section), dyn.Key(name)))
+	if err != nil {
+		return nil, false
+	}
+
+	// Note, we cannot read b.Config.Resources.Jobs[name] because we don't populate ForceSendFields properly on those
+	bytes, err := json.Marshal(v.AsAny())
+	if err != nil {
+		return nil, false
+	}
+
+	var result T
+	err = json.Unmarshal(bytes, &result)
+	if err != nil {
+		return nil, false
+	}
+
+	return &result, true
+}
+
+func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
+	// TODO: validate that the config is fully resolved
+	switch section {
+	case "jobs":
+		return GetResourceConfigT[resources.Job](b, section, name)
+	case "pipelines":
+		return GetResourceConfigT[resources.Pipeline](b, section, name)
+	case "models":
+		return GetResourceConfigT[resources.MlflowModel](b, section, name)
+	case "experiments":
+		return GetResourceConfigT[resources.MlflowExperiment](b, section, name)
+	case "model_serving_endpoints":
+		return GetResourceConfigT[resources.ModelServingEndpoint](b, section, name)
+	case "registered_models":
+		return GetResourceConfigT[resources.RegisteredModel](b, section, name)
+	case "quality_monitors":
+		return GetResourceConfigT[resources.QualityMonitor](b, section, name)
+	case "schemas":
+		return GetResourceConfigT[resources.Schema](b, section, name)
+	case "volumes":
+		return GetResourceConfigT[resources.Volume](b, section, name)
+	case "clusters":
+		return GetResourceConfigT[resources.Cluster](b, section, name)
+	case "dashboards":
+		return GetResourceConfigT[resources.Dashboard](b, section, name)
+	case "apps":
+		return GetResourceConfigT[resources.App](b, section, name)
+	}
+	return nil, false
 }
