@@ -28,6 +28,23 @@ func New() *cobra.Command {
   
   This settings can be disabled so that new workspaces do not have compliance
   security profile enabled by default.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				// Check if the subcommand exists
+				for _, subcmd := range cmd.Commands() {
+					if subcmd.Name() == args[0] {
+						// Let Cobra handle the valid subcommand
+						return nil
+					}
+				}
+				// Return error for unknown subcommands
+				return &root.InvalidArgsError{
+					Message: fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath()),
+					Command: cmd,
+				}
+			}
+			return cmd.Help()
+		},
 	}
 
 	// Add methods
