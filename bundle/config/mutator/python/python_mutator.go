@@ -13,9 +13,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
-	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/libs/log"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
@@ -108,14 +108,12 @@ const (
 )
 
 type pythonMutator struct {
-	phase             phase
-	resourceProcessor mutator.ResourceProcessor
+	phase phase
 }
 
-func PythonMutator(phase phase, resourceProcessor mutator.ResourceProcessor) bundle.Mutator {
+func PythonMutator(phase phase) bundle.Mutator {
 	return &pythonMutator{
-		phase:             phase,
-		resourceProcessor: resourceProcessor,
+		phase: phase,
 	}
 }
 
@@ -274,12 +272,12 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return mutateDiags
 	}
 
-	processorOpts := mutator.ResourceProcessorOpts{
-		AddedResources:   result.AddedResources,
-		UpdatedResources: result.UpdatedResources,
+	mutateDiags = mutateDiags.Extend(resourcemutator.NormalizeAndInitializeResources(ctx, b, result.AddedResources))
+	if mutateDiags.HasError() {
+		return mutateDiags
 	}
 
-	return mutateDiags.Extend(m.resourceProcessor.Process(ctx, b, processorOpts))
+	return mutateDiags.Extend(resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources))
 }
 
 func createCacheDir(ctx context.Context) (string, error) {

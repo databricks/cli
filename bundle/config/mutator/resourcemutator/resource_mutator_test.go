@@ -1,58 +1,11 @@
-package mutator
+package resourcemutator
 
 import (
-	"context"
 	"testing"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
-
-func TestResourceProcessor_process(t *testing.T) {
-	ctx := context.Background()
-	initializeMutator := recordingMutator{}
-	normalizeMutator := recordingMutator{}
-
-	rp := NewResourceProcessor(
-		[]bundle.Mutator{&initializeMutator},
-		[]bundle.Mutator{&normalizeMutator},
-	)
-
-	b := bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job_1": {},
-					"job_2": {},
-					"job_3": {},
-					"job_4": {},
-					"job_5": {},
-				},
-			},
-		},
-	}
-
-	opts := ResourceProcessorOpts{
-		AddedResources:   NewResourceKeySet(),
-		UpdatedResources: NewResourceKeySet(),
-	}
-
-	opts.AddedResources.AddResourceKey(ResourceKey{Type: "jobs", Name: "job_1"})
-	opts.UpdatedResources.AddResourceKey(ResourceKey{Type: "jobs", Name: "job_2"})
-	opts.UpdatedResources.AddResourceKey(ResourceKey{Type: "jobs", Name: "job_3"})
-
-	diags := rp.Process(ctx, &b, opts)
-
-	assert.NoError(t, diags.Error())
-	assert.ElementsMatch(t, initializeMutator.jobNames, []string{"job_1"})
-	assert.ElementsMatch(t, normalizeMutator.jobNames, []string{"job_1", "job_2", "job_3"})
-
-	assert.Equal(t, 5, len(b.Config.Resources.Jobs))
-}
 
 type mergeResourcesTestCase struct {
 	name     string
@@ -159,21 +112,4 @@ func mapOf2(k0 string, v0 dyn.Value, k1 string, v1 dyn.Value) dyn.Value {
 
 func emptyMap() dyn.Value {
 	return dyn.V(map[string]dyn.Value{})
-}
-
-// recordingMutator is a mutator that records the names of jobs it has seen.
-type recordingMutator struct {
-	jobNames []string
-}
-
-func (c *recordingMutator) Name() string {
-	return "recording"
-}
-
-func (c *recordingMutator) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	for name := range b.Config.Resources.Jobs {
-		c.jobNames = append(c.jobNames, name)
-	}
-
-	return diag.Diagnostics{}
 }

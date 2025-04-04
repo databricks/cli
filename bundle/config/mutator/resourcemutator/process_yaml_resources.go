@@ -1,16 +1,15 @@
-package mutator
+package resourcemutator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type processYamlResources struct {
-	resourceProcessor ResourceProcessor
-}
+type processYamlResources struct{}
 
 // ProcessYamlResources is a mutator that processes all YAML resources in the bundle.
 //
@@ -18,9 +17,9 @@ type processYamlResources struct {
 // - Only YAML resources are loaded
 //
 // Post-condition:
-// - ResourceProcessor is applied to all YAML resources
-func ProcessYamlResources(resourceProcessor ResourceProcessor) bundle.Mutator {
-	return &processYamlResources{resourceProcessor: resourceProcessor}
+// - All YAML resources are initialized and normalized
+func ProcessYamlResources() bundle.Mutator {
+	return &processYamlResources{}
 }
 
 func (p processYamlResources) Name() string {
@@ -28,11 +27,19 @@ func (p processYamlResources) Name() string {
 }
 
 func (p processYamlResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	addedResources := NewResourceKeySet()
+	addedResources, err := getAllResources(b)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
+	return NormalizeAndInitializeResources(ctx, b, addedResources)
+}
+
+func getAllResources(b *bundle.Bundle) (ResourceKeySet, error) {
+	set := NewResourceKeySet()
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey())
-		err := addedResources.AddPattern(pattern, root)
+		err := set.AddPattern(pattern, root)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -40,8 +47,8 @@ func (p processYamlResources) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		return root, nil
 	})
 	if err != nil {
-		return diag.Errorf("failed to collect resources: %s", err)
+		return nil, fmt.Errorf("failed to collect resources: %s", err)
 	}
 
-	return p.resourceProcessor.Process(ctx, b, ResourceProcessorOpts{AddedResources: addedResources})
+	return set, nil
 }

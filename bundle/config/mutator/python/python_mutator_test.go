@@ -9,8 +9,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config/mutator"
-
 	"github.com/databricks/cli/libs/dyn/convert"
 
 	"github.com/databricks/cli/bundle/env"
@@ -27,25 +25,25 @@ import (
 )
 
 func TestPythonMutator_Name_load(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseLoad, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseLoad)
 
 	assert.Equal(t, "PythonMutator(load)", mutator.Name())
 }
 
 func TestPythonMutator_Name_init(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseInit, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseInit)
 
 	assert.Equal(t, "PythonMutator(init)", mutator.Name())
 }
 
 func TestPythonMutator_Name_loadResources(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 
 	assert.Equal(t, "PythonMutator(load_resources)", mutator.Name())
 }
 
 func TestPythonMutator_Name_applyMutators(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseApplyMutators, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseApplyMutators)
 
 	assert.Equal(t, "PythonMutator(apply_mutators)", mutator.Name())
 }
@@ -112,7 +110,7 @@ workspace: { current_user: { userName: test }}`)
 		{"path": "resources.pipelines.pipeline0", "file": "src/examples/pipeline0.py", "line": 7, "column": 9}`,
 	)
 
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diags := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diags.Error())
@@ -218,7 +216,7 @@ resources:
 			}
 		}`, "", "")
 
-	mutator := PythonMutator(PythonMutatorPhaseApplyMutators, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseApplyMutators)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diag.Error())
@@ -279,7 +277,7 @@ resources:
 			}
 		}`, "", "")
 
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.EqualError(t, diag.Error(), "unknown field: unknown_property")
@@ -289,7 +287,7 @@ func TestPythonMutator_disabled(t *testing.T) {
 	b := loadYaml("databricks.yml", ``)
 
 	ctx := context.Background()
-	mutator := PythonMutator(PythonMutatorPhaseLoad, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diag.Error())
@@ -305,7 +303,7 @@ experimental:
     resources:
       - "resources:load_resources"`)
 
-	mutator := PythonMutator(PythonMutatorPhaseLoadResources, fakeResourceProcessor())
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(context.Background(), b, mutator)
 
 	assert.EqualError(t, diag.Error(), expectedError)
@@ -515,8 +513,4 @@ func interpreterPath(venvPath string) string {
 	} else {
 		return filepath.Join(venvPath, "bin", "python3")
 	}
-}
-
-func fakeResourceProcessor() mutator.ResourceProcessor {
-	return mutator.NewResourceProcessor([]bundle.Mutator{}, []bundle.Mutator{})
 }
