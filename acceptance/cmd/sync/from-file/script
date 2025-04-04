@@ -1,0 +1,22 @@
+mkdir "project-folder" "project-folder/blob" "ignored-folder" "ignored-folder/folder1" ".git"
+touch "project-folder/app.yaml" "project-folder/app.py" "project-folder/query.sql" "project-folder/blob/1" "project-folder/blob/2"
+touch "ignored-folder/script.py" "ignored-folder/folder1/script.py" "ignored-folder/folder1/script.yaml" "ignored-folder/folder1/big-blob"
+cat > .gitignore << EOF
+ignored-folder/
+script
+output.txt
+repls.json
+EOF
+cat > .databricksignore << EOF
+project-folder/blob/*
+project-folder/*.sql
+EOF
+
+cleanup() {
+  rm -rf project-folder ignored-folder .git .databricksignore
+}
+trap cleanup EXIT
+
+# Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
+trace $CLI sync . /Users/$CURRENT_USER_NAME --exclude-from '.databricksignore' | grep -v "^Action: " | sort
+
