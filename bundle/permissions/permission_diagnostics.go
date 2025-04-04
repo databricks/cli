@@ -15,6 +15,12 @@ import (
 
 type permissionDiagnostics struct{}
 
+const (
+	CAN_MANAGE = "CAN_MANAGE"
+	CAN_VIEW   = "CAN_VIEW"
+	CAN_RUN    = "CAN_RUN"
+)
+
 func PermissionDiagnostics() bundle.Mutator {
 	return &permissionDiagnostics{}
 }

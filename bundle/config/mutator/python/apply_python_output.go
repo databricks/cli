@@ -3,16 +3,17 @@ package python
 import (
 	"fmt"
 
-	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 )
 
 // applyPythonOutputResult contains which resources where added, updated, or deleted by Python mutator.
 type applyPythonOutputResult struct {
-	AddedResources   mutator.ResourceKeySet
-	UpdatedResources mutator.ResourceKeySet
-	DeletedResources mutator.ResourceKeySet
+	AddedResources   resourcemutator.ResourceKeySet
+	UpdatedResources resourcemutator.ResourceKeySet
+	DeletedResources resourcemutator.ResourceKeySet
 }
 
 // applyPythonOutput applies output of Python mutator to bundle configuration before Python mutator.
@@ -35,9 +36,9 @@ func applyPythonOutput(root, output dyn.Value) (dyn.Value, applyPythonOutputResu
 
 func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResult, merge.OverrideVisitor) {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
-	deleted := mutator.NewResourceKeySet()
-	updated := mutator.NewResourceKeySet()
-	added := mutator.NewResourceKeySet()
+	deleted := resourcemutator.NewResourceKeySet()
+	updated := resourcemutator.NewResourceKeySet()
+	added := resourcemutator.NewResourceKeySet()
 
 	visitor := merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
@@ -75,13 +76,13 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				)
 			} else if len(valuePath) == 3 {
 				// Example: "resources.jobs.job_0"
-				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				resourceKey := resourcemutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
 				deleted.AddResourceKey(resourceKey)
 
 				return nil
 			} else {
 				// Example: "resources.jobs.job_0.tags"
-				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				resourceKey := resourcemutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
 				updated.AddResourceKey(resourceKey)
 
 				return nil
@@ -122,13 +123,13 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				// valuePath: "resources.jobs"
 				// leftRoot:  {"resources": { "jobs": {               }}}
 				// rightRoot: {"resources": { "jobs": {"job_0": {...} }}}
-				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				resourceKey := resourcemutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
 				added.AddResourceKey(resourceKey)
 
 				return right, nil
 			} else {
 				// Example: "resources.jobs.job_0.email_notifications"
-				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				resourceKey := resourcemutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
 				updated.AddResourceKey(resourceKey)
 
 				return right, nil
@@ -169,13 +170,13 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				// valuePath: "resources.jobs.job_0"
 				// leftRoot:  {"resources": { "jobs": {"job_0": null  }}}
 				// rightRoot: {"resources": { "jobs": {"job_0": {...} }}}
-				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				resourceKey := resourcemutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
 				added.AddResourceKey(resourceKey)
 
 				return right, nil
 			} else {
 				// Example: "resources.jobs.job_0.name"
-				resourceKey := mutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
+				resourceKey := resourcemutator.ResourceKey{Type: valuePath[1].Key(), Name: valuePath[2].Key()}
 				updated.AddResourceKey(resourceKey)
 
 				return right, nil

@@ -3,6 +3,8 @@ package phases
 import (
 	"context"
 
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -126,32 +128,32 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
 		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
 		// Expands glob patterns in pipeline library paths to include all matching files
-		mutator.ExpandPipelineGlobPaths(),
+		resourcemutator.ExpandPipelineGlobPaths(),
 
 		// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)
 		// Updates (dynamic): resources.jobs.*.job_clusters (merges job clusters with the same job_cluster_key)
-		mutator.MergeJobClusters(),
+		resourcemutator.MergeJobClusters(),
 
 		// Reads (dynamic): resources.jobs.*.parameters (reads job parameters to merge)
 		// Updates (dynamic): resources.jobs.*.parameters (merges job parameters with the same name)
-		mutator.MergeJobParameters(),
+		resourcemutator.MergeJobParameters(),
 
 		// Reads (dynamic): resources.jobs.*.tasks (reads job tasks to merge)
 		// Updates (dynamic): resources.jobs.*.tasks (merges job tasks with the same task_key)
-		mutator.MergeJobTasks(),
+		resourcemutator.MergeJobTasks(),
 
 		// Reads (dynamic): resources.pipelines.*.clusters (reads pipeline clusters to merge)
 		// Updates (dynamic): resources.pipelines.*.clusters (merges pipeline clusters with the same label)
-		mutator.MergePipelineClusters(),
+		resourcemutator.MergePipelineClusters(),
 
 		// Reads (dynamic): resources.apps.*.resources (reads app resources to merge)
 		// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
-		mutator.MergeApps(),
+		resourcemutator.MergeApps(),
 
 		// Reads (typed): resources.pipelines.*.{catalog,schema,target}, resources.volumes.*.{catalog_name,schema_name} (checks for schema references)
 		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
 		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
-		mutator.CaptureSchemaDependency(),
+		resourcemutator.CaptureSchemaDependency(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
@@ -162,7 +164,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): run_as (checks if run_as is specified)
 		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as; only if Experimental.UseLegacyRunAs is set)
 		// Updates (typed): range b.Config.Resources.Pipelines[].Permissions (set permission based on bundle run_as; only if Experimental.UseLegacyRunAs is set)
-		mutator.SetRunAs(),
+		resourcemutator.SetRunAs(),
 
 		// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
 		// Reads (env): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
@@ -171,25 +173,25 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Jobs.*.Tasks.*.{NewCluster,ExistingClusterId,JobClusterKey,EnvironmentKey} (replaces compute settings with specified cluster ID)
 		// OR corresponding fields on ForEachTask if that is present
 		// Overrides job compute settings with a specified cluster ID for development or testing
-		mutator.OverrideCompute(),
+		resourcemutator.OverrideCompute(),
 
 		// Reads (dynamic): resources.dashboards.* (checks for existing parent_path and embed_credentials)
 		// Updates (dynamic): resources.dashboards.*.parent_path (sets to workspace.resource_path if not set)
 		// Updates (dynamic): resources.dashboards.*.embed_credentials (sets to false if not set)
-		mutator.ConfigureDashboardDefaults(),
+		resourcemutator.ConfigureDashboardDefaults(),
 
 		// Reads (dynamic): resources.volumes.* (checks for existing volume_type)
 		// Updates (dynamic): resources.volumes.*.volume_type (sets to "MANAGED" if not set)
-		mutator.ConfigureVolumeDefaults(),
+		resourcemutator.ConfigureVolumeDefaults(),
 
 		// ApplyTargetMode must run before ApplyPresets to set default values for 'presets' section
 		mutator.ApplyTargetMode(),
-		mutator.ApplyPresets(),
+		resourcemutator.ApplyPresets(),
 
 		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
 		// Updates (typed): b.Config.Resources.Jobs[].Queue (sets Queue.Enabled to true for jobs without queue settings)
 		// Enable queueing for jobs by default, following the behavior from API 2.2+.
-		mutator.DefaultQueueing(),
+		resourcemutator.DefaultQueueing(),
 
 		// Reads (typed): b.SyncRoot (checks if bundle root is in /Workspace/)
 		// Updates (typed): b.SyncRoot (replaces with extension-aware path when running on Databricks Runtime)
@@ -223,12 +225,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (reads existing permissions)
 		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
 		// Applies bundle-level permissions to all supported resources
-		permissions.ApplyBundlePermissions(),
+		resourcemutator.ApplyBundlePermissions(),
 
 		// Reads (typed): b.Config.Workspace.CurrentUser.UserName (gets current user name)
 		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
-		permissions.FilterCurrentUser(),
+		resourcemutator.FilterCurrentUser(),
 
 		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
 		// Updates (typed): b.Config.Resources.Jobs[].JobSettings.{Deployment,EditMode,Format} (sets deployment metadata, locks UI editing, and sets format to multi-task)

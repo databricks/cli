@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/permissions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +19,7 @@ func TestBundlePermissions(t *testing.T) {
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
-	diags := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
+	diags := bundle.Apply(context.Background(), b, resourcemutator.ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
@@ -41,7 +42,7 @@ func TestBundlePermissionsDevTarget(t *testing.T) {
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
-	diags := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
+	diags := bundle.Apply(context.Background(), b, resourcemutator.ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
