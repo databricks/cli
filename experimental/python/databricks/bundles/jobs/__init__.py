@@ -15,6 +15,9 @@ __all__ = [
     "AzureAttributesParam",
     "AzureAvailability",
     "AzureAvailabilityParam",
+    "CleanRoomsNotebookTask",
+    "CleanRoomsNotebookTaskDict",
+    "CleanRoomsNotebookTaskParam",
     "ClientsTypes",
     "ClientsTypesDict",
     "ClientsTypesParam",
@@ -24,6 +27,9 @@ __all__ = [
     "ClusterSpec",
     "ClusterSpecDict",
     "ClusterSpecParam",
+    "ComputeConfig",
+    "ComputeConfigDict",
+    "ComputeConfigParam",
     "Condition",
     "ConditionParam",
     "ConditionTask",
@@ -70,6 +76,9 @@ __all__ = [
     "GcsStorageInfo",
     "GcsStorageInfoDict",
     "GcsStorageInfoParam",
+    "GenAiComputeTask",
+    "GenAiComputeTaskDict",
+    "GenAiComputeTaskParam",
     "GitProvider",
     "GitProviderParam",
     "GitSource",
@@ -96,6 +105,11 @@ __all__ = [
     "JobParameterDefinition",
     "JobParameterDefinitionDict",
     "JobParameterDefinitionParam",
+    "JobPermission",
+    "JobPermissionDict",
+    "JobPermissionLevel",
+    "JobPermissionLevelParam",
+    "JobPermissionParam",
     "JobRunAs",
     "JobRunAsDict",
     "JobRunAsParam",
@@ -133,9 +147,6 @@ __all__ = [
     "PeriodicTriggerConfigurationParam",
     "PeriodicTriggerConfigurationTimeUnit",
     "PeriodicTriggerConfigurationTimeUnitParam",
-    "Permission",
-    "PermissionDict",
-    "PermissionParam",
     "PipelineParams",
     "PipelineParamsDict",
     "PipelineParamsParam",
@@ -373,6 +384,16 @@ from databricks.bundles.compute._models.workspace_storage_info import (
     WorkspaceStorageInfoDict,
     WorkspaceStorageInfoParam,
 )
+from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
+    CleanRoomsNotebookTask,
+    CleanRoomsNotebookTaskDict,
+    CleanRoomsNotebookTaskParam,
+)
+from databricks.bundles.jobs._models.compute_config import (
+    ComputeConfig,
+    ComputeConfigDict,
+    ComputeConfigParam,
+)
 from databricks.bundles.jobs._models.condition import Condition, ConditionParam
 from databricks.bundles.jobs._models.condition_task import (
     ConditionTask,
@@ -403,6 +424,11 @@ from databricks.bundles.jobs._models.for_each_task import (
     ForEachTask,
     ForEachTaskDict,
     ForEachTaskParam,
+)
+from databricks.bundles.jobs._models.gen_ai_compute_task import (
+    GenAiComputeTask,
+    GenAiComputeTaskDict,
+    GenAiComputeTaskParam,
 )
 from databricks.bundles.jobs._models.git_provider import GitProvider, GitProviderParam
 from databricks.bundles.jobs._models.git_source import (
@@ -435,6 +461,15 @@ from databricks.bundles.jobs._models.job_parameter_definition import (
     JobParameterDefinition,
     JobParameterDefinitionDict,
     JobParameterDefinitionParam,
+)
+from databricks.bundles.jobs._models.job_permission import (
+    JobPermission,
+    JobPermissionDict,
+    JobPermissionParam,
+)
+from databricks.bundles.jobs._models.job_permission_level import (
+    JobPermissionLevel,
+    JobPermissionLevelParam,
 )
 from databricks.bundles.jobs._models.job_run_as import (
     JobRunAs,
@@ -477,11 +512,6 @@ from databricks.bundles.jobs._models.periodic_trigger_configuration import (
 from databricks.bundles.jobs._models.periodic_trigger_configuration_time_unit import (
     PeriodicTriggerConfigurationTimeUnit,
     PeriodicTriggerConfigurationTimeUnitParam,
-)
-from databricks.bundles.jobs._models.permission import (
-    Permission,
-    PermissionDict,
-    PermissionParam,
 )
 from databricks.bundles.jobs._models.pipeline_params import (
     PipelineParams,

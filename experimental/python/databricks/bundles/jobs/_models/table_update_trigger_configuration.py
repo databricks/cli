@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class TableUpdateTriggerConfiguration:
-    """"""
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     condition: VariableOrOptional[Condition] = None
     """
