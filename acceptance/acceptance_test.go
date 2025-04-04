@@ -35,6 +35,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const deploymentEnvVar = "DATABRICKS_CLI_DEPLOYMENT"
+
 var (
 	KeepTmp     bool
 	NoRepl      bool

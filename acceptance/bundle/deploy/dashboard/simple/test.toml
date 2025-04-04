@@ -2,6 +2,9 @@ Local = true
 Cloud = true
 RequiresWarehouse = true
 
+# dashboards not implemented yet
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+
 Ignore = [
     "databricks.yml",
 ]
