@@ -31,6 +31,7 @@ class Schema:
     properties: dict[str, Property] = field(default_factory=dict)
     required: list[str] = field(default_factory=list)
     description: Optional[str] = None
+    deprecated: Optional[bool] = None
     stage: Optional[str] = None
 
     def __post_init__(self):
@@ -83,6 +84,11 @@ def _parse_schema(schema: dict) -> Schema:
     schema = _unwrap_variable(schema) or schema
     properties = {}
 
+    def _parse_bool(value) -> Optional[bool]:
+        assert value is None or isinstance(value, bool)
+
+        return value
+
     for k, v in schema.get("properties", {}).items():
         assert v.get("type") is None
         assert v.get("anyOf") is None
@@ -94,7 +100,7 @@ def _parse_schema(schema: dict) -> Schema:
         prop = Property(
             ref=v["$ref"],
             description=v.get("description"),
-            deprecated=v.get("deprecated"),
+            deprecated=_parse_bool(v.get("deprecated")),
             stage=v.get("x-databricks-preview"),
         )
 
@@ -111,6 +117,7 @@ def _parse_schema(schema: dict) -> Schema:
         properties=properties,
         required=schema.get("required", []),
         description=schema.get("description"),
+        deprecated=_parse_bool(schema.get("deprecated")),
         stage=schema.get("x-databricks-preview"),
     )
 

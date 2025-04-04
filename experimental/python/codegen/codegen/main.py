@@ -21,6 +21,9 @@ def main(output: str):
     schemas = openapi_patch.add_extra_required_fields(schemas)
     schemas = openapi_patch.remove_unsupported_fields(schemas)
 
+    schemas = _transitively_mark_deprecated_and_private(
+        packages.RESOURCE_TYPES, schemas
+    )
     # first remove deprecated fields so there are more unused schemas
     schemas = _remove_deprecated_fields(schemas)
     schemas = _remove_unused_schemas(packages.RESOURCE_TYPES, schemas)
@@ -42,6 +45,28 @@ def main(output: str):
         resource_enums = {k: v for k, v in enums.items() if k in reachable}
 
         _write_exports(resource, resource_dataclasses, resource_enums, output)
+
+
+def _transitively_mark_deprecated_and_private(
+    roots: list[str],
+    schemas: dict[str, openapi.Schema],
+) -> dict[str, openapi.Schema]:
+    not_private = _collect_reachable_schemas(roots, schemas, include_private=False)
+    not_deprecated = _collect_reachable_schemas(
+        roots, schemas, include_deprecated=False
+    )
+    new_schemas = {}
+
+    for schema_name, schema in schemas.items():
+        if schema_name not in not_private:
+            schema.stage = openapi.Stage.PRIVATE
+
+        if schema_name not in not_deprecated:
+            schema.deprecated = True
+
+        new_schemas[schema_name] = schema
+
+    return new_schemas
 
 
 def _remove_deprecated_fields(
@@ -182,6 +207,8 @@ def _collect_typechecking_imports(
 def _collect_reachable_schemas(
     roots: list[str],
     schemas: dict[str, openapi.Schema],
+    include_private: bool = True,
+    include_deprecated: bool = True,
 ) -> set[str]:
     """
     Remove schemas that are not reachable from the roots, because we
@@ -207,6 +234,12 @@ def _collect_reachable_schemas(
             for field in schema.properties.values():
                 if field.ref:
                     name = field.ref.split("/")[-1]
+
+                    if not include_private and field.stage == openapi.Stage.PRIVATE:
+                        continue
+
+                    if not include_deprecated and field.deprecated:
+                        continue
 
                     if name not in reachable:
                         stack.append(name)
