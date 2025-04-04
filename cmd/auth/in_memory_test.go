@@ -1,6 +1,7 @@
-package cache
+package auth
 
 import (
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"golang.org/x/oauth2"
 )
 
@@ -12,7 +13,7 @@ type InMemoryTokenCache struct {
 func (i *InMemoryTokenCache) Lookup(key string) (*oauth2.Token, error) {
 	token, ok := i.Tokens[key]
 	if !ok {
-		return nil, ErrNotConfigured
+		return nil, cache.ErrNotConfigured
 	}
 	return token, nil
 }
@@ -23,4 +24,4 @@ func (i *InMemoryTokenCache) Store(key string, t *oauth2.Token) error {
 	return nil
 }
 
-var _ TokenCache = (*InMemoryTokenCache)(nil)
+var _ cache.TokenCache = (*InMemoryTokenCache)(nil)

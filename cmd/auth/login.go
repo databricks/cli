@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -14,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +36,7 @@ const (
 	defaultTimeout          = 1 * time.Hour
 )
 
-func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
 	if runtime.GOOS == "windows" {
 		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
@@ -98,14 +100,22 @@ depends on the existing profiles you have set in your configuration file
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
-			profileName, err = promptForProfile(ctx, persistentAuth.ProfileName())
+			profileName, err = promptForProfile(ctx, getProfileName(authArguments))
 			if err != nil {
 				return err
 			}
 		}
 
 		// Set the host and account-id based on the provided arguments and flags.
-		err := setHostAndAccountId(ctx, profileName, persistentAuth, args)
+		err := setHostAndAccountId(ctx, profile.DefaultProfiler, profileName, authArguments, args)
+		if err != nil {
+			return err
+		}
+		oauthArgument, err := authArguments.ToOAuthArgument()
+		if err != nil {
+			return err
+		}
+		persistentAuth, err := u2m.NewPersistentAuth(ctx, u2m.WithOAuthArgument(oauthArgument))
 		if err != nil {
 			return err
 		}
@@ -114,16 +124,15 @@ depends on the existing profiles you have set in your configuration file
 		// We need the config without the profile before it's used to initialise new workspace client below.
 		// Otherwise it will complain about non existing profile because it was not yet saved.
 		cfg := config.Config{
-			Host:      persistentAuth.Host,
-			AccountID: persistentAuth.AccountID,
+			Host:      authArguments.Host,
+			AccountID: authArguments.AccountID,
 			AuthType:  "databricks-cli",
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
-		err = persistentAuth.Challenge(ctx)
-		if err != nil {
+		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
 
@@ -173,13 +182,13 @@ depends on the existing profiles you have set in your configuration file
 // 1. --account-id flag.
 // 2. account-id from the specified profile, if available.
 // 3. Prompt the user for the account-id.
-func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profileName string, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
-	if len(args) > 0 && persistentAuth.Host != "" {
+	host := authArguments.Host
+	if len(args) > 0 && host != "" {
 		return errors.New("please only provide a host as an argument or a flag, not both")
 	}
 
-	profiler := profile.GetProfiler(ctx)
 	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
 	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
 	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
@@ -187,13 +196,13 @@ func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth
 		return err
 	}
 
-	if persistentAuth.Host == "" {
+	if host == "" {
 		if len(args) > 0 {
 			// If [HOST] is provided, set the host to the provided positional argument.
-			persistentAuth.Host = args[0]
+			authArguments.Host = args[0]
 		} else if len(profiles) > 0 && profiles[0].Host != "" {
 			// If neither [HOST] nor --host are provided, and the profile has a host, use it.
-			persistentAuth.Host = profiles[0].Host
+			authArguments.Host = profiles[0].Host
 		} else {
 			// If neither [HOST] nor --host are provided, and the profile does not have a host,
 			// then prompt the user for a host.
@@ -201,16 +210,17 @@ func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth
 			if err != nil {
 				return err
 			}
-			persistentAuth.Host = hostName
+			authArguments.Host = hostName
 		}
 	}
 
 	// If the account-id was not provided as a cmd line flag, try to read it from
 	// the specified profile.
-	isAccountClient := (&config.Config{Host: persistentAuth.Host}).IsAccountClient()
-	if isAccountClient && persistentAuth.AccountID == "" {
+	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
+	accountID := authArguments.AccountID
+	if isAccountClient && accountID == "" {
 		if len(profiles) > 0 && profiles[0].AccountID != "" {
-			persistentAuth.AccountID = profiles[0].AccountID
+			authArguments.AccountID = profiles[0].AccountID
 		} else {
 			// Prompt user for the account-id if it we could not get it from a
 			// profile.
@@ -218,8 +228,20 @@ func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth
 			if err != nil {
 				return err
 			}
-			persistentAuth.AccountID = accountId
+			authArguments.AccountID = accountId
 		}
 	}
 	return nil
+}
+
+// getProfileName returns the default profile name for a given host/account ID.
+// If the account ID is provided, the profile name is "ACCOUNT-<account-id>".
+// Otherwise, the profile name is the first part of the host URL.
+func getProfileName(authArguments *auth.AuthArguments) string {
+	if authArguments.AccountID != "" {
+		return "ACCOUNT-" + authArguments.AccountID
+	}
+	host := strings.TrimPrefix(authArguments.Host, "https://")
+	split := strings.Split(host, ".")
+	return split[0]
 }
