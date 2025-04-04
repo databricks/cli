@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
@@ -163,7 +162,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Job 1
@@ -223,7 +222,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -237,7 +236,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
@@ -251,63 +250,17 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
 	assert.Equal(t, "Hello_world", b.Config.Resources.Jobs["job1"].Tags["dev"])
 }
 
-func TestValidateDevelopmentMode(t *testing.T) {
-	// Test with a valid development mode bundle
-	b := mockBundle(config.Development)
-	diags := validateDevelopmentMode(b)
-	require.NoError(t, diags.Error())
-
-	// Test with /Volumes path
-	b = mockBundle(config.Development)
-	b.Config.Workspace.ArtifactPath = "/Volumes/catalog/schema/lennart/libs"
-	diags = validateDevelopmentMode(b)
-	require.NoError(t, diags.Error())
-	b.Config.Workspace.ArtifactPath = "/Volumes/catalog/schema/libs"
-	diags = validateDevelopmentMode(b)
-	require.ErrorContains(t, diags.Error(), "artifact_path should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'")
-
-	// Test with a bundle that has a non-user path
-	b = mockBundle(config.Development)
-	b.Config.Workspace.RootPath = "/Shared/.bundle/x/y/state"
-	diags = validateDevelopmentMode(b)
-	require.ErrorContains(t, diags.Error(), "root_path must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'")
-
-	// Test with a bundle that has an unpaused trigger pause status
-	b = mockBundle(config.Development)
-	b.Config.Presets.TriggerPauseStatus = config.Unpaused
-	diags = validateDevelopmentMode(b)
-	require.ErrorContains(t, diags.Error(), "UNPAUSED")
-
-	// Test with a bundle that has a prefix not containing the username or short name
-	b = mockBundle(config.Development)
-	b.Config.Presets.NamePrefix = "[prod]"
-	diags = validateDevelopmentMode(b)
-	require.Len(t, diags, 1)
-	assert.Equal(t, diag.Error, diags[0].Severity)
-	assert.Contains(t, diags[0].Summary, "")
-
-	// Test with a bundle that has valid user paths
-	b = mockBundle(config.Development)
-	b.Config.Workspace.RootPath = "/Users/lennart@company.com/.bundle/x/y/state"
-	b.Config.Workspace.StatePath = "/Users/lennart@company.com/.bundle/x/y/state"
-	b.Config.Workspace.FilePath = "/Users/lennart@company.com/.bundle/x/y/files"
-	b.Config.Workspace.ArtifactPath = "/Users/lennart@company.com/.bundle/x/y/artifacts"
-	b.Config.Workspace.ResourcePath = "/Users/lennart@company.com/.bundle/x/y/resources"
-	diags = validateDevelopmentMode(b)
-	require.NoError(t, diags.Error())
-}
-
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
@@ -318,81 +271,6 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
-}
-
-func TestProcessTargetModeProduction(t *testing.T) {
-	b := mockBundle(config.Production)
-
-	diags := validateProductionMode(b, false)
-	require.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
-
-	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
-	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
-	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
-	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
-
-	diags = validateProductionMode(b, false)
-	require.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
-
-	permissions := []resources.Permission{
-		{
-			Level:    "CAN_MANAGE",
-			UserName: "user@company.com",
-		},
-	}
-	b.Config.Resources.Jobs["job1"].Permissions = permissions
-	b.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	b.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	b.Config.Resources.Jobs["job3"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	b.Config.Resources.Jobs["job4"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	b.Config.Resources.Pipelines["pipeline1"].Permissions = permissions
-	b.Config.Resources.Experiments["experiment1"].Permissions = permissions
-	b.Config.Resources.Experiments["experiment2"].Permissions = permissions
-	b.Config.Resources.Models["model1"].Permissions = permissions
-	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
-	b.Config.Resources.Clusters["cluster1"].Permissions = permissions
-
-	diags = validateProductionMode(b, false)
-	require.NoError(t, diags.Error())
-
-	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
-	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
-	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
-	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
-	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
-	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
-	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
-}
-
-func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
-	b := mockBundle(config.Production)
-
-	// Our target has all kinds of problems when not using service principals ...
-	diags := validateProductionMode(b, false)
-	require.Error(t, diags.Error())
-
-	// ... but we're much less strict when a principal is used
-	diags = validateProductionMode(b, true)
-	require.NoError(t, diags.Error())
-}
-
-func TestProcessTargetModeProductionOkWithRootPath(t *testing.T) {
-	b := mockBundle(config.Production)
-
-	// Our target has all kinds of problems when not using service principals ...
-	diags := validateProductionMode(b, false)
-	require.Error(t, diags.Error())
-
-	// ... but we're okay if we specify a root path
-	b.Target = &config.Target{
-		Workspace: &config.Workspace{
-			RootPath: "some-root-path",
-		},
-	}
-	diags = validateProductionMode(b, false)
-	require.NoError(t, diags.Error())
 }
 
 // Make sure that we have test coverage for all resource types
@@ -424,7 +302,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 		reflect.TypeOf(&resources.Volume{}),
 	}
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
@@ -478,7 +356,7 @@ func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.NamePrefix = "custom_lennart_deploy_"
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "custom_lennart_deploy_job1", b.Config.Resources.Jobs["job1"].Name)
@@ -491,7 +369,7 @@ func TestTagsAlreadySet(t *testing.T) {
 		"dev":    "foo",
 	}
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["custom"])
@@ -502,7 +380,7 @@ func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = nil
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
@@ -512,7 +390,7 @@ func TestTagsEmptySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = map[string]string{}
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
@@ -522,7 +400,7 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.JobsMaxConcurrentRuns = 10
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 10, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
@@ -532,18 +410,10 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.JobsMaxConcurrentRuns = 1
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
-}
-
-func TestTriggerPauseStatusWhenUnpaused(t *testing.T) {
-	b := mockBundle(config.Development)
-	b.Config.Presets.TriggerPauseStatus = config.Unpaused
-
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
-	require.ErrorContains(t, diags.Error(), "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default")
 }
 
 func TestPipelinesDevelopmentDisabled(t *testing.T) {
@@ -551,7 +421,7 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	notEnabled := false
 	b.Config.Presets.PipelinesDevelopment = &notEnabled
 
-	diags := bundle.ApplySeq(context.Background(), b, ProcessTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
