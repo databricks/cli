@@ -14,7 +14,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
+# Note: output line containing "DRY-RUN MODE" lists files in non-deterministic order so we filter it out
 trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run | grep -v "^\[DRY-RUN MODE\] Action" | sort
 
 # excluding by mask:
