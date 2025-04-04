@@ -1,4 +1,4 @@
-package mutator
+package resourcemutator
 
 import (
 	"context"

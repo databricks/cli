@@ -13,12 +13,8 @@ variables:
     default: "abc"
   int_variable:
     default: 42
-  # FIXME doesn't work, resolve variables before running PythonMutator
-  #
-  # > cannot interpolate non-string value: ${var.int_variable}
-  #
-  # nested_variable:
-  #   default: ${var.string_variable} ${var.int_variable}
+  nested_variable:
+    default: ${var.string_variable} ${var.string_variable}
   bool_variable_true:
     default: true
   bool_variable_false:
@@ -31,12 +27,12 @@ variables:
     default:
       task_key: "abc"
       notebook_task:
-        notebook_path: "cde"
+        notebook_path: "/Workspace/cde"
   complex_list_variable:
     default:
       - task_key: "abc"
         notebook_task:
-          notebook_path: "cde"
+          notebook_path: "/Workspace/cde"
       - task_key: "def"
         notebook_task:
-          notebook_path: "ghi"
+          notebook_path: "/Workspace/ghi"
