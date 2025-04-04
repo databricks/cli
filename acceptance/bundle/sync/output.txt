@@ -2,27 +2,29 @@
 >>> [CLI] bundle sync --output text
 Initial Sync Complete
 Uploaded .gitignore
-Uploaded app.py
-Uploaded app.yaml
 Uploaded databricks.yml
-Uploaded query.sql
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
+Uploaded project-folder/query.sql
 Uploaded sample-dashboard.lvdash.json
 
->>> [CLI] bundle sync --exclude app.* --output text
-Deleted app.py
-Deleted app.yaml
+>>> [CLI] bundle sync --exclude project-folder/app.* --output text
+Deleted project-folder/app.py
+Deleted project-folder/app.yaml
 Initial Sync Complete
 
->>> [CLI] bundle sync --exclude app.* --exclude query.sql --output text
-Deleted query.sql
+>>> [CLI] bundle sync --exclude project-folder/app.* --exclude project-folder/query.sql --output text
+Deleted project-folder
+Deleted project-folder/query.sql
 Initial Sync Complete
 
->>> [CLI] bundle sync --exclude app.* --exclude query.sql --include ignored-folder/*.py --output text
+>>> [CLI] bundle sync --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py --output text
 Initial Sync Complete
 Uploaded ignored-folder
 Uploaded ignored-folder/script.py
 
->>> [CLI] bundle sync --exclude app.* --exclude query.sql --include ignored-folder/**/*.py --output text
+>>> [CLI] bundle sync --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py --output text
 Initial Sync Complete
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
@@ -33,6 +35,7 @@ Deleted ignored-folder/folder1
 Deleted ignored-folder/folder1/script.py
 Deleted ignored-folder/script.py
 Initial Sync Complete
-Uploaded app.py
-Uploaded app.yaml
-Uploaded query.sql
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
+Uploaded project-folder/query.sql

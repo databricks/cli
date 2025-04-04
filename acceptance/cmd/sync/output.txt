@@ -1,42 +1,39 @@
 
 >>> [CLI] sync . /Users/[USERNAME]
-Warn: Failed to read git info: stat /.git: no such file or directory
 Initial Sync Complete
 Uploaded .gitignore
-Uploaded app.py
-Uploaded app.yaml
-Uploaded query.sql
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
+Uploaded project-folder/query.sql
 
->>> [CLI] sync . /Users/[USERNAME] --exclude app.*
-Warn: Failed to read git info: stat /.git: no such file or directory
-Deleted app.py
-Deleted app.yaml
+>>> [CLI] sync . /Users/[USERNAME] --exclude project-folder/app.*
+Deleted project-folder/app.py
+Deleted project-folder/app.yaml
 Initial Sync Complete
 
->>> [CLI] sync . /Users/[USERNAME] --exclude app.* --exclude query.sql
-Warn: Failed to read git info: stat /.git: no such file or directory
-Deleted query.sql
+>>> [CLI] sync . /Users/[USERNAME] --exclude project-folder/app.* --exclude project-folder/query.sql
+Deleted project-folder
+Deleted project-folder/query.sql
 Initial Sync Complete
 
->>> [CLI] sync . /Users/[USERNAME] --exclude app.* --exclude query.sql --include ignored-folder/*.py
-Warn: Failed to read git info: stat /.git: no such file or directory
+>>> [CLI] sync . /Users/[USERNAME] --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py
 Initial Sync Complete
 Uploaded ignored-folder
 Uploaded ignored-folder/script.py
 
->>> [CLI] sync . /Users/[USERNAME] --exclude app.* --exclude query.sql --include ignored-folder/**/*.py
-Warn: Failed to read git info: stat /.git: no such file or directory
+>>> [CLI] sync . /Users/[USERNAME] --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py
 Initial Sync Complete
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 
 >>> [CLI] sync . /Users/[USERNAME]
-Warn: Failed to read git info: stat /.git: no such file or directory
 Deleted ignored-folder
 Deleted ignored-folder/folder1
 Deleted ignored-folder/folder1/script.py
 Deleted ignored-folder/script.py
 Initial Sync Complete
-Uploaded app.py
-Uploaded app.yaml
-Uploaded query.sql
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
+Uploaded project-folder/query.sql

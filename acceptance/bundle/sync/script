@@ -1,24 +1,22 @@
-touch "app.yaml"
-touch "app.py"
-touch "query.sql"
-mkdir "ignored-folder" "ignored-folder/folder1"
-touch "ignored-folder/script.py"
-touch "ignored-folder/folder1/script.py"
-echo "ignored-folder/" > .gitignore
-echo "script" >> .gitignore
-echo "output.txt" >> .gitignore
-echo "repls.json" >> .gitignore
+mkdir "project-folder" "ignored-folder" "ignored-folder/folder1"
+touch "project-folder/app.yaml" "project-folder/app.py" "project-folder/query.sql"
+touch "ignored-folder/script.py" "ignored-folder/folder1/script.py"
+cat > .gitignore << EOF
+ignored-folder/
+script
+output.txt
+repls.json
+EOF
 
 cleanup() {
-  rm app.yaml app.py .gitignore query.sql
-  rm -rf ignored-folder
+  rm -rf project-folder ignored-folder .git
 }
 trap cleanup EXIT
 
 # Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
 trace $CLI bundle sync --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --exclude 'app.*' --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --exclude 'app.*' --exclude 'query.sql' --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --exclude 'app.*' --exclude 'query.sql' --include 'ignored-folder/*.py' --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --exclude 'app.*' --exclude 'query.sql' --include 'ignored-folder/**/*.py' --output text | grep -v "^Action: " | sort
+trace $CLI bundle sync --exclude 'project-folder/app.*' --output text | grep -v "^Action: " | sort
+trace $CLI bundle sync --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --output text | grep -v "^Action: " | sort
+trace $CLI bundle sync --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --include 'ignored-folder/*.py' --output text | grep -v "^Action: " | sort
+trace $CLI bundle sync --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --include 'ignored-folder/**/*.py' --output text | grep -v "^Action: " | sort
 trace $CLI bundle sync --output text | grep -v "^Action: " | sort
