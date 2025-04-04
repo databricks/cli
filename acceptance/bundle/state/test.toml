@@ -1,1 +1,3 @@
+# Test needs splitting or updating to handle terranova state file
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
 RecordRequests = true
