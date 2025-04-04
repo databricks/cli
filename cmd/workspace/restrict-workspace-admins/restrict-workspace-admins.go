@@ -33,6 +33,23 @@ func New() *cobra.Command {
   User role on. They can also only change a job owner to themselves. And they
   can change the job run_as setting to themselves or to a service principal on
   which they have the Service Principal User role.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				// Check if the subcommand exists
+				for _, subcmd := range cmd.Commands() {
+					if subcmd.Name() == args[0] {
+						// Let Cobra handle the valid subcommand
+						return nil
+					}
+				}
+				// Return error for unknown subcommands
+				return &root.InvalidArgsError{
+					Message: fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath()),
+					Command: cmd,
+				}
+			}
+			return cmd.Help()
+		},
 	}
 
 	// Add methods

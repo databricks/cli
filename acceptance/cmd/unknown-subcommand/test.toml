@@ -1,0 +1,8 @@
+Local = true
+Cloud = false
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/scopes/list"
+Response.Body = """
+{}
+"""

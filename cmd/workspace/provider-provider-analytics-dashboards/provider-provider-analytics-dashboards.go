@@ -3,6 +3,8 @@
 package provider_provider_analytics_dashboards
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -23,6 +25,23 @@ func New() *cobra.Command {
 		GroupID: "marketplace",
 		Annotations: map[string]string{
 			"package": "marketplace",
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				// Check if the subcommand exists
+				for _, subcmd := range cmd.Commands() {
+					if subcmd.Name() == args[0] {
+						// Let Cobra handle the valid subcommand
+						return nil
+					}
+				}
+				// Return error for unknown subcommands
+				return &root.InvalidArgsError{
+					Message: fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath()),
+					Command: cmd,
+				}
+			}
+			return cmd.Help()
 		},
 	}
 
