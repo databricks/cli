@@ -696,10 +696,6 @@
                         "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.",
                         "$ref": "#/$defs/bool"
                       },
-                      "deployment": {
-                        "description": "Deployment type of this pipeline.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineDeployment"
-                      },
                       "development": {
                         "description": "Whether the pipeline is in Development mode. Defaults to false.",
                         "$ref": "#/$defs/bool"
