@@ -43,7 +43,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Figure out if the sync root path is identical or an ancestor of the bundle root path.
 		// If it is an ancestor, this updates all paths to be relative to the sync root path.
 		// Reads (typed): b.Config.Sync.Paths (calculates longest common parent together with bundle root).
-		// Updates (typed) b.{SyncRoot,SyncRootPath}  (set to calculate sync root, which is either bundle root or some parent of bundle root)
+		// Updates (typed) b.{SyncRoot,SyncRootPath}  (set to calculated sync root, which is either bundle root or some parent of bundle root)
 		// Updates (typed) b.Config.{Sync,Include,Exclude} they set to be relative to SyncRootPath instead of bundle root
 		mutator.SyncInferRoot(),
 
