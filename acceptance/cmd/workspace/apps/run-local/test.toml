@@ -1,3 +1,5 @@
+RecordRequests = false
+
 Ignore = [
     '.venv',
     '__pycache__'

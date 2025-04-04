@@ -3,6 +3,7 @@ package apps
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -34,15 +35,28 @@ func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
 // If not, it creates a virtual environment and installs the required libraries. It then installs the libraries from
 // requirements.txt if it exists.
 func (p *PythonApp) PrepareEnvironment() error {
-	args := append([]string{"uv", "run", "--with"}, strings.Join(defaultLibraries, ","))
-
-	// Install the requirements from requirements.txt if exists
-	_, err := os.Stat(filepath.Join(p.config.AppPath, "requirements.txt"))
-	if err == nil {
-		args = append(args, "--with-requirements", filepath.Join(p.config.AppPath, "requirements.txt"))
+	// Create venv first
+	venvArgs := []string{"uv", "venv"}
+	if err := p.runCommand(venvArgs); err != nil {
+		return err
 	}
 
-	p.uvArgs = args
+	// Install default libraries
+	installArgs := append([]string{"uv", "pip", "install"}, defaultLibraries...)
+	if err := p.runCommand(installArgs); err != nil {
+		return err
+	}
+
+	// Install requirements if they exist
+	if _, err := os.Stat(filepath.Join(p.config.AppPath, "requirements.txt")); err == nil {
+		reqArgs := []string{"uv", "pip", "install", "-r", filepath.Join(p.config.AppPath, "requirements.txt")}
+		if err := p.runCommand(reqArgs); err != nil {
+			return err
+		}
+	}
+
+	// Set up run args
+	p.uvArgs = []string{"uv", "run"}
 	return nil
 }
 
@@ -101,4 +115,13 @@ func (p *PythonApp) enableDebugging() {
 	} else {
 		spec.Command = append([]string{"python", "-m", "debugpy", "--listen", DEBUG_PORT}, spec.Command[1:]...)
 	}
+}
+
+// runCommand executes the given command as a bash command and returns any error.
+func (p *PythonApp) runCommand(args []string) error {
+	cmd := exec.Command("bash", "-c", strings.Join(args, " "))
+	cmd.Dir = p.spec.config.AppPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
