@@ -3,6 +3,9 @@
 package settings
 
 import (
+	"fmt"
+
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
 	aibi_dashboard_embedding_access_policy "github.com/databricks/cli/cmd/workspace/aibi-dashboard-embedding-access-policy"
@@ -28,6 +31,23 @@ func New() *cobra.Command {
 		GroupID: "settings",
 		Annotations: map[string]string{
 			"package": "settings",
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				// Check if the subcommand exists
+				for _, subcmd := range cmd.Commands() {
+					if subcmd.Name() == args[0] {
+						// Let Cobra handle the valid subcommand
+						return nil
+					}
+				}
+				// Return error for unknown subcommands
+				return &root.InvalidArgsError{
+					Message: fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath()),
+					Command: cmd,
+				}
+			}
+			return cmd.Help()
 		},
 	}
 
