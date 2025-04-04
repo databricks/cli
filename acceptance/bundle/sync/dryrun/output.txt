@@ -1,6 +1,5 @@
 
 >>> [CLI] bundle sync --dry-run --output text
-[DRY-RUN MODE] Action: PUT: .gitignore, databricks.yml, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql
 [DRY-RUN] Initial Sync Complete
 [DRY-RUN] Would upload: .gitignore
 [DRY-RUN] Would upload: databricks.yml
@@ -10,7 +9,6 @@
 [DRY-RUN] Would upload: project-folder/query.sql
 
 >>> [CLI] bundle sync --dry-run --exclude project-folder/app.* --output text
-[DRY-RUN MODE] Action: PUT: .gitignore, databricks.yml, project-folder/query.sql
 [DRY-RUN] Initial Sync Complete
 [DRY-RUN] Would upload: .gitignore
 [DRY-RUN] Would upload: databricks.yml
@@ -18,13 +16,11 @@
 [DRY-RUN] Would upload: project-folder/query.sql
 
 >>> [CLI] bundle sync --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --output text
-[DRY-RUN MODE] Action: PUT: databricks.yml, .gitignore
 [DRY-RUN] Initial Sync Complete
 [DRY-RUN] Would upload: .gitignore
 [DRY-RUN] Would upload: databricks.yml
 
 >>> [CLI] bundle sync --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py --output text
-[DRY-RUN MODE] Action: PUT: databricks.yml, ignored-folder/script.py, .gitignore
 [DRY-RUN] Initial Sync Complete
 [DRY-RUN] Would upload: .gitignore
 [DRY-RUN] Would upload: databricks.yml
@@ -32,7 +28,6 @@
 [DRY-RUN] Would upload: ignored-folder/script.py
 
 >>> [CLI] bundle sync --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py --output text
-[DRY-RUN MODE] Action: PUT: ignored-folder/folder1/script.py, ignored-folder/script.py, .gitignore, databricks.yml
 [DRY-RUN] Initial Sync Complete
 [DRY-RUN] Would upload: .gitignore
 [DRY-RUN] Would upload: databricks.yml
