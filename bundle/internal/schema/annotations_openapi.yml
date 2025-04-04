@@ -97,7 +97,28 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       - Currently, Databricks allows at most 45 custom tags
 
       - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
-  "data_security_mode": {}
+  "data_security_mode":
+    "description": |-
+      Data security mode decides what data governance model to use when accessing data
+      from a cluster.
+
+      The following modes can only be used when `kind = CLASSIC_PREVIEW`.
+      * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
+      * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
+      * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
+
+      The following modes can be used regardless of `kind`.
+      * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
+      * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
+      * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+
+      The following modes are deprecated starting with Databricks Runtime 15.0 and
+      will be removed for future Databricks Runtime versions:
+
+      * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
+      * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
+      * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
+      * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
   "docker_image":
     "description": |-
       Custom docker image BYOC
@@ -139,7 +160,18 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
-  "kind": {}
+  "kind":
+    "description": |-
+      The kind of compute described by this compute specification.
+
+      Depending on `kind`, different validations and default values will be applied.
+
+      Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
+      * [is_single_node](/api/workspace/clusters/create#is_single_node)
+      * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
+      * [data_security_mode](/api/workspace/clusters/create#data_security_mode) set to `DATA_SECURITY_MODE_AUTO`, `DATA_SECURITY_MODE_DEDICATED`, or `DATA_SECURITY_MODE_STANDARD`
+
+      By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   "node_type_id":
     "description": |-
       This field encodes, through a single value, the resources available to each of
@@ -204,7 +236,9 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
-  "workload_type": {}
+  "workload_type":
+    "description": |-
+      Cluster Attributes showing for clusters workload types.
 github.com/databricks/cli/bundle/config/resources.Dashboard:
   "create_time":
     "description": |-
@@ -288,7 +322,9 @@ github.com/databricks/cli/bundle/config/resources.Job:
       If `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.
 
       Note: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.
-  "health": {}
+  "health":
+    "description": |-
+      An optional set of health rules that can be defined for this job.
   "job_clusters":
     "description": |-
       A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
@@ -313,12 +349,14 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "performance_target":
     "description": |-
       PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
-    "x-databricks-preview": |-
-      PRIVATE
   "queue":
     "description": |-
       The queue settings of the job.
-  "run_as": {}
+  "run_as":
+    "description": |-
+      Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.
+
+      Either `user_name` or `service_principal_name` should be specified. If not, an error is thrown.
   "schedule":
     "description": |-
       An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
@@ -417,8 +455,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "budget_policy_id":
     "description": |-
       Budget policy of this pipeline.
-    "x-databricks-preview": |-
-      PRIVATE
   "catalog":
     "description": |-
       A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.
@@ -453,8 +489,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "gateway_definition":
     "description": |-
       The definition of a gateway pipeline to support change data capture.
-    "x-databricks-preview": |-
-      PRIVATE
   "id":
     "description": |-
       Unique identifier for this pipeline.
@@ -476,11 +510,11 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "restart_window":
     "description": |-
       Restart window of this pipeline.
-    "x-databricks-preview": |-
-      PRIVATE
   "run_as":
-    "x-databricks-preview": |-
-      PRIVATE
+    "description": |-
+      Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
+
+      Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
   "schema":
     "description": |-
       The default schema (database) where tables are read from or published to.
@@ -512,8 +546,6 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "data_classification_config":
     "description": |-
       The data classification config for the monitor.
-    "x-databricks-preview": |-
-      PRIVATE
   "inference_log":
     "description": |-
       Configuration for monitoring inference logs.
@@ -571,7 +603,9 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "name":
     "description": |-
       Name of schema, relative to parent catalog.
-  "properties": {}
+  "properties":
+    "description": |-
+      A map of key-value properties attached to the securable.
   "storage_root":
     "description": |-
       Storage root URL for managed tables within schema.
@@ -793,9 +827,6 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedulePause
       - |-
         PAUSED
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig:
-  "_":
-    "x-databricks-preview": |-
-      PRIVATE
   "enabled":
     "description": |-
       Whether data classification is enabled.
@@ -889,8 +920,6 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications:
   "on_new_classification_tag_detected":
     "description": |-
       Who to send notifications to when new data classification tags are detected.
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorSnapshot: {}
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
   "granularities":
@@ -931,7 +960,11 @@ github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
   "_":
     "description": |-
       Attributes set during cluster creation which are related to Amazon Web Services.
-  "availability": {}
+  "availability":
+    "description": |-
+      Availability type used for all subsequent nodes past the `first_on_demand` ones.
+
+      Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
   "ebs_volume_count":
     "description": |-
       The number of volumes launched for each instance. Users can choose up to 10 volumes.
@@ -1125,7 +1158,28 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       - Currently, Databricks allows at most 45 custom tags
 
       - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
-  "data_security_mode": {}
+  "data_security_mode":
+    "description": |-
+      Data security mode decides what data governance model to use when accessing data
+      from a cluster.
+
+      The following modes can only be used when `kind = CLASSIC_PREVIEW`.
+      * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
+      * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
+      * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
+
+      The following modes can be used regardless of `kind`.
+      * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
+      * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
+      * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+
+      The following modes are deprecated starting with Databricks Runtime 15.0 and
+      will be removed for future Databricks Runtime versions:
+
+      * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
+      * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
+      * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
+      * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
   "docker_image":
     "description": |-
       Custom docker image BYOC
@@ -1167,7 +1221,18 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
-  "kind": {}
+  "kind":
+    "description": |-
+      The kind of compute described by this compute specification.
+
+      Depending on `kind`, different validations and default values will be applied.
+
+      Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
+      * [is_single_node](/api/workspace/clusters/create#is_single_node)
+      * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
+      * [data_security_mode](/api/workspace/clusters/create#data_security_mode) set to `DATA_SECURITY_MODE_AUTO`, `DATA_SECURITY_MODE_DEDICATED`, or `DATA_SECURITY_MODE_STANDARD`
+
+      By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   "node_type_id":
     "description": |-
       This field encodes, through a single value, the resources available to each of
@@ -1232,7 +1297,9 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
-  "workload_type": {}
+  "workload_type":
+    "description": |-
+      Cluster Attributes showing for clusters workload types.
 github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode:
   "_":
     "description": |-
@@ -1707,7 +1774,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
   "command":
     "description": |-
       Command launcher to run the actual script, e.g. bash, python etc.
-  "compute": {}
+  "compute":
+    "description": |-
+      Next field: 4
   "dl_runtime_image":
     "description": |-
       Runtime image
@@ -1774,7 +1843,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
   "git_provider":
     "description": |-
       Unique identifier of the service used to host the Git repository. The value is case insensitive.
-  "git_snapshot": {}
+  "git_snapshot":
+    "description": |-
+      Read-only state of the remote repository at the time the job was run. This field is only included on job runs.
   "git_tag":
     "description": |-
       Name of the tag to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_commit.
@@ -1784,8 +1855,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
   "job_source":
     "description": |-
       The source of the job specification in the remote repository when the job is source controlled.
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.JobCluster:
   "job_cluster_key":
     "description": |-
@@ -1848,7 +1917,10 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
   "environment_key":
     "description": |-
       The key of an environment. It has to be unique within a job.
-  "spec": {}
+  "spec":
+    "description": |-
+      The environment entity used to preserve serverless environment side panel and jobs' environment for non-notebook task.
+      In this minimal environment spec, only pip dependencies are supported.
 github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
   "no_alert_for_canceled_runs":
     "description": |-
@@ -1935,8 +2007,18 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthOperator:
       - |-
         GREATER_THAN
 github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule:
-  "metric": {}
-  "op": {}
+  "metric":
+    "description": |-
+      Specifies the health metric that is being evaluated for a particular health rule.
+
+      * `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.
+      * `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.
+      * `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.
+      * `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.
+      * `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.
+  "op":
+    "description": |-
+      Specifies the operator used to compare the health metric value with the specified threshold.
   "value":
     "description": |-
       Specifies the threshold value that the health metric should obey to satisfy the health rule.
@@ -2068,8 +2150,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
   "dbt_commands":
     "description": |-
       An array of commands to execute for jobs with the dbt task, for example `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
-    "x-databricks-preview": |-
-      PRIVATE
   "jar_params":
     "description": |-
       A list of parameters for jobs with Spark JAR tasks, for example `"jar_params": ["john doe", "35"]`.
@@ -2079,8 +2159,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
       The JSON representation of this field (for example `{"jar_params":["john doe","35"]}`) cannot exceed 10,000 bytes.
 
       Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
-    "x-databricks-preview": |-
-      PRIVATE
   "job_id":
     "description": |-
       ID of the job to trigger.
@@ -2099,14 +2177,10 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
       Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
 
       The JSON representation of this field (for example `{"notebook_params":{"name":"john doe","age":"35"}}`) cannot exceed 10,000 bytes.
-    "x-databricks-preview": |-
-      PRIVATE
   "pipeline_params":
     "description": |-
       Controls whether the pipeline should perform a full refresh
-  "python_named_params":
-    "x-databricks-preview": |-
-      PRIVATE
+  "python_named_params": {}
   "python_params":
     "description": |-
       A list of parameters for jobs with Python tasks, for example `"python_params": ["john doe", "35"]`.
@@ -2120,8 +2194,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
 
       These parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.
       Examples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.
-    "x-databricks-preview": |-
-      PRIVATE
   "spark_submit_params":
     "description": |-
       A list of parameters for jobs with spark submit task, for example `"spark_submit_params": ["--class", "org.apache.spark.examples.SparkPi"]`.
@@ -2135,13 +2207,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
 
       These parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.
       Examples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.
-    "x-databricks-preview": |-
-      PRIVATE
   "sql_params":
     "description": |-
       A map from keys to values for jobs with SQL task, for example `"sql_params": {"name": "john doe", "age": "35"}`. The SQL alert task does not support custom parameters.
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.Source:
   "_":
     "description": |-
@@ -2315,9 +2383,11 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
     "description": |-
       The task executes a nested task for every input provided when the `for_each_task` field is present.
   "gen_ai_compute_task":
-    "x-databricks-preview": |-
-      PRIVATE
-  "health": {}
+    "description": |-
+      Next field: 9
+  "health":
+    "description": |-
+      An optional set of health rules that can be defined for this job.
   "job_cluster_key":
     "description": |-
       If job_cluster_key, this task is executed reusing the cluster specified in `job.settings.job_clusters`.
@@ -2446,11 +2516,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
   "table":
     "description": |-
       Old table trigger settings name. Deprecated in favor of `table_update`.
-    "x-databricks-preview": |-
-      PRIVATE
-  "table_update":
-    "x-databricks-preview": |-
-      PRIVATE
+  "table_update": {}
 github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
   "id": {}
 github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications:
@@ -2802,13 +2868,9 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
   "jar":
     "description": |
       URI of the jar to be installed. Currently only DBFS is supported.
-    "x-databricks-preview": |-
-      PRIVATE
   "maven":
     "description": |
       Specification of a maven library to be installed.
-    "x-databricks-preview": |-
-      PRIVATE
   "notebook":
     "description": |
       The path to a notebook that defines a pipeline and is stored in the Databricks workspace.
@@ -2904,13 +2966,9 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
   "salesforce_include_formula_fields":
     "description": |-
       If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
-    "x-databricks-preview": |-
-      PRIVATE
   "scd_type":
     "description": |-
       The SCD type to use to ingest the table.
-    "x-databricks-preview": |-
-      PRIVATE
   "sequence_by":
     "description": |-
       The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.

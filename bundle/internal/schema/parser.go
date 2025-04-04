@@ -150,12 +150,13 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			if preview == "PUBLIC" {
 				preview = ""
 			}
-
-			if ref.Description != "" || ref.Enum != nil || preview != "" {
+			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" || preview != "" {
 				pkg[RootTypeKey] = annotation.Descriptor{
-					Description: ref.Description,
-					Enum:        ref.Enum,
-					Preview:     preview,
+					Description:        ref.Description,
+					Enum:               ref.Enum,
+					Deprecated:         ref.Deprecated,
+					DeprecationMessage: ref.DeprecationMessage,
+					Preview:            preview,
 				}
 			}
 
@@ -167,9 +168,11 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 					}
 
 					pkg[k] = annotation.Descriptor{
-						Description: refProp.Description,
-						Enum:        refProp.Enum,
-						Preview:     preview,
+						Description:        refProp.Description,
+						Enum:               refProp.Enum,
+						Preview:            preview,
+						Deprecated:         refProp.Deprecated,
+						DeprecationMessage: refProp.DeprecationMessage,
 					}
 					if refProp.Description == "" {
 						addEmptyOverride(k, basePath, overrides)
