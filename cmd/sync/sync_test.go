@@ -3,7 +3,9 @@ package sync
 import (
 	"context"
 	"flag"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -63,4 +65,45 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, local, opts.LocalRoot.Native())
 	assert.Equal(t, remote, opts.RemotePath)
+}
+
+func TestExcludeFromFlag(t *testing.T) {
+	// Create a temporary directory
+	tempDir := t.TempDir()
+	local := filepath.Join(tempDir, "local")
+	require.NoError(t, os.MkdirAll(local, 0o755))
+	remote := "/remote"
+
+	// Create a temporary exclude-from file
+	excludeFromPath := filepath.Join(tempDir, "exclude-patterns.txt")
+	excludePatterns := []string{
+		"*.log",
+		"build/",
+		"# This is a comment",
+		"",
+		"temp/*.tmp",
+	}
+	require.NoError(t, os.WriteFile(excludeFromPath, []byte(strings.Join(excludePatterns, "\n")), 0o644))
+
+	// Set up the flags
+	f := syncFlags{excludeFrom: excludeFromPath}
+	cmd := New()
+	cmd.SetContext(cmdctx.SetWorkspaceClient(context.Background(), nil))
+
+	// Test syncOptionsFromArgs
+	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
+	require.NoError(t, err)
+
+	// Expected patterns (should skip comments and empty lines)
+	expected := []string{"*.log", "build/", "temp/*.tmp"}
+	assert.ElementsMatch(t, expected, opts.Exclude)
+
+	// Test with both exclude flag and exclude-from flag
+	f.exclude = []string{"node_modules/"}
+	opts, err = f.syncOptionsFromArgs(cmd, []string{local, remote})
+	require.NoError(t, err)
+
+	// Should include both exclude flag and exclude-from patterns
+	expected = []string{"node_modules/", "*.log", "build/", "temp/*.tmp"}
+	assert.ElementsMatch(t, expected, opts.Exclude)
 }

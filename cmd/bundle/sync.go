@@ -1,9 +1,13 @@
 package bundle
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -18,17 +22,50 @@ import (
 )
 
 type syncFlags struct {
-	interval time.Duration
-	full     bool
-	watch    bool
-	output   flags.Output
+	interval    time.Duration
+	full        bool
+	watch       bool
+	output      flags.Output
 	dryRun   bool
+	excludeFrom string
+}
+
+func (f *syncFlags) readExcludeFrom(ctx context.Context) ([]string, error) {
+	if f.excludeFrom == "" {
+		return nil, nil
+	}
+
+	data, err := os.ReadFile(f.excludeFrom)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read exclude-from file: %w", err)
+	}
+
+	var patterns []string
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		// Skip empty lines and comments
+		if line != "" && !strings.HasPrefix(line, "#") {
+			patterns = append(patterns, line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading exclude-from file: %w", err)
+	}
+
+	return patterns, nil
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	opts, err := files.GetSyncOptions(cmd.Context(), b)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
+	}
+
+	excludePatterns, err := f.readExcludeFrom(cmd.Context())
+	if err != nil {
+		return nil, err
 	}
 
 	if f.output != "" {
@@ -48,7 +85,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 
 	opts.Full = f.full
 	opts.PollInterval = f.interval
-	opts.DryRun = f.dryRun
+	opts.Exclude = append(opts.Exclude, excludePatterns...)
 	return opts, nil
 }
 
@@ -65,6 +102,7 @@ func newSyncCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of the output format")
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
+	cmd.Flags().StringVar(&f.excludeFrom, "exclude-from", "", "file containing patterns to exclude from sync (one pattern per line)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()

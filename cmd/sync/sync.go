@@ -1,12 +1,16 @@
 package sync
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -23,13 +27,41 @@ import (
 
 type syncFlags struct {
 	// project files polling interval
-	interval time.Duration
-	full     bool
-	watch    bool
-	output   flags.Output
-	exclude  []string
-	include  []string
-	dryRun   bool
+	interval    time.Duration
+	full        bool
+	watch       bool
+	output      flags.Output
+	exclude     []string
+	include     []string
+	dryRun      bool
+	excludeFrom string
+}
+
+func (f *syncFlags) readExcludeFrom(ctx context.Context) ([]string, error) {
+	if f.excludeFrom == "" {
+		return nil, nil
+	}
+
+	data, err := os.ReadFile(f.excludeFrom)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read exclude-from file: %w", err)
+	}
+
+	var patterns []string
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		// Skip empty lines and comments
+		if line != "" && !strings.HasPrefix(line, "#") {
+			patterns = append(patterns, line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading exclude-from file: %w", err)
+	}
+
+	return patterns, nil
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
@@ -42,10 +74,16 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
+	excludePatterns, err := f.readExcludeFrom(cmd.Context())
+	if err != nil {
+		return nil, err
+	}
+
 	opts.Full = f.full
 	opts.PollInterval = f.interval
 	opts.WorktreeRoot = b.WorktreeRoot
 	opts.Exclude = append(opts.Exclude, f.exclude...)
+	opts.Exclude = append(opts.Exclude, excludePatterns...)
 	opts.Include = append(opts.Include, f.include...)
 	opts.DryRun = f.dryRun
 	return opts, nil
@@ -78,6 +116,11 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		log.Warnf(ctx, "Running in dry-run mode. No actual changes will be made.")
 	}
 
+	excludePatterns, err := f.readExcludeFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	localRoot := vfs.MustNew(args[0])
 	info, err := git.FetchRepositoryInfo(ctx, localRoot.Native(), client)
 	if err != nil {
@@ -97,7 +140,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		LocalRoot:    localRoot,
 		Paths:        []string{"."},
 		Include:      f.include,
-		Exclude:      f.exclude,
+		Exclude:      append(f.exclude, excludePatterns...),
 
 		RemotePath:   args[1],
 		Full:         f.full,
@@ -133,7 +176,6 @@ func New() *cobra.Command {
 	cmd.Flags().Var(&f.output, "output", "type of output format")
 	cmd.Flags().StringSliceVar(&f.exclude, "exclude", nil, "patterns to exclude from sync (can be specified multiple times)")
 	cmd.Flags().StringSliceVar(&f.include, "include", nil, "patterns to include in sync (can be specified multiple times)")
-	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
 	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
