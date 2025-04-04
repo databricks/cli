@@ -1,6 +1,49 @@
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run
-grep: invalid character range
 Warn: Running in DRY-RUN mode. No actual changes will be made.
+[DRY-RUN] Initial Sync Complete
+[DRY-RUN] Would upload: .gitignore
+[DRY-RUN] Would upload: project-folder
+[DRY-RUN] Would upload: project-folder/app.py
+[DRY-RUN] Would upload: project-folder/app.yaml
+[DRY-RUN] Would upload: project-folder/query.sql
 
-Exit code: 2
+>>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.*
+Warn: Running in DRY-RUN mode. No actual changes will be made.
+[DRY-RUN] Initial Sync Complete
+[DRY-RUN] Would upload: .gitignore
+[DRY-RUN] Would upload: project-folder
+[DRY-RUN] Would upload: project-folder/query.sql
+
+>>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql
+Warn: Running in DRY-RUN mode. No actual changes will be made.
+[DRY-RUN] Initial Sync Complete
+[DRY-RUN] Would upload: .gitignore
+
+>>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py
+Warn: Running in DRY-RUN mode. No actual changes will be made.
+[DRY-RUN] Initial Sync Complete
+[DRY-RUN] Would upload: .gitignore
+[DRY-RUN] Would upload: ignored-folder
+[DRY-RUN] Would upload: ignored-folder/script.py
+
+>>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py
+Warn: Running in DRY-RUN mode. No actual changes will be made.
+[DRY-RUN] Initial Sync Complete
+[DRY-RUN] Would upload: .gitignore
+[DRY-RUN] Would upload: ignored-folder/folder1
+[DRY-RUN] Would upload: ignored-folder/folder1/script.py
+[DRY-RUN] Would upload: ignored-folder/script.py
+
+>>> [CLI] sync . /Users/[USERNAME] --dry-run --include ignored-folder/** --include !ignored-folder/folder1/big-blob
+Warn: Running in DRY-RUN mode. No actual changes will be made.
+[DRY-RUN] Initial Sync Complete
+[DRY-RUN] Would upload: .gitignore
+[DRY-RUN] Would upload: ignored-folder/folder1
+[DRY-RUN] Would upload: ignored-folder/folder1/script.py
+[DRY-RUN] Would upload: ignored-folder/folder1/script.yaml
+[DRY-RUN] Would upload: ignored-folder/script.py
+[DRY-RUN] Would upload: project-folder
+[DRY-RUN] Would upload: project-folder/app.py
+[DRY-RUN] Would upload: project-folder/app.yaml
+[DRY-RUN] Would upload: project-folder/query.sql
