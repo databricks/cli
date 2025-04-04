@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle sync --exclude-from .databricksignore --output text
+Initial Sync Complete
+Uploaded .databricksignore
+Uploaded .gitignore
+Uploaded databricks.yml
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
