@@ -3,34 +3,17 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/google/uuid"
 )
 
-func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
-	defer s.LockUnlock()()
-
-	spec, ok := s.Pipelines[pipelineId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	return Response{
-		Body: pipelines.GetPipelineResponse{
-			PipelineId: pipelineId,
-			Spec:       &spec,
-		},
-	}
-}
-
 func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var r pipelines.PipelineSpec
-	err := json.Unmarshal(req.Body, &r)
+	spec := pipelines.PipelineSpec{}
+	err := json.Unmarshal(req.Body, &spec)
 	if err != nil {
 		return Response{
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
@@ -38,14 +21,23 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 		}
 	}
 
+	var r pipelines.GetPipelineResponse
+	r.Spec = &spec
+
 	pipelineId := uuid.New().String()
-	r.Id = pipelineId
+	spec.Id = pipelineId
+	r.PipelineId = pipelineId
+	r.CreatorUserName = "tester@databricks.com"
+	r.LastModified = time.Now().UnixMilli()
+	r.Name = r.Spec.Name
+	r.RunAsUserName = "tester@databricks.com"
+	r.State = "IDLE"
 
 	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
 	// and if the storage location is not specified, API automatically generates a storage location
 	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
-	if r.Storage == "" && r.Catalog == "" {
-		r.Storage = "dbfs:/pipelines/" + pipelineId
+	if spec.Storage == "" && spec.Catalog == "" {
+		spec.Storage = "dbfs:/pipelines/" + pipelineId
 	}
 	s.Pipelines[pipelineId] = r
 
@@ -68,14 +60,15 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
-	_, exists := s.Pipelines[pipelineId]
+	item, exists := s.Pipelines[pipelineId]
 	if !exists {
 		return Response{
 			StatusCode: 404,
 		}
 	}
 
-	s.Pipelines[pipelineId] = request
+	item.Spec = &request
+	s.Pipelines[pipelineId] = item
 
 	return Response{
 		Body: pipelines.EditPipelineResponse{},

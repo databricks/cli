@@ -10,7 +10,7 @@ import os
 import json
 
 
-def print_resource_terraform(section, name, *attrs):
+def print_resource_terraform(section, name):
     resource_type = "databricks_" + section[:-1]
     filename = ".databricks/bundle/default/terraform/terraform.tfstate"
     raw = open(filename).read()
@@ -24,16 +24,12 @@ def print_resource_terraform(section, name, *attrs):
         if r_name != name:
             continue
         for inst in r["instances"]:
-            attribute_values = inst.get("attributes")
-            if attribute_values:
-                values = [f"{x}={attribute_values.get(x)!r}" for x in attrs]
-                print(section, name, " ".join(values))
-                found += 1
-    if not found:
-        print(f"Resource {section=} {name=} {resource_type=} not found. Available: {raw}")
+            attribute_values = inst.get("attributes") or {}
+            print(attribute_values.get("id"))
+            return
 
 
-def print_resource_terranova(section, name, *attrs):
+def print_resource_terranova(section, name):
     filename = ".databricks/bundle/default/resources.json"
     raw = open(filename).read()
     data = json.loads(raw)
@@ -42,10 +38,7 @@ def print_resource_terranova(section, name, *attrs):
     if result is None:
         print(f"Resource {section=} {name=} not found. Available: {raw}")
         return
-    state = result["state"]
-    state.setdefault("id", result.get("__id__"))
-    values = [f"{x}={state.get(x)!r}" for x in attrs]
-    print(section, name, " ".join(values))
+    print(result.get("__id__"))
 
 
 if os.environ.get("DATABRICKS_CLI_DEPLOYMENT") == "direct":
