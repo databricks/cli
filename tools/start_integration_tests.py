@@ -72,8 +72,19 @@ def check_if_job_running(pr_number, commit_sha):
     return False
 
 def start_job(pr_number, commit_sha, author):
-    # AI TODO: include commit title there and full link
-    print(f"PR #{pr_number} by {author} (commit {commit_sha[:7]}) is approved but has no running tests.")
+    # Get PR details including title
+    result = subprocess.run(
+        ["gh", "pr", "view", str(pr_number), "--json", "title,url"],
+        capture_output=True, text=True
+    )
+    pr_details = json.loads(result.stdout)
+    
+    pr_title = pr_details.get("title", "")
+    pr_url = pr_details.get("url", "")
+    
+    print(f"PR #{pr_number}: \"{pr_title}\" by {author} (commit {commit_sha[:7]})")
+    print(f"URL: {pr_url}")
+    print("This PR is approved but has no running tests.")
     response = input("Start integration tests? (y/n): ")
     
     if response.lower() == "y":
