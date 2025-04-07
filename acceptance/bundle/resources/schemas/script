@@ -1,7 +1,7 @@
 echo "*" > .gitignore
 trace $CLI bundle deploy
-# AI TODO: Filter out GET requests from the input
-jq 'select(.path | contains("/unity"))' < out.requests.txt > out.requests-deploy1.txt
+# Filter out GET requests and only keep requests related to unity catalog
+jq 'select(.method != "GET" and .path | contains("/unity"))' < out.requests.txt > out.requests-deploy1.txt
 rm out.requests.txt
 
 read_state.py schemas schema1 id name catalog_name comment
