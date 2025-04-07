@@ -84,8 +84,16 @@ def start_job(pr_number, commit_sha, author):
     
     print(f"PR #{pr_number}: \"{pr_title}\" by {author} (commit {commit_sha[:7]})")
     print(f"URL: {pr_url}")
-    # AI TODO: include details below. approved by who?
-    print("This PR is approved but has no running tests.")
+    
+    # Get approver information
+    result = subprocess.run(
+        ["gh", "pr", "view", str(pr_number), "--json", "reviews"],
+        capture_output=True, text=True
+    )
+    reviews = json.loads(result.stdout).get("reviews", [])
+    approvers = [review["author"]["login"] for review in reviews if review["state"] == "APPROVED"]
+    
+    print(f"This PR is approved by {', '.join(approvers)} but has no running tests.")
     response = input("Start integration tests? (y/n): ")
     
     if response.lower() == "y":
