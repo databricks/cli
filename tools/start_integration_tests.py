@@ -44,7 +44,7 @@ def get_team_members():
 def get_approved_prs_by_non_team():
     team_members = get_team_members()
 
-    prs = run_json(["gh", "pr", "-R", CLI_REPO, "list", "--json", "number,author,reviews,headRefOid"])
+    prs = run_json(["gh", "pr", "-R", CLI_REPO, "list", "--limit", "300", "--json", "number,author,reviews,headRefOid"])
     result = []
 
     for pr in prs:
@@ -72,13 +72,12 @@ def get_approved_prs_by_non_team():
             }
         )
 
-    return result
+    return prs, result
 
 
 def start_job(pr_number, commit_sha, author, approved_by, force=False):
     pr_details = run_json(["gh", "pr", "-R", CLI_REPO, "view", str(pr_number), "--json", "title,url"])
     pr_title = pr_details.get("title", "")
-    pr_url = pr_details.get("url", "")
     commit_url = f"https://github.com/{CLI_REPO}/pull/{pr_number}/commits/{commit_sha}"
     approvers = ", ".join(approved_by)
 
@@ -126,11 +125,13 @@ def main():
     parser.add_argument("--yes", action="store_true", default=False)
     args = parser.parse_args()
 
-    approved_prs = get_approved_prs_by_non_team()
+    all_prs, approved_prs = get_approved_prs_by_non_team()
 
     if not approved_prs:
-        print("No approved PRs from non-team members found.")
+        print(f"Fetched {len(all_prs)} PRs. No approved PRs from non-team members found.")
         return
+
+    print(f"Fetched {len(all_prs)} PRs.")
 
     for pr in approved_prs:
         pr_number = pr["number"]
