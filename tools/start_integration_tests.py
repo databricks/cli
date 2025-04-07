@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Script to find open PRs by non-team members that are approved by team members,
 and start integration tests for them if not already running.
@@ -7,7 +8,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-import requests
+#import requests
 import time
 import re
 
@@ -71,6 +72,7 @@ def check_if_job_running(pr_number, commit_sha):
     return False
 
 def start_job(pr_number, commit_sha, author):
+    # AI TODO: include commit title there and full link
     print(f"PR #{pr_number} by {author} (commit {commit_sha[:7]}) is approved but has no running tests.")
     response = input("Start integration tests? (y/n): ")
     
