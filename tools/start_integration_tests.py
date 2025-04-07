@@ -98,12 +98,36 @@ def start_job(pr_number, commit_sha, author):
     
     if response.lower() == "y":
         # Use the commit SHA directly instead of the PR ref
-        # AI TODO: This failed with : Error starting workflow: could not create workflow dispatch event: HTTP 422: Unexpected inputs provided: ["pr_number", "sha"] (https://api.github.com/repos/databricks-eng/eng-dev-ecosystem/actions/workflows/122636273/dispatches)
+        # Check the workflow file to get the correct input parameters
+        result = subprocess.run([
+            "gh", "workflow", "view", "cli-isolated-pr.yml",
+            "-R", "databricks-eng/eng-dev-ecosystem",
+            "--json", "inputs"
+        ], capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            print(f"Error getting workflow inputs: {result.stderr}")
+            return
+            
+        workflow_inputs = json.loads(result.stdout).get("inputs", {})
+        input_params = []
+        
+        # Only add parameters that are defined in the workflow
+        if "pr_number" in workflow_inputs:
+            input_params.extend(["-f", f"pr_number={pr_number}"])
+        if "sha" in workflow_inputs:
+            input_params.extend(["-f", f"sha={commit_sha}"])
+        if "ref" in workflow_inputs:
+            input_params.extend(["-f", f"ref=refs/pull/{pr_number}/head"])
+            
+        # If no valid inputs were found, use default behavior
+        if not input_params:
+            input_params = ["-r", f"refs/pull/{pr_number}/head"]
+            
         result = subprocess.run([
             "gh", "workflow", "run", "cli-isolated-pr.yml",
             "-R", "databricks-eng/eng-dev-ecosystem",
-            "-f", f"pr_number={pr_number}",
-            "-f", f"sha={commit_sha}"
+            *input_params
         ], capture_output=True, text=True)
         
         if result.returncode != 0:
