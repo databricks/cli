@@ -4,6 +4,7 @@ Print selected attributes from terraform state.
 
 Usage: <section> <name> [attr...]
 """
+
 import sys
 import os
 import json
