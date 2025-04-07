@@ -228,7 +228,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		newRoot, result0, err := applyPythonOutput(leftRoot, rightRoot)
 		result = result0
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("failed to apply python output: %w", err)
+			return dyn.InvalidValue, fmt.Errorf("internal error when merging output of Python mutator: %w", err)
 		}
 
 		for _, resourceKey := range result.AddedResources.ToArray() {
