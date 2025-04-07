@@ -97,6 +97,14 @@ def start_job(pr_number, commit_sha, author):
     response = input("Start integration tests? (y/n): ")
     
     if response.lower() == "y":
+        # AI TODO: fix failure, output below:
+        """
+        PR #2668: "Bump golang.org/x/sys from 0.31.0 to 0.32.0" by app/dependabot (commit bf81055)
+        URL: https://github.com/databricks/cli/pull/2668
+        This PR is approved by denik but has no running tests.
+        Start integration tests? (y/n): y
+        could not create workflow dispatch event: HTTP 422: No ref found for: refs/pull/2668/head (https://api.github.com/repos/databricks-eng/eng-dev-ecosystem/actions/workflows/122636273/dispatches)0
+        """
         subprocess.run([
             "gh", "workflow", "run", "cli-isolated-pr.yml",
             "-R", "databricks-eng/eng-dev-ecosystem",
