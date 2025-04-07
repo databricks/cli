@@ -84,6 +84,7 @@ def start_job(pr_number, commit_sha, author):
     
     print(f"PR #{pr_number}: \"{pr_title}\" by {author} (commit {commit_sha[:7]})")
     print(f"URL: {pr_url}")
+    # AI TODO: include details below. approved by who?
     print("This PR is approved but has no running tests.")
     response = input("Start integration tests? (y/n): ")
     
