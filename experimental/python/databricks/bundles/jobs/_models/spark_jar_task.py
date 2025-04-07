@@ -3,11 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOr,
-    VariableOrList,
-    VariableOrOptional,
-)
+from databricks.bundles.core._variable import VariableOr, VariableOrList
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -22,11 +18,6 @@ class SparkJarTask:
     The full name of the class containing the main method to be executed. This class must be contained in a JAR provided as a library.
     
     The code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail.
-    """
-
-    jar_uri: VariableOrOptional[str] = None
-    """
-    Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
     """
 
     parameters: VariableOrList[str] = field(default_factory=list)
@@ -52,11 +43,6 @@ class SparkJarTaskDict(TypedDict, total=False):
     The full name of the class containing the main method to be executed. This class must be contained in a JAR provided as a library.
     
     The code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail.
-    """
-
-    jar_uri: VariableOrOptional[str]
-    """
-    Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
     """
 
     parameters: VariableOrList[str]

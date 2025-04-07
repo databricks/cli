@@ -17,10 +17,7 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import (
-    GitSource,
-    GitSourceParam,
-)
+from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -38,6 +35,10 @@ from databricks.bundles.jobs._models.job_parameter_definition import (
     JobParameterDefinition,
     JobParameterDefinitionParam,
 )
+from databricks.bundles.jobs._models.job_permission import (
+    JobPermission,
+    JobPermissionParam,
+)
 from databricks.bundles.jobs._models.job_run_as import JobRunAs, JobRunAsParam
 from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRules,
@@ -47,7 +48,6 @@ from databricks.bundles.jobs._models.performance_target import (
     PerformanceTarget,
     PerformanceTargetParam,
 )
-from databricks.bundles.jobs._models.permission import Permission, PermissionParam
 from databricks.bundles.jobs._models.queue_settings import (
     QueueSettings,
     QueueSettingsParam,
@@ -144,10 +144,12 @@ class Job(Resource):
 
     performance_target: VariableOrOptional[PerformanceTarget] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
     """
 
-    permissions: VariableOrList[Permission] = field(default_factory=list)
+    permissions: VariableOrList[JobPermission] = field(default_factory=list)
 
     queue: VariableOrOptional[QueueSettings] = None
     """
@@ -272,10 +274,12 @@ class JobDict(TypedDict, total=False):
 
     performance_target: VariableOrOptional[PerformanceTargetParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
     """
 
-    permissions: VariableOrList[PermissionParam]
+    permissions: VariableOrList[JobPermissionParam]
 
     queue: VariableOrOptional[QueueSettingsParam]
     """

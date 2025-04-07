@@ -42,6 +42,9 @@ class TriggerSettings:
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     def __post_init__(self):
         union_fields = [
@@ -82,6 +85,9 @@ class TriggerSettingsDict(TypedDict, total=False):
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
 
 TriggerSettingsParam = TriggerSettingsDict | TriggerSettings
