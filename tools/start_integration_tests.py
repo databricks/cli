@@ -48,47 +48,40 @@ def get_approved_prs_by_non_team():
         author = pr["author"]["login"]
 
         if author in team_members:
-            # print(f"Skipping #{pr_number} by {author}")
             continue
 
-        is_approved = False
+        approved_by = []
         for review in pr.get("reviews", []):
-            if review["state"] == "APPROVED" and review["author"]["login"] in team_members:
-                is_approved = True
-                break
+            approver = review["author"]["login"]
+            if review["state"] == "APPROVED" and approver in team_members:
+                approved_by.append(approver)
 
-        if not is_approved:
-            # print(f"Skipping #{pr_number} by {author} -- not approved yet.")
+        if not approved_by:
             continue
-
-        print(f"Needs tests: #{pr_number} by {author}")
 
         result.append(
             {
                 "number": pr_number,
                 "commit": pr["headRefOid"],
                 "author": author,
+                "approved_by": approved_by,
             }
         )
 
     return result
 
 
-def start_job(pr_number, commit_sha, author, force=False):
+def start_job(pr_number, commit_sha, author, approved_by, force=False):
     pr_details = run_json(["gh", "pr", "view", str(pr_number), "--json", "title,url"])
     pr_title = pr_details.get("title", "")
     pr_url = pr_details.get("url", "")
-
-    print(f"PR: {pr_url}")
-    print(f'PR: #{pr_number}: "{pr_title}" by {author} (commit {commit_sha[:7]})')
-
-    # Get approver information
-    pr_view = run_json(["gh", "pr", "view", str(pr_number), "--json", "reviews"])
-    reviews = pr_view.get("reviews", [])
-    approvers = [review["author"]["login"] for review in reviews if review["state"] == "APPROVED"]
-
     commit_url = f"https://github.com/databricks/cli/pull/{pr_number}/commits/{commit_sha}"
-    print(f"This PR is approved by {', '.join(approvers)} but has no integration tests for {commit_url}")
+    approvers = ", ".join(approved_by)
+
+    print(f"PR:        #{pr_number} {pr_title}")
+    print(f"Author:    {author}")
+    print(f"Approvers: {approvers}")
+    print(f"Commit:    {commit_url}")
 
     if force:
         response = "y"
