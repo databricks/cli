@@ -43,7 +43,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
-	err := mergo.Merge(&existing, schemaUpdate)
+	err := mergo.Merge(&existing, schemaUpdate, mergo.WithOverride)
 	if err != nil {
 		return Response{
 			Body:       fmt.Sprintf("mergo error: %s", err),
