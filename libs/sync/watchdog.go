@@ -17,9 +17,11 @@ const MaxRequestsInFlight = 20
 func (s *Sync) applyDelete(ctx context.Context, remoteName string) error {
 	s.notifyProgress(ctx, EventActionDelete, remoteName, 0.0)
 
-	err := s.filer.Delete(ctx, remoteName)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
+	if !s.DryRun {
+		err := s.filer.Delete(ctx, remoteName)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
 	}
 
 	s.notifyProgress(ctx, EventActionDelete, remoteName, 1.0)
@@ -30,10 +32,12 @@ func (s *Sync) applyDelete(ctx context.Context, remoteName string) error {
 func (s *Sync) applyRmdir(ctx context.Context, remoteName string) error {
 	s.notifyProgress(ctx, EventActionDelete, remoteName, 0.0)
 
-	err := s.filer.Delete(ctx, remoteName)
-	if err != nil {
-		// Directory deletion is opportunistic, so we ignore errors.
-		log.Debugf(ctx, "error removing directory %s: %s", remoteName, err)
+	if !s.DryRun {
+		err := s.filer.Delete(ctx, remoteName)
+		if err != nil {
+			// Directory deletion is opportunistic, so we ignore errors.
+			log.Debugf(ctx, "error removing directory %s: %s", remoteName, err)
+		}
 	}
 
 	s.notifyProgress(ctx, EventActionDelete, remoteName, 1.0)
@@ -44,9 +48,11 @@ func (s *Sync) applyRmdir(ctx context.Context, remoteName string) error {
 func (s *Sync) applyMkdir(ctx context.Context, localName string) error {
 	s.notifyProgress(ctx, EventActionPut, localName, 0.0)
 
-	err := s.filer.Mkdir(ctx, localName)
-	if err != nil {
-		return err
+	if !s.DryRun {
+		err := s.filer.Mkdir(ctx, localName)
+		if err != nil {
+			return err
+		}
 	}
 
 	s.notifyProgress(ctx, EventActionPut, localName, 1.0)
@@ -64,10 +70,12 @@ func (s *Sync) applyPut(ctx context.Context, localName string) error {
 
 	defer localFile.Close()
 
-	opts := []filer.WriteMode{filer.CreateParentDirectories, filer.OverwriteIfExists}
-	err = s.filer.Write(ctx, localName, localFile, opts...)
-	if err != nil {
-		return err
+	if !s.DryRun {
+		opts := []filer.WriteMode{filer.CreateParentDirectories, filer.OverwriteIfExists}
+		err = s.filer.Write(ctx, localName, localFile, opts...)
+		if err != nil {
+			return err
+		}
 	}
 
 	s.notifyProgress(ctx, EventActionPut, localName, 1.0)

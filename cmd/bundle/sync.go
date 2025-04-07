@@ -24,6 +24,7 @@ type syncFlags struct {
 	output   flags.Output
 	exclude  []string
 	include  []string
+	dryRun   bool
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
@@ -51,6 +52,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 	opts.PollInterval = f.interval
 	opts.Exclude = append(opts.Exclude, f.exclude...)
 	opts.Include = append(opts.Include, f.include...)
+	opts.DryRun = f.dryRun
 	return opts, nil
 }
 
@@ -68,6 +70,7 @@ func newSyncCommand() *cobra.Command {
 	cmd.Flags().Var(&f.output, "output", "type of the output format")
 	cmd.Flags().StringSliceVar(&f.exclude, "exclude", nil, "patterns to exclude from sync (can be specified multiple times)")
 	cmd.Flags().StringSliceVar(&f.include, "include", nil, "patterns to include in sync (can be specified multiple times)")
+	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -94,6 +97,10 @@ func newSyncCommand() *cobra.Command {
 		defer s.Close()
 
 		log.Infof(ctx, "Remote file sync location: %v", opts.RemotePath)
+
+		if opts.DryRun {
+			log.Infof(ctx, "Running in dry-run mode. No changes will be made.")
+		}
 
 		if f.watch {
 			return s.RunContinuous(ctx)

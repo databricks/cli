@@ -1,0 +1,7 @@
+bundle:
+  name: bundle-sync-test
+
+resources:
+  dashboards:
+    dashboard1:
+      display_name: My dashboard
