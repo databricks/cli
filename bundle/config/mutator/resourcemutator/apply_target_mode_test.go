@@ -1,12 +1,10 @@
-package mutator
+package resourcemutator
 
 import (
 	"context"
 	"reflect"
 	"slices"
 	"testing"
-
-	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -26,6 +24,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// FIXME apply_target_mode_test should be untied from apply_presets_test
+// and apply_target_mode with validate_target_mode should be moved into mutators package.
 
 func mockBundle(mode config.Mode) *bundle.Bundle {
 	return &bundle.Bundle{
@@ -164,7 +165,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Job 1
@@ -224,7 +225,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -238,7 +239,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
@@ -252,7 +253,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -262,7 +263,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
@@ -304,7 +305,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 		reflect.TypeOf(&resources.Volume{}),
 	}
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
@@ -361,7 +362,7 @@ func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.NamePrefix = "custom_lennart_deploy_"
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "custom_lennart_deploy_job1", b.Config.Resources.Jobs["job1"].Name)
@@ -374,7 +375,7 @@ func TestTagsAlreadySet(t *testing.T) {
 		"dev":    "foo",
 	}
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["custom"])
@@ -385,7 +386,7 @@ func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = nil
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
@@ -395,7 +396,7 @@ func TestTagsEmptySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = map[string]string{}
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
@@ -405,7 +406,7 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.JobsMaxConcurrentRuns = 10
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 10, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
@@ -415,7 +416,7 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.JobsMaxConcurrentRuns = 1
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
@@ -426,7 +427,7 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	notEnabled := false
 	b.Config.Presets.PipelinesDevelopment = &notEnabled
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), resourcemutator.ApplyPresets())
+	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)

@@ -57,6 +57,28 @@ func (r ResourceKeySet) AddPattern(pattern dyn.Pattern, root dyn.Value) error {
 	return err
 }
 
+// Types returns the types of all resources in the set.
+func (r ResourceKeySet) Types() []string {
+	var result []string
+
+	for resourceType := range r {
+		result = append(result, resourceType)
+	}
+
+	return result
+}
+
+// Names returns the names of all resources of a given type.
+func (r ResourceKeySet) Names(resourceType string) []string {
+	var result []string
+
+	for resourceName := range r[resourceType] {
+		result = append(result, resourceName)
+	}
+
+	return result
+}
+
 // ToArray converts the set to an array of resource keys.
 func (r ResourceKeySet) ToArray() []ResourceKey {
 	var result []ResourceKey
