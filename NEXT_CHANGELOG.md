@@ -8,9 +8,11 @@
 
 ### CLI
 * Added include/exclude flags support to sync command ([#2650](https://github.com/databricks/cli/pull/2650))
+* Added exclude-from flag support to sync command ([#2660](https://github.com/databricks/cli/pull/2660))
 
 ### Bundles
 * Added support for model serving endpoints in deployment bind/unbind commands ([#2634](https://github.com/databricks/cli/pull/2634))
 * Added include/exclude flags support to bundle sync command ([#2650](https://github.com/databricks/cli/pull/2650))
+* Added exclude-from flag support to bundle sync command ([#2660](https://github.com/databricks/cli/pull/2660))
 
 ### API Changes

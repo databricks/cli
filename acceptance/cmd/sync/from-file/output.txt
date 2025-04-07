@@ -1,0 +1,8 @@
+
+>>> [CLI] sync . /Users/[USERNAME] --exclude-from .databricksignore
+Initial Sync Complete
+Uploaded .databricksignore
+Uploaded .gitignore
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
