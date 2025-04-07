@@ -768,9 +768,7 @@
                       },
                       "target": {
                         "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
-                        "$ref": "#/$defs/string",
-                        "deprecationMessage": "This legacy field is deprecated for pipeline creation in favor of the schema field",
-                        "deprecated": true
+                        "$ref": "#/$defs/string"
                       },
                       "trigger": {
                         "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
