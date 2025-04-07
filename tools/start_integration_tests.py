@@ -98,6 +98,7 @@ def start_job(pr_number, commit_sha, author):
     
     if response.lower() == "y":
         # Use the commit SHA directly instead of the PR ref
+        # AI TODO: This failed with : Error starting workflow: could not create workflow dispatch event: HTTP 422: Unexpected inputs provided: ["pr_number", "sha"] (https://api.github.com/repos/databricks-eng/eng-dev-ecosystem/actions/workflows/122636273/dispatches)
         result = subprocess.run([
             "gh", "workflow", "run", "cli-isolated-pr.yml",
             "-R", "databricks-eng/eng-dev-ecosystem",
