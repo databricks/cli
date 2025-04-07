@@ -25,9 +25,34 @@ type FakeWorkspace struct {
 	nextJobId int64
 	jobs      map[int64]jobs.Job
 
-	pipelines map[string]pipelines.PipelineSpec
-	monitors  map[string]catalog.MonitorInfo
-	apps      map[string]apps.App
+	Pipelines map[string]pipelines.PipelineSpec
+	Monitors  map[string]catalog.MonitorInfo
+	Apps      map[string]apps.App
+	Schemas   map[string]catalog.SchemaInfo
+}
+
+// Generic functions to handle map operations
+func MapGet[T any](collection map[string]T, key string) Response {
+	value, ok := collection[key]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+	return Response{
+		Body: value,
+	}
+}
+
+func MapDelete[T any](collection map[string]T, key string) Response {
+	_, ok := collection[key]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+	delete(collection, key)
+	return Response{}
 }
 
 func NewFakeWorkspace() *FakeWorkspace {
@@ -39,9 +64,10 @@ func NewFakeWorkspace() *FakeWorkspace {
 		jobs:      map[int64]jobs.Job{},
 		nextJobId: 1,
 
-		pipelines: map[string]pipelines.PipelineSpec{},
-		monitors:  map[string]catalog.MonitorInfo{},
-		apps:      map[string]apps.App{},
+		Pipelines: map[string]pipelines.PipelineSpec{},
+		Monitors:  map[string]catalog.MonitorInfo{},
+		Apps:      map[string]apps.App{},
+		Schemas:   map[string]catalog.SchemaInfo{},
 	}
 }
 
@@ -134,7 +160,7 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
 	pipelineId := uuid.New().String()
 
-	s.pipelines[pipelineId] = r
+	s.Pipelines[pipelineId] = r
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
@@ -167,7 +193,7 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 }
 
 func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
-	spec, ok := s.pipelines[pipelineId]
+	spec, ok := s.Pipelines[pipelineId]
 	if !ok {
 		return Response{
 			StatusCode: 404,

@@ -1,0 +1,22 @@
+echo "*" > .gitignore
+trace $CLI bundle deploy
+
+print_requests() {
+    jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace print_requests
+read_state.py schemas schema1 id name catalog_name comment
+
+title "Update comment and re-deploy"
+trace update_file.py databricks.yml COMMENT1 COMMENT2
+trace $CLI bundle deploy
+trace print_requests
+read_state.py schemas schema1 id name catalog_name comment
+
+title "Restore comment to original value and re-deploy"
+trace update_file.py databricks.yml COMMENT2 COMMENT1
+trace $CLI bundle deploy
+trace print_requests
+read_state.py schemas schema1 id name catalog_name comment

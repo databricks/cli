@@ -50,6 +50,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	if state.ID == uuid.Nil {
 		state.ID = uuid.New()
 	}
+	b.Metrics.DeploymentId = state.ID
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {

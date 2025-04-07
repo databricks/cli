@@ -16,6 +16,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
+    CleanRoomsNotebookTask,
+    CleanRoomsNotebookTaskParam,
+)
 from databricks.bundles.jobs._models.condition_task import (
     ConditionTask,
     ConditionTaskParam,
@@ -24,6 +28,10 @@ from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
 from databricks.bundles.jobs._models.for_each_task import (
     ForEachTask,
     ForEachTaskParam,
+)
+from databricks.bundles.jobs._models.gen_ai_compute_task import (
+    GenAiComputeTask,
+    GenAiComputeTaskParam,
 )
 from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRules,
@@ -91,6 +99,12 @@ class Task:
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
     """
 
+    clean_rooms_notebook_task: VariableOrOptional[CleanRoomsNotebookTask] = None
+    """
+    The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook
+    when the `clean_rooms_notebook_task` field is present.
+    """
+
     condition_task: VariableOrOptional[ConditionTask] = None
     """
     The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.
@@ -139,6 +153,11 @@ class Task:
     for_each_task: VariableOrOptional[ForEachTask] = None
     """
     The task executes a nested task for every input provided when the `for_each_task` field is present.
+    """
+
+    gen_ai_compute_task: VariableOrOptional[GenAiComputeTask] = None
+    """
+    :meta private: [EXPERIMENTAL]
     """
 
     health: VariableOrOptional[JobsHealthRules] = None
@@ -281,6 +300,12 @@ class TaskDict(TypedDict, total=False):
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
     """
 
+    clean_rooms_notebook_task: VariableOrOptional[CleanRoomsNotebookTaskParam]
+    """
+    The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook
+    when the `clean_rooms_notebook_task` field is present.
+    """
+
     condition_task: VariableOrOptional[ConditionTaskParam]
     """
     The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.
@@ -329,6 +354,11 @@ class TaskDict(TypedDict, total=False):
     for_each_task: VariableOrOptional[ForEachTaskParam]
     """
     The task executes a nested task for every input provided when the `for_each_task` field is present.
+    """
+
+    gen_ai_compute_task: VariableOrOptional[GenAiComputeTaskParam]
+    """
+    :meta private: [EXPERIMENTAL]
     """
 
     health: VariableOrOptional[JobsHealthRulesParam]
