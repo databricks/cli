@@ -231,7 +231,9 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
     "description": |-
       PLACEHOLDER
   "target":
-    "deprecation_message": This legacy field is deprecated for pipeline creation in favor of the schema field
+    # should not be marked as deprecated until its possible to switch
+    # existing pipelines to use 'schema' instead
+    "deprecated": false
   "trigger":
     "deprecation_message": Use continuous instead
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
