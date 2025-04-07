@@ -1,8 +1,7 @@
 echo "*" > .gitignore
 trace $CLI bundle deploy
 # Filter out GET requests and only keep requests related to unity catalog
-# AI TODO: fix error:        +jq: error (at <stdin>:4): boolean (false) and string ("/unity") cannot have their containment checked
-jq 'select(.method != "GET" and .path | contains("/unity"))' < out.requests.txt > out.requests-deploy1.txt
+jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt > out.requests-deploy1.txt
 rm out.requests.txt
 
 read_state.py schemas schema1 id name catalog_name comment
