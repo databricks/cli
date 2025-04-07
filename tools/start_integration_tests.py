@@ -11,6 +11,10 @@ from pathlib import Path
 import re
 
 
+CLI_REPO = "databricks/cli"
+ECO_REPO = "databricks-eng/eng-dev-ecosystem"
+
+
 def run(cmd):
     sys.stderr.write("+ " + " ".join(cmd) + "\n")
     return subprocess.run(cmd, check=True)
@@ -40,7 +44,7 @@ def get_team_members():
 def get_approved_prs_by_non_team():
     team_members = get_team_members()
 
-    prs = run_json(["gh", "pr", "list", "--json", "number,author,reviews,headRefOid"])
+    prs = run_json(["gh", "pr", "-R", CLI_REPO, "list", "--json", "number,author,reviews,headRefOid"])
     result = []
 
     for pr in prs:
@@ -72,10 +76,10 @@ def get_approved_prs_by_non_team():
 
 
 def start_job(pr_number, commit_sha, author, approved_by, force=False):
-    pr_details = run_json(["gh", "pr", "view", str(pr_number), "--json", "title,url"])
+    pr_details = run_json(["gh", "pr", "-R", CLI_REPO, "view", str(pr_number), "--json", "title,url"])
     pr_title = pr_details.get("title", "")
     pr_url = pr_details.get("url", "")
-    commit_url = f"https://github.com/databricks/cli/pull/{pr_number}/commits/{commit_sha}"
+    commit_url = f"https://github.com/{CLI_REPO}/pull/{pr_number}/commits/{commit_sha}"
     approvers = ", ".join(approved_by)
 
     print(f"PR:        #{pr_number} {pr_title}")
@@ -97,19 +101,18 @@ def start_job(pr_number, commit_sha, author, approved_by, force=False):
                 "run",
                 "cli-isolated-pr",
                 "-R",
-                "databricks-eng/eng-dev-ecosystem",
+                ECO_REPO,
                 "-F",
                 f"pull_request_number={pr_number}",
                 "-F",
                 f"commit_sha={commit_sha}",
             ],
-            check=True,
         )
         print(f"Started integration tests for PR #{pr_number}")
 
 
 def get_status(commit_sha):
-    statuses = run_json(["gh", "api", f"repos/databricks/cli/commits/{commit_sha}/statuses"])
+    statuses = run_json(["gh", "api", f"repos/{CLI_REPO}/commits/{commit_sha}/statuses"])
     result = []
     for st in statuses:
         if st["context"] != "Integration Tests Check":
@@ -136,9 +139,9 @@ def main():
         status = get_status(commit_sha)
 
         if not status:
-            start_job(pr_number, commit_sha, pr["author"], force=args.yes)
+            start_job(pr_number, commit_sha, pr["author"], approved_by=pr["approved_by"], force=args.yes)
         else:
-            commit_url = f"https://github.com/databricks/cli/pull/{pr_number}/commits/{commit_sha}"
+            commit_url = f"https://github.com/{CLI_REPO}/pull/{pr_number}/commits/{commit_sha}"
             print(f"Tests already running for PR #{pr_number} {commit_url}")
             print("\n".join(status))
         print()
