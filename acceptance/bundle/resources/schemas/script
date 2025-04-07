@@ -1,5 +1,6 @@
 echo "*" > .gitignore
 trace $CLI bundle deploy
+# AI TODO: Filter out GET requests from the input
 jq 'select(.path | contains("/unity"))' < out.requests.txt > out.requests-deploy1.txt
 rm out.requests.txt
 
