@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Print selected attributes from terraform state.
+
+Usage: <section> <name> [attr...]
+"""
 import sys
 import os
 import json
@@ -29,11 +34,4 @@ def print_resource_terraform(section, name, *attrs):
         print(f"Resource {(resource_type, name)} not found. Available: {available}")
 
 
-def print_resource_terranova(section, name, attrs):
-    pass
-
-
-if os.environ.get("TERRANOVA"):
-    print_resource_terranova(*sys.argv[1:])
-else:
-    print_resource_terraform(*sys.argv[1:])
+print_resource_terraform(*sys.argv[1:])
