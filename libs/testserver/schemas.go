@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"dario.cat/mergo"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -43,7 +44,10 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
+	fmt.Fprintf(os.Stderr, "Merging %#v\ninto\n%#v\n\n", schemaUpdate, existing)
+	// AI TODO: explain why this Merge operation did not copy Comment from schemaUpdate into existing
 	err := mergo.Merge(&existing, schemaUpdate)
+	fmt.Fprintf(os.Stderr, "MERGED %#v\ninto\n%#v\n\n", schemaUpdate, existing)
 	if err != nil {
 		return Response{
 			Body:       fmt.Sprintf("mergo error: %s", err),
