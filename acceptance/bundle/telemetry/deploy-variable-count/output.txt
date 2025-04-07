@@ -7,6 +7,7 @@ Deployment complete!
 >>> cat out.requests.txt
 {
   "bundle_uuid": "[UUID]",
+  "deployment_id": "[UUID]",
   "resource_count": 0,
   "resource_job_count": 0,
   "resource_pipeline_count": 0,
@@ -25,7 +26,8 @@ Deployment complete!
     "variable_count": 6,
     "complex_variable_count": 1,
     "lookup_variable_count": 2,
-    "target_count": 0,
-    "bundle_mode": "TYPE_UNSPECIFIED"
+    "target_count": 1,
+    "bundle_mode": "TYPE_UNSPECIFIED",
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
   }
 }

@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -10,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -324,9 +324,14 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 	complexVariableCount := int64(0)
 	lookupVariableCount := int64(0)
 	for _, v := range b.Config.Variables {
-		if v.Type == variable.VariableTypeComplex {
+		// If the resolved value of the variable is a complex type, we count it as a complex variable.
+		// We can't rely on the "type: complex" annotation because the annotation is optional in some contexts
+		// like bundle YAML files.
+		kind := reflect.ValueOf(v.Value).Kind()
+		if kind == reflect.Struct || kind == reflect.Array || kind == reflect.Slice || kind == reflect.Map {
 			complexVariableCount++
 		}
+
 		if v.Lookup != nil {
 			lookupVariableCount++
 		}
