@@ -1,0 +1,5 @@
+bundle:
+  name: yml_outside_root
+
+include:
+  - ../include.yml

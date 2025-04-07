@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle validate --output json
+{
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/relative_path_outside_root/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "name": "include_outside_root",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {},
+        "tasks": [
+          {
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/relative_path_outside_root/default/files/src/notebook"
+            },
+            "task_key": "task_key"
+          }
+        ]
+      }
+    }
+  }
+}

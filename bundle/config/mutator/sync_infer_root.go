@@ -106,11 +106,14 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	for i, p := range b.Config.Sync.Paths {
 		b.Config.Sync.Paths[i] = filepath.Join(rel, p)
 	}
+
+	// Convert include and exclude in the sync block to use Unix-style slashes.
+	// This is required for the ignore.GitIgnore we use in libs/fileset to work correctly.
 	for i, p := range b.Config.Sync.Include {
-		b.Config.Sync.Include[i] = filepath.Join(rel, p)
+		b.Config.Sync.Include[i] = filepath.ToSlash(filepath.Join(rel, p))
 	}
 	for i, p := range b.Config.Sync.Exclude {
-		b.Config.Sync.Exclude[i] = filepath.Join(rel, p)
+		b.Config.Sync.Exclude[i] = filepath.ToSlash(filepath.Join(rel, p))
 	}
 
 	// Configure the sync root path.

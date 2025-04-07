@@ -14,19 +14,19 @@ func TestSyncOverride(t *testing.T) {
 	b = loadTarget(t, "./sync/override", "development")
 	assert.Equal(t, filepath.FromSlash("sync/override"), b.SyncRootPath)
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("src/*"), filepath.FromSlash("tests/*")}, b.Config.Sync.Include)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("dist")}, b.Config.Sync.Exclude)
+	assert.ElementsMatch(t, []string{"src/*", "tests/*"}, b.Config.Sync.Include)
+	assert.ElementsMatch(t, []string{"dist"}, b.Config.Sync.Exclude)
 
 	b = loadTarget(t, "./sync/override", "staging")
 	assert.Equal(t, filepath.FromSlash("sync/override"), b.SyncRootPath)
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("src/*"), filepath.FromSlash("fixtures/*")}, b.Config.Sync.Include)
+	assert.ElementsMatch(t, []string{"src/*", "fixtures/*"}, b.Config.Sync.Include)
 	assert.ElementsMatch(t, []string{}, b.Config.Sync.Exclude)
 
 	b = loadTarget(t, "./sync/override", "prod")
 	assert.Equal(t, filepath.FromSlash("sync/override"), b.SyncRootPath)
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("src/*")}, b.Config.Sync.Include)
+	assert.ElementsMatch(t, []string{"src/*"}, b.Config.Sync.Include)
 	assert.ElementsMatch(t, []string{}, b.Config.Sync.Exclude)
 }
 
@@ -36,13 +36,13 @@ func TestSyncOverrideNoRootSync(t *testing.T) {
 	b = loadTarget(t, "./sync/override_no_root", "development")
 	assert.Equal(t, filepath.FromSlash("sync/override_no_root"), b.SyncRootPath)
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("tests/*")}, b.Config.Sync.Include)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("dist")}, b.Config.Sync.Exclude)
+	assert.ElementsMatch(t, []string{"tests/*"}, b.Config.Sync.Include)
+	assert.ElementsMatch(t, []string{"dist"}, b.Config.Sync.Exclude)
 
 	b = loadTarget(t, "./sync/override_no_root", "staging")
 	assert.Equal(t, filepath.FromSlash("sync/override_no_root"), b.SyncRootPath)
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("fixtures/*")}, b.Config.Sync.Include)
+	assert.ElementsMatch(t, []string{"fixtures/*"}, b.Config.Sync.Include)
 	assert.ElementsMatch(t, []string{}, b.Config.Sync.Exclude)
 
 	b = loadTarget(t, "./sync/override_no_root", "prod")
@@ -64,8 +64,8 @@ func TestSyncNil(t *testing.T) {
 	b = loadTarget(t, "./sync/nil", "staging")
 	assert.Equal(t, filepath.FromSlash("sync/nil"), b.SyncRootPath)
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("tests/*")}, b.Config.Sync.Include)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("dist")}, b.Config.Sync.Exclude)
+	assert.ElementsMatch(t, []string{"tests/*"}, b.Config.Sync.Include)
+	assert.ElementsMatch(t, []string{"dist"}, b.Config.Sync.Exclude)
 }
 
 func TestSyncNilRoot(t *testing.T) {
@@ -80,8 +80,8 @@ func TestSyncNilRoot(t *testing.T) {
 	b = loadTarget(t, "./sync/nil_root", "staging")
 	assert.Equal(t, filepath.FromSlash("sync/nil_root"), b.SyncRootPath)
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("tests/*")}, b.Config.Sync.Include)
-	assert.ElementsMatch(t, []string{filepath.FromSlash("dist")}, b.Config.Sync.Exclude)
+	assert.ElementsMatch(t, []string{"tests/*"}, b.Config.Sync.Include)
+	assert.ElementsMatch(t, []string{"dist"}, b.Config.Sync.Exclude)
 }
 
 func TestSyncPaths(t *testing.T) {

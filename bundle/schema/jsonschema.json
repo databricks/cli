@@ -696,10 +696,6 @@
                         "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.",
                         "$ref": "#/$defs/bool"
                       },
-                      "deployment": {
-                        "description": "Deployment type of this pipeline.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineDeployment"
-                      },
                       "development": {
                         "description": "Whether the pipeline is in Development mode. Defaults to false.",
                         "$ref": "#/$defs/bool"
@@ -1117,7 +1113,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "dynamic_version": {
-                      "description": "Whether to patch the wheel version with dynamic component, based on timestamp of whl file. This ensures that the new code is deployed without having to update version in setup.py / pyproject.toml. Only applies to type=whl.",
+                      "description": "Whether to patch the wheel version dynamically based on the timestamp of the whl file. If this is set to `true`, new code can be deployed without having to update the version in `setup.py` or `pyproject.toml`. This setting is only valid when `type` is set to `whl`. See [\\_](/dev-tools/bundles/settings.md#bundle-syntax-mappings-artifacts).",
                       "$ref": "#/$defs/bool"
                     },
                     "executable": {

@@ -41,6 +41,7 @@ var (
 	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
 	Tail        bool
 	Forcerun    bool
+	LogRequests bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -58,6 +59,7 @@ func init() {
 	flag.BoolVar(&NoRepl, "norepl", false, "Do not apply any replacements (for debugging)")
 	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
+	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 }
 
 const (
@@ -306,15 +308,15 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		}
 
 		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID=%s)", configPath, os.Getenv("TEST_METASTORE_ID"))
+			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID is empty)", configPath)
 		}
 
 		if isTruePtr(config.RequiresWarehouse) && os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresWarehouse setting in %s (TEST_DEFAULT_WAREHOUSE_ID=%s)", configPath, os.Getenv("TEST_DEFAULT_WAREHOUSE_ID"))
+			return fmt.Sprintf("Disabled via RequiresWarehouse setting in %s (TEST_DEFAULT_WAREHOUSE_ID is empty)", configPath)
 		}
 
 		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID=%s)", configPath, os.Getenv("TEST_DEFAULT_CLUSTER_ID"))
+			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
 		}
 
 	} else {
@@ -389,10 +391,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			server = testserver.New(t)
 			if isTruePtr(config.RecordRequests) {
 				requestsPath := filepath.Join(tmpDir, "out.requests.txt")
-				server.RecordRequestsCallback = func(request *testserver.Request) {
+				server.RequestCallback = func(request *testserver.Request) {
 					req := getLoggedRequest(request, config.IncludeRequestHeaders)
 					reqJson, err := json.MarshalIndent(req, "", "  ")
-					assert.NoErrorf(t, err, "Failed to indent: %#v", req)
+					assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
 
 					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 					assert.NoError(t, err)
@@ -400,6 +402,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 					_, err = f.WriteString(string(reqJson) + "\n")
 					assert.NoError(t, err)
+				}
+			}
+
+			if LogRequests {
+				server.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
+					t.Logf("%d %s %s\n%s\n%s",
+						response.StatusCode, request.Method, request.URL,
+						formatHeadersAndBody("> ", request.Headers, request.Body),
+						formatHeadersAndBody("# ", response.Headers, response.Body),
+					)
 				}
 			}
 
@@ -660,7 +672,12 @@ func copyFile(src, dst string) error {
 	}
 	defer in.Close()
 
-	out, err := os.Create(dst)
+	info, err := in.Stat()
+	if err != nil {
+		return err
+	}
+
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, info.Mode())
 	if err != nil {
 		return err
 	}
@@ -942,4 +959,26 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) (string, error) 
 	} else {
 		return "", fmt.Errorf("databricks-bundles wheel not found in %s", buildDir)
 	}
+}
+
+func formatHeadersAndBody(prefix string, headers http.Header, body []byte) string {
+	var result []string
+	for key, values := range headers {
+		if len(values) == 1 {
+			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values[0]))
+		} else {
+			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values))
+		}
+	}
+	if len(body) > 0 {
+		var s string
+		if utf8.Valid(body) {
+			s = string(body)
+		} else {
+			s = fmt.Sprintf("[Binary %d bytes]", len(body))
+		}
+		s = strings.ReplaceAll(s, "\n", "\n"+prefix)
+		result = append(result, prefix+s)
+	}
+	return strings.Join(result, "\n")
 }

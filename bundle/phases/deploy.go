@@ -332,6 +332,13 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		}
 	}
 
+	artifactPathType := protos.BundleDeployArtifactPathTypeUnspecified
+	if libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
+		artifactPathType = protos.BundleDeployArtifactPathTypeVolume
+	} else if libraries.IsWorkspacePath(b.Config.Workspace.ArtifactPath) {
+		artifactPathType = protos.BundleDeployArtifactPathTypeWorkspace
+	}
+
 	mode := protos.BundleModeUnspecified
 	if b.Config.Bundle.Mode == config.Development {
 		mode = protos.BundleModeDevelopment
@@ -341,7 +348,8 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
-			BundleUuid: bundleUuid,
+			BundleUuid:   bundleUuid,
+			DeploymentId: b.Metrics.DeploymentId.String(),
 
 			ResourceCount:                     resourcesCount,
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
@@ -363,12 +371,13 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourceDashboardIDs: dashboardIds,
 
 			Experimental: &protos.BundleDeployExperimental{
-				VariableCount:          int64(variableCount),
-				ComplexVariableCount:   complexVariableCount,
-				LookupVariableCount:    lookupVariableCount,
-				BundleMode:             mode,
-				ConfigurationFileCount: b.Metrics.ConfigurationFileCount,
-				TargetCount:            b.Metrics.TargetCount,
+				VariableCount:             int64(variableCount),
+				ComplexVariableCount:      complexVariableCount,
+				LookupVariableCount:       lookupVariableCount,
+				BundleMode:                mode,
+				ConfigurationFileCount:    b.Metrics.ConfigurationFileCount,
+				TargetCount:               b.Metrics.TargetCount,
+				WorkspaceArtifactPathType: artifactPathType,
 			},
 		},
 	})

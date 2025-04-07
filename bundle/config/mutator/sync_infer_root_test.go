@@ -103,8 +103,8 @@ func TestSyncInferRoot_ParentDirectory(t *testing.T) {
 
 	// Check that the paths are updated.
 	assert.Equal(t, []string{"common"}, b.Config.Sync.Paths)
-	assert.Equal(t, []string{filepath.FromSlash("dir/foo"), filepath.FromSlash("dir/bar")}, b.Config.Sync.Include)
-	assert.Equal(t, []string{filepath.FromSlash("dir/baz"), filepath.FromSlash("dir/qux")}, b.Config.Sync.Exclude)
+	assert.Equal(t, []string{"dir/foo", "dir/bar"}, b.Config.Sync.Include)
+	assert.Equal(t, []string{"dir/baz", "dir/qux"}, b.Config.Sync.Exclude)
 }
 
 func TestSyncInferRoot_ManyParentDirectories(t *testing.T) {
@@ -135,12 +135,12 @@ func TestSyncInferRoot_ManyParentDirectories(t *testing.T) {
 	// Check that the paths are updated.
 	assert.Equal(t, []string{"common"}, b.Config.Sync.Paths)
 	assert.Equal(t, []string{
-		filepath.FromSlash("dir/that/is/very/deeply/nested/foo"),
-		filepath.FromSlash("dir/that/is/very/deeply/nested/bar"),
+		"dir/that/is/very/deeply/nested/foo",
+		"dir/that/is/very/deeply/nested/bar",
 	}, b.Config.Sync.Include)
 	assert.Equal(t, []string{
-		filepath.FromSlash("dir/that/is/very/deeply/nested/baz"),
-		filepath.FromSlash("dir/that/is/very/deeply/nested/qux"),
+		"dir/that/is/very/deeply/nested/baz",
+		"dir/that/is/very/deeply/nested/qux",
 	}, b.Config.Sync.Exclude)
 }
 

@@ -71,7 +71,7 @@ jobs:
       - name: Pull external libraries
         run: |
           make vendor
-          pip3 install wheel
+          pip3 install wheel==0.45.1
 
       - name: Run tests with coverage
         run: make cover
@@ -114,7 +114,7 @@ jobs:
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
       - name: Run whitespace check
-        run: python tools/validate_whitespace.py
+        run: make ws
 
   validate-bundle-schema:
     needs: cleanups

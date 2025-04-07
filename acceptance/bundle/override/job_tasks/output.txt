@@ -1,5 +1,6 @@
 {
   "name": "job",
+  "permissions": [],
   "queue": {
     "enabled": true
   },
@@ -12,7 +13,7 @@
         "spark_version": "13.3.x-scala2.12"
       },
       "spark_python_task": {
-        "python_file": "./test1.py"
+        "python_file": "test1.py"
       },
       "task_key": "key1"
     },
@@ -21,7 +22,7 @@
         "spark_version": "13.3.x-scala2.12"
       },
       "spark_python_task": {
-        "python_file": "./test2.py"
+        "python_file": "test2.py"
       },
       "task_key": "key2"
     }
@@ -29,12 +30,13 @@
 }
 
 >>> errcode [CLI] bundle validate -o json -t staging
-Error: file ./test1.py not found
+Error: file test1.py not found
 
 
 Exit code: 1
 {
   "name": "job",
+  "permissions": [],
   "queue": {
     "enabled": true
   },
@@ -45,7 +47,7 @@ Exit code: 1
         "spark_version": "13.3.x-scala2.12"
       },
       "spark_python_task": {
-        "python_file": "./test1.py"
+        "python_file": "test1.py"
       },
       "task_key": "key1"
     },
@@ -56,7 +58,7 @@ Exit code: 1
         "spark_version": "13.3.x-scala2.12"
       },
       "spark_python_task": {
-        "python_file": "./test3.py"
+        "python_file": "test3.py"
       },
       "task_key": "key2"
     }
@@ -64,7 +66,7 @@ Exit code: 1
 }
 
 >>> errcode [CLI] bundle validate -t staging
-Error: file ./test1.py not found
+Error: file test1.py not found
 
 Name: override_job_tasks
 Target: staging

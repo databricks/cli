@@ -190,7 +190,7 @@ func convertLinksToAbsoluteUrl(s string) string {
 	referencePage := "/dev-tools/bundles/reference.html"
 
 	// Regular expression to match Markdown-style links like [_](link)
-	re := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)
+	re := regexp.MustCompile(`\[\\?(.*?)\]\((.*?)\)`)
 	result := re.ReplaceAllStringFunc(s, func(match string) string {
 		matches := re.FindStringSubmatch(match)
 		if len(matches) < 2 {
