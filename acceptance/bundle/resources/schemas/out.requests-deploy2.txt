@@ -1,0 +1,15 @@
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema",
+  "body": {
+    "comment": "COMMENT2"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema"
+}

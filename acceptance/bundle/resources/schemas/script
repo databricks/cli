@@ -1,0 +1,22 @@
+echo "*" > .gitignore
+trace $CLI bundle deploy
+jq 'select(.path | contains("/unity"))' < out.requests.txt > out.requests-deploy1.txt
+rm out.requests.txt
+
+read_state.py schemas schema1 id name catalog_name comment
+
+title "Update comment and re-deploy"
+trace update_file.py databricks.yml COMMENT1 COMMENT2
+errcode trace $CLI bundle deploy
+jq 'select(.path | contains("/unity"))' < out.requests.txt > out.requests-deploy2.txt
+rm out.requests.txt
+
+read_state.py schemas schema1 id name catalog_name comment
+
+title "Restore comment to original value and re-deploy"
+trace update_file.py databricks.yml COMMENT2 COMMENT1
+errcode trace $CLI bundle deploy
+jq 'select(.path | contains("/unity"))' < out.requests.txt > out.requests-deploy3.txt
+rm out.requests.txt
+
+read_state.py schemas schema1 id name catalog_name comment
