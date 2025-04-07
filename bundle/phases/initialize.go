@@ -114,12 +114,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		// ApplyTargetMode sets default values for 'presets' section.
 		//
-		// It must run before ProcessYamlResources and PythonMutator using
+		// It must run before ProcessStaticResources and PythonMutator using
 		// ApplyPresets through ResourceProcessor.
 		resourcemutator.ApplyTargetMode(),
 
-		// YAML resources are already loaded, we initialize and normalize them before Python
-		resourcemutator.ProcessYamlResources(),
+		// Static resources (e.g. YAML) are already loaded, we initialize and normalize them before Python
+		resourcemutator.ProcessStaticResources(),
 		mutator.NormalizePaths(),
 
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),

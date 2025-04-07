@@ -17,8 +17,10 @@ import (
 // settings and defaults to it. Initialization is applied only once.
 //
 // If bundle is modified outside of 'resources' section, these changes are discarded.
-func initializeMutators() []bundle.Mutator {
-	return []bundle.Mutator{
+func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	return bundle.ApplySeq(
+		ctx,
+		b,
 		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
 		// Reads (dynamic): run_as (checks if run_as is specified)
 		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as; only if Experimental.UseLegacyRunAs is set)
@@ -60,14 +62,16 @@ func initializeMutators() []bundle.Mutator {
 		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
 		FilterCurrentUser(),
-	}
+	)
 }
 
 // Normalization is applied multiple times if resource is modified during initialization
 //
 // If bundle is modified outside of 'resources' section, these changes are discarded.
-func normalizeMutators() []bundle.Mutator {
-	return []bundle.Mutator{
+func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	return bundle.ApplySeq(
+		ctx,
+		b,
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
@@ -106,7 +110,7 @@ func normalizeMutators() []bundle.Mutator {
 		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
 		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
 		CaptureSchemaDependency(),
-	}
+	)
 }
 
 // NormalizeAndInitializeResources initializes and normalizes specified resources,
@@ -132,12 +136,12 @@ func NormalizeAndInitializeResources(
 		return diags.Extend(diag.Errorf("failed to select resources: %s", err))
 	}
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b, normalizeMutators()...))
+	diags = diags.Extend(applyNormalizeMutators(ctx, b))
 	if diags.HasError() {
 		return diags
 	}
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b, initializeMutators()...))
+	diags = diags.Extend(applyInitializeMutators(ctx, b))
 	if diags.HasError() {
 		return diags
 	}
@@ -176,7 +180,7 @@ func NormalizeResources(
 		return diags.Extend(diag.Errorf("failed to select resources: %s", err))
 	}
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b, normalizeMutators()...))
+	diags = diags.Extend(applyNormalizeMutators(ctx, b))
 	if diags.HasError() {
 		return diags
 	}

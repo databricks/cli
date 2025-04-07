@@ -9,24 +9,24 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type processYamlResources struct{}
+type processStaticResources struct{}
 
-// ProcessYamlResources is a mutator that processes all YAML resources in the bundle.
+// ProcessStaticResources is a mutator that processes all YAML resources in the bundle.
 //
 // Pre-condition:
-// - Only YAML resources are loaded
+// - Only static resources are loaded (e.g. YAML)
 //
 // Post-condition:
-// - All YAML resources are initialized and normalized
-func ProcessYamlResources() bundle.Mutator {
-	return &processYamlResources{}
+// - All static resources are initialized and normalized
+func ProcessStaticResources() bundle.Mutator {
+	return &processStaticResources{}
 }
 
-func (p processYamlResources) Name() string {
-	return "ProcessYamlResources"
+func (p processStaticResources) Name() string {
+	return "ProcessStaticResources"
 }
 
-func (p processYamlResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	addedResources, err := getAllResources(b)
 	if err != nil {
 		return diag.FromErr(err)

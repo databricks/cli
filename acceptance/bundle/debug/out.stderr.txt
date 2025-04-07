@@ -38,7 +38,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
-10:07:59 Debug: Apply pid=12345 mutator=ProcessYamlResources
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources
 10:07:59 Debug: Apply pid=12345 mutator=NormalizePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(init)
