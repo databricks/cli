@@ -58,7 +58,7 @@ class Pipeline(Resource):
     budget_policy_id: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
-
+    
     Budget policy of this pipeline.
     """
 
@@ -110,7 +110,7 @@ class Pipeline(Resource):
     gateway_definition: VariableOrOptional[IngestionGatewayPipelineDefinition] = None
     """
     :meta private: [EXPERIMENTAL]
-
+    
     The definition of a gateway pipeline to support change data capture.
     """
 
@@ -149,7 +149,7 @@ class Pipeline(Resource):
     restart_window: VariableOrOptional[RestartWindow] = None
     """
     :meta private: [EXPERIMENTAL]
-
+    
     Restart window of this pipeline.
     """
 
@@ -173,6 +173,11 @@ class Pipeline(Resource):
     DBFS root directory for storing checkpoints and tables.
     """
 
+    target: VariableOrOptional[str] = None
+    """
+    Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    """
+
     @classmethod
     def from_dict(cls, value: "PipelineDict") -> "Self":
         return _transform(cls, value)
@@ -184,19 +189,10 @@ class Pipeline(Resource):
 class PipelineDict(TypedDict, total=False):
     """"""
 
-<<<<<<< HEAD
-    name: VariableOrOptional[str]
-    """
-    TODO
-    """
-
-
-PipelineParam = Pipeline | PipelineDict
-=======
     budget_policy_id: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
-
+    
     Budget policy of this pipeline.
     """
 
@@ -248,7 +244,7 @@ PipelineParam = Pipeline | PipelineDict
     gateway_definition: VariableOrOptional[IngestionGatewayPipelineDefinitionParam]
     """
     :meta private: [EXPERIMENTAL]
-
+    
     The definition of a gateway pipeline to support change data capture.
     """
 
@@ -287,7 +283,7 @@ PipelineParam = Pipeline | PipelineDict
     restart_window: VariableOrOptional[RestartWindowParam]
     """
     :meta private: [EXPERIMENTAL]
-
+    
     Restart window of this pipeline.
     """
 
@@ -311,6 +307,10 @@ PipelineParam = Pipeline | PipelineDict
     DBFS root directory for storing checkpoints and tables.
     """
 
+    target: VariableOrOptional[str]
+    """
+    Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    """
+
 
 PipelineParam = PipelineDict | Pipeline
->>>>>>> 2aabe4c0 (Add pipelines)
