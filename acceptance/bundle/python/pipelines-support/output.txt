@@ -1,0 +1,34 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_pipeline"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "pipelines": {
+      "my_pipeline_1": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "name": "My Pipeline 1 (updated)",
+        "permissions": []
+      },
+      "my_pipeline_2": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "name": "My Pipeline 2 (updated)",
+        "permissions": []
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 {
   "name": "job",
+  "permissions": [],
   "queue": {
     "enabled": true
   },
@@ -35,6 +36,7 @@ Error: file test1.py not found
 Exit code: 1
 {
   "name": "job",
+  "permissions": [],
   "queue": {
     "enabled": true
   },
