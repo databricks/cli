@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -24,32 +25,12 @@ func SubstituteEnv(value string, env []string) string {
 		}
 	}
 
-	// Replace $VAR references with their values
-	// Use a more precise replacement to handle overlapping variable names
+	// Replace $VAR references with their values using regexp
 	result := value
 	for k, v := range envMap {
-		// Match $VAR followed by space, end of string, or non-alphanumeric character
-		parts := strings.Split(result, "$"+k)
-		if len(parts) <= 1 {
-			continue
-		}
-
-		var newResult strings.Builder
-		newResult.WriteString(parts[0])
-
-		// AI TODO: investigate if you can make this code more compact by using regexp
-
-		for i := 1; i < len(parts); i++ {
-			// Check if this is a complete variable name (not a prefix of another)
-			if len(parts[i]) == 0 || !isAlphaNumeric(parts[i][0]) {
-				newResult.WriteString(v)
-			} else {
-				newResult.WriteString("$" + k)
-			}
-			newResult.WriteString(parts[i])
-		}
-
-		result = newResult.String()
+		// Create a regexp that matches $VAR but not $VARNAME (where NAME is alphanumeric)
+		re := regexp.MustCompile(`\$` + k + `\b`)
+		result = re.ReplaceAllString(result, v)
 	}
 
 	return result
