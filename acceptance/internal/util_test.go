@@ -13,11 +13,11 @@ func TestSubstituteEnv(t *testing.T) {
 		placeholder string
 	}{
 		{
-			name:         "simple substitution",
-			value:        "$CLI",
-			env:          []string{"CLI=/bin/true"},
-			expected:     "/bin/true",
-			placeholder:  "[CLI]",
+			name:        "simple substitution",
+			value:       "$CLI",
+			env:         []string{"CLI=/bin/true"},
+			expected:    "/bin/true",
+			placeholder: "[CLI]",
 		},
 		{
 			name:        "multiple variables",
@@ -43,7 +43,7 @@ func TestSubstituteEnv(t *testing.T) {
 			value:       "$FOO$BAR",
 			env:         []string{"FOO=hello"},
 			expected:    "hello$BAR",
-			placeholder: "hello[BAR]",
+			placeholder: "[FOO]$BAR",
 		},
 		{
 			name:        "overlapping variable names",

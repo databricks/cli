@@ -488,20 +488,15 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		require.Len(t, items, 2)
 		key := items[0]
 		value := items[1]
-		newValue := internal.SubstituteEnv(value, cmd.Env)
+		newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, cmd.Env)
 		if value != newValue {
-			t.Logf("Substituted %s %#v -> %#v", key, value, newValue)
+			t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
 		}
 		cmd.Env = append(cmd.Env, key+"="+newValue)
 		repls.Set(newValue, "["+key+"]")
+		// newValue won't match because parts of it were already replaced; we adding it anyway just in case but we need newValueWithPlaceholders:
+		repls.Set(newValueWithPlaceholders, "["+key+"]")
 	}
-
-	// Put larger replacements as this ensure more stable output when
-	// having one replacement include another one (as can happen when using
-	// env var substition in EnvMatrix).
-	slices.SortStableFunc(repls.Repls, func(a, b testdiff.Replacement) int {
-		return len(b.Old.String()) - len(a.Old.String())
-	})
 
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
