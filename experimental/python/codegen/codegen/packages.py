@@ -6,7 +6,10 @@ RESOURCE_NAMESPACE_OVERRIDE = {
     "resources.Pipeline": "pipelines",
     # FIXME this is not correct, other resource types can also have permissions
     # we should separate types for those
-    "resources.Permission": "jobs",
+    "resources.JobPermission": "jobs",
+    "resources.JobPermissionLevel": "jobs",
+    "resources.PipelinePermission": "pipelines",
+    "resources.PipelinePermissionLevel": "pipelines",
 }
 
 # All supported resource types
