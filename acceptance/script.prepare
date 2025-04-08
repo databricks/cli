@@ -60,6 +60,19 @@ withdir() {
     return $exit_code
 }
 
+withnewdir() {
+    local dir="$1"
+    shift
+    local orig_dir="$(pwd)"
+    mkdir -p "$dir"
+    cd "$dir" || return $?
+    "$@"
+    local exit_code=$?
+    cd "$orig_dir" || return $?
+    return $exit_code
+}
+
+
 uuid() {
     python3 -c 'import uuid; print(uuid.uuid4())'
 }
