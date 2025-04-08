@@ -8,7 +8,8 @@ import (
 // Substitute env variables like $VAR in value.
 // value is a string with variable references like $VAR
 // env is a set of variables in golang format, like VAR=hello
-// Example: value="$CLI", env={"CLI=/bin/true"}, result: "/bin/true"
+// Example: value="$CLI --params", env={"CLI=/bin/true"}, result: ("/bin/true --params", "[CLI] --params")
+// AI TODO: return 2 strings, one with actual substituions, another with [KEY] substitutions. See example above. Modify tests.
 func SubstituteEnv(value string, env []string) string {
 	result := value
 
