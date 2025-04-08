@@ -7,12 +7,16 @@ import os.path
 import sys
 from copy import deepcopy
 from dataclasses import dataclass, field, fields, replace
-from typing import Callable, Optional, TextIO
+from typing import (
+    Callable,
+    Optional,
+    TextIO,
+)
 
 from databricks.bundles.core import Bundle, Diagnostics, Location, Resources
 from databricks.bundles.core._resource_mutator import ResourceMutator
+from databricks.bundles.core._resource_type import _ResourceType
 from databricks.bundles.core._transform import _transform
-from databricks.bundles.jobs import Job
 
 __all__ = []
 
@@ -81,21 +85,23 @@ def _load_resources_from_input(input: dict) -> tuple[Resources, Diagnostics]:
     diagnostics = Diagnostics()
 
     input_resources = input.get("resources", {})
-    input_jobs = input_resources.get("jobs", {})
 
-    for resource_name, job_dict in input_jobs.items():
-        try:
-            job = Job.from_dict(job_dict)
+    for tpe in _ResourceType.all():
+        input_resources_by_tpe = input_resources.get(tpe.plural_name, {})
 
-            resources.add_job(resource_name, job)
-        except Exception as exc:
-            diagnostics = diagnostics.extend(
-                Diagnostics.from_exception(
-                    exc=exc,
-                    summary="Error while loading job",
-                    path=("resources", "jobs", resource_name),
+        for resource_name, resource_dict in input_resources_by_tpe.items():
+            try:
+                resource = _transform(tpe.resource_type, resource_dict)
+
+                resources.add_resource(resource_name=resource_name, resource=resource)
+            except Exception as exc:
+                diagnostics = diagnostics.extend(
+                    Diagnostics.from_exception(
+                        exc=exc,
+                        summary=f"Error while loading {tpe.singular_name}",
+                        path=("resources", tpe.plural_name, resource_name),
+                    )
                 )
-            )
 
     return resources, diagnostics
 
@@ -105,30 +111,48 @@ def _apply_mutators(
     resources: Resources,
     mutator_functions: list[ResourceMutator],
 ) -> tuple[Resources, Diagnostics]:
-    for resource_name, job in resources.jobs.items():
+    diagnostics = Diagnostics()
+
+    for tpe in _ResourceType.all():
+        resources, diagnostics = diagnostics.extend_tuple(
+            _apply_mutators_for_type(bundle, resources, tpe, mutator_functions)
+        )
+
+    return resources, diagnostics
+
+
+def _apply_mutators_for_type(
+    bundle: Bundle,
+    resources: Resources,
+    tpe: _ResourceType,
+    mutator_functions: list[ResourceMutator],
+) -> tuple[Resources, Diagnostics]:
+    resources_dict = getattr(resources, tpe.plural_name)
+
+    for resource_name, resource in resources_dict.items():
         for mutator in mutator_functions:
-            if mutator.resource_type != Job:
+            if mutator.resource_type != tpe.resource_type:
                 continue
 
             location = Location.from_callable(mutator.function)
 
             try:
                 if _get_num_args(mutator.function) == 1:
-                    new_job = mutator.function(job)
+                    new_resource = mutator.function(resource)
                 else:
                     # defensive copy so that one function doesn't affect another
-                    new_job = mutator.function(deepcopy(bundle), job)
+                    new_resource = mutator.function(deepcopy(bundle), resource)
 
-                # mutating job in-place works, but we can't tell when it happens,
+                # mutating resource in-place works, but we can't tell when it happens,
                 # so we only update location if new instance is returned
 
-                if new_job is not job:
+                if new_resource is not resource:
                     if location:
                         resources.add_location(
-                            ("resources", "jobs", resource_name), location
+                            ("resources", tpe.plural_name, resource_name), location
                         )
-                    resources.jobs[resource_name] = new_job
-                    job = new_job
+                    resources_dict[resource_name] = new_resource
+                    resource = new_resource
             except Exception as exc:
                 mutator_name = mutator.function.__name__
 
@@ -136,7 +160,7 @@ def _apply_mutators(
                     exc=exc,
                     summary=f"Failed to apply '{mutator_name}' mutator",
                     location=location,
-                    path=("resources", "jobs", resource_name),
+                    path=("resources", tpe.plural_name, resource_name),
                 )
 
     return resources, Diagnostics()
@@ -219,12 +243,19 @@ def _append_resources(bundle: dict, resources: Resources) -> dict:
 
     new_bundle = bundle.copy()
 
-    if resources.jobs:
-        new_bundle["resources"] = new_bundle.get("resources", {})
-        new_bundle["resources"]["jobs"] = new_bundle["resources"].get("jobs", {})
+    for tpe in _ResourceType.all():
+        resources_dict = getattr(resources, tpe.plural_name)
 
-        for resource_name, resource in resources.jobs.items():
-            new_bundle["resources"]["jobs"][resource_name] = resource.as_dict()
+        if resources_dict:
+            new_bundle["resources"] = new_bundle.get("resources", {})
+            new_bundle["resources"][tpe.plural_name] = new_bundle["resources"].get(
+                tpe.plural_name, {}
+            )
+
+            for resource_name, resource in resources_dict.items():
+                new_bundle["resources"][tpe.plural_name][resource_name] = (
+                    resource.as_dict()
+                )
 
     return new_bundle
 
@@ -385,7 +416,7 @@ def _load_resource_mutator(
 
     if instance and not isinstance(instance, ResourceMutator):
         return None, Diagnostics.create_error(
-            f"'{name}' in module '{module_name}' is not instance of ResourceMutator, did you decorate it with @job_mutator?",
+            f"'{name}' in module '{module_name}' is not instance of ResourceMutator, did you decorate it with @<resource_type>_mutator?",
         )
 
     return instance, diagnostics
