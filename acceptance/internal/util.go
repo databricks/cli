@@ -2,7 +2,6 @@ package internal
 
 import (
 	"strings"
-	"unicode"
 )
 
 // isAlphaNumeric returns true if the rune is a letter or digit
@@ -16,7 +15,7 @@ func isAlphaNumeric(r byte) bool {
 // Example: value="$CLI", env={"CLI=/bin/true"}, result: "/bin/true"
 func SubstituteEnv(value string, env []string) string {
 	envMap := make(map[string]string)
-	
+
 	// Parse environment variables into a map
 	for _, e := range env {
 		parts := strings.SplitN(e, "=", 2)
@@ -24,7 +23,7 @@ func SubstituteEnv(value string, env []string) string {
 			envMap[parts[0]] = parts[1]
 		}
 	}
-	
+
 	// Replace $VAR references with their values
 	// Use a more precise replacement to handle overlapping variable names
 	result := value
@@ -34,10 +33,12 @@ func SubstituteEnv(value string, env []string) string {
 		if len(parts) <= 1 {
 			continue
 		}
-		
+
 		var newResult strings.Builder
 		newResult.WriteString(parts[0])
-		
+
+		// AI TODO: investigate if you can make this code more compact by using regexp
+
 		for i := 1; i < len(parts); i++ {
 			// Check if this is a complete variable name (not a prefix of another)
 			if len(parts[i]) == 0 || !isAlphaNumeric(parts[i][0]) {
@@ -47,9 +48,9 @@ func SubstituteEnv(value string, env []string) string {
 			}
 			newResult.WriteString(parts[i])
 		}
-		
+
 		result = newResult.String()
 	}
-	
+
 	return result
 }
