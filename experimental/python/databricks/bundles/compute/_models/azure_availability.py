@@ -5,8 +5,7 @@ from typing import Literal
 class AzureAvailability(Enum):
     """
     Availability type used for all subsequent nodes past the `first_on_demand` ones.
-    Note: If `first_on_demand` is zero (which only happens on pool clusters), this availability
-    type will be used for the entire cluster.
+    Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
     """
 
     SPOT_AZURE = "SPOT_AZURE"

@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class AwsAttributes:
-    """"""
+    """
+    Attributes set during cluster creation which are related to Amazon Web Services.
+    """
 
     availability: VariableOrOptional[AwsAvailability] = None
 
@@ -81,8 +83,6 @@ class AwsAttributes:
     administrator.
     
     This feature may only be available to certain customer plans.
-    
-    If this field is ommitted, we will pull in the default from the conf if it exists.
     """
 
     spot_bid_price_percent: VariableOrOptional[int] = None
@@ -96,9 +96,6 @@ class AwsAttributes:
     When spot instances are requested for this cluster, only spot instances whose bid price
     percentage matches this field will be considered.
     Note that, for safety, we enforce this field to be no more than 10000.
-    
-    The default value and documentation here should be kept consistent with
-    CommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent.
     """
 
     zone_id: VariableOrOptional[str] = None
@@ -110,6 +107,7 @@ class AwsAttributes:
     This is an optional field at cluster creation, and if not specified, a default zone will be used.
     If the zone specified is "auto", will try to place cluster in a zone with high availability,
     and will retry placement in a different AZ if there is not enough capacity.
+    
     The list of available zones as well as the default value can be found by using the
     `List Zones` method.
     """
@@ -185,8 +183,6 @@ class AwsAttributesDict(TypedDict, total=False):
     administrator.
     
     This feature may only be available to certain customer plans.
-    
-    If this field is ommitted, we will pull in the default from the conf if it exists.
     """
 
     spot_bid_price_percent: VariableOrOptional[int]
@@ -200,9 +196,6 @@ class AwsAttributesDict(TypedDict, total=False):
     When spot instances are requested for this cluster, only spot instances whose bid price
     percentage matches this field will be considered.
     Note that, for safety, we enforce this field to be no more than 10000.
-    
-    The default value and documentation here should be kept consistent with
-    CommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent.
     """
 
     zone_id: VariableOrOptional[str]
@@ -214,6 +207,7 @@ class AwsAttributesDict(TypedDict, total=False):
     This is an optional field at cluster creation, and if not specified, a default zone will be used.
     If the zone specified is "auto", will try to place cluster in a zone with high availability,
     and will retry placement in a different AZ if there is not enough capacity.
+    
     The list of available zones as well as the default value can be found by using the
     `List Zones` method.
     """

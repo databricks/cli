@@ -15,13 +15,15 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class GcpAttributes:
-    """"""
+    """
+    Attributes set during cluster creation which are related to GCP.
+    """
 
     availability: VariableOrOptional[GcpAvailability] = None
 
     boot_disk_size: VariableOrOptional[int] = None
     """
-    boot disk size in GB
+    Boot disk size in GB
     """
 
     google_service_account: VariableOrOptional[str] = None
@@ -34,22 +36,20 @@ class GcpAttributes:
 
     local_ssd_count: VariableOrOptional[int] = None
     """
-    If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type.
-    """
-
-    use_preemptible_executors: VariableOrOptional[bool] = None
-    """
-    This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).
-    Note: Soon to be deprecated, use the availability field instead.
+    If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached.
+    Each local SSD is 375GB in size.
+    Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds)
+    for the supported number of local SSDs for each instance type.
     """
 
     zone_id: VariableOrOptional[str] = None
     """
     Identifier for the availability zone in which the cluster resides.
     This can be one of the following:
-    - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default]
+    - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default].
     - "AUTO" => Databricks picks an availability zone to schedule the cluster on.
-    - A GCP availability zone => Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones.
+    - A GCP availability zone => Pick One of the available zones for (machine type + region) from
+    https://cloud.google.com/compute/docs/regions-zones.
     """
 
     @classmethod
@@ -67,7 +67,7 @@ class GcpAttributesDict(TypedDict, total=False):
 
     boot_disk_size: VariableOrOptional[int]
     """
-    boot disk size in GB
+    Boot disk size in GB
     """
 
     google_service_account: VariableOrOptional[str]
@@ -80,22 +80,20 @@ class GcpAttributesDict(TypedDict, total=False):
 
     local_ssd_count: VariableOrOptional[int]
     """
-    If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type.
-    """
-
-    use_preemptible_executors: VariableOrOptional[bool]
-    """
-    This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).
-    Note: Soon to be deprecated, use the availability field instead.
+    If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached.
+    Each local SSD is 375GB in size.
+    Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds)
+    for the supported number of local SSDs for each instance type.
     """
 
     zone_id: VariableOrOptional[str]
     """
     Identifier for the availability zone in which the cluster resides.
     This can be one of the following:
-    - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default]
+    - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default].
     - "AUTO" => Databricks picks an availability zone to schedule the cluster on.
-    - A GCP availability zone => Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones.
+    - A GCP availability zone => Pick One of the available zones for (machine type + region) from
+    https://cloud.google.com/compute/docs/regions-zones.
     """
 
 
