@@ -57,9 +57,13 @@ func TestSubstituteEnv(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := SubstituteEnv(tt.value, tt.env)
-			if result != tt.expected {
-				t.Errorf("SubstituteEnv() = %q, want %q", result, tt.expected)
+			actual, placeholder := SubstituteEnv(tt.value, tt.env)
+			if actual != tt.expected {
+				t.Errorf("SubstituteEnv() actual = %q, want %q", actual, tt.expected)
+			}
+			// Test placeholder output for one case
+			if tt.name == "simple substitution" && placeholder != "[CLI]" {
+				t.Errorf("SubstituteEnv() placeholder = %q, want %q", placeholder, "[CLI]")
 			}
 		})
 	}
