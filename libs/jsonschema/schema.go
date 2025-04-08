@@ -80,11 +80,6 @@ type Schema struct {
 	// Examples of the value for properties in the schema.
 	// https://json-schema.org/understanding-json-schema/reference/annotations
 	Examples any `json:"examples,omitempty"`
-
-	// A boolean that indicates the field should not be used and may be removed
-	// in the future.
-	// https://json-schema.org/understanding-json-schema/reference/annotations
-	Deprecated bool `json:"deprecated,omitempty"`
 }
 
 // Default value defined in a JSON Schema, represented as a string.

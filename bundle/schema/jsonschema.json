@@ -887,7 +887,8 @@
                       "rate_limits": {
                         "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.RateLimit",
-                        "deprecated": true
+                        "deprecated": true,
+                        "deprecationMessage": "This field is deprecated"
                       },
                       "route_optimized": {
                         "description": "Enable route optimization for the serving endpoint.",
@@ -1093,14 +1094,13 @@
                       },
                       "target": {
                         "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
-                        "$ref": "#/$defs/string",
-                        "deprecated": true
+                        "$ref": "#/$defs/string"
                       },
                       "trigger": {
                         "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger",
-                        "deprecationMessage": "Use continuous instead",
-                        "deprecated": true
+                        "deprecated": true,
+                        "deprecationMessage": "Use continuous instead"
                       }
                     },
                     "additionalProperties": false,
@@ -1147,9 +1147,9 @@
                     "type": "string",
                     "enum": [
                       "CAN_MANAGE",
-                      "IS_OWNER",
                       "CAN_RUN",
-                      "CAN_VIEW"
+                      "CAN_VIEW",
+                      "IS_OWNER"
                     ]
                   },
                   {
@@ -1631,8 +1631,8 @@
                     "pydabs": {
                       "description": "The PyDABs configuration.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs",
-                      "deprecationMessage": "Deprecated: please use python instead",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "Deprecated: please use python instead"
                     },
                     "python": {
                       "description": "Configures loading of Python code defined with 'databricks-bundles' package.",
@@ -1922,8 +1922,8 @@
                     "compute_id": {
                       "description": "Deprecated. The ID of the compute to use for this target.",
                       "$ref": "#/$defs/string",
-                      "deprecationMessage": "Deprecated: please use cluster_id instead",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "Deprecated: please use cluster_id instead"
                     },
                     "default": {
                       "description": "Whether this target is the default target.",
@@ -3230,7 +3230,8 @@
                     "use_preemptible_executors": {
                       "description": "This field determines whether the spark executors will be scheduled to run on preemptible\nVMs (when set to true) versus standard compute engine VMs (when set to false; default).\nNote: Soon to be deprecated, use the 'availability' field instead.",
                       "$ref": "#/$defs/bool",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     },
                     "zone_id": {
                       "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default].\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from\nhttps://cloud.google.com/compute/docs/regions-zones.",
@@ -3297,7 +3298,8 @@
                     "dbfs": {
                       "description": "destination needs to be provided. e.g.\n`{ \"dbfs\": { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DbfsStorageInfo",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     },
                     "file": {
                       "description": "destination needs to be provided, e.g.\n`{ \"file\": { \"destination\": \"file:/my/local/file.sh\" } }`",
@@ -3343,7 +3345,8 @@
                     "egg": {
                       "description": "Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.",
                       "$ref": "#/$defs/string",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     },
                     "jar": {
                       "description": "URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"jar\": \"/Workspace/path/to/library.jar\" }`, `{ \"jar\" : \"/Volumes/path/to/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI.",
@@ -4155,7 +4158,8 @@
                     "no_alert_for_skipped_runs": {
                       "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
                       "$ref": "#/$defs/bool",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     },
                     "on_duration_warning_threshold_exceeded": {
                       "description": "A list of email addresses to be notified when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the `health` field for the job, notifications are not sent.",
@@ -4643,15 +4647,17 @@
                       "description": "An array of commands to execute for jobs with the dbt task, for example `\"dbt_commands\": [\"dbt deps\", \"dbt seed\", \"dbt deps\", \"dbt seed\", \"dbt run\"]`",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true,
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true
                     },
                     "jar_params": {
                       "description": "A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true,
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true
                     },
                     "job_id": {
                       "description": "ID of the job to trigger.",
@@ -4665,8 +4671,9 @@
                       "description": "A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
                       "$ref": "#/$defs/map/string",
                       "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true,
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true
                     },
                     "pipeline_params": {
                       "description": "Controls whether the pipeline should perform a full refresh",
@@ -4675,29 +4682,33 @@
                     "python_named_params": {
                       "$ref": "#/$defs/map/string",
                       "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true,
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true
                     },
                     "python_params": {
                       "description": "A list of parameters for jobs with Python tasks, for example `\"python_params\": [\"john doe\", \"35\"]`.\nThe parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite\nthe parameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true,
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true
                     },
                     "spark_submit_params": {
                       "description": "A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true,
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true
                     },
                     "sql_params": {
                       "description": "A map from keys to values for jobs with SQL task, for example `\"sql_params\": {\"name\": \"john doe\", \"age\": \"35\"}`. The SQL alert task does not support custom parameters.",
                       "$ref": "#/$defs/map/string",
                       "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true,
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -4735,7 +4746,8 @@
                     "jar_uri": {
                       "description": "Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.",
                       "$ref": "#/$defs/string",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     },
                     "main_class_name": {
                       "description": "The full name of the class containing the main method to be executed. This class must be contained in a JAR provided as a library.\n\nThe code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail.",
@@ -4748,7 +4760,8 @@
                     "run_as_repl": {
                       "description": "Deprecated. A value of `false` is no longer supported.",
                       "$ref": "#/$defs/bool",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     }
                   },
                   "additionalProperties": false
@@ -5181,7 +5194,8 @@
                     "no_alert_for_skipped_runs": {
                       "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
                       "$ref": "#/$defs/bool",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     },
                     "on_duration_warning_threshold_exceeded": {
                       "description": "A list of email addresses to be notified when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the `health` field for the job, notifications are not sent.",
@@ -5259,8 +5273,9 @@
                       "description": "Old table trigger settings name. Deprecated in favor of `table_update`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
                       "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true,
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true
                     },
                     "table_update": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
@@ -5637,7 +5652,8 @@
                     "connection_id": {
                       "description": "[Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
                       "$ref": "#/$defs/string",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     },
                     "connection_name": {
                       "description": "Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
@@ -5932,8 +5948,8 @@
                     "whl": {
                       "description": "URI of the whl to be installed.",
                       "$ref": "#/$defs/string",
-                      "deprecationMessage": "This field is deprecated",
-                      "deprecated": true
+                      "deprecated": true,
+                      "deprecationMessage": "This field is deprecated"
                     }
                   },
                   "additionalProperties": false
@@ -8143,8 +8159,8 @@
     },
     "environments": {
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Target",
-      "deprecationMessage": "Deprecated: please use targets instead",
-      "deprecated": true
+      "deprecated": true,
+      "deprecationMessage": "Deprecated: please use targets instead"
     },
     "experimental": {
       "description": "Defines attributes for experimental features.",

@@ -151,15 +151,13 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 				preview = ""
 			}
 			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" || preview != "" {
-				var deprecated = "false"
-				if ref.Deprecated {
-					deprecated = "true"
+				if ref.Deprecated && ref.DeprecationMessage == "" {
+					ref.DeprecationMessage = "This field is deprecated"
 				}
 
 				pkg[RootTypeKey] = annotation.Descriptor{
 					Description:        ref.Description,
 					Enum:               ref.Enum,
-					Deprecated:         deprecated,
 					DeprecationMessage: ref.DeprecationMessage,
 					Preview:            preview,
 				}
@@ -172,16 +170,14 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 						preview = ""
 					}
 
-					var deprecated = "false"
-					if refProp.Deprecated {
-						deprecated = "true"
+					if refProp.Deprecated && refProp.DeprecationMessage == "" {
+						refProp.DeprecationMessage = "This field is deprecated"
 					}
 
 					pkg[k] = annotation.Descriptor{
 						Description:        refProp.Description,
 						Enum:               refProp.Enum,
 						Preview:            preview,
-						Deprecated:         deprecated,
 						DeprecationMessage: refProp.DeprecationMessage,
 					}
 					if refProp.Description == "" {

@@ -44,6 +44,9 @@ type Extension struct {
 	// Also it can be used in documentation generation.
 	MarkdownDescription string `json:"markdownDescription,omitempty"`
 
+	// If true, the field is deprecated.
+	Deprecated bool `json:"deprecated,omitempty"`
+
 	// This field is not in the JSON schema spec, but it is supported in VSCode
 	// It is used to provide a warning for deprecated fields
 	DeprecationMessage string `json:"deprecationMessage,omitempty"`
