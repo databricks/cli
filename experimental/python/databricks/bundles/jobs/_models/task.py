@@ -269,19 +269,6 @@ class Task:
     A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.
     """
 
-    def __post_init__(self):
-        union_fields = [
-            self.new_cluster,
-            self.job_cluster_key,
-            self.environment_key,
-            self.existing_cluster_id,
-        ]
-
-        if sum(f is not None for f in union_fields) > 1:
-            raise ValueError(
-                "Only one of 'new_cluster', 'job_cluster_key', 'environment_key', 'existing_cluster_id' can be specified in Task"
-            )
-
     @classmethod
     def from_dict(cls, value: "TaskDict") -> "Self":
         return _transform(cls, value)
