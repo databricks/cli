@@ -10,3 +10,4 @@ UV_ARGS = [
   "--with databricks-bundles==0.7.3",
   "--with-requirements requirements-latest.txt --no-cache",
 ]
+CLI = ["$CLI_BINARY"]
