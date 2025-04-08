@@ -55,7 +55,31 @@ func TestProcessTargetModeProduction(t *testing.T) {
 			UserName: "user@company.com",
 		},
 	}
-	permissions := []resources.Permission{
+	pipelinePermissions := []resources.PipelinePermission{
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
+	}
+	experimentPermissions := []resources.MlflowExperimentPermission{
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
+	}
+	modelPermissions := []resources.MlflowModelPermission{
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
+	}
+	endpointPermissions := []resources.ModelServingEndpointPermission{
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
+	}
+	clusterPermissions := []resources.ClusterPermission{
 		{
 			Level:    "CAN_MANAGE",
 			UserName: "user@company.com",
@@ -66,12 +90,12 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
 	b.Config.Resources.Jobs["job3"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
 	b.Config.Resources.Jobs["job4"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	b.Config.Resources.Pipelines["pipeline1"].Permissions = permissions
-	b.Config.Resources.Experiments["experiment1"].Permissions = permissions
-	b.Config.Resources.Experiments["experiment2"].Permissions = permissions
-	b.Config.Resources.Models["model1"].Permissions = permissions
-	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
-	b.Config.Resources.Clusters["cluster1"].Permissions = permissions
+	b.Config.Resources.Pipelines["pipeline1"].Permissions = pipelinePermissions
+	b.Config.Resources.Experiments["experiment1"].Permissions = experimentPermissions
+	b.Config.Resources.Experiments["experiment2"].Permissions = experimentPermissions
+	b.Config.Resources.Models["model1"].Permissions = modelPermissions
+	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = endpointPermissions
+	b.Config.Resources.Clusters["cluster1"].Permissions = clusterPermissions
 
 	diags = validateProductionMode(b, false)
 	require.NoError(t, diags.Error())

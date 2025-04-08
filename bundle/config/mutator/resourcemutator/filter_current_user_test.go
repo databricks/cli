@@ -14,21 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var alice = resources.Permission{
-	Level:    permissions.CAN_MANAGE,
-	UserName: "alice@databricks.com",
-}
-
-var bob = resources.Permission{
-	Level:    permissions.CAN_VIEW,
-	UserName: "bob@databricks.com",
-}
-
-var robot = resources.Permission{
-	Level:                permissions.CAN_RUN,
-	ServicePrincipalName: "i-Robot",
-}
-
 var jobAlice = resources.JobPermission{
 	Level:    resources.JobPermissionLevelCanManage,
 	UserName: "alice@databricks.com",
@@ -44,6 +29,66 @@ var jobRobot = resources.JobPermission{
 	ServicePrincipalName: "i-Robot",
 }
 
+var pipelineAlice = resources.PipelinePermission{
+	Level:    permissions.CAN_MANAGE,
+	UserName: "alice@databricks.com",
+}
+
+var pipelineBob = resources.PipelinePermission{
+	Level:    permissions.CAN_VIEW,
+	UserName: "bob@databricks.com",
+}
+
+var pipelineRobot = resources.PipelinePermission{
+	Level:                permissions.CAN_RUN,
+	ServicePrincipalName: "i-Robot",
+}
+
+var experimentAlice = resources.MlflowExperimentPermission{
+	Level:    permissions.CAN_MANAGE,
+	UserName: "alice@databricks.com",
+}
+
+var experimentBob = resources.MlflowExperimentPermission{
+	Level:    permissions.CAN_VIEW,
+	UserName: "bob@databricks.com",
+}
+
+var experimentRobot = resources.MlflowExperimentPermission{
+	Level:                permissions.CAN_RUN,
+	ServicePrincipalName: "i-Robot",
+}
+
+var modelAlice = resources.MlflowModelPermission{
+	Level:    permissions.CAN_MANAGE,
+	UserName: "alice@databricks.com",
+}
+
+var modelBob = resources.MlflowModelPermission{
+	Level:    permissions.CAN_VIEW,
+	UserName: "bob@databricks.com",
+}
+
+var modelRobot = resources.MlflowModelPermission{
+	Level:                permissions.CAN_RUN,
+	ServicePrincipalName: "i-Robot",
+}
+
+var endpointAlice = resources.ModelServingEndpointPermission{
+	Level:    permissions.CAN_MANAGE,
+	UserName: "alice@databricks.com",
+}
+
+var endpointBob = resources.ModelServingEndpointPermission{
+	Level:    permissions.CAN_VIEW,
+	UserName: "bob@databricks.com",
+}
+
+var endpointRobot = resources.ModelServingEndpointPermission{
+	Level:                permissions.CAN_RUN,
+	ServicePrincipalName: "i-Robot",
+}
+
 func testFixture(userName string) *bundle.Bundle {
 	jobPermissions := []resources.JobPermission{
 		jobAlice,
@@ -51,10 +96,28 @@ func testFixture(userName string) *bundle.Bundle {
 		jobRobot,
 	}
 
-	p := []resources.Permission{
-		alice,
-		bob,
-		robot,
+	pipelinePermissions := []resources.PipelinePermission{
+		pipelineAlice,
+		pipelineBob,
+		pipelineRobot,
+	}
+
+	experimentPermissions := []resources.MlflowExperimentPermission{
+		experimentAlice,
+		experimentBob,
+		experimentRobot,
+	}
+
+	modelPermissions := []resources.MlflowModelPermission{
+		modelAlice,
+		modelBob,
+		modelRobot,
+	}
+
+	endpointPermissions := []resources.ModelServingEndpointPermission{
+		endpointAlice,
+		endpointBob,
+		endpointRobot,
 	}
 
 	return &bundle.Bundle{
@@ -83,22 +146,22 @@ func testFixture(userName string) *bundle.Bundle {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						Permissions: p,
+						Permissions: pipelinePermissions,
 					},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {
-						Permissions: p,
+						Permissions: experimentPermissions,
 					},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model1": {
-						Permissions: p,
+						Permissions: modelPermissions,
 					},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"endpoint1": {
-						Permissions: p,
+						Permissions: endpointPermissions,
 					},
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
@@ -131,20 +194,20 @@ func TestFilterCurrentUser(t *testing.T) {
 	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobBob)
 
 	assert.Len(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, robot)
-	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineRobot)
+	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineBob)
 
 	assert.Len(t, b.Config.Resources.Experiments["experiment1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, robot)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, endpointRobot)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, endpointBob)
 
 	assert.Len(t, b.Config.Resources.Models["model1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, robot)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelRobot)
+	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelBob)
 
 	assert.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, robot)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, endpointRobot)
+	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, endpointBob)
 
 	// Assert there's no change to the grant.
 	assert.Len(t, b.Config.Resources.RegisteredModels["registered_model1"].Grants, 1)
@@ -166,20 +229,20 @@ func TestFilterCurrentServicePrincipal(t *testing.T) {
 	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobBob)
 
 	assert.Len(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, alice)
-	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineAlice)
+	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineBob)
 
 	assert.Len(t, b.Config.Resources.Experiments["experiment1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, alice)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, endpointAlice)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, endpointBob)
 
 	assert.Len(t, b.Config.Resources.Models["model1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, alice)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelAlice)
+	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelBob)
 
 	assert.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, alice)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, bob)
+	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, modelAlice)
+	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, modelBob)
 
 	// Assert there's no change to the grant.
 	assert.Len(t, b.Config.Resources.RegisteredModels["registered_model1"].Grants, 1)
