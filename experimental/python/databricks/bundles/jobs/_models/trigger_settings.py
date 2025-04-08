@@ -46,18 +46,6 @@ class TriggerSettings:
     :meta private: [EXPERIMENTAL]
     """
 
-    def __post_init__(self):
-        union_fields = [
-            self.file_arrival,
-            self.periodic,
-            self.table_update,
-        ]
-
-        if sum(f is not None for f in union_fields) != 1:
-            raise ValueError(
-                "TriggerSettings must specify exactly one of 'file_arrival', 'periodic', 'table_update'"
-            )
-
     @classmethod
     def from_dict(cls, value: "TriggerSettingsDict") -> "Self":
         return _transform(cls, value)
