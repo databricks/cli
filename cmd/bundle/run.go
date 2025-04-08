@@ -107,7 +107,7 @@ task or a Python wheel task, the second example applies.
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if cmd.ArgsLenAtDash() == 0 {
-			return fmt.Errorf("resource key cannot be specified after '--'")
+			return errors.New("resource key cannot be specified after '--'")
 		}
 
 		ctx := cmd.Context()
