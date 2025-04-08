@@ -12,6 +12,7 @@ import re
 
 
 CLI_REPO = "databricks/cli"
+CODE_OWNERS = "pietern andrewnester shreyas-goenka denik anton-107".split()
 
 
 def run(cmd):
@@ -30,19 +31,7 @@ def run_json(cmd):
         raise
 
 
-def get_team_members():
-    codeowners_path = Path(".github/CODEOWNERS")
-    with open(codeowners_path, "r") as f:
-        first_line = f.readline().strip()
-
-    team_members = re.findall(r"@([a-zA-Z0-9-.]+)", first_line)
-    print("Team members:", team_members)
-    return team_members
-
-
 def get_approved_prs_by_non_team():
-    team_members = get_team_members()
-
     prs = run_json(["gh", "pr", "-R", CLI_REPO, "list", "--limit", "300", "--json", "number,author,reviews,headRefOid"])
     result = []
 
@@ -50,13 +39,13 @@ def get_approved_prs_by_non_team():
         pr_number = pr["number"]
         author = pr["author"]["login"]
 
-        if author in team_members:
+        if author in CODE_OWNERS:
             continue
 
         approved_by = []
         for review in pr.get("reviews", []):
             approver = review["author"]["login"]
-            if review["state"] == "APPROVED" and approver in team_members:
+            if review["state"] == "APPROVED" and approver in CODE_OWNERS:
                 approved_by.append(approver)
 
         if not approved_by:
@@ -126,6 +115,7 @@ def main():
     parser.add_argument("-R", "--repo")
 
     args = parser.parse_args()
+    assert args.repo, "Must provide repo where workflow is run with -R"
 
     all_prs, approved_prs = get_approved_prs_by_non_team()
 
