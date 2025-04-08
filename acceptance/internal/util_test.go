@@ -6,22 +6,25 @@ import (
 
 func TestSubstituteEnv(t *testing.T) {
 	tests := []struct {
-		name     string
-		value    string
-		env      []string
-		expected string
+		name        string
+		value       string
+		env         []string
+		expected    string
+		placeholder string
 	}{
 		{
-			name:     "simple substitution",
-			value:    "$CLI",
-			env:      []string{"CLI=/bin/true"},
-			expected: "/bin/true",
+			name:         "simple substitution",
+			value:        "$CLI",
+			env:          []string{"CLI=/bin/true"},
+			expected:     "/bin/true",
+			placeholder:  "[CLI]",
 		},
 		{
-			name:     "multiple variables",
-			value:    "$HOME/$USER",
-			env:      []string{"HOME=/home", "USER=john"},
-			expected: "/home/john",
+			name:        "multiple variables",
+			value:       "$HOME/$USER",
+			env:         []string{"HOME=/home", "USER=john"},
+			expected:    "/home/john",
+			placeholder: "[HOME]/[USER]",
 		},
 		{
 			name:     "no variables",
@@ -36,22 +39,25 @@ func TestSubstituteEnv(t *testing.T) {
 			expected: "$UNDEFINED",
 		},
 		{
-			name:     "partial substitution",
-			value:    "$FOO$BAR",
-			env:      []string{"FOO=hello"},
-			expected: "hello$BAR",
+			name:        "partial substitution",
+			value:       "$FOO$BAR",
+			env:         []string{"FOO=hello"},
+			expected:    "hello$BAR",
+			placeholder: "hello[BAR]",
 		},
 		{
-			name:     "overlapping variable names",
-			value:    "$VAR $VARNAME",
-			env:      []string{"VAR=value", "VARNAME=longer"},
-			expected: "value longer",
+			name:        "overlapping variable names",
+			value:       "$VAR $VARNAME",
+			env:         []string{"VAR=value", "VARNAME=longer"},
+			expected:    "value longer",
+			placeholder: "[VAR] [VARNAME]",
 		},
 		{
-			name:     "only one of overlapping variables provided",
-			value:    "$VAR $VARNAME",
-			env:      []string{"VAR=value"},
-			expected: "value $VARNAME",
+			name:        "only one of overlapping variables provided",
+			value:       "$VAR $VARNAME",
+			env:         []string{"VAR=value"},
+			expected:    "value $VARNAME",
+			placeholder: "[VAR] $VARNAME",
 		},
 	}
 
@@ -61,10 +67,8 @@ func TestSubstituteEnv(t *testing.T) {
 			if actual != tt.expected {
 				t.Errorf("SubstituteEnv() actual = %q, want %q", actual, tt.expected)
 			}
-			// Test placeholder output for one case
-			// AI TODO: incorporate this in table tests, do not make exception; add another test case for this feature
-			if tt.name == "simple substitution" && placeholder != "[CLI]" {
-				t.Errorf("SubstituteEnv() placeholder = %q, want %q", placeholder, "[CLI]")
+			if tt.placeholder != "" && placeholder != tt.placeholder {
+				t.Errorf("SubstituteEnv() placeholder = %q, want %q", placeholder, tt.placeholder)
 			}
 		})
 	}
