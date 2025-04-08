@@ -486,8 +486,14 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	for _, keyvalue := range customEnv {
 		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
-		cmd.Env = append(cmd.Env, keyvalue)
-		repls.Set(items[1], "["+items[0]+"]")
+		key := items[0]
+		value := items[1]
+		newValue := internal.SubstituteEnv(value, cmd.Env)
+		if value != newValue {
+			t.Logf("Substituted %s %#v -> %#v", key, value, newValue)
+		}
+		cmd.Env = append(cmd.Env, key+"="+newValue)
+		repls.Set(newValue, "["+key+"]")
 	}
 
 	absDir, err := filepath.Abs(dir)
