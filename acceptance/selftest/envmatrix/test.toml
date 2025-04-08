@@ -1,3 +1,3 @@
 [EnvMatrix]
 FIRST = ["overriden-in-inner"]
-THIRD = ["three"]
+THIRD = ["three $FIRST"]
