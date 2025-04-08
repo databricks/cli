@@ -123,7 +123,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--yes", action="store_true", default=False)
     parser.add_argument("--workflow", default="cli-isolated-pr")
-    parser.add_argument("-R", "--repo", default="databricks-eng/eng-dev-ecosystem")
+    parser.add_argument("-R", "--repo")
 
     args = parser.parse_args()
 
