@@ -3,7 +3,6 @@ from dataclasses import replace
 from codegen.generated_dataclass import (
     GeneratedDataclass,
     GeneratedField,
-    GeneratedOneOf,
     GeneratedType,
 )
 
@@ -77,83 +76,3 @@ def _quote_recursive_references_for_model(
 
 def _is_required(field: GeneratedField) -> bool:
     return field.default is None and field.default_factory is None
-
-
-def add_default_values(models: dict[str, GeneratedDataclass]):
-    models["jobs.CronSchedule"] = _add_default_value(
-        models["jobs.CronSchedule"],
-        field_name="timezone_id",
-        default_value='"UTC"',
-    )
-
-
-def add_oneofs(models: dict[str, GeneratedDataclass]):
-    models["jobs.JobRunAs"] = _add_oneof(
-        models["jobs.JobRunAs"],
-        ["user_name", "service_principal_name"],
-        required=True,
-    )
-
-    models["resources.JobPermission"] = _add_oneof(
-        models["resources.JobPermission"],
-        ["user_name", "service_principal_name", "group_name"],
-        required=True,
-    )
-
-    models["resources.PipelinePermission"] = _add_oneof(
-        models["resources.PipelinePermission"],
-        ["user_name", "service_principal_name", "group_name"],
-        required=True,
-    )
-
-    models["jobs.Task"] = _add_oneof(
-        models["jobs.Task"],
-        ["new_cluster", "job_cluster_key", "environment_key", "existing_cluster_id"],
-        required=False,
-    )
-
-    models["jobs.TriggerSettings"] = _add_oneof(
-        models["jobs.TriggerSettings"],
-        ["file_arrival", "periodic", "table_update"],
-        required=True,
-    )
-
-
-def _add_default_value(
-    model: GeneratedDataclass,
-    field_name: str,
-    default_value: str,
-):
-    """
-    Add a default value for a field in a dataclass.
-    """
-
-    def update_field(field: GeneratedField):
-        if field.field_name == field_name:
-            return replace(
-                field,
-                default=default_value,
-                create_func_default=default_value,
-            )
-        else:
-            return field
-
-    return replace(
-        model,
-        fields=[update_field(field) for field in model.fields],
-    )
-
-
-def _add_oneof(
-    model: GeneratedDataclass,
-    values: list[str],
-    required: bool,
-):
-    """
-    Make a field in a dataclass a one-of, one of the fields can be present.
-    """
-
-    return replace(
-        model,
-        one_ofs=[GeneratedOneOf(values, required=required)],
-    )

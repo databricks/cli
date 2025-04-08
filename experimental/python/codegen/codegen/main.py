@@ -30,8 +30,6 @@ def main(output: str):
 
     dataclasses, enums = _generate_code(schemas)
 
-    generated_dataclass_patch.add_default_values(dataclasses)
-    generated_dataclass_patch.add_oneofs(dataclasses)
     generated_dataclass_patch.reorder_required_fields(dataclasses)
     generated_dataclass_patch.quote_recursive_references(dataclasses)
 
