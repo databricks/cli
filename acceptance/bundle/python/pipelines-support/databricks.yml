@@ -12,5 +12,5 @@ experimental:
 
 resources:
   pipelines:
-    my_pipeline_2:
-      name: "My Pipeline 2"
+    my_pipeline_1:
+      name: "My Pipeline 1"

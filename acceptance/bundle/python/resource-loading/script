@@ -1,4 +1,4 @@
-UV_ARGS="${UV_ARGS//\[\DATABRICKS_BUNDLES_WHEEL\]/$DATABRICKS_BUNDLES_WHEEL}"
+echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
 
 # each job should record location where add_job function was called
 

@@ -3,6 +3,6 @@ Cloud = false # tests don't interact with APIs
 
 [EnvMatrix]
 UV_ARGS = [
-    # only works with the latest version of the wheel
-    "--with [DATABRICKS_BUNDLES_WHEEL] --no-cache",
+    # pipelines are only supported in the latest version of the wheel
+    "--with-requirements requirements-latest.txt --no-cache",
 ]

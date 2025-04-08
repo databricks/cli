@@ -1,4 +1,4 @@
-UV_ARGS="${UV_ARGS//\[\DATABRICKS_BUNDLES_WHEEL\]/$DATABRICKS_BUNDLES_WHEEL}"
+echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
 
 trace uv run $UV_ARGS -q $CLI bundle validate --output json | \
   jq "pick(.experimental.python, .resources)"
