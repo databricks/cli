@@ -39,4 +39,4 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
-          ./start_integration_tests.py -R ${{ secrets.ORG_NAME }}/${{secrets.REPO_NAME}}
+          ./start_integration_tests.py -R ${{ secrets.ORG_NAME }}/${{secrets.REPO_NAME}} --yes
