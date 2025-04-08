@@ -8,7 +8,6 @@ type Descriptor struct {
 	Enum                []any  `json:"enum,omitempty"`
 	MarkdownExamples    string `json:"markdown_examples,omitempty"`
 	DeprecationMessage  string `json:"deprecation_message,omitempty"`
-	Deprecated          bool   `json:"deprecated,omitempty"`
 }
 
 const Placeholder = "PLACEHOLDER"

@@ -5510,6 +5510,7 @@
                     "whl": {
                       "description": "URI of the whl to be installed.",
                       "$ref": "#/$defs/string",
+                      "deprecationMessage": "This field is deprecated",
                       "deprecated": true
                     }
                   },
