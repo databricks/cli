@@ -41,8 +41,18 @@ func TestSubstituteEnv(t *testing.T) {
 			env:      []string{"FOO=hello"},
 			expected: "hello$BAR",
 		},
-		// AI TODO with overlapping names $VAR $VARVAR; test what happens when only one is provided
-		// AI TODO: fix replacement to match full words to handle this case correctly
+		{
+			name:     "overlapping variable names",
+			value:    "$VAR $VARNAME",
+			env:      []string{"VAR=value", "VARNAME=longer"},
+			expected: "value longer",
+		},
+		{
+			name:     "only one of overlapping variables provided",
+			value:    "$VAR $VARNAME",
+			env:      []string{"VAR=value"},
+			expected: "value $VARNAME",
+		},
 	}
 
 	for _, tt := range tests {
