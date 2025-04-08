@@ -49,7 +49,7 @@ Resources:
       Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline
       URL:  [DATABRICKS_URL]/pipelines/[UUID]
 
->>> [CLIDIR] bundle summary -t dev -o json
+>>> [CLI] bundle summary -t dev -o json
 
 >>> diff.py ../out.validate.dev.json ../out.summary.dev.json
 --- ../out.validate.dev.json
@@ -106,7 +106,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> [CLIDIR] bundle validate -t prod
+>>> [CLI] bundle validate -t prod
 Name: project_name_[UNIQUE_NAME]
 Target: prod
 Workspace:
@@ -116,7 +116,7 @@ Workspace:
 
 Validation OK!
 
->>> [CLIDIR] bundle validate -t prod -o json
+>>> [CLI] bundle validate -t prod -o json
 
 >>> diff.py ../out.validate.dev.json ../out.validate.prod.json
 --- ../out.validate.dev.json
@@ -240,7 +240,7 @@ Validation OK!
    }
  }
 
->>> [CLIDIR] bundle deploy -t prod
+>>> [CLI] bundle deploy -t prod
 Building python_artifact...
 Uploading dist/project_name_[UNIQUE_NAME]-0.0.1+[NUMBER].[NUMBER]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files...
@@ -248,7 +248,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLIDIR] bundle summary -t prod
+>>> [CLI] bundle summary -t prod
 Name: project_name_[UNIQUE_NAME]
 Target: prod
 Workspace:
@@ -265,7 +265,7 @@ Resources:
       Name: project_name_[UNIQUE_NAME]_pipeline
       URL:  [DATABRICKS_URL]/pipelines/[UUID]
 
->>> [CLIDIR] bundle summary -t prod -o json
+>>> [CLI] bundle summary -t prod -o json
 
 >>> diff.py ../out.summary.dev.json ../out.summary.prod.json
 --- ../out.summary.dev.json
@@ -388,7 +388,7 @@ Resources:
    }
  }
 
->>> [CLIDIR] bundle destroy -t prod --auto-approve
+>>> [CLI] bundle destroy -t prod --auto-approve
 The following resources will be deleted:
   delete job project_name_[UNIQUE_NAME]_job
   delete pipeline project_name_[UNIQUE_NAME]_pipeline

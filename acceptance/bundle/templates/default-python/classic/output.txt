@@ -1,5 +1,5 @@
 
->>> [CLIDIR] bundle init default-python --config-file ./input.json --output-dir output
+>>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
 
 Welcome to the default Python template for Databricks Asset Bundles!
 Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): [DATABRICKS_URL]
@@ -9,7 +9,7 @@ Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): [D
 Please refer to the README.md file for "getting started" instructions.
 See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
->>> [CLIDIR] bundle validate -t dev
+>>> [CLI] bundle validate -t dev
 Name: my_default_python
 Target: dev
 Workspace:
@@ -19,7 +19,7 @@ Workspace:
 
 Validation OK!
 
->>> [CLIDIR] bundle validate -t prod
+>>> [CLI] bundle validate -t prod
 Name: my_default_python
 Target: prod
 Workspace:

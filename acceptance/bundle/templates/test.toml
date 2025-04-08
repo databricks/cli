@@ -1,5 +1,8 @@
 # Local-only: At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
 
+[EnvMatrix]
+CLI = ["$CLI_BINARY"]
+
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''
