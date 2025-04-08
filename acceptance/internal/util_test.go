@@ -62,6 +62,7 @@ func TestSubstituteEnv(t *testing.T) {
 				t.Errorf("SubstituteEnv() actual = %q, want %q", actual, tt.expected)
 			}
 			// Test placeholder output for one case
+			// AI TODO: incorporate this in table tests, do not make exception; add another test case for this feature
 			if tt.name == "simple substitution" && placeholder != "[CLI]" {
 				t.Errorf("SubstituteEnv() placeholder = %q, want %q", placeholder, "[CLI]")
 			}
