@@ -25,18 +25,6 @@ class PipelinePermission:
 
     user_name: VariableOrOptional[str] = None
 
-    def __post_init__(self):
-        union_fields = [
-            self.user_name,
-            self.service_principal_name,
-            self.group_name,
-        ]
-
-        if sum(f is not None for f in union_fields) != 1:
-            raise ValueError(
-                "PipelinePermission must specify exactly one of 'user_name', 'service_principal_name', 'group_name'"
-            )
-
     @classmethod
     def from_dict(cls, value: "PipelinePermissionDict") -> "Self":
         return _transform(cls, value)
