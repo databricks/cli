@@ -1,2 +1,8 @@
+
+>>> [CLI_BINARY] bundle generate job --existing-job-id 1234 --config-dir . --key out
+Job is using Git source, skipping downloading files
+Job configuration successfully saved to out.job.yml
+
+>>> [CLI_BINARY] bundle generate job --existing-job-id 1234 --config-dir . --key out
 Job is using Git source, skipping downloading files
 Job configuration successfully saved to out.job.yml

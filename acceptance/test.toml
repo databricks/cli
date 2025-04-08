@@ -1,3 +1,6 @@
 # Default settings that apply to all tests unless overriden by test.toml files in inner directories.
 Local = true
 Cloud = false
+
+[EnvMatrix]
+CLI = ["$CLI_BINARY"]

@@ -127,8 +127,8 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 		execPath = BuildCLI(t, buildDir, coverDir)
 	}
 
-	t.Setenv("CLI", execPath)
-	repls.SetPath(execPath, "[CLI]")
+	t.Setenv("CLI_BINARY", execPath)
+	repls.SetPath(execPath, "[CLI_BINARY]")
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
@@ -233,6 +233,12 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 			} else {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
+					// Presence of $ in PATH confuses Python when building Python artifacts
+					//  File "/private/var/folders/5y/9kkdnjw91p11vsqwk0cvmk200000gp/T/TestAcceptbundleartifactswhl_dynamicCLI=$CLI_BINARYUV_PYTHON=3.102963127949/001/.venv/lib/python3.10/site-packages/setuptools/_distutils/util.py", line 204, in subst_vars
+					//    raise ValueError(f"invalid variable {var}")
+					// ValueError: invalid variable 'CLI_BINARYUV_PYTHON'
+					envname = strings.ReplaceAll(envname, "$", "_")
+
 					t.Run(envname, func(t *testing.T) {
 						if !InprocessMode {
 							t.Parallel()

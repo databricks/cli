@@ -60,13 +60,11 @@ withdir() {
     return $exit_code
 }
 
-withnewdir() {
-    local dir="$1"
-    shift
+cli_subdir() {
     local orig_dir="$(pwd)"
-    mkdir -p "$dir"
-    cd "$dir" || return $?
-    "$@"
+    mkdir -p subdir1
+    cd subdir1 || return $?
+    $CLI_BINARY "$@"
     local exit_code=$?
     cd "$orig_dir" || return $?
     return $exit_code
