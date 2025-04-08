@@ -7,6 +7,7 @@ from databricks.bundles.core._resource import Resource
 
 if TYPE_CHECKING:
     from databricks.bundles.jobs._models.job import Job
+    from databricks.bundles.pipelines._models.pipeline import Pipeline
 
 _T = TypeVar("_T", bound=Resource)
 
@@ -94,3 +95,35 @@ def job_mutator(function: Callable) -> ResourceMutator["Job"]:
     from databricks.bundles.jobs._models.job import Job
 
     return ResourceMutator(resource_type=Job, function=function)
+
+
+@overload
+def pipeline_mutator(
+    function: Callable[[Bundle, "Pipeline"], "Pipeline"],
+) -> ResourceMutator["Pipeline"]: ...
+
+
+@overload
+def pipeline_mutator(
+    function: Callable[["Pipeline"], "Pipeline"],
+) -> ResourceMutator["Pipeline"]: ...
+
+
+def pipeline_mutator(function: Callable) -> ResourceMutator["Pipeline"]:
+    """
+    Decorator for defining a pipeline mutator. Function should return a new instance of the pipeline with the desired changes,
+    instead of mutating the input pipeline.
+
+    Example:
+
+    .. code-block:: python
+
+        @pipeline_mutator
+        def my_pipeline_mutator(bundle: Bundle, pipeline: Pipeline) -> Pipeline:
+            return replace(pipeline, name="my_job")
+
+    :param function: Function that mutates a pipeline.
+    """
+    from databricks.bundles.pipelines._models.pipeline import Pipeline
+
+    return ResourceMutator(resource_type=Pipeline, function=function)
