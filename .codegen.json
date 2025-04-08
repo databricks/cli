@@ -11,7 +11,8 @@
     },
     "version": {
       "experimental/python/databricks/bundles/version.py": "__version__ = \"$VERSION\"",
-      "experimental/python/pyproject.toml": "version = \"$VERSION\""
+      "experimental/python/pyproject.toml": "version = \"$VERSION\"",
+      "libs/template/templates/experimental-jobs-as-code/library/versions.tmpl": "{{define \"latest_databricks_bundles_version\" -}}$VERSION{{- end}}"
     },
     "toolchain": {
         "required": [
