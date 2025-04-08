@@ -12,7 +12,6 @@ import re
 
 
 CLI_REPO = "databricks/cli"
-ECO_REPO = "databricks-eng/eng-dev-ecosystem"
 
 
 def run(cmd):
@@ -75,7 +74,7 @@ def get_approved_prs_by_non_team():
     return prs, result
 
 
-def start_job(pr_number, commit_sha, author, approved_by, force=False):
+def start_job(pr_number, commit_sha, author, approved_by, workflow, repo, force=False):
     pr_details = run_json(["gh", "pr", "-R", CLI_REPO, "view", str(pr_number), "--json", "title,url"])
     pr_title = pr_details.get("title", "")
     commit_url = f"https://github.com/{CLI_REPO}/pull/{pr_number}/commits/{commit_sha}"
@@ -98,9 +97,9 @@ def start_job(pr_number, commit_sha, author, approved_by, force=False):
                 "gh",
                 "workflow",
                 "run",
-                "cli-isolated-pr",
+                workflow,
                 "-R",
-                ECO_REPO,
+                repo,
                 "-F",
                 f"pull_request_number={pr_number}",
                 "-F",
@@ -123,6 +122,9 @@ def get_status(commit_sha):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--yes", action="store_true", default=False)
+    parser.add_argument("--workflow", default="cli-isolated-pr")
+    parser.add_argument("-R", "--repo", default="databricks-eng/eng-dev-ecosystem")
+
     args = parser.parse_args()
 
     all_prs, approved_prs = get_approved_prs_by_non_team()
@@ -140,7 +142,7 @@ def main():
         status = get_status(commit_sha)
 
         if not status:
-            start_job(pr_number, commit_sha, pr["author"], approved_by=pr["approved_by"], force=args.yes)
+            start_job(pr_number, commit_sha, pr["author"], approved_by=pr["approved_by"], workflow=args.workflow, repo=args.repo, force=args.yes)
         else:
             commit_url = f"https://github.com/{CLI_REPO}/pull/{pr_number}/commits/{commit_sha}"
             print(f"Tests already running for PR #{pr_number} {commit_url}")
