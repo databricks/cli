@@ -15,6 +15,7 @@ func isAlphaNumeric(r byte) bool {
 // env is a set of variables in golang format, like VAR=hello
 // Example: value="$CLI", env={"CLI=/bin/true"}, result: "/bin/true"
 func SubstituteEnv(value string, env []string) string {
+	// AI TODO: do not use map to avoid random order
 	envMap := make(map[string]string)
 
 	// Parse environment variables into a map
