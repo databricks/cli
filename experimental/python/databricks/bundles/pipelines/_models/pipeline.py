@@ -173,6 +173,11 @@ class Pipeline(Resource):
     DBFS root directory for storing checkpoints and tables.
     """
 
+    target: VariableOrOptional[str] = None
+    """
+    Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    """
+
     @classmethod
     def from_dict(cls, value: "PipelineDict") -> "Self":
         return _transform(cls, value)
@@ -300,6 +305,11 @@ class PipelineDict(TypedDict, total=False):
     storage: VariableOrOptional[str]
     """
     DBFS root directory for storing checkpoints and tables.
+    """
+
+    target: VariableOrOptional[str]
+    """
+    Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
     """
 
 
