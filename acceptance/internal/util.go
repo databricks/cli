@@ -15,23 +15,17 @@ func isAlphaNumeric(r byte) bool {
 // env is a set of variables in golang format, like VAR=hello
 // Example: value="$CLI", env={"CLI=/bin/true"}, result: "/bin/true"
 func SubstituteEnv(value string, env []string) string {
-	// AI TODO: do not use map to avoid random order
-	envMap := make(map[string]string)
-
-	// Parse environment variables into a map
+	result := value
+	
+	// Process environment variables in the order they appear in the input slice
 	for _, e := range env {
 		parts := strings.SplitN(e, "=", 2)
 		if len(parts) == 2 {
-			envMap[parts[0]] = parts[1]
+			key, val := parts[0], parts[1]
+			// Create a regexp that matches $VAR but not $VARNAME (where NAME is alphanumeric)
+			re := regexp.MustCompile(`\$` + key + `\b`)
+			result = re.ReplaceAllString(result, val)
 		}
-	}
-
-	// Replace $VAR references with their values using regexp
-	result := value
-	for k, v := range envMap {
-		// Create a regexp that matches $VAR but not $VARNAME (where NAME is alphanumeric)
-		re := regexp.MustCompile(`\$` + k + `\b`)
-		result = re.ReplaceAllString(result, v)
 	}
 
 	return result
