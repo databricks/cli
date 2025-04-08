@@ -1,7 +1,8 @@
 name: integration-pr
 
 on:
-  # AI TODO: Modify this to run on schedule every 10 minutes
+  schedule:
+    - cron: '*/10 * * * *'
   pull_request:
     types: [opened, synchronize]
 
