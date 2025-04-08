@@ -13,6 +13,8 @@ import re
 
 CLI_REPO = "databricks/cli"
 CODE_OWNERS = "pietern andrewnester shreyas-goenka denik anton-107".split()
+ALLOWED_HEAD_REPOSITORY = {"id": "R_kgDOHVGMwQ", "name": "cli"}
+ALLOWED_HEAD_OWNER = {"id": "MDEyOk9yZ2FuaXphdGlvbjQ5OTgwNTI=", "login": "databricks"}
 
 
 def run(cmd):
@@ -32,7 +34,9 @@ def run_json(cmd):
 
 
 def get_approved_prs_by_non_team():
-    prs = run_json(["gh", "pr", "-R", CLI_REPO, "list", "--limit", "300", "--json", "number,author,reviews,headRefOid"])
+    prs = run_json(
+        ["gh", "pr", "-R", CLI_REPO, "list", "--limit", "300", "--json", "number,author,reviews,headRefOid,headRepository,headRepositoryOwner"]
+    )
     result = []
 
     for pr in prs:
@@ -40,6 +44,16 @@ def get_approved_prs_by_non_team():
         author = pr["author"]["login"]
 
         if author in CODE_OWNERS:
+            continue
+
+        head_repo = pr["headRepository"]
+        if head_repo != ALLOWED_HEAD_REPOSITORY:
+            print(f"#{pr_number} by {author} skipped due to headRepository: {head_repo}")
+            continue
+
+        head_owner = pr["headRepositoryOwner"]
+        if head_owner != ALLOWED_HEAD_OWNER:
+            print(f"#{pr_number} by {author} skipped due to headRepositoryOwner: {head_owner}")
             continue
 
         approved_by = []
