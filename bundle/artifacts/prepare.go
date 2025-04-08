@@ -37,6 +37,12 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	for _, artifactName := range sortedKeys(b.Config.Artifacts) {
 		artifact := b.Config.Artifacts[artifactName]
+		if artifact.BuildCommand != "" {
+			b.Metrics.AddSetField("artifact.build")
+		}
+		if len(artifact.Files) != 0 {
+			b.Metrics.AddSetField("artifact.files")
+		}
 
 		if artifact.Type == "whl" {
 			if artifact.BuildCommand == "" && len(artifact.Files) == 0 {

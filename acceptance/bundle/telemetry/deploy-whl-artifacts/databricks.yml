@@ -1,0 +1,19 @@
+bundle:
+  name: deploy-artifacts
+
+targets:
+  one:
+    artifacts:
+      test:
+        type: whl
+        path: ./my_test_code
+
+  two:
+    artifacts:
+      test:
+        type: whl
+        path: ./my_test_code
+        dynamic_version: true
+        build: "python3 setup.py bdist_wheel"
+        files:
+          - source: "./my_test_code/dist/*.whl"

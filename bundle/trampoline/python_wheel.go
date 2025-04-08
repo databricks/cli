@@ -80,6 +80,7 @@ func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		return nil
 	}
 
+	b.Metrics.AddSetField("python_wheel_wrapper")
 	return bundle.Apply(ctx, b, NewTrampoline(
 		"python_wheel",
 		&pythonTrampoline{},

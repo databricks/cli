@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
@@ -38,6 +39,11 @@ type Metrics struct {
 	ConfigurationFileCount int64
 	TargetCount            int64
 	DeploymentId           uuid.UUID
+	SetFields              []protos.BoolMapEntry
+}
+
+func (m *Metrics) AddSetField(key string) {
+	m.SetFields = append(m.SetFields, protos.BoolMapEntry{Key: key, Value: true})
 }
 
 type Bundle struct {

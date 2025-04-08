@@ -80,6 +80,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 
 		if a.Type == "whl" && a.DynamicVersion && cacheDir != "" {
+			b.Metrics.AddSetField("artifact.dynamic_version")
 			for ind, artifactFile := range a.Files {
 				patchedWheel, extraDiags := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)
 				log.Debugf(ctx, "Patching ind=%d artifactName=%s Source=%s patchedWheel=%s", ind, artifactName, artifactFile.Source, patchedWheel)
