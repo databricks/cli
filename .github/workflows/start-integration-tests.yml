@@ -3,8 +3,6 @@ name: start-integration-tests
 on:
   schedule:
     - cron: '*/10 * * * *'
-  pull_request:
-    types: [opened, synchronize]
 
 jobs:
   # Trigger for pull requests.
