@@ -198,8 +198,8 @@ func TestFilterCurrentUser(t *testing.T) {
 	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineBob)
 
 	assert.Len(t, b.Config.Resources.Experiments["experiment1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, endpointRobot)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, endpointBob)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, experimentRobot)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, experimentBob)
 
 	assert.Len(t, b.Config.Resources.Models["model1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelRobot)
@@ -233,16 +233,16 @@ func TestFilterCurrentServicePrincipal(t *testing.T) {
 	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineBob)
 
 	assert.Len(t, b.Config.Resources.Experiments["experiment1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, endpointAlice)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, endpointBob)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, experimentAlice)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, experimentBob)
 
 	assert.Len(t, b.Config.Resources.Models["model1"].Permissions, 2)
 	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelAlice)
 	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelBob)
 
 	assert.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, modelAlice)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, modelBob)
+	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, endpointAlice)
+	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, endpointBob)
 
 	// Assert there's no change to the grant.
 	assert.Len(t, b.Config.Resources.RegisteredModels["registered_model1"].Grants, 1)

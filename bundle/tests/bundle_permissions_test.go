@@ -23,10 +23,10 @@ func TestBundlePermissions(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
-	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "test@company.com"})
-	assert.NotContains(t, pipelinePermissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
-	assert.NotContains(t, pipelinePermissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
-	assert.NotContains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
+	assert.Contains(t, pipelinePermissions, resources.PipelinePermission{Level: "CAN_RUN", UserName: "test@company.com"})
+	assert.NotContains(t, pipelinePermissions, resources.PipelinePermission{Level: "CAN_MANAGE", GroupName: "devs"})
+	assert.NotContains(t, pipelinePermissions, resources.PipelinePermission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
+	assert.NotContains(t, pipelinePermissions, resources.PipelinePermission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
 	jobsPermissions := b.Config.Resources.Jobs["pipeline_schedule"].Permissions
 	assert.Contains(
@@ -62,10 +62,10 @@ func TestBundlePermissionsDevTarget(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
-	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "test@company.com"})
-	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
-	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
-	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
+	assert.Contains(t, pipelinePermissions, resources.PipelinePermission{Level: "CAN_RUN", UserName: "test@company.com"})
+	assert.Contains(t, pipelinePermissions, resources.PipelinePermission{Level: "CAN_MANAGE", GroupName: "devs"})
+	assert.Contains(t, pipelinePermissions, resources.PipelinePermission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
+	assert.Contains(t, pipelinePermissions, resources.PipelinePermission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
 	jobsPermissions := b.Config.Resources.Jobs["pipeline_schedule"].Permissions
 	assert.Contains(
