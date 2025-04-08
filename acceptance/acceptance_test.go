@@ -496,6 +496,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		repls.Set(newValue, "["+key+"]")
 	}
 
+	// Put larger replacements as this ensure more stable output when
+	// having one replacement include another one (as can happen when using
+	// env var substition in EnvMatrix).
+	slices.SortStableFunc(repls.Repls, func(a, b testdiff.Replacement) int {
+		return len(b.Old.String()) - len(a.Old.String())
+	})
+
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
