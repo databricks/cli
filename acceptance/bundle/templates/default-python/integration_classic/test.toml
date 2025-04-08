@@ -17,6 +17,8 @@ UV_PYTHON = [
     "3.13",
 ]
 
+CLIDIR = ["withdir resources $CLI"]
+
 [[Repls]]
 # for some reason leading number is lost converting "%H%M%S" 061234 to 61234
 Old = '\d{5,}'

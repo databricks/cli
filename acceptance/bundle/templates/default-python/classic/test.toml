@@ -1,0 +1,2 @@
+[EnvMatrix]
+CLIDIR = ["$CLI", "withdir resources $CLI"]
