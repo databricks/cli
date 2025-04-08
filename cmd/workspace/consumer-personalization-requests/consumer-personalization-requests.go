@@ -60,13 +60,6 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, ``)
-	cmd.Flags().StringVar(&createReq.Company, "company", createReq.Company, ``)
-	cmd.Flags().StringVar(&createReq.FirstName, "first-name", createReq.FirstName, ``)
-	cmd.Flags().BoolVar(&createReq.IsFromLighthouse, "is-from-lighthouse", createReq.IsFromLighthouse, ``)
-	cmd.Flags().StringVar(&createReq.LastName, "last-name", createReq.LastName, ``)
-	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `. Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`)
-
 	cmd.Use = "create LISTING_ID"
 	cmd.Short = `Create a personalization request.`
 	cmd.Long = `Create a personalization request.

@@ -3,6 +3,8 @@
 package budget_policy
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -303,11 +305,6 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: limit_config
-
-	// TODO: array: custom_tags
-	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
-
 	cmd.Use = "update POLICY_ID"
 	cmd.Short = `Update a budget policy.`
 	cmd.Long = `Update a budget policy.
@@ -341,6 +338,8 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.PolicyId = args[0]
 

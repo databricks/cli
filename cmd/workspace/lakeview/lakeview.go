@@ -295,6 +295,8 @@ func newDeleteSchedule() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().StringVar(&deleteScheduleReq.Etag, "etag", deleteScheduleReq.Etag, `The etag for the schedule.`)
+
 	cmd.Use = "delete-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Delete dashboard schedule.`
 	cmd.Long = `Delete dashboard schedule.
@@ -352,6 +354,8 @@ func newDeleteSubscription() *cobra.Command {
 	var deleteSubscriptionReq dashboards.DeleteSubscriptionRequest
 
 	// TODO: short flags
+
+	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription.`)
 
 	cmd.Use = "delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Delete schedule subscription.`
@@ -648,6 +652,7 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call.`)
 	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
 	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
 
@@ -700,6 +705,7 @@ func newListSchedules() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSchedulesReq.PageSize, "page-size", listSchedulesReq.PageSize, `The number of schedules to return per page.`)
+	cmd.Flags().StringVar(&listSchedulesReq.PageToken, "page-token", listSchedulesReq.PageToken, `A page token, received from a previous ListSchedules call.`)
 
 	cmd.Use = "list-schedules DASHBOARD_ID"
 	cmd.Short = `List dashboard schedules.`
@@ -755,6 +761,7 @@ func newListSubscriptions() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSubscriptionsReq.PageSize, "page-size", listSubscriptionsReq.PageSize, `The number of subscriptions to return per page.`)
+	cmd.Flags().StringVar(&listSubscriptionsReq.PageToken, "page-token", listSubscriptionsReq.PageToken, `A page token, received from a previous ListSubscriptions call.`)
 
 	cmd.Use = "list-subscriptions DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `List schedule subscriptions.`
@@ -1090,10 +1097,6 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
-
 	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Update dashboard.`
 	cmd.Long = `Update dashboard.
@@ -1126,6 +1129,8 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.DashboardId = args[0]
 
@@ -1167,10 +1172,6 @@ func newUpdateSchedule() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
-
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Update dashboard schedule.`
 	cmd.Long = `Update dashboard schedule.
@@ -1202,6 +1203,8 @@ func newUpdateSchedule() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateScheduleReq.DashboardId = args[0]
 		updateScheduleReq.ScheduleId = args[1]

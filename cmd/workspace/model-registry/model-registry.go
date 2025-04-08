@@ -581,12 +581,6 @@ func newCreateWebhook() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createWebhookReq.Description, "description", createWebhookReq.Description, `User-specified description for the webhook.`)
-	// TODO: complex arg: http_url_spec
-	// TODO: complex arg: job_spec
-	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
-	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
-
 	cmd.Use = "create-webhook"
 	cmd.Short = `Create a webhook.`
 	cmd.Long = `Create a webhook.
