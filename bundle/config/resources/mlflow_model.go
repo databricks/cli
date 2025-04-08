@@ -15,7 +15,7 @@ type MlflowModelPermissionLevel string
 // MlflowModelPermission holds the permission level setting for a single principal.
 // Multiple of these can be defined on any model.
 type MlflowModelPermission struct {
-	Level MlflowExperimentPermissionLevel `json:"level"`
+	Level MlflowModelPermissionLevel `json:"level"`
 
 	UserName             string `json:"user_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
