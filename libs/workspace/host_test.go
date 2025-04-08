@@ -28,6 +28,7 @@ func TestNormalizeHost(t *testing.T) {
 func TestMatchHost(t *testing.T) {
 	assert.True(t, MatchHost("https://foo.com", "https://foo.com"))
 	assert.True(t, MatchHost("https://foo.com", "foo.com"))
+	assert.True(t, MatchHost("https://foo.com", "https://foo.com:443"))
 
 	assert.False(t, MatchHost("https://foo.com", "bar.com"))
 	assert.False(t, MatchHost("https://foo.com", "::invalid"))
