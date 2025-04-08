@@ -1086,7 +1086,9 @@
                       },
                       "trigger": {
                         "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger",
+                        "deprecationMessage": "Use continuous instead",
+                        "deprecated": true
                       }
                     },
                     "additionalProperties": false,
@@ -5871,7 +5873,9 @@
                     },
                     "whl": {
                       "description": "URI of the whl to be installed.",
-                      "$ref": "#/$defs/string"
+                      "$ref": "#/$defs/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     }
                   },
                   "additionalProperties": false
