@@ -1,0 +1,12 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "body": {
+    "description": "my_app_description",
+    "name": "myapp"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/apps/myapp"
+}

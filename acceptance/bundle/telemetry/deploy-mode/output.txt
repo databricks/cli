@@ -18,6 +18,7 @@ A common practice is to use a username or principal name in this path, i.e. use
 >>> cat out.requests.txt
 {
   "bundle_uuid": "[UUID]",
+  "deployment_id": "[UUID]",
   "resource_count": 0,
   "resource_job_count": 0,
   "resource_pipeline_count": 0,
@@ -43,6 +44,7 @@ A common practice is to use a username or principal name in this path, i.e. use
 }
 {
   "bundle_uuid": "[UUID]",
+  "deployment_id": "[UUID]",
   "resource_count": 0,
   "resource_job_count": 0,
   "resource_pipeline_count": 0,

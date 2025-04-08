@@ -1,8 +1,12 @@
 # Tests don't interact with APIs
 
+Ignore = [
+  # created by scripts to install the latest wheel with UV_ARGS
+  "requirements-latest.txt",
+]
+
 [EnvMatrix]
 UV_ARGS = [
   "--with databricks-bundles==0.7.3",
-  # NB: test runner doesn't support substitutions, they are expanded in the script
-  "--with [DATABRICKS_BUNDLES_WHEEL] --no-cache",
+  "--with-requirements requirements-latest.txt --no-cache",
 ]
