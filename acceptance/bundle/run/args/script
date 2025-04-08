@@ -1,0 +1,5 @@
+errcode trace  $CLI bundle run
+
+errcode trace  $CLI bundle run -- abc
+
+errcode trace  $CLI bundle run abc

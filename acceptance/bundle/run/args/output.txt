@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle run
+Error: accepts 1 arg(s), received 0
+
+Exit code: 1
+
+>>> [CLI] bundle run -- abc
+Error: resource key cannot be specified after '--'
+
+Exit code: 1
+
+>>> [CLI] bundle run abc
+Error: unable to locate bundle root: databricks.yml not found
+
+Exit code: 1

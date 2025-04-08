@@ -75,6 +75,7 @@ func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] KEY",
 		Short: "Run a job or pipeline update",
+		Args:  cobra.ExactArgs(1),
 		Long: `Run the job or pipeline identified by KEY.
 
 The KEY is the unique identifier of the resource to run. In addition to
@@ -105,6 +106,10 @@ task or a Python wheel task, the second example applies.
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if cmd.ArgsLenAtDash() == 0 {
+			return fmt.Errorf("resource key cannot be specified after '--'")
+		}
+
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
 		if err := diags.Error(); err != nil {
