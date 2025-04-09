@@ -21,15 +21,8 @@ func execv(opts ExecvOptions) error {
 		return fmt.Errorf("looking up %q failed: %w", opts.Args[0], err)
 	}
 
-	// TODO: Validate atleast one arg before calling execv.
 	cmd := exec.Command(path, opts.Args[1:]...)
 
-	// TODO: Move this comment.
-	// Execute all scripts from the bundle root directory. This behavior can
-	// be surprising in isolation, but we do it to keep the behavior consistent
-	// for both these cases:
-	// 1. One shot commands like `databricks bundle exec -- echo hello`
-	// 2. (upcoming) Scripts that are defined in the scripts section of the DAB.
 	cmd.Dir = opts.Dir
 	cmd.Env = opts.Env
 
