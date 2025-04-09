@@ -7,6 +7,9 @@ resources:
           notebook_task:
             notebook_path: path/in/repo/should/not/change
             source: GIT
+          libraries:
+            # this path should become remote path, but it doesn't work
+            - whl: ../mywheel.whl
       git_source:
         git_url: https://github.com/foo
         git_provider: gitHub

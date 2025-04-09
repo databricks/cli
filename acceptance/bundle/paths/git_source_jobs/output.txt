@@ -35,6 +35,11 @@
         "tags": {},
         "tasks": [
           {
+            "libraries": [
+              {
+                "whl": "../mywheel.whl"
+              }
+            ],
             "notebook_task": {
               "notebook_path": "path/in/repo/should/not/change",
               "source": "GIT"

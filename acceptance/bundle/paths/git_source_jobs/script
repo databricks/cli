@@ -1,1 +1,2 @@
+touch mywheel.whl
 $CLI bundle validate -o json
