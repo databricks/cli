@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/variable"
@@ -97,7 +96,7 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	filePath := filepath.Join(b.BundleRootPath, getDefaultVariableFilePath(b.Config.Bundle.Target))
+	filePath := getDefaultVariableFilePath(b.Config.Bundle.Target)
 	if _, err := os.Stat(filePath); err != nil {
 		return dyn.InvalidValue, nil
 	}

@@ -59,7 +59,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		}
 
 		if artifact.Path == "" {
-			artifact.Path = b.BundleRootPath
+			artifact.Path = "."
 		}
 
 		if !filepath.IsAbs(artifact.Path) {
@@ -117,7 +117,7 @@ func InsertPythonArtifact(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	// checking if there is setup.py in the bundle root
-	setupPy := filepath.Join(b.BundleRootPath, "setup.py")
+	setupPy := "setup.py"
 	_, err := os.Stat(setupPy)
 	if err != nil {
 		log.Infof(ctx, "No Python wheel project found at bundle root folder")
