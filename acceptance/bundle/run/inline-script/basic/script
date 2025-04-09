@@ -8,4 +8,6 @@ errcode trace $CLI bundle run -- --help
 errcode trace $CLI bundle run -- bash -c "exit 5"
 
 # stderr should also be passed through.
-trace $CLI bundle run -- python3 -c "import sys; print('Hello', file=sys.stderr)"
+trace $CLI bundle exec -- python3 -c "import sys; print('Hello', file=sys.stderr)" 2> stderr.txt
+trace cat stderr.txt
+rm stderr.txt
