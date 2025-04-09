@@ -1,3 +1,4 @@
+Running command: uv run python -c print('Hello, world')
 Hello, world
 
 === Starting the app in background...

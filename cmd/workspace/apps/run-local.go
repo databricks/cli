@@ -65,10 +65,10 @@ func newRunLocal() *cobra.Command {
 			return err
 		}
 
-		env := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil {
-			env = append(env, "DATABRICKS_CONFIG_PROFILE="+profileFlag.Value.String())
+		cfg := cmdctx.ConfigUsed(cmd.Context())
+		env := auth.ProcessEnv(cfg)
+		if cfg.Profile != "" {
+			env = append(env, "DATABRICKS_CONFIG_PROFILE="+cfg.Profile)
 		}
 
 		for _, envVar := range spec.EnvVars {
@@ -77,6 +77,9 @@ func newRunLocal() *cobra.Command {
 			}
 
 			if envVar.ValueFrom != nil {
+				if os.Getenv(envVar.Name) != "" {
+					customEnv = append(customEnv, envVar.Name+"="+os.Getenv(envVar.Name))
+				}
 				found := false
 				for _, e := range customEnv {
 					if strings.HasPrefix(e, envVar.Name+"=") {
@@ -85,7 +88,8 @@ func newRunLocal() *cobra.Command {
 					}
 				}
 				if !found {
-					return fmt.Errorf("env var %s needs to be set", envVar.Name)
+					return fmt.Errorf("%s defined in app.yml with valueFrom property and can't be resolved locally."+
+						"Please set %s environment variable in your terminal or using --env flag", envVar.Name, envVar.Name)
 				}
 			}
 		}
@@ -103,6 +107,7 @@ func newRunLocal() *cobra.Command {
 			return err
 		}
 
+		cmdio.LogString(ctx, "Running command: "+strings.Join(specCommand, " "))
 		appCmd := exec.Command(specCommand[0], specCommand[1:]...)
 		appCmd.Stdin = cmd.InOrStdin()
 		appCmd.Stdout = cmd.OutOrStdout()
