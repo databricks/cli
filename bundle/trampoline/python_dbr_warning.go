@@ -55,6 +55,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 					Severity: diag.Error,
 					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", task.TaskKey, task.NewCluster.SparkVersion),
 				})
+				continue
 			}
 		}
 
@@ -67,6 +68,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 								Severity: diag.Error,
 								Summary:  fmt.Sprintf("job cluster %s uses incompatible DBR version %s", cluster.JobClusterKey, cluster.NewCluster.SparkVersion),
 							})
+							continue
 						}
 					}
 				}
@@ -112,6 +114,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 					Severity: diag.Error,
 					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", task.TaskKey, version),
 				})
+				continue
 			}
 		}
 	}
