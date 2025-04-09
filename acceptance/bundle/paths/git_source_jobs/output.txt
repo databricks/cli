@@ -1,0 +1,66 @@
+{
+  "bundle": {
+    "environment": "default",
+    "git": {
+      "bundle_root_path": "."
+    },
+    "name": "hello",
+    "target": "default",
+    "terraform": {
+      "exec_path": "[TERRAFORM]"
+    }
+  },
+  "include": [
+    "resources/included.yml"
+  ],
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "git_source": {
+          "git_branch": "main",
+          "git_provider": "gitHub",
+          "git_url": "https://github.com/foo"
+        },
+        "name": "my_job",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {},
+        "tasks": [
+          {
+            "notebook_task": {
+              "notebook_path": "path/in/repo/should/not/change",
+              "source": "GIT"
+            },
+            "task_key": "my_task"
+          }
+        ]
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "targets": null,
+  "workspace": {
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/artifacts",
+    "current_user": {
+      "id": "[USERID]",
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/state"
+  }
+}

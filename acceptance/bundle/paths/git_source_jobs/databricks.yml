@@ -1,0 +1,5 @@
+bundle:
+  name: hello
+
+include:
+  - resources/included.yml
