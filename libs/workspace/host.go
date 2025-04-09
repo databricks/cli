@@ -37,7 +37,7 @@ func MatchHost(host1, host2 string) bool {
 	if err != nil {
 		return false
 	}
-	return u1.Host == u2.Host
+	return u1.Hostname() == u2.Hostname()
 }
 
 func fixUrlIfNeeded(s string) string {
