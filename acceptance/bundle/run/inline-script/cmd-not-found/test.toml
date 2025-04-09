@@ -1,7 +1,0 @@
-[[Repls]]
-Old = "\\$PATH"
-New = "PATH"
-
-[[Repls]]
-Old = "%PATH%"
-New = "PATH"

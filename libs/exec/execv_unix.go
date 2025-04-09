@@ -18,7 +18,7 @@ func execv(opts ExecvOptions) error {
 	// execve syscall does not perform PATH lookup and
 	path, err := exec.LookPath(opts.Args[0])
 	if err != nil {
-		return fmt.Errorf("looking up %q in PATH failed: %w", opts.Args[0], err)
+		return fmt.Errorf("looking up %q failed: %w", opts.Args[0], err)
 	}
 	return syscall.Exec(path, opts.Args, opts.Env)
 }

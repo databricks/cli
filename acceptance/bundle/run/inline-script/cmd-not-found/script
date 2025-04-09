@@ -1,1 +1,0 @@
-errcode trace $CLI bundle run -- doesnotexist  arg1 arg2 --flag1 --flag2

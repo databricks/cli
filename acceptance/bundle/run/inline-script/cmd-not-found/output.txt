@@ -1,5 +1,0 @@
-
->>> [CLI] bundle run -- doesnotexist arg1 arg2 --flag1 --flag2
-Error: looking up "doesnotexist" in PATH failed: exec: "doesnotexist": executable file not found in PATH
-
-Exit code: 1

@@ -17,7 +17,7 @@ import (
 func execv(opts ExecvOptions) error {
 	path, err := exec.LookPath(opts.Args[0])
 	if err != nil {
-		return fmt.Errorf("looking up %q in PATH failed: %w", opts.Args[0], err)
+		return fmt.Errorf("looking up %q failed: %w", opts.Args[0], err)
 	}
 
 	// TODO: Validate atleast one arg before calling execv.
