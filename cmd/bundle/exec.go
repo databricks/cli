@@ -57,7 +57,6 @@ Example usage:
 				env = append(env, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 			}
 
-
 			err := exec.Execv(exec.ExecvOptions{
 				Args:   args,
 				Env:    env,
