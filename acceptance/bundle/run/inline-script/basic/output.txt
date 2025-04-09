@@ -13,5 +13,5 @@ Exit code: 5
 
 >>> cat stderr.txt
 
->>> [CLI] bundle exec -- python3 -c import sys; print('Hello', file=sys.stderr)
+>>> [CLI] bundle run -- python3 -c import sys; print('Hello', file=sys.stderr)
 Hello

@@ -11,7 +11,6 @@ Available Commands:
   deploy      Deploy bundle
   deployment  Deployment related commands
   destroy     Destroy deployed bundle resources
-  exec        Execute a command using the same authentication context as the bundle
   generate    Generate bundle configuration
   init        Initialize using a bundle template
   open        Open a resource in the browser
