@@ -3,4 +3,4 @@
 hello
 
 >>> [CLI] bundle exec -- python3 -c import os; print(os.getcwd())
-[TMPDIR]
+[TEST_TMP_DIR]

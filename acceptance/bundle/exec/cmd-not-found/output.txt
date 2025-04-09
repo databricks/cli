@@ -1,5 +1,5 @@
 
 >>> [CLI] bundle exec -- doesnotexist arg1 arg2 --flag1 --flag2
-Error: starting "doesnotexist arg1 arg2 --flag1 --flag2" failed: exec: "doesnotexist": executable file not found in PATH
+Error: running "doesnotexist arg1 arg2 --flag1 --flag2" failed: looking up "doesnotexist" in PATH failed: exec: "doesnotexist": executable file not found in PATH
 
 Exit code: 1
