@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/cli/libs/python"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func Build() bundle.Mutator {
@@ -37,7 +38,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		})
 	}
 
-	for _, artifactName := range sortedKeys(b.Config.Artifacts) {
+	for _, artifactName := range utils.SortedKeys(b.Config.Artifacts) {
 		a := b.Config.Artifacts[artifactName]
 
 		if a.BuildCommand != "" {
