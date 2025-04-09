@@ -56,7 +56,8 @@ type BundleDeployExperimental struct {
 	// Examples: "bundle.terraform.exec_path", "bundle.git.branch" etc.
 	SetFields []BoolMapEntry `json:"set_fields,omitempty"`
 
-	// Values for boolean configuration fields like `experimental.python_wheel_wrapper`
+	// Values for boolean configuration fields like `experimental.python_wheel_wrapper` or just any
+	// boolean values that we want to track.
 	// We don't need to define protos to track boolean values and can simply write those
 	// values to this map to track them.
 	BoolValues []BoolMapEntry `json:"bool_values,omitempty"`
@@ -71,7 +72,7 @@ type BundleDeployExperimental struct {
 
 type BoolMapEntry struct {
 	Key   string `json:"key,omitempty"`
-	Value bool   `json:"value,omitempty"`
+	Value bool   `json:"value"`
 }
 
 type IntMapEntry struct {

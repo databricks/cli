@@ -39,11 +39,11 @@ type Metrics struct {
 	ConfigurationFileCount int64
 	TargetCount            int64
 	DeploymentId           uuid.UUID
-	SetFields              []protos.BoolMapEntry
+	BoolValues             []protos.BoolMapEntry
 }
 
-func (m *Metrics) AddSetField(key string) {
-	m.SetFields = append(m.SetFields, protos.BoolMapEntry{Key: key, Value: true})
+func (m *Metrics) AddBoolValue(key string, value bool) {
+	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
 
 type Bundle struct {

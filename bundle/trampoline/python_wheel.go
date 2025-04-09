@@ -77,11 +77,11 @@ func TransformWheelTask() bundle.Mutator {
 
 func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	isEnabled := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
+	b.Metrics.AddBoolValue(protos.ExperimentalPythonWheelWrapperIsSet, isEnabled)
 	if !isEnabled {
 		return nil
 	}
 
-	b.Metrics.AddSetField(protos.ExperimentalPythonWheelWrapperIsSet)
 	return bundle.Apply(ctx, b, NewTrampoline(
 		"python_wheel",
 		&pythonTrampoline{},
