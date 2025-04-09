@@ -46,7 +46,7 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 			return "", nil, err
 		}
 		return key, args, nil
-	} a
+	}
 
 	if len(args) < 1 {
 		return "", nil, errors.New("expected a KEY of the resource to run")
