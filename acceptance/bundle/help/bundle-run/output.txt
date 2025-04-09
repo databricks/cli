@@ -31,9 +31,11 @@ Authentication to the input command will be provided by setting the appropriate
 environment variables that Databricks tools use to authenticate.
 
 Example usage:
-1. databricks bundle exec -- echo "hello, world"
-2. databricks bundle exec -- /bin/bash -c "echo hello"
-3. databricks bundle exec -- uv run pytest
+1. databricks bundle run -- echo "hello, world"
+2. databricks bundle run -- /bin/bash -c "echo hello"
+3. databricks bundle run -- uv run pytest
+
+---------------------------------------------------------
 
 Usage:
   databricks bundle run [flags] [KEY]
