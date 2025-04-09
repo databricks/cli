@@ -54,15 +54,6 @@ func NewGenerateAppCommand() *cobra.Command {
 			return err
 		}
 
-		// Making sure the config directory and source directory are absolute paths.
-		if !filepath.IsAbs(configDir) {
-			configDir = filepath.Join(b.BundleRootPath, configDir)
-		}
-
-		if !filepath.IsAbs(sourceDir) {
-			sourceDir = filepath.Join(b.BundleRootPath, sourceDir)
-		}
-
 		downloader := newDownloader(w, sourceDir, configDir)
 
 		sourceCodePath := app.DefaultSourceCodePath

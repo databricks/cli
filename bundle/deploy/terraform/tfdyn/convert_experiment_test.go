@@ -18,7 +18,7 @@ func TestConvertExperiment(t *testing.T) {
 		Experiment: &ml.Experiment{
 			Name: "name",
 		},
-		Permissions: []resources.Permission{
+		Permissions: []resources.MlflowExperimentPermission{
 			{
 				Level:    "CAN_READ",
 				UserName: "jane@doe.com",

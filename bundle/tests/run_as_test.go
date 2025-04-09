@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
+
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/databricks/cli/bundle"
@@ -295,11 +297,15 @@ func TestLegacyRunAs(t *testing.T) {
 	pipelines := b.Config.Resources.Pipelines
 	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
 
-	assert.Equal(t, "CAN_VIEW", pipelines["nyc_taxi_pipeline"].Permissions[0].Level)
-	assert.Equal(t, "my_user_name", pipelines["nyc_taxi_pipeline"].Permissions[0].UserName)
+	assert.Equal(t, resources.PipelinePermission{
+		Level:    "CAN_VIEW",
+		UserName: "my_user_name",
+	}, pipelines["nyc_taxi_pipeline"].Permissions[0])
 
-	assert.Equal(t, "IS_OWNER", pipelines["nyc_taxi_pipeline"].Permissions[1].Level)
-	assert.Equal(t, "my_service_principal", pipelines["nyc_taxi_pipeline"].Permissions[1].ServicePrincipalName)
+	assert.Equal(t, resources.PipelinePermission{
+		Level:                "IS_OWNER",
+		ServicePrincipalName: "my_service_principal",
+	}, pipelines["nyc_taxi_pipeline"].Permissions[1])
 
 	// Assert other resources are not affected.
 	assert.Equal(t, ml.Model{Name: "skynet"}, *b.Config.Resources.Models["model_one"].Model)
