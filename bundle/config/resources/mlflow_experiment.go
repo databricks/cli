@@ -10,11 +10,23 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+type MlflowExperimentPermissionLevel string
+
+// MlflowExperimentPermission holds the permission level setting for a single principal.
+// Multiple of these can be defined on any experiment.
+type MlflowExperimentPermission struct {
+	Level MlflowExperimentPermissionLevel `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
 type MlflowExperiment struct {
-	ID             string         `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []Permission   `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
+	ID             string                       `json:"id,omitempty" bundle:"readonly"`
+	Permissions    []MlflowExperimentPermission `json:"permissions,omitempty"`
+	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string                       `json:"url,omitempty" bundle:"internal"`
 
 	*ml.Experiment
 }
@@ -36,6 +48,16 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 		return false, err
 	}
 	return true, nil
+}
+
+func (j *MlflowExperiment) ResourceDescription() ResourceDescription {
+	return ResourceDescription{
+		SingularName:          "experiment",
+		PluralName:            "experiments",
+		SingularTitle:         "Experiment",
+		PluralTitle:           "Experiments",
+		TerraformResourceName: "databricks_mlflow_experiment",
+	}
 }
 
 func (s *MlflowExperiment) TerraformResourceName() string {

@@ -1,0 +1,19 @@
+Local = true
+Cloud = true
+RequiresCluster = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
+New = "[CLUSTER-ID]"
+
+[[Server]]
+Pattern = "GET /api/2.1/clusters/get"
+Response.Body = '''
+{
+  "cluster_name": "DEFAULT Test Cluster"
+}
+'''

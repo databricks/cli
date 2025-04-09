@@ -116,6 +116,11 @@ func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sche
 		// should not expose it to the user.
 		delete(s.Properties, "dry_run")
 		delete(s.Properties, "allow_duplicate_names")
+
+		// These fields are only meant to be set by the DABs client (ie the CLI)
+		// and thus should not be exposed to the user. These are used to annotate
+		// pipelines that were created by DABs.
+		delete(s.Properties, "deployment")
 	default:
 		// Do nothing
 	}
@@ -131,7 +136,7 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 		return s
 	}
 
-	res := []string{}
+	var res []string
 	for _, r := range s.Required {
 		if r != "volume_type" {
 			res = append(res, r)

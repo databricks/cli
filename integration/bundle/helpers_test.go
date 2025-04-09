@@ -13,8 +13,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/folders"
@@ -35,7 +35,7 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 
 	configFilePath := writeConfigFile(t, config)
 
-	ctx = command.SetWorkspaceClient(ctx, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
@@ -142,7 +142,7 @@ func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key s
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
-	args := make([]string, 0)
+	var args []string
 	args = append(args, "bundle", "run", key)
 	args = append(args, params...)
 	c := testcli.NewRunner(t, ctx, args...)

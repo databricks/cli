@@ -1,0 +1,7 @@
+# Set timeout to 0.1 second to make this test faster
+export DATABRICKS_CLI_TELEMETRY_TIMEOUT=0.1
+
+trace $CLI selftest send-telemetry --debug
+
+# pretty print the telemetry payload.
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs.[] | fromjson'

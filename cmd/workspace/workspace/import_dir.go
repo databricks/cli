@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/spf13/cobra"
@@ -125,7 +125,7 @@ Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stri
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		opts.sourceDir = args[0]
 		opts.targetDir = args[1]
 

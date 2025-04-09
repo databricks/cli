@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/settings"
@@ -93,7 +94,7 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq)
@@ -171,7 +172,8 @@ func newCreatePrivateEndpointRule() *cobra.Command {
     RESOURCE_ID: The Azure resource ID of the target resource.
     GROUP_ID: The sub-resource type (group ID) of the target resource. Note that to
       connect to workspace root storage (root DBFS), you need two endpoints, one
-      for blob and one for dfs.`
+      for blob and one for dfs. 
+      Supported values: [blob, dfs, mysqlServer, sqlServer]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -190,7 +192,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq)
@@ -269,7 +271,7 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		deleteNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
 
@@ -333,7 +335,7 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		deletePrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
 		deletePrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
@@ -392,7 +394,7 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		getNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
 
@@ -451,7 +453,7 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		getPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
 		getPrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
@@ -509,7 +511,7 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		response := a.NetworkConnectivity.ListNetworkConnectivityConfigurations(ctx, listNetworkConnectivityConfigurationsReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -564,7 +566,7 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = args[0]
 

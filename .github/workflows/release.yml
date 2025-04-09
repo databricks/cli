@@ -24,7 +24,7 @@ jobs:
           fetch-tags: true
 
       - name: Setup Go
-        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version-file: go.mod
 
@@ -37,7 +37,7 @@ jobs:
 
       # Log into the GitHub Container Registry. The goreleaser action will create
       # the docker images and push them to the GitHub Container Registry.
-      - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+      - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: "ghcr.io"
           username: "${{ github.actor }}"
@@ -50,7 +50,7 @@ jobs:
 
       - name: Run GoReleaser
         id: releaser
-        uses: goreleaser/goreleaser-action@9ed2f89a662bf1735a48bc8557fd212fa902bebf # v6.1.0
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
         with:
           version: ~> v2
           args: release
@@ -107,7 +107,7 @@ jobs:
             artifacts = artifacts.filter(a => a.type == "Archive")
             artifacts = new Map(
               artifacts.map(a => [
-                a.goos + "_" + a.goarch,
+                a.goos + "_" + a.goarch + "_" + a.extra.Format,
                 a.extra.Checksum.replace("sha256:", "")
               ])
             )
@@ -119,10 +119,10 @@ jobs:
               ref: 'main',
               inputs: {
                 version: "${{ env.VERSION }}",
-                darwin_amd64_sha: artifacts.get('darwin_amd64'),
-                darwin_arm64_sha: artifacts.get('darwin_arm64'),
-                linux_amd64_sha: artifacts.get('linux_amd64'),
-                linux_arm64_sha: artifacts.get('linux_arm64')
+                darwin_amd64_sha: artifacts.get('darwin_amd64_zip'),
+                darwin_arm64_sha: artifacts.get('darwin_arm64_zip'),
+                linux_amd64_sha: artifacts.get('linux_amd64_zip'),
+                linux_arm64_sha: artifacts.get('linux_arm64_zip')
               }
             });
 

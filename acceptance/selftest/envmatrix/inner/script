@@ -1,0 +1,6 @@
+[ "$FIRST" = "one" ] || [ "$FIRST" = "two" ]
+[ "$SECOND" = "variantA" ] || [ "$SECOND" = "variantB" ]
+
+echo "FIRST=$FIRST"
+echo "SECOND=$SECOND"
+echo "THIRD=$THIRD"

@@ -89,6 +89,44 @@ func (p Path) HasPrefix(q Path) bool {
 	return true
 }
 
+// HasSuffix returns true if the path has the specified suffix.
+// The empty path is a suffix of all paths.
+func (p Path) HasSuffix(q Path) bool {
+	pl := len(p)
+	ql := len(q)
+	if pl < ql {
+		return false
+	}
+	for i := range ql {
+		if p[pl-ql+i] != q[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// CutPrefix returns the path with the specified prefix removed.
+// If the path does not have the specified prefix, the original path is returned.
+// The second return value is true if the prefix was removed.
+// Logically equivalent to [strings.CutPrefix].
+func (p Path) CutPrefix(q Path) (Path, bool) {
+	if !p.HasPrefix(q) {
+		return p, false
+	}
+	return p[len(q):], true
+}
+
+// CutSuffix returns the path with the specified suffix removed.
+// If the path does not have the specified suffix, the original path is returned.
+// The second return value is true if the suffix was removed.
+// Logically equivalent to [strings.CutSuffix].
+func (p Path) CutSuffix(q Path) (Path, bool) {
+	if !p.HasSuffix(q) {
+		return p, false
+	}
+	return p[:len(p)-len(q)], true
+}
+
 // String returns a string representation of the path.
 func (p Path) String() string {
 	var buf bytes.Buffer

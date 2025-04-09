@@ -1,0 +1,37 @@
+
+Welcome to the dbt template for Databricks Asset Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+
+📊 Your new project has been created in the 'my_dbt_sql' directory!
+If you already have dbt installed, just type 'cd my_dbt_sql; dbt init' to get started.
+Refer to the README.md file for full "getting started" guide and production setup instructions.
+
+
+>>> cat out.requests.txt
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[CMD-EXEC-ID]",
+        "version": "[DEV_VERSION]",
+        "command": "bundle_init",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "bundle_init_event": {
+        "bundle_uuid": "[BUNDLE-UUID]",
+        "template_name": "dbt-sql",
+        "template_enum_args": [
+          {
+            "key": "personal_schemas",
+            "value": "yes, use a schema based on the current user name during development"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -6,18 +6,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-)
-
-// Placeholders to use as unique keys in context.Context.
-var (
-	accountClient int
 )
 
 type ErrNoWorkspaceProfiles struct {
@@ -118,7 +113,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
-	ctx = command.SetConfigUsed(ctx, cfg)
+	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	profiler := profile.GetProfiler(ctx)
@@ -145,7 +140,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx = context.WithValue(ctx, &accountClient, a)
+	ctx = cmdctx.SetAccountClient(ctx, a)
 	cmd.SetContext(ctx)
 	return nil
 }
@@ -201,7 +196,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
-	ctx = command.SetConfigUsed(ctx, cfg)
+	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
@@ -212,7 +207,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		}
 
 		if b != nil {
-			ctx = command.SetConfigUsed(ctx, b.Config.Workspace.Config())
+			ctx = cmdctx.SetConfigUsed(ctx, b.Config.Workspace.Config())
 			cmd.SetContext(ctx)
 			client, err := b.WorkspaceClientE()
 			if err != nil {
@@ -228,13 +223,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx = command.SetWorkspaceClient(ctx, w)
+	ctx = cmdctx.SetWorkspaceClient(ctx, w)
 	cmd.SetContext(ctx)
 	return nil
-}
-
-func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
-	return context.WithValue(ctx, &accountClient, a)
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
@@ -314,12 +305,4 @@ func emptyHttpRequest(ctx context.Context) *http.Request {
 		panic(err)
 	}
 	return req
-}
-
-func AccountClient(ctx context.Context) *databricks.AccountClient {
-	a, ok := ctx.Value(&accountClient).(*databricks.AccountClient)
-	if !ok {
-		panic("cannot get *databricks.AccountClient. Please report it as a bug")
-	}
-	return a
 }

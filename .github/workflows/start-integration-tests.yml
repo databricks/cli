@@ -1,0 +1,40 @@
+name: start-integration-tests
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+
+jobs:
+  # Trigger for pull requests.
+  #
+  # This workflow triggers the integration test workflow in a different repository.
+  # It requires secrets from the "test-trigger-is" environment, which are only available to authorized users.
+  trigger:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    environment: "test-trigger-is"
+
+    # Only run this job for PRs from branches on the main repository and not from forks.
+    # Workflows triggered by PRs from forks don't have access to the "test-trigger-is" environment.
+    if: "${{ !github.event.pull_request.head.repo.fork }}"
+
+    steps:
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@136412a57a7081aa63c935a2cc2918f76c34f514 # v1.11.2
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: ${{ secrets.ORG_NAME }}
+          repositories: ${{secrets.REPO_NAME}}
+
+      - name: Fetch start_integration_tests.py
+        run: wget https://raw.githubusercontent.com/databricks/cli/refs/heads/main/tools/start_integration_tests.py
+
+      - name: Run start_integration_tests.py
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          python3 ./start_integration_tests.py -R ${{ secrets.ORG_NAME }}/${{secrets.REPO_NAME}} --yes

@@ -1,4 +1,4 @@
-default: vendor fmt lint tidy
+default: vendor fmt lint tidy ws
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -16,12 +16,12 @@ tidy:
 lintcheck:
 	golangci-lint run ./...
 
-# Note 'make lint' will do formatting as well. However, if there are compilation errors,
-# formatting/goimports will not be applied by 'make lint'. However, it will be applied by 'make fmt'.
-# If you need to ensure that formatting & imports are always fixed, do "make fmt lint"
 fmt:
 	ruff format -qn
-	golangci-lint run --enable-only="gofmt,gofumpt,goimports" --fix ./...
+	golangci-lint fmt
+
+ws:
+	./tools/validate_whitespace.py
 
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
@@ -63,4 +63,9 @@ integration: vendor
 integration-short: vendor
 	VERBOSE_TEST=1 $(INTEGRATION) -short
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs
+generate:
+	genkit update-sdk
+	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
+	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
+
+.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs ws

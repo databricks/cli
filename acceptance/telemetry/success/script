@@ -1,0 +1,8 @@
+trace $CLI selftest send-telemetry --debug
+
+update_file.py out.requests.txt \
+ $(cat out.requests.txt | jq '.headers."User-Agent".[0]'| grep -o 'cmd-exec-id/[^ ]*' | cut -d '/' -f2) \
+ '[CMD-EXEC-ID]'
+
+# pretty print the telemetry payload.
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs.[] | fromjson'

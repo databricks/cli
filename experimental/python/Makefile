@@ -4,9 +4,13 @@ fmt:
 	uv run ruff check --fix $(sources) || true
 	uv run ruff format
 
+docs:
+	# Python 3.12+ is needed for get_overloads
+	uv run --python 3.12 sphinx-build docs docs/_output --fail-on-warning --show-traceback --nitpicky --fresh-env --keep-going
+
 lint:
 	# check if lock matches the project metadata
-	uv lock --check 
+	uv lock --check
 
 	uv run ruff check $(sources)
 	uv run pyright
@@ -18,3 +22,5 @@ test:
 build:
 	rm -rf build dist
 	uv build .
+
+.PHONY: fmt docs lint test build

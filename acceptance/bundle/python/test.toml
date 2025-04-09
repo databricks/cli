@@ -1,0 +1,12 @@
+# Tests don't interact with APIs
+
+Ignore = [
+  # created by scripts to install the latest wheel with UV_ARGS
+  "requirements-latest.txt",
+]
+
+[EnvMatrix]
+UV_ARGS = [
+  "--with databricks-bundles==0.7.3",
+  "--with-requirements requirements-latest.txt --no-cache",
+]

@@ -1,9 +1,6 @@
 package config
 
 import (
-	"context"
-	"errors"
-
 	"github.com/databricks/cli/libs/exec"
 )
 
@@ -14,7 +11,11 @@ type ArtifactType string
 const ArtifactPythonWheel ArtifactType = `whl`
 
 type ArtifactFile struct {
-	Source     string `json:"source"`
+	Source string `json:"source"`
+
+	// Patched is populated if DynamicVersion is set and patching was successful
+	Patched string `json:"patched" bundle:"readonly"`
+
 	RemotePath string `json:"remote_path" bundle:"readonly"`
 }
 
@@ -33,23 +34,6 @@ type Artifact struct {
 	BuildCommand string         `json:"build,omitempty"`
 
 	Executable exec.ExecutableType `json:"executable,omitempty"`
-}
 
-func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
-	if a.BuildCommand == "" {
-		return nil, errors.New("no build property defined")
-	}
-
-	var e *exec.Executor
-	var err error
-	if a.Executable != "" {
-		e, err = exec.NewCommandExecutorWithExecutable(a.Path, a.Executable)
-	} else {
-		e, err = exec.NewCommandExecutor(a.Path)
-		a.Executable = e.ShellType()
-	}
-	if err != nil {
-		return nil, err
-	}
-	return e.Exec(ctx, a.BuildCommand)
+	DynamicVersion bool `json:"dynamic_version,omitempty"`
 }

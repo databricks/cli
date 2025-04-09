@@ -1,0 +1,55 @@
+
+>>> [CLI] selftest send-telemetry --debug
+HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
+HH:MM:SS Info: completed execution pid=PID exit_code=0
+HH:MM:SS Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< Error: Post "[DATABRICKS_URL]/telemetry-ext": context deadline exceeded pid=PID sdk=true
+HH:MM:SS Debug: non-retriable error: Post "[DATABRICKS_URL]/telemetry-ext": context deadline exceeded pid=PID sdk=true
+HH:MM:SS Debug: Attempt 1 failed due to a timeout. Will not retry pid=PID
+HH:MM:SS Info: telemetry upload failed: uploading telemetry logs timed out: Post "[DATABRICKS_URL]/telemetry-ext": context deadline exceeded pid=PID
+
+>>> cat out.requests.txt
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[UUID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE1"
+      }
+    }
+  }
+}
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[UUID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE2"
+      }
+    }
+  }
+}

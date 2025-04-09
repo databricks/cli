@@ -5,8 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/command"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -18,7 +17,7 @@ import (
 func TestGetWorkspaceAuthStatus(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
-	ctx = command.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -76,7 +75,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 func TestGetWorkspaceAuthStatusError(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
-	ctx = command.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -125,7 +124,7 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
-	ctx = command.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -170,7 +169,7 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 func TestGetAccountAuthStatus(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockAccountClient(t)
-	ctx = root.SetAccountClient(ctx, m.AccountClient)
+	ctx = cmdctx.SetAccountClient(ctx, m.AccountClient)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)

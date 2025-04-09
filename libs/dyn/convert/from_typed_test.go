@@ -398,6 +398,7 @@ func TestFromTypedSliceNil(t *testing.T) {
 }
 
 func TestFromTypedSliceEmpty(t *testing.T) {
+	//nolint:gocritic
 	src := []string{}
 
 	ref := dyn.V([]dyn.Value{

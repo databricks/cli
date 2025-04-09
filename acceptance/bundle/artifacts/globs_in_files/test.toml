@@ -1,0 +1,9 @@
+RecordRequests = false
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Repls]]
+Old = '\\'
+New = '/'

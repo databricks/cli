@@ -1,0 +1,37 @@
+
+>>> [CLI] bundle deployment bind dashboard1 [DASHBOARD_ID] --auto-approve
+Updating deployment state...
+Successfully bound dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
+  "display_name": "test dashboard [UUID]",
+  "lifecycle_state": "ACTIVE",
+  "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
+  "parent_path": "/Users/[USERNAME]",
+  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
+}
+
+>>> [CLI] bundle deployment unbind dashboard1
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
+  "display_name": "test dashboard [UUID]",
+  "lifecycle_state": "ACTIVE",
+  "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
+  "parent_path": "/Users/[USERNAME]",
+  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
+}

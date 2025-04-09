@@ -4,6 +4,7 @@ package budget_policy
 
 import (
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/billing"
@@ -77,7 +78,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -146,7 +147,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		deleteReq.PolicyId = args[0]
 
@@ -204,7 +205,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		getReq.PolicyId = args[0]
 
@@ -265,7 +266,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		response := a.BudgetPolicy.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -327,7 +328,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.Policy)

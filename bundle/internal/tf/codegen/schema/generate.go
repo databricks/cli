@@ -15,7 +15,7 @@ import (
 )
 
 func (s *Schema) writeTerraformBlock(_ context.Context) error {
-	var body = map[string]any{
+	body := map[string]any{
 		"terraform": map[string]any{
 			"required_providers": map[string]any{
 				"databricks": map[string]any{
@@ -31,12 +31,12 @@ func (s *Schema) writeTerraformBlock(_ context.Context) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.WorkingDir, "main.tf.json"), buf, 0644)
+	return os.WriteFile(filepath.Join(s.WorkingDir, "main.tf.json"), buf, 0o644)
 }
 
 func (s *Schema) installTerraform(ctx context.Context) (path string, err error) {
 	installDir := filepath.Join(s.WorkingDir, "bin")
-	err = os.MkdirAll(installDir, 0755)
+	err = os.MkdirAll(installDir, 0o755)
 	if err != nil {
 		return
 	}
@@ -82,7 +82,7 @@ func (s *Schema) generateSchema(ctx context.Context, execPath string) error {
 		return err
 	}
 
-	return os.WriteFile(s.ProviderSchemaFile, buf, 0644)
+	return os.WriteFile(s.ProviderSchemaFile, buf, 0o644)
 }
 
 func (s *Schema) Generate(ctx context.Context) error {

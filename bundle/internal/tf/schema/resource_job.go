@@ -638,6 +638,23 @@ type ResourceJobTaskForEachTaskTaskEmailNotifications struct {
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
+type ResourceJobTaskForEachTaskTaskGenAiComputeTaskCompute struct {
+	GpuNodePoolId string `json:"gpu_node_pool_id"`
+	GpuType       string `json:"gpu_type,omitempty"`
+	NumGpus       int    `json:"num_gpus"`
+}
+
+type ResourceJobTaskForEachTaskTaskGenAiComputeTask struct {
+	Command                string                                                 `json:"command,omitempty"`
+	DlRuntimeImage         string                                                 `json:"dl_runtime_image"`
+	MlflowExperimentName   string                                                 `json:"mlflow_experiment_name,omitempty"`
+	Source                 string                                                 `json:"source,omitempty"`
+	TrainingScriptPath     string                                                 `json:"training_script_path,omitempty"`
+	YamlParameters         string                                                 `json:"yaml_parameters,omitempty"`
+	YamlParametersFilePath string                                                 `json:"yaml_parameters_file_path,omitempty"`
+	Compute                *ResourceJobTaskForEachTaskTaskGenAiComputeTaskCompute `json:"compute,omitempty"`
+}
+
 type ResourceJobTaskForEachTaskTaskHealthRules struct {
 	Metric string `json:"metric"`
 	Op     string `json:"op"`
@@ -1018,6 +1035,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	DbtTask                 *ResourceJobTaskForEachTaskTaskDbtTask                `json:"dbt_task,omitempty"`
 	DependsOn               []ResourceJobTaskForEachTaskTaskDependsOn             `json:"depends_on,omitempty"`
 	EmailNotifications      *ResourceJobTaskForEachTaskTaskEmailNotifications     `json:"email_notifications,omitempty"`
+	GenAiComputeTask        *ResourceJobTaskForEachTaskTaskGenAiComputeTask       `json:"gen_ai_compute_task,omitempty"`
 	Health                  *ResourceJobTaskForEachTaskTaskHealth                 `json:"health,omitempty"`
 	Library                 []ResourceJobTaskForEachTaskTaskLibrary               `json:"library,omitempty"`
 	NewCluster              *ResourceJobTaskForEachTaskTaskNewCluster             `json:"new_cluster,omitempty"`
@@ -1037,6 +1055,23 @@ type ResourceJobTaskForEachTask struct {
 	Concurrency int                             `json:"concurrency,omitempty"`
 	Inputs      string                          `json:"inputs"`
 	Task        *ResourceJobTaskForEachTaskTask `json:"task,omitempty"`
+}
+
+type ResourceJobTaskGenAiComputeTaskCompute struct {
+	GpuNodePoolId string `json:"gpu_node_pool_id"`
+	GpuType       string `json:"gpu_type,omitempty"`
+	NumGpus       int    `json:"num_gpus"`
+}
+
+type ResourceJobTaskGenAiComputeTask struct {
+	Command                string                                  `json:"command,omitempty"`
+	DlRuntimeImage         string                                  `json:"dl_runtime_image"`
+	MlflowExperimentName   string                                  `json:"mlflow_experiment_name,omitempty"`
+	Source                 string                                  `json:"source,omitempty"`
+	TrainingScriptPath     string                                  `json:"training_script_path,omitempty"`
+	YamlParameters         string                                  `json:"yaml_parameters,omitempty"`
+	YamlParametersFilePath string                                  `json:"yaml_parameters_file_path,omitempty"`
+	Compute                *ResourceJobTaskGenAiComputeTaskCompute `json:"compute,omitempty"`
 }
 
 type ResourceJobTaskHealthRules struct {
@@ -1420,6 +1455,7 @@ type ResourceJobTask struct {
 	DependsOn               []ResourceJobTaskDependsOn             `json:"depends_on,omitempty"`
 	EmailNotifications      *ResourceJobTaskEmailNotifications     `json:"email_notifications,omitempty"`
 	ForEachTask             *ResourceJobTaskForEachTask            `json:"for_each_task,omitempty"`
+	GenAiComputeTask        *ResourceJobTaskGenAiComputeTask       `json:"gen_ai_compute_task,omitempty"`
 	Health                  *ResourceJobTaskHealth                 `json:"health,omitempty"`
 	Library                 []ResourceJobTaskLibrary               `json:"library,omitempty"`
 	NewCluster              *ResourceJobTaskNewCluster             `json:"new_cluster,omitempty"`

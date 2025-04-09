@@ -1,0 +1,42 @@
+
+>>> [CLI] schemas create test-schema-[UUID] main
+{
+  "full_name": "main.test-schema-[UUID]",
+  "catalog_name": "main"
+}
+
+=== Create a pre-defined volume:
+>>> [CLI] bundle deployment bind volume1 main.test-schema-[UUID].volume-[UUID] --auto-approve
+Updating deployment state...
+Successfully bound volume with an id 'main.test-schema-[UUID].volume-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] volumes read main.test-schema-[UUID].volume-[UUID]
+{
+  "catalog_name": "main",
+  "full_name": "main.test-schema-[UUID].volume-[UUID]",
+  "schema_name": "test-schema-[UUID]",
+  "volume_type": "MANAGED"
+}
+
+>>> [CLI] bundle deployment unbind volume1
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] volumes read main.test-schema-[UUID].volume-[UUID]
+{
+  "catalog_name": "main",
+  "full_name": "main.test-schema-[UUID].volume-[UUID]",
+  "schema_name": "test-schema-[UUID]",
+  "volume_type": "MANAGED"
+}

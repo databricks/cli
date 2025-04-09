@@ -22,7 +22,7 @@ To generate YAML for any existing resource, use the `databricks bundle generate`
 
 The following table lists supported resource types for bundles. Some resources can be created by defining them in a bundle and deploying the bundle, and some resources only support referencing an existing resource to include in the bundle.
 
-Resources are defined using the corresponding [Databricks REST API](https://docs.databricks.com/api/workspace/introduction) object’s create operation request payload, where the object’s supported fields, expressed as YAML, are the resource’s supported properties. Links to documentation for each resource’s corresponding payloads are listed in the table.
+Resources are defined using the corresponding [Databricks REST API](/api/workspace/introduction) object’s create operation request payload, where the object’s supported fields, expressed as YAML, are the resource’s supported properties. Links to documentation for each resource’s corresponding payloads are listed in the table.
 
 :::tip
 
@@ -39,40 +39,40 @@ The `databricks bundle validate` command returns warnings if unknown resource pr
   - Corresponding REST API object
 - - [app](#apps)
   - ✓
-  - [App object](https://docs.databricks.com/api/workspace/apps/create)
+  - [App object](/api/workspace/apps/create)
 - - [cluster](#clusters)
   - ✓
-  - [Cluster object](https://docs.databricks.com/api/workspace/clusters/create)
+  - [Cluster object](/api/workspace/clusters/create)
 - - [dashboard](#dashboards)
   -
-  - [Dashboard object](https://docs.databricks.com/api/workspace/lakeview/create)
+  - [Dashboard object](/api/workspace/lakeview/create)
 - - [experiment](#experiments)
   - ✓
-  - [Experiment object](https://docs.databricks.com/api/workspace/experiments/createexperiment)
+  - [Experiment object](/api/workspace/experiments/createexperiment)
 - - [job](#job)
   - ✓
-  - [Job object](https://docs.databricks.com/api/workspace/jobs/create)
+  - [Job object](/api/workspace/jobs/create)
 - - [model (legacy)](#models)
   - ✓
-  - [Model (legacy) object](https://docs.databricks.com/api/workspace/modelregistry/createmodel)
+  - [Model (legacy) object](/api/workspace/modelregistry/createmodel)
 - - [model_serving_endpoint](#model_serving_endpoints)
   - ✓
-  - [Model serving endpoint object](https://docs.databricks.com/api/workspace/servingendpoints/create)
+  - [Model serving endpoint object](/api/workspace/servingendpoints/create)
 - - [pipeline](#pipeline)
   - ✓
-  - [Pipeline object](https://docs.databricks.com/api/workspace/pipelines/create)
+  - [Pipeline object](/api/workspace/pipelines/create)
 - - [quality_monitor](#quality_monitors)
   - ✓
-  - [Quality monitor object](https://docs.databricks.com/api/workspace/qualitymonitors/create)
+  - [Quality monitor object](/api/workspace/qualitymonitors/create)
 - - [registered_model](#registered_models) (:re[UC])
   - ✓
-  - [Registered model object](https://docs.databricks.com/api/workspace/registeredmodels/create)
+  - [Registered model object](/api/workspace/registeredmodels/create)
 - - [schema](#schemas) (:re[UC])
   - ✓
-  - [Schema object](https://docs.databricks.com/api/workspace/schemas/create)
+  - [Schema object](/api/workspace/schemas/create)
 - - [volume](#volumes) (:re[UC])
   - ✓
-  - [Volume object](https://docs.databricks.com/api/workspace/volumes/create)
+  - [Volume object](/api/workspace/volumes/create)
 
 :::
 
@@ -87,37 +87,37 @@ The `databricks bundle validate` command returns warnings if unknown resource pr
   - Corresponding REST API object
 - - [cluster](#clusters)
   - ✓
-  - [Cluster object](https://docs.databricks.com/api/workspace/clusters/create)
+  - [Cluster object](/api/workspace/clusters/create)
 - - [dashboard](#dashboards)
   -
-  - [Dashboard object](https://docs.databricks.com/api/workspace/lakeview/create)
+  - [Dashboard object](/api/workspace/lakeview/create)
 - - [experiment](#experiments)
   - ✓
-  - [Experiment object](https://docs.databricks.com/api/workspace/experiments/createexperiment)
+  - [Experiment object](/api/workspace/experiments/createexperiment)
 - - [job](#jobs)
   - ✓
-  - [Job object](https://docs.databricks.com/api/workspace/jobs/create)
+  - [Job object](/api/workspace/jobs/create)
 - - [model (legacy)](#models)
   - ✓
-  - [Model (legacy) object](https://docs.databricks.com/api/workspace/modelregistry/createmodel)
+  - [Model (legacy) object](/api/workspace/modelregistry/createmodel)
 - - [model_serving_endpoint](#model_serving_endpoints)
   - ✓
-  - [Model serving endpoint object](https://docs.databricks.com/api/workspace/servingendpoints/create)
+  - [Model serving endpoint object](/api/workspace/servingendpoints/create)
 - - [pipeline](#pipelines)
   - ✓
-  - [Pipeline object]](https://docs.databricks.com/api/workspace/pipelines/create)
+  - [Pipeline object]](/api/workspace/pipelines/create)
 - - [quality_monitor](#quality_monitors)
   - ✓
-  - [Quality monitor object](https://docs.databricks.com/api/workspace/qualitymonitors/create)
+  - [Quality monitor object](/api/workspace/qualitymonitors/create)
 - - [registered_model](#registered_models) (:re[UC])
   - ✓
-  - [Registered model object](https://docs.databricks.com/api/workspace/registeredmodels/create)
+  - [Registered model object](/api/workspace/registeredmodels/create)
 - - [schema](#schemas) (:re[UC])
   - ✓
-  - [Schema object](https://docs.databricks.com/api/workspace/schemas/create)
+  - [Schema object](/api/workspace/schemas/create)
 - - [volume](#volumes) (:re[UC])
   - ✓
-  - [Volume object](https://docs.databricks.com/api/workspace/volumes/create)
+  - [Volume object](/api/workspace/volumes/create)
 
 :::
 

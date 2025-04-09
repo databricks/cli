@@ -26,10 +26,19 @@ import (
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 const internalFolder = ".internal"
+
+// This struct is used as a communication channel to collect metrics
+// from all over the bundle codebase to finally be emitted as telemetry.
+type Metrics struct {
+	ConfigurationFileCount int64
+	TargetCount            int64
+	DeploymentId           uuid.UUID
+}
 
 type Bundle struct {
 	// BundleRootPath is the local path to the root directory of the bundle.
@@ -93,6 +102,8 @@ type Bundle struct {
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud
+
+	Metrics Metrics
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {

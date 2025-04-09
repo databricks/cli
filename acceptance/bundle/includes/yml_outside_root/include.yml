@@ -1,0 +1,7 @@
+resources:
+  jobs:
+    my_job:
+      name: include_outside_root
+      tasks:
+        - task_key: task_key
+          description: "task_description"

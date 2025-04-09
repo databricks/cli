@@ -92,7 +92,7 @@ type pythonTrampoline struct{}
 func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
 	task.PythonWheelTask = nil
 
-	nonWheelLibraries := make([]compute.Library, 0)
+	var nonWheelLibraries []compute.Library
 	for _, l := range task.Libraries {
 		if l.Whl == "" {
 			nonWheelLibraries = append(nonWheelLibraries, l)
@@ -105,7 +105,7 @@ func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
 
 func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 	r := b.Config.Resources
-	result := make([]TaskWithJobKey, 0)
+	var result []TaskWithJobKey
 	for k := range b.Config.Resources.Jobs {
 		tasks := r.Jobs[k].JobSettings.Tasks
 		for i := range tasks {
@@ -134,7 +134,7 @@ func needsTrampoline(task jobs.Task) bool {
 
 func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, error) {
 	params, err := t.generateParameters(task.PythonWheelTask)
-	whlLibraries := make([]compute.Library, 0)
+	var whlLibraries []compute.Library
 	for _, l := range task.Libraries {
 		if l.Whl != "" {
 			whlLibraries = append(whlLibraries, l)

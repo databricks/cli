@@ -1,0 +1,16 @@
+$CLI bundle init default-sql --config-file input.json --output-dir output
+
+# We only need to keep the output databricks.yml to assert the bundle_uuid is consistent
+# in both the generated YAML file and telemetry payload.
+mv output/my_default_sql/databricks.yml out.databricks.yml
+rm -r output
+
+cmd_exec_id=$(extract_command_exec_id.py)
+bundle_uuid=$(cat out.databricks.yml | grep -o 'uuid: [^\n]*' | cut -d ' ' -f2)
+
+update_file.py out.requests.txt $cmd_exec_id  '[CMD-EXEC-ID]'
+update_file.py out.requests.txt $bundle_uuid '[BUNDLE-UUID]'
+update_file.py out.databricks.yml $bundle_uuid '[BUNDLE-UUID]'
+
+# pretty print the telemetry payload.
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs.[] | fromjson'

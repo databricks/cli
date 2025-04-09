@@ -97,7 +97,7 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 			// We use a writer that does not log verbose telemetry for custom templates.
 			// This is important because template definitions can contain PII that we
 			// do not want to centralize.
-			Writer: &defaultWriter{},
+			Writer: &defaultWriter{name: Custom},
 		}
 
 		if isRepoUrl(r.TemplatePathOrUrl) {

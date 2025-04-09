@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -76,7 +76,24 @@ func newGet() *cobra.Command {
   Gets the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
+      CATALOG,
+      CLEAN_ROOM,
+      CONNECTION,
+      CREDENTIAL,
+      EXTERNAL_LOCATION,
+      FUNCTION,
+      METASTORE,
+      PIPELINE,
+      PROVIDER,
+      RECIPIENT,
+      SCHEMA,
+      SHARE,
+      STORAGE_CREDENTIAL,
+      TABLE,
+      VOLUME,
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -89,7 +106,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &getReq.SecurableType)
 		if err != nil {
@@ -141,7 +158,24 @@ func newGetEffective() *cobra.Command {
   Gets the effective permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
+      CATALOG,
+      CLEAN_ROOM,
+      CONNECTION,
+      CREDENTIAL,
+      EXTERNAL_LOCATION,
+      FUNCTION,
+      METASTORE,
+      PIPELINE,
+      PROVIDER,
+      RECIPIENT,
+      SCHEMA,
+      SHARE,
+      STORAGE_CREDENTIAL,
+      TABLE,
+      VOLUME,
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -154,7 +188,7 @@ func newGetEffective() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &getEffectiveReq.SecurableType)
 		if err != nil {
@@ -208,7 +242,24 @@ func newUpdate() *cobra.Command {
   Updates the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
+    SECURABLE_TYPE: Type of securable. 
+      Supported values: [
+      CATALOG,
+      CLEAN_ROOM,
+      CONNECTION,
+      CREDENTIAL,
+      EXTERNAL_LOCATION,
+      FUNCTION,
+      METASTORE,
+      PIPELINE,
+      PROVIDER,
+      RECIPIENT,
+      SCHEMA,
+      SHARE,
+      STORAGE_CREDENTIAL,
+      TABLE,
+      VOLUME,
+    ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -221,7 +272,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

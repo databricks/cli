@@ -1,0 +1,30 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Server]]
+Pattern = "POST /api/2.1/unity-catalog/volumes"
+Response.Body = '''
+{
+    "full_name":"main.test-schema-6260d50f-e8ff-4905-8f28-812345678903.volume-6260d50f-e8ff-4905-8f28-812345678903"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/volumes/{volume_fullname}"
+Response.Body = '''
+{
+  "catalog_name": "main",
+  "schema_name": "test-schema-6260d50f-e8ff-4905-8f28-812345678903",
+  "name": "volume-6260d50f-e8ff-4905-8f28-812345678903",
+  "full_name": "main.test-schema-6260d50f-e8ff-4905-8f28-812345678903.volume-6260d50f-e8ff-4905-8f28-812345678903",
+  "volume_type": "MANAGED"
+}
+'''
+
+[[Server]]
+Pattern = "DELETE /api/2.1/unity-catalog/volumes/{volume_fullname}"

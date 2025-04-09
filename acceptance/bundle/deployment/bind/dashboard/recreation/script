@@ -1,0 +1,26 @@
+DASHBOARD_DISPLAY_NAME="test dashboard $(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    DASHBOARD_DISPLAY_NAME="test dashboard 6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
+    export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+fi
+
+export DASHBOARD_DISPLAY_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Create a pre-defined dashboard:
+DASHBOARD_ID=$($CLI lakeview create --display-name "${DASHBOARD_DISPLAY_NAME}" --warehouse-id "${TEST_DEFAULT_WAREHOUSE_ID}" --serialized-dashboard '{"pages":[{"name":"02724bf2","displayName":"Untitled page"}]}' | jq -r '.dashboard_id')
+
+cleanupRemoveDashboard() {
+    $CLI lakeview trash "${DASHBOARD_ID}"
+}
+trap cleanupRemoveDashboard EXIT
+
+trace $CLI bundle deployment bind dashboard1 "${DASHBOARD_ID}" --auto-approve
+
+trace errcode $CLI bundle deploy
+
+trace $CLI bundle deployment unbind dashboard1
+
+trace $CLI bundle deploy --auto-approve
+
+trace $CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name, lifecycle_state}'

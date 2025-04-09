@@ -10,6 +10,18 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
+type AppPermissionLevel string
+
+// AppPermission holds the permission level setting for a single principal.
+// Multiple of these can be defined on any app.
+type AppPermission struct {
+	Level AppPermissionLevel `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
 type App struct {
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
@@ -21,9 +33,9 @@ type App struct {
 	// If there’s app.yml defined locally, DABs will raise an error.
 	Config map[string]any `json:"config,omitempty"`
 
-	Permissions    []Permission   `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
+	Permissions    []AppPermission `json:"permissions,omitempty"`
+	ModifiedStatus ModifiedStatus  `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string          `json:"url,omitempty" bundle:"internal"`
 
 	*apps.App
 }
@@ -43,6 +55,16 @@ func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name st
 		return false, err
 	}
 	return true, nil
+}
+
+func (*App) ResourceDescription() ResourceDescription {
+	return ResourceDescription{
+		SingularName:          "app",
+		PluralName:            "apps",
+		SingularTitle:         "App",
+		PluralTitle:           "Apps",
+		TerraformResourceName: "databricks_app",
+	}
 }
 
 func (a *App) TerraformResourceName() string {

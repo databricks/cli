@@ -42,8 +42,8 @@ func AssertEqualJQ(t testutil.TestingT, expectedName, outName, expected, out str
 	} else {
 		diff := UnifiedDiff(expectedName, outName, expected, out)
 		t.Logf("Diff:\n%s", diff)
-		allowedDiffs := []string{}
-		erroredDiffs := []string{}
+		var allowedDiffs []string
+		var erroredDiffs []string
 		for _, op := range patch {
 			if allowDifference(ignorePaths, op) {
 				allowedDiffs = append(allowedDiffs, fmt.Sprintf("%7s %s %v old=%v", op.Type, op.Path, op.Value, op.OldValue))

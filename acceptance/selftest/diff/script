@@ -8,10 +8,18 @@ echo Hello! >> out_dir_a/output.txt
 echo Hello! >> out_dir_b/output.txt
 
 curl -s $DATABRICKS_HOST/api/2.0/preview/scim/v2/Me >> out_dir_a/output.txt
-printf "\n\nFooter" >> out_dir_a/output.txt
-printf '{\n    "id": "7d639bad-ac6d-4e6f-abd7-9522a86b0239",\n    "userName": "[USERNAME]"\n}\n\nFooter' >> out_dir_b/output.txt
+printf "\n\nFooter\n" >> out_dir_a/output.txt
+printf '{\n    "id": "7d639bad-ac6d-4e6f-abd7-9522a86b0239",\n    "userName": "[USERNAME]"\n}\n\nFooter\n' >> out_dir_b/output.txt
 
 # Unlike regular diff, diff.py will apply replacements first before doing the comparison
-errcode trace diff.py out_dir_a out_dir_b
+trace diff.py out_dir_a out_dir_b
+
+# Test that it works from non-root directory:
+cd out_dir_a
+trace diff.py . ../out_dir_b
+cd ..
+
+# Test diffing files:
+trace diff.py out_dir_a/output.txt out_dir_b/output.txt
 
 rm out_dir_a/only_in_a out_dir_b/only_in_b

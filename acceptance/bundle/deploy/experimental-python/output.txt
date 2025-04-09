@@ -1,0 +1,34 @@
+
+>>> uv run --quiet --with [DATABRICKS_BUNDLES_WHEEL] -- [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] jobs list --output json
+[
+  {
+    "job_id": 1,
+    "settings": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "My Job",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/files/my_notebook"
+          },
+          "task_key": "my_notebook"
+        }
+      ]
+    }
+  }
+]

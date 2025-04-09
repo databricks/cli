@@ -1,0 +1,45 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "test": {
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/resources/a1.txt"
+      },
+      {
+        "source": "[TEST_TMP_DIR]/resources/subdir/hello.txt"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]"
+  }
+}
+
+>>> withdir resources [CLI] bundle validate -o json
+{
+  "test": {
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/resources/a1.txt"
+      },
+      {
+        "source": "[TEST_TMP_DIR]/resources/subdir/hello.txt"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]"
+  }
+}
+
+>>> withdir other_dir [CLI] bundle validate -o json
+{
+  "test": {
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/resources/a1.txt"
+      },
+      {
+        "source": "[TEST_TMP_DIR]/resources/subdir/hello.txt"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]"
+  }
+}

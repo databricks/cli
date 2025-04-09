@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/spf13/cobra"
@@ -74,7 +74,8 @@ func newCreateEndpoint() *cobra.Command {
 
   Arguments:
     NAME: Name of endpoint
-    ENDPOINT_TYPE: Type of endpoint.`
+    ENDPOINT_TYPE: Type of endpoint. 
+      Supported values: [STANDARD]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -93,7 +94,7 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createEndpointJson.Unmarshal(&createEndpointReq)
@@ -188,7 +189,7 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		deleteEndpointReq.EndpointName = args[0]
 
@@ -244,7 +245,7 @@ func newGetEndpoint() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		getEndpointReq.EndpointName = args[0]
 
@@ -299,7 +300,7 @@ func newListEndpoints() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.VectorSearchEndpoints.ListEndpoints(ctx, listEndpointsReq)
 		return cmdio.RenderIterator(ctx, response)

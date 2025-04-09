@@ -20,11 +20,6 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/state/metadata.json"
       },
       "edit_mode": "UI_LOCKED",
-      "email_notifications": {
-        "on_failure": [
-          "[USERNAME]"
-        ]
-      },
       "format": "MULTI_TASK",
       "job_clusters": [
         {
@@ -86,3 +81,12 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
     }
   }
 }
+
+>>> unzip -Z1 dist/my_jobs_as_code-0.0.1-py3-none-any.whl
+my_jobs_as_code/__init__.py
+my_jobs_as_code/main.py
+my_jobs_as_code-0.0.1.dist-info/METADATA
+my_jobs_as_code-0.0.1.dist-info/WHEEL
+my_jobs_as_code-0.0.1.dist-info/entry_points.txt
+my_jobs_as_code-0.0.1.dist-info/top_level.txt
+my_jobs_as_code-0.0.1.dist-info/RECORD

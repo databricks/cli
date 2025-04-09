@@ -1,0 +1,122 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json --include-locations
+{
+  "experimental": {
+    "python": {
+      "resources": [
+        "resources:load_resources_1",
+        "resources:load_resources_2"
+      ]
+    }
+  },
+  "resources": {
+    "jobs": {
+      "my_job_1": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "name": "Job 1",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {}
+      },
+      "my_job_2": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "name": "Job 2",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {}
+      },
+      "my_job_3": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "name": "Job 3",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {}
+      }
+    }
+  },
+  "__locations": {
+    "files": [
+      "databricks.yml",
+      "resources.py"
+    ],
+    "locations": {
+      "bundle": [
+        [
+          0,
+          2,
+          3
+        ]
+      ],
+      "experimental": [
+        [
+          0,
+          7,
+          3
+        ]
+      ],
+      "resources": [
+        [
+          0,
+          13,
+          3
+        ]
+      ],
+      "resources.jobs": [
+        [
+          0,
+          14,
+          5
+        ]
+      ],
+      "resources.jobs.my_job_1": [
+        [
+          1,
+          16,
+          1
+        ]
+      ],
+      "resources.jobs.my_job_2": [
+        [
+          1,
+          6,
+          1
+        ]
+      ],
+      "resources.jobs.my_job_3": [
+        [
+          0,
+          15,
+          7
+        ]
+      ],
+      "sync": [
+        [
+          0,
+          4,
+          7
+        ]
+      ]
+    }
+  }
+}

@@ -1,5 +1,57 @@
 # Version changelog
 
+## Release v0.246.0
+
+### Notable Changes
+Previously ".internal" folder under artifact_path was not cleaned up as expected. In this release this behaviour is fixed and now DABs cleans up this folder before uploading artifacts to it.
+
+### Dependency updates
+* Bump golangci-lint version to v2.0.2 from v1.63.4 ([#2586](https://github.com/databricks/cli/pull/2586)).
+
+### CLI
+* Include supported values for enum positional args in docs ([#2557](https://github.com/databricks/cli/pull/2557))
+* Upgrade Go SDK to 0.61.0 ([#2575](https://github.com/databricks/cli/pull/2575))
+* Fix `databricks api` command usage string to include PATH positional argument ([#2591](https://github.com/databricks/cli/pull/2591))
+
+### Bundles
+* Fixed cleaning up artifact path .internal folder ([#2572](https://github.com/databricks/cli/pull/2572))
+* Fixed sync include/exclude not working correctly on Windows ([#2609](https://github.com/databricks/cli/pull/2609))
+* Added support for quality monitors in deployment bind/unbind commands ([#2583](https://github.com/databricks/cli/pull/2583))
+* Comment out email\_notifications section in builtin templates ([#2565](https://github.com/databricks/cli/pull/2565))
+* New DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION environment variable that rejects running scripts and Python code when it is set ([#2598](https://github.com/databricks/cli/pull/2598))
+* Upgrade TF provider to 1.71.0 ([#2611](https://github.com/databricks/cli/pull/2611))
+
+
+## Release v0.245.0
+
+### Bundles
+* Processing 'artifacts' section is now done in "bundle validate" (adding defaults, inferring "build", asserting required fields) ([#2526])(https://github.com/databricks/cli/pull/2526))
+* When uploading artifacts, include relative path in log message ([#2539])(https://github.com/databricks/cli/pull/2539))
+* Added support for clusters in deployment bind/unbind commands ([#2536](https://github.com/databricks/cli/pull/2536))
+* Added support for volumes in deployment bind/unbind commands ([#2527](https://github.com/databricks/cli/pull/2527))
+* Added support for dashboards in deployment bind/unbind commands ([#2516](https://github.com/databricks/cli/pull/2516))
+* Added support for registered models in deployment bind/unbind commands ([#2556](https://github.com/databricks/cli/pull/2556))
+* Added a mismatch check when host is defined in config and as an env variable ([#2549](https://github.com/databricks/cli/pull/2549))
+* New attribute on artifacts entries: `dynamic_version`. When set to true, it patches the wheel with dynamic version suffix so it is always used by Databricks environments, even if original wheel version is the same. Intended for development loop on interactive clusters. ([#2520](https://github.com/databricks/cli/pull/2520))
+
+
+## Release v0.244.0
+
+### CLI
+* Fixed "can't evaluate field Name in type interface{}" for "databricks queries list" command ([#2451](https://github.com/databricks/cli/pull/2451))
+* Fixed `query-history list` command failing with 'executing "command" at <.>: range cant iterate over' ([#2506](https://github.com/databricks/cli/pull/2506))
+* Include tarballs in releases ([#2515](https://github.com/databricks/cli/pull/2515))
+
+### Bundles
+* Support all version identifiers as per PEP440 in environment deps ([#2522](https://github.com/databricks/cli/pull/2522))
+
+### API Changes
+* Added `databricks genie execute-message-attachment-query` command.
+* Added `databricks genie get-message-attachment-query-result` command.
+* `databricks genie execute-message-query` marked as Deprecated.
+* `databricks genie get-message-query-result-by-attachment` marked as Deprecated.
+
+
 ## [Release] Release v0.243.0
 
 CLI:

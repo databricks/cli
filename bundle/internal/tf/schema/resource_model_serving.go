@@ -2,6 +2,10 @@
 
 package schema
 
+type ResourceModelServingAiGatewayFallbackConfig struct {
+	Enabled bool `json:"enabled"`
+}
+
 type ResourceModelServingAiGatewayGuardrailsInputPii struct {
 	Behavior string `json:"behavior,omitempty"`
 }
@@ -47,6 +51,7 @@ type ResourceModelServingAiGatewayUsageTrackingConfig struct {
 }
 
 type ResourceModelServingAiGateway struct {
+	FallbackConfig       *ResourceModelServingAiGatewayFallbackConfig       `json:"fallback_config,omitempty"`
 	Guardrails           *ResourceModelServingAiGatewayGuardrails           `json:"guardrails,omitempty"`
 	InferenceTableConfig *ResourceModelServingAiGatewayInferenceTableConfig `json:"inference_table_config,omitempty"`
 	RateLimits           []ResourceModelServingAiGatewayRateLimits          `json:"rate_limits,omitempty"`
@@ -72,6 +77,7 @@ type ResourceModelServingConfigServedEntitiesExternalModelAmazonBedrockConfig st
 	AwsSecretAccessKey          string `json:"aws_secret_access_key,omitempty"`
 	AwsSecretAccessKeyPlaintext string `json:"aws_secret_access_key_plaintext,omitempty"`
 	BedrockProvider             string `json:"bedrock_provider"`
+	InstanceProfileArn          string `json:"instance_profile_arn,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelAnthropicConfig struct {
@@ -83,6 +89,23 @@ type ResourceModelServingConfigServedEntitiesExternalModelCohereConfig struct {
 	CohereApiBase         string `json:"cohere_api_base,omitempty"`
 	CohereApiKey          string `json:"cohere_api_key,omitempty"`
 	CohereApiKeyPlaintext string `json:"cohere_api_key_plaintext,omitempty"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelCustomProviderConfigApiKeyAuth struct {
+	Key            string `json:"key"`
+	Value          string `json:"value,omitempty"`
+	ValuePlaintext string `json:"value_plaintext,omitempty"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelCustomProviderConfigBearerTokenAuth struct {
+	Token          string `json:"token,omitempty"`
+	TokenPlaintext string `json:"token_plaintext,omitempty"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelCustomProviderConfig struct {
+	CustomProviderUrl string                                                                                    `json:"custom_provider_url"`
+	ApiKeyAuth        *ResourceModelServingConfigServedEntitiesExternalModelCustomProviderConfigApiKeyAuth      `json:"api_key_auth,omitempty"`
+	BearerTokenAuth   *ResourceModelServingConfigServedEntitiesExternalModelCustomProviderConfigBearerTokenAuth `json:"bearer_token_auth,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelDatabricksModelServingConfig struct {
@@ -125,6 +148,7 @@ type ResourceModelServingConfigServedEntitiesExternalModel struct {
 	AmazonBedrockConfig          *ResourceModelServingConfigServedEntitiesExternalModelAmazonBedrockConfig          `json:"amazon_bedrock_config,omitempty"`
 	AnthropicConfig              *ResourceModelServingConfigServedEntitiesExternalModelAnthropicConfig              `json:"anthropic_config,omitempty"`
 	CohereConfig                 *ResourceModelServingConfigServedEntitiesExternalModelCohereConfig                 `json:"cohere_config,omitempty"`
+	CustomProviderConfig         *ResourceModelServingConfigServedEntitiesExternalModelCustomProviderConfig         `json:"custom_provider_config,omitempty"`
 	DatabricksModelServingConfig *ResourceModelServingConfigServedEntitiesExternalModelDatabricksModelServingConfig `json:"databricks_model_serving_config,omitempty"`
 	GoogleCloudVertexAiConfig    *ResourceModelServingConfigServedEntitiesExternalModelGoogleCloudVertexAiConfig    `json:"google_cloud_vertex_ai_config,omitempty"`
 	OpenaiConfig                 *ResourceModelServingConfigServedEntitiesExternalModelOpenaiConfig                 `json:"openai_config,omitempty"`
@@ -186,6 +210,7 @@ type ResourceModelServingTags struct {
 }
 
 type ResourceModelServing struct {
+	BudgetPolicyId    string                           `json:"budget_policy_id,omitempty"`
 	Id                string                           `json:"id,omitempty"`
 	Name              string                           `json:"name"`
 	RouteOptimized    bool                             `json:"route_optimized,omitempty"`

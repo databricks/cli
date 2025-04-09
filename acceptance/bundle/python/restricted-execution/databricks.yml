@@ -1,0 +1,15 @@
+bundle:
+  name: my_project
+
+sync: { paths: [] } # don't need to copy files
+
+experimental:
+  python:
+    mutators:
+    - "mutators:read_envs"
+
+
+resources:
+  jobs:
+    my_job_3:
+      name: "Job 3"

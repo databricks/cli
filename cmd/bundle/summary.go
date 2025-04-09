@@ -26,7 +26,10 @@ func newSummaryCommand() *cobra.Command {
 	}
 
 	var forcePull bool
+	var includeLocations bool
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
+	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
+	cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -63,6 +66,12 @@ func newSummaryCommand() *cobra.Command {
 			terraform.Load(),
 			mutator.InitializeURLs(),
 		)
+
+		// Include location information in the output if the flag is set.
+		if includeLocations {
+			diags = diags.Extend(bundle.Apply(ctx, b, mutator.PopulateLocations()))
+		}
+
 		if err := diags.Error(); err != nil {
 			return err
 		}

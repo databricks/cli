@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy
-Uploading my_test_code-0.0.1-py3-none-any.whl...
+Uploading package/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel-local/default/files...
 Deploying resources...
 Updating deployment state...
@@ -10,7 +10,7 @@ Deployment complete!
 package/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.1/jobs/create") | .body out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body out.requests.txt
 {
   "deployment": {
     "kind": "BUNDLE",

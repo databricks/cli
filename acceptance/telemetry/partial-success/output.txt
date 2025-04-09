@@ -1,0 +1,160 @@
+
+>>> [CLI] selftest send-telemetry --debug
+HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
+HH:MM:SS Info: completed execution pid=PID exit_code=0
+HH:MM:SS Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 200 OK
+< {
+<   "errors": null,
+<   "numProtoSuccess": 1
+< } pid=PID sdk=true
+HH:MM:SS Debug: Attempt 1 was a partial success. Number of logs uploaded: 1 out of 2 pid=PID
+HH:MM:SS Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 200 OK
+< {
+<   "errors": null,
+<   "numProtoSuccess": 1
+< } pid=PID sdk=true
+HH:MM:SS Debug: Attempt 2 was a partial success. Number of logs uploaded: 1 out of 2 pid=PID
+HH:MM:SS Debug: POST /telemetry-ext
+> {
+>   "items": null,
+>   "protoLogs": [
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>   ],
+>   "uploadTime": "UNIX_TIME_MILLIS"
+> }
+< HTTP/1.1 200 OK
+< {
+<   "errors": null,
+<   "numProtoSuccess": 1
+< } pid=PID sdk=true
+HH:MM:SS Debug: Attempt 3 was a partial success. Number of logs uploaded: 1 out of 2 pid=PID
+HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after three attempts pid=PID
+
+>>> cat out.requests.txt
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[UUID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE1"
+      }
+    }
+  }
+}
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[UUID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE2"
+      }
+    }
+  }
+}
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[UUID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE1"
+      }
+    }
+  }
+}
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[UUID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE2"
+      }
+    }
+  }
+}
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[UUID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE1"
+      }
+    }
+  }
+}
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[UUID]",
+        "version": "[DEV_VERSION]",
+        "command": "selftest_send-telemetry",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "cli_test_event": {
+        "name": "VALUE2"
+      }
+    }
+  }
+}

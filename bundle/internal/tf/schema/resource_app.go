@@ -85,14 +85,19 @@ type ResourceAppResources struct {
 type ResourceApp struct {
 	ActiveDeployment         *ResourceAppActiveDeployment  `json:"active_deployment,omitempty"`
 	AppStatus                *ResourceAppAppStatus         `json:"app_status,omitempty"`
+	BudgetPolicyId           string                        `json:"budget_policy_id,omitempty"`
 	ComputeStatus            *ResourceAppComputeStatus     `json:"compute_status,omitempty"`
 	CreateTime               string                        `json:"create_time,omitempty"`
 	Creator                  string                        `json:"creator,omitempty"`
 	DefaultSourceCodePath    string                        `json:"default_source_code_path,omitempty"`
 	Description              string                        `json:"description,omitempty"`
+	EffectiveBudgetPolicyId  string                        `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUserApiScopes   []string                      `json:"effective_user_api_scopes,omitempty"`
 	Id                       string                        `json:"id,omitempty"`
 	Name                     string                        `json:"name"`
 	NoCompute                bool                          `json:"no_compute,omitempty"`
+	Oauth2AppClientId        string                        `json:"oauth2_app_client_id,omitempty"`
+	Oauth2AppIntegrationId   string                        `json:"oauth2_app_integration_id,omitempty"`
 	PendingDeployment        *ResourceAppPendingDeployment `json:"pending_deployment,omitempty"`
 	Resources                []ResourceAppResources        `json:"resources,omitempty"`
 	ServicePrincipalClientId string                        `json:"service_principal_client_id,omitempty"`
@@ -101,4 +106,5 @@ type ResourceApp struct {
 	UpdateTime               string                        `json:"update_time,omitempty"`
 	Updater                  string                        `json:"updater,omitempty"`
 	Url                      string                        `json:"url,omitempty"`
+	UserApiScopes            []string                      `json:"user_api_scopes,omitempty"`
 }

@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -66,7 +66,8 @@ func newGet() *cobra.Command {
   metastore admin or have the **MANAGE ALLOWLIST** privilege on the metastore.
 
   Arguments:
-    ARTIFACT_TYPE: The artifact type of the allowlist.`
+    ARTIFACT_TYPE: The artifact type of the allowlist. 
+      Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -78,7 +79,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &getReq.ArtifactType)
 		if err != nil {
@@ -131,7 +132,8 @@ func newUpdate() *cobra.Command {
   admin or have the **MANAGE ALLOWLIST** privilege on the metastore.
 
   Arguments:
-    ARTIFACT_TYPE: The artifact type of the allowlist.`
+    ARTIFACT_TYPE: The artifact type of the allowlist. 
+      Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -143,7 +145,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

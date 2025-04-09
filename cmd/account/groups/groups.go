@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -94,7 +95,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -158,7 +159,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -228,7 +229,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -308,7 +309,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		response := a.Groups.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -354,14 +355,14 @@ func newPatch() *cobra.Command {
   Partially updates the details of a group.
 
   Arguments:
-    ID: Unique ID for a group in the Databricks account.`
+    ID: Unique ID in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := patchJson.Unmarshal(&patchReq)
@@ -383,14 +384,14 @@ func newPatch() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Groups drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks account")
+			id, err := cmdio.Select(ctx, names, "Unique ID in the Databricks workspace")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a group in the databricks account")
+			return fmt.Errorf("expected to have unique id in the databricks workspace")
 		}
 		patchReq.Id = args[0]
 
@@ -455,7 +456,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)

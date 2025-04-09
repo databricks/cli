@@ -8,15 +8,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 )
-
-type expandGlobs struct {
-	name string
-}
-
-func (m *expandGlobs) Name() string {
-	return fmt.Sprintf("artifacts.ExpandGlobs(%s)", m.name)
-}
 
 func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 	// The pattern contained in v is an absolute path.
@@ -37,12 +30,20 @@ func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 	}
 }
 
-func (m *expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+type expandGlobs struct {
+	name string
+}
+
+func (e expandGlobs) Name() string {
+	return "expandGlobs"
+}
+
+func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Base path for this mutator.
 	// This path is set with the list of expanded globs when done.
 	base := dyn.NewPath(
 		dyn.Key("artifacts"),
-		dyn.Key(m.name),
+		dyn.Key(e.name),
 		dyn.Key("files"),
 	)
 
@@ -53,9 +54,9 @@ func (m *expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	)
 
 	var diags diag.Diagnostics
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(rootv dyn.Value) (dyn.Value, error) {
 		var output []dyn.Value
-		_, err := dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		_, err := dyn.MapByPattern(rootv, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			if v.Kind() != dyn.KindString {
 				return v, nil
 			}
@@ -67,14 +68,26 @@ func (m *expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			if err != nil {
 				diags = diags.Append(createGlobError(v, p, err.Error()))
 
-				// Continue processing and leave this value unchanged.
+				// Drop this value from the list; this does not matter since we've raised an error anyway
+				return v, nil
+			}
+
+			if len(matches) == 1 && matches[0] == source {
+				// No glob expansion was performed.
+				// Keep node unchanged. We need to ensure that "patched" field remains and not wiped out by code below.
+				parent, err := dyn.GetByPath(rootv, p[0:len(p)-1])
+				if err != nil {
+					log.Debugf(ctx, "Failed to get parent of %s", p.String())
+				} else {
+					output = append(output, parent)
+				}
 				return v, nil
 			}
 
 			if len(matches) == 0 {
 				diags = diags.Append(createGlobError(v, p, "no matching files"))
 
-				// Continue processing and leave this value unchanged.
+				// Drop this value from the list; this does not matter since we've raised an error anyway
 				return v, nil
 			}
 
@@ -90,11 +103,11 @@ func (m *expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		})
 
 		if err != nil || diags.HasError() {
-			return v, err
+			return rootv, err
 		}
 
 		// Set the expanded globs back into the configuration.
-		return dyn.SetByPath(v, base, dyn.V(output))
+		return dyn.SetByPath(rootv, base, dyn.V(output))
 	})
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))

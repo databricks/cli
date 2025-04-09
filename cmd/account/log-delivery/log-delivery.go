@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/billing"
@@ -159,7 +160,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -224,7 +225,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -301,7 +302,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		response := a.LogDelivery.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -353,7 +354,8 @@ func newPatchStatus() *cobra.Command {
       DISABLED (disabled). Defaults to ENABLED. You can [enable or disable
       the configuration](#operation/patch-log-delivery-config-status) later.
       Deletion of a configuration is not supported, so disable a log delivery
-      configuration that is no longer needed.`
+      configuration that is no longer needed. 
+      Supported values: [DISABLED, ENABLED]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -372,7 +374,7 @@ func newPatchStatus() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := patchStatusJson.Unmarshal(&patchStatusReq)

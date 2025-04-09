@@ -1,0 +1,34 @@
+VOLUME_NAME="volume-$(uuid)"
+SCHEMA_NAME="test-schema-$(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    VOLUME_NAME="volume-6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
+    SCHEMA_NAME="test-schema-6260d50f-e8ff-4905-8f28-812345678903"
+fi
+export VOLUME_NAME
+export SCHEMA_NAME
+export CATALOG_NAME="main"
+envsubst < databricks.yml.tmpl > databricks.yml
+
+VOLUME_TYPE="MANAGED"
+
+trace $CLI schemas create "${SCHEMA_NAME}" ${CATALOG_NAME} | jq '{full_name, catalog_name}'
+
+title "Create a pre-defined volume:"
+VOLUME_FULL_NAME=$($CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${VOLUME_NAME}" "${VOLUME_TYPE}" | jq -r '.full_name')
+
+cleanupRemoveVolume() {
+    $CLI volumes delete "${VOLUME_FULL_NAME}"
+}
+trap cleanupRemoveVolume EXIT
+
+trace $CLI bundle deployment bind volume1 "${VOLUME_FULL_NAME}" --auto-approve
+
+trace $CLI bundle deploy
+
+trace $CLI volumes read "${VOLUME_FULL_NAME}" | jq '{catalog_name, full_name, schema_name, volume_type}'
+
+trace $CLI bundle deployment unbind volume1
+
+trace $CLI bundle destroy --auto-approve
+
+trace $CLI volumes read "${VOLUME_FULL_NAME}" | jq '{catalog_name, full_name, schema_name, volume_type}'

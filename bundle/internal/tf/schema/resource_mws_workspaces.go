@@ -17,14 +17,14 @@ type ResourceMwsWorkspacesExternalCustomerInfo struct {
 }
 
 type ResourceMwsWorkspacesGcpManagedNetworkConfig struct {
-	GkeClusterPodIpRange     string `json:"gke_cluster_pod_ip_range"`
-	GkeClusterServiceIpRange string `json:"gke_cluster_service_ip_range"`
+	GkeClusterPodIpRange     string `json:"gke_cluster_pod_ip_range,omitempty"`
+	GkeClusterServiceIpRange string `json:"gke_cluster_service_ip_range,omitempty"`
 	SubnetCidr               string `json:"subnet_cidr"`
 }
 
 type ResourceMwsWorkspacesGkeConfig struct {
-	ConnectivityType string `json:"connectivity_type"`
-	MasterIpRange    string `json:"master_ip_range"`
+	ConnectivityType string `json:"connectivity_type,omitempty"`
+	MasterIpRange    string `json:"master_ip_range,omitempty"`
 }
 
 type ResourceMwsWorkspacesToken struct {

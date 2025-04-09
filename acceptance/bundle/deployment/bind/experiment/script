@@ -1,0 +1,40 @@
+title "Bind experiment test:"
+
+title "Substitute variables in the template"
+
+# double slash at the start prevents Windows to apply replacements to the path
+EXPERIMENT_NAME="//Workspace/Users/${CURRENT_USER_NAME}/test-experiment$(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    EXPERIMENT_NAME="//Workspace/Users/${CURRENT_USER_NAME}/test-experiment6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
+fi
+export EXPERIMENT_NAME
+envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
+
+title "Create a pre-defined experiment"
+EXPERIMENT_ID=$($CLI experiments create-experiment "${EXPERIMENT_NAME}" | jq -r '.experiment_id')
+
+cleanupRemoveExperiment() {
+    title "Test cleanup:"
+    title "Delete the pre-defined experiment: "
+    $CLI experiments delete-experiment ${EXPERIMENT_ID}
+    echo $?
+}
+trap cleanupRemoveExperiment EXIT
+
+title "Bind experiment: "
+$CLI bundle deployment bind experiment1 ${EXPERIMENT_ID} --auto-approve
+
+title "Deploy bundle: "
+$CLI bundle deploy --force-lock --auto-approve
+
+title "Read the pre-defined experiment: "
+$CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'
+
+title "Unbind the experiment: "
+$CLI bundle deployment unbind experiment1
+
+title "Destroy the bundle: "
+$CLI bundle destroy --auto-approve
+
+title "Read the pre-defined experiment again (expecting it still exists and is not deleted): "
+$CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'

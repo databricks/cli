@@ -15,7 +15,7 @@ type WorkspacePathPermissions struct {
 }
 
 func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObjectAccessControlResponse) *WorkspacePathPermissions {
-	permissions := make([]resources.Permission, 0)
+	var permissions []resources.Permission
 	for _, a := range acl {
 		// Skip the admin group because it's added to all resources by default.
 		if a.GroupName == "admins" {
@@ -53,7 +53,7 @@ func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Dia
 
 // containsAll checks if permA contains all permissions in permB.
 func containsAll(permA, permB []resources.Permission) (bool, []resources.Permission) {
-	missing := make([]resources.Permission, 0)
+	var missing []resources.Permission
 	for _, a := range permA {
 		found := false
 		for _, b := range permB {

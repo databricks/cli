@@ -4,19 +4,22 @@ type BundleDeployEvent struct {
 	// UUID associated with the bundle itself. Set in the `bundle.uuid` field in the bundle configuration.
 	BundleUuid string `json:"bundle_uuid,omitempty"`
 
-	ResourceCount                     int64 `json:"resource_count,omitempty"`
-	ResourceJobCount                  int64 `json:"resource_job_count,omitempty"`
-	ResourcePipelineCount             int64 `json:"resource_pipeline_count,omitempty"`
-	ResourceModelCount                int64 `json:"resource_model_count,omitempty"`
-	ResourceExperimentCount           int64 `json:"resource_experiment_count,omitempty"`
-	ResourceModelServingEndpointCount int64 `json:"resource_model_serving_endpoint_count,omitempty"`
-	ResourceRegisteredModelCount      int64 `json:"resource_registered_model_count,omitempty"`
-	ResourceQualityMonitorCount       int64 `json:"resource_quality_monitor_count,omitempty"`
-	ResourceSchemaCount               int64 `json:"resource_schema_count,omitempty"`
-	ResourceVolumeCount               int64 `json:"resource_volume_count,omitempty"`
-	ResourceClusterCount              int64 `json:"resource_cluster_count,omitempty"`
-	ResourceDashboardCount            int64 `json:"resource_dashboard_count,omitempty"`
-	ResourceAppCount                  int64 `json:"resource_app_count,omitempty"`
+	// UUID associated with the deployment.
+	DeploymentId string `json:"deployment_id,omitempty"`
+
+	ResourceCount                     int64 `json:"resource_count"`
+	ResourceJobCount                  int64 `json:"resource_job_count"`
+	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`
+	ResourceModelCount                int64 `json:"resource_model_count"`
+	ResourceExperimentCount           int64 `json:"resource_experiment_count"`
+	ResourceModelServingEndpointCount int64 `json:"resource_model_serving_endpoint_count"`
+	ResourceRegisteredModelCount      int64 `json:"resource_registered_model_count"`
+	ResourceQualityMonitorCount       int64 `json:"resource_quality_monitor_count"`
+	ResourceSchemaCount               int64 `json:"resource_schema_count"`
+	ResourceVolumeCount               int64 `json:"resource_volume_count"`
+	ResourceClusterCount              int64 `json:"resource_cluster_count"`
+	ResourceDashboardCount            int64 `json:"resource_dashboard_count"`
+	ResourceAppCount                  int64 `json:"resource_app_count"`
 
 	// IDs of resources managed by the bundle. Some resources like volumes or schemas
 	// do not expose a numerical or UUID identifier and are tracked by name. Those
@@ -34,18 +37,18 @@ type BundleDeployEvent struct {
 // any notice.
 type BundleDeployExperimental struct {
 	// Number of configuration files in the bundle.
-	ConfigurationFileCount int64 `json:"configuration_file_count,omitempty"`
+	ConfigurationFileCount int64 `json:"configuration_file_count"`
 
 	// Size in bytes of the Terraform state file
 	TerraformStateSizeBytes int64 `json:"terraform_state_size_bytes,omitempty"`
 
 	// Number of variables in the bundle
-	VariableCount        int64 `json:"variable_count,omitempty"`
-	ComplexVariableCount int64 `json:"complex_variable_count,omitempty"`
-	LookupVariableCount  int64 `json:"lookup_variable_count,omitempty"`
+	VariableCount        int64 `json:"variable_count"`
+	ComplexVariableCount int64 `json:"complex_variable_count"`
+	LookupVariableCount  int64 `json:"lookup_variable_count"`
 
 	// Number of targets in the bundle
-	TargetCount int64 `json:"target_count,omitempty"`
+	TargetCount int64 `json:"target_count"`
 
 	// Whether a field is set or not. If a configuration field is not present in this
 	// map then it is not tracked by this field.

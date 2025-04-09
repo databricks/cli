@@ -33,9 +33,9 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install uv
-        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.pyVersion }}
           version: "0.6.5"
 
       - name: Run tests
@@ -51,11 +51,27 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install uv
-        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
         with:
           version: "0.6.5"
-          checksum: "8fc9895719a1291ecd193cb86f9282ff3649cef797d29eacc74c4f573aab1e2f"
 
       - name: Run lint
         working-directory: experimental/python
         run: make lint
+
+  python_docs:
+    name: docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
+        with:
+          version: "0.6.5"
+
+      - name: Run docs
+        working-directory: experimental/python
+        run: make docs

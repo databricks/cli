@@ -1,10 +1,24 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/databricks/databricks-sdk-go/service/serving"
+
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -97,5 +111,97 @@ func TestSupportedResources(t *testing.T) {
 		jsonTags := strings.Split(field.Tag.Get("json"), ",")
 		pluralName := jsonTags[0]
 		assert.Equal(t, actual[pluralName].PluralName, pluralName)
+	}
+}
+
+func TestResourcesBindSupport(t *testing.T) {
+	supportedResources := &Resources{
+		Jobs: map[string]*resources.Job{
+			"my_job": {
+				JobSettings: &jobs.JobSettings{},
+			},
+		},
+		Pipelines: map[string]*resources.Pipeline{
+			"my_pipeline": {
+				CreatePipeline: &pipelines.CreatePipeline{},
+			},
+		},
+		Experiments: map[string]*resources.MlflowExperiment{
+			"my_experiment": {
+				Experiment: &ml.Experiment{},
+			},
+		},
+		RegisteredModels: map[string]*resources.RegisteredModel{
+			"my_registered_model": {
+				CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{},
+			},
+		},
+		Schemas: map[string]*resources.Schema{
+			"my_schema": {
+				CreateSchema: &catalog.CreateSchema{},
+			},
+		},
+		Clusters: map[string]*resources.Cluster{
+			"my_cluster": {
+				ClusterSpec: &compute.ClusterSpec{},
+			},
+		},
+		Dashboards: map[string]*resources.Dashboard{
+			"my_dashboard": {
+				Dashboard: &dashboards.Dashboard{},
+			},
+		},
+		Volumes: map[string]*resources.Volume{
+			"my_volume": {
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{},
+			},
+		},
+		Apps: map[string]*resources.App{
+			"my_app": {
+				App: &apps.App{},
+			},
+		},
+		QualityMonitors: map[string]*resources.QualityMonitor{
+			"my_quality_monitor": {
+				CreateMonitor: &catalog.CreateMonitor{},
+			},
+		},
+		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+			"my_model_serving_endpoint": {
+				CreateServingEndpoint: &serving.CreateServingEndpoint{},
+			},
+		},
+	}
+	unbindableResources := map[string]bool{"model": true}
+
+	ctx := context.Background()
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+
+	allResources := supportedResources.AllResources()
+	for _, group := range allResources {
+		if len(group.Resources) == 0 && !unbindableResources[group.Description.SingularName] {
+			t.Fatalf("Expected at least one resource in group %s", group.Description)
+		}
+		for _, resource := range group.Resources {
+			// bind operation requires resource to be returned from FindResourceByConfigKey
+			r, err := supportedResources.FindResourceByConfigKey("my_" + resource.ResourceDescription().SingularName)
+			assert.NoError(t, err)
+
+			// bind operation requires Exists to return true
+			exists, err := r.Exists(ctx, m.WorkspaceClient, "0")
+			assert.NoError(t, err)
+			assert.True(t, exists)
+		}
 	}
 }

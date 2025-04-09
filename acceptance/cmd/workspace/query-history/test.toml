@@ -1,0 +1,60 @@
+[[Server]]
+Pattern = "GET /api/2.0/sql/history/queries"
+Response.Body = '''
+{
+    "has_next_page": false,
+    "next_page_token": "",
+    "res": [
+        {
+            "channel_used": {
+                "dbsql_version": "dbsql_version",
+                "name": "ENUM"
+            },
+            "duration": 42,
+            "endpoint_id": "endpoint_id",
+            "error_message": "error_message",
+            "executed_as_user_id": 42,
+            "executed_as_user_name": "executed_as_user_name",
+            "execution_end_time_ms": 42,
+            "is_final": false,
+            "lookup_key": "lookup_key",
+            "metrics": {
+                "compilation_time_ms": 42,
+                "execution_time_ms": 42,
+                "network_sent_bytes": 42,
+                "overloading_queue_start_timestamp": 42,
+                "photon_total_time_ms": 42,
+                "provisioning_queue_start_timestamp": 42,
+                "pruned_bytes": 42,
+                "pruned_files_count": 42,
+                "query_compilation_start_timestamp": 42,
+                "read_bytes": 42,
+                "read_cache_bytes": 42,
+                "read_files_count": 42,
+                "read_partitions_count": 42,
+                "read_remote_bytes": 42,
+                "result_fetch_time_ms": 42,
+                "result_from_cache": false,
+                "rows_produced_count": 42,
+                "rows_read_count": 42,
+                "spill_to_disk_bytes": 42,
+                "task_total_time_ms": 42,
+                "total_time_ms": 42,
+                "write_remote_bytes": 42
+            },
+            "plans_state": "ENUM",
+            "query_end_time_ms": 42,
+            "query_id": "query_id",
+            "query_start_time_ms": 42,
+            "query_text": "query_text",
+            "rows_produced": 42,
+            "spark_ui_url": "spark_ui_url",
+            "statement_type": "ENUM",
+            "status": "ENUM",
+            "user_id": 42,
+            "user_name": "user_name",
+            "warehouse_id": "warehouse_id"
+        }
+    ]
+}
+'''

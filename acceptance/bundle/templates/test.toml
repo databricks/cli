@@ -1,2 +1,10 @@
-# At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
-Cloud = false
+# Local-only: At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
+
+[[Server]]
+Pattern = "POST /telemetry-ext"
+Response.Body = '''
+{
+    "errors": [],
+    "numProtoSuccess": 1
+}
+'''

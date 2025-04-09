@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/command"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
@@ -112,7 +112,7 @@ func newChangeOwner() *cobra.Command {
   be supplied as an argument to owner_username.
 
   Arguments:
-    CLUSTER_ID: <needs content added>
+    CLUSTER_ID: 
     OWNER_USERNAME: New owner of the cluster_id after this RPC.`
 
 	cmd.Annotations = make(map[string]string)
@@ -132,7 +132,7 @@ func newChangeOwner() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := changeOwnerJson.Unmarshal(&changeOwnerReq)
@@ -242,9 +242,12 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create new cluster.
   
   Creates a new Spark cluster. This method will acquire new instances from the
-  cloud provider if necessary. Note: Databricks may not be able to acquire some
-  of the requested nodes, due to cloud provider limitations (account limits,
-  spot price, etc.) or transient network issues.
+  cloud provider if necessary. This method is asynchronous; the returned
+  cluster_id can be used to poll the cluster status. When this method
+  returns, the cluster will be in a PENDING state. The cluster will be
+  usable once it enters a RUNNING state. Note: Databricks may not be able to
+  acquire some of the requested nodes, due to cloud provider limitations
+  (account limits, spot price, etc.) or transient network issues.
   
   If Databricks acquires at least 85% of the requested on-demand nodes, cluster
   creation will succeed. Otherwise the cluster will terminate with an
@@ -278,7 +281,7 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -378,7 +381,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteJson.Unmarshal(&deleteReq)
@@ -547,7 +550,7 @@ func newEdit() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := editJson.Unmarshal(&editReq)
@@ -630,7 +633,7 @@ func newEvents() *cobra.Command {
   
   Retrieves a list of events about the activity of a cluster. This API is
   paginated. If there are more events to read, the response includes all the
-  nparameters necessary to request the next page of events.
+  parameters necessary to request the next page of events.
 
   Arguments:
     CLUSTER_ID: The ID of the cluster to retrieve events about.`
@@ -651,7 +654,7 @@ func newEvents() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := eventsJson.Unmarshal(&eventsReq)
@@ -737,7 +740,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -807,7 +810,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -878,7 +881,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -957,7 +960,7 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Clusters.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
@@ -998,7 +1001,7 @@ func newListNodeTypes() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListNodeTypes(ctx)
 		if err != nil {
 			return err
@@ -1041,7 +1044,7 @@ func newListZones() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListZones(ctx)
 		if err != nil {
 			return err
@@ -1109,7 +1112,7 @@ func newPermanentDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := permanentDeleteJson.Unmarshal(&permanentDeleteReq)
@@ -1186,10 +1189,7 @@ func newPin() *cobra.Command {
   
   Pinning a cluster ensures that the cluster will always be returned by the
   ListClusters API. Pinning a cluster that is already pinned will have no
-  effect. This API can only be called by workspace admins.
-
-  Arguments:
-    CLUSTER_ID: <needs content added>`
+  effect. This API can only be called by workspace admins.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1207,7 +1207,7 @@ func newPin() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := pinJson.Unmarshal(&pinReq)
@@ -1229,14 +1229,14 @@ func newPin() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
-				id, err := cmdio.Select(ctx, names, "<needs content added>")
+				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
 					return err
 				}
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have <needs content added>")
+				return fmt.Errorf("expected to have ")
 			}
 			pinReq.ClusterId = args[0]
 		}
@@ -1312,7 +1312,7 @@ func newResize() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := resizeJson.Unmarshal(&resizeReq)
@@ -1400,7 +1400,7 @@ func newRestart() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&restartJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `<needs content added>.`)
+	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, ``)
 
 	cmd.Use = "restart CLUSTER_ID"
 	cmd.Short = `Restart cluster.`
@@ -1428,7 +1428,7 @@ func newRestart() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := restartJson.Unmarshal(&restartReq)
@@ -1529,7 +1529,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1604,7 +1604,7 @@ func newSparkVersions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 		response, err := w.Clusters.SparkVersions(ctx)
 		if err != nil {
 			return err
@@ -1652,13 +1652,12 @@ func newStart() *cobra.Command {
 	cmd.Long = `Start terminated cluster.
   
   Starts a terminated Spark cluster with the supplied ID. This works similar to
-  createCluster except:
-  
-  * The previous cluster id and attributes are preserved. * The cluster starts
-  with the last specified cluster size. * If the previous cluster was an
-  autoscaling cluster, the current cluster starts with the minimum number of
-  nodes. * If the cluster is not currently in a TERMINATED state, nothing will
-  happen. * Clusters launched to run a job cannot be started.
+  createCluster except: - The previous cluster id and attributes are
+  preserved. - The cluster starts with the last specified cluster size. - If the
+  previous cluster was an autoscaling cluster, the current cluster starts with
+  the minimum number of nodes. - If the cluster is not currently in a
+  TERMINATED state, nothing will happen. - Clusters launched to run a job
+  cannot be started.
 
   Arguments:
     CLUSTER_ID: The cluster to be started.`
@@ -1679,7 +1678,7 @@ func newStart() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := startJson.Unmarshal(&startReq)
@@ -1768,10 +1767,7 @@ func newUnpin() *cobra.Command {
   
   Unpinning a cluster will allow the cluster to eventually be removed from the
   ListClusters API. Unpinning a cluster that is not pinned will have no effect.
-  This API can only be called by workspace admins.
-
-  Arguments:
-    CLUSTER_ID: <needs content added>`
+  This API can only be called by workspace admins.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1789,7 +1785,7 @@ func newUnpin() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := unpinJson.Unmarshal(&unpinReq)
@@ -1811,14 +1807,14 @@ func newUnpin() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
-				id, err := cmdio.Select(ctx, names, "<needs content added>")
+				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
 					return err
 				}
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have <needs content added>")
+				return fmt.Errorf("expected to have ")
 			}
 			unpinReq.ClusterId = args[0]
 		}
@@ -1884,11 +1880,20 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     CLUSTER_ID: ID of the cluster.
-    UPDATE_MASK: Specifies which fields of the cluster will be updated. This is required in
-      the POST request. The update mask should be supplied as a single string.
-      To specify multiple fields, separate them with commas (no spaces). To
-      delete a field from a cluster configuration, add it to the update_mask
-      string but omit it from the cluster object.`
+    UPDATE_MASK: Used to specify which cluster attributes and size fields to update. See
+      https://google.aip.dev/161 for more details.
+      
+      The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+      
+      A field mask of * indicates full replacement. It’s recommended to
+      always explicitly list the fields being updated and avoid using *
+      wildcards, as it can lead to unintended results if the API changes in the
+      future.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1907,7 +1912,7 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -1994,7 +1999,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := command.WorkspaceClient(ctx)
+		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)

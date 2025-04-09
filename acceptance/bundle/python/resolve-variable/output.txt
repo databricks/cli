@@ -1,0 +1,43 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "name": "abc",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {},
+        "tasks": [
+          {
+            "notebook_task": {
+              "notebook_path": "/Workspace/cde"
+            },
+            "task_key": "abc"
+          },
+          {
+            "notebook_task": {
+              "notebook_path": "/Workspace/ghi"
+            },
+            "task_key": "def"
+          }
+        ]
+      }
+    }
+  }
+}

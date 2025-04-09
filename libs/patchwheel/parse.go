@@ -2,6 +2,7 @@ package patchwheel
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -39,6 +40,7 @@ func calculateNewVersion(info WheelInfo, mtime time.Time) (newVersion, newFilena
 // The function does not try hard to validate if the format is correct, it tries to parse whatever is available.
 // However, it does require 5 or 6 components in the filename.
 func ParseWheelFilename(filename string) (WheelInfo, error) {
+	filename = filepath.Base(filename)
 	parts := strings.Split(filename, "-")
 	if len(parts) < 5 {
 		return WheelInfo{}, fmt.Errorf("invalid wheel filename format: not enough parts in %s", filename)

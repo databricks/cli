@@ -24,8 +24,9 @@ func TestTranslatePathsArtifacts_InsideSyncRoot(t *testing.T) {
 	_ = os.MkdirAll(dir, 0o755)
 
 	b := &bundle.Bundle{
-		SyncRootPath: dir,
-		SyncRoot:     vfs.MustNew(dir),
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
 		Config: config.Root{
 			Artifacts: map[string]*config.Artifact{
 				"my_artifact": {
@@ -42,7 +43,7 @@ func TestTranslatePathsArtifacts_InsideSyncRoot(t *testing.T) {
 		File: filepath.Join(dir, "config/artifacts.yml"),
 	}})
 
-	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Assert that the artifact path has been converted to a local absolute path.
@@ -57,8 +58,9 @@ func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 	_ = os.MkdirAll(dir, 0o755)
 
 	b := &bundle.Bundle{
-		SyncRootPath: dir,
-		SyncRoot:     vfs.MustNew(dir),
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
 		Config: config.Root{
 			Artifacts: map[string]*config.Artifact{
 				"my_artifact": {
@@ -75,7 +77,7 @@ func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 		File: filepath.Join(dir, "config/artifacts.yml"),
 	}})
 
-	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Assert that the artifact path has been converted to a local absolute path.

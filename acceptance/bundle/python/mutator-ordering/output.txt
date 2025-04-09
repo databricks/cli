@@ -1,0 +1,108 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json --include-locations
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:add_task_1",
+        "mutators:add_task_2"
+      ]
+    }
+  },
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tags": {},
+        "tasks": [
+          {
+            "task_key": "task_1"
+          },
+          {
+            "task_key": "task_2"
+          }
+        ]
+      }
+    }
+  },
+  "__locations": {
+    "files": [
+      "databricks.yml",
+      "mutators.py"
+    ],
+    "locations": {
+      "bundle": [
+        [
+          0,
+          2,
+          3
+        ]
+      ],
+      "experimental": [
+        [
+          0,
+          7,
+          3
+        ]
+      ],
+      "resources": [
+        [
+          0,
+          13,
+          3
+        ]
+      ],
+      "resources.jobs": [
+        [
+          0,
+          14,
+          5
+        ]
+      ],
+      "resources.jobs.my_job": [
+        [
+          0,
+          15,
+          7
+        ]
+      ],
+      "resources.jobs.my_job.tasks": [
+        [
+          0,
+          15,
+          14
+        ]
+      ],
+      "resources.jobs.my_job.tasks[0]": [
+        [
+          1,
+          8,
+          1
+        ]
+      ],
+      "resources.jobs.my_job.tasks[1]": [
+        [
+          1,
+          8,
+          1
+        ]
+      ],
+      "sync": [
+        [
+          0,
+          4,
+          7
+        ]
+      ]
+    }
+  }
+}

@@ -21,24 +21,25 @@ dependencies = [
 # see setup.py
 dynamic = ["version"]
 
-{{ if .include_python -}}
+{{ if eq .include_python "yes" -}}
 [project.entry-points.packages]
 main = "{{.project_name}}.main:main"
 
 {{ end -}}
 
-[tool.setuptools]
-{{ if .include_python -}}
-py-modules = ["resources", "{{.project_name}}"]
+{{ if eq .include_python "yes" -}}
+[tool.setuptools.packages.find]
+where = ["src"]
 
-{{ else }}
-py-modules = ["resources"]
+{{ else -}}
+[tool.setuptools]
+py-modules = []
 
 {{ end -}}
 [tool.uv]
 ## Dependencies for local development
 dev-dependencies = [
-    "databricks-bundles==0.7.0",
+    "databricks-bundles==0.7.2",
 
     ## Add code completion support for DLT
     # "databricks-dlt",

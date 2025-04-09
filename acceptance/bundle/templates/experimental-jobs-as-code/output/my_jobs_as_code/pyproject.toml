@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "my_jobs_as_code"
-requires-python = ">=3.10"
 description = "wheel file based on my_jobs_as_code"
 
 # Dependencies in case the output wheel file is used as a library dependency.
@@ -24,13 +23,13 @@ dynamic = ["version"]
 [project.entry-points.packages]
 main = "my_jobs_as_code.main:main"
 
-[tool.setuptools]
-py-modules = ["resources", "my_jobs_as_code"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.uv]
 ## Dependencies for local development
 dev-dependencies = [
-    "databricks-bundles==0.7.0",
+    "databricks-bundles==0.7.2",
 
     ## Add code completion support for DLT
     # "databricks-dlt",

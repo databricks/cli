@@ -12,7 +12,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/command"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
@@ -27,6 +27,8 @@ type syncFlags struct {
 	full     bool
 	watch    bool
 	output   flags.Output
+	exclude  []string
+	include  []string
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
@@ -42,6 +44,8 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 	opts.Full = f.full
 	opts.PollInterval = f.interval
 	opts.WorktreeRoot = b.WorktreeRoot
+	opts.Exclude = append(opts.Exclude, f.exclude...)
+	opts.Include = append(opts.Include, f.include...)
 	return opts, nil
 }
 
@@ -66,7 +70,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	}
 
 	ctx := cmd.Context()
-	client := command.WorkspaceClient(ctx)
+	client := cmdctx.WorkspaceClient(ctx)
 
 	localRoot := vfs.MustNew(args[0])
 	info, err := git.FetchRepositoryInfo(ctx, localRoot.Native(), client)
@@ -86,8 +90,8 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		WorktreeRoot: worktreeRoot,
 		LocalRoot:    localRoot,
 		Paths:        []string{"."},
-		Include:      nil,
-		Exclude:      nil,
+		Include:      f.include,
+		Exclude:      f.exclude,
 
 		RemotePath:   args[1],
 		Full:         f.full,
@@ -120,6 +124,8 @@ func New() *cobra.Command {
 	cmd.Flags().BoolVar(&f.full, "full", false, "perform full synchronization (default is incremental)")
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of output format")
+	cmd.Flags().StringSliceVar(&f.exclude, "exclude", nil, "patterns to exclude from sync (can be specified multiple times)")
+	cmd.Flags().StringSliceVar(&f.include, "include", nil, "patterns to include in sync (can be specified multiple times)")
 
 	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
 	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
@@ -187,7 +193,7 @@ func New() *cobra.Command {
 		case 0:
 			return nil, cobra.ShellCompDirectiveFilterDirs
 		case 1:
-			wsc := command.WorkspaceClient(cmd.Context())
+			wsc := cmdctx.WorkspaceClient(cmd.Context())
 			return completeRemotePath(cmd.Context(), wsc, toComplete)
 		default:
 			return nil, cobra.ShellCompDirectiveNoFileComp

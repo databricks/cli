@@ -1,9 +1,9 @@
-trace $CLI bundle deploy 2>&1 | sort  # sorting because 'Uploading ...whl...' messages change order
+trace $CLI bundle deploy 2>&1
 
 trace find.py --expect 2 whl
 
 title "Expecting 2 wheels in libraries section in /jobs/create"
-trace jq -s '.[] | select(.path=="/api/2.1/jobs/create") | .body.tasks' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
 
 title "Expecting 2 wheels to be uploaded"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
