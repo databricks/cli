@@ -45,21 +45,21 @@
         "tasks": [
           {
             "notebook_task": {
-              "notebook_path": "etl_pipelines/dabs_testing/tables/adhoc_build_logs",
+              "notebook_path": "resources/etl_pipelines/dabs_testing/tables/adhoc_build_logs",
               "source": "GIT"
             },
             "task_key": "adhoc_build_logs"
           },
           {
             "notebook_task": {
-              "notebook_path": "etl_pipelines/dabs_testing/tables/dabs_testing_bronze",
+              "notebook_path": "resources/etl_pipelines/dabs_testing/tables/dabs_testing_bronze",
               "source": "GIT"
             },
             "task_key": "dabs_testing_bronze"
           },
           {
             "notebook_task": {
-              "notebook_path": "etl_pipelines/dabs_testing/tables/dabs_testing_silver",
+              "notebook_path": "resources/etl_pipelines/dabs_testing/tables/dabs_testing_silver",
               "source": "GIT"
             },
             "task_key": "dabs_testing_silver"
