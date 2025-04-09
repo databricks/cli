@@ -362,6 +362,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 				ConfigurationFileCount:    b.Metrics.ConfigurationFileCount,
 				TargetCount:               b.Metrics.TargetCount,
 				WorkspaceArtifactPathType: artifactPathType,
+				BoolValues:                b.Metrics.BoolValues,
 			},
 		},
 	})

@@ -49,6 +49,12 @@ Deployment complete!
           "complex_variable_count": 0,
           "lookup_variable_count": 0,
           "target_count": 1,
+          "bool_values": [
+            {
+              "key": "python_wheel_wrapper_is_set",
+              "value": false
+            }
+          ],
           "bundle_mode": "TYPE_UNSPECIFIED",
           "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
         }

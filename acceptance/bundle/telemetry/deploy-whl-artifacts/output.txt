@@ -1,11 +1,15 @@
 
 >>> [CLI] bundle deploy -t one
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sheep/one/files...
+Building test...
+Uploading my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-artifacts/one/files...
 Deploying resources...
 Deployment complete!
 
 >>> [CLI] bundle deploy -t two
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sheep/two/files...
+Building test...
+Uploading .databricks/bundle/two/patched_wheels/test_my_test_code/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-artifacts/two/files...
 Deploying resources...
 Deployment complete!
 
@@ -33,6 +37,14 @@ Deployment complete!
     "lookup_variable_count": 0,
     "target_count": 2,
     "bool_values": [
+      {
+        "key": "artifact_build_command_is_set",
+        "value": false
+      },
+      {
+        "key": "artifact_files_is_set",
+        "value": false
+      },
       {
         "key": "python_wheel_wrapper_is_set",
         "value": false
@@ -66,11 +78,23 @@ Deployment complete!
     "target_count": 2,
     "bool_values": [
       {
+        "key": "artifact_build_command_is_set",
+        "value": true
+      },
+      {
+        "key": "artifact_files_is_set",
+        "value": true
+      },
+      {
+        "key": "artifact_dynamic_version_is_set",
+        "value": true
+      },
+      {
         "key": "python_wheel_wrapper_is_set",
-        "value": false
+        "value": true
       }
     ],
     "bundle_mode": "TYPE_UNSPECIFIED",
-    "workspace_artifact_path_type": "UC_VOLUME"
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
   }
 }
