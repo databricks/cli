@@ -76,7 +76,7 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run [flags] KEY",
+		Use:   "run [flags] [KEY]",
 		Short: "Run a job or pipeline update",
 		Long: `Run the job or pipeline identified by KEY.
 
@@ -96,6 +96,22 @@ parameter names.
 
 If the specified job does not use job parameters and the job has a Python file
 task or a Python wheel task, the second example applies.
+
+---------------------------------------------------------
+
+You can also use the bundle run command to execute scripts / commands in the same
+authentication context as the bundle.
+
+Note: The current working directory of the provided command will be set to the root
+of the bundle.
+
+Authentication to the input command will be provided by setting the appropriate
+environment variables that Databricks tools use to authenticate.
+
+Example usage:
+1. databricks bundle exec -- echo "hello, world"
+2. databricks bundle exec -- /bin/bash -c "echo hello"
+3. databricks bundle exec -- uv run pytest
 `,
 	}
 
@@ -220,7 +236,6 @@ task or a Python wheel task, the second example applies.
 	return cmd
 }
 
-// TODO: Test singal propogation in the acceptance testS?
 func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	env := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
 
