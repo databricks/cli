@@ -74,6 +74,10 @@ Deployment complete!
       {
         "key": "artifact.dynamic_version",
         "value": true
+      },
+      {
+        "key": "experimental.python_wheel_wrapper",
+        "value": true
       }
     ],
     "bundle_mode": "TYPE_UNSPECIFIED",

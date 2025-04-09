@@ -1,6 +1,13 @@
 bundle:
   name: deploy-artifacts
 
+variables:
+  wrapper:
+    default: false
+
+experimental:
+  python_wheel_wrapper: ${var.wrapper}
+
 targets:
   one:
     artifacts:
@@ -9,6 +16,8 @@ targets:
         path: ./my_test_code
 
   two:
+    variables:
+      wrapper: true
     artifacts:
       test:
         type: whl
