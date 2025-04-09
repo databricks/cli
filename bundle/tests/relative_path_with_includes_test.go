@@ -2,7 +2,7 @@ package config_tests
 
 import (
 	"context"
-	"path/filepath"
+	"path"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -13,8 +13,10 @@ import (
 func TestRelativePathsWithIncludes(t *testing.T) {
 	b := loadTarget(t, "./relative_path_with_includes", "default")
 
-	m := mutator.TranslatePaths()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.ApplySeq(context.Background(), b,
+		mutator.NormalizePaths(),
+		mutator.TranslatePaths(),
+	)
 	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, b.SyncRootPath+"/artifact_a", b.Config.Artifacts["test_a"].Path)
@@ -23,16 +25,16 @@ func TestRelativePathsWithIncludes(t *testing.T) {
 	assert.ElementsMatch(
 		t,
 		[]string{
-			filepath.Join("folder_a", "*.*"),
-			filepath.Join("subfolder", "folder_c", "*.*"),
+			path.Join("folder_a", "*.*"),
+			path.Join("subfolder", "folder_c", "*.*"),
 		},
 		b.Config.Sync.Include,
 	)
 	assert.ElementsMatch(
 		t,
 		[]string{
-			filepath.Join("folder_b", "*.*"),
-			filepath.Join("subfolder", "folder_d", "*.*"),
+			path.Join("folder_b", "*.*"),
+			path.Join("subfolder", "folder_d", "*.*"),
 		},
 		b.Config.Sync.Exclude,
 	)

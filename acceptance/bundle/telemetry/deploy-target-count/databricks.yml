@@ -1,0 +1,13 @@
+bundle:
+  name: ox
+
+targets:
+  one:
+    presets:
+      name_prefix: one
+  two:
+    presets:
+      name_prefix: two
+  three:
+    presets:
+      name_prefix: three

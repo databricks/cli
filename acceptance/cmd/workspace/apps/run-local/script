@@ -2,7 +2,7 @@ cd app
 
 # We first run the command with different entry poiny which starts unblocking script
 # so we don't need to start it in background. It will install the dependencies as part of the command
-trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -o "Hello, world"
+trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
 
 title "Starting the app in background..."
 $CLI apps run-local --prepare-environment --debug > ../out.run.txt 2>&1 &
@@ -10,8 +10,13 @@ PID=$!
 
 cd ..
 
-echo Waiting for the app to start...
-trace errcode tail -n0 -f out.run.txt | sed '/Python Flask app has started with/ q' > /dev/null
+title Waiting for the app to start...
+# Use a loop to check for the startup message instead of tail/sed which can be unreliable on Windows
+# due to file locking, buffering issues, and different text processing behavior across Windows versions.
+# A simple grep loop is more robust across platforms.
+while [ -z "$(grep -o "Python Flask app has started with" out.run.txt 2>/dev/null)" ]; do
+    sleep 1
+done
 
 title "Checking app is running..."
 trace curl -s -o - http://127.0.0.1:8001

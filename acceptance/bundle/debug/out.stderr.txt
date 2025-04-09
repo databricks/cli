@@ -42,6 +42,8 @@
 10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences(resources)
+10:07:59 Debug: Apply pid=12345 mutator=NormalizePaths
+10:07:59 Debug: Apply pid=12345 mutator=ExpandPipelineGlobPaths
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobClusters
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobParameters
 10:07:59 Debug: Apply pid=12345 mutator=MergeJobTasks
@@ -53,16 +55,16 @@
 10:07:59 Debug: Apply pid=12345 mutator=OverrideCompute
 10:07:59 Debug: Apply pid=12345 mutator=ConfigureDashboardDefaults
 10:07:59 Debug: Apply pid=12345 mutator=ConfigureVolumeDefaults
-10:07:59 Debug: Apply pid=12345 mutator=ProcessTargetMode
+10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
 10:07:59 Debug: Apply pid=12345 mutator=ApplyPresets
 10:07:59 Debug: Apply pid=12345 mutator=DefaultQueueing
-10:07:59 Debug: Apply pid=12345 mutator=ExpandPipelineGlobPaths
 10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
 10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonWrapperWarning
 10:07:59 Debug: Apply pid=12345 mutator=artifacts.Prepare
 10:07:59 Info: No local tasks in databricks.yml config, skipping auto detect pid=12345 mutator=artifacts.Prepare
 10:07:59 Debug: Apply pid=12345 mutator=apps.Validate
+10:07:59 Debug: Apply pid=12345 mutator=ValidateTargetMode
 10:07:59 Debug: Apply pid=12345 mutator=ValidateSharedRootPermissions
 10:07:59 Debug: Apply pid=12345 mutator=ApplyBundlePermissions
 10:07:59 Debug: Apply pid=12345 mutator=FilterCurrentUserFromPermissions

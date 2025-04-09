@@ -1,0 +1,4 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/sync_patterns/default/files/conf/dir/test.yml"
+}

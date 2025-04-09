@@ -1,10 +1,14 @@
 package apps
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/appproxy"
@@ -61,10 +65,10 @@ func newRunLocal() *cobra.Command {
 			return err
 		}
 
-		env := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil {
-			env = append(env, "DATABRICKS_CONFIG_PROFILE="+profileFlag.Value.String())
+		cfg := cmdctx.ConfigUsed(cmd.Context())
+		env := auth.ProcessEnv(cfg)
+		if cfg.Profile != "" {
+			env = append(env, "DATABRICKS_CONFIG_PROFILE="+cfg.Profile)
 		}
 
 		for _, envVar := range spec.EnvVars {
@@ -73,6 +77,9 @@ func newRunLocal() *cobra.Command {
 			}
 
 			if envVar.ValueFrom != nil {
+				if os.Getenv(envVar.Name) != "" {
+					customEnv = append(customEnv, envVar.Name+"="+os.Getenv(envVar.Name))
+				}
 				found := false
 				for _, e := range customEnv {
 					if strings.HasPrefix(e, envVar.Name+"=") {
@@ -81,7 +88,8 @@ func newRunLocal() *cobra.Command {
 					}
 				}
 				if !found {
-					return fmt.Errorf("env var %s needs to be set", envVar.Name)
+					return fmt.Errorf("%s defined in app.yml with valueFrom property and can't be resolved locally."+
+						"Please set %s environment variable in your terminal or using --env flag", envVar.Name, envVar.Name)
 				}
 			}
 		}
@@ -99,6 +107,7 @@ func newRunLocal() *cobra.Command {
 			return err
 		}
 
+		cmdio.LogString(ctx, "Running command: "+strings.Join(specCommand, " "))
 		appCmd := exec.Command(specCommand[0], specCommand[1:]...)
 		appCmd.Stdin = cmd.InOrStdin()
 		appCmd.Stdout = cmd.OutOrStdout()
@@ -145,9 +154,40 @@ func newRunLocal() *cobra.Command {
 			cmdio.LogString(ctx, "To debug your app, attach a debugger to port "+apps.DEBUG_PORT)
 		}
 
-		err = appCmd.Wait()
-		if err != nil {
-			return err
+		// Create a channel to handle graceful shutdown
+		done := make(chan error, 1)
+
+		// Handle interrupt signal
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+		// Wait for either command completion or interrupt
+		go func() {
+			done <- appCmd.Wait()
+		}()
+
+		select {
+		case err := <-done:
+			if err != nil {
+				return err
+			}
+		case <-sigChan:
+			// Give the process a chance to cleanup
+			if err := appCmd.Process.Signal(os.Interrupt); err != nil {
+				return fmt.Errorf("failed to send interrupt signal: %w", err)
+			}
+
+			// Wait for process to finish with timeout
+			select {
+			case err := <-done:
+				return err
+			case <-time.After(10 * time.Second):
+				// Force kill if timeout
+				if err := appCmd.Process.Kill(); err != nil {
+					return fmt.Errorf("failed to kill process: %w", err)
+				}
+				return errors.New("process killed after timeout")
+			}
 		}
 
 		return nil

@@ -9,7 +9,6 @@ import (
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/stretchr/testify/require"
 )
 
 func TestVisitJobPaths(t *testing.T) {
@@ -73,7 +72,7 @@ func TestVisitJobPaths(t *testing.T) {
 		},
 	}
 
-	actual := visitJobPaths(t, root)
+	actual := collectVisitedPaths(t, root, VisitJobPaths)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.tasks[0].notebook_task.notebook_path"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[1].spark_python_task.python_file"),
@@ -112,7 +111,7 @@ func TestVisitJobPaths_environments(t *testing.T) {
 		},
 	}
 
-	actual := visitJobPaths(t, root)
+	actual := collectVisitedPaths(t, root, VisitJobPaths)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[0]"),
 		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[1]"),
@@ -147,22 +146,10 @@ func TestVisitJobPaths_foreach(t *testing.T) {
 		},
 	}
 
-	actual := visitJobPaths(t, root)
+	actual := collectVisitedPaths(t, root, VisitJobPaths)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.tasks[0].for_each_task.task.notebook_task.notebook_path"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)
-}
-
-func visitJobPaths(t *testing.T, root config.Root) []dyn.Path {
-	var actual []dyn.Path
-	err := root.Mutate(func(value dyn.Value) (dyn.Value, error) {
-		return VisitJobPaths(value, func(p dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
-			actual = append(actual, p)
-			return v, nil
-		})
-	})
-	require.NoError(t, err)
-	return actual
 }

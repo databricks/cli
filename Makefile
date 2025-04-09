@@ -1,4 +1,4 @@
-default: vendor fmt lint tidy
+default: vendor fmt lint tidy ws
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -19,6 +19,9 @@ lintcheck:
 fmt:
 	ruff format -qn
 	golangci-lint fmt
+
+ws:
+	./tools/validate_whitespace.py
 
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
@@ -65,4 +68,4 @@ generate:
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs
+.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs ws

@@ -1,0 +1,15 @@
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/volumes/main.a.b"
+Response.Body = '''
+{
+  "catalog_name": "main",
+  "schema_name": "a",
+  "name": "b",
+  "volume_type": "MANAGED",
+  "full_name": "main.a.b"
+}
+'''
+
+[[Server]]
+Pattern = "PUT /api/2.0/fs/directories/Volumes/main/a/b/c/.internal"
+Response.StatusCode = 200

@@ -76,6 +76,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			"workspace",
 			"variables",
 		),
+		mutator.NormalizePaths(),
+		mutator.ExpandPipelineGlobPaths(),
 
 		mutator.MergeJobClusters(),
 		mutator.MergeJobParameters(),
@@ -91,10 +93,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		mutator.OverrideCompute(),
 		mutator.ConfigureDashboardDefaults(),
 		mutator.ConfigureVolumeDefaults(),
-		mutator.ProcessTargetMode(),
+
+		// ApplyTargetMode must run before ApplyPresets to set default values for 'presets' section
+		mutator.ApplyTargetMode(),
 		mutator.ApplyPresets(),
 		mutator.DefaultQueueing(),
-		mutator.ExpandPipelineGlobPaths(),
 
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
 		mutator.ConfigureWSFS(),
@@ -106,6 +109,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		apps.Validate(),
 
+		mutator.ValidateTargetMode(),
 		permissions.ValidateSharedRootPermissions(),
 		permissions.ApplyBundlePermissions(),
 		permissions.FilterCurrentUser(),

@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
@@ -18,12 +17,6 @@ func (t *translateContext) applyAppsTranslations(ctx context.Context, v dyn.Valu
 			Mode: mode,
 		}
 
-		key := p[2].Key()
-		dir, err := v.Location().Directory()
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for app %s: %w", key, err)
-		}
-
-		return t.rewriteValue(ctx, p, v, dir, opts)
+		return t.rewriteValue(ctx, p, v, t.b.BundleRootPath, opts)
 	})
 }

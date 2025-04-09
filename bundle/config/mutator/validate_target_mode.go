@@ -5,62 +5,38 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/iamutil"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/iamutil"
-	"github.com/databricks/cli/libs/log"
 )
 
-type processTargetMode struct{}
+type validateTargetMode struct{}
 
-const developmentConcurrentRuns = 4
-
-func ProcessTargetMode() bundle.Mutator {
-	return &processTargetMode{}
+// ValidateTargetMode validates that bundle have an adequate configuration
+// for a selected target mode.
+func ValidateTargetMode() bundle.Mutator {
+	return &validateTargetMode{}
 }
 
-func (m *processTargetMode) Name() string {
-	return "ProcessTargetMode"
+func (v validateTargetMode) Name() string {
+	return "ValidateTargetMode"
 }
 
-// Mark all resources as being for 'development' purposes, i.e.
-// changing their their name, adding tags, and (in the future)
-// marking them as 'hidden' in the UI.
-func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
-	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
-		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
-		disabled := false
-		b.Config.Bundle.Deployment.Lock.Enabled = &disabled
-	}
-
-	t := &b.Config.Presets
-	shortName := b.Config.Workspace.CurrentUser.ShortName
-
-	if t.NamePrefix == "" {
-		t.NamePrefix = "[dev " + shortName + "] "
-	}
-
-	if t.Tags == nil {
-		t.Tags = map[string]string{}
-	}
-	_, exists := t.Tags["dev"]
-	if !exists {
-		t.Tags["dev"] = b.Tagging.NormalizeValue(shortName)
-	}
-
-	if t.JobsMaxConcurrentRuns == 0 {
-		t.JobsMaxConcurrentRuns = developmentConcurrentRuns
-	}
-
-	if t.TriggerPauseStatus == "" {
-		t.TriggerPauseStatus = config.Paused
-	}
-
-	if !config.IsExplicitlyDisabled(t.PipelinesDevelopment) {
-		enabled := true
-		t.PipelinesDevelopment = &enabled
+func (v validateTargetMode) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	switch b.Config.Bundle.Mode {
+	case config.Development:
+		return validateDevelopmentMode(b)
+	case config.Production:
+		isPrincipal := iamutil.IsServicePrincipal(b.Config.Workspace.CurrentUser.User)
+		return validateProductionMode(b, isPrincipal)
+	case "":
+		// No action
+		return nil
+	default:
+		return diag.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
 	}
 }
 
@@ -190,25 +166,4 @@ func isRunAsSet(r config.Resources) bool {
 
 func isExplicitRootSet(b *bundle.Bundle) bool {
 	return b.Target != nil && b.Target.Workspace != nil && b.Target.Workspace.RootPath != ""
-}
-
-func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	switch b.Config.Bundle.Mode {
-	case config.Development:
-		diags := validateDevelopmentMode(b)
-		if diags.HasError() {
-			return diags
-		}
-		transformDevelopmentMode(ctx, b)
-		return diags
-	case config.Production:
-		isPrincipal := iamutil.IsServicePrincipal(b.Config.Workspace.CurrentUser.User)
-		return validateProductionMode(b, isPrincipal)
-	case "":
-		// No action
-	default:
-		return diag.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
-	}
-
-	return nil
 }

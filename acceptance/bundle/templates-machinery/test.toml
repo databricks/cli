@@ -1,5 +1,3 @@
-Cloud = false
-
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''

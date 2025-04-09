@@ -1,5 +1,3 @@
-Cloud = false  # This test needs to run against stubbed Databricks API
-
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
 Response.Body = '''

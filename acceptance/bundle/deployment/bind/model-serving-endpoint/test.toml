@@ -1,0 +1,34 @@
+Local = true
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Server]]
+Pattern = "POST /api/2.0/serving-endpoints"
+Response.Body = '''
+{
+  "name": "test-endpoint-6260d50f-e8ff-4905-8f28-812345678903"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/serving-endpoints/"
+
+[[Server]]
+Pattern = "GET /api/2.0/serving-endpoints/{endpoint_name}"
+Response.Body = '''
+{
+  "name": "test-endpoint-6260d50f-e8ff-4905-8f28-812345678903",
+  "permission_level": "CAN_MANAGE",
+  "route_optimized": false,
+  "state": {
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
+  }
+}
+'''
+
+[[Server]]
+Pattern = "DELETE /api/2.0/serving-endpoints/{endpoint_name}"

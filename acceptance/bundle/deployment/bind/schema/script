@@ -1,8 +1,6 @@
 title "Bind schema test:"
 
 title "Substitute variables in the template:"
-export BUNDLE_NAME_SUFFIX=$(uuid)
-
 export SCHEMA_NAME="test-schema-$(uuid)"
 if [ -z "$CLOUD_ENV" ]; then
     export SCHEMA_NAME="test-schema-6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally

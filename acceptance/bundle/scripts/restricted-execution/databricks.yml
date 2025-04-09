@@ -1,0 +1,13 @@
+bundle:
+  name: scripts_with_restricted_execution
+
+experimental:
+  scripts:
+    # SOME_ENV_VAR is here to ensure that the envs are not accessible in the preinit script
+    # when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set
+    preinit: "echo \"preinit $SOME_ENV_VAR\""
+    postinit: "echo \"postinit $SOME_ENV_VAR\""
+    prebuild: "echo \"prebuild $SOME_ENV_VAR\""
+    postbuild: "echo \"postbuild $SOME_ENV_VAR\""
+    predeploy: "echo \"predeploy $SOME_ENV_VAR\""
+    postdeploy: "echo \"postdeploy $SOME_ENV_VAR\""
