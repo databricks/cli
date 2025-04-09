@@ -5,3 +5,4 @@ unset DATABRICKS_TOKEN
 # even if authentication is not provided.
 trace $CLI bundle run -- echo hello
 trace $CLI bundle run -- python3 -c 'import os; print(os.getcwd())'
+trace $CLI bundle run -- $CLI current-user me
