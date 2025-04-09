@@ -1,15 +1,15 @@
 
->>> [CLI] bundle exec -- echo hello, world
+>>> [CLI] bundle run -- echo hello, world
 hello, world
 
->>> [CLI] bundle exec -- --help
-Error: running "--help" failed: looking up "--help" in PATH failed: exec: "--help": executable file not found in PATH
+>>> [CLI] bundle run -- --help
+Error: looking up "--help" in PATH failed: exec: "--help": executable file not found in PATH
 
 Exit code: 1
 
->>> [CLI] bundle exec -- bash -c exit 5
+>>> [CLI] bundle run -- bash -c exit 5
 
 Exit code: 5
 
->>> [CLI] bundle exec -- python3 -c import sys; print('Hello', file=sys.stderr)
+>>> [CLI] bundle run -- python3 -c import sys; print('Hello', file=sys.stderr)
 Hello

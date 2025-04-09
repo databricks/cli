@@ -1,5 +1,5 @@
 
->>> [CLI] bundle exec -- [CLI] current-user me
+>>> [CLI] bundle run -- [CLI] current-user me
 {
   "id":"[USERID]",
   "userName":"[USERNAME]"

@@ -4,5 +4,5 @@
 >>> python3 -c import os; print(os.getcwd())
 [TEST_TMP_DIR]/a/b/c
 
->>> [CLI] bundle exec -- python3 -c import os; print(os.getcwd())
+>>> [CLI] bundle run -- python3 -c import os; print(os.getcwd())
 [TEST_TMP_DIR]

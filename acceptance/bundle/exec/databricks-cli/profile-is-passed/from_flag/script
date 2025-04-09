@@ -7,4 +7,4 @@ unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
 # This should use myprofile, which uses oauth.
-trace $CLI bundle exec --profile myprofile -- $CLI current-user me
+trace $CLI bundle run --profile myprofile -- $CLI current-user me

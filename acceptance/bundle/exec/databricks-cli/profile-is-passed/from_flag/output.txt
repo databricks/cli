@@ -1,5 +1,5 @@
 
->>> [CLI] bundle exec --profile myprofile -- [CLI] current-user me
+>>> [CLI] bundle run --profile myprofile -- [CLI] current-user me
 {
   "id":"[USERID]",
   "userName":"[USERNAME]"

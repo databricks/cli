@@ -1,5 +1,5 @@
 
->>> [CLI] bundle exec echo hello
-Error: Please add a '--' separator. Usage: 'databricks bundle exec -- echo hello'
+>>> [CLI] bundle run echo hello
+Error: unable to locate bundle root: databricks.yml not found
 
 Exit code: 1

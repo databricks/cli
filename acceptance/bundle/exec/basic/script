@@ -1,11 +1,11 @@
-trace $CLI bundle exec -- echo "hello, world"
+trace $CLI bundle run -- echo "hello, world"
 
 # The CLI should not parse the --help flag and should try to run it as an executable
 # instead.
-errcode trace $CLI bundle exec -- --help
+errcode trace $CLI bundle run -- --help
 
 # The error message should include the exit code.
-errcode trace $CLI bundle exec -- bash -c "exit 5"
+errcode trace $CLI bundle run -- bash -c "exit 5"
 
 # stderr should also be passed through.
-trace $CLI bundle exec -- python3 -c "import sys; print('Hello', file=sys.stderr)"
+trace $CLI bundle run -- python3 -c "import sys; print('Hello', file=sys.stderr)"

@@ -1,7 +1,7 @@
 unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
-# Confirm that bundle exec works for commands that do not require authentication,
+# Confirm that bundle run works for commands that do not require authentication,
 # even if authentication is not provided.
-trace $CLI bundle exec -- echo hello
-trace $CLI bundle exec -- python3 -c 'import os; print(os.getcwd())'
+trace $CLI bundle run -- echo hello
+trace $CLI bundle run -- python3 -c 'import os; print(os.getcwd())'

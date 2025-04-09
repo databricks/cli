@@ -57,7 +57,6 @@ Example usage:
 				env = append(env, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 			}
 
-			// TODO: Test singal propogation in the acceptance testS?
 
 			err := exec.Execv(exec.ExecvOptions{
 				Args:   args,

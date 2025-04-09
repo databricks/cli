@@ -2,5 +2,5 @@ trace cd a/b/c
 
 trace python3 -c 'import os; print(os.getcwd())'
 
-# Scripts that bundle exec executes should run from the bundle root.
-trace $CLI bundle exec -- python3 -c 'import os; print(os.getcwd())'
+# Scripts that bundle run executes should run from the bundle root.
+trace $CLI bundle run -- python3 -c 'import os; print(os.getcwd())'

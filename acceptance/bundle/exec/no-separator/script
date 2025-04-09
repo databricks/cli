@@ -1,1 +1,1 @@
-trace $CLI bundle exec echo hello
+trace $CLI bundle run echo hello
