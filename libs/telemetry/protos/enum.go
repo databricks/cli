@@ -24,3 +24,10 @@ const (
 	BundleDeployArtifactPathTypeWorkspace   BundleDeployArtifactPathType = "WORKSPACE_FILE_SYSTEM"
 	BundleDeployArtifactPathTypeVolume      BundleDeployArtifactPathType = "UC_VOLUME"
 )
+
+const (
+	ExperimentalPythonWheelWrapperIsSet = "python_wheel_wrapper_is_set"
+	DynamicVersionIsSet                 = "dynamic_version_is_set"
+	ArtifactBuildCommandIsSet           = "artifact_build_command_is_set"
+	ArtifactFilesIsSet                  = "artifact_files_is_set"
+)

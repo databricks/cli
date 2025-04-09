@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/cli/libs/python"
+	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
 func Build() bundle.Mutator {
@@ -80,7 +81,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 
 		if a.Type == "whl" && a.DynamicVersion && cacheDir != "" {
-			b.Metrics.AddSetField("artifact.dynamic_version")
+			b.Metrics.AddSetField(protos.DynamicVersionIsSet)
 			for ind, artifactFile := range a.Files {
 				patchedWheel, extraDiags := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)
 				log.Debugf(ctx, "Patching ind=%d artifactName=%s Source=%s patchedWheel=%s", ind, artifactName, artifactFile.Source, patchedWheel)

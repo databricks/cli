@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -80,7 +81,7 @@ func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		return nil
 	}
 
-	b.Metrics.AddSetField("experimental.python_wheel_wrapper")
+	b.Metrics.AddSetField(protos.ExperimentalPythonWheelWrapperIsSet)
 	return bundle.Apply(ctx, b, NewTrampoline(
 		"python_wheel",
 		&pythonTrampoline{},
