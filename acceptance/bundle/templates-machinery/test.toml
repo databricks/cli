@@ -1,3 +1,6 @@
+[EnvMatrix]
+CLI = ["$CLI_BINARY"]
+
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''
