@@ -9,10 +9,10 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
-	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
 func Prepare() bundle.Mutator {
@@ -38,8 +38,8 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	for _, artifactName := range sortedKeys(b.Config.Artifacts) {
 		artifact := b.Config.Artifacts[artifactName]
-		b.Metrics.AddBoolValue(protos.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
-		b.Metrics.AddBoolValue(protos.ArtifactFilesIsSet, len(artifact.Files) != 0)
+		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
+		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
 
 		if artifact.Type == "whl" {
 			if artifact.BuildCommand == "" && len(artifact.Files) == 0 {
