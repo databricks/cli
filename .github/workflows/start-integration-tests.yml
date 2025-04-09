@@ -3,6 +3,7 @@ name: start-integration-tests
 on:
   schedule:
     - cron: '*/10 * * * *'
+  workflow_distpatch:
 
 jobs:
   # Trigger for pull requests.
@@ -11,8 +12,8 @@ jobs:
   # It requires secrets from the "test-trigger-is" environment, which are only available to authorized users.
   trigger:
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-protected-runner-group
+      labels: linux-ubuntu-latest
 
     environment: "test-trigger-is"
 
