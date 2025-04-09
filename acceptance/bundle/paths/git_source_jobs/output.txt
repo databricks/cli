@@ -1,18 +1,4 @@
 {
-  "bundle": {
-    "environment": "default",
-    "git": {
-      "bundle_root_path": "."
-    },
-    "name": "hello",
-    "target": "default",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    }
-  },
-  "include": [
-    "resources/included.yml"
-  ],
   "resources": {
     "jobs": {
       "my_job": {
@@ -49,23 +35,5 @@
         ]
       }
     }
-  },
-  "sync": {
-    "paths": [
-      "."
-    ]
-  },
-  "targets": null,
-  "workspace": {
-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/artifacts",
-    "current_user": {
-      "id": "[USERID]",
-      "short_name": "[USERNAME]",
-      "userName": "[USERNAME]"
-    },
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/files",
-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/resources",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default",
-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/state"
   }
 }
