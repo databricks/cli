@@ -32,9 +32,6 @@ dev-dependencies = [
 name = "databricks"
 packages = ["databricks"]
 
-[tool.uv.workspace]
-members = ["codegen"]
-
 [tool.pytest.ini_options]
 addopts = "-ra -q -vv"
 testpaths = [
