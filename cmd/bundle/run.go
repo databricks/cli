@@ -117,7 +117,7 @@ task or a Python wheel task, the second example applies.
 		// If user runs the bundle run command as:
 		// databricks bundle run -- <command> <args>
 		// we execute the command inline.
-		if cmd.ArgsLenAtDash() == 0 {
+		if cmd.ArgsLenAtDash() == 0 && len(args) > 0 {
 			return executeInline(cmd, args, b)
 		}
 
