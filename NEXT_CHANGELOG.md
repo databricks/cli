@@ -1,9 +1,8 @@
 # NEXT CHANGELOG
 
-## Release v0.247.1
+## Release v0.248.0
 
 ### Notable Changes
-* Fix git source regression introduced in v0.247.0 ([#2699](https://github.com/databricks/cli/pull/2699))
 
 ### Dependency updates
 
