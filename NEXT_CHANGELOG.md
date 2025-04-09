@@ -15,5 +15,6 @@
 * Added JSON schema for resource permissions ([#2674](https://github.com/databricks/cli/pull/2674))
 * Removed pipeline 'deployment' field from jsonschema ([#2653](https://github.com/databricks/cli/pull/2653))
 * Updated JSON schema for deprecated pipeline fields ([#2646](https://github.com/databricks/cli/pull/2646))
+* Reverts [#2549](https://github.com/databricks/cli/pull/2549) to resolve issues with Web Terminal host mismatch ([#2685](https://github.com/databricks/cli/pull/2685))
 
 ### API Changes
