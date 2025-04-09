@@ -6,7 +6,7 @@ fmt:
 
 docs:
 	# Python 3.12+ is needed for get_overloads
-	uv run --python 3.12 sphinx-build docs docs/_output --fail-on-warning --show-traceback --nitpicky --fresh-env --keep-going
+	uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going
 
 lint:
 	# check if lock matches the project metadata

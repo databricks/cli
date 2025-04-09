@@ -1,0 +1,28 @@
+bundle:
+  name: deploy-artifacts
+
+variables:
+  wrapper:
+    default: false
+
+experimental:
+  python_wheel_wrapper: ${var.wrapper}
+
+targets:
+  one:
+    artifacts:
+      test:
+        type: whl
+        path: ./my_test_code
+
+  two:
+    variables:
+      wrapper: true
+    artifacts:
+      test:
+        type: whl
+        path: ./my_test_code
+        dynamic_version: true
+        build: "python3 setup.py bdist_wheel"
+        files:
+          - source: "./my_test_code/dist/*.whl"
