@@ -1,5 +1,4 @@
 //go:build windows
-
 package exec
 
 import (
@@ -16,7 +15,13 @@ import (
 // the exit code.
 // ref: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/execv-wexecv?view=msvc-170
 func execv(opts ExecvOptions) error {
-	cmd := exec.Command(opts.Name, opts.Args...)
+	path, err := exec.LookPath(opts.Args[0])
+	if err != nil {
+		return fmt.Errorf("looking up %q in PATH failed: %w", opts.Args[0], err)
+	}
+
+	// TODO: Validate atleast one arg before calling execv.
+	cmd := exec.Command(path, opts.Args[1:]...)
 
 	// TODO: Move this comment.
 	// Execute all scripts from the bundle root directory. This behavior can
@@ -25,6 +30,7 @@ func execv(opts ExecvOptions) error {
 	// 1. One shot commands like `databricks bundle exec -- echo hello`
 	// 2. (upcoming) Scripts that are defined in the scripts section of the DAB.
 	cmd.Dir = opts.Dir
+	cmd.Env = opts.Env
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -39,7 +45,7 @@ func execv(opts ExecvOptions) error {
 	// Start the child command.
 	err = cmd.Start()
 	if err != nil {
-		return fmt.Errorf("starting %s %s failed: %w", opts.Name, strings.Join(opts.Args, " "), err)
+		return fmt.Errorf(" %s failed: %w", strings.Join(opts.Args, " "), err)
 	}
 
 	var wg sync.WaitGroup
@@ -88,7 +94,7 @@ func execv(opts ExecvOptions) error {
 		os.Exit(exitErr.ExitCode())
 	}
 	if err != nil {
-		return fmt.Errorf("running %s %s failed: %w", opts.Name, strings.Join(opts.Args, " "), err)
+		return fmt.Errorf("running %s failed: %w", strings.Join(opts.Args, " "), err)
 	}
 
 	return nil
