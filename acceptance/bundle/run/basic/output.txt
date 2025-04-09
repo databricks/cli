@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle run
+Error: expected a KEY of the resource to run
+
+Exit code: 1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run foo
+Run URL: [DATABRICKS_URL]/job/run/1
+
+2025-04-09 18:22:15 "foobar" TERMINATED 

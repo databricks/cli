@@ -192,6 +192,21 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 	}
 }
 
+func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
+	_, ok := s.jobs[jobId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	return Response{
+		Body: jobs.RunNowResponse{
+			RunId: 1,
+		},
+	}
+}
+
 func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
 	spec, ok := s.Pipelines[pipelineId]
 	if !ok {
