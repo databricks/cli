@@ -3,6 +3,7 @@ name: start-integration-tests
 on:
   schedule:
     - cron: '*/10 * * * *'
+  workflow_distpatch:
 
 jobs:
   # Trigger for pull requests.
