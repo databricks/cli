@@ -29,7 +29,6 @@ class Schema:
     def __post_init__(self):
         match self.type:
             case SchemaType.OBJECT:
-                assert self.properties
                 assert not self.enum
 
             case SchemaType.STRING:

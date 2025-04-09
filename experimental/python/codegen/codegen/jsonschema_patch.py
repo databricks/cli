@@ -22,14 +22,23 @@ REMOVED_FIELDS = {
         # doesn't work, openapi schema needs to be updated to be enum
         "kind",
     },
-    "jobs.Task": {
-        # TODO add task types as a follow-up
-        "clean_rooms_notebook_task",
-        "gen_ai_compute_task",
+    "jobs.TaskEmailNotifications": {
+        # Deprecated
+        "no_alert_for_skipped_runs",
     },
     "jobs.SparkJarTask": {
         # Deprecated. A value of `false` is no longer supported.
         "run_as_repl",
+        # Deprecated
+        "jar_uri",
+    },
+    "resources.Pipeline": {
+        # Deprecated
+        "trigger",
+    },
+    "pipelines.PipelineLibrary": {
+        # Deprecated
+        "whl",
     },
 }
 
