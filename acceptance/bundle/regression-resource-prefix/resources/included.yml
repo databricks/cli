@@ -1,0 +1,29 @@
+resources:
+  jobs:
+    dabs_testing_ddl:
+      name: dabs_testing_ddl
+      tasks:
+        - task_key: adhoc_build_logs
+          notebook_task:
+            notebook_path: etl_pipelines/dabs_testing/tables/adhoc_build_logs
+            source: GIT
+        - task_key: dabs_testing_bronze
+          notebook_task:
+            notebook_path: etl_pipelines/dabs_testing/tables/dabs_testing_bronze
+            source: GIT
+        - task_key: dabs_testing_silver
+          notebook_task:
+            notebook_path: etl_pipelines/dabs_testing/tables/dabs_testing_silver
+            source: GIT
+      git_source:
+        git_url: https://basesrc@dev.azure.com/basesrc/BASE/_git/Databricks
+        git_provider: azureDevOpsServices
+        git_branch: develop
+      tags:
+        Project: dabs_testing
+        Purpose: DDL
+      queue:
+        enabled: true
+      parameters:
+        - name: ENVIRONMENT
+          default: development
