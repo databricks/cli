@@ -151,7 +151,7 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 
 	diags := hasIncompatibleWheelTasks(context.Background(), b)
 	require.NotEmpty(t, diags)
-	require.ErrorContains(t, diags.Error(), "uses incompatible DBR version 12.2.x-scala2.12")
+	require.ErrorContains(t, diags.Error(), "uses cluster with incompatible DBR version 12.2.x-scala2.12")
 }
 
 func TestNoIncompatibleWheelTasks(t *testing.T) {

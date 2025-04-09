@@ -53,7 +53,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			if lowerThanExpectedVersion(task.NewCluster.SparkVersion) {
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("task %s uses incompatible DBR version %s", task.TaskKey, task.NewCluster.SparkVersion),
+					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", task.TaskKey, task.NewCluster.SparkVersion),
 				})
 			}
 		}
@@ -110,7 +110,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			if lowerThanExpectedVersion(version) {
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("existing cluster %s uses incompatible DBR version %s", task.ExistingClusterId, version),
+					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", task.TaskKey, version),
 				})
 			}
 		}
