@@ -1,0 +1,37 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading other_dab/dist/lib/other_test_code-0.0.1-py3-none-any.whl...
+Uploading other_dab/dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Expecting to find no wheels in current directory
+>>> find.py --expect 0 whl
+
+=== Expecting 2 wheels in libraries section in /jobs/create
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+[
+  {
+    "existing_cluster_id": "0717-132531-5opeqon1",
+    "libraries": [
+      {
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+      },
+      {
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
+      }
+    ],
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "my_test_code"
+    },
+    "task_key": "TestTask"
+  }
+]
+
+=== Expecting 2 wheels to be uploaded
+>>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
