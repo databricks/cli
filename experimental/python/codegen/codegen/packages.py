@@ -5,7 +5,9 @@ RESOURCE_NAMESPACE_OVERRIDE = {
     "resources.Job": "jobs",
     "resources.Pipeline": "pipelines",
     "resources.JobPermission": "jobs",
+    "resources.JobPermissionLevel": "jobs",
     "resources.PipelinePermission": "pipelines",
+    "resources.PipelinePermissionLevel": "pipelines",
 }
 
 # All supported resource types
