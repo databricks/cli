@@ -59,7 +59,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		}
 
 		if artifact.Path == "" {
-			artifact.Path = "."
+			artifact.Path = b.BundleRootPath
 		}
 
 		if !filepath.IsAbs(artifact.Path) {
