@@ -1,3 +1,7 @@
+uv venv -q .venv
+venv_activate
+uv pip install -q setuptools
+
 trace $CLI bundle deploy -t one
 
 trace $CLI bundle deploy -t two
