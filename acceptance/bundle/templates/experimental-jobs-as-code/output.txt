@@ -79,6 +79,29 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         }
       }
     }
+  },
+  "pipelines": {
+    "my_jobs_as_code_pipeline": {
+      "catalog": "catalog_name",
+      "configuration": {
+        "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src"
+      },
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/state/metadata.json"
+      },
+      "development": true,
+      "libraries": [
+        {
+          "notebook": {
+            "path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/dlt_pipeline"
+          }
+        }
+      ],
+      "name": "[dev [USERNAME]] my_jobs_as_code_pipeline",
+      "permissions": [],
+      "target": "my_jobs_as_code_dev"
+    }
   }
 }
 
