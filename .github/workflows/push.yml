@@ -185,7 +185,9 @@ jobs:
       - name: Verify that python/codegen is up to date
         working-directory: experimental/python
         run: |
-          if ! ( make codegen && git diff --exit-code ); then
+          make codegen
+
+          if ! ( git diff --exit-code ); then
             echo "Generated Python code is not up-to-date. Please run 'pushd experimental/python && make codegen' and commit the changes."
 
             # TODO block PR if this fails once diffs are fixed
