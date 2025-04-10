@@ -9,7 +9,7 @@ from codegen.generated_dataclass import (
     str_type,
     variable_or_type,
 )
-from codegen.openapi import Property, Schema, SchemaType
+from codegen.jsonschema import Property, Schema, SchemaType
 
 
 def test_generate_type_string():

@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from codegen.openapi import Schema
+from codegen.jsonschema import Schema
 
 REMOVED_FIELDS = {
     "jobs.RunJobTask": {

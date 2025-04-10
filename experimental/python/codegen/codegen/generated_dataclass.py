@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 import codegen.packages as packages
 from codegen.code_builder import CodeBuilder
-from codegen.openapi import Property, Schema
+from codegen.jsonschema import Property, Schema
 from codegen.packages import is_resource
 
 

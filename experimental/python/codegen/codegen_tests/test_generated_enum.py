@@ -1,5 +1,5 @@
 from codegen.generated_enum import GeneratedEnum, generate_enum
-from codegen.openapi import Schema, SchemaType
+from codegen.jsonschema import Schema, SchemaType
 
 
 def test_generate_enum():

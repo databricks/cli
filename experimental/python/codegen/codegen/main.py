@@ -6,8 +6,8 @@ import codegen.generated_dataclass as generated_dataclass
 import codegen.generated_dataclass_patch as generated_dataclass_patch
 import codegen.generated_enum as generated_enum
 import codegen.generated_imports as generated_imports
-import codegen.openapi as openapi
-import codegen.openapi_patch as openapi_patch
+import codegen.jsonschema as openapi
+import codegen.jsonschema_patch as openapi_patch
 import codegen.packages as packages
 
 from codegen.code_builder import CodeBuilder

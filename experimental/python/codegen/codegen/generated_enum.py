@@ -5,7 +5,7 @@ from typing import Optional
 import codegen.packages as packages
 from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import _append_description
-from codegen.openapi import Schema
+from codegen.jsonschema import Schema
 
 
 @dataclass(kw_only=True)

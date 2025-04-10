@@ -1,4 +1,4 @@
-from codegen.openapi import (
+from codegen.jsonschema import (
     Property,
     Schema,
     SchemaType,
