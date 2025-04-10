@@ -153,16 +153,6 @@ func TestLoadOutput(t *testing.T) {
 	name, err := dyn.Get(value, "resources.jobs.my_job.name")
 	require.NoError(t, err)
 	require.Equal(t, []dyn.Location{location}, name.Locations())
-
-	// until we implement path normalization, we have to keep locations of values
-	// that change semantic depending on their location
-	//
-	// note: it's important to have absolute path including 'bundleRoot'
-	// because mutator pipeline already has expanded locations into absolute path
-	notebookPath, err := dyn.Get(value, "resources.jobs.my_job.tasks[0].notebook_task.notebook_path")
-	require.NoError(t, err)
-	require.Len(t, notebookPath.Locations(), 1)
-	require.Equal(t, filepath.Join(bundleRoot, generatedFileName), notebookPath.Locations()[0].File)
 }
 
 func TestParsePythonLocations_absolutePath(t *testing.T) {

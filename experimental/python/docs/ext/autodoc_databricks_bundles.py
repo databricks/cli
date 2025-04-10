@@ -13,6 +13,7 @@ from sphinx.application import Sphinx
 from sphinx.util.inspect import stringify_signature
 from sphinx.util.typing import ExtensionMetadata
 
+from databricks.bundles.core._resource_type import _ResourceType
 from databricks.bundles.core._transform import _unwrap_variable, _unwrap_optional
 
 
@@ -160,11 +161,9 @@ def process_signature(app, what, name, obj, options, signature, return_annotatio
         if name.startswith("databricks.bundles.core."):
             # return signature, return_annotation
             sig = simplify_sig(sig, unwrap_variable=False)
-        elif name.startswith("databricks.bundles.jobs.") and name.endswith(".as_dict"):
+        elif name.startswith("databricks.bundles.") and name.endswith(".as_dict"):
             sig = simplify_as_dict_sig(sig)
-        elif name.startswith("databricks.bundles.jobs.") and name.endswith(
-            ".from_dict"
-        ):
+        elif name.startswith("databricks.bundles.") and name.endswith(".from_dict"):
             sig = simplify_from_dict_sig(sig)
         # this is the only recursive type we have, resolution is
         elif name == "databricks.bundles.jobs.ForEachTask.create":
@@ -260,9 +259,13 @@ rewrite_aliases = {
     "databricks.bundles.core._variable._T": "databricks.bundles.core.T",
     "databricks.bundles.core._diagnostics._T": "databricks.bundles.core.T",
     "databricks.bundles.core._resource_mutator._T": "databricks.bundles.core.T",
-    # use dataclasses instead of typed dicts used in databricks.bundles.core
-    "JobParam": "databricks.bundles.jobs.Job",
 }
+
+# use dataclasses instead of typed dicts used in databricks.bundles.core
+for tpe in _ResourceType.all():
+    rewrite_aliases[tpe.resource_type.__name__ + "Param"] = (
+        tpe.resource_type.__module__ + "." + tpe.resource_type.__name__
+    )
 
 
 def resolve_internal_aliases(app, doctree):
@@ -294,7 +297,6 @@ def skip_member(app, what, name, obj, skip, options):
     # skip databricks.bundles.<resource>._module.FooDict classes
     # because we already document Foo dataclass that is equivalent.
     if what == "module" and name.endswith("Dict") and "._models." in obj.__module__:
-        print(what, name, obj, app)
         return True
 
     return skip
@@ -308,9 +310,11 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     disable_sphinx_overloads()
 
     # instead, select the first overload manually
-    databricks.bundles.core.job_mutator = typing.get_overloads(
-        databricks.bundles.core.job_mutator
-    )[0]
+    for tpe in _ResourceType.all():
+        mutator_fn = getattr(databricks.bundles.core, tpe.singular_name + "_mutator")
+        overloads = typing.get_overloads(mutator_fn)
+
+        setattr(databricks.bundles.core, tpe.singular_name + "_mutator", overloads[0])
 
     app.setup_extension("sphinx.ext.autodoc")
 

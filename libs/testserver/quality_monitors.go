@@ -28,7 +28,7 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 	}
 
 	if checkExists {
-		_, ok := s.monitors[tableName]
+		_, ok := s.Monitors[tableName]
 		if !ok {
 			return Response{
 				StatusCode: 404,
@@ -44,35 +44,8 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 		info.TableName = tableName
 	}
 
-	s.monitors[tableName] = info
+	s.Monitors[tableName] = info
 	return Response{
 		Body: info,
 	}
-}
-
-func (s *FakeWorkspace) QualityMonitorGet(req Request, tableName string) Response {
-	info, ok := s.monitors[tableName]
-
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	return Response{
-		Body: info,
-	}
-}
-
-func (s *FakeWorkspace) QualityMonitorDelete(req Request, tableName string) Response {
-	_, ok := s.monitors[tableName]
-
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	delete(s.monitors, tableName)
-	return Response{}
 }

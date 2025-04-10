@@ -61,7 +61,8 @@ experimental:
 resources:
   jobs:
     job0:
-      name: job_0`)
+      name: job_0
+workspace: { current_user: { userName: test }}`)
 
 	// set rootPath so that we can make absolute paths in dyn.Location
 	b.BundleRootPath = rootPath
@@ -95,6 +96,11 @@ resources:
 					"pipeline0": {
 						name: "pipeline_0"
 					},
+				}
+			},
+			"workspace": {
+				"current_user": {
+					"userName": "test"
 				}
 			}
 		}`,

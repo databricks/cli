@@ -4,6 +4,9 @@ type BundleDeployEvent struct {
 	// UUID associated with the bundle itself. Set in the `bundle.uuid` field in the bundle configuration.
 	BundleUuid string `json:"bundle_uuid,omitempty"`
 
+	// UUID associated with the deployment.
+	DeploymentId string `json:"deployment_id,omitempty"`
+
 	ResourceCount                     int64 `json:"resource_count"`
 	ResourceJobCount                  int64 `json:"resource_job_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`
@@ -53,7 +56,8 @@ type BundleDeployExperimental struct {
 	// Examples: "bundle.terraform.exec_path", "bundle.git.branch" etc.
 	SetFields []BoolMapEntry `json:"set_fields,omitempty"`
 
-	// Values for boolean configuration fields like `experimental.python_wheel_wrapper`
+	// Values for boolean configuration fields like `experimental.python_wheel_wrapper` or just any
+	// boolean values that we want to track.
 	// We don't need to define protos to track boolean values and can simply write those
 	// values to this map to track them.
 	BoolValues []BoolMapEntry `json:"bool_values,omitempty"`
@@ -68,7 +72,7 @@ type BundleDeployExperimental struct {
 
 type BoolMapEntry struct {
 	Key   string `json:"key,omitempty"`
-	Value bool   `json:"value,omitempty"`
+	Value bool   `json:"value"`
 }
 
 type IntMapEntry struct {

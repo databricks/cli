@@ -1,0 +1,72 @@
+bundle:
+  name: bind-model-serving-endpoint-test-[UNIQUE_NAME]
+
+resources:
+  model_serving_endpoints:
+    endpoint1:
+      name: test-endpoint-[UUID]
+
+>>> [CLI] serving-endpoints create test-endpoint-[UUID]
+{
+  "name": "test-endpoint-[UUID]",
+  "permission_level": "CAN_MANAGE",
+  "route_optimized": false,
+  "state": {
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
+  }
+}
+
+>>> [CLI] serving-endpoints get test-endpoint-[UUID]
+{
+  "name": "test-endpoint-[UUID]",
+  "permission_level": "CAN_MANAGE",
+  "route_optimized": false,
+  "state": {
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
+  }
+}
+
+>>> [CLI] bundle deployment bind endpoint1 test-endpoint-[UUID]
+Updating deployment state...
+Successfully bound model_serving_endpoint with an id 'test-endpoint-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-model-serving-endpoint-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] serving-endpoints get test-endpoint-[UUID]
+{
+  "name": "test-endpoint-[UUID]",
+  "permission_level": "CAN_MANAGE",
+  "route_optimized": false,
+  "state": {
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
+  }
+}
+
+>>> [CLI] bundle deployment unbind endpoint1
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-model-serving-endpoint-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] serving-endpoints get test-endpoint-[UUID]
+{
+  "name": "test-endpoint-[UUID]",
+  "permission_level": "CAN_MANAGE",
+  "route_optimized": false,
+  "state": {
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
+  }
+}
+
+>>> [CLI] serving-endpoints delete test-endpoint-[UUID]

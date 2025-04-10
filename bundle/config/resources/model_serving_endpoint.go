@@ -10,6 +10,18 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
+type ModelServingEndpointPermissionLevel string
+
+// ModelServingEndpointPermission holds the permission level setting for a single principal.
+// Multiple of these can be defined on any serving endpoint.
+type ModelServingEndpointPermission struct {
+	Level ModelServingEndpointPermissionLevel `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
 type ModelServingEndpoint struct {
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
@@ -21,7 +33,7 @@ type ModelServingEndpoint struct {
 
 	// This is a resource agnostic implementation of permissions for ACLs.
 	// Implementation could be different based on the resource type.
-	Permissions []Permission `json:"permissions,omitempty"`
+	Permissions []ModelServingEndpointPermission `json:"permissions,omitempty"`
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
@@ -35,12 +47,12 @@ func (s ModelServingEndpoint) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.ServingEndpoints.Get(ctx, serving.GetServingEndpointRequest{
-		Name: id,
+		Name: name,
 	})
 	if err != nil {
-		log.Debugf(ctx, "serving endpoint %s does not exist", id)
+		log.Debugf(ctx, "serving endpoint %s does not exist", name)
 		return false, err
 	}
 	return true, nil

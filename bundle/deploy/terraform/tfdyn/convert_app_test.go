@@ -39,7 +39,7 @@ func TestConvertApp(t *testing.T) {
 				},
 			},
 		},
-		Permissions: []resources.Permission{
+		Permissions: []resources.AppPermission{
 			{
 				Level:    "CAN_RUN",
 				UserName: "jack@gmail.com",

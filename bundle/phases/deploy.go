@@ -335,7 +335,8 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
-			BundleUuid: bundleUuid,
+			BundleUuid:   bundleUuid,
+			DeploymentId: b.Metrics.DeploymentId.String(),
 
 			ResourceCount:                     resourcesCount,
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
@@ -361,6 +362,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 				ConfigurationFileCount:    b.Metrics.ConfigurationFileCount,
 				TargetCount:               b.Metrics.TargetCount,
 				WorkspaceArtifactPathType: artifactPathType,
+				BoolValues:                b.Metrics.BoolValues,
 			},
 		},
 	})

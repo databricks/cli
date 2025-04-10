@@ -4,9 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
+
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -28,7 +31,7 @@ func TestRunAsForAllowed(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	assert.NoError(t, diags.Error())
 
 	assert.Len(t, b.Config.Resources.Jobs, 3)
@@ -67,7 +70,7 @@ func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	assert.NoError(t, diags.Error())
 
 	assert.Len(t, b.Config.Resources.Jobs, 3)
@@ -107,7 +110,7 @@ func TestRunAsErrorForPipelines(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	err := diags.Error()
 
 	assert.ErrorContains(t, err, "pipelines do not support a setting a run_as user that is different from the owner.\n"+
@@ -130,7 +133,7 @@ func TestRunAsNoErrorForPipelines(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	assert.NoError(t, diags.Error())
 }
 
@@ -147,7 +150,7 @@ func TestRunAsErrorForModelServing(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	err := diags.Error()
 
 	assert.ErrorContains(t, err, "model_serving_endpoints do not support a setting a run_as user that is different from the owner.\n"+
@@ -170,7 +173,7 @@ func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	assert.NoError(t, diags.Error())
 }
 
@@ -187,7 +190,7 @@ func TestRunAsErrorWhenBothUserAndSpSpecified(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	err := diags.Error()
 
 	assert.ErrorContains(t, err, "run_as section cannot specify both user_name and service_principal_name")
@@ -231,7 +234,7 @@ func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
 				return nil
 			})
 
-			diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+			diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 			err := diags.Error()
 			assert.EqualError(t, err, tc.err)
 		})
@@ -251,7 +254,7 @@ func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	err := diags.Error()
 
 	assert.EqualError(t, err, "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified")
@@ -270,7 +273,7 @@ func TestLegacyRunAs(t *testing.T) {
 		return nil
 	})
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
 	assert.NoError(t, diags.Error())
 
 	assert.Len(t, b.Config.Resources.Jobs, 3)
@@ -294,11 +297,15 @@ func TestLegacyRunAs(t *testing.T) {
 	pipelines := b.Config.Resources.Pipelines
 	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
 
-	assert.Equal(t, "CAN_VIEW", pipelines["nyc_taxi_pipeline"].Permissions[0].Level)
-	assert.Equal(t, "my_user_name", pipelines["nyc_taxi_pipeline"].Permissions[0].UserName)
+	assert.Equal(t, resources.PipelinePermission{
+		Level:    "CAN_VIEW",
+		UserName: "my_user_name",
+	}, pipelines["nyc_taxi_pipeline"].Permissions[0])
 
-	assert.Equal(t, "IS_OWNER", pipelines["nyc_taxi_pipeline"].Permissions[1].Level)
-	assert.Equal(t, "my_service_principal", pipelines["nyc_taxi_pipeline"].Permissions[1].ServicePrincipalName)
+	assert.Equal(t, resources.PipelinePermission{
+		Level:                "IS_OWNER",
+		ServicePrincipalName: "my_service_principal",
+	}, pipelines["nyc_taxi_pipeline"].Permissions[1])
 
 	// Assert other resources are not affected.
 	assert.Equal(t, ml.Model{Name: "skynet"}, *b.Config.Resources.Models["model_one"].Model)
