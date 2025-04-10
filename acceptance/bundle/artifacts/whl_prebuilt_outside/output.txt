@@ -1,6 +1,21 @@
 
->>> [CLI] bundle deploy
-Error: path [TEST_TMP_DIR]/other_dab/dist/*.whl is not contained in sync root path
+>>> errcode [CLI] bundle deploy
+Uploading other_dab/dist/lib/other_test_code-0.0.1-py3-none-any.whl...
+Uploading other_dab/dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
+Error: cannot list files: stat other_dab/dist/*.whl: no such file or directory
+Error: stat other_dab/dist/*.whl: no such file or directory
 
 
 Exit code: 1
+
+=== Expecting to find no wheels in current directory
+>>> find.py --expect 0 whl
+
+=== Expecting 2 wheels in libraries section in /jobs/create
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+
+=== Expecting 2 wheels to be uploaded
+>>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"

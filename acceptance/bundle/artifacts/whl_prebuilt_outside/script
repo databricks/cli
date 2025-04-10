@@ -1,6 +1,6 @@
 cd this_dab
 
-trace $CLI bundle deploy 2>&1
+trace errcode $CLI bundle deploy 2>&1
 
 title "Expecting to find no wheels in current directory"
 trace find.py --expect 0 whl
