@@ -102,18 +102,6 @@ class GeneratedField:
 
 
 @dataclass
-class GeneratedOneOf:
-    """
-    GeneratedOneOf is a one-of constraint for GeneratedDataclass.
-
-    Example: in jobs.JobRunAs one of the user_name or service_principal_name must be specified.
-    """
-
-    fields: list[str]
-    required: bool
-
-
-@dataclass
 class GeneratedDataclass:
     """
     GeneratedDataclass represents a dataclass to be generated.
@@ -136,7 +124,6 @@ class GeneratedDataclass:
 
     fields: list[GeneratedField]
     extends: list[GeneratedType]
-    one_ofs: list[GeneratedOneOf]
 
 
 def generate_field(
@@ -321,7 +308,6 @@ def generate_dataclass(schema_name: str, schema: Schema) -> GeneratedDataclass:
         description=schema.description,
         fields=fields,
         extends=extends,
-        one_ofs=[],
     )
 
 
@@ -333,13 +319,10 @@ def _get_type_code(generated: GeneratedType, quote: bool = True) -> str:
 
         return f"{generated.name}[{parameters}]"
     else:
-        if generated.name[0].islower():
-            return generated.name
+        if quote:
+            return '"' + generated.name + '"'
         else:
-            if quote:
-                return '"' + generated.name + '"'
-            else:
-                return generated.name
+            return generated.name
 
 
 def _append_dataclass(b: CodeBuilder, generated: GeneratedDataclass):
@@ -388,46 +371,6 @@ def _append_field(b: CodeBuilder, field: GeneratedField):
         b.append(" = ")
         b.append(field.default)
 
-    b.newline()
-
-
-def _append_oneof_check(
-    b: CodeBuilder,
-    generated: GeneratedDataclass,
-    one_of: GeneratedOneOf,
-):
-    # Example:
-    #
-    # union_fields = [
-    #     self.foo,
-    #     self.bar,
-    # ]
-    #
-    # if sum(f is not None for f in union_fields) != 1:
-    #     raise ValueError("Only one of 'foo', 'bar' can be specified in Job")
-
-    condition = (
-        "if sum(f is not None for f in union_fields) != 1:"
-        if one_of.required
-        else "if sum(f is not None for f in union_fields) > 1:"
-    )
-    fields_str = "'" + "', '".join(one_of.fields) + "'"
-    error_message = (
-        f"{generated.class_name} must specify exactly one of {fields_str}"
-        if one_of.required
-        else f"Only one of {fields_str} can be specified in {generated.class_name}"
-    )
-
-    b.indent().indent().append("union_fields = [").newline()
-    for field in one_of.fields:
-        b.indent().indent().indent().append(f"self.{field},").newline()
-    b.indent().indent().append("]").newline()
-    b.newline()
-
-    b.indent().indent().append(condition).newline()
-    b.indent().indent().indent().append(
-        f'raise ValueError("{error_message}")'
-    ).newline()
     b.newline()
 
 
@@ -509,12 +452,6 @@ def get_code(generated: GeneratedDataclass) -> str:
         _append_description(b, field.description)
 
         b.newline()
-
-    if generated.one_ofs:
-        b.indent().append("def __post_init__(self):").newline()
-
-        for one_of in generated.one_ofs:
-            _append_oneof_check(b, generated, one_of)
 
     _append_from_dict(b, generated)
     _append_as_dict(b, generated)

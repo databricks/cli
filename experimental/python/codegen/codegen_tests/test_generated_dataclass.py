@@ -55,7 +55,6 @@ def test_generate_dataclass():
         package="databricks.bundles.jobs._models.task",
         description="task description",
         extends=[],
-        one_ofs=[],
         fields=[
             GeneratedField(
                 create_func_default=None,
