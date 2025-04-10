@@ -5,10 +5,7 @@ Jobs
 
 **Package:** ``databricks.bundles.jobs``
 
-.. comment TODO
-.. comment .. autodecorator:: job_mutator
-
 Classes
 ---------------
 
-.. include:: __generated__/databricks.bundles.jobs.rst
+.. automodule:: databricks.bundles.jobs
