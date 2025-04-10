@@ -5,6 +5,11 @@ Core
 
 **Package:** ``databricks.bundles.core``
 
+.. comment:
+    We don't use automodule to manually order the classes,
+    and ensure that every class is documented well before
+    adding it to the documentation.
+
 Classes
 -----------
 
