@@ -9,5 +9,6 @@
 ### CLI
 
 ### Bundles
+* Do not use app config section in test templates and generated app configuration ([#2599](https://github.com/databricks/cli/pull/2599))
 
 ### API Changes
