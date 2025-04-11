@@ -25,3 +25,5 @@ assemblyMergeStrategy := {
 fork := true
 javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
 
+// To ensure logs are written to System.out by default and not System.err
+javaOptions += "-Dorg.slf4j.simpleLogger.logFile=System.out"
