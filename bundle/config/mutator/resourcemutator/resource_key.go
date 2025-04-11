@@ -37,6 +37,16 @@ func (r ResourceKeySet) IsEmpty() bool {
 	return len(r) == 0
 }
 
+func (r ResourceKeySet) Size() int {
+	size := 0
+
+	for _, resources := range r {
+		size += len(resources)
+	}
+
+	return size
+}
+
 // AddPattern adds all resource keys that match the pattern.
 func (r ResourceKeySet) AddPattern(pattern dyn.Pattern, root dyn.Value) error {
 	if len(pattern) != 3 {

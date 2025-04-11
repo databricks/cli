@@ -258,6 +258,12 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return newRoot, nil
 	})
 
+	// don't instrument deprecated phases
+	if m.phase == PythonMutatorPhaseLoadResources || m.phase == PythonMutatorPhaseApplyMutators {
+		b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
+		b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
+	}
+
 	if err == mutateDiagsHasError {
 		if !mutateDiags.HasError() {
 			panic("mutateDiags has no error, but error is expected")

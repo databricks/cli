@@ -36,10 +36,12 @@ const internalFolder = ".internal"
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
-	ConfigurationFileCount int64
-	TargetCount            int64
-	DeploymentId           uuid.UUID
-	BoolValues             []protos.BoolMapEntry
+	ConfigurationFileCount      int64
+	TargetCount                 int64
+	DeploymentId                uuid.UUID
+	BoolValues                  []protos.BoolMapEntry
+	PythonAddedResourcesCount   int64
+	PythonUpdatedResourcesCount int64
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
