@@ -1,20 +1,15 @@
-package auth_test
+package auth
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/cmd"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/auth/cache"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go/httpclient"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
@@ -30,7 +25,7 @@ var refreshFailureTokenResponse = fixtures.HTTPFixture{
 
 var refreshFailureInvalidResponse = fixtures.HTTPFixture{
 	MatchAny: true,
-	Status:   401,
+	Status:   200,
 	Response: "Not json",
 }
 
@@ -53,15 +48,27 @@ var refreshSuccessTokenResponse = fixtures.HTTPFixture{
 	},
 }
 
-func validateToken(t *testing.T, resp string) {
-	res := map[string]string{}
-	err := json.Unmarshal([]byte(resp), &res)
-	assert.NoError(t, err)
-	assert.Equal(t, "new-access-token", res["access_token"])
-	assert.Equal(t, "Bearer", res["token_type"])
+type MockApiClient struct{}
+
+// GetAccountOAuthEndpoints implements u2m.OAuthEndpointSupplier.
+func (m *MockApiClient) GetAccountOAuthEndpoints(ctx context.Context, accountHost, accountId string) (*u2m.OAuthAuthorizationServer, error) {
+	return &u2m.OAuthAuthorizationServer{
+		TokenEndpoint:         accountHost + "/token",
+		AuthorizationEndpoint: accountHost + "/authorize",
+	}, nil
 }
 
-func getContextForTest(f fixtures.HTTPFixture) context.Context {
+// GetWorkspaceOAuthEndpoints implements u2m.OAuthEndpointSupplier.
+func (m *MockApiClient) GetWorkspaceOAuthEndpoints(ctx context.Context, workspaceHost string) (*u2m.OAuthAuthorizationServer, error) {
+	return &u2m.OAuthAuthorizationServer{
+		TokenEndpoint:         workspaceHost + "/token",
+		AuthorizationEndpoint: workspaceHost + "/authorize",
+	}, nil
+}
+
+var _ u2m.OAuthEndpointSupplier = (*MockApiClient)(nil)
+
+func TestToken_loadToken(t *testing.T) {
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
 			{
@@ -76,7 +83,7 @@ func getContextForTest(f fixtures.HTTPFixture) context.Context {
 			},
 		},
 	}
-	tokenCache := &cache.InMemoryTokenCache{
+	tokenCache := &inMemoryTokenCache{
 		Tokens: map[string]*oauth2.Token{
 			"https://accounts.cloud.databricks.com/oidc/accounts/expired": {
 				RefreshToken: "expired",
@@ -87,83 +94,130 @@ func getContextForTest(f fixtures.HTTPFixture) context.Context {
 			},
 		},
 	}
-	client := httpclient.NewApiClient(httpclient.ClientConfig{
-		Transport: fixtures.SliceTransport{f},
-	})
-	ctx := profile.WithProfiler(context.Background(), profiler)
-	ctx = cache.WithTokenCache(ctx, tokenCache)
-	ctx = auth.WithApiClientForOAuth(ctx, client)
-	return ctx
-}
+	validateToken := func(resp *oauth2.Token) {
+		assert.Equal(t, "new-access-token", resp.AccessToken)
+		assert.Equal(t, "Bearer", resp.TokenType)
+	}
 
-func getCobraCmdForTest(f fixtures.HTTPFixture) (*cobra.Command, *bytes.Buffer) {
-	ctx := getContextForTest(f)
-	c := cmd.New(ctx)
-	output := &bytes.Buffer{}
-	c.SetOut(output)
-	return c, output
-}
-
-func TestTokenCmdWithProfilePrintsHelpfulLoginMessageOnRefreshFailure(t *testing.T) {
-	cmd, output := getCobraCmdForTest(refreshFailureTokenResponse)
-	cmd.SetArgs([]string{"auth", "token", "--profile", "expired"})
-	err := root.Execute(cmd.Context(), cmd)
-
-	out := output.String()
-	assert.Empty(t, out)
-	assert.ErrorContains(t, err, "a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run ")
-	assert.ErrorContains(t, err, "auth login --profile expired")
-}
-
-func TestTokenCmdWithHostPrintsHelpfulLoginMessageOnRefreshFailure(t *testing.T) {
-	cmd, output := getCobraCmdForTest(refreshFailureTokenResponse)
-	cmd.SetArgs([]string{"auth", "token", "--host", "https://accounts.cloud.databricks.com", "--account-id", "expired"})
-	err := root.Execute(cmd.Context(), cmd)
-
-	out := output.String()
-	assert.Empty(t, out)
-	assert.ErrorContains(t, err, "a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run ")
-	assert.ErrorContains(t, err, "auth login --host https://accounts.cloud.databricks.com --account-id expired")
-}
-
-func TestTokenCmdInvalidResponse(t *testing.T) {
-	cmd, output := getCobraCmdForTest(refreshFailureInvalidResponse)
-	cmd.SetArgs([]string{"auth", "token", "--profile", "active"})
-	err := root.Execute(cmd.Context(), cmd)
-
-	out := output.String()
-	assert.Empty(t, out)
-	assert.ErrorContains(t, err, "unexpected parsing token response: invalid character 'N' looking for beginning of value. Try logging in again with ")
-	assert.ErrorContains(t, err, "auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new")
-}
-
-func TestTokenCmdOtherErrorResponse(t *testing.T) {
-	cmd, output := getCobraCmdForTest(refreshFailureOtherError)
-	cmd.SetArgs([]string{"auth", "token", "--profile", "active"})
-	err := root.Execute(cmd.Context(), cmd)
-
-	out := output.String()
-	assert.Empty(t, out)
-	assert.ErrorContains(t, err, "unexpected error refreshing token: Databricks is down. Try logging in again with ")
-	assert.ErrorContains(t, err, "auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new")
-}
-
-func TestTokenCmdWithProfileSuccess(t *testing.T) {
-	cmd, output := getCobraCmdForTest(refreshSuccessTokenResponse)
-	cmd.SetArgs([]string{"auth", "token", "--profile", "active"})
-	err := root.Execute(cmd.Context(), cmd)
-
-	out := output.String()
-	validateToken(t, out)
-	assert.NoError(t, err)
-}
-
-func TestTokenCmdWithHostSuccess(t *testing.T) {
-	cmd, output := getCobraCmdForTest(refreshSuccessTokenResponse)
-	cmd.SetArgs([]string{"auth", "token", "--host", "https://accounts.cloud.databricks.com", "--account-id", "expired"})
-	err := root.Execute(cmd.Context(), cmd)
-
-	out := output.String()
-	validateToken(t, out)
-	assert.NoError(t, err)
+	cases := []struct {
+		name          string
+		args          loadTokenArgs
+		validateToken func(*oauth2.Token)
+		wantErr       string
+	}{
+		{
+			name: "prints helpful login message on refresh failure when profile is specified",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "expired",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
+				},
+			},
+			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --profile expired`,
+		},
+		{
+			name: "prints helpful login message on refresh failure when host is specified",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host:      "https://accounts.cloud.databricks.com",
+					AccountID: "expired",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
+				},
+			},
+			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --host https://accounts.cloud.databricks.com --account-id expired`,
+		},
+		{
+			name: "prints helpful login message on invalid response",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "active",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureInvalidResponse}}),
+				},
+			},
+			wantErr: "token refresh: oauth2: cannot parse json: invalid character 'N' looking for beginning of value. Try logging in again with " +
+				"`databricks auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+		},
+		{
+			name: "prints helpful login message on other error response",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "active",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureOtherError}}),
+				},
+			},
+			wantErr: "token refresh: Databricks is down (error code: other_error). Try logging in again with " +
+				"`databricks auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+		},
+		{
+			name: "succeeds with profile",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "active",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "succeeds with host",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{Host: "https://accounts.cloud.databricks.com", AccountID: "active"},
+				profileName:   "",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := loadToken(context.Background(), c.args)
+			if c.wantErr != "" {
+				assert.Equal(t, c.wantErr, err.Error())
+			} else {
+				assert.NoError(t, err)
+				c.validateToken(got)
+			}
+		})
+	}
 }
