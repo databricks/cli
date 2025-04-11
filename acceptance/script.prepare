@@ -60,6 +60,17 @@ withdir() {
     return $exit_code
 }
 
+cli_subdir() {
+    local orig_dir="$(pwd)"
+    mkdir -p subdir1
+    cd subdir1 || return $?
+    $CLI_BINARY "$@"
+    local exit_code=$?
+    cd "$orig_dir" || return $?
+    return $exit_code
+}
+
+
 uuid() {
     python3 -c 'import uuid; print(uuid.uuid4())'
 }

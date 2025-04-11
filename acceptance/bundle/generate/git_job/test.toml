@@ -1,3 +1,6 @@
+[EnvMatrix]
+CLI = ["$CLI_BINARY"]
+
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
 Response.Body = '''
