@@ -337,7 +337,6 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 	_, processErr := process.Background(
 		ctx,
 		args,
-		process.WithDir(opts.bundleRootPath),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
 	)
