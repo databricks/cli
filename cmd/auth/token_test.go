@@ -83,7 +83,7 @@ func TestToken_loadToken(t *testing.T) {
 			},
 		},
 	}
-	tokenCache := &InMemoryTokenCache{
+	tokenCache := &inMemoryTokenCache{
 		Tokens: map[string]*oauth2.Token{
 			"https://accounts.cloud.databricks.com/oidc/accounts/expired": {
 				RefreshToken: "expired",

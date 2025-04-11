@@ -5,12 +5,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type InMemoryTokenCache struct {
+type inMemoryTokenCache struct {
 	Tokens map[string]*oauth2.Token
 }
 
 // Lookup implements TokenCache.
-func (i *InMemoryTokenCache) Lookup(key string) (*oauth2.Token, error) {
+func (i *inMemoryTokenCache) Lookup(key string) (*oauth2.Token, error) {
 	token, ok := i.Tokens[key]
 	if !ok {
 		return nil, cache.ErrNotConfigured
@@ -19,9 +19,9 @@ func (i *InMemoryTokenCache) Lookup(key string) (*oauth2.Token, error) {
 }
 
 // Store implements TokenCache.
-func (i *InMemoryTokenCache) Store(key string, t *oauth2.Token) error {
+func (i *inMemoryTokenCache) Store(key string, t *oauth2.Token) error {
 	i.Tokens[key] = t
 	return nil
 }
 
-var _ cache.TokenCache = (*InMemoryTokenCache)(nil)
+var _ cache.TokenCache = (*inMemoryTokenCache)(nil)
