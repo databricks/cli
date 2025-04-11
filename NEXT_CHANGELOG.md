@@ -9,5 +9,6 @@
 ### CLI
 
 ### Bundles
+* Do not exit early when checking incompatible tasks for specified DBR ([#2692](https://github.com/databricks/cli/pull/2692))
 
 ### API Changes
