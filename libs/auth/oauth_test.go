@@ -56,6 +56,7 @@ func TestOidcForWorkspace(t *testing.T) {
 type tokenCacheMock struct {
 	store  func(key string, t *oauth2.Token) error
 	lookup func(key string) (*oauth2.Token, error)
+	delete func(key string) error
 }
 
 func (m *tokenCacheMock) Store(key string, t *oauth2.Token) error {
@@ -70,6 +71,13 @@ func (m *tokenCacheMock) Lookup(key string) (*oauth2.Token, error) {
 		panic("no lookup mock")
 	}
 	return m.lookup(key)
+}
+
+func (m *tokenCacheMock) Delete(key string) error {
+	if m.delete == nil {
+		panic("no deleteKey mock")
+	}
+	return m.delete(key)
 }
 
 func TestLoad(t *testing.T) {
@@ -230,6 +238,52 @@ func TestChallengeFailed(t *testing.T) {
 		err = <-errc
 		assert.EqualError(t, err, "authorize: access_denied: Policy evaluation failed for this request")
 	})
+}
+
+func TestClearToken(t *testing.T) {
+	p := &PersistentAuth{
+		Host:      "abc",
+		AccountID: "xyz",
+		cache: &tokenCacheMock{
+			lookup: func(key string) (*oauth2.Token, error) {
+				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
+				return &oauth2.Token{}, ErrNotConfigured
+			},
+			delete: func(key string) error {
+				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
+				return nil
+			},
+		},
+	}
+	defer p.Close()
+	err := p.ClearToken(context.Background())
+	assert.NoError(t, err)
+	key := p.key()
+	_, err = p.cache.Lookup(key)
+	assert.Equal(t, ErrNotConfigured, err)
+}
+
+func TestClearTokenNotExist(t *testing.T) {
+	p := &PersistentAuth{
+		Host:      "abc",
+		AccountID: "xyz",
+		cache: &tokenCacheMock{
+			lookup: func(key string) (*oauth2.Token, error) {
+				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
+				return &oauth2.Token{}, ErrNotConfigured
+			},
+			delete: func(key string) error {
+				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
+				return ErrNotConfigured
+			},
+		},
+	}
+	defer p.Close()
+	err := p.ClearToken(context.Background())
+	assert.Equal(t, ErrNotConfigured, err)
+	key := p.key()
+	_, err = p.cache.Lookup(key)
+	assert.Equal(t, ErrNotConfigured, err)
 }
 
 func TestPersistentAuthCleanHost(t *testing.T) {

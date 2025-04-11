@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -102,4 +103,65 @@ func TestStoreOnDev(t *testing.T) {
 	// Linux: permission denied
 	// macOS: read-only file system
 	assert.Error(t, err)
+}
+
+func TestStoreAndDeleteKey(t *testing.T) {
+	setup(t)
+	c := &FileTokenCache{}
+	err := c.Store("x", &oauth2.Token{
+		AccessToken: "abc",
+	})
+	require.NoError(t, err)
+
+	err = c.Store("y", &oauth2.Token{
+		AccessToken: "bcd",
+	})
+	require.NoError(t, err)
+
+	l := &FileTokenCache{}
+	err = l.Delete("x")
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(l.Tokens))
+
+	_, err = l.Lookup("x")
+	assert.Equal(t, ErrNotConfigured, err)
+
+	tok, err := l.Lookup("y")
+	require.NoError(t, err)
+	assert.Equal(t, "bcd", tok.AccessToken)
+}
+
+func TestDeleteKeyNotExist(t *testing.T) {
+	c := &FileTokenCache{
+		Tokens: map[string]*oauth2.Token{},
+	}
+	err := c.Delete("x")
+	assert.Equal(t, ErrNotConfigured, err)
+
+	_, err = c.Lookup("x")
+	assert.Equal(t, ErrNotConfigured, err)
+}
+
+func TestWrite(t *testing.T) {
+	tempFile := filepath.Join(t.TempDir(), "token-cache.json")
+
+	tokenMap := map[string]*oauth2.Token{}
+	token := &oauth2.Token{
+		AccessToken: "some-access-token",
+	}
+	tokenMap["test"] = token
+
+	cache := &FileTokenCache{
+		fileLocation: tempFile,
+		Tokens:       tokenMap,
+	}
+
+	err := cache.write()
+	assert.NoError(t, err)
+
+	content, err := os.ReadFile(tempFile)
+	require.NoError(t, err)
+
+	expected, _ := json.MarshalIndent(&cache, "", "  ")
+	assert.Equal(t, content, expected)
 }
