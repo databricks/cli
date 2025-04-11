@@ -3,7 +3,6 @@ package phases
 import (
 	"context"
 	"errors"
-	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -327,8 +326,7 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		// If the resolved value of the variable is a complex type, we count it as a complex variable.
 		// We can't rely on the "type: complex" annotation because the annotation is optional in some contexts
 		// like bundle YAML files.
-		kind := reflect.ValueOf(v.Value).Kind()
-		if kind == reflect.Struct || kind == reflect.Array || kind == reflect.Slice || kind == reflect.Map {
+		if v.IsComplexValued() {
 			complexVariableCount++
 		}
 
