@@ -36,7 +36,7 @@ func TestConvertModelServingEndpoint(t *testing.T) {
 				},
 			},
 		},
-		Permissions: []resources.Permission{
+		Permissions: []resources.ModelServingEndpointPermission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",

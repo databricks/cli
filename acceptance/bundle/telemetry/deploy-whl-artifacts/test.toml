@@ -1,0 +1,8 @@
+Ignore = [
+    '.venv',
+    'dist',
+    'build',
+    '*egg-info',
+    '.databricks',
+    "__pycache__",
+]

@@ -37,8 +37,17 @@ func NormalizePaths() bundle.Mutator {
 }
 
 func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Do not normalize job task paths if using git source
+	gitSourcePaths := collectGitSourcePaths(b)
+
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return paths.VisitPaths(v, func(path dyn.Path, kind paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
+			for _, gitSourcePrefix := range gitSourcePaths {
+				if path.HasPrefix(gitSourcePrefix) {
+					return v, nil
+				}
+			}
+
 			value, ok := v.AsString()
 			if !ok {
 				return dyn.InvalidValue, fmt.Errorf("value at %s is not a string", path.String())
@@ -57,6 +66,18 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 
 	return diag.FromErr(err)
+}
+
+func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
+	var jobs []dyn.Path
+
+	for name, job := range b.Config.Resources.Jobs {
+		if job.GitSource != nil {
+			jobs = append(jobs, dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key(name)))
+		}
+	}
+
+	return jobs
 }
 
 func normalizePath(path string, location dyn.Location, bundleRootPath string) (string, error) {

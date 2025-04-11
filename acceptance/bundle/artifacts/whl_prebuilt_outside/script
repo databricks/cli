@@ -1,0 +1,16 @@
+cd this_dab
+
+trace errcode $CLI bundle deploy 2>&1
+
+title "Expecting to find no wheels in current directory"
+trace find.py --expect 0 whl
+
+cd ..
+
+title "Expecting 2 wheels in libraries section in /jobs/create"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
+
+title "Expecting 2 wheels to be uploaded"
+trace jq .path < out.requests.txt | grep import | grep whl | sort
+
+rm out.requests.txt

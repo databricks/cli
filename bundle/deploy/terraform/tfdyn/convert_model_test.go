@@ -29,7 +29,7 @@ func TestConvertModel(t *testing.T) {
 				},
 			},
 		},
-		Permissions: []resources.Permission{
+		Permissions: []resources.MlflowModelPermission{
 			{
 				Level:    "CAN_READ",
 				UserName: "jane@doe.com",

@@ -27,17 +27,6 @@ class JobRunAs:
     The email of an active workspace user. Non-admin users can only set this field to their own email.
     """
 
-    def __post_init__(self):
-        union_fields = [
-            self.user_name,
-            self.service_principal_name,
-        ]
-
-        if sum(f is not None for f in union_fields) != 1:
-            raise ValueError(
-                "JobRunAs must specify exactly one of 'user_name', 'service_principal_name'"
-            )
-
     @classmethod
     def from_dict(cls, value: "JobRunAsDict") -> "Self":
         return _transform(cls, value)
