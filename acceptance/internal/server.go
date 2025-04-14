@@ -4,258 +4,183 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+	"testing"
+	"time"
+	"unicode/utf8"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-
-	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var TestUser = iam.User{
-	Id:       "1000012345",
-	UserName: "tester@databricks.com",
+func StartDefaultServer(t *testing.T) {
+	s := testserver.New(t)
+	addDefaultHandlers(s)
+
+	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
+
+	// Do not read user's ~/.databrickscfg
+	homeDir := t.TempDir()
+	t.Setenv(env.HomeEnvVar(), homeDir)
 }
 
-var TestMetastore = catalog.MetastoreAssignment{
-	DefaultCatalogName: "hive_metastore",
-	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
-	WorkspaceId:        470123456789500,
+func isTruePtr(value *bool) bool {
+	return value != nil && *value
 }
 
-func AddHandlers(server *testserver.Server) {
-	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req testserver.Request) any {
-		return compute.ListPoliciesResponse{
-			Policies: []compute.Policy{
-				{
-					PolicyId: "5678",
-					Name:     "wrong-cluster-policy",
-				},
-				{
-					PolicyId: "9876",
-					Name:     "some-test-cluster-policy",
-				},
-			},
+func ResolveServer(t *testing.T, config TestConfig, logRequests bool, outputDir string) *databricks.WorkspaceClient {
+	cloudEnv := os.Getenv("CLOUD_ENV")
+
+	// If we are running on a cloud environment, use the host configured in the
+	// environment.
+	if cloudEnv != "" {
+		w, err := databricks.NewWorkspaceClient(&databricks.Config{})
+		require.NoError(t, err)
+
+		return w
+	}
+
+	recordRequests := isTruePtr(config.RecordRequests)
+
+	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+	token := fmt.Sprintf("dbapi%s", tokenSuffix)
+
+	// If we are not recording requests, and no custom server server stubs are configured,
+	// use the default shared server.
+	if len(config.Server) == 0 && !recordRequests {
+		w, err := databricks.NewWorkspaceClient(&databricks.Config{
+			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
+			Token: token,
+		})
+		require.NoError(t, err)
+
+		return w
+	}
+
+	// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
+	// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
+	slices.Reverse(config.Server)
+	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  host,
+		Token: token,
+	})
+	require.NoError(t, err)
+	return w
+}
+
+func startDedicatedServer(t *testing.T,
+	stubs []ServerStub,
+	recordRequests bool,
+	logRequests bool,
+	includedHeaders []string,
+	outputDir string,
+) string {
+	s := testserver.New(t)
+
+	if recordRequests {
+		requestsPath := filepath.Join(outputDir, "out.requests.txt")
+		s.RequestCallback = func(request *testserver.Request) {
+			req := getLoggedRequest(request, includedHeaders)
+			reqJson, err := json.MarshalIndent(req, "", "  ")
+			assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
+
+			f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+			assert.NoError(t, err)
+			defer f.Close()
+
+			_, err = f.WriteString(string(reqJson) + "\n")
+			assert.NoError(t, err)
 		}
-	})
+	}
 
-	server.Handle("GET", "/api/2.0/instance-pools/list", func(req testserver.Request) any {
-		return compute.ListInstancePools{
-			InstancePools: []compute.InstancePoolAndStats{
-				{
-					InstancePoolName: "some-test-instance-pool",
-					InstancePoolId:   "1234",
-				},
-			},
+	if logRequests {
+		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
+			t.Logf("%d %s %s\n%s\n%s",
+				response.StatusCode, request.Method, request.URL,
+				formatHeadersAndBody("> ", request.Headers, request.Body),
+				formatHeadersAndBody("# ", response.Headers, response.Body),
+			)
 		}
-	})
+	}
 
-	server.Handle("GET", "/api/2.1/clusters/list", func(req testserver.Request) any {
-		return compute.ListClustersResponse{
-			Clusters: []compute.ClusterDetails{
-				{
-					ClusterName: "some-test-cluster",
-					ClusterId:   "4321",
-				},
-				{
-					ClusterName: "some-other-cluster",
-					ClusterId:   "9876",
-				},
-			},
+	for _, stub := range stubs {
+		require.NotEmpty(t, stub.Pattern)
+		items := strings.Split(stub.Pattern, " ")
+		require.Len(t, items, 2)
+		s.Handle(items[0], items[1], func(req testserver.Request) any {
+			time.Sleep(stub.Delay)
+			return stub.Response
+		})
+	}
+
+	// The earliest handlers take precedence, add default handlers last
+	addDefaultHandlers(s)
+
+	return s.URL
+}
+
+type LoggedRequest struct {
+	Headers http.Header `json:"headers,omitempty"`
+	Method  string      `json:"method"`
+	Path    string      `json:"path"`
+	Body    any         `json:"body,omitempty"`
+	RawBody string      `json:"raw_body,omitempty"`
+}
+
+func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedRequest {
+	result := LoggedRequest{
+		Method:  req.Method,
+		Path:    req.URL.Path,
+		Headers: filterHeaders(req.Headers, includedHeaders),
+	}
+
+	if json.Valid(req.Body) {
+		result.Body = json.RawMessage(req.Body)
+	} else {
+		result.RawBody = string(req.Body)
+	}
+
+	return result
+}
+
+func filterHeaders(h http.Header, includedHeaders []string) http.Header {
+	headers := make(http.Header)
+	for k, v := range h {
+		if !slices.Contains(includedHeaders, k) {
+			continue
 		}
-	})
+		headers[k] = v
+	}
+	return headers
+}
 
-	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
-		return testserver.Response{
-			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
-			Body:    TestUser,
+func formatHeadersAndBody(prefix string, headers http.Header, body []byte) string {
+	var result []string
+	for key, values := range headers {
+		if len(values) == 1 {
+			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values[0]))
+		} else {
+			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values))
 		}
-	})
-
-	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
-		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceGetStatus(path)
-	})
-
-	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req testserver.Request) any {
-		var request workspace.Mkdirs
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return testserver.Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: http.StatusInternalServerError,
-			}
+	}
+	if len(body) > 0 {
+		var s string
+		if utf8.Valid(body) {
+			s = string(body)
+		} else {
+			s = fmt.Sprintf("[Binary %d bytes]", len(body))
 		}
-
-		req.Workspace.WorkspaceMkdirs(request)
-		return ""
-	})
-
-	server.Handle("GET", "/api/2.0/workspace/export", func(req testserver.Request) any {
-		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceExport(path)
-	})
-
-	server.Handle("POST", "/api/2.0/workspace/delete", func(req testserver.Request) any {
-		path := req.URL.Query().Get("path")
-		recursive := req.URL.Query().Get("recursive") == "true"
-		req.Workspace.WorkspaceDelete(path, recursive)
-		return ""
-	})
-
-	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path:.*}", func(req testserver.Request) any {
-		path := req.Vars["path"]
-		req.Workspace.WorkspaceFilesImportFile(path, req.Body)
-		return ""
-	})
-
-	server.Handle("GET", "/api/2.0/workspace-files/{path:.*}", func(req testserver.Request) any {
-		path := req.Vars["path"]
-		return req.Workspace.WorkspaceFilesExportFile(path)
-	})
-
-	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
-		return TestMetastore
-	})
-
-	server.Handle("GET", "/api/2.0/permissions/directories/{objectId}", func(req testserver.Request) any {
-		objectId := req.Vars["objectId"]
-		return workspace.WorkspaceObjectPermissions{
-			ObjectId:   objectId,
-			ObjectType: "DIRECTORY",
-			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-				{
-					UserName: "tester@databricks.com",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
-						{
-							PermissionLevel: "CAN_MANAGE",
-						},
-					},
-				},
-			},
-		}
-	})
-
-	server.Handle("POST", "/api/2.2/jobs/create", func(req testserver.Request) any {
-		var request jobs.CreateJob
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return testserver.Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsCreate(request)
-	})
-
-	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
-		var request pipelines.PipelineSpec
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return testserver.Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 400,
-			}
-		}
-
-		return req.Workspace.PipelinesCreate(request)
-	})
-
-	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
-	})
-
-	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
-		pipelineId := req.Vars["pipeline_id"]
-		return req.Workspace.PipelinesGet(pipelineId)
-	})
-
-	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
-		return req.Workspace.JobsList()
-	})
-
-	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
-		return req.Workspace.JobsList()
-	})
-
-	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ testserver.Request) any {
-		return map[string]string{
-			"authorization_endpoint": server.URL + "oidc/v1/authorize",
-			"token_endpoint":         server.URL + "/oidc/v1/token",
-		}
-	})
-
-	server.Handle("POST", "/oidc/v1/token", func(_ testserver.Request) any {
-		return map[string]string{
-			"access_token": "oauth-token",
-			"expires_in":   "3600",
-			"scope":        "all-apis",
-			"token_type":   "Bearer",
-		}
-	})
-
-	server.Handle("POST", "/telemetry-ext", func(_ testserver.Request) any {
-		return telemetry.ResponseBody{
-			Errors:          []telemetry.LogError{},
-			NumProtoSuccess: 1,
-		}
-	})
-
-	// Quality monitors:
-
-	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
-		return testserver.MapGet(req.Workspace.Monitors, req.Vars["table_name"])
-	})
-
-	server.Handle("POST", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
-		return req.Workspace.QualityMonitorUpsert(req, req.Vars["table_name"], false)
-	})
-
-	server.Handle("PUT", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
-		return req.Workspace.QualityMonitorUpsert(req, req.Vars["table_name"], true)
-	})
-
-	server.Handle("DELETE", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
-		return testserver.MapDelete(req.Workspace.Monitors, req.Vars["table_name"])
-	})
-
-	// Apps:
-
-	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-		return testserver.MapGet(req.Workspace.Apps, req.Vars["name"])
-	})
-
-	server.Handle("POST", "/api/2.0/apps", func(req testserver.Request) any {
-		return req.Workspace.AppsUpsert(req, "")
-	})
-
-	server.Handle("PATCH", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-		return req.Workspace.AppsUpsert(req, req.Vars["name"])
-	})
-
-	server.Handle("DELETE", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-		return testserver.MapDelete(req.Workspace.Apps, req.Vars["name"])
-	})
-
-	// Schemas:
-
-	server.Handle("GET", "/api/2.1/unity-catalog/schemas/{full_name}", func(req testserver.Request) any {
-		return testserver.MapGet(req.Workspace.Schemas, req.Vars["full_name"])
-	})
-
-	server.Handle("POST", "/api/2.1/unity-catalog/schemas", func(req testserver.Request) any {
-		return req.Workspace.SchemasCreate(req)
-	})
-
-	server.Handle("PATCH", "/api/2.1/unity-catalog/schemas/{full_name}", func(req testserver.Request) any {
-		return req.Workspace.SchemasUpdate(req, req.Vars["full_name"])
-	})
-
-	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req testserver.Request) any {
-		return testserver.MapDelete(req.Workspace.Schemas, req.Vars["full_name"])
-	})
+		s = strings.ReplaceAll(s, "\n", "\n"+prefix)
+		result = append(result, prefix+s)
+	}
+	return strings.Join(result, "\n")
 }
