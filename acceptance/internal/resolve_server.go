@@ -50,7 +50,7 @@ func ResolveServer(t *testing.T, config TestConfig, logRequests bool, outputDir 
 	recordRequests := isTruePtr(config.RecordRequests)
 
 	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-	token := fmt.Sprintf("dbapi%s", tokenSuffix)
+	token := "dbapi" + tokenSuffix
 
 	// If we are not recording requests, and no custom server server stubs are configured,
 	// use the default shared server.
