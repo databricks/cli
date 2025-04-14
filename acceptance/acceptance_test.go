@@ -2,7 +2,6 @@ package acceptance_test
 
 import (
 	"bufio"
-	"context"
 	"encoding/base32"
 	"encoding/json"
 	"errors"
@@ -26,8 +25,9 @@ import (
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -78,7 +78,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, InprocessMode, "selftest/record_cloud")
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -361,27 +361,21 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
-	workspaceClient := internal.ResolveServer(t, config, LogRequests, tmpDir)
-	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
-
-	// Configure resolved credentials in the environment.
-	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+workspaceClient.Config.Host)
-	if workspaceClient.Config.Token != "" {
-		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+workspaceClient.Config.Token)
-	}
-
-	var user iam.User
-	if isRunningOnCloud {
-		pUser, err := workspaceClient.CurrentUser.Me(context.Background())
-		require.NoError(t, err, "Failed to get current user")
-		user = *pUser
-	} else {
-		// For the purposes of replacements, use testUser for local runs.
-		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-		user = internal.TestUser
-	}
+	cfg, user := internal.ResolveServer(t, config, LogRequests, tmpDir)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	require.NoError(t, err)
+	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, w)
+
+	// Configure resolved credentials in the environment.
+	for _, v := range auth.ProcessEnv(cfg) {
+		cmd.Env = append(cmd.Env, v)
+	}
+	// cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+workspaceClient.Config.Host)
+	// if workspaceClient.Config.Token != "" {
+	// 	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+workspaceClient.Config.Token)
+	// }
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 

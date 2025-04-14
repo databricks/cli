@@ -1,0 +1,5 @@
+
+>>> [CLI] current-user me
+Error: inner token: Post "[ARM_TENANT_ID]/oauth2/token": Post "[ARM_TENANT_ID]/oauth2/token": unsupported protocol scheme ""
+
+Exit code: 1

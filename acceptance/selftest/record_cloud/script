@@ -1,0 +1,7 @@
+trace $CLI current-user me | jq .name
+
+# TODO CONTINUE(v3): I got it working for a short while but something went wrong again with the proxy.
+# Figure out out and make this test pass after the new approach where workspaceClient -> config.Config.
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/api/2.0/preview/scim/v2/Me")'
+
+rm out.requests.txt

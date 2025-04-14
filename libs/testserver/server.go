@@ -1,12 +1,15 @@
 package testserver
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -15,6 +18,9 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/stretchr/testify/require"
 )
 
 type Server struct {
@@ -22,6 +28,9 @@ type Server struct {
 	Router *mux.Router
 
 	t testutil.TestingT
+
+	workspaceUrl string
+	proxyClient  *client.DatabricksClient
 
 	fakeWorkspaces map[string]*FakeWorkspace
 	mu             *sync.Mutex
@@ -177,7 +186,7 @@ func getHeaders(value []byte) http.Header {
 	}
 }
 
-func New(t testutil.TestingT) *Server {
+func New(t testutil.TestingT, cloud bool) *Server {
 	router := mux.NewRouter()
 	server := httptest.NewServer(router)
 	t.Cleanup(server.Close)
@@ -190,8 +199,25 @@ func New(t testutil.TestingT) *Server {
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
 
-	// Set up the not found handler as fallback
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// If cloud is true, we proxy all requests to the configured Databricks workspace
+	// instead of using local server stubs.
+	var err error
+	if cloud {
+		s.workspaceUrl = os.Getenv("DATABRICKS_HOST")
+		s.proxyClient, err = client.New(&config.Config{})
+		require.NoError(t, err)
+	}
+
+	// Set up the not found handler as fallback. If a proxy URL is configured then this handler
+	// will proxy the request to the proxy URL.
+	s.Router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// For integration tests forwards all requests to the workspace instead of returning a 404.
+		if s.proxyClient != nil {
+			s.ProxyToCloud(w, r)
+			return
+		}
+
+		// Original Not Found Logic
 		pattern := r.Method + " " + r.URL.Path
 		bodyBytes, err := io.ReadAll(r.Body)
 		var body string
@@ -234,8 +260,60 @@ Response.Body = '<response body here>'
 
 type HandlerFunc func(req Request) any
 
+func (s *Server) ProxyToCloud(w http.ResponseWriter, r *http.Request) {
+	request := NewRequest(s.t, r, nil)
+	s.RequestCallback(&request)
+
+	headers := make(map[string]string)
+	for k, v := range r.Header {
+		// Authorization headers will be set by the SDK. No need to pass them along here.
+		if k == "Authorization" {
+			continue
+		}
+		if k == "Accept-Encoding" {
+			continue
+		}
+		headers[k] = v[0]
+	}
+
+	queryParams := make(map[string]any)
+	for k, v := range r.URL.Query() {
+		queryParams[k] = v[0]
+	}
+
+	// TODO: Since the response is always JSON, this should be specified in the header.
+	respB := map[string]any{}
+	err := s.proxyClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, r.Body, &respB)
+	require.NoError(s.t, err) // todo remove
+	if err != nil {
+		// API errors from the SDK are expected to be of the type apierr.APIError.
+		apiErr := apierr.APIError{}
+		if errors.As(err, &apiErr) {
+			w.WriteHeader(apiErr.StatusCode)
+			w.Write(respB["message"].([]byte))
+		} else {
+			// Something else went wrong.
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+		}
+	}
+
+	// Successful response
+	w.WriteHeader(200)
+	b, err := json.Marshal(respB)
+	require.NoError(s.t, err)
+	w.Write(b)
+}
+
 func (s *Server) Handle(method, path string, handler HandlerFunc) {
 	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		// Overriding the proxy URL is not supported. We can add a configuration option
+		// to disable the proxy and use the test.toml stub if and when such a use case arises.
+		if s.proxyClient != nil {
+			s.ProxyToCloud(w, r)
+			return
+		}
+
 		// For simplicity we process requests sequentially. It's fast enough because
 		// we don't do any IO except reading and writing request/response bodies.
 		s.mu.Lock()
