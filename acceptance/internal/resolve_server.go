@@ -81,7 +81,7 @@ func startDedicatedServer(t *testing.T,
 	stubs []ServerStub,
 	recordRequests bool,
 	logRequests bool,
-	includedHeaders []string,
+	includeHeaders []string,
 	outputDir string,
 ) string {
 	s := testserver.New(t)
@@ -89,7 +89,7 @@ func startDedicatedServer(t *testing.T,
 	if recordRequests {
 		requestsPath := filepath.Join(outputDir, "out.requests.txt")
 		s.RequestCallback = func(request *testserver.Request) {
-			req := getLoggedRequest(request, includedHeaders)
+			req := getLoggedRequest(request, includeHeaders)
 			reqJson, err := json.MarshalIndent(req, "", "  ")
 			assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
 
