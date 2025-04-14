@@ -1,5 +1,7 @@
 
 >>> errcode [CLI] bundle validate
+Error: task test_task uses cluster with incompatible DBR version 7.3.x-scala2.12
+
 Error: Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.
 
 Name: trampoline_warning_message_with_old_spark
@@ -8,6 +10,6 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/trampoline_warning_message_with_old_spark/dev
 
-Found 1 error
+Found 2 errors
 
 Exit code: 1
