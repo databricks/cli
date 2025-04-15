@@ -93,7 +93,7 @@ func newSyncCommand() *cobra.Command {
 		log.Infof(ctx, "Remote file sync location: %v", opts.RemotePath)
 
 		if opts.DryRun {
-			log.Infof(ctx, "Running in dry-run mode. No changes will be made.")
+			log.Warnf(ctx, "Running in dry-run mode. No actual changes will be made.")
 		}
 
 		if f.watch {

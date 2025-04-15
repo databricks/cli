@@ -75,7 +75,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	client := cmdctx.WorkspaceClient(ctx)
 
 	if f.dryRun {
-		log.Warnf(ctx, "Running in DRY-RUN mode. No actual changes will be made.")
+		log.Warnf(ctx, "Running in dry-run mode. No actual changes will be made.")
 	}
 
 	localRoot := vfs.MustNew(args[0])
