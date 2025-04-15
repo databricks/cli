@@ -48,7 +48,7 @@ func TestEventStart(t *testing.T) {
 			put:      []string{"put"},
 			delete:   []string{"delete"},
 			dryRun:   true,
-			expected: "[DRY-RUN MODE] Action: PUT: put, DELETE: delete",
+			expected: "Action: PUT: put, DELETE: delete",
 		},
 		{
 			name:     "only put without dry run",
@@ -64,7 +64,7 @@ func TestEventStart(t *testing.T) {
 			put:      []string{"put"},
 			delete:   []string{},
 			dryRun:   true,
-			expected: "[DRY-RUN MODE] Action: PUT: put",
+			expected: "Action: PUT: put",
 		},
 		{
 			name:     "only delete without dry run",
@@ -80,7 +80,7 @@ func TestEventStart(t *testing.T) {
 			put:      []string{},
 			delete:   []string{"delete"},
 			dryRun:   true,
-			expected: "[DRY-RUN MODE] Action: DELETE: delete",
+			expected: "Action: DELETE: delete",
 		},
 		{
 			name:     "empty without dry run",
@@ -235,7 +235,7 @@ func TestEventProgress(t *testing.T) {
 			path:     "path",
 			progress: 1.0,
 			dryRun:   true,
-			expected: "[DRY-RUN] Would upload: path",
+			expected: "Uploaded path",
 		},
 		{
 			name:     "delete no progress without dry run",
@@ -271,7 +271,7 @@ func TestEventProgress(t *testing.T) {
 			path:     "path",
 			progress: 1.0,
 			dryRun:   true,
-			expected: "[DRY-RUN] Would delete: path",
+			expected: "Deleted path",
 		},
 	}
 
@@ -434,7 +434,7 @@ func TestEventComplete(t *testing.T) {
 			put:      []string{"put"},
 			delete:   []string{"delete"},
 			dryRun:   true,
-			expected: "[DRY-RUN] Initial Sync Complete",
+			expected: "Initial Sync Complete",
 		},
 		{
 			name:     "only put without dry run",
@@ -450,7 +450,7 @@ func TestEventComplete(t *testing.T) {
 			put:      []string{"put"},
 			delete:   []string{},
 			dryRun:   true,
-			expected: "[DRY-RUN] Complete",
+			expected: "Complete",
 		},
 		{
 			name:     "only delete without dry run",
@@ -466,7 +466,7 @@ func TestEventComplete(t *testing.T) {
 			put:      []string{},
 			delete:   []string{"delete"},
 			dryRun:   true,
-			expected: "[DRY-RUN] Complete",
+			expected: "Complete",
 		},
 		{
 			name:     "empty without dry run",

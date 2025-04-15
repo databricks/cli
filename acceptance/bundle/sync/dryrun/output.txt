@@ -1,36 +1,36 @@
 
 >>> [CLI] bundle sync --dry-run --output text
-[DRY-RUN] Initial Sync Complete
-[DRY-RUN] Would upload: .gitignore
-[DRY-RUN] Would upload: databricks.yml
-[DRY-RUN] Would upload: project-folder
-[DRY-RUN] Would upload: project-folder/app.py
-[DRY-RUN] Would upload: project-folder/app.yaml
-[DRY-RUN] Would upload: project-folder/query.sql
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded databricks.yml
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
+Uploaded project-folder/query.sql
 
 >>> [CLI] bundle sync --dry-run --exclude project-folder/app.* --output text
-[DRY-RUN] Initial Sync Complete
-[DRY-RUN] Would upload: .gitignore
-[DRY-RUN] Would upload: databricks.yml
-[DRY-RUN] Would upload: project-folder
-[DRY-RUN] Would upload: project-folder/query.sql
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded databricks.yml
+Uploaded project-folder
+Uploaded project-folder/query.sql
 
 >>> [CLI] bundle sync --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --output text
-[DRY-RUN] Initial Sync Complete
-[DRY-RUN] Would upload: .gitignore
-[DRY-RUN] Would upload: databricks.yml
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded databricks.yml
 
 >>> [CLI] bundle sync --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py --output text
-[DRY-RUN] Initial Sync Complete
-[DRY-RUN] Would upload: .gitignore
-[DRY-RUN] Would upload: databricks.yml
-[DRY-RUN] Would upload: ignored-folder
-[DRY-RUN] Would upload: ignored-folder/script.py
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded databricks.yml
+Uploaded ignored-folder
+Uploaded ignored-folder/script.py
 
 >>> [CLI] bundle sync --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py --output text
-[DRY-RUN] Initial Sync Complete
-[DRY-RUN] Would upload: .gitignore
-[DRY-RUN] Would upload: databricks.yml
-[DRY-RUN] Would upload: ignored-folder/folder1
-[DRY-RUN] Would upload: ignored-folder/folder1/script.py
-[DRY-RUN] Would upload: ignored-folder/script.py
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded databricks.yml
+Uploaded ignored-folder/folder1
+Uploaded ignored-folder/folder1/script.py
+Uploaded ignored-folder/script.py

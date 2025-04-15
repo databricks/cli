@@ -72,10 +72,6 @@ func (e *EventStart) String() string {
 		return ""
 	}
 
-	if e.DryRun {
-		return "[DRY-RUN MODE] Action: " + e.EventChanges.String()
-	}
-
 	return "Action: " + e.EventChanges.String()
 }
 
@@ -100,17 +96,6 @@ type EventSyncProgress struct {
 func (e *EventSyncProgress) String() string {
 	if e.Progress < 1.0 {
 		return ""
-	}
-
-	if e.DryRun {
-		switch e.Action {
-		case EventActionPut:
-			return "[DRY-RUN] Would upload: " + e.Path
-		case EventActionDelete:
-			return "[DRY-RUN] Would delete: " + e.Path
-		default:
-			panic("invalid action")
-		}
 	}
 
 	switch e.Action {
@@ -140,18 +125,11 @@ type EventSyncComplete struct {
 
 func (e *EventSyncComplete) String() string {
 	if e.Seq == 0 {
-		if e.DryRun {
-			return "[DRY-RUN] Initial Sync Complete"
-		}
 		return "Initial Sync Complete"
 	}
 
 	if e.IsEmpty() {
 		return ""
-	}
-
-	if e.DryRun {
-		return "[DRY-RUN] Complete"
 	}
 
 	return "Complete"
