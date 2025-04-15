@@ -10,6 +10,7 @@
 ### CLI
 
 ### Bundles
+* Do not use app config section in test templates and generated app configuration ([#2599](https://github.com/databricks/cli/pull/2599))
 * Do not exit early when checking incompatible tasks for specified DBR ([#2692](https://github.com/databricks/cli/pull/2692))
 * Removed include/exclude flags support from bundle sync command ([#2718](https://github.com/databricks/cli/pull/2718))
 * Do not clean up Python artifacts dist and build folder in "bundle validate", do it in "bundle deploy". This reverts the behaviour introduced in 0.245.0 ([#2722](https://github.com/databricks/cli/pull/2722))
