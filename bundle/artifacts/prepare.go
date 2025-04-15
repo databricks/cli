@@ -80,8 +80,6 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diags
 	}
 
-	cleanupPythonDistBuild(ctx, b)
-
 	return diags
 }
 
