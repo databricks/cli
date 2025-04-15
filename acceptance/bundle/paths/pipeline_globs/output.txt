@@ -48,7 +48,6 @@
             }
           }
         ],
-        "name": "nyc taxi loader",
         "permissions": []
       }
     }

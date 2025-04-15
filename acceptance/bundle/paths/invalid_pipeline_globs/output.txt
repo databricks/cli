@@ -13,7 +13,6 @@ Error: notebook non-existent/*.ipynb not found
             }
           }
         ],
-        "name": "nyc taxi loader",
         "permissions": []
       }
     }
