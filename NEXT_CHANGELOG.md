@@ -7,14 +7,9 @@
 ### Dependency updates
 
 ### CLI
-* Added include/exclude flags support to sync command ([#2650](https://github.com/databricks/cli/pull/2650))
 * Added dry-run flag support to sync command ([#2657](https://github.com/databricks/cli/pull/2657))
 
-
 ### Bundles
-* Added support for model serving endpoints in deployment bind/unbind commands ([#2634](https://github.com/databricks/cli/pull/2634))
-* Added include/exclude flags support to bundle sync command ([#2650](https://github.com/databricks/cli/pull/2650))
-* Added dry-run flag support to bundle sync command ([#2657](https://github.com/databricks/cli/pull/2657))
 * Do not exit early when checking incompatible tasks for specified DBR ([#2692](https://github.com/databricks/cli/pull/2692))
 * Removed include/exclude flags support from bundle sync command ([#2718](https://github.com/databricks/cli/pull/2718))
 
