@@ -260,6 +260,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	// don't instrument deprecated phases
 	if m.phase == PythonMutatorPhaseLoadResources || m.phase == PythonMutatorPhaseApplyMutators {
+		// we can precisely track resources that are added/updates, so sum doesn't double-count
 		b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
 		b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
 	}
