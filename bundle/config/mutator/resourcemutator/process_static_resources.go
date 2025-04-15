@@ -3,6 +3,7 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/diag"
