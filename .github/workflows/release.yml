@@ -161,9 +161,13 @@ jobs:
 
     needs: goreleaser
 
+
+    # IMPORTANT: 
+    # - 'id-token: write' is mandatory for OIDC and trusted publishing to PyPi
+    # - 'environment: release' is checked by PyPi to protect from unwanted publishing
     environment: release
     permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
+      id-token: write
 
     steps:
       - name: Checkout repository and submodules
