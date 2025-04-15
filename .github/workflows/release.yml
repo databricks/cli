@@ -164,7 +164,9 @@ jobs:
 
     # IMPORTANT: 
     # - 'id-token: write' is mandatory for OIDC and trusted publishing to PyPi
-    # - 'environment: release' is checked by PyPi to protect from unwanted publishing
+    # - 'environment: release' is a part of OIDC assertion done by PyPi
+    #
+    # See: https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/
     environment: release
     permissions:
       id-token: write
