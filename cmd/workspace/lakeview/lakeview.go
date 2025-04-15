@@ -295,6 +295,8 @@ func newDeleteSchedule() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().StringVar(&deleteScheduleReq.Etag, "etag", deleteScheduleReq.Etag, `The etag for the schedule.`)
+
 	cmd.Use = "delete-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Delete dashboard schedule.`
 	cmd.Long = `Delete dashboard schedule.
@@ -352,6 +354,8 @@ func newDeleteSubscription() *cobra.Command {
 	var deleteSubscriptionReq dashboards.DeleteSubscriptionRequest
 
 	// TODO: short flags
+
+	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription.`)
 
 	cmd.Use = "delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Delete schedule subscription.`
@@ -648,6 +652,7 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call.`)
 	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
 	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
 
@@ -700,6 +705,7 @@ func newListSchedules() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSchedulesReq.PageSize, "page-size", listSchedulesReq.PageSize, `The number of schedules to return per page.`)
+	cmd.Flags().StringVar(&listSchedulesReq.PageToken, "page-token", listSchedulesReq.PageToken, `A page token, received from a previous ListSchedules call.`)
 
 	cmd.Use = "list-schedules DASHBOARD_ID"
 	cmd.Short = `List dashboard schedules.`
@@ -755,6 +761,7 @@ func newListSubscriptions() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSubscriptionsReq.PageSize, "page-size", listSubscriptionsReq.PageSize, `The number of subscriptions to return per page.`)
+	cmd.Flags().StringVar(&listSubscriptionsReq.PageToken, "page-token", listSubscriptionsReq.PageToken, `A page token, received from a previous ListSubscriptions call.`)
 
 	cmd.Use = "list-subscriptions DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `List schedule subscriptions.`

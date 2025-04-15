@@ -12,6 +12,9 @@ import (
 	default_namespace "github.com/databricks/cli/cmd/workspace/default-namespace"
 	disable_legacy_access "github.com/databricks/cli/cmd/workspace/disable-legacy-access"
 	disable_legacy_dbfs "github.com/databricks/cli/cmd/workspace/disable-legacy-dbfs"
+	enable_export_notebook "github.com/databricks/cli/cmd/workspace/enable-export-notebook"
+	enable_notebook_table_clipboard "github.com/databricks/cli/cmd/workspace/enable-notebook-table-clipboard"
+	enable_results_downloading "github.com/databricks/cli/cmd/workspace/enable-results-downloading"
 	enhanced_security_monitoring "github.com/databricks/cli/cmd/workspace/enhanced-security-monitoring"
 	restrict_workspace_admins "github.com/databricks/cli/cmd/workspace/restrict-workspace-admins"
 )
@@ -39,6 +42,9 @@ func New() *cobra.Command {
 	cmd.AddCommand(default_namespace.New())
 	cmd.AddCommand(disable_legacy_access.New())
 	cmd.AddCommand(disable_legacy_dbfs.New())
+	cmd.AddCommand(enable_export_notebook.New())
+	cmd.AddCommand(enable_notebook_table_clipboard.New())
+	cmd.AddCommand(enable_results_downloading.New())
 	cmd.AddCommand(enhanced_security_monitoring.New())
 	cmd.AddCommand(restrict_workspace_admins.New())
 
