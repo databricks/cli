@@ -362,7 +362,6 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
 	workspaceClient := internal.ResolveServer(t, config, LogRequests, tmpDir)
-	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	// Configure resolved credentials in the environment.
 	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+workspaceClient.Config.Host)
@@ -381,6 +380,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		user = internal.TestUser
 	}
 	testdiff.PrepareReplacementsUser(t, &repls, user)
+	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
