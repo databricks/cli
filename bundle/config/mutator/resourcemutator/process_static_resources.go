@@ -3,8 +3,8 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
-
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -30,6 +30,27 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 	addedResources, err := getAllResources(b)
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	// only YAML resources need to have paths normalized, before normalizing paths
+	// we need to resolve variables because they can change path values:
+	// - variable can be used a prefix
+	// - path can be part of a complex variable value
+	diags := bundle.ApplySeq(
+		ctx,
+		b,
+		// Reads (dynamic): * (strings) (searches for variable references in string values)
+		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
+		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
+		mutator.ResolveVariableReferencesOnlyResources(
+			"bundle",
+			"workspace",
+			"variables",
+		),
+		mutator.NormalizePaths(),
+	)
+	if diags.HasError() {
+		return diags
 	}
 
 	return NormalizeAndInitializeResources(ctx, b, addedResources)

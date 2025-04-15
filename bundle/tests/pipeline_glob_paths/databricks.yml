@@ -1,13 +1,8 @@
 bundle:
   name: pipeline_glob_paths
 
-resources:
-  pipelines:
-    nyc_taxi_pipeline:
-      name: "nyc taxi loader"
-      libraries:
-        - notebook:
-            path: ./dlt/*
+include:
+  - resources/pipeline.yml
 
 targets:
   default:
