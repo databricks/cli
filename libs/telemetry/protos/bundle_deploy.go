@@ -68,6 +68,18 @@ type BundleDeployExperimental struct {
 
 	// Execution time per mutator for a selected subset of mutators.
 	BundleMutatorExecutionTimeMs []IntMapEntry `json:"bundle_mutator_execution_time_ms,omitempty"`
+
+	// Number of resources added by PythonMutator
+	PythonAddedResourcesCount int64 `json:"python_added_resources_count,omitempty"`
+
+	// Number of resources updated by PythonMutator
+	PythonUpdatedResourcesCount int64 `json:"python_updated_resources_count,omitempty"`
+
+	// Number of resource loaders declared at 'python/resources' in databricks.yml
+	PythonResourceLoadersCount int64 `json:"python_resource_loaders_count,omitempty"`
+
+	// Number of resource mutators declared at 'python/mutators' in databricks.yml
+	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
 }
 
 type BoolMapEntry struct {
