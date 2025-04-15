@@ -1,1 +1,1 @@
-trace $CLI bundle validate --output json | jq 'pick(.resources)'
+errcode trace $CLI bundle validate --output json | jq 'pick(.resources)'
