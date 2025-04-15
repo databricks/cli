@@ -98,7 +98,12 @@ func newCreate() *cobra.Command {
     CATALOG_NAME: The name of the catalog where the schema and the volume are
     SCHEMA_NAME: The name of the schema where the volume is
     NAME: The name of the volume
-    VOLUME_TYPE:  
+    VOLUME_TYPE: The type of the volume. An external volume is located in the specified
+      external location. A managed volume is located in the default location
+      which is specified by the parent schema, or the parent catalog, or the
+      Metastore. [Learn more]
+      
+      [Learn more]: https://docs.databricks.com/aws/en/volumes/managed-vs-external 
       Supported values: [EXTERNAL, MANAGED]`
 
 	cmd.Annotations = make(map[string]string)

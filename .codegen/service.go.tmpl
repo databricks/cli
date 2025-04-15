@@ -158,7 +158,7 @@ func new{{.PascalName}}() *cobra.Command {
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
 			{{else if .Entity.IsEmpty }}// TODO: output-only field
-			{{else if .Entity.IsComputed -}}
+			{{else if .IsComputed -}}
 			{{else if .IsOutputOnly -}}
 			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}. Supported values: {{template "printArray" .Entity.Enum}}`)
 			{{else}}cmd.Flags().{{template "arg-type" .Entity}}(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", {{- template "request-body-obj" (dict "Method" $method "Field" .)}}, `{{.Summary | without "`"}}`)

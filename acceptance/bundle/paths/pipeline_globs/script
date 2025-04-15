@@ -1,0 +1,3 @@
+cd root
+trace $CLI bundle validate --output json | jq 'pick(.resources)'
+rm -rf .databricks

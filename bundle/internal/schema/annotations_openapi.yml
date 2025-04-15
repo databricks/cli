@@ -328,7 +328,6 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "job_clusters":
     "description": |-
       A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
-      If more than 100 job clusters are available, you can paginate through them using :method:jobs/get.
   "max_concurrent_runs":
     "description": |-
       An optional maximum allowed number of concurrent runs of the job.
@@ -348,7 +347,10 @@ github.com/databricks/cli/bundle/config/resources.Job:
       Job-level parameter definitions
   "performance_target":
     "description": |-
-      PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
+      The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run.
+
+      * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+      * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
   "queue":
     "description": |-
       The queue settings of the job.
@@ -366,7 +368,8 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "tasks":
     "description": |-
       A list of task specifications to be executed by this job.
-      If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
+      It supports up to 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset, :method:jobs/update, :method:jobs/submit).
+      Read endpoints return only 100 tasks. If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
   "timeout_seconds":
     "description": |-
       An optional timeout applied to each run of this job. A value of `0` means no timeout.
@@ -428,7 +431,7 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "ai_gateway":
     "description": |-
-      The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported.
+      The AI Gateway configuration for the serving endpoint. NOTE: External model, provisioned throughput, and pay-per-token endpoints are fully supported; agent endpoints currently only support inference tables.
   "budget_policy_id":
     "description": |-
       The budget policy to be applied to the serving endpoint.
@@ -625,7 +628,9 @@ github.com/databricks/cli/bundle/config/resources.Volume:
   "storage_location":
     "description": |-
       The storage location on the cloud
-  "volume_type": {}
+  "volume_type":
+    "description": |-
+      The type of the volume. An external volume is located in the specified external location. A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore. [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
 github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-
@@ -935,6 +940,8 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
         ``to_timestamp`` [function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.to_timestamp.html).
 github.com/databricks/databricks-sdk-go/service/catalog.VolumeType:
   "_":
+    "description": |-
+      The type of the volume. An external volume is located in the specified external location. A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore. [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
     "enum":
       - |-
         EXTERNAL
@@ -1392,6 +1399,9 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
       Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
       E.g. dependencies: ["foo==0.0.1", "-r /Workspace/test/requirements.txt"]
+  "jar_dependencies":
+    "description": |-
+      List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "_":
     "description": |-
@@ -1626,6 +1636,13 @@ github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState:
         ACTIVE
       - |-
         TRASHED
+github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod:
+  "_":
+    "enum":
+      - |-
+        OAUTH
+      - |-
+        PAT
 github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask:
   "clean_room_name":
     "description": |-
@@ -1641,9 +1658,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask:
     "description": |-
       Name of the notebook being run.
 github.com/databricks/databricks-sdk-go/service/jobs.ComputeConfig:
-  "_":
-    "description": |-
-      Next field: 4
   "gpu_node_pool_id":
     "description": |-
       IDof the GPU pool to use.
@@ -1707,6 +1721,15 @@ github.com/databricks/databricks-sdk-go/service/jobs.CronSchedule:
   "timezone_id":
     "description": |-
       A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
+github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
+  "_":
+    "description": |-
+      Configures the Lakeview Dashboard job task type.
+  "dashboard_id": {}
+  "subscription": {}
+  "warehouse_id":
+    "description": |-
+      The warehouse id to execute the dashboard with for the schedule
 github.com/databricks/databricks-sdk-go/service/jobs.DbtTask:
   "catalog":
     "description": |-
@@ -1768,15 +1791,10 @@ github.com/databricks/databricks-sdk-go/service/jobs.Format:
       - |-
         MULTI_TASK
 github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
-  "_":
-    "description": |-
-      Next field: 9
   "command":
     "description": |-
       Command launcher to run the actual script, e.g. bash, python etc.
-  "compute":
-    "description": |-
-      Next field: 4
+  "compute": {}
   "dl_runtime_image":
     "description": |-
       Runtime image
@@ -2074,9 +2092,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget:
       - |-
         PERFORMANCE_OPTIMIZED
       - |-
-        COST_OPTIMIZED
-      - |-
-        BALANCED
+        STANDARD
 github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfiguration:
   "interval":
     "description": |-
@@ -2104,6 +2120,51 @@ github.com/databricks/databricks-sdk-go/service/jobs.PipelineTask:
   "pipeline_id":
     "description": |-
       The full name of the pipeline task to execute.
+github.com/databricks/databricks-sdk-go/service/jobs.PowerBiModel:
+  "authentication_method":
+    "description": |-
+      How the published Power BI model authenticates to Databricks
+  "model_name":
+    "description": |-
+      The name of the Power BI model
+  "overwrite_existing":
+    "description": |-
+      Whether to overwrite existing Power BI models
+  "storage_mode":
+    "description": |-
+      The default storage mode of the Power BI model
+  "workspace_name":
+    "description": |-
+      The name of the Power BI workspace of the model
+github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTable:
+  "catalog":
+    "description": |-
+      The catalog name in Databricks
+  "name":
+    "description": |-
+      The table name in Databricks
+  "schema":
+    "description": |-
+      The schema name in Databricks
+  "storage_mode":
+    "description": |-
+      The Power BI storage mode of the table
+github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTask:
+  "connection_resource_name":
+    "description": |-
+      The resource name of the UC connection to authenticate from Databricks to Power BI
+  "power_bi_model":
+    "description": |-
+      The semantic model to update
+  "refresh_after_update":
+    "description": |-
+      Whether the model should be refreshed after the update
+  "tables":
+    "description": |-
+      The tables to be exported to Power BI
+  "warehouse_id":
+    "description": |-
+      The SQL warehouse ID to use as the Power BI data source
 github.com/databricks/databricks-sdk-go/service/jobs.PythonWheelTask:
   "entry_point":
     "description": |-
@@ -2329,6 +2390,27 @@ github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskSubscription:
   "user_name":
     "description": |-
       The user name to receive the subscription email. This parameter is mutually exclusive with destination_id. You cannot set both destination_id and user_name for subscription notifications.
+github.com/databricks/databricks-sdk-go/service/jobs.StorageMode:
+  "_":
+    "enum":
+      - |-
+        DIRECT_QUERY
+      - |-
+        IMPORT
+      - |-
+        DUAL
+github.com/databricks/databricks-sdk-go/service/jobs.Subscription:
+  "custom_subject":
+    "description": |-
+      Optional: Allows users to specify a custom subject line on the email sent
+      to subscribers.
+  "paused":
+    "description": |-
+      When true, the subscription will not send emails.
+  "subscribers": {}
+github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber:
+  "destination_id": {}
+  "user_name": {}
 github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration:
   "condition":
     "description": |-
@@ -2354,6 +2436,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
     "description": |-
       The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.
       The condition task does not require a cluster to execute and does not support retries or notifications.
+  "dashboard_task":
+    "description": |-
+      The task runs a DashboardTask when the `dashboard_task` field is present.
   "dbt_task":
     "description": |-
       The task runs one or more dbt commands when the `dbt_task` field is present. The dbt task requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.
@@ -2382,9 +2467,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "for_each_task":
     "description": |-
       The task executes a nested task for every input provided when the `for_each_task` field is present.
-  "gen_ai_compute_task":
-    "description": |-
-      Next field: 9
+  "gen_ai_compute_task": {}
   "health":
     "description": |-
       An optional set of health rules that can be defined for this job.
@@ -2413,6 +2496,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "pipeline_task":
     "description": |-
       The task triggers a pipeline update when the `pipeline_task` field is present. Only pipelines configured to use triggered more are supported.
+  "power_bi_task":
+    "description": |-
+      The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
   "python_wheel_task":
     "description": |-
       The task runs a Python wheel when the `python_wheel_task` field is present.
