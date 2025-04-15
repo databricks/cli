@@ -74,6 +74,12 @@ type BundleDeployExperimental struct {
 
 	// Number of resources updated by PythonMutator
 	PythonUpdatedResourcesCount int64 `json:"python_updated_resources_count,omitempty"`
+
+	// Number of resource loaders declared at 'python/resources' in databricks.yml
+	PythonResourceLoadersCount int64 `json:"python_resource_loaders_count,omitempty"`
+
+	// Number of resource mutators declared at 'python/mutators' in databricks.yml
+	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
 }
 
 type BoolMapEntry struct {

@@ -333,6 +333,11 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		mode = protos.BundleModeProduction
 	}
 
+	experimentalConfig := b.Config.Experimental
+	if experimentalConfig == nil {
+		experimentalConfig = &config.Experimental{}
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
@@ -365,6 +370,8 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 				BoolValues:                  b.Metrics.BoolValues,
 				PythonAddedResourcesCount:   b.Metrics.PythonAddedResourcesCount,
 				PythonUpdatedResourcesCount: b.Metrics.PythonUpdatedResourcesCount,
+				PythonResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
+				PythonResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
 			},
 		},
 	})
