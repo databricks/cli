@@ -4,9 +4,10 @@ resources:
       libraries:
         # globs for notebooks and files are expanded
         - notebook: { path: "../${var.notebook_dir}/*" }
-        - file: { path: "../${var.notebook_dir}/*" }
+        - file: { path: "../${var.file_dir}/*" }
         # globs can include file extensions
         - notebook: { path: "../${var.notebook_dir}/*.py" }
+        - file: { path: "../${var.file_dir}/*.py" }
         # non-glob files work
         - notebook: { path: "../${var.notebook_dir}/nyc_taxi_loader.py" }
         # maven libraries and jars remain as-is

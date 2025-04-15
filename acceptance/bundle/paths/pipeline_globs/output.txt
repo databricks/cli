@@ -11,22 +11,27 @@
         "libraries": [
           {
             "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/notebooks/nyc_taxi_loader"
             }
           },
           {
             "file": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/files/nyc_taxi_loader.py"
             }
           },
           {
             "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/notebooks/nyc_taxi_loader"
+            }
+          },
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/files/nyc_taxi_loader.py"
             }
           },
           {
             "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/notebooks/nyc_taxi_loader"
             }
           },
           {

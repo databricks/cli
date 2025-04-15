@@ -1,5 +1,5 @@
 bundle:
-  name: pipeline_glob_paths
+  name: invalid_pipeline_glob_paths
 
 resources:
   pipelines:
