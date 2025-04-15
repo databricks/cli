@@ -1,8 +1,0 @@
-resources:
-  pipelines:
-    nyc_taxi_pipeline:
-      name: "nyc taxi loader"
-      libraries:
-        - notebook:
-            path: ../dlt/*
-

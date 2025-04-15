@@ -1,9 +1,56 @@
 
 >>> [CLI] bundle validate --output json
-Error: resources/pipeline.yml defined in 'include' section does not match any files
-
 {
-  "resources": null
+  "resources": {
+    "pipelines": {
+      "nyc_taxi_pipeline": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/state/metadata.json"
+        },
+        "libraries": [
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader"
+            }
+          },
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader"
+            }
+          },
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader"
+            }
+          },
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader"
+            }
+          },
+          {
+            "maven": {
+              "coordinates": "org.jsoup:jsoup:1.7.2"
+            }
+          },
+          {
+            "jar": "*/*.jar"
+          },
+          {
+            "notebook": {
+              "path": "/Workspace/Users/me@company.com/*.ipynb"
+            }
+          },
+          {
+            "notebook": {
+              "path": "s3://notebooks/*.ipynb"
+            }
+          }
+        ],
+        "name": "nyc taxi loader",
+        "permissions": []
+      }
+    }
+  }
 }
-
-Exit code: 1

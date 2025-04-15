@@ -1,0 +1,13 @@
+bundle:
+  name: pipeline_glob_paths
+
+resources:
+  pipelines:
+    nyc_taxi_pipeline:
+      libraries:
+        - notebook: { path: "${var.notebook_dir}/*.ipynb" }
+
+variables:
+  notebook_dir:
+    description: Directory with DLT notebooks
+    default: non-existent

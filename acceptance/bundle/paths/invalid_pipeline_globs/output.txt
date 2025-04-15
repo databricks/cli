@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle validate --output json
+Error: notebook non-existent/*.ipynb not found
+
+{
+  "resources": {
+    "pipelines": {
+      "nyc_taxi_pipeline": {
+        "libraries": [
+          {
+            "notebook": {
+              "path": "non-existent/*.ipynb"
+            }
+          }
+        ],
+        "name": "nyc taxi loader",
+        "permissions": []
+      }
+    }
+  }
+}
+
+Exit code: 1
