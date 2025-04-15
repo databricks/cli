@@ -861,9 +861,7 @@ func newPut() *cobra.Command {
 	cmd.Short = `Update rate limits of a serving endpoint.`
 	cmd.Long = `Update rate limits of a serving endpoint.
   
-  Used to update the rate limits of a serving endpoint. NOTE: Only foundation
-  model endpoints are currently supported. For external models, use AI Gateway
-  to manage rate limits.
+  Deprecated: Please use AI Gateway to manage rate limits instead.
 
   Arguments:
     NAME: The name of the serving endpoint whose rate limits are being updated. This
@@ -942,8 +940,9 @@ func newPutAiGateway() *cobra.Command {
 	cmd.Short = `Update AI Gateway of a serving endpoint.`
 	cmd.Long = `Update AI Gateway of a serving endpoint.
   
-  Used to update the AI Gateway of a serving endpoint. NOTE: Only external model
-  and provisioned throughput endpoints are currently supported.
+  Used to update the AI Gateway of a serving endpoint. NOTE: External model,
+  provisioned throughput, and pay-per-token endpoints are fully supported; agent
+  endpoints currently only support inference tables.
 
   Arguments:
     NAME: The name of the serving endpoint whose AI Gateway is being updated. This
