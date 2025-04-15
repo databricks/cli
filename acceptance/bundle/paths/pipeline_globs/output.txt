@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle validate --output json
+Error: resources/pipeline.yml defined in 'include' section does not match any files
+
+{
+  "resources": null
+}
+
+Exit code: 1
