@@ -78,22 +78,22 @@ func newGet() *cobra.Command {
   Arguments:
     SECURABLE_TYPE: Type of securable. 
       Supported values: [
-      CATALOG,
-      CLEAN_ROOM,
-      CONNECTION,
-      CREDENTIAL,
-      EXTERNAL_LOCATION,
-      FUNCTION,
-      METASTORE,
-      PIPELINE,
-      PROVIDER,
-      RECIPIENT,
-      SCHEMA,
-      SHARE,
-      STORAGE_CREDENTIAL,
-      TABLE,
-      VOLUME,
-    ]
+        CATALOG,
+        CLEAN_ROOM,
+        CONNECTION,
+        CREDENTIAL,
+        EXTERNAL_LOCATION,
+        FUNCTION,
+        METASTORE,
+        PIPELINE,
+        PROVIDER,
+        RECIPIENT,
+        SCHEMA,
+        SHARE,
+        STORAGE_CREDENTIAL,
+        TABLE,
+        VOLUME,
+      ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -160,22 +160,22 @@ func newGetEffective() *cobra.Command {
   Arguments:
     SECURABLE_TYPE: Type of securable. 
       Supported values: [
-      CATALOG,
-      CLEAN_ROOM,
-      CONNECTION,
-      CREDENTIAL,
-      EXTERNAL_LOCATION,
-      FUNCTION,
-      METASTORE,
-      PIPELINE,
-      PROVIDER,
-      RECIPIENT,
-      SCHEMA,
-      SHARE,
-      STORAGE_CREDENTIAL,
-      TABLE,
-      VOLUME,
-    ]
+        CATALOG,
+        CLEAN_ROOM,
+        CONNECTION,
+        CREDENTIAL,
+        EXTERNAL_LOCATION,
+        FUNCTION,
+        METASTORE,
+        PIPELINE,
+        PROVIDER,
+        RECIPIENT,
+        SCHEMA,
+        SHARE,
+        STORAGE_CREDENTIAL,
+        TABLE,
+        VOLUME,
+      ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -244,22 +244,22 @@ func newUpdate() *cobra.Command {
   Arguments:
     SECURABLE_TYPE: Type of securable. 
       Supported values: [
-      CATALOG,
-      CLEAN_ROOM,
-      CONNECTION,
-      CREDENTIAL,
-      EXTERNAL_LOCATION,
-      FUNCTION,
-      METASTORE,
-      PIPELINE,
-      PROVIDER,
-      RECIPIENT,
-      SCHEMA,
-      SHARE,
-      STORAGE_CREDENTIAL,
-      TABLE,
-      VOLUME,
-    ]
+        CATALOG,
+        CLEAN_ROOM,
+        CONNECTION,
+        CREDENTIAL,
+        EXTERNAL_LOCATION,
+        FUNCTION,
+        METASTORE,
+        PIPELINE,
+        PROVIDER,
+        RECIPIENT,
+        SCHEMA,
+        SHARE,
+        STORAGE_CREDENTIAL,
+        TABLE,
+        VOLUME,
+      ]
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)

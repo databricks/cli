@@ -340,17 +340,6 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&updateReq.Asset.AssetType, "asset-type", `The type of the asset. Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`)
-	// TODO: complex arg: foreign_table
-	// TODO: complex arg: foreign_table_local_details
-	cmd.Flags().StringVar(&updateReq.Asset.Name, "name", updateReq.Asset.Name, `A fully qualified name that uniquely identifies the asset within the clean room.`)
-	// TODO: complex arg: notebook
-	// TODO: complex arg: table
-	// TODO: complex arg: table_local_details
-	// TODO: complex arg: view
-	// TODO: complex arg: view_local_details
-	// TODO: complex arg: volume_local_details
-
 	cmd.Use = "update CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Update an asset.`
 	cmd.Long = `Update an asset.
@@ -393,6 +382,8 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.CleanRoomName = args[0]
 		_, err = fmt.Sscan(args[1], &updateReq.AssetType)

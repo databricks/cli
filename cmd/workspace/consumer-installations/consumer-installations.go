@@ -301,8 +301,6 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.RotateToken, "rotate-token", updateReq.RotateToken, ``)
-
 	cmd.Use = "update LISTING_ID INSTALLATION_ID"
 	cmd.Short = `Update an installation.`
 	cmd.Long = `Update an installation.
