@@ -263,7 +263,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 		// Execute all scripts from the bundle root directory. This behavior can
 		// be surprising in isolation, but we do it to keep the behavior consistent
 		// for both these cases:
-		// 1. One shot commands like `databricks bundle exec -- echo hello`
+		// 1. One shot commands like `databricks bundle run -- echo hello`
 		// 2. (upcoming) Scripts that are defined in the scripts section of the DAB.
 		Dir:    b.BundleRootPath,
 		Stderr: cmd.ErrOrStderr(),
