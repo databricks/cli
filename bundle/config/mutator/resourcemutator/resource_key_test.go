@@ -127,4 +127,5 @@ func TestResourceKeySet_AddResourceKey(t *testing.T) {
 		},
 		set.ToArray(),
 	)
+	assert.Equal(t, 2, set.Size())
 }

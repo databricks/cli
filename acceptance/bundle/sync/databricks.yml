@@ -5,3 +5,10 @@ resources:
   dashboards:
     dashboard1:
       display_name: My dashboard
+
+sync:
+  exclude:
+    - 'project-folder/app.*'
+    - 'project-folder/query.sql'
+  include:
+    - 'ignored-folder/**/*.py'

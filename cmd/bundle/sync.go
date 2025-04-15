@@ -22,8 +22,6 @@ type syncFlags struct {
 	full     bool
 	watch    bool
 	output   flags.Output
-	exclude  []string
-	include  []string
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
@@ -49,8 +47,6 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 
 	opts.Full = f.full
 	opts.PollInterval = f.interval
-	opts.Exclude = append(opts.Exclude, f.exclude...)
-	opts.Include = append(opts.Include, f.include...)
 	return opts, nil
 }
 
@@ -66,8 +62,6 @@ func newSyncCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&f.full, "full", false, "perform full synchronization (default is incremental)")
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of the output format")
-	cmd.Flags().StringSliceVar(&f.exclude, "exclude", nil, "patterns to exclude from sync (can be specified multiple times)")
-	cmd.Flags().StringSliceVar(&f.include, "include", nil, "patterns to include in sync (can be specified multiple times)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
