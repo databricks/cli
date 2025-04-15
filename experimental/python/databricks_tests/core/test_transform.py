@@ -233,12 +233,14 @@ def test_cron_schedule():
         CronSchedule,
         {
             "quartz_cron_expression": "0 0 0 * * ?",
+            "timezone_id": "UTC",
             "pause_status": Variable(path="var.pause_status", type=str),
         },
     )
 
     assert cron_schedule == CronSchedule(
         quartz_cron_expression="0 0 0 * * ?",
+        timezone_id="UTC",
         pause_status=Variable(path="var.pause_status", type=PauseStatus),
     )
 

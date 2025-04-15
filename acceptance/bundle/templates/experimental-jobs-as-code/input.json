@@ -1,5 +1,6 @@
 {
   "project_name": "my_jobs_as_code",
   "include_notebook": "yes",
-  "include_python": "yes"
+  "include_python": "yes",
+  "include_dlt": "yes"
 }

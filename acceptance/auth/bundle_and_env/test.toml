@@ -1,5 +1,0 @@
-# Some of the clouds have DATABRICKS_HOST variable setup without https:// prefix
-# In the result, output is replaced with DATABRICKS_URL variable instead of DATABRICKS_HOST
-[[Repls]]
-Old='DATABRICKS_URL'
-New='DATABRICKS_HOST'

@@ -11,11 +11,23 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+type JobPermissionLevel string
+
+// JobPermission holds the permission level setting for a single principal.
+// Multiple of these can be defined on any job.
+type JobPermission struct {
+	Level JobPermissionLevel `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
 type Job struct {
-	ID             string         `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []Permission   `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
+	ID             string          `json:"id,omitempty" bundle:"readonly"`
+	Permissions    []JobPermission `json:"permissions,omitempty"`
+	ModifiedStatus ModifiedStatus  `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string          `json:"url,omitempty" bundle:"internal"`
 
 	*jobs.JobSettings
 }

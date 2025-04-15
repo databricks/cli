@@ -19,14 +19,14 @@ class CronSchedule:
     A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required.
     """
 
+    timezone_id: VariableOr[str]
+    """
+    A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
+    """
+
     pause_status: VariableOrOptional[PauseStatus] = None
     """
     Indicate whether this schedule is paused or not.
-    """
-
-    timezone_id: VariableOr[str] = "UTC"
-    """
-    A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
     """
 
     @classmethod
@@ -45,14 +45,14 @@ class CronScheduleDict(TypedDict, total=False):
     A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required.
     """
 
-    pause_status: VariableOrOptional[PauseStatusParam]
-    """
-    Indicate whether this schedule is paused or not.
-    """
-
     timezone_id: VariableOr[str]
     """
     A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
+    """
+
+    pause_status: VariableOrOptional[PauseStatusParam]
+    """
+    Indicate whether this schedule is paused or not.
     """
 
 

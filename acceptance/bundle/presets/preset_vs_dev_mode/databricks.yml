@@ -1,0 +1,9 @@
+bundle:
+  name: preset
+
+targets:
+  dev:
+    mode: development
+    default: true
+    presets:
+      trigger_pause_status: UNPAUSED

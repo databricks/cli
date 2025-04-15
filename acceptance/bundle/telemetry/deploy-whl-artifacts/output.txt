@@ -1,0 +1,100 @@
+
+>>> [CLI] bundle deploy -t one
+Building test...
+Uploading my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-artifacts/one/files...
+Deploying resources...
+Deployment complete!
+
+>>> [CLI] bundle deploy -t two
+Building test...
+Uploading .databricks/bundle/two/patched_wheels/test_my_test_code/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-artifacts/two/files...
+Deploying resources...
+Deployment complete!
+
+>>> cat out.requests.txt
+{
+  "bundle_uuid": "[UUID]",
+  "deployment_id": "[UUID]",
+  "resource_count": 0,
+  "resource_job_count": 0,
+  "resource_pipeline_count": 0,
+  "resource_model_count": 0,
+  "resource_experiment_count": 0,
+  "resource_model_serving_endpoint_count": 0,
+  "resource_registered_model_count": 0,
+  "resource_quality_monitor_count": 0,
+  "resource_schema_count": 0,
+  "resource_volume_count": 0,
+  "resource_cluster_count": 0,
+  "resource_dashboard_count": 0,
+  "resource_app_count": 0,
+  "experimental": {
+    "configuration_file_count": 1,
+    "variable_count": 0,
+    "complex_variable_count": 0,
+    "lookup_variable_count": 0,
+    "target_count": 2,
+    "bool_values": [
+      {
+        "key": "artifact_build_command_is_set",
+        "value": false
+      },
+      {
+        "key": "artifact_files_is_set",
+        "value": false
+      },
+      {
+        "key": "python_wheel_wrapper_is_set",
+        "value": false
+      }
+    ],
+    "bundle_mode": "TYPE_UNSPECIFIED",
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+  }
+}
+{
+  "bundle_uuid": "[UUID]",
+  "deployment_id": "[UUID]",
+  "resource_count": 0,
+  "resource_job_count": 0,
+  "resource_pipeline_count": 0,
+  "resource_model_count": 0,
+  "resource_experiment_count": 0,
+  "resource_model_serving_endpoint_count": 0,
+  "resource_registered_model_count": 0,
+  "resource_quality_monitor_count": 0,
+  "resource_schema_count": 0,
+  "resource_volume_count": 0,
+  "resource_cluster_count": 0,
+  "resource_dashboard_count": 0,
+  "resource_app_count": 0,
+  "experimental": {
+    "configuration_file_count": 1,
+    "variable_count": 0,
+    "complex_variable_count": 0,
+    "lookup_variable_count": 0,
+    "target_count": 2,
+    "bool_values": [
+      {
+        "key": "artifact_build_command_is_set",
+        "value": true
+      },
+      {
+        "key": "artifact_files_is_set",
+        "value": true
+      },
+      {
+        "key": "artifact_dynamic_version_is_set",
+        "value": true
+      },
+      {
+        "key": "python_wheel_wrapper_is_set",
+        "value": true
+      }
+    ],
+    "bundle_mode": "TYPE_UNSPECIFIED",
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+  }
+}
