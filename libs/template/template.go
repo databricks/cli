@@ -68,7 +68,6 @@ var databricksTemplates = []Template{
 	},
 	{
 		name:        ExperimentalJobsAsCode,
-		hidden:      true,
 		description: "Jobs as code template (experimental)",
 		Reader:      &builtinReader{name: string(ExperimentalJobsAsCode)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalJobsAsCode}},
