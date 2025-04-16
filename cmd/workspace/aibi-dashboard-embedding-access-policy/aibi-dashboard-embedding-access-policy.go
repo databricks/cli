@@ -24,6 +24,7 @@ func New() *cobra.Command {
 		Long: `Controls whether AI/BI published dashboard embedding is enabled, conditionally
   enabled, or disabled at the workspace level. By default, this setting is
   conditionally enabled (ALLOW_APPROVED_DOMAINS).`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

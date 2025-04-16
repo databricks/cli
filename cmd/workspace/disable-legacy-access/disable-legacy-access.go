@@ -27,6 +27,7 @@ func New() *cobra.Command {
   can still access a Hive Metastore through Hive Metastore federation. 2.
   Disables fallback mode on external location access from the workspace. 3.
   Disables Databricks Runtime versions prior to 13.3LTS.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
