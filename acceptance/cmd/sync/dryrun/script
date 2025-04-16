@@ -1,0 +1,33 @@
+mkdir "project-folder" "ignored-folder" "ignored-folder/folder1" ".git"
+touch "project-folder/app.yaml" "project-folder/app.py" "project-folder/query.sql"
+touch "ignored-folder/script.py" "ignored-folder/folder1/script.py" "ignored-folder/folder1/script.yaml" "ignored-folder/folder1/big-blob"
+cat > .gitignore << EOF
+ignored-folder/
+script
+output.txt
+repls.json
+EOF
+
+cleanup() {
+  rm .gitignore
+  rm -rf project-folder ignored-folder .git
+}
+trap cleanup EXIT
+
+# Note: output line starting with Action lists files in non-deterministic order so we filter it out
+trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run | grep -v "^Action" | sort
+
+# excluding by mask:
+trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run --exclude 'project-folder/app.*' | grep -v "^Action" | sort
+
+# combining excludes:
+trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' | grep -v "^Action" | sort
+
+# combining excludes and includes:
+trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --include 'ignored-folder/*.py' | grep -v "^Action" | sort
+
+# include sub-folders:
+trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --include 'ignored-folder/**/*.py' | grep -v "^Action" | sort
+
+# use negated include to exclude files from syncing:
+trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run --include 'ignored-folder/**' --include '!ignored-folder/folder1/big-blob' | grep -v "^Action" | sort
