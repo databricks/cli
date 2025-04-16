@@ -3,6 +3,8 @@
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded databricks.yml
+Uploaded dryrun
+Uploaded dryrun/databricks.yml
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 Uploaded ignored-folder/script.py
