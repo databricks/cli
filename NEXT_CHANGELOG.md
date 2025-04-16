@@ -3,6 +3,7 @@
 ## Release v0.248.0
 
 ### Notable Changes
+* Python for Databricks Asset Bundles is now in Public Preview. This feature extends bundles so that you can define jobs and pipelines as Python code, dynamically create jobs and pipelines using metadata, and modify jobs and pipelines defined in YAML or Python during bundle deployment. For more information and to get started see [Configuration in Python](https://docs.databricks.com/aws/en/dev-tools/bundles/python).
 * Fixed a regression with pipeline library globs introduced in 0.247.0 ([#2723](https://github.com/databricks/cli/pull/2723)). The issue caused glob patterns to fail when using paths relative to a directory that is not the bundle root.
 
 ### Dependency updates
