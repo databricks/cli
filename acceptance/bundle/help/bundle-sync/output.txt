@@ -6,6 +6,7 @@ Usage:
   databricks bundle sync [flags]
 
 Flags:
+      --dry-run             simulate sync execution without making actual changes
       --full                perform full synchronization (default is incremental)
   -h, --help                help for sync
       --interval duration   file system polling interval (for --watch) (default 1s)
