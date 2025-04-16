@@ -4,6 +4,9 @@ type BundleDeployEvent struct {
 	// UUID associated with the bundle itself. Set in the `bundle.uuid` field in the bundle configuration.
 	BundleUuid string `json:"bundle_uuid,omitempty"`
 
+	// UUID associated with the deployment.
+	DeploymentId string `json:"deployment_id,omitempty"`
+
 	ResourceCount                     int64 `json:"resource_count"`
 	ResourceJobCount                  int64 `json:"resource_job_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`
@@ -53,7 +56,8 @@ type BundleDeployExperimental struct {
 	// Examples: "bundle.terraform.exec_path", "bundle.git.branch" etc.
 	SetFields []BoolMapEntry `json:"set_fields,omitempty"`
 
-	// Values for boolean configuration fields like `experimental.python_wheel_wrapper`
+	// Values for boolean configuration fields like `experimental.python_wheel_wrapper` or just any
+	// boolean values that we want to track.
 	// We don't need to define protos to track boolean values and can simply write those
 	// values to this map to track them.
 	BoolValues []BoolMapEntry `json:"bool_values,omitempty"`
@@ -64,11 +68,23 @@ type BundleDeployExperimental struct {
 
 	// Execution time per mutator for a selected subset of mutators.
 	BundleMutatorExecutionTimeMs []IntMapEntry `json:"bundle_mutator_execution_time_ms,omitempty"`
+
+	// Number of resources added by PythonMutator
+	PythonAddedResourcesCount int64 `json:"python_added_resources_count,omitempty"`
+
+	// Number of resources updated by PythonMutator
+	PythonUpdatedResourcesCount int64 `json:"python_updated_resources_count,omitempty"`
+
+	// Number of resource loaders declared at 'python/resources' in databricks.yml
+	PythonResourceLoadersCount int64 `json:"python_resource_loaders_count,omitempty"`
+
+	// Number of resource mutators declared at 'python/mutators' in databricks.yml
+	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
 }
 
 type BoolMapEntry struct {
 	Key   string `json:"key,omitempty"`
-	Value bool   `json:"value,omitempty"`
+	Value bool   `json:"value"`
 }
 
 type IntMapEntry struct {

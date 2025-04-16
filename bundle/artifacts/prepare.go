@@ -4,14 +4,15 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func Prepare() bundle.Mutator {
@@ -32,11 +33,10 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.FromErr(err)
 	}
 
-	removeFolders := make(map[string]bool, len(b.Config.Artifacts))
-	cleanupWheelFolders := make(map[string]bool, len(b.Config.Artifacts))
-
-	for _, artifactName := range sortedKeys(b.Config.Artifacts) {
+	for _, artifactName := range utils.SortedKeys(b.Config.Artifacts) {
 		artifact := b.Config.Artifacts[artifactName]
+		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
+		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
 
 		if artifact.Type == "whl" {
 			if artifact.BuildCommand == "" && len(artifact.Files) == 0 {
@@ -63,12 +63,6 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			artifact.Path = filepath.Join(dirPath, artifact.Path)
 		}
 
-		if artifact.Type == "whl" && artifact.BuildCommand != "" {
-			dir := artifact.Path
-			removeFolders[filepath.Join(dir, "dist")] = true
-			cleanupWheelFolders[dir] = true
-		}
-
 		if artifact.BuildCommand == "" && len(artifact.Files) == 0 {
 			diags = diags.Extend(diag.Errorf("misconfigured artifact: please specify 'build' or 'files' property"))
 		}
@@ -84,18 +78,6 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	if diags.HasError() {
 		return diags
-	}
-
-	for _, dir := range sortedKeys(removeFolders) {
-		err := os.RemoveAll(dir)
-		if err != nil {
-			log.Infof(ctx, "Failed to remove %s: %s", dir, err)
-		}
-	}
-
-	for _, dir := range sortedKeys(cleanupWheelFolders) {
-		log.Infof(ctx, "Cleaning up Python build artifacts in %s", dir)
-		python.CleanupWheelFolder(dir)
 	}
 
 	return diags
@@ -136,13 +118,4 @@ func InsertPythonArtifact(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	return nil
-}
-
-func sortedKeys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }

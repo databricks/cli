@@ -42,18 +42,9 @@ class TriggerSettings:
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
-
-    def __post_init__(self):
-        union_fields = [
-            self.file_arrival,
-            self.periodic,
-            self.table_update,
-        ]
-
-        if sum(f is not None for f in union_fields) != 1:
-            raise ValueError(
-                "TriggerSettings must specify exactly one of 'file_arrival', 'periodic', 'table_update'"
-            )
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     @classmethod
     def from_dict(cls, value: "TriggerSettingsDict") -> "Self":
@@ -82,6 +73,9 @@ class TriggerSettingsDict(TypedDict, total=False):
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
 
 TriggerSettingsParam = TriggerSettingsDict | TriggerSettings

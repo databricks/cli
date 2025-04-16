@@ -22,9 +22,8 @@ def load_resources(bundle: Bundle) -> Resources:
     int_variable = bundle.resolve_variable(Variables.int_variable)
     assert int_variable == 42
 
-    # FIXME resolve variables before running PythonMutator
-    # nested_variable = bundle.resolve_variable(Variables.nested_variable)
-    # assert nested_variable == "abc 42"
+    nested_variable = bundle.resolve_variable(Variables.nested_variable)
+    assert nested_variable == "abc abc"
 
     bool_variable_true = bundle.resolve_variable(Variables.bool_variable_true)
     assert bool_variable_true
@@ -39,13 +38,16 @@ def load_resources(bundle: Bundle) -> Resources:
     assert dict_variable == {"a": 1, "b": 2}
 
     complex_variable = bundle.resolve_variable(Variables.complex_variable)
-    assert complex_variable == Task(task_key="abc", notebook_task=NotebookTask(notebook_path="cde"))
+    assert complex_variable == Task(
+        task_key="abc",
+        notebook_task=NotebookTask(notebook_path="/Workspace/cde"),
+    )
 
     complex_list_variable = bundle.resolve_variable(Variables.complex_list_variable)
     print(complex_list_variable)
     assert complex_list_variable == [
-        Task(task_key="abc", notebook_task=NotebookTask(notebook_path="cde")),
-        Task(task_key="def", notebook_task=NotebookTask(notebook_path="ghi")),
+        Task(task_key="abc", notebook_task=NotebookTask(notebook_path="/Workspace/cde")),
+        Task(task_key="def", notebook_task=NotebookTask(notebook_path="/Workspace/ghi")),
     ]
 
     resources = Resources()
@@ -53,12 +55,7 @@ def load_resources(bundle: Bundle) -> Resources:
         "my_job",
         Job(
             name=Variables.string_variable,
-            # FIXME we can't output complex variables in place where we override locations
-            # with bundle root path. See loadOutput in python_mutator.go
-            #
-            # > failed to update locations: expected a sequence at "resources.jobs.my_job.tasks", found string
-            #
-            # tasks=Variables.complex_list_variable,
+            tasks=Variables.complex_list_variable,
         ),
     )
 

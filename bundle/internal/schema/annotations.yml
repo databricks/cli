@@ -403,6 +403,45 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+github.com/databricks/cli/bundle/config/resources.AppPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ClusterPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DashboardPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:
   "principal":
     "description": |-
@@ -410,6 +449,58 @@ github.com/databricks/cli/bundle/config/resources.Grant:
   "privileges":
     "description": |-
       The privileges to grant to the specified entity
+github.com/databricks/cli/bundle/config/resources.JobPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.MlflowModelPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Permission:
   "-":
     "description": |-
@@ -428,6 +519,19 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
+github.com/databricks/cli/bundle/config/resources.PipelinePermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-

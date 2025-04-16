@@ -16,6 +16,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=<func>
 10:07:59 Info: Phase: initialize pid=12345
 10:07:59 Debug: Apply pid=12345 mutator=validate:AllResourcesHaveValues
+10:07:59 Debug: Apply pid=12345 mutator=validate:interpolation_in_auth_config
 10:07:59 Debug: Apply pid=12345 mutator=RewriteSyncPaths
 10:07:59 Debug: Apply pid=12345 mutator=SyncDefaultPath
 10:07:59 Debug: Apply pid=12345 mutator=SyncInferRoot
@@ -34,30 +35,18 @@
 10:07:59 Debug: Apply pid=12345 mutator=PrependWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=RewriteWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=SetVariables
+10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
+10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=ResolveVariableReferences(resources)
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=NormalizePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(init)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
-10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
-10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
-10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
-10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences(resources)
-10:07:59 Debug: Apply pid=12345 mutator=NormalizePaths
-10:07:59 Debug: Apply pid=12345 mutator=ExpandPipelineGlobPaths
-10:07:59 Debug: Apply pid=12345 mutator=MergeJobClusters
-10:07:59 Debug: Apply pid=12345 mutator=MergeJobParameters
-10:07:59 Debug: Apply pid=12345 mutator=MergeJobTasks
-10:07:59 Debug: Apply pid=12345 mutator=MergePipelineClusters
-10:07:59 Debug: Apply pid=12345 mutator=MergeApps
-10:07:59 Debug: Apply pid=12345 mutator=CaptureSchemaDependency
 10:07:59 Debug: Apply pid=12345 mutator=CheckPermissions
-10:07:59 Debug: Apply pid=12345 mutator=SetRunAs
-10:07:59 Debug: Apply pid=12345 mutator=OverrideCompute
-10:07:59 Debug: Apply pid=12345 mutator=ConfigureDashboardDefaults
-10:07:59 Debug: Apply pid=12345 mutator=ConfigureVolumeDefaults
-10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
-10:07:59 Debug: Apply pid=12345 mutator=ApplyPresets
-10:07:59 Debug: Apply pid=12345 mutator=DefaultQueueing
 10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
 10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonWrapperWarning
@@ -66,8 +55,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=apps.Validate
 10:07:59 Debug: Apply pid=12345 mutator=ValidateTargetMode
 10:07:59 Debug: Apply pid=12345 mutator=ValidateSharedRootPermissions
-10:07:59 Debug: Apply pid=12345 mutator=ApplyBundlePermissions
-10:07:59 Debug: Apply pid=12345 mutator=FilterCurrentUserFromPermissions
 10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotateJobs
 10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotatePipelines
 10:07:59 Debug: Apply pid=12345 mutator=terraform.Initialize

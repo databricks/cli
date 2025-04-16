@@ -7,16 +7,6 @@ Ignore = [
 ]
 
 [[Server]]
-Pattern = "POST /api/2.1/unity-catalog/schemas"
-Response.Body = '''
-{
-    "name":"test-schema-6260d50f-e8ff-4905-8f28-812345678903",
-    "catalog_name":"main",
-    "full_name":"main.test-schema-6260d50f-e8ff-4905-8f28-812345678903"
-}
-'''
-
-[[Server]]
 Pattern = "POST /api/2.1/unity-catalog/volumes"
 Response.Body = '''
 {

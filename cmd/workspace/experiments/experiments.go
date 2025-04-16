@@ -61,6 +61,8 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeleteRuns())
 	cmd.AddCommand(newDeleteTag())
 	cmd.AddCommand(newGetByName())
+	cmd.AddCommand(newGetCredentialsForTraceDataDownload())
+	cmd.AddCommand(newGetCredentialsForTraceDataUpload())
 	cmd.AddCommand(newGetExperiment())
 	cmd.AddCommand(newGetHistory())
 	cmd.AddCommand(newGetPermissionLevels())
@@ -669,6 +671,124 @@ func newGetByName() *cobra.Command {
 	return cmd
 }
 
+// start get-credentials-for-trace-data-download command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getCredentialsForTraceDataDownloadOverrides []func(
+	*cobra.Command,
+	*ml.GetCredentialsForTraceDataDownloadRequest,
+)
+
+func newGetCredentialsForTraceDataDownload() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getCredentialsForTraceDataDownloadReq ml.GetCredentialsForTraceDataDownloadRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-credentials-for-trace-data-download REQUEST_ID"
+	cmd.Short = `Get credentials to download trace data.`
+	cmd.Long = `Get credentials to download trace data.
+
+  Arguments:
+    REQUEST_ID: The ID of the trace to fetch artifact download credentials for.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getCredentialsForTraceDataDownloadReq.RequestId = args[0]
+
+		response, err := w.Experiments.GetCredentialsForTraceDataDownload(ctx, getCredentialsForTraceDataDownloadReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getCredentialsForTraceDataDownloadOverrides {
+		fn(cmd, &getCredentialsForTraceDataDownloadReq)
+	}
+
+	return cmd
+}
+
+// start get-credentials-for-trace-data-upload command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getCredentialsForTraceDataUploadOverrides []func(
+	*cobra.Command,
+	*ml.GetCredentialsForTraceDataUploadRequest,
+)
+
+func newGetCredentialsForTraceDataUpload() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getCredentialsForTraceDataUploadReq ml.GetCredentialsForTraceDataUploadRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-credentials-for-trace-data-upload REQUEST_ID"
+	cmd.Short = `Get credentials to upload trace data.`
+	cmd.Long = `Get credentials to upload trace data.
+
+  Arguments:
+    REQUEST_ID: The ID of the trace to fetch artifact upload credentials for.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getCredentialsForTraceDataUploadReq.RequestId = args[0]
+
+		response, err := w.Experiments.GetCredentialsForTraceDataUpload(ctx, getCredentialsForTraceDataUploadReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getCredentialsForTraceDataUploadOverrides {
+		fn(cmd, &getCredentialsForTraceDataUploadReq)
+	}
+
+	return cmd
+}
+
 // start get-experiment command
 
 // Slice with functions to override default command behavior.
@@ -985,7 +1105,7 @@ func newListArtifacts() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `Token indicating the page of artifact results to fetch.`)
+	cmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `The token indicating the page of artifact results to fetch.`)
 	cmd.Flags().StringVar(&listArtifactsReq.Path, "path", listArtifactsReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
 	cmd.Flags().StringVar(&listArtifactsReq.RunId, "run-id", listArtifactsReq.RunId, `ID of the run whose artifacts to list.`)
 	cmd.Flags().StringVar(&listArtifactsReq.RunUuid, "run-uuid", listArtifactsReq.RunUuid, `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
@@ -1217,6 +1337,7 @@ func newLogInputs() *cobra.Command {
 	cmd.Flags().Var(&logInputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: datasets
+	// TODO: array: models
 
 	cmd.Use = "log-inputs RUN_ID"
 	cmd.Short = `Log inputs to a run.`
@@ -1302,6 +1423,9 @@ func newLogMetric() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&logMetricJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&logMetricReq.DatasetDigest, "dataset-digest", logMetricReq.DatasetDigest, `Dataset digest of the dataset associated with the metric, e.g.`)
+	cmd.Flags().StringVar(&logMetricReq.DatasetName, "dataset-name", logMetricReq.DatasetName, `The name of the dataset associated with the metric.`)
+	cmd.Flags().StringVar(&logMetricReq.ModelId, "model-id", logMetricReq.ModelId, `ID of the logged model associated with the metric, if applicable.`)
 	cmd.Flags().StringVar(&logMetricReq.RunId, "run-id", logMetricReq.RunId, `ID of the run under which to log the metric.`)
 	cmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", logMetricReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
 	cmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric.`)

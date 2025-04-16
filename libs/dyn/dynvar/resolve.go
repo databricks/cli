@@ -4,11 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
-	"golang.org/x/exp/maps"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // Resolve resolves variable references in the given input value using the provided lookup function.
@@ -102,8 +101,7 @@ func (r *resolver) resolveVariableReferences() (err error) {
 	// We sort the keys here to ensure that we always resolve the same variable reference first.
 	// This is done such that the cycle detection error is deterministic. If we did not do this,
 	// we could enter the cycle at any point in the cycle and return varying errors.
-	keys := maps.Keys(r.refs)
-	sort.Strings(keys)
+	keys := utils.SortedKeys(r.refs)
 	for _, key := range keys {
 		v, err := r.resolveRef(r.refs[key], []string{key})
 		if err != nil {

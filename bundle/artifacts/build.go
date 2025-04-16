@@ -8,12 +8,14 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/cli/libs/python"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func Build() bundle.Mutator {
@@ -37,7 +39,9 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		})
 	}
 
-	for _, artifactName := range sortedKeys(b.Config.Artifacts) {
+	cleanupPythonDistBuild(ctx, b)
+
+	for _, artifactName := range utils.SortedKeys(b.Config.Artifacts) {
 		a := b.Config.Artifacts[artifactName]
 
 		if a.BuildCommand != "" {
@@ -80,6 +84,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 
 		if a.Type == "whl" && a.DynamicVersion && cacheDir != "" {
+			b.Metrics.AddBoolValue(metrics.ArtifactDynamicVersionIsSet, true)
 			for ind, artifactFile := range a.Files {
 				patchedWheel, extraDiags := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)
 				log.Debugf(ctx, "Patching ind=%d artifactName=%s Source=%s patchedWheel=%s", ind, artifactName, artifactFile.Source, patchedWheel)

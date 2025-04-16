@@ -61,7 +61,8 @@ experimental:
 resources:
   jobs:
     job0:
-      name: job_0`)
+      name: job_0
+workspace: { current_user: { userName: test }}`)
 
 	// set rootPath so that we can make absolute paths in dyn.Location
 	b.BundleRootPath = rootPath
@@ -95,6 +96,11 @@ resources:
 					"pipeline0": {
 						name: "pipeline_0"
 					},
+				}
+			},
+			"workspace": {
+				"current_user": {
+					"userName": "test"
 				}
 			}
 		}`,
@@ -159,6 +165,9 @@ resources:
 		return v, nil
 	})
 	assert.NoError(t, err)
+
+	assert.Equal(t, int64(2), b.Metrics.PythonAddedResourcesCount)
+	assert.Equal(t, int64(0), b.Metrics.PythonUpdatedResourcesCount)
 
 	assert.Equal(t, 1, len(diags))
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
@@ -237,6 +246,9 @@ resources:
 		return v, nil
 	})
 	assert.NoError(t, err)
+
+	assert.Equal(t, int64(0), b.Metrics.PythonAddedResourcesCount)
+	assert.Equal(t, int64(1), b.Metrics.PythonUpdatedResourcesCount)
 }
 
 func TestPythonMutator_badOutput(t *testing.T) {
