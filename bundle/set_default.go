@@ -45,23 +45,15 @@ func (m *setDefault) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	return nil
 }
 
-func SetDefault(ctx context.Context, b *Bundle, value any, pattern ...string) diag.Diagnostics {
-	if len(pattern) <= 2 {
-		return diag.FromErr(fmt.Errorf("Internal error: invalid pattern, not enough components: %#v", pattern))
-	}
-	key := pattern[len(pattern)-1]
-	if key == "" || key == "*" {
-		return diag.FromErr(fmt.Errorf("Internal error: invalid pattern, last component must be regular key: %#v", pattern))
+func SetDefault(ctx context.Context, b *Bundle, pattern string, value any) diag.Diagnostics {
+	pat, err := dyn.NewPatternFromString(pattern)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("Internal error: invalid pattern: %s: %w", pattern, err))
 	}
 
-	pat := make(dyn.Pattern, len(pattern)-1)
-	for i := range len(pattern) - 1 {
-		if pattern[i] == "*" {
-			pat[i] = dyn.AnyKey()
-		} else {
-			pat[i] = dyn.Key(pattern[i])
-		}
-		// We don't support [] here
+	pat, key := pat.Split()
+	if pat == nil || key == "" {
+		return diag.FromErr(fmt.Errorf("Internal error: invalid pattern: %s", pattern))
 	}
 
 	m := SetDefaultMutator(pat, key, value)

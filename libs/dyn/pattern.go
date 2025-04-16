@@ -32,6 +32,19 @@ func NewPatternFromPath(p Path) Pattern {
 	return cs
 }
 
+func (p Pattern) Split() (Pattern, string) {
+	if len(p) <= 1 {
+		return nil, ""
+	}
+	parent := p[:len(p)-1]
+	leaf := p[len(p)-1]
+	pc, ok := leaf.(pathComponent)
+	if !ok {
+		return nil, ""
+	}
+	return parent, pc.Key()
+}
+
 // Append appends the given components to the pattern.
 func (p Pattern) Append(cs ...patternComponent) Pattern {
 	out := make(Pattern, len(p)+len(cs))

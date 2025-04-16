@@ -37,12 +37,20 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		OverrideCompute(),
 	)
 
-	// Dashboards:
-	diags = diags.Extend(bundle.SetDefault(ctx, b, b.Config.Workspace.ResourcePath, "resources", "dashboards", "*", "parent_path"))
-	diags = diags.Extend(bundle.SetDefault(ctx, b, false, "resources", "dashboards", "*", "embed_credentials"))
+	// Resource defaults:
 
-	// Volumes:
-	diags = diags.Extend(bundle.SetDefault(ctx, b, "MANAGED", "resources", "volumes", "*", "volume_type"))
+	defaults := []struct {
+		pattern string
+		value   any
+	}{
+		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
+		{"resources.dashboards.*.embed_credentials", false},
+		{"resources.volumes.*.volume_type", "MANAGED"},
+	}
+
+	for _, defaultDef := range defaults {
+		diags = diags.Extend(bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value))
+	}
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		ApplyPresets(),
