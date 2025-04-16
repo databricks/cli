@@ -88,6 +88,24 @@ func TestNewPathFromString(t *testing.T) {
 			input: "foo[1]bar",
 			err:   errors.New("invalid path: foo[1]bar"),
 		},
+
+		// * is allowed (used in patterns)
+		{
+			input:  "foo.*",
+			output: NewPath(Key("foo"), Key("*")),
+		},
+
+		// * is allowed (used in patterns)
+		{
+			input:  "foo.*.bar",
+			output: NewPath(Key("foo"), Key("*"), Key("bar")),
+		},
+
+		// * is allowed (used in patterns)
+		{
+			input:  "foo[*].bad",
+			output: NewPath(Key("foo"), Index(-1), Key("bar")),
+		},
 	} {
 		p, err := NewPathFromString(tc.input)
 		if tc.err != nil {
