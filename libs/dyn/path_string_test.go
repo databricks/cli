@@ -101,10 +101,10 @@ func TestNewPathFromString(t *testing.T) {
 			output: NewPath(Key("foo"), Key("*"), Key("bar")),
 		},
 
-		// * is allowed (used in patterns)
+		// This is an invalid path (but would be valid for patterns)
 		{
-			input:  "foo[*].bad",
-			output: NewPath(Key("foo"), Index(-1), Key("bar")),
+			input: "foo[*].bar",
+			err:   errors.New("invalid path: foo[*].bar"),
 		},
 	} {
 		p, err := NewPathFromString(tc.input)
