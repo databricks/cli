@@ -33,23 +33,7 @@ func New() *cobra.Command {
   This setting requires a restart of clusters and SQL warehouses to take effect.
   Additionally, the default namespace only applies when using Unity
   Catalog-enabled compute.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				// Check if the subcommand exists
-				for _, subcmd := range cmd.Commands() {
-					if subcmd.Name() == args[0] {
-						// Let Cobra handle the valid subcommand
-						return nil
-					}
-				}
-				// Return error for unknown subcommands
-				return &root.InvalidArgsError{
-					Message: fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath()),
-					Command: cmd,
-				}
-			}
-			return cmd.Help()
-		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

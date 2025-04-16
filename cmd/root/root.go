@@ -185,3 +185,19 @@ Stack Trace:
 
 	return err
 }
+
+// This function is used to report an unknown subcommand.
+// It is used in the [cobra.Command.RunE] field of commands that have subcommands.
+// If user provided a valid subcommand, RunE for the
+// If there are any arguments, it means the user has provided an unknown subcommand.
+// If there are no arguments, it means the user has not provided any subcommand, and the help
+// command should be displayed.
+func ReportUnknownSubcommand(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return &InvalidArgsError{
+			Message: fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath()),
+			Command: cmd,
+		}
+	}
+	return cmd.Help()
+}

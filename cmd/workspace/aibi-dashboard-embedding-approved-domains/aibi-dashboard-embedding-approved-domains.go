@@ -24,23 +24,7 @@ func New() *cobra.Command {
 		Long: `Controls the list of domains approved to host the embedded AI/BI dashboards.
   The approved domains list can't be mutated when the current access policy is
   not set to ALLOW_APPROVED_DOMAINS.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				// Check if the subcommand exists
-				for _, subcmd := range cmd.Commands() {
-					if subcmd.Name() == args[0] {
-						// Let Cobra handle the valid subcommand
-						return nil
-					}
-				}
-				// Return error for unknown subcommands
-				return &root.InvalidArgsError{
-					Message: fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath()),
-					Command: cmd,
-				}
-			}
-			return cmd.Help()
-		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

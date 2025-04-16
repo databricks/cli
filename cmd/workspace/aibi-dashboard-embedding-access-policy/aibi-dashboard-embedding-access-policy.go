@@ -24,23 +24,7 @@ func New() *cobra.Command {
 		Long: `Controls whether AI/BI published dashboard embedding is enabled, conditionally
   enabled, or disabled at the workspace level. By default, this setting is
   conditionally enabled (ALLOW_APPROVED_DOMAINS).`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				// Check if the subcommand exists
-				for _, subcmd := range cmd.Commands() {
-					if subcmd.Name() == args[0] {
-						// Let Cobra handle the valid subcommand
-						return nil
-					}
-				}
-				// Return error for unknown subcommands
-				return &root.InvalidArgsError{
-					Message: fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath()),
-					Command: cmd,
-				}
-			}
-			return cmd.Help()
-		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
