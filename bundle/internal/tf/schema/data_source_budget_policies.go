@@ -8,9 +8,10 @@ type DataSourceBudgetPoliciesBudgetPoliciesCustomTags struct {
 }
 
 type DataSourceBudgetPoliciesBudgetPolicies struct {
-	CustomTags []DataSourceBudgetPoliciesBudgetPoliciesCustomTags `json:"custom_tags,omitempty"`
-	PolicyId   string                                             `json:"policy_id,omitempty"`
-	PolicyName string                                             `json:"policy_name,omitempty"`
+	BindingWorkspaceIds []int                                              `json:"binding_workspace_ids,omitempty"`
+	CustomTags          []DataSourceBudgetPoliciesBudgetPoliciesCustomTags `json:"custom_tags,omitempty"`
+	PolicyId            string                                             `json:"policy_id,omitempty"`
+	PolicyName          string                                             `json:"policy_name,omitempty"`
 }
 
 type DataSourceBudgetPolicies struct {

@@ -31,8 +31,9 @@ type ResourceJobEmailNotifications struct {
 }
 
 type ResourceJobEnvironmentSpec struct {
-	Client       string   `json:"client"`
-	Dependencies []string `json:"dependencies,omitempty"`
+	Client          string   `json:"client"`
+	Dependencies    []string `json:"dependencies,omitempty"`
+	JarDependencies []string `json:"jar_dependencies,omitempty"`
 }
 
 type ResourceJobEnvironment struct {
@@ -577,6 +578,23 @@ type ResourceJobTaskConditionTask struct {
 	Right string `json:"right"`
 }
 
+type ResourceJobTaskDashboardTaskSubscriptionSubscribers struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type ResourceJobTaskDashboardTaskSubscription struct {
+	CustomSubject string                                                `json:"custom_subject,omitempty"`
+	Paused        bool                                                  `json:"paused,omitempty"`
+	Subscribers   []ResourceJobTaskDashboardTaskSubscriptionSubscribers `json:"subscribers,omitempty"`
+}
+
+type ResourceJobTaskDashboardTask struct {
+	DashboardId  string                                    `json:"dashboard_id,omitempty"`
+	WarehouseId  string                                    `json:"warehouse_id,omitempty"`
+	Subscription *ResourceJobTaskDashboardTaskSubscription `json:"subscription,omitempty"`
+}
+
 type ResourceJobTaskDbtTask struct {
 	Catalog           string   `json:"catalog,omitempty"`
 	Commands          []string `json:"commands"`
@@ -612,6 +630,23 @@ type ResourceJobTaskForEachTaskTaskConditionTask struct {
 	Left  string `json:"left"`
 	Op    string `json:"op"`
 	Right string `json:"right"`
+}
+
+type ResourceJobTaskForEachTaskTaskDashboardTaskSubscriptionSubscribers struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskDashboardTaskSubscription struct {
+	CustomSubject string                                                               `json:"custom_subject,omitempty"`
+	Paused        bool                                                                 `json:"paused,omitempty"`
+	Subscribers   []ResourceJobTaskForEachTaskTaskDashboardTaskSubscriptionSubscribers `json:"subscribers,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskDashboardTask struct {
+	DashboardId  string                                                   `json:"dashboard_id,omitempty"`
+	WarehouseId  string                                                   `json:"warehouse_id,omitempty"`
+	Subscription *ResourceJobTaskForEachTaskTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskDbtTask struct {
@@ -908,6 +943,29 @@ type ResourceJobTaskForEachTaskTaskPipelineTask struct {
 	PipelineId  string `json:"pipeline_id"`
 }
 
+type ResourceJobTaskForEachTaskTaskPowerBiTaskPowerBiModel struct {
+	AuthenticationMethod string `json:"authentication_method,omitempty"`
+	ModelName            string `json:"model_name,omitempty"`
+	OverwriteExisting    bool   `json:"overwrite_existing,omitempty"`
+	StorageMode          string `json:"storage_mode,omitempty"`
+	WorkspaceName        string `json:"workspace_name,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskPowerBiTaskTables struct {
+	Catalog     string `json:"catalog,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Schema      string `json:"schema,omitempty"`
+	StorageMode string `json:"storage_mode,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskPowerBiTask struct {
+	ConnectionResourceName string                                                 `json:"connection_resource_name,omitempty"`
+	RefreshAfterUpdate     bool                                                   `json:"refresh_after_update,omitempty"`
+	WarehouseId            string                                                 `json:"warehouse_id,omitempty"`
+	PowerBiModel           *ResourceJobTaskForEachTaskTaskPowerBiTaskPowerBiModel `json:"power_bi_model,omitempty"`
+	Tables                 []ResourceJobTaskForEachTaskTaskPowerBiTaskTables      `json:"tables,omitempty"`
+}
+
 type ResourceJobTaskForEachTaskTaskPythonWheelTask struct {
 	EntryPoint      string            `json:"entry_point,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
@@ -1032,6 +1090,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	TimeoutSeconds          int                                                   `json:"timeout_seconds,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask          `json:"condition_task,omitempty"`
+	DashboardTask           *ResourceJobTaskForEachTaskTaskDashboardTask          `json:"dashboard_task,omitempty"`
 	DbtTask                 *ResourceJobTaskForEachTaskTaskDbtTask                `json:"dbt_task,omitempty"`
 	DependsOn               []ResourceJobTaskForEachTaskTaskDependsOn             `json:"depends_on,omitempty"`
 	EmailNotifications      *ResourceJobTaskForEachTaskTaskEmailNotifications     `json:"email_notifications,omitempty"`
@@ -1042,6 +1101,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	NotebookTask            *ResourceJobTaskForEachTaskTaskNotebookTask           `json:"notebook_task,omitempty"`
 	NotificationSettings    *ResourceJobTaskForEachTaskTaskNotificationSettings   `json:"notification_settings,omitempty"`
 	PipelineTask            *ResourceJobTaskForEachTaskTaskPipelineTask           `json:"pipeline_task,omitempty"`
+	PowerBiTask             *ResourceJobTaskForEachTaskTaskPowerBiTask            `json:"power_bi_task,omitempty"`
 	PythonWheelTask         *ResourceJobTaskForEachTaskTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
 	RunJobTask              *ResourceJobTaskForEachTaskTaskRunJobTask             `json:"run_job_task,omitempty"`
 	SparkJarTask            *ResourceJobTaskForEachTaskTaskSparkJarTask           `json:"spark_jar_task,omitempty"`
@@ -1327,6 +1387,29 @@ type ResourceJobTaskPipelineTask struct {
 	PipelineId  string `json:"pipeline_id"`
 }
 
+type ResourceJobTaskPowerBiTaskPowerBiModel struct {
+	AuthenticationMethod string `json:"authentication_method,omitempty"`
+	ModelName            string `json:"model_name,omitempty"`
+	OverwriteExisting    bool   `json:"overwrite_existing,omitempty"`
+	StorageMode          string `json:"storage_mode,omitempty"`
+	WorkspaceName        string `json:"workspace_name,omitempty"`
+}
+
+type ResourceJobTaskPowerBiTaskTables struct {
+	Catalog     string `json:"catalog,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Schema      string `json:"schema,omitempty"`
+	StorageMode string `json:"storage_mode,omitempty"`
+}
+
+type ResourceJobTaskPowerBiTask struct {
+	ConnectionResourceName string                                  `json:"connection_resource_name,omitempty"`
+	RefreshAfterUpdate     bool                                    `json:"refresh_after_update,omitempty"`
+	WarehouseId            string                                  `json:"warehouse_id,omitempty"`
+	PowerBiModel           *ResourceJobTaskPowerBiTaskPowerBiModel `json:"power_bi_model,omitempty"`
+	Tables                 []ResourceJobTaskPowerBiTaskTables      `json:"tables,omitempty"`
+}
+
 type ResourceJobTaskPythonWheelTask struct {
 	EntryPoint      string            `json:"entry_point,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
@@ -1451,6 +1534,7 @@ type ResourceJobTask struct {
 	TimeoutSeconds          int                                    `json:"timeout_seconds,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	ConditionTask           *ResourceJobTaskConditionTask          `json:"condition_task,omitempty"`
+	DashboardTask           *ResourceJobTaskDashboardTask          `json:"dashboard_task,omitempty"`
 	DbtTask                 *ResourceJobTaskDbtTask                `json:"dbt_task,omitempty"`
 	DependsOn               []ResourceJobTaskDependsOn             `json:"depends_on,omitempty"`
 	EmailNotifications      *ResourceJobTaskEmailNotifications     `json:"email_notifications,omitempty"`
@@ -1462,6 +1546,7 @@ type ResourceJobTask struct {
 	NotebookTask            *ResourceJobTaskNotebookTask           `json:"notebook_task,omitempty"`
 	NotificationSettings    *ResourceJobTaskNotificationSettings   `json:"notification_settings,omitempty"`
 	PipelineTask            *ResourceJobTaskPipelineTask           `json:"pipeline_task,omitempty"`
+	PowerBiTask             *ResourceJobTaskPowerBiTask            `json:"power_bi_task,omitempty"`
 	PythonWheelTask         *ResourceJobTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
 	RunJobTask              *ResourceJobTaskRunJobTask             `json:"run_job_task,omitempty"`
 	SparkJarTask            *ResourceJobTaskSparkJarTask           `json:"spark_jar_task,omitempty"`
