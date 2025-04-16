@@ -10,4 +10,4 @@ resources:
       volume_type: "already-set"
 
     v3:
-      comment: hello 
+      comment: hello
