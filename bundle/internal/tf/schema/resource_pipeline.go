@@ -137,7 +137,7 @@ type ResourcePipelineDeployment struct {
 
 type ResourcePipelineEventLog struct {
 	Catalog string `json:"catalog,omitempty"`
-	Name    string `json:"name,omitempty"`
+	Name    string `json:"name"`
 	Schema  string `json:"schema,omitempty"`
 }
 
