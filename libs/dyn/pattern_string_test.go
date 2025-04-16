@@ -2,6 +2,7 @@ package dyn_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	. "github.com/databricks/cli/libs/dyn"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestNewPatternFromString(t *testing.T) {
-	for _, tc := range []struct {
+	for ind, tc := range []struct {
 		input  string
 		output Pattern
 		err    error
@@ -118,13 +119,15 @@ func TestNewPatternFromString(t *testing.T) {
 			output: NewPattern(AnyKey(), AnyIndex()),
 		},
 	} {
-		p, err := NewPatternFromString(tc.input)
-		if tc.err != nil {
-			assert.EqualError(t, err, tc.err.Error(), tc.input)
-		} else {
-			assert.NoError(t, err)
-			assert.Equal(t, tc.output, p)
-		}
+		t.Run(fmt.Sprintf("%d %s", ind, tc.input), func(t *testing.T) {
+			p, err := NewPatternFromString(tc.input)
+			if tc.err != nil {
+				assert.EqualError(t, err, tc.err.Error(), tc.input)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.output, p)
+			}
+		})
 	}
 }
 
