@@ -37,8 +37,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		OverrideCompute(),
 	)
 
-	// Resource defaults:
-
 	defaults := []struct {
 		pattern string
 		value   any
