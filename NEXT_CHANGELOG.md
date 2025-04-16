@@ -10,6 +10,7 @@
 
 ### CLI
 * Added an error when invalid subcommand is provided for CLI commands ([#2655](https://github.com/databricks/cli/pull/2655))
+* Added dry-run flag support to sync command ([#2657](https://github.com/databricks/cli/pull/2657))
 
 ### Bundles
 * Do not use app config section in test templates and generated app configuration ([#2599](https://github.com/databricks/cli/pull/2599))
