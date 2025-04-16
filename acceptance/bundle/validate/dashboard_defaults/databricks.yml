@@ -1,0 +1,22 @@
+bundle:
+  name: BUNDLE
+
+workspace:
+  resource_path: /foo/bar
+
+resources:
+  dashboards:
+    d1:
+      # unchanged
+      parent_path: ""
+
+    d2:
+      # unchanged
+      parent_path: "already-set"
+
+    d3:
+      display_name: hello
+      # parent_path set default
+
+    d4:
+      embed_credentials: true
