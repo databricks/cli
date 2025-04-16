@@ -6,17 +6,19 @@ workspace:
 
 resources:
   dashboards:
-    d1:
+    empty_string:
       # unchanged
       parent_path: ""
 
-    d2:
+    non_empty_string:
       # unchanged
       parent_path: "already-set"
 
-    d3:
+    other_fields:
       display_name: hello
       # parent_path set default
 
-    d4:
+    set_to_true:
       embed_credentials: true
+
+    completely_empty: {}
