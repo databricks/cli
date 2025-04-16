@@ -361,7 +361,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
-	workspaceClient := internal.ResolveServer(t, config, LogRequests, tmpDir)
+	workspaceClient := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
 
 	// Configure resolved credentials in the environment.
 	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+workspaceClient.Config.Host)

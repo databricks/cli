@@ -35,7 +35,7 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func ResolveServer(t *testing.T, config TestConfig, logRequests bool, outputDir string) *databricks.WorkspaceClient {
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) *databricks.WorkspaceClient {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	// If we are running on a cloud environment, use the host configured in the
