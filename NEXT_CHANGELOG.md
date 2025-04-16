@@ -6,7 +6,8 @@
 * Fixed a regression with pipeline library globs introduced in 0.247.0 ([#2723](https://github.com/databricks/cli/pull/2723)). The issue caused glob patterns to fail when using paths relative to a directory that is not the bundle root.
 
 ### Dependency updates
-* Updated Go SDK to 0.63.0 ([#2716](https://github.com/databricks/cli/pull/2716))
+* Upgraded Go SDK to 0.63.0 ([#2716](https://github.com/databricks/cli/pull/2716))
+* Upgraded TF provider to 1.73.0 ([#2728](https://github.com/databricks/cli/pull/2728))
 
 ### CLI
 
