@@ -18,7 +18,7 @@ import (
 //
 // If bundle is modified outside of 'resources' section, these changes are discarded.
 func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return bundle.ApplySeq(
+	diags := bundle.ApplySeq(
 		ctx,
 		b,
 		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
@@ -35,16 +35,16 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// OR corresponding fields on ForEachTask if that is present
 		// Overrides job compute settings with a specified cluster ID for development or testing
 		OverrideCompute(),
+	)
 
-		// Reads (dynamic): resources.dashboards.* (checks for existing parent_path and embed_credentials)
-		// Updates (dynamic): resources.dashboards.*.parent_path (sets to workspace.resource_path if not set)
-		// Updates (dynamic): resources.dashboards.*.embed_credentials (sets to false if not set)
-		ConfigureDashboardDefaults(),
+	// Dashboards:
+	diags = diags.Extend(bundle.SetDefault(ctx, b, b.Config.Workspace.ResourcePath, "resources", "dashboards", "*", "parent_path"))
+	diags = diags.Extend(bundle.SetDefault(ctx, b, false, "resources", "dashboards", "*", "embed_credentials"))
 
-		// Reads (dynamic): resources.volumes.* (checks for existing volume_type)
-		// Updates (dynamic): resources.volumes.*.volume_type (sets to "MANAGED" if not set)
-		ConfigureVolumeDefaults(),
+	// Volumes:
+	diags = diags.Extend(bundle.SetDefault(ctx, b, "MANAGED", "resources", "volumes", "*", "volume_type"))
 
+	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		ApplyPresets(),
 
 		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
@@ -62,7 +62,9 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
 		FilterCurrentUser(),
-	)
+	))
+
+	return diags
 }
 
 // Normalization is applied multiple times if resource is modified during initialization
