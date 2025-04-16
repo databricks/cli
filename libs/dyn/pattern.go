@@ -32,6 +32,8 @@ func NewPatternFromPath(p Path) Pattern {
 	return cs
 }
 
+// Split <pattern>.<string_key> into <pattern> and <string_key>
+// The last component must be dyn.Key() and there must be at least two components.
 func (p Pattern) Split() (Pattern, string) {
 	if len(p) <= 1 {
 		return nil, ""
