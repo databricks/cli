@@ -2,6 +2,11 @@
 
 package schema
 
+type ResourceMwsWorkspacesAzureWorkspaceInfo struct {
+	ResourceGroup  string `json:"resource_group,omitempty"`
+	SubscriptionId string `json:"subscription_id,omitempty"`
+}
+
 type ResourceMwsWorkspacesCloudResourceContainerGcp struct {
 	ProjectId string `json:"project_id"`
 }
@@ -58,6 +63,7 @@ type ResourceMwsWorkspaces struct {
 	WorkspaceStatus                     string                                        `json:"workspace_status,omitempty"`
 	WorkspaceStatusMessage              string                                        `json:"workspace_status_message,omitempty"`
 	WorkspaceUrl                        string                                        `json:"workspace_url,omitempty"`
+	AzureWorkspaceInfo                  *ResourceMwsWorkspacesAzureWorkspaceInfo      `json:"azure_workspace_info,omitempty"`
 	CloudResourceContainer              *ResourceMwsWorkspacesCloudResourceContainer  `json:"cloud_resource_container,omitempty"`
 	ExternalCustomerInfo                *ResourceMwsWorkspacesExternalCustomerInfo    `json:"external_customer_info,omitempty"`
 	GcpManagedNetworkConfig             *ResourceMwsWorkspacesGcpManagedNetworkConfig `json:"gcp_managed_network_config,omitempty"`
