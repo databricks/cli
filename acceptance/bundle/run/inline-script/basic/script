@@ -11,3 +11,6 @@ errcode trace $CLI bundle run -- bash -c "exit 5"
 trace $CLI bundle run -- python3 -c "import sys; print('Hello', file=sys.stderr)" 2> stderr.txt
 trace cat stderr.txt
 rm stderr.txt
+
+# no newline
+trace $CLI bundle run -- printf "hello"
