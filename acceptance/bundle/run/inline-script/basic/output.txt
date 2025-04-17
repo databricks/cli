@@ -16,5 +16,8 @@ Exit code: 5
 >>> [CLI] bundle run -- python3 -c import sys; print('Hello', file=sys.stderr)
 Hello
 
+>>> cat -
+abc
+
 >>> [CLI] bundle run -- printf hello
 hello
