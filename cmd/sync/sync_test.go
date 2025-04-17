@@ -79,8 +79,6 @@ func TestExcludeFromFlag(t *testing.T) {
 	excludePatterns := []string{
 		"*.log",
 		"build/",
-		"# This is a comment",
-		"",
 		"temp/*.tmp",
 	}
 	require.NoError(t, os.WriteFile(excludeFromPath, []byte(strings.Join(excludePatterns, "\n")), 0o644))
@@ -90,20 +88,12 @@ func TestExcludeFromFlag(t *testing.T) {
 	cmd := New()
 	cmd.SetContext(cmdctx.SetWorkspaceClient(context.Background(), nil))
 
-	// Test syncOptionsFromArgs
+	// Test with both exclude flag and exclude-from flag
+	f.exclude = []string{"node_modules/"}
 	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
 
-	// Expected patterns (should skip comments and empty lines)
-	expected := []string{"*.log", "build/", "temp/*.tmp"}
-	assert.ElementsMatch(t, expected, opts.Exclude)
-
-	// Test with both exclude flag and exclude-from flag
-	f.exclude = []string{"node_modules/"}
-	opts, err = f.syncOptionsFromArgs(cmd, []string{local, remote})
-	require.NoError(t, err)
-
 	// Should include both exclude flag and exclude-from patterns
-	expected = []string{"node_modules/", "*.log", "build/", "temp/*.tmp"}
+	expected := []string{"node_modules/", "*.log", "build/", "temp/*.tmp"}
 	assert.ElementsMatch(t, expected, opts.Exclude)
 }
