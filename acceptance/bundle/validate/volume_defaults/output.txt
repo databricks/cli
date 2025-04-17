@@ -1,0 +1,12 @@
+{
+  "v1": {
+    "volume_type": ""
+  },
+  "v2": {
+    "volume_type": "already-set"
+  },
+  "v3": {
+    "comment": "hello",
+    "volume_type": "MANAGED"
+  }
+}
