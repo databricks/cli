@@ -103,10 +103,8 @@ func (v Value) AsAny() any {
 	case KindMap:
 		m := v.v.(Mapping)
 		out := make(map[string]any, m.Len())
-		for _, pair := range m.Pairs() {
-			pk := pair.Key
-			pv := pair.Value
-			out[pk.MustString()] = pv.AsAny()
+		for key, value := range m.data {
+			out[key] = value.AsAny()
 		}
 		return out
 	case KindSequence:
