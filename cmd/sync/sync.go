@@ -51,10 +51,7 @@ func (f *syncFlags) readExcludeFrom(ctx context.Context) ([]string, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		// Skip empty lines and comments
-		if line != "" && !strings.HasPrefix(line, "#") {
-			patterns = append(patterns, line)
-		}
+		patterns = append(patterns, line)
 	}
 
 	if err := scanner.Err(); err != nil {
