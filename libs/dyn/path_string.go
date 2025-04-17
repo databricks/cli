@@ -39,7 +39,7 @@ func NewPathFromString(input string) (Path, error) {
 
 	for p != "" {
 		// Every component may have a leading dot.
-		if p != "" && p[0] == '.' {
+		if p[0] == '.' {
 			p = p[1:]
 		}
 
