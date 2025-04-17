@@ -1,1 +1,3 @@
 # need deterministic ids and clean workspace
+[EnvMatrix]
+CLI = ["$CLI_BINARY"]
