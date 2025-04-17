@@ -27,8 +27,7 @@ func TestMappingZeroValue(t *testing.T) {
 
 func TestMappingGet(t *testing.T) {
 	var m dyn.Mapping
-	err := m.Set(dyn.V("key"), dyn.V("value"))
-	assert.NoError(t, err)
+	m.SetLoc("key", nil, dyn.V("value"))
 	assert.Equal(t, 1, m.Len())
 
 	// Call GetPair
