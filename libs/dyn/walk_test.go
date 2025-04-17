@@ -116,9 +116,9 @@ func TestWalkMapDrop(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(
 		t,
-		NewValue(map[string]Value{
+		V(map[string]Value{
 			"bar": V("baz"),
-		}, nil),
+		}),
 		out,
 	)
 
