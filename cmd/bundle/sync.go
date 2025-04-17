@@ -48,6 +48,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 
 	opts.Full = f.full
 	opts.PollInterval = f.interval
+	opts.DryRun = f.dryRun
 	return opts, nil
 }
 
