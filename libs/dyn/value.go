@@ -32,7 +32,7 @@ var NilValue = Value{
 
 // V constructs a new Value with the given value.
 func V(v any) Value {
-	return NewValue(v, []Location{})
+	return NewValue(v, nil)
 }
 
 // NewValue constructs a new Value with the given value and location.
@@ -103,10 +103,8 @@ func (v Value) AsAny() any {
 	case KindMap:
 		m := v.v.(Mapping)
 		out := make(map[string]any, m.Len())
-		for _, pair := range m.pairs {
-			pk := pair.Key
-			pv := pair.Value
-			out[pk.MustString()] = pv.AsAny()
+		for key, value := range m.data {
+			out[key] = value.AsAny()
 		}
 		return out
 	case KindSequence:
@@ -212,5 +210,28 @@ func (v Value) eq(w Value) bool {
 		return &vs[0] == &ws[0]
 	default:
 		return v.v == w.v
+	}
+}
+
+func (v Value) DropKeyLocations() Value {
+	switch v.k {
+	case KindMap:
+		m := v.v.(Mapping)
+		out := make(map[string]Value, m.Len())
+		for _, pair := range m.Pairs() {
+			pk := pair.Key
+			pv := pair.Value.DropKeyLocations()
+			out[pk.MustString()] = pv
+		}
+		return NewValue(NewMappingFromGoMap(out), v.l)
+	case KindSequence:
+		vv := v.v.([]Value)
+		a := make([]Value, len(vv))
+		for i, v := range vv {
+			a[i] = v.DropKeyLocations()
+		}
+		return NewValue(a, v.l)
+	default:
+		return v
 	}
 }
