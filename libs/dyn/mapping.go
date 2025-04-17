@@ -1,7 +1,6 @@
 package dyn
 
 import (
-	"fmt"
 	"maps"
 	"slices"
 )
@@ -88,22 +87,6 @@ func (m Mapping) Get(key Value) (Value, bool) {
 func (m *Mapping) GetByString(skey string) (Value, bool) {
 	p, ok := m.GetPairByString(skey)
 	return p.Value, ok
-}
-
-// Set sets the value for the given key in the mapping.
-// If the key already exists, the value is updated.
-// If the key does not exist, a new key-value pair is added.
-// The key must be a string, otherwise an error is returned.
-//
-// Deprecated: Use SetLoc instead.
-func (m *Mapping) Set(key, value Value) error {
-	skey, ok := key.AsString()
-	if !ok {
-		return fmt.Errorf("key must be a string, got %s", key.Kind())
-	}
-
-	m.SetLoc(skey, key.l, value)
-	return nil
 }
 
 // Set sets the value for the given key in the mapping and optionally location of the key.
