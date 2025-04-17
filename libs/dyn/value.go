@@ -52,24 +52,6 @@ func NewValue(v any, loc []Location) Value {
 	}
 }
 
-func NewValueAnchor(v any, loc []Location) Value {
-	switch vin := v.(type) {
-	case map[string]Value:
-		v = newMappingFromGoMap(vin)
-	}
-
-	return Value{
-		v: v,
-		k: kindOf(v),
-
-		// create a copy of the locations, so that mutations to the original slice
-		// don't affect new value.
-		l: slices.Clone(loc),
-
-		anchor: true,
-	}
-}
-
 // WithLocations returns a new Value with its location set to the given value.
 func (v Value) WithLocations(loc []Location) Value {
 	return Value{

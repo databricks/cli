@@ -250,7 +250,7 @@ func TestYAMLSpecExample_2_10(t *testing.T) {
 			"hr": dyn.NewValue(
 				[]dyn.Value{
 					dyn.NewValue("Mark McGwire", []dyn.Location{{File: file, Line: 5, Column: 3}}),
-					dyn.NewValueAnchor("Sammy Sosa", []dyn.Location{{File: file, Line: 7, Column: 3}}),
+					dyn.NewValue("Sammy Sosa", []dyn.Location{{File: file, Line: 7, Column: 3}}).MarkAnchor(),
 				},
 				[]dyn.Location{{File: file, Line: 5, Column: 1}},
 			),
@@ -258,7 +258,7 @@ func TestYAMLSpecExample_2_10(t *testing.T) {
 				[]dyn.Value{
 					// The location for an anchored value refers to the anchor, not the reference.
 					// This is the same location as the anchor that appears in the "hr" mapping.
-					dyn.NewValueAnchor("Sammy Sosa", []dyn.Location{{File: file, Line: 7, Column: 3}}),
+					dyn.NewValue("Sammy Sosa", []dyn.Location{{File: file, Line: 7, Column: 3}}).MarkAnchor(),
 					dyn.NewValue("Ken Griffey", []dyn.Location{{File: file, Line: 10, Column: 3}}),
 				},
 				[]dyn.Location{{File: file, Line: 9, Column: 1}},
