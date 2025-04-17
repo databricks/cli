@@ -88,21 +88,18 @@ func TestNewPathFromString(t *testing.T) {
 			input: "foo[1]bar",
 			err:   errors.New("invalid path: foo[1]bar"),
 		},
-
-		// * is parsed as regular string in NewPathFromString
 		{
+			// * is parsed as regular string in NewPathFromString
 			input:  "foo.*",
 			output: NewPath(Key("foo"), Key("*")),
 		},
-
-		// * is parsed as regular string in NewPathFromString
 		{
+			// * is parsed as regular string in NewPathFromString
 			input:  "foo.*.bar",
 			output: NewPath(Key("foo"), Key("*"), Key("bar")),
 		},
-
-		// This is an invalid path (but would be valid for patterns)
 		{
+			// This is an invalid path (but would be valid for patterns)
 			input: "foo[*].bar",
 			err:   errors.New("invalid path: foo[*].bar"),
 		},
