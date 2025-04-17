@@ -1,0 +1,11 @@
+
+>>> [CLI] bundle run -- echo hello
+hello
+
+>>> [CLI] bundle run -- python3 -c import os; print(os.getcwd())
+[TEST_TMP_DIR]
+
+>>> [CLI] bundle run -- [CLI] current-user me
+Error: default auth: cannot configure default credentials, please check https://docs.databricks.com/en/dev-tools/auth.html#databricks-client-unified-authentication to configure credentials for your preferred authentication method. Config: databricks_cli_path=[CLI]. Env: DATABRICKS_CLI_PATH
+
+Exit code: 1
