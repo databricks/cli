@@ -1,6 +1,6 @@
 cd app
 
-# We first run the command with different entry poiny which starts unblocking script
+# We first run the command with different entry point which starts unblocking script
 # so we don't need to start it in background. It will install the dependencies as part of the command
 trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
 
