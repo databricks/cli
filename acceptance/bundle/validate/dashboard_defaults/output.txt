@@ -1,0 +1,28 @@
+{
+  "completely_empty": {
+    "embed_credentials": false,
+    "parent_path": "/Workspace/foo/bar",
+    "permissions": []
+  },
+  "empty_string": {
+    "embed_credentials": false,
+    "parent_path": "",
+    "permissions": []
+  },
+  "non_empty_string": {
+    "embed_credentials": false,
+    "parent_path": "already-set",
+    "permissions": []
+  },
+  "other_fields": {
+    "display_name": "hello",
+    "embed_credentials": false,
+    "parent_path": "/Workspace/foo/bar",
+    "permissions": []
+  },
+  "set_to_true": {
+    "embed_credentials": true,
+    "parent_path": "/Workspace/foo/bar",
+    "permissions": []
+  }
+}
