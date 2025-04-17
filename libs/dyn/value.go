@@ -32,7 +32,7 @@ var NilValue = Value{
 
 // V constructs a new Value with the given value.
 func V(v any) Value {
-	return NewValue(v, []Location{})
+	return NewValue(v, nil)
 }
 
 // NewValue constructs a new Value with the given value and location.
@@ -103,7 +103,7 @@ func (v Value) AsAny() any {
 	case KindMap:
 		m := v.v.(Mapping)
 		out := make(map[string]any, m.Len())
-		for _, pair := range m.pairs {
+		for _, pair := range m.Pairs() {
 			pk := pair.Key
 			pv := pair.Value
 			out[pk.MustString()] = pv.AsAny()
