@@ -1,8 +1,8 @@
 
->>> [CLI] sync . /Users/[USERNAME] --exclude-from ignore.test
+>>> [CLI] sync . /Users/[USERNAME] --exclude-from ignore.test-fixture
 Initial Sync Complete
 Uploaded .gitignore
-Uploaded ignore.test
+Uploaded ignore.test-fixture
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml
