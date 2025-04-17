@@ -3,6 +3,7 @@ package dyn
 import (
 	"fmt"
 	"maps"
+	"slices"
 
 	"github.com/databricks/cli/libs/utils"
 )
@@ -123,7 +124,11 @@ func (m *Mapping) Set(key, value Value) error {
 	}
 
 	m.data[skey] = value
-	m.keyLocations[skey] = key.l
+	if len(key.l) == 0 {
+		delete(m.keyLocations, skey)
+	} else {
+		m.keyLocations[skey] = slices.Clone(key.l)
+	}
 	return nil
 }
 
