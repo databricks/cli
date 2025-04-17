@@ -11,3 +11,4 @@ trap cleanup EXIT
 
 # Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
 trace $CLI sync . /Users/$CURRENT_USER_NAME --exclude-from 'ignore.test-fixture' | grep -v "^Action: " | sort
+trace $CLI sync . /Users/$CURRENT_USER_NAME --include-from 'ignore.test-fixture' | grep -v "^Action: " | sort

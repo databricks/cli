@@ -35,14 +35,15 @@ type syncFlags struct {
 	include     []string
 	dryRun      bool
 	excludeFrom string
+	includeFrom string
 }
 
-func (f *syncFlags) readExcludeFrom(ctx context.Context) ([]string, error) {
-	if f.excludeFrom == "" {
+func readPatternsFile(filePath string) ([]string, error) {
+	if filePath == "" {
 		return nil, nil
 	}
 
-	data, err := os.ReadFile(f.excludeFrom)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read exclude-from file: %w", err)
 	}
@@ -71,7 +72,12 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
-	excludePatterns, err := f.readExcludeFrom(cmd.Context())
+	excludePatterns, err := readPatternsFile(f.excludeFrom)
+	if err != nil {
+		return nil, err
+	}
+
+	includePatterns, err := readPatternsFile(f.includeFrom)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +88,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 	opts.Exclude = append(opts.Exclude, f.exclude...)
 	opts.Exclude = append(opts.Exclude, excludePatterns...)
 	opts.Include = append(opts.Include, f.include...)
+	opts.Include = append(opts.Include, includePatterns...)
 	opts.DryRun = f.dryRun
 	return opts, nil
 }
@@ -113,7 +120,12 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		log.Warnf(ctx, "Running in dry-run mode. No actual changes will be made.")
 	}
 
-	excludePatterns, err := f.readExcludeFrom(ctx)
+	excludePatterns, err := readPatternsFile(f.excludeFrom)
+	if err != nil {
+		return nil, err
+	}
+
+	includePatterns, err := readPatternsFile(f.includeFrom)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +148,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		WorktreeRoot: worktreeRoot,
 		LocalRoot:    localRoot,
 		Paths:        []string{"."},
-		Include:      f.include,
+		Include:      append(f.include, includePatterns...),
 		Exclude:      append(f.exclude, excludePatterns...),
 
 		RemotePath:   args[1],
@@ -174,6 +186,7 @@ func New() *cobra.Command {
 	cmd.Flags().StringSliceVar(&f.exclude, "exclude", nil, "patterns to exclude from sync (can be specified multiple times)")
 	cmd.Flags().StringSliceVar(&f.include, "include", nil, "patterns to include in sync (can be specified multiple times)")
 	cmd.Flags().StringVar(&f.excludeFrom, "exclude-from", "", "file containing patterns to exclude from sync (one pattern per line)")
+	cmd.Flags().StringVar(&f.includeFrom, "include-from", "", "file containing patterns to include to sync (one pattern per line)")
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
