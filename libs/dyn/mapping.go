@@ -41,7 +41,7 @@ func newMappingWithSize(size int) Mapping {
 func newMappingFromGoMap(vin map[string]Value) Mapping {
 	m := newMappingWithSize(len(vin))
 	for k, v := range vin {
-		m.Set(V(k), v) //nolint:errcheck
+		m.SetLoc(k, nil, v)
 	}
 	return m
 }
@@ -113,6 +113,28 @@ func (m *Mapping) Set(key, value Value) error {
 	}
 	m.index[skey] = len(m.pairs) - 1
 	return nil
+}
+
+// Set sets the value for the given key in the mapping and optionally location of the key.
+// If the key already exists, the value is updated. The location is updated if loc != nil.
+// If the key does not exist, a new key-value pair is added.
+func (m *Mapping) SetLoc(skey string, loc []Location, value Value) {
+	// If the key already exists, update the value.
+	if i, ok := m.index[skey]; ok {
+		p := m.pairs[i]
+		p.Value = value
+		if loc != nil {
+			p.Key.l = loc
+		}
+		return
+	}
+
+	// Otherwise, add a new pair.
+	m.pairs = append(m.pairs, Pair{NewValue(skey, loc), value})
+	if m.index == nil {
+		m.index = make(map[string]int)
+	}
+	m.index[skey] = len(m.pairs) - 1
 }
 
 // Keys returns all the keys in the Mapping.
