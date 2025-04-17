@@ -121,7 +121,7 @@ func (m *Mapping) Set(key, value Value) error {
 func (m *Mapping) SetLoc(skey string, loc []Location, value Value) {
 	// If the key already exists, update the value.
 	if i, ok := m.index[skey]; ok {
-		p := m.pairs[i]
+		p := &m.pairs[i]
 		p.Value = value
 		if loc != nil {
 			p.Key.l = loc
