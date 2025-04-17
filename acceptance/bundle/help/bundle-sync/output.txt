@@ -6,14 +6,12 @@ Usage:
   databricks bundle sync [flags]
 
 Flags:
-      --dry-run               simulate sync execution without making actual changes
-      --exclude-from string   file containing patterns to exclude from sync (one pattern per line)
-      --full                  perform full synchronization (default is incremental)
-  -h, --help                  help for sync
-      --include strings       patterns to include in sync (can be specified multiple times)
-      --interval duration     file system polling interval (for --watch) (default 1s)
-      --output type           type of the output format
-      --watch                 watch local file system for changes
+      --dry-run             simulate sync execution without making actual changes
+      --full                perform full synchronization (default is incremental)
+  -h, --help                help for sync
+      --interval duration   file system polling interval (for --watch) (default 1s)
+      --output type         type of the output format
+      --watch               watch local file system for changes
 
 Global Flags:
       --debug            enable debug logging
