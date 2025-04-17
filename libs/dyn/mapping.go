@@ -94,24 +94,15 @@ func (m *Mapping) GetByString(skey string) (Value, bool) {
 // If the key already exists, the value is updated.
 // If the key does not exist, a new key-value pair is added.
 // The key must be a string, otherwise an error is returned.
+//
+// Deprecated: Use SetLoc instead.
 func (m *Mapping) Set(key, value Value) error {
 	skey, ok := key.AsString()
 	if !ok {
 		return fmt.Errorf("key must be a string, got %s", key.Kind())
 	}
 
-	// If the key already exists, update the value.
-	if i, ok := m.index[skey]; ok {
-		m.pairs[i].Value = value
-		return nil
-	}
-
-	// Otherwise, add a new pair.
-	m.pairs = append(m.pairs, Pair{key, value})
-	if m.index == nil {
-		m.index = make(map[string]int)
-	}
-	m.index[skey] = len(m.pairs) - 1
+	m.SetLoc(skey, key.l, value)
 	return nil
 }
 
