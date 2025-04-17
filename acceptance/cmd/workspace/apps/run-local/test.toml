@@ -1,0 +1,10 @@
+RecordRequests = false
+
+Ignore = [
+    '.venv',
+    '__pycache__'
+]
+
+[[Repls]]
+Old='curl/[0-9]+\.[0-9]+\.[0-9]+'
+New='curl/(version)'
