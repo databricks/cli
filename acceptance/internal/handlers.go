@@ -28,7 +28,7 @@ var TestMetastore = catalog.MetastoreAssignment{
 	WorkspaceId:        470123456789500,
 }
 
-func AddHandlers(server *testserver.Server) {
+func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req testserver.Request) any {
 		return compute.ListPoliciesResponse{
 			Policies: []compute.Policy{

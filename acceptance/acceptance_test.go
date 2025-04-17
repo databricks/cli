@@ -26,12 +26,8 @@ import (
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
-	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -144,13 +140,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		defaultServer := testserver.New(t)
-		internal.AddHandlers(defaultServer)
-		t.Setenv("DATABRICKS_DEFAULT_HOST", defaultServer.URL)
-
-		homeDir := t.TempDir()
-		// Do not read user's ~/.databrickscfg
-		t.Setenv(env.HomeEnvVar(), homeDir)
+		internal.StartDefaultServer(t)
 	}
 
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
@@ -371,94 +361,24 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
-	var workspaceClient *databricks.WorkspaceClient
+	workspaceClient := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+
+	// Configure resolved credentials in the environment.
+	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+workspaceClient.Config.Host)
+	if workspaceClient.Config.Token != "" {
+		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+workspaceClient.Config.Token)
+	}
+
 	var user iam.User
-
-	// Start a new server with a custom configuration if the acceptance test
-	// specifies a custom server stubs.
-	var server *testserver.Server
-
-	if !isRunningOnCloud {
-		// Start a new server for this test if either:
-		// 1. A custom server spec is defined in the test configuration.
-		// 2. The test is configured to record requests and assert on them. We need
-		//    a duplicate of the default server to record requests because the default
-		//    server otherwise is a shared resource.
-
-		databricksLocalHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
-
-		if len(config.Server) > 0 || isTruePtr(config.RecordRequests) {
-			server = testserver.New(t)
-			if isTruePtr(config.RecordRequests) {
-				requestsPath := filepath.Join(tmpDir, "out.requests.txt")
-				server.RequestCallback = func(request *testserver.Request) {
-					req := getLoggedRequest(request, config.IncludeRequestHeaders)
-					reqJson, err := json.MarshalIndent(req, "", "  ")
-					assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
-
-					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-					assert.NoError(t, err)
-					defer f.Close()
-
-					_, err = f.WriteString(string(reqJson) + "\n")
-					assert.NoError(t, err)
-				}
-			}
-
-			if LogRequests {
-				server.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
-					t.Logf("%d %s %s\n%s\n%s",
-						response.StatusCode, request.Method, request.URL,
-						formatHeadersAndBody("> ", request.Headers, request.Body),
-						formatHeadersAndBody("# ", response.Headers, response.Body),
-					)
-				}
-			}
-
-			// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
-			// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
-			slices.Reverse(config.Server)
-
-			for _, stub := range config.Server {
-				require.NotEmpty(t, stub.Pattern)
-				items := strings.Split(stub.Pattern, " ")
-				require.Len(t, items, 2)
-				server.Handle(items[0], items[1], func(req testserver.Request) any {
-					time.Sleep(stub.Delay)
-					return stub.Response
-				})
-			}
-
-			// The earliest handlers take precedence, add default handlers last
-			internal.AddHandlers(server)
-			databricksLocalHost = server.URL
-		}
-
-		// Each local test should use a new token that will result into a new fake workspace,
-		// so that test don't interfere with each other.
-		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-		config := databricks.Config{
-			Host:  databricksLocalHost,
-			Token: "dbapi" + tokenSuffix,
-		}
-		workspaceClient, err = databricks.NewWorkspaceClient(&config)
-		require.NoError(t, err)
-
-		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+config.Host)
-		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+config.Token)
-
-		// For the purposes of replacements, use testUser.
-		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-		user = internal.TestUser
-	} else {
-		// Use whatever authentication mechanism is configured by the test runner.
-		workspaceClient, err = databricks.NewWorkspaceClient(&databricks.Config{})
-		require.NoError(t, err)
+	if isRunningOnCloud {
 		pUser, err := workspaceClient.CurrentUser.Me(context.Background())
 		require.NoError(t, err, "Failed to get current user")
 		user = *pUser
+	} else {
+		// For the purposes of replacements, use testUser for local runs.
+		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
+		user = internal.TestUser
 	}
-
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
@@ -835,33 +755,6 @@ type LoggedRequest struct {
 	RawBody string      `json:"raw_body,omitempty"`
 }
 
-func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedRequest {
-	result := LoggedRequest{
-		Method:  req.Method,
-		Path:    req.URL.Path,
-		Headers: filterHeaders(req.Headers, includedHeaders),
-	}
-
-	if json.Valid(req.Body) {
-		result.Body = json.RawMessage(req.Body)
-	} else {
-		result.RawBody = string(req.Body)
-	}
-
-	return result
-}
-
-func filterHeaders(h http.Header, includedHeaders []string) http.Header {
-	headers := make(http.Header)
-	for k, v := range h {
-		if !slices.Contains(includedHeaders, k) {
-			continue
-		}
-		headers[k] = v
-	}
-	return headers
-}
-
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
@@ -967,26 +860,4 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) (string, error) 
 	} else {
 		return "", fmt.Errorf("databricks-bundles wheel not found in %s", buildDir)
 	}
-}
-
-func formatHeadersAndBody(prefix string, headers http.Header, body []byte) string {
-	var result []string
-	for key, values := range headers {
-		if len(values) == 1 {
-			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values[0]))
-		} else {
-			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values))
-		}
-	}
-	if len(body) > 0 {
-		var s string
-		if utf8.Valid(body) {
-			s = string(body)
-		} else {
-			s = fmt.Sprintf("[Binary %d bytes]", len(body))
-		}
-		s = strings.ReplaceAll(s, "\n", "\n"+prefix)
-		result = append(result, prefix+s)
-	}
-	return strings.Join(result, "\n")
 }
