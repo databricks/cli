@@ -161,7 +161,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	}
 
 	refm, _ := ref.AsMap()
-	out := dyn.NewMapping()
+	out := dyn.NewMappingWithSize(src.Len())
 	iter := src.MapRange()
 	for iter.Next() {
 		k := iter.Key().String()

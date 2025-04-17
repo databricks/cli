@@ -24,7 +24,7 @@ func TestFromTypedStructZeroFields(t *testing.T) {
 	// For an empty struct with a non-nil reference we expect an empty map.
 	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	assert.Equal(t, dyn.V(dyn.Mapping{}), nv)
 }
 
 func TestFromTypedStructPointerZeroFields(t *testing.T) {
@@ -53,13 +53,13 @@ func TestFromTypedStructPointerZeroFields(t *testing.T) {
 	src = &Tmp{}
 	nv, err = FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	assert.Equal(t, dyn.V(dyn.Mapping{}), nv)
 
 	// For an initialized pointer with a non-nil reference we expect an empty map.
 	src = &Tmp{}
 	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	assert.Equal(t, dyn.V(dyn.Mapping{}), nv)
 }
 
 func TestFromTypedStructNilFields(t *testing.T) {

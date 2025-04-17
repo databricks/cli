@@ -15,7 +15,7 @@ func TestNewMapping(t *testing.T) {
 }
 
 func TestMappingZeroValue(t *testing.T) {
-	m := dyn.NewMapping()
+	var m dyn.Mapping
 	assert.Equal(t, 0, m.Len())
 
 	value, ok := m.Get(dyn.V("key"))
@@ -26,7 +26,7 @@ func TestMappingZeroValue(t *testing.T) {
 }
 
 func TestMappingGet(t *testing.T) {
-	m := dyn.NewMapping()
+	var m dyn.Mapping
 	err := m.Set(dyn.V("key"), dyn.V("value"))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, m.Len())
@@ -95,7 +95,7 @@ func TestMappingGet(t *testing.T) {
 
 func TestMappingSet(t *testing.T) {
 	var err error
-	m := dyn.NewMapping()
+	var m dyn.Mapping
 
 	// Set a value
 	err = m.Set(dyn.V("key1"), dyn.V("foo"))
@@ -137,8 +137,7 @@ func TestMappingKeysValues(t *testing.T) {
 	var err error
 
 	// Configure mapping
-	m := dyn.NewMapping()
-
+	var m dyn.Mapping
 	err = m.Set(dyn.V("key1"), dyn.V("foo"))
 	assert.NoError(t, err)
 	err = m.Set(dyn.V("key2"), dyn.V("bar"))
@@ -160,8 +159,8 @@ func TestMappingKeysValues(t *testing.T) {
 func TestMappingClone(t *testing.T) {
 	var err error
 
-	m1 := dyn.NewMapping()
-
+	// Configure mapping
+	var m1 dyn.Mapping
 	err = m1.Set(dyn.V("key1"), dyn.V("foo"))
 	assert.NoError(t, err)
 	err = m1.Set(dyn.V("key2"), dyn.V("bar"))
@@ -185,19 +184,19 @@ func TestMappingClone(t *testing.T) {
 }
 
 func TestMappingMerge(t *testing.T) {
-	m1 := dyn.NewMapping()
+	var m1 dyn.Mapping
 	for i := range 10 {
 		err := m1.Set(dyn.V(strconv.Itoa(i)), dyn.V(i))
 		require.NoError(t, err)
 	}
 
-	m2 := dyn.NewMapping()
+	var m2 dyn.Mapping
 	for i := 5; i < 15; i++ {
 		err := m2.Set(dyn.V(strconv.Itoa(i)), dyn.V(i))
 		require.NoError(t, err)
 	}
 
-	out := dyn.NewMapping()
+	var out dyn.Mapping
 	out.Merge(m1)
 	assert.Equal(t, 10, out.Len())
 	out.Merge(m2)

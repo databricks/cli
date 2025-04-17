@@ -25,17 +25,20 @@ type Mapping struct {
 
 // NewMapping creates a new empty Mapping.
 func NewMapping() Mapping {
-	return Mapping{
-		data:         make(map[string]Value),
-		keyLocations: make(map[string][]Location),
-	}
+	return Mapping{}
+}
+
+// NewMappingWithSize creates a new Mapping preallocated to the specified size.
+func NewMappingWithSize(size int) Mapping {
+	return newMappingWithSize(size)
 }
 
 // newMappingWithSize creates a new Mapping preallocated to the specified size.
 func newMappingWithSize(size int) Mapping {
 	return Mapping{
-		data:         make(map[string]Value, size),
-		keyLocations: make(map[string][]Location, size),
+		data: make(map[string]Value, size),
+		// Do not initialize keyLocations, because in many contexts it's not going to be filled
+		// e.g. when constructing Mapping from map[string]Value.
 	}
 }
 
@@ -46,14 +49,8 @@ func NewMappingFromGoMap(vin map[string]Value) Mapping {
 
 // newMappingFromGoMap creates a new Mapping from a Go map of string keys and dynamic values.
 func newMappingFromGoMap(vin map[string]Value) Mapping {
-	if vin == nil {
-		vin = make(map[string]Value)
-	} else {
-		vin = maps.Clone(vin)
-	}
 	return Mapping{
-		data:         vin,
-		keyLocations: make(map[string][]Location),
+		data: maps.Clone(vin),
 	}
 }
 
@@ -123,13 +120,24 @@ func (m *Mapping) Set(key, value Value) error {
 		return fmt.Errorf("key must be a string, got %s", key.Kind())
 	}
 
-	m.data[skey] = value
-	if len(key.l) == 0 {
-		delete(m.keyLocations, skey)
-	} else {
-		m.keyLocations[skey] = slices.Clone(key.l)
-	}
+	m.set(skey, key.l, value)
 	return nil
+}
+
+func (m *Mapping) set(key string, keyloc []Location, value Value) {
+	if m.data == nil {
+		m.data = make(map[string]Value)
+	}
+	m.data[key] = value
+
+	if len(keyloc) == 0 {
+		delete(m.keyLocations, key)
+	} else {
+		if m.keyLocations == nil {
+			m.keyLocations = make(map[string][]Location)
+		}
+		m.keyLocations[key] = slices.Clone(keyloc)
+	}
 }
 
 // Keys returns all the keys in the Mapping.
@@ -160,8 +168,12 @@ func (m Mapping) Clone() Mapping {
 
 // Merge merges the key-value pairs from another Mapping into the current Mapping.
 func (m *Mapping) Merge(n Mapping) {
+	if len(m.data) == 0 {
+		m.data = maps.Clone(n.data)
+		m.keyLocations = maps.Clone(n.keyLocations)
+		return
+	}
 	for key, value := range n.data {
-		m.data[key] = value
-		m.keyLocations[key] = n.keyLocations[key]
+		m.set(key, n.keyLocations[key], value)
 	}
 }

@@ -197,7 +197,7 @@ func TestNormalizeStructIncludeMissingFields(t *testing.T) {
 		"ptr": dyn.V(map[string]dyn.Value{
 			"string": dyn.V(""),
 		}),
-		"map":    dyn.V(map[string]dyn.Value{}),
+		"map":    dyn.V(dyn.Mapping{}),
 		"slice":  dyn.V([]dyn.Value{}),
 		"string": dyn.V(""),
 		"bool":   dyn.V(false),
