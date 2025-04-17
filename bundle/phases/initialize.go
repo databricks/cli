@@ -119,6 +119,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// ApplyPresets through ResourceProcessor.
 		resourcemutator.ApplyTargetMode(),
 
+		// Reads (typed): b.SyncRoot (checks if bundle root is in /Workspace/)
+		// Updates (typed): b.SyncRoot (replaces with extension-aware path when running on Databricks Runtime)
+		// Configure use of WSFS for reads if the CLI is running on Databricks.
+		mutator.ConfigureWSFS(),
+
 		// Static resources (e.g. YAML) are already loaded, we initialize and normalize them before Python
 		resourcemutator.ProcessStaticResources(),
 
@@ -135,11 +140,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
 		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions
 		permissions.PermissionDiagnostics(),
-
-		// Reads (typed): b.SyncRoot (checks if bundle root is in /Workspace/)
-		// Updates (typed): b.SyncRoot (replaces with extension-aware path when running on Databricks Runtime)
-		// Configure use of WSFS for reads if the CLI is running on Databricks.
-		mutator.ConfigureWSFS(),
 
 		mutator.TranslatePaths(),
 
