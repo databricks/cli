@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/libraries"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -91,6 +92,13 @@ func (t *translateContext) rewritePath(
 	input string,
 	opts translateOptions,
 ) (string, error) {
+	// If the input is a local requirements file, we need to translate it to an absolute path.
+	isLocalRequirementsFile := libraries.IsLocalRequirementsFile(input)
+	if isLocalRequirementsFile {
+		input = strings.TrimPrefix(input, "-r")
+		input = strings.TrimSpace(input)
+	}
+
 	// We assume absolute paths point to a location in the workspace
 	if path.IsAbs(input) {
 		return "", nil
@@ -143,6 +151,10 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateLocalRelativePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalRelativeWithPrefix:
 		interp, err = t.translateLocalRelativeWithPrefixPath(ctx, input, localPath, localRelPath)
+	case paths.TranslateModeEnvironmentRequirements:
+		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
+		// Add the -r flag to the path to indicate it's a requirements file used for environment dependencies.
+		interp = "-r " + interp
 	default:
 		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)
 	}
