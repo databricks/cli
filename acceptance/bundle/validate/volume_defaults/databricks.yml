@@ -1,0 +1,13 @@
+bundle:
+  name: BUNDLE
+
+resources:
+  volumes:
+    v1:
+      volume_type: ""
+
+    v2:
+      volume_type: "already-set"
+
+    v3:
+      comment: hello
