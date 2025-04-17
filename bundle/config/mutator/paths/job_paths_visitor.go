@@ -99,7 +99,8 @@ func jobRewritePatterns() []jobRewritePattern {
 			),
 			TranslateModeEnvironmentRequirements,
 			func(s string) bool {
-				return !libraries.IsLocalRequirementsFile(s)
+				_, ok := libraries.IsLocalRequirementsFile(s)
+				return !ok
 			},
 		},
 	}
