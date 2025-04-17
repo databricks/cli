@@ -51,7 +51,7 @@ func SetDefault(ctx context.Context, b *Bundle, pattern string, value any) diag.
 		return diag.FromErr(fmt.Errorf("Internal error: invalid pattern: %s: %w", pattern, err))
 	}
 
-	pat, key := pat.Split()
+	pat, key := pat.SplitKey()
 	if pat == nil || key == "" {
 		return diag.FromErr(fmt.Errorf("Internal error: invalid pattern: %s", pattern))
 	}

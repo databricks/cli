@@ -34,7 +34,7 @@ func NewPatternFromPath(p Path) Pattern {
 
 // Split <pattern>.<string_key> into <pattern> and <string_key>
 // The last component must be dyn.Key() and there must be at least two components.
-func (p Pattern) Split() (Pattern, string) {
+func (p Pattern) SplitKey() (Pattern, string) {
 	if len(p) <= 1 {
 		return nil, ""
 	}
@@ -44,7 +44,11 @@ func (p Pattern) Split() (Pattern, string) {
 	if !ok {
 		return nil, ""
 	}
-	return parent, pc.Key()
+	key := pc.Key()
+	if key == "" {
+		return nil, ""
+	}
+	return parent, key
 }
 
 // Append appends the given components to the pattern.
