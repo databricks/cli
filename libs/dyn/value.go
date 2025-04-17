@@ -214,3 +214,26 @@ func (v Value) eq(w Value) bool {
 		return v.v == w.v
 	}
 }
+
+func (v Value) DropKeyLocations() Value {
+	switch v.k {
+	case KindMap:
+		m := v.v.(Mapping)
+		out := make(map[string]Value, m.Len())
+		for _, pair := range m.Pairs() {
+			pk := pair.Key
+			pv := pair.Value.DropKeyLocations()
+			out[pk.MustString()] = pv
+		}
+		return NewValue(NewMappingFromGoMap(out), v.l)
+	case KindSequence:
+		vv := v.v.([]Value)
+		a := make([]any, len(vv))
+		for i, v := range vv {
+			a[i] = v.DropKeyLocations()
+		}
+		return NewValue(a, v.l)
+	default:
+		return v
+	}
+}
