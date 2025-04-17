@@ -25,6 +25,7 @@ func loadExample(t *testing.T, file string) dyn.Value {
 func TestYAMLSpecExample_2_1(t *testing.T) {
 	file := "testdata/spec_example_2.1.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
@@ -40,6 +41,8 @@ func TestYAMLSpecExample_2_2(t *testing.T) {
 	file := "testdata/spec_example_2.2.yml"
 	self := loadExample(t, file)
 
+	self = self.DropKeyLocations()
+
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"hr":  dyn.NewValue(65, []dyn.Location{{File: file, Line: 3, Column: 6}}),
@@ -53,6 +56,7 @@ func TestYAMLSpecExample_2_2(t *testing.T) {
 func TestYAMLSpecExample_2_3(t *testing.T) {
 	file := "testdata/spec_example_2.3.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -80,6 +84,7 @@ func TestYAMLSpecExample_2_3(t *testing.T) {
 func TestYAMLSpecExample_2_4(t *testing.T) {
 	file := "testdata/spec_example_2.4.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
@@ -142,6 +147,7 @@ func TestYAMLSpecExample_2_5(t *testing.T) {
 func TestYAMLSpecExample_2_6(t *testing.T) {
 	file := "testdata/spec_example_2.6.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -192,6 +198,7 @@ func TestYAMLSpecExample_2_7(t *testing.T) {
 func TestYAMLSpecExample_2_8(t *testing.T) {
 	file := "testdata/spec_example_2.8.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	// Note: we do not support multiple documents in a single YAML file.
 
@@ -208,6 +215,7 @@ func TestYAMLSpecExample_2_8(t *testing.T) {
 func TestYAMLSpecExample_2_9(t *testing.T) {
 	file := "testdata/spec_example_2.9.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	// Note: we do not support multiple documents in a single YAML file.
 
@@ -235,13 +243,14 @@ func TestYAMLSpecExample_2_9(t *testing.T) {
 func TestYAMLSpecExample_2_10(t *testing.T) {
 	file := "testdata/spec_example_2.10.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"hr": dyn.NewValue(
 				[]dyn.Value{
 					dyn.NewValue("Mark McGwire", []dyn.Location{{File: file, Line: 5, Column: 3}}),
-					dyn.NewValue("Sammy Sosa", []dyn.Location{{File: file, Line: 7, Column: 3}}),
+					dyn.NewValueAnchor("Sammy Sosa", []dyn.Location{{File: file, Line: 7, Column: 3}}),
 				},
 				[]dyn.Location{{File: file, Line: 5, Column: 1}},
 			),
@@ -249,7 +258,7 @@ func TestYAMLSpecExample_2_10(t *testing.T) {
 				[]dyn.Value{
 					// The location for an anchored value refers to the anchor, not the reference.
 					// This is the same location as the anchor that appears in the "hr" mapping.
-					dyn.NewValue("Sammy Sosa", []dyn.Location{{File: file, Line: 7, Column: 3}}),
+					dyn.NewValueAnchor("Sammy Sosa", []dyn.Location{{File: file, Line: 7, Column: 3}}),
 					dyn.NewValue("Ken Griffey", []dyn.Location{{File: file, Line: 10, Column: 3}}),
 				},
 				[]dyn.Location{{File: file, Line: 9, Column: 1}},
@@ -272,6 +281,7 @@ func TestYAMLSpecExample_2_11(t *testing.T) {
 func TestYAMLSpecExample_2_12(t *testing.T) {
 	file := "testdata/spec_example_2.12.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
@@ -342,6 +352,7 @@ func TestYAMLSpecExample_2_15(t *testing.T) {
 func TestYAMLSpecExample_2_16(t *testing.T) {
 	file := "testdata/spec_example_2.16.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -367,6 +378,7 @@ func TestYAMLSpecExample_2_16(t *testing.T) {
 func TestYAMLSpecExample_2_17(t *testing.T) {
 	file := "testdata/spec_example_2.17.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -402,6 +414,7 @@ func TestYAMLSpecExample_2_17(t *testing.T) {
 func TestYAMLSpecExample_2_18(t *testing.T) {
 	file := "testdata/spec_example_2.18.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -421,6 +434,7 @@ func TestYAMLSpecExample_2_18(t *testing.T) {
 func TestYAMLSpecExample_2_19(t *testing.T) {
 	file := "testdata/spec_example_2.19.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -452,6 +466,7 @@ func TestYAMLSpecExample_2_19(t *testing.T) {
 func TestYAMLSpecExample_2_20(t *testing.T) {
 	file := "testdata/spec_example_2.20.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	// Equality assertion doesn't work with NaNs.
 	// See https://github.com/stretchr/testify/issues/624.
@@ -490,6 +505,7 @@ func TestYAMLSpecExample_2_20(t *testing.T) {
 func TestYAMLSpecExample_2_21(t *testing.T) {
 	file := "testdata/spec_example_2.21.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -516,6 +532,7 @@ func TestYAMLSpecExample_2_21(t *testing.T) {
 func TestYAMLSpecExample_2_22(t *testing.T) {
 	file := "testdata/spec_example_2.22.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -556,6 +573,7 @@ func TestYAMLSpecExample_2_23(t *testing.T) {
 func TestYAMLSpecExample_2_24(t *testing.T) {
 	file := "testdata/spec_example_2.24.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
@@ -613,6 +631,7 @@ func TestYAMLSpecExample_2_24(t *testing.T) {
 func TestYAMLSpecExample_2_25(t *testing.T) {
 	file := "testdata/spec_example_2.25.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -627,6 +646,7 @@ func TestYAMLSpecExample_2_25(t *testing.T) {
 func TestYAMLSpecExample_2_26(t *testing.T) {
 	file := "testdata/spec_example_2.26.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
@@ -656,6 +676,7 @@ func TestYAMLSpecExample_2_26(t *testing.T) {
 func TestYAMLSpecExample_2_27(t *testing.T) {
 	file := "testdata/spec_example_2.27.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
@@ -801,6 +822,7 @@ func TestYAMLSpecExample_2_27(t *testing.T) {
 func TestYAMLSpecExample_2_28(t *testing.T) {
 	file := "testdata/spec_example_2.28.yml"
 	self := loadExample(t, file)
+	self = self.DropKeyLocations()
 
 	assert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
