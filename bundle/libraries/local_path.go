@@ -64,7 +64,10 @@ func IsLibraryLocal(dep string) bool {
 		return false
 	}
 
-	// If the dependency is a requirements file, it's not a valid local path
+	// If the dependency is a requirements file, it can either be a local path or a remote path.
+	// Even though the path to requirements.txt can be local we don't return true in this function anyway
+	// and don't treat suchh path as local library path.
+	// Instead wehandle translation of these paths in separate code path in TranslatePath mutator.
 	if strings.HasPrefix(dep, "-r") {
 		return false
 	}
@@ -75,6 +78,16 @@ func IsLibraryLocal(dep string) bool {
 	}
 
 	return IsLocalPath(dep)
+}
+
+func IsLocalRequirementsFile(dep string) (string, bool) {
+	dep, ok := strings.CutPrefix(dep, "-r")
+	if !ok {
+		return "", false
+	}
+
+	dep = strings.TrimSpace(dep)
+	return dep, IsLocalPath(dep)
 }
 
 func containsPipFlag(input string) bool {

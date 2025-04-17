@@ -1,0 +1,5 @@
+trace $CLI bundle validate
+
+trace $CLI bundle deploy
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
+rm out.requests.txt

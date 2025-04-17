@@ -29,4 +29,7 @@ const (
 	// It a "./" prefix to the path if it does not already have one.
 	// This allows for disambiguating between paths and PyPI package names.
 	TranslateModeLocalRelativeWithPrefix
+
+	// TranslateModeEnvironmentRequirements translates a local requirements file path to be absolute.
+	TranslateModeEnvironmentRequirements
 )
