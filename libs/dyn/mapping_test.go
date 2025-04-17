@@ -125,8 +125,8 @@ func TestMappingSetLoc(t *testing.T) {
 func TestMappingKeysValues(t *testing.T) {
 	// Configure mapping
 	var m dyn.Mapping
-	m.SetLoc("key1", []dyn.Location{}, dyn.V("foo"))
-	m.SetLoc("key2", []dyn.Location{}, dyn.V("bar"))
+	m.SetLoc("key1", nil, dyn.V("foo"))
+	m.SetLoc("key2", nil, dyn.V("bar"))
 
 	// Confirm keys
 	keys := m.Keys()
