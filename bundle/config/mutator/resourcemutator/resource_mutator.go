@@ -41,6 +41,11 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// Updates (dynamic): resources.dashboards.*.embed_credentials (sets to false if not set)
 		ConfigureDashboardDefaults(),
 
+		// Reads (typed): resources.dashboards.*.file_path (checks for existing file_path)
+		// Updates (typed): resources.dashboards.*.serialized_dashboard (sets to the contents of the file in file_path)
+		// Removes resources.dashboards.*.file_path
+		ConfigureDashboardSerializedDashboard(),
+
 		// Reads (dynamic): resources.volumes.* (checks for existing volume_type)
 		// Updates (dynamic): resources.volumes.*.volume_type (sets to "MANAGED" if not set)
 		ConfigureVolumeDefaults(),
