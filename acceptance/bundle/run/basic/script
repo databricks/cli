@@ -1,0 +1,16 @@
+title "no run key specified"
+errcode trace $CLI bundle run
+
+title "deploy and run resource"
+errcode trace $CLI bundle deploy
+
+errcode trace $CLI bundle run foo
+
+title "no resource key with --"
+errcode trace $CLI bundle run --
+
+title "resource key with parameters"
+errcode trace $CLI bundle run foo -- arg1 arg2
+
+title "inline script"
+errcode trace $CLI bundle run -- echo "hello"
