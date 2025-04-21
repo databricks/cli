@@ -38,6 +38,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "jobs",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -3,6 +3,7 @@
 package settings
 
 import (
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
 	aibi_dashboard_embedding_access_policy "github.com/databricks/cli/cmd/workspace/aibi-dashboard-embedding-access-policy"
@@ -32,6 +33,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "settings",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add subservices

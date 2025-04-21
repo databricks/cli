@@ -31,8 +31,9 @@ type DataSourceJobJobSettingsSettingsEmailNotifications struct {
 }
 
 type DataSourceJobJobSettingsSettingsEnvironmentSpec struct {
-	Client       string   `json:"client"`
-	Dependencies []string `json:"dependencies,omitempty"`
+	Client          string   `json:"client"`
+	Dependencies    []string `json:"dependencies,omitempty"`
+	JarDependencies []string `json:"jar_dependencies,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsEnvironment struct {

@@ -24,6 +24,7 @@ func New() *cobra.Command {
 		Long: `Controls the list of domains approved to host the embedded AI/BI dashboards.
   The approved domains list can't be mutated when the current access policy is
   not set to ALLOW_APPROVED_DOMAINS.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
