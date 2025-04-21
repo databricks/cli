@@ -24,9 +24,6 @@ task or a Python wheel task, the second example applies.
 You can also use the bundle run command to execute scripts / commands in the same
 authentication context as the bundle.
 
-Note: The current working directory of the provided command will be set to the root
-of the bundle.
-
 Authentication to the input command will be provided by setting the appropriate
 environment variables that Databricks tools use to authenticate.
 
