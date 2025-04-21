@@ -25,7 +25,6 @@ func execv(opts ExecvOptions) error {
 	cmd.Dir = opts.Dir
 	cmd.Env = opts.Env
 
-	// Setup Stdin pipe
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("creating stdin pipe failed: %w", err)
@@ -54,7 +53,10 @@ func execv(opts ExecvOptions) error {
 	var stdinErr error
 	go func() {
 		defer wg.Done()
-		defer stdin.Close() // Close stdin pipe when copying is done
+		// Close stdin pipe when we are done copying
+		// from the parent process.
+		defer stdin.Close()
+
 		_, stdinErr = io.Copy(stdin, opts.Stdin)
 	}()
 
@@ -92,5 +94,8 @@ func execv(opts ExecvOptions) error {
 		return fmt.Errorf("running %s failed: %w", strings.Join(opts.Args, " "), err)
 	}
 
-	return nil
+	// Unix implementation of execv never returns control to the CLI process.
+	// To emulate this behavior, we exit early here if the child process exits
+	// successfully.
+	os.Exit(0)
 }
