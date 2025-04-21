@@ -7,4 +7,4 @@ unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
 # Explicitly select oauth target
-trace $CLI bundle run -t oauth -- $CLI current-user me
+trace $CLI bundle run -t oauth -- $CLI bundle validate -o json| jq .bundle.target

@@ -25,3 +25,33 @@
   "method": "GET",
   "path": "/api/2.0/preview/scim/v2/Me"
 }
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/foobar/oauth/files"
+  }
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}

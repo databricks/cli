@@ -245,7 +245,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	//
 	// This is only useful for when the Databricks CLI is the child command.
 	if target := root.GetTarget(cmd); target != "" {
-		env = append(env, "DATABRICKS_CONFIG_TARGET="+target)
+		env = append(env, "DATABRICKS_BUNDLE_TARGET="+target)
 	}
 
 	// If the bundle has a profile configured, explicitly pass it to the child command.
