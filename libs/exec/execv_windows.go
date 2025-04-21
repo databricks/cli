@@ -98,4 +98,5 @@ func execv(opts ExecvOptions) error {
 	// To emulate this behavior, we exit early here if the child process exits
 	// successfully.
 	os.Exit(0)
+	return nil
 }
