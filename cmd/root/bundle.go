@@ -13,8 +13,8 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// GetTarget returns the name of the target to operate in.
-func GetTarget(cmd *cobra.Command) (value string) {
+// getTarget returns the name of the target to operate in.
+func getTarget(cmd *cobra.Command) (value string) {
 	target, isFlagSet := targetFlagValue(cmd)
 	if isFlagSet {
 		return target
@@ -78,7 +78,7 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 	// Load bundle and select target.
 	ctx := cmd.Context()
 	var diags diag.Diagnostics
-	if target := GetTarget(cmd); target == "" {
+	if target := getTarget(cmd); target == "" {
 		diags = phases.LoadDefaultTarget(ctx, b)
 	} else {
 		diags = phases.LoadNamedTarget(ctx, b, target)

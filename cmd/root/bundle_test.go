@@ -216,7 +216,7 @@ func TestTargetFlagFull(t *testing.T) {
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "development", GetTarget(cmd))
+	assert.Equal(t, "development", getTarget(cmd))
 }
 
 func TestTargetFlagShort(t *testing.T) {
@@ -228,7 +228,7 @@ func TestTargetFlagShort(t *testing.T) {
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "production", GetTarget(cmd))
+	assert.Equal(t, "production", getTarget(cmd))
 }
 
 // TODO: remove when environment flag is fully deprecated
@@ -242,5 +242,5 @@ func TestTargetEnvironmentFlag(t *testing.T) {
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "development", GetTarget(cmd))
+	assert.Equal(t, "development", getTarget(cmd))
 }

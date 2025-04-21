@@ -245,8 +245,8 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	// If user has specified a target, pass it to the child command.
 	//
 	// This is only useful for when the Databricks CLI is the child command.
-	if target := root.GetTarget(cmd); target != "" {
-		cmdEnv = append(cmdEnv, env.TargetVariable+"="+target)
+	if b.Config.Bundle.Target != "" {
+		cmdEnv = append(cmdEnv, env.TargetVariable+"="+b.Config.Bundle.Target)
 	}
 
 	// If the bundle has a profile configured, explicitly pass it to the child command.
