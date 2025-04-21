@@ -3,8 +3,8 @@
 package exec
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -48,29 +48,13 @@ func execv(opts ExecvOptions) error {
 	var stdoutErr error
 	go func() {
 		defer wg.Done()
-
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			_, err = fmt.Fprintln(opts.Stdout, scanner.Text())
-			if err != nil {
-				stdoutErr = err
-				break
-			}
-		}
+		_, stdoutErr = io.Copy(opts.Stdout, stdout)
 	}()
 
 	var stderrErr error
 	go func() {
 		defer wg.Done()
-
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			_, err = fmt.Fprintln(opts.Stderr, scanner.Text())
-			if err != nil {
-				stderrErr = err
-				break
-			}
-		}
+		_, stderrErr = io.Copy(opts.Stderr, stderr)
 	}()
 
 	wg.Wait()
