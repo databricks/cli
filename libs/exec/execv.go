@@ -2,9 +2,6 @@ package exec
 
 import "io"
 
-// TODO(shreyas): Add a DATABRICKS_BUNDLE_INITIAL_CWD environment variable
-// that users can read to figure out the original CWD. I'll do that when
-// adding support for the scripts section.
 type ExecvOptions struct {
 	// Args is the name of the command to run and its arguments.
 	// Eg: ["echo", "hello"] for "echo hello"

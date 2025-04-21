@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
@@ -258,15 +259,15 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 		cmdEnv = append(cmdEnv, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 	}
 
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
 	return exec.Execv(exec.ExecvOptions{
-		Args: args,
-		Env:  cmdEnv,
-		// Execute all scripts from the bundle root directory. This behavior can
-		// be surprising in isolation, but we do it to keep the behavior consistent
-		// for both these cases:
-		// 1. One shot commands like `databricks bundle run -- echo hello`
-		// 2. (upcoming) Scripts that are defined in the scripts section of the DAB.
-		Dir:    b.BundleRootPath,
+		Args:   args,
+		Env:    cmdEnv,
+		Dir:    dir,
 		Stderr: cmd.ErrOrStderr(),
 		Stdout: cmd.OutOrStdout(),
 		Stdin:  cmd.InOrStdin(),
