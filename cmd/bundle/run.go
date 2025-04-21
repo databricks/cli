@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
@@ -239,13 +240,13 @@ Example usage:
 }
 
 func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
-	env := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
+	cmdEnv := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
 
 	// If user has specified a target, pass it to the child command.
 	//
 	// This is only useful for when the Databricks CLI is the child command.
 	if target := root.GetTarget(cmd); target != "" {
-		env = append(env, "DATABRICKS_BUNDLE_TARGET="+target)
+		cmdEnv = append(cmdEnv, env.TargetVariable+"="+target)
 	}
 
 	// If the bundle has a profile configured, explicitly pass it to the child command.
@@ -254,12 +255,12 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	// since if we do not explicitly pass the profile, the CLI will use the
 	// auth configured in the bundle YAML configuration (if any).
 	if b.Config.Workspace.Profile != "" {
-		env = append(env, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+		cmdEnv = append(cmdEnv, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 	}
 
 	return exec.Execv(exec.ExecvOptions{
 		Args: args,
-		Env:  env,
+		Env:  cmdEnv,
 		// Execute all scripts from the bundle root directory. This behavior can
 		// be surprising in isolation, but we do it to keep the behavior consistent
 		// for both these cases:
