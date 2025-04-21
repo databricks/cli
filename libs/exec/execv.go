@@ -10,9 +10,10 @@ type ExecvOptions struct {
 	Env  []string
 	Dir  string
 
-	// Stderr and Stdout are only used for Windows where execv is not supported.
-	// For Unix, the Stdout and Stderr are automatically inherited during the exec
+	// Stdin, Stderr and Stdout are only used for Windows where execv is not supported.
+	// For Unix, these are automatically inherited during the exec
 	// system call.
+	Stdin  io.Reader
 	Stderr io.Writer
 	Stdout io.Writer
 }

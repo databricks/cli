@@ -268,5 +268,6 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 		Dir:    b.BundleRootPath,
 		Stderr: cmd.ErrOrStderr(),
 		Stdout: cmd.OutOrStdout(),
+		Stdin:  cmd.InOrStdin(),
 	})
 }
