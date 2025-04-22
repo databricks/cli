@@ -3,8 +3,6 @@
 package federation_policy
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -346,6 +344,11 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update.`)
+	cmd.Flags().StringVar(&updateReq.Policy.Description, "description", updateReq.Policy.Description, `Description of the federation policy.`)
+	cmd.Flags().StringVar(&updateReq.Policy.Name, "name", updateReq.Policy.Name, `Resource name for the federation policy.`)
+	// TODO: complex arg: oidc_policy
+
 	cmd.Use = "update POLICY_ID"
 	cmd.Short = `Update account federation policy.`
 	cmd.Long = `Update account federation policy.
@@ -376,8 +379,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.PolicyId = args[0]
 

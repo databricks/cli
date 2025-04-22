@@ -376,6 +376,11 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update.`)
+	cmd.Flags().StringVar(&updateReq.Policy.Description, "description", updateReq.Policy.Description, `Description of the federation policy.`)
+	cmd.Flags().StringVar(&updateReq.Policy.Name, "name", updateReq.Policy.Name, `Resource name for the federation policy.`)
+	// TODO: complex arg: oidc_policy
+
 	cmd.Use = "update SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Update service principal federation policy.`
 	cmd.Long = `Update service principal federation policy.
@@ -407,8 +412,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.ServicePrincipalId)
 		if err != nil {

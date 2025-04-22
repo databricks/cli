@@ -941,6 +941,16 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: active_deployment
+	// TODO: complex arg: app_status
+	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
+	// TODO: complex arg: compute_status
+	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
+	// TODO: array: effective_user_api_scopes
+	// TODO: complex arg: pending_deployment
+	// TODO: array: resources
+	// TODO: array: user_api_scopes
+
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`
 	cmd.Long = `Update an app.
@@ -974,8 +984,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Name = args[0]
 

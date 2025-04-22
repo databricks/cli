@@ -119,12 +119,13 @@ var {{.CamelName}}Overrides []func(
 )
 
 {{- $excludeFromJson := list "http-request"}}
+{{- $onlyJsonUpdates := list "budget-policy"}}
 
 func new{{.PascalName}}() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	{{- $canUseJson := and .CanUseJson (not (in $excludeFromJson .KebabName )) -}}
-	{{- $jsonOnly := or (or .IsJsonOnly .MustUseJson) (and .IsCrudUpdate .RequestBodyField) -}}
+	{{- $jsonOnly := or (or .IsJsonOnly .MustUseJson) (and (in $onlyJsonUpdates $serviceName) (eq .KebabName "update")) -}}
 	{{- if .Request}}
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
