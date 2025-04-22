@@ -35,3 +35,16 @@ Deployment complete!
     }
   }
 ]
+
+>>> [CLI] bundle validate -o json
+[
+  "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+  "test_package",
+  "test_package==2.0.1",
+  "test_package>=2.0.1",
+  "./dist/*.whl",
+  "/Workspace/Users/test@databricks.com/test-package.whl",
+  "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
+  "beautifulsoup4[security, tests] ~= 4.12.3",
+  "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+]

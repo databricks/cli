@@ -81,7 +81,7 @@ func IsLibraryLocal(dep string) bool {
 }
 
 func IsLocalRequirementsFile(dep string) (string, bool) {
-	dep, ok := strings.CutPrefix(dep, "-r")
+	dep, ok := strings.CutPrefix(dep, "-r ")
 	if !ok {
 		return "", false
 	}

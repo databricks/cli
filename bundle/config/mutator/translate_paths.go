@@ -93,7 +93,9 @@ func (t *translateContext) rewritePath(
 	opts translateOptions,
 ) (string, error) {
 	// If the input is a local requirements file, we need to translate it to an absolute path.
-	input, _ = libraries.IsLocalRequirementsFile(input)
+	if reqPath, ok := libraries.IsLocalRequirementsFile(input); ok {
+		input = reqPath
+	}
 
 	// We assume absolute paths point to a location in the workspace
 	if path.IsAbs(input) {

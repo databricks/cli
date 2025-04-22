@@ -87,3 +87,45 @@ func TestIsLibraryLocal(t *testing.T) {
 		require.Equalf(t, tc.expected, IsLibraryLocal(tc.path), "failed case: %d, path: %s", i, tc.path)
 	}
 }
+
+func TestIsLocalRequirementsFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+		isLocal  bool
+	}{
+		{
+			name:     "valid requirements file with space",
+			input:    "-r requirements.txt",
+			expected: "requirements.txt",
+			isLocal:  true,
+		},
+		{
+			name:     "remote requirements file",
+			input:    "-r /Workspace/Users/requirements.txt",
+			expected: "/Workspace/Users/requirements.txt",
+			isLocal:  false,
+		},
+		{
+			name:     "not a requirements file",
+			input:    "some.txt",
+			expected: "",
+			isLocal:  false,
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+			isLocal:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, isLocal := IsLocalRequirementsFile(tt.input)
+			require.Equal(t, tt.expected, got)
+			require.Equal(t, tt.isLocal, isLocal)
+		})
+	}
+}
