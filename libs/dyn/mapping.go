@@ -95,8 +95,7 @@ func (m *Mapping) GetByString(skey string) (Value, bool) {
 func (m *Mapping) SetLoc(skey string, loc []Location, value Value) {
 	// If the key already exists, update the value.
 	if i, ok := m.index[skey]; ok {
-		p := &m.pairs[i]
-		p.Value = value
+		m.pairs[i].Value = value
 		return
 	}
 
