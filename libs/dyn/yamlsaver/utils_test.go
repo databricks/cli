@@ -38,19 +38,19 @@ func TestConvertToMap(t *testing.T) {
 				dyn.V("b"),
 				dyn.V("c"),
 			},
-			[]dyn.Location{},
+			nil,
 		),
-		"long_name_field": dyn.NewValue("long name goes here", []dyn.Location{}),
+		"long_name_field": dyn.NewValue("long name goes here", nil),
 		"map": dyn.NewValue(
 			map[string]dyn.Value{
 				"key1": dyn.V("value1"),
 				"key2": dyn.V("value2"),
 			},
-			[]dyn.Location{},
+			nil,
 		),
 		"name": dyn.NewValue(
 			"test",
-			[]dyn.Location{},
+			nil,
 		),
 	}), result)
 }
