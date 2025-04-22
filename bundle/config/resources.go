@@ -24,6 +24,7 @@ type Resources struct {
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
+	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
 }
 
 type ConfigResource interface {
@@ -86,6 +87,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
+		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
 	}
 }
 
@@ -157,6 +159,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
+	for k := range r.SecretScopes {
+		if k == key {
+			found = append(found, r.SecretScopes[k])
+		}
+	}
+
 	if len(found) == 0 {
 		return nil, fmt.Errorf("no such resource: %s", key)
 	}
@@ -187,5 +195,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
+		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
 	}
 }
