@@ -116,7 +116,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				}
 			}
 
-			out.Set(pk, nv) //nolint:errcheck
+			out.SetLoc(pk.MustString(), pk.Locations(), nv)
 		}
 
 		// Return the normalized value if missing fields are not included.
@@ -162,7 +162,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				continue
 			}
 			if v.IsValid() {
-				out.Set(dyn.V(k), v) // nolint:errcheck
+				out.SetLoc(k, nil, v)
 			}
 		}
 
@@ -201,7 +201,7 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 				}
 			}
 
-			out.Set(pk, nv) //nolint:errcheck
+			out.SetLoc(pk.MustString(), pk.Locations(), nv)
 		}
 
 		return dyn.NewValue(out, src.Locations()), diags

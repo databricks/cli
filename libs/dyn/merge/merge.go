@@ -81,6 +81,7 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 	// Merge the values from b into the output map.
 	for _, pair := range bm.Pairs() {
 		pk := pair.Key
+		key := pk.MustString()
 		pv := pair.Value
 		if ov, ok := out.Get(pk); ok {
 			// If the key already exists, merge the values.
@@ -88,10 +89,10 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
-			out.Set(pk, merged) //nolint:errcheck
+			out.SetLoc(key, pair.Key.Locations(), merged)
 		} else {
 			// Otherwise, just set the value.
-			out.Set(pk, pv) //nolint:errcheck
+			out.SetLoc(key, pair.Key.Locations(), pv)
 		}
 	}
 

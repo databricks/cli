@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewMapping(t *testing.T) {
@@ -27,8 +26,7 @@ func TestMappingZeroValue(t *testing.T) {
 
 func TestMappingGet(t *testing.T) {
 	var m dyn.Mapping
-	err := m.Set(dyn.V("key"), dyn.V("value"))
-	assert.NoError(t, err)
+	m.SetLoc("key", nil, dyn.V("value"))
 	assert.Equal(t, 1, m.Len())
 
 	// Call GetPair
@@ -93,13 +91,11 @@ func TestMappingGet(t *testing.T) {
 	assert.Equal(t, dyn.InvalidValue, value)
 }
 
-func TestMappingSet(t *testing.T) {
-	var err error
+func TestMappingSetLoc(t *testing.T) {
 	var m dyn.Mapping
 
 	// Set a value
-	err = m.Set(dyn.V("key1"), dyn.V("foo"))
-	assert.NoError(t, err)
+	m.SetLoc("key1", nil, dyn.V("foo"))
 	assert.Equal(t, 1, m.Len())
 
 	// Confirm the value
@@ -108,8 +104,7 @@ func TestMappingSet(t *testing.T) {
 	assert.Equal(t, dyn.V("foo"), value)
 
 	// Set another value
-	err = m.Set(dyn.V("key2"), dyn.V("bar"))
-	assert.NoError(t, err)
+	m.SetLoc("key2", nil, dyn.V("bar"))
 	assert.Equal(t, 2, m.Len())
 
 	// Confirm the value
@@ -118,30 +113,20 @@ func TestMappingSet(t *testing.T) {
 	assert.Equal(t, dyn.V("bar"), value)
 
 	// Overwrite first value
-	err = m.Set(dyn.V("key1"), dyn.V("qux"))
-	assert.NoError(t, err)
+	m.SetLoc("key1", nil, dyn.V("qux"))
 	assert.Equal(t, 2, m.Len())
 
 	// Confirm the value
 	value, ok = m.Get(dyn.V("key1"))
 	assert.True(t, ok)
 	assert.Equal(t, dyn.V("qux"), value)
-
-	// Try to set non-string key
-	err = m.Set(dyn.V(1), dyn.V("qux"))
-	assert.Error(t, err)
-	assert.Equal(t, 2, m.Len())
 }
 
 func TestMappingKeysValues(t *testing.T) {
-	var err error
-
 	// Configure mapping
 	var m dyn.Mapping
-	err = m.Set(dyn.V("key1"), dyn.V("foo"))
-	assert.NoError(t, err)
-	err = m.Set(dyn.V("key2"), dyn.V("bar"))
-	assert.NoError(t, err)
+	m.SetLoc("key1", []dyn.Location{}, dyn.V("foo"))
+	m.SetLoc("key2", []dyn.Location{}, dyn.V("bar"))
 
 	// Confirm keys
 	keys := m.Keys()
@@ -157,22 +142,17 @@ func TestMappingKeysValues(t *testing.T) {
 }
 
 func TestMappingClone(t *testing.T) {
-	var err error
-
 	// Configure mapping
 	var m1 dyn.Mapping
-	err = m1.Set(dyn.V("key1"), dyn.V("foo"))
-	assert.NoError(t, err)
-	err = m1.Set(dyn.V("key2"), dyn.V("bar"))
-	assert.NoError(t, err)
+	m1.SetLoc("key1", nil, dyn.V("foo"))
+	m1.SetLoc("key2", nil, dyn.V("bar"))
 
 	// Clone mapping
 	m2 := m1.Clone()
 	assert.Equal(t, m1.Len(), m2.Len())
 
 	// Modify original mapping
-	err = m1.Set(dyn.V("key1"), dyn.V("qux"))
-	assert.NoError(t, err)
+	m1.SetLoc("key1", nil, dyn.V("qux"))
 
 	// Confirm values
 	value, ok := m1.Get(dyn.V("key1"))
@@ -186,14 +166,12 @@ func TestMappingClone(t *testing.T) {
 func TestMappingMerge(t *testing.T) {
 	var m1 dyn.Mapping
 	for i := range 10 {
-		err := m1.Set(dyn.V(strconv.Itoa(i)), dyn.V(i))
-		require.NoError(t, err)
+		m1.SetLoc(strconv.Itoa(i), nil, dyn.V(i))
 	}
 
 	var m2 dyn.Mapping
 	for i := 5; i < 15; i++ {
-		err := m2.Set(dyn.V(strconv.Itoa(i)), dyn.V(i))
-		require.NoError(t, err)
+		m2.SetLoc(strconv.Itoa(i), nil, dyn.V(i))
 	}
 
 	var out dyn.Mapping
