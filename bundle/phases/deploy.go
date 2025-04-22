@@ -192,6 +192,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
+		terraform.CheckRunningResource(),
 		artifacts.CleanUp(),
 		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
 		// know what are the actual library paths.
@@ -209,7 +210,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		permissions.ApplyWorkspaceRootPermissions(),
 		terraform.Interpolate(),
 		terraform.Write(),
-		terraform.CheckRunningResource(),
 		terraform.Plan(terraform.PlanGoal("deploy")),
 	)
 
