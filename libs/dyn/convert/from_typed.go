@@ -104,10 +104,12 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	info := getStructInfo(src.Type())
 	for k, v := range info.FieldValues(src) {
 		pair, ok := refm.GetPairByString(k)
+		refloc := pair.Key.Locations()
 		refv := pair.Value
 
 		// Use nil reference if there is no reference for this key
 		if !ok {
+			refloc = nil
 			refv = dyn.NilValue
 		}
 
@@ -124,7 +126,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 
 		// Either if the key was set in the reference or the field is not zero-valued, we include it.
 		if ok || nv.Kind() != dyn.KindNil {
-			out.SetLoc(k, nil, nv)
+			out.SetLoc(k, refloc, nv)
 		}
 	}
 
@@ -165,10 +167,12 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		k := iter.Key().String()
 		v := iter.Value()
 		pair, ok := refm.GetPairByString(k)
+		refloc := pair.Key.Locations()
 		refv := pair.Value
 
 		// Use nil reference if there is no reference for this key
 		if !ok {
+			refloc = nil
 			refv = dyn.NilValue
 		}
 
@@ -180,7 +184,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 
 		// Every entry is represented, even if it is a nil.
 		// Otherwise, a map with zero-valued structs would yield a nil as well.
-		out.SetLoc(k, nil, nv)
+		out.SetLoc(k, refloc, nv)
 	}
 
 	return dyn.V(out), nil
