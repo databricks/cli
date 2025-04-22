@@ -37,6 +37,10 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		OverrideCompute(),
 	)
 
+	if diags.HasError() {
+		return diags
+	}
+
 	defaults := []struct {
 		pattern string
 		value   any
@@ -48,6 +52,9 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	for _, defaultDef := range defaults {
 		diags = diags.Extend(bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value))
+		if diags.HasError() {
+			return diags
+		}
 	}
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
