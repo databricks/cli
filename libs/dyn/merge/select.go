@@ -18,10 +18,7 @@ func Select(value dyn.Value, included []string) (dyn.Value, error) {
 		pair, ok := mapping.GetPairByString(key)
 
 		if ok {
-			err := newMapping.Set(pair.Key, pair.Value)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+			newMapping.SetLoc(key, pair.Key.Locations(), pair.Value)
 		}
 	}
 

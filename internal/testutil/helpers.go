@@ -42,3 +42,7 @@ func SkipUntil(t TestingT, date string) {
 		t.Skipf("Skipping test until %s. Time right now: %s", deadline.Format(time.DateOnly), time.Now())
 	}
 }
+
+func ReplaceWindowsLineEndings(s string) string {
+	return strings.ReplaceAll(s, "\r\n", "\n")
+}

@@ -560,7 +560,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules"
                       },
                       "job_clusters": {
-                        "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.\nIf more than 100 job clusters are available, you can paginate through them using :method:jobs/get.",
+                        "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster"
                       },
                       "max_concurrent_runs": {
@@ -580,7 +580,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition"
                       },
                       "performance_target": {
-                        "description": "PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.",
+                        "description": "The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
                       },
                       "permissions": {
@@ -602,7 +602,7 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "tasks": {
-                        "description": "A list of task specifications to be executed by this job.\nIf more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.",
+                        "description": "A list of task specifications to be executed by this job.\nIt supports up to 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset, :method:jobs/update, :method:jobs/submit).\nRead endpoints return only 100 tasks. If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Task"
                       },
                       "timeout_seconds": {
@@ -864,7 +864,7 @@
                     "type": "object",
                     "properties": {
                       "ai_gateway": {
-                        "description": "The AI Gateway configuration for the serving endpoint. NOTE: Only external model and provisioned throughput endpoints are currently supported.",
+                        "description": "The AI Gateway configuration for the serving endpoint. NOTE: External model, provisioned throughput, and pay-per-token endpoints are fully supported; agent endpoints currently only support inference tables.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig"
                       },
                       "budget_policy_id": {
@@ -2706,6 +2706,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "The type of the volume. An external volume is located in the specified external location. A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore. [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)",
                   "enum": [
                     "EXTERNAL",
                     "MANAGED"
@@ -3175,6 +3176,10 @@
                     "dependencies": {
                       "description": "List of pip dependencies, as supported by the version of pip in this environment.",
                       "$ref": "#/$defs/slice/string"
+                    },
+                    "jar_dependencies": {
+                      "description": "List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.",
+                      "$ref": "#/$defs/slice/string"
                     }
                   },
                   "additionalProperties": false,
@@ -3618,6 +3623,21 @@
                 }
               ]
             },
+            "jobs.AuthenticationMethod": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "OAUTH",
+                    "PAT"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "jobs.CleanRoomsNotebookTask": {
               "oneOf": [
                 {
@@ -3656,7 +3676,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Next field: 4",
                   "properties": {
                     "gpu_node_pool_id": {
                       "description": "IDof the GPU pool to use.",
@@ -3797,6 +3816,31 @@
                 }
               ]
             },
+            "jobs.DashboardTask": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configures the Lakeview Dashboard job task type.",
+                  "properties": {
+                    "dashboard_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "subscription": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Subscription"
+                    },
+                    "warehouse_id": {
+                      "description": "The warehouse id to execute the dashboard with for the schedule",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "jobs.DbtTask": {
               "oneOf": [
                 {
@@ -3920,7 +3964,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Next field: 9",
                   "properties": {
                     "command": {
                       "description": "Command launcher to run the actual script, e.g. bash, python etc.",
@@ -4442,8 +4485,7 @@
                   "description": "PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.\nThe performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager\n(see cluster-common PerformanceTarget).",
                   "enum": [
                     "PERFORMANCE_OPTIMIZED",
-                    "COST_OPTIMIZED",
-                    "BALANCED"
+                    "STANDARD"
                   ]
                 },
                 {
@@ -4530,6 +4572,104 @@
                   "required": [
                     "pipeline_id"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.PowerBiModel": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "authentication_method": {
+                      "description": "How the published Power BI model authenticates to Databricks",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod"
+                    },
+                    "model_name": {
+                      "description": "The name of the Power BI model",
+                      "$ref": "#/$defs/string"
+                    },
+                    "overwrite_existing": {
+                      "description": "Whether to overwrite existing Power BI models",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "storage_mode": {
+                      "description": "The default storage mode of the Power BI model",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.StorageMode"
+                    },
+                    "workspace_name": {
+                      "description": "The name of the Power BI workspace of the model",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.PowerBiTable": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "catalog": {
+                      "description": "The catalog name in Databricks",
+                      "$ref": "#/$defs/string"
+                    },
+                    "name": {
+                      "description": "The table name in Databricks",
+                      "$ref": "#/$defs/string"
+                    },
+                    "schema": {
+                      "description": "The schema name in Databricks",
+                      "$ref": "#/$defs/string"
+                    },
+                    "storage_mode": {
+                      "description": "The Power BI storage mode of the table",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.StorageMode"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.PowerBiTask": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "connection_resource_name": {
+                      "description": "The resource name of the UC connection to authenticate from Databricks to Power BI",
+                      "$ref": "#/$defs/string"
+                    },
+                    "power_bi_model": {
+                      "description": "The semantic model to update",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PowerBiModel"
+                    },
+                    "refresh_after_update": {
+                      "description": "Whether the model should be refreshed after the update",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "tables": {
+                      "description": "The tables to be exported to Power BI",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTable"
+                    },
+                    "warehouse_id": {
+                      "description": "The SQL warehouse ID to use as the Power BI data source",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -4932,6 +5072,67 @@
                 }
               ]
             },
+            "jobs.StorageMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "DIRECT_QUERY",
+                    "IMPORT",
+                    "DUAL"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.Subscription": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "custom_subject": {
+                      "description": "Optional: Allows users to specify a custom subject line on the email sent\nto subscribers.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "paused": {
+                      "description": "When true, the subscription will not send emails.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "subscribers": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.SubscriptionSubscriber": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "destination_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "user_name": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "jobs.TableUpdateTriggerConfiguration": {
               "oneOf": [
                 {
@@ -4974,6 +5175,10 @@
                     "condition_task": {
                       "description": "The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.\nThe condition task does not require a cluster to execute and does not support retries or notifications.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask"
+                    },
+                    "dashboard_task": {
+                      "description": "The task runs a DashboardTask when the `dashboard_task` field is present.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask"
                     },
                     "dbt_task": {
                       "description": "The task runs one or more dbt commands when the `dbt_task` field is present. The dbt task requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.",
@@ -5044,6 +5249,10 @@
                     "pipeline_task": {
                       "description": "The task triggers a pipeline update when the `pipeline_task` field is present. Only pipelines configured to use triggered more are supported.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PipelineTask"
+                    },
+                    "power_bi_task": {
+                      "description": "The task triggers a Power BI semantic model update when the `power_bi_task` field is present.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTask"
                     },
                     "python_wheel_task": {
                       "description": "The task runs a Python wheel when the `python_wheel_task` field is present.",
@@ -7778,12 +7987,40 @@
                   }
                 ]
               },
+              "jobs.PowerBiTable": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTable"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "jobs.SqlTaskSubscription": {
                 "oneOf": [
                   {
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskSubscription"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "jobs.SubscriptionSubscriber": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber"
                     }
                   },
                   {

@@ -24,6 +24,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "billing",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -305,6 +306,7 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: limit_config
 
+	// TODO: array: binding_workspace_ids
 	// TODO: array: custom_tags
 	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
 

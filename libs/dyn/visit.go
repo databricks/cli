@@ -122,7 +122,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 
 		// Return an updated map value.
 		m = m.Clone()
-		m.Set(V(component.key), nv) //nolint:errcheck
+		m.SetLoc(component.key, nil, nv)
 		return Value{
 			v: m,
 			k: KindMap,

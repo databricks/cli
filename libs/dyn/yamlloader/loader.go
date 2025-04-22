@@ -118,18 +118,18 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			return dyn.InvalidValue, errorf(loc, "invalid key tag: %v", st)
 		}
 
-		k := dyn.NewValue(key.Value, []dyn.Location{{
+		loc := []dyn.Location{{
 			File:   d.path,
 			Line:   key.Line,
 			Column: key.Column,
-		}})
+		}}
 
 		v, err := d.load(val)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 
-		acc.Set(k, v) //nolint:errcheck
+		acc.SetLoc(key.Value, loc, v)
 	}
 
 	if merge == nil {

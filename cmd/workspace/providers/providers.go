@@ -28,6 +28,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "sharing",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

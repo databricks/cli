@@ -28,6 +28,7 @@ func New() *cobra.Command {
   
   If the compliance security profile is disabled, you can enable or disable this
   setting and it is not permanent.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

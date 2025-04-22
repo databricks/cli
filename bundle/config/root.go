@@ -555,7 +555,7 @@ func (r Root) GetLocation(path string) dyn.Location {
 func (r Root) GetLocations(path string) []dyn.Location {
 	v, err := dyn.Get(r.value, path)
 	if err != nil {
-		return []dyn.Location{}
+		return nil
 	}
 	return v.Locations()
 }

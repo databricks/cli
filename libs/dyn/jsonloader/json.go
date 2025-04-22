@@ -63,7 +63,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 
 				// Get the offset of the key by subtracting the length of the key and the '"' character
 				keyOffset := decoder.InputOffset() - int64(len(key)+1)
-				keyVal := dyn.NewValue(key, []dyn.Location{o.GetPosition(keyOffset)})
+				loc := []dyn.Location{o.GetPosition(keyOffset)}
 
 				// Decode the value recursively
 				val, err := decodeValue(decoder, o)
@@ -71,7 +71,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 					return invalidValueWithLocation(decoder, o), err
 				}
 
-				obj.Set(keyVal, val) //nolint:errcheck
+				obj.SetLoc(key, loc, val)
 			}
 			// Consume the closing '}'
 			if _, err := decoder.Token(); err != nil {
