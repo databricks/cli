@@ -9,5 +9,6 @@
 ### CLI
 
 ### Bundles
+* Check for running resources with --fail-on-active-runs earlier ([#2743](https://github.com/databricks/cli/pull/2743))
 
 ### API Changes
