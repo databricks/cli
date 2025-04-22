@@ -34,7 +34,7 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 				"name":    dyn.NewValue(parameter.Name, []dyn.Location{{Line: 0}}), // We use Line: 0 to ensure that the name goes first.
 				"default": dyn.NewValue(parameter.Default, []dyn.Location{{Line: 1}}),
 			}
-			params = append(params, dyn.NewValue(p, []dyn.Location{}))
+			params = append(params, dyn.V(p))
 		}
 
 		value["parameters"] = dyn.NewValue(params, []dyn.Location{{Line: jobOrder.Get("parameters")}})
