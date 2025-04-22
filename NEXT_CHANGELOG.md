@@ -9,5 +9,6 @@
 ### CLI
 
 ### Bundles
+* Correctly translate paths to local requirements.txt file in environment dependencies ([#2736](https://github.com/databricks/cli/pull/2736))
 
 ### API Changes
