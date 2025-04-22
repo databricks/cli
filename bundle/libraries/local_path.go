@@ -66,8 +66,8 @@ func IsLibraryLocal(dep string) bool {
 
 	// If the dependency is a requirements file, it can either be a local path or a remote path.
 	// Even though the path to requirements.txt can be local we don't return true in this function anyway
-	// and don't treat suchh path as local library path.
-	// Instead wehandle translation of these paths in separate code path in TranslatePath mutator.
+	// and don't treat such path as a local library path.
+	// Instead we handle translation of these paths in a separate code path in TranslatePath mutator.
 	if strings.HasPrefix(dep, "-r") {
 		return false
 	}
