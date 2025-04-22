@@ -1,0 +1,91 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary --output json
+{
+  "bundle": {
+    "name": "deploy-secret-scope-test-[UNIQUE_NAME]",
+    "target": "default",
+    "environment": "default",
+    "terraform": {
+      "exec_path": "[TERRAFORM]"
+    },
+    "git": {
+      "bundle_root_path": "."
+    },
+    "deployment": {
+      "lock": {}
+    }
+  },
+  "workspace": {
+    "current_user": {
+      "active": true,
+      "displayName": "[USERNAME]",
+      "emails": [
+        {
+          "primary": true,
+          "type": "work",
+          "value": "[USERNAME]"
+        }
+      ],
+      "entitlements": [
+        {
+          "value": "allow-cluster-create"
+        },
+        {
+          "value": "allow-instance-pool-create"
+        }
+      ],
+      "groups": [
+        {
+          "$ref": "Groups/[USERGROUP]",
+          "display": "admins",
+          "type": "direct",
+          "value": "[USERGROUP]"
+        }
+      ],
+      "id": "[USERID]",
+      "name": {
+        "givenName": "[USERNAME]"
+      },
+      "schemas": [
+        "urn:ietf:params:scim:schemas:core:2.0:User",
+        "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
+      ],
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default/resources",
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default/artifacts",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default/state"
+  },
+  "resources": {
+    "secret_scopes": {
+      "secret_scope1": {
+        "initial_manage_principal": "users",
+        "name": "my-secrets"
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "presets": {}
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete secret_scope secret_scope1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

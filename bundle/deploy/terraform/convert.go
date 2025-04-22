@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -210,6 +211,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.Name = instance.Attributes.Name
 				config.Resources.Apps[resource.Name] = cur
+			case "databricks_secret_scope":
+				if config.Resources.SecretScopes == nil {
+					config.Resources.SecretScopes = make(map[string]*resources.SecretScope)
+				}
+				cur := config.Resources.SecretScopes[resource.Name]
+				if cur == nil {
+					cur = &resources.SecretScope{ModifiedStatus: resources.ModifiedStatusDeleted, SecretScope: &workspace.SecretScope{}}
+				}
+				cur.Name = instance.Attributes.Name
+				config.Resources.SecretScopes[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
