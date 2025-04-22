@@ -85,9 +85,30 @@ func jobRewritePatterns() []jobRewritePattern {
 		},
 	}
 
+	jobEnvironmentsWithRequirementsPatterns := []jobRewritePattern{
+		{
+			dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("jobs"),
+				dyn.AnyKey(),
+				dyn.Key("environments"),
+				dyn.AnyIndex(),
+				dyn.Key("spec"),
+				dyn.Key("dependencies"),
+				dyn.AnyIndex(),
+			),
+			TranslateModeEnvironmentRequirements,
+			func(s string) bool {
+				_, ok := libraries.IsLocalRequirementsFile(s)
+				return !ok
+			},
+		},
+	}
+
 	taskPatterns := jobTaskRewritePatterns(base)
 	forEachPatterns := jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
 	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
+	allPatterns = append(allPatterns, jobEnvironmentsWithRequirementsPatterns...)
 	allPatterns = append(allPatterns, forEachPatterns...)
 	return allPatterns
 }
