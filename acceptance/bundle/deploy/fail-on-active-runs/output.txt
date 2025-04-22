@@ -11,7 +11,7 @@ Error: job 1 is running
 
 Exit code: 1
 
-=== Expecting only 1 delete request to artifact_path/.internal folder
+=== Expecting only 1 delete request to artifact_path/.internal folder from the first deploy
 >>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
 {
   "method": "POST",
