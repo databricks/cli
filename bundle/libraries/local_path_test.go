@@ -114,6 +114,12 @@ func TestIsLocalRequirementsFile(t *testing.T) {
 			isLocal:  false,
 		},
 		{
+			name:     "-r with no space",
+			input:    "-rrequirements.txt",
+			expected: "",
+			isLocal:  false,
+		},
+		{
 			name:     "empty string",
 			input:    "",
 			expected: "",
