@@ -4,11 +4,9 @@ package exec
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 )
 
 // Note: Windows does not support an execv syscall that replaces the current process.
@@ -22,68 +20,17 @@ func execv(opts ExecvOptions) error {
 
 	cmd := exec.Command(path, opts.Args[1:]...)
 
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	cmd.Dir = opts.Dir
 	cmd.Env = opts.Env
-
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return fmt.Errorf("creating stdin pipe failed: %w", err)
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("creating stdout pipe failed: %w", err)
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("creating stderr pipe failed: %w", err)
-	}
 
 	// Start the child command.
 	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf(" %s failed: %w", strings.Join(opts.Args, " "), err)
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(3) // Increment WaitGroup for stdin goroutine
-
-	// Goroutine to copy stdin
-	var stdinErr error
-	go func() {
-		defer wg.Done()
-		// Close stdin pipe when we are done copying
-		// from the parent process.
-		defer stdin.Close()
-
-		_, stdinErr = io.Copy(stdin, opts.Stdin)
-	}()
-
-	var stdoutErr error
-	go func() {
-		defer wg.Done()
-		_, stdoutErr = io.Copy(opts.Stdout, stdout)
-	}()
-
-	var stderrErr error
-	go func() {
-		defer wg.Done()
-		_, stderrErr = io.Copy(opts.Stderr, stderr)
-	}()
-
-	wg.Wait()
-
-	if stdoutErr != nil {
-		return fmt.Errorf("writing stdout failed: %w", stdoutErr)
-	}
-
-	if stderrErr != nil {
-		return fmt.Errorf("writing stderr failed: %w", stderrErr)
-	}
-
-	if stdinErr != nil {
-		return fmt.Errorf("reading from stdin failed: %w", stdinErr)
 	}
 
 	err = cmd.Wait()
