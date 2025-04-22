@@ -136,7 +136,6 @@ func (m Mapping) Clone() Mapping {
 // Merge merges the key-value pairs from another Mapping into the current Mapping.
 func (m *Mapping) Merge(n Mapping) {
 	for _, p := range n.pairs {
-		// Following original Merge logic: do not take key locations from n
-		m.SetLoc(p.Key.MustString(), nil, p.Value)
+		m.SetLoc(p.Key.MustString(), p.Key.Locations(), p.Value)
 	}
 }
