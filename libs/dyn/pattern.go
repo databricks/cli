@@ -69,7 +69,7 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 			return InvalidValue, err
 		}
 
-		m.SetLoc(pk.MustString(), nil, nv)
+		m.SetLoc(pk.MustString(), pk.Locations(), nv)
 	}
 
 	return NewValue(m, v.Locations()), nil
