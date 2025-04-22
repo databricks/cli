@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "spark_version": "15.4.x-scala2.12"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/BUNDLENAME/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq select(.path | contains("/jobs/create"))
+[
+  {
+    "new_cluster": {
+      "num_workers": 0,
+      "spark_version": "15.4.x-scala2.12"
+    },
+    "task_key": "test-task"
+  }
+]

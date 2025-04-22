@@ -1,0 +1,5 @@
+trace $CLI bundle validate -o json | jq .resources.jobs.myjob.tasks[0].new_cluster
+trace $CLI bundle deploy
+
+trace jq 'select(.path | contains("/jobs/create"))' < out.requests.txt | jq .body.tasks
+rm out.requests.txt

@@ -1,0 +1,13 @@
+bundle:
+  name: BUNDLENAME
+
+resources:
+  jobs:
+    myjob:
+      name: "test"
+      tasks:
+        - task_key: "test-task"
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            # adding this causes validation error even though it is added by terraform if not present
+            #num_workers: 0
