@@ -1,0 +1,3 @@
+touch mywheel.whl
+$CLI bundle validate -o json | jq "pick(.resources)"
+rm mywheel.whl

@@ -26,6 +26,7 @@ func New() *cobra.Command {
   off.
   
   This settings can NOT be disabled once it is enabled.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -1,5 +1,4 @@
-# disable everywhere, because it does not show consistent behaviour
-Cloud = false
+CloudSlow = true
 Local = false
 
 # serverless is only enabled if UC is enabled

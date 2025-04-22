@@ -1,0 +1,10 @@
+# We deploy the bundle first to create a job
+trace $CLI bundle deploy
+
+# We deploy the bundle again to check that the deploy is failing if the job is running
+trace errcode $CLI bundle deploy --fail-on-active-runs
+
+title "Expecting only 1 delete request to artifact_path/.internal folder from the first deploy"
+trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' out.requests.txt
+
+rm out.requests.txt

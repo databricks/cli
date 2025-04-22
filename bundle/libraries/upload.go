@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -16,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/utils"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -150,11 +150,7 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	sources := make([]string, 0, len(libs))
-	for source := range libs {
-		sources = append(sources, source)
-	}
-	sort.Strings(sources)
+	sources := utils.SortedKeys(libs)
 
 	errs, errCtx := errgroup.WithContext(ctx)
 	errs.SetLimit(maxFilesRequestsInFlight)

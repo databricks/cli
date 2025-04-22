@@ -9,6 +9,7 @@ repls.json
 EOF
 
 cleanup() {
+  rm .gitignore
   rm -rf project-folder ignored-folder .git
 }
 trap cleanup EXIT

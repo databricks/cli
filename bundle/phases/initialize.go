@@ -31,6 +31,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
+		validate.NoInterpolationInAuthConfig(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -120,7 +121,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		// Static resources (e.g. YAML) are already loaded, we initialize and normalize them before Python
 		resourcemutator.ProcessStaticResources(),
-		mutator.NormalizePaths(),
 
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),

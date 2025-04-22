@@ -28,6 +28,7 @@ func New() *cobra.Command {
   
   This settings can be disabled so that new workspaces do not have compliance
   security profile enabled by default.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

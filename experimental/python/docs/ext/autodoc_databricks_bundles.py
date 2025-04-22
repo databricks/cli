@@ -297,7 +297,6 @@ def skip_member(app, what, name, obj, skip, options):
     # skip databricks.bundles.<resource>._module.FooDict classes
     # because we already document Foo dataclass that is equivalent.
     if what == "module" and name.endswith("Dict") and "._models." in obj.__module__:
-        print(what, name, obj, app)
         return True
 
     return skip

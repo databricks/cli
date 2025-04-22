@@ -6,12 +6,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
-func ConvertAppToValue(app *apps.App, sourceCodePath string, appConfig map[string]any) (dyn.Value, error) {
-	ac, err := convert.FromTyped(appConfig, dyn.NilValue)
-	if err != nil {
-		return dyn.NilValue, err
-	}
-
+func ConvertAppToValue(app *apps.App, sourceCodePath string) (dyn.Value, error) {
 	ar, err := convert.FromTyped(app.Resources, dyn.NilValue)
 	if err != nil {
 		return dyn.NilValue, err
@@ -23,10 +18,6 @@ func ConvertAppToValue(app *apps.App, sourceCodePath string, appConfig map[strin
 		"name":             dyn.NewValue(app.Name, []dyn.Location{{Line: 1}}),
 		"description":      dyn.NewValue(app.Description, []dyn.Location{{Line: 2}}),
 		"source_code_path": dyn.NewValue(sourceCodePath, []dyn.Location{{Line: 3}}),
-	}
-
-	if ac.Kind() != dyn.KindNil {
-		dv["config"] = ac.WithLocations([]dyn.Location{{Line: 4}})
 	}
 
 	if ar.Kind() != dyn.KindNil {

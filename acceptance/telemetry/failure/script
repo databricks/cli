@@ -1,4 +1,4 @@
 trace $CLI selftest send-telemetry --debug
 
 # pretty print the telemetry payload.
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs.[] | fromjson'
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson'
