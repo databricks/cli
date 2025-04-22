@@ -254,9 +254,9 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 }
 
 func mapOf(key string, value dyn.Value) dyn.Value {
-	return dyn.NewValue(map[string]dyn.Value{
+	return dyn.V(map[string]dyn.Value{
 		key: value,
-	}, []dyn.Location{})
+	})
 }
 
 func mapOf2(key1 string, value1 dyn.Value, key2 string, value2 dyn.Value) dyn.Value {
@@ -267,5 +267,5 @@ func mapOf2(key1 string, value1 dyn.Value, key2 string, value2 dyn.Value) dyn.Va
 }
 
 func emptyMap() dyn.Value {
-	return dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{})
+	return dyn.V(map[string]dyn.Value{})
 }
