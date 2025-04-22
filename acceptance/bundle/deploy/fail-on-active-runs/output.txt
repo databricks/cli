@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/fail-on-active-runs/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> errcode [CLI] bundle deploy --fail-on-active-runs
+Error: job 1 is running
+
+
+Exit code: 1
+
+=== Expecting only 1 delete request to artifact_path/.internal folder
+>>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/fail-on-active-runs/default/artifacts/.internal",
+    "recursive": true
+  }
+}
