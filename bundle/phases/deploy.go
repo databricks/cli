@@ -5,6 +5,8 @@ import (
 	"errors"
 	"slices"
 
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -209,6 +211,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
 		terraform.Interpolate(),
+		resourcemutator.ConfigureDashboardSerializedDashboard(),
 		terraform.Write(),
 		terraform.Plan(terraform.PlanGoal("deploy")),
 	)

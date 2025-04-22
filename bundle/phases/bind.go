@@ -3,6 +3,8 @@ package phases
 import (
 	"context"
 
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
@@ -25,6 +27,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) (d
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		terraform.StatePull(),
 		terraform.Interpolate(),
+		resourcemutator.ConfigureDashboardSerializedDashboard(),
 		terraform.Write(),
 		terraform.Import(opts),
 		terraform.StatePush(),
@@ -48,6 +51,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey str
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		terraform.StatePull(),
 		terraform.Interpolate(),
+		resourcemutator.ConfigureDashboardSerializedDashboard(),
 		terraform.Write(),
 		terraform.Unbind(resourceType, resourceKey),
 		terraform.StatePush(),

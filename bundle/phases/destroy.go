@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -118,6 +120,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		terraform.StatePull(),
 		terraform.Interpolate(),
+		resourcemutator.ConfigureDashboardSerializedDashboard(),
 		terraform.Write(),
 		terraform.Plan(terraform.PlanGoal("destroy")),
 	))
