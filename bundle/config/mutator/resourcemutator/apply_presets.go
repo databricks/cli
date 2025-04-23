@@ -53,12 +53,15 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			continue
 		}
 		j.Name = prefix + j.Name
-		for _, tag := range tags {
+		if len(tags) > 0 {
 			if j.Tags == nil {
+				// Note: only create this map if tags is not empty, to avoid inserting "tags: {}" entry in the config
 				j.Tags = make(map[string]string, len(tags))
 			}
-			if j.Tags[tag.Key] == "" {
-				j.Tags[tag.Key] = tag.Value
+			for _, tag := range tags {
+				if j.Tags[tag.Key] == "" {
+					j.Tags[tag.Key] = tag.Value
+				}
 			}
 		}
 		if j.MaxConcurrentRuns == 0 {
