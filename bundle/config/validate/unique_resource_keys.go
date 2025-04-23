@@ -59,8 +59,8 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			m, ok := resourceMetadata[k]
 			if !ok {
 				m = &metadata{
-					paths:     []dyn.Path{},
-					locations: []dyn.Location{},
+					paths:     nil,
+					locations: nil,
 				}
 			}
 

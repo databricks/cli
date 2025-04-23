@@ -1,0 +1,29 @@
+bundle:
+  name: "dependencies"
+
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Job"
+      tasks:
+        - task_key: "main"
+          python_wheel_task:
+            package_name: "test_package"
+            entry_point: "main"
+          environment_key: "test_env"
+
+      environments:
+        - environment_key: "test_env"
+          spec:
+            client: "1"
+            dependencies:
+              - "-r ./requirements.txt"
+              - "test_package"
+              - "test_package==2.0.1"
+              - "test_package>=2.0.1"
+              - "dist/*.whl"
+              - "/Workspace/Users/test@databricks.com/test-package.whl"
+              - "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0"
+              - "beautifulsoup4[security, tests] ~= 4.12.3"
+              - "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"

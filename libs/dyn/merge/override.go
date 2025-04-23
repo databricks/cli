@@ -111,16 +111,15 @@ func overrideMapping(basePath dyn.Path, leftMapping, rightMapping dyn.Mapping, v
 	for _, leftPair := range leftMapping.Pairs() {
 		// detect if key was removed
 		if _, ok := rightMapping.GetPair(leftPair.Key); !ok {
-			path := basePath.Append(dyn.Key(leftPair.Key.MustString()))
+			key := leftPair.Key.MustString()
+			keyLoc := leftPair.Key.Locations()
+			path := basePath.Append(dyn.Key(key))
 
 			err := visitor.VisitDelete(path, leftPair.Value)
 
 			// if 'delete' was undone, add it back
 			if errors.Is(err, ErrOverrideUndoDelete) {
-				err := out.Set(leftPair.Key, leftPair.Value)
-				if err != nil {
-					return dyn.NewMapping(), err
-				}
+				out.SetLoc(key, keyLoc, leftPair.Value)
 			} else if err != nil {
 				return dyn.NewMapping(), err
 			}
@@ -131,18 +130,17 @@ func overrideMapping(basePath dyn.Path, leftMapping, rightMapping dyn.Mapping, v
 	// and insert new keys
 
 	for _, rightPair := range rightMapping.Pairs() {
+		key := rightPair.Key.MustString()
+		keyLoc := rightPair.Key.Locations()
 		if leftPair, ok := leftMapping.GetPair(rightPair.Key); ok {
-			path := basePath.Append(dyn.Key(rightPair.Key.MustString()))
+			path := basePath.Append(dyn.Key(key))
 			newValue, err := override(path, leftPair.Value, rightPair.Value, visitor)
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
 
 			// key was there before, so keep its location
-			err = out.Set(leftPair.Key, newValue)
-			if err != nil {
-				return dyn.NewMapping(), err
-			}
+			out.SetLoc(key, keyLoc, newValue)
 		} else {
 			path := basePath.Append(dyn.Key(rightPair.Key.MustString()))
 
@@ -151,10 +149,7 @@ func overrideMapping(basePath dyn.Path, leftMapping, rightMapping dyn.Mapping, v
 				return dyn.NewMapping(), err
 			}
 
-			err = out.Set(rightPair.Key, newValue)
-			if err != nil {
-				return dyn.NewMapping(), err
-			}
+			out.SetLoc(key, keyLoc, newValue)
 		}
 	}
 
