@@ -31,7 +31,7 @@ func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagno
 		JobTaskClusterSpec(),
 		// does not like num_workers: 0 setting but this is something terraform adds so we have to as well.
 		// TODO: do this check before applying defaults
-		//SingleNodeCluster(),
+		// SingleNodeCluster(),
 
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
