@@ -15,6 +15,7 @@ type Move struct {
 
 // Example:
 // Input: {"job_id": 123, "field1": "hello", "field2": "world"}, Fields: ["field1", "field2"], Target: "data", Result: {"job_id": 123, "data": {"field1": "hello", "field2": "world"}}
+// AI TODO: Implement field syntax: !field, which means everything but field named "field". Add new test.
 func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 	mapping, ok := v.AsMap()
 	if !ok {
