@@ -38,6 +38,7 @@ var (
 	Tail        bool
 	Forcerun    bool
 	LogRequests bool
+	LogConfig   bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -56,6 +57,7 @@ func init() {
 	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
+	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 }
 
 const (
@@ -320,6 +322,12 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 }
 
 func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string, customEnv []string) {
+	if LogConfig {
+		configBytes, err := json.MarshalIndent(config, "", "  ")
+		require.NoError(t, err)
+		t.Log(string(configBytes))
+	}
+
 	tailOutput := Tail
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
