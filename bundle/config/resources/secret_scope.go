@@ -2,10 +2,11 @@ package resources
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"net/url"
 )
 
 type SecretScope struct {
@@ -27,7 +28,7 @@ func (s SecretScope) MarshalJSON() ([]byte, error) {
 }
 
 func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
@@ -54,7 +55,7 @@ func (s SecretScope) GetURL() string {
 }
 
 func (s SecretScope) InitializeURL(baseURL url.URL) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 

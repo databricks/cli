@@ -1,1 +1,37 @@
 Cloud = true
+Local = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/scopes/create"
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/scopes/list"
+Response.Body = '''
+{
+    "scopes": [
+        {
+            "backend_type": "DATABRICKS",
+            "name": "my-secrets"
+        }
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/scopes/delete"
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/put"
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/get"
+Response.Body = '''
+{
+    "key":"my-key",
+    "value":"bXktc2VjcmV0LXZhbHVl"
+}
+'''

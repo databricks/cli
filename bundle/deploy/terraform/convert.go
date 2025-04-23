@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"fmt"
+
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 
 	"github.com/databricks/cli/bundle/config"
