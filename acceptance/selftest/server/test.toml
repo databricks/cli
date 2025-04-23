@@ -3,7 +3,7 @@ RecordRequests = true
 # Ensure that server configuration works with EnvMatrix
 [EnvMatrix]
 VARIABLE_A = ["one", "two"]
-VARIABLE_B = ["hello", "world"]
+VARIABLE_B = ["HELLO", "WORLD"]
 
 [[Server]]
 Pattern = "GET /custom/endpoint"
