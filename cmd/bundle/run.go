@@ -262,8 +262,8 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	}
 
 	return exec.Execv(exec.ExecvOptions{
-		Args:   args,
-		Env:    cmdEnv,
-		Dir:    dir,
+		Args: args,
+		Env:  cmdEnv,
+		Dir:  dir,
 	})
 }
