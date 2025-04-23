@@ -97,3 +97,14 @@ func (p *Processor) ApplyProcessor(v dyn.Value) (dyn.Value, error) {
 
 	return v, nil
 }
+
+func ApplyProcessors(processors []Processor, value dyn.Value) (dyn.Value, error) {
+	var err error
+	for _, p := range processors {
+		value, err = p.ApplyProcessor(value)
+		if err != nil {
+			return value, err
+		}
+	}
+	return value, nil
+}

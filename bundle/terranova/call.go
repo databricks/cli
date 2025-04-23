@@ -2,13 +2,14 @@ package terranova
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/jsonsaver"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/httpclient"
@@ -70,10 +71,9 @@ type Call struct {
 	ResponseID   string
 }
 
-func (spec *CallSpec) PrepareCall(requestBody, resourceID string) (*Call, error) {
+func (spec *CallSpec) PrepareCall(request dyn.Value, resourceID string) (*Call, error) {
 	call := Call{
-		Spec:        spec,
-		RequestBody: requestBody,
+		Spec: spec,
 	}
 
 	call.Path = spec.Path
@@ -98,26 +98,19 @@ func (spec *CallSpec) PrepareCall(requestBody, resourceID string) (*Call, error)
 
 		if idfield != "" {
 			// If we have a request body, we need to unmarshal it, add the ID field, and marshal it back
-			if requestBody != "" {
-				var requestMap map[string]any
-				if err := json.Unmarshal([]byte(requestBody), &requestMap); err != nil {
-					return nil, fmt.Errorf("failed to unmarshal request body: %w", err)
-				}
-				requestMap[idfield] = resourceIDConverted
-				newRequestBody, err := json.MarshalIndent(requestMap, "", "  ")
-				if err != nil {
-					return nil, fmt.Errorf("failed to marshal request body: %w", err)
-				}
-				call.RequestBody = string(newRequestBody)
-			} else {
-				// If no request body, create a simple one with just the ID field
-				idMap := map[string]any{idfield: resourceIDConverted}
-				newRequestBody, err := json.Marshal(idMap)
-				if err != nil {
-					return nil, fmt.Errorf("failed to marshal request body: %w", err)
-				}
-				call.RequestBody = string(newRequestBody)
+			var requestMap dyn.Mapping
+			switch request.Kind() {
+			case dyn.KindNil:
+				requestMap = dyn.NewMapping()
+			case dyn.KindMap:
+				requestMap = request.MustMap()
+				// good
+			default:
+				return nil, fmt.Errorf("Unexpected request type: %s", request.Kind().String())
 			}
+
+			requestMap.SetLoc(idfield, nil, dyn.V(resourceIDConverted))
+			request = dyn.V(requestMap)
 		}
 
 		if spec.QueryIDField != "" {
@@ -129,6 +122,19 @@ func (spec *CallSpec) PrepareCall(requestBody, resourceID string) (*Call, error)
 			return nil, fmt.Errorf("CallSpec error: Path has {} but resourceID is not provided: %s", spec.Path)
 		}
 	}
+
+	var err error
+	request, err = ApplyProcessors(spec.RequestProcessors, request)
+	if err != nil {
+		return nil, err
+	}
+
+	requestBodyBytes, err := jsonsaver.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	call.RequestBody = string(requestBodyBytes)
 
 	return &call, nil
 }

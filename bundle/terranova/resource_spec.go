@@ -2,7 +2,6 @@ package terranova
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 
@@ -30,15 +29,7 @@ type ResourceSpec struct {
 }
 
 func (s *ResourceSpec) DoCreate(ctx context.Context, resourceID string, config dyn.Value, client *databricks.WorkspaceClient) (string, error) {
-	// QQQ already marshalled this when saving to db
-	configBytes, err := json.Marshal(config.AsAny())
-	if err != nil {
-		return resourceID, err
-	}
-
-	configString := string(configBytes)
-
-	call, err := s.Create.PrepareCall(configString, resourceID)
+	call, err := s.Create.PrepareCall(config, resourceID)
 	if err != nil {
 		return resourceID, err
 	}
@@ -67,21 +58,13 @@ func (s *ResourceSpec) DoCreate(ctx context.Context, resourceID string, config d
 }
 
 func (s *ResourceSpec) DoUpdate(ctx context.Context, resourceID string, configOld, config dyn.Value, client *databricks.WorkspaceClient) error {
-	// QQQ already marshalled this when saving to db
-	configBytes, err := json.Marshal(config.AsAny())
-	if err != nil {
-		return err
-	}
-
-	configString := string(configBytes)
-
 	// TODO: cache this
 	apiClient, err := client.Config.NewApiClient()
 	if err != nil {
 		return err
 	}
 
-	call, err := s.Update.PrepareCall(configString, resourceID)
+	call, err := s.Update.PrepareCall(config, resourceID)
 	if err != nil {
 		return err
 	}
@@ -156,12 +139,5 @@ func (spec *ResourceSpec) ExtractIDFromConfig(value dyn.Value) (string, error) {
 }
 
 func (spec *ResourceSpec) PreprocessConfig(value dyn.Value) (dyn.Value, error) {
-	var err error
-	for _, p := range spec.Processors {
-		value, err = p.ApplyProcessor(value)
-		if err != nil {
-			return value, err
-		}
-	}
-	return value, nil
+	return ApplyProcessors(spec.Processors, value)
 }

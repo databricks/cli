@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +32,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 	tests := []struct {
 		name               string
 		spec               CallSpec
-		requestBody        string
+		requestBody        dyn.Value
 		resourceID         string
 		expectedPath       string
 		expectedBody       map[string]any
@@ -47,7 +48,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				Path:           "/api/resource",
 				RequestIDField: "id",
 			},
-			requestBody:   "",
+			requestBody:   dyn.V(nil),
 			resourceID:    "123",
 			expectedBody:  map[string]any{"id": "123"},
 			mockResponse:  map[string]any{"result": "success"},
@@ -61,7 +62,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				Path:           "/api/resource",
 				RequestIDField: "id",
 			},
-			requestBody:   `{"name":"test"}`,
+			requestBody:   dyn.V(map[string]any{"name": "test"}),
 			resourceID:    "456",
 			expectedBody:  map[string]any{"name": "test", "id": "456"},
 			mockResponse:  map[string]any{"result": "success"},
@@ -75,7 +76,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				Path:            "/api/resource",
 				ResponseIDField: "resource_id",
 			},
-			requestBody:        "",
+			requestBody:        dyn.V(nil),
 			resourceID:         "",
 			expectedBody:       map[string]any{},
 			expectedResponseID: "789",
@@ -90,7 +91,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				Path:            "/api/resource",
 				ResponseIDField: "resource_id",
 			},
-			requestBody:        "",
+			requestBody:        dyn.V(nil),
 			resourceID:         "",
 			expectedBody:       map[string]any{},
 			expectedResponseID: "789",
@@ -105,7 +106,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				Path:            "/api/resource",
 				ResponseIDField: "resource_id",
 			},
-			requestBody:        "",
+			requestBody:        dyn.V(nil),
 			resourceID:         "",
 			expectedBody:       map[string]any{},
 			expectedResponseID: "789",
@@ -120,7 +121,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				Method: "GET",
 				Path:   "/api/resource",
 			},
-			requestBody:   "",
+			requestBody:   dyn.V(nil),
 			resourceID:    "",
 			expectedBody:  map[string]any{},
 			mockResponse:  nil,
@@ -134,7 +135,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				Path:         "/api/resource",
 				QueryIDField: "resource_id",
 			},
-			requestBody:   "",
+			requestBody:   dyn.V(nil),
 			resourceID:    "123",
 			expectedPath:  "/api/resource?resource_id=123",
 			expectedBody:  map[string]any{},
@@ -149,7 +150,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				Path:             "/api/resource",
 				RequestDataField: "data",
 			},
-			requestBody:   `{"name":"test","value":42}`,
+			requestBody:   dyn.V(map[string]any{"name": "test", "value": 42}),
 			resourceID:    "",
 			expectedBody:  map[string]any{"data": map[string]any{"name": "test", "value": 42}},
 			mockResponse:  map[string]any{"result": "success"},
@@ -164,7 +165,7 @@ func TestPerform_RequestIDField(t *testing.T) {
 				RequestDataField: "data",
 				RequestIDField:   "id",
 			},
-			requestBody:   `{"name":"test"}`,
+			requestBody:   dyn.V(map[string]any{"name": "test"}),
 			resourceID:    "456",
 			expectedBody:  map[string]any{"data": map[string]any{"name": "test", "id": "456"}},
 			mockResponse:  map[string]any{"result": "success"},
