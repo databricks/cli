@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -66,17 +65,23 @@ func (v *Variable) Set(val VariableValue) error {
 		return fmt.Errorf("variable has already been assigned value: %s", v.Value)
 	}
 
-	rv := reflect.ValueOf(val)
-	switch rv.Kind() {
-	case reflect.Struct, reflect.Array, reflect.Slice, reflect.Map:
-		if v.Type != VariableTypeComplex {
-			return errors.New("variable type is not complex")
-		}
+	if v.IsComplexValued() && v.Type != VariableTypeComplex {
+		return fmt.Errorf("variable type is not complex: %s", v.Type)
 	}
 
 	v.Value = val
 
 	return nil
+}
+
+func (v *Variable) IsComplexValued() bool {
+	rv := reflect.ValueOf(v.Value)
+	switch rv.Kind() {
+	case reflect.Struct, reflect.Array, reflect.Slice, reflect.Map:
+		return true
+	default:
+		return false
+	}
 }
 
 func (v *Variable) IsComplex() bool {
