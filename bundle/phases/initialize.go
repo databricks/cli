@@ -193,7 +193,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	if withTerranova {
 		// For acceptance tests, initialize terraform map
-		b.Config.Bundle.Terraform = &config.Terraform{ExecPath: ""}
+		bundle.ApplyFunc(ctx, b, func(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+			b.Config.Bundle.Terraform = &config.Terraform{ExecPath: " "}
+			return nil
+		})
 	} else {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)

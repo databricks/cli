@@ -15,3 +15,7 @@ New = ''
 [[Repls]]
 Old = '2025/\d\d/\d\d \d\d:\d\d:\d\d \[TRACE\] over recursion limit.*\n'
 New = ''
+
+[[Repls]]
+Old = '"exec_path": " "'
+New = '"exec_path": "[TERRAFORM]"'
