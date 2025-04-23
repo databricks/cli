@@ -55,7 +55,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		j.Name = prefix + j.Name
 		for _, tag := range tags {
 			if j.Tags == nil {
-				j.Tags = make(map[string]string)
+				j.Tags = make(map[string]string, len(tags))
 			}
 			if j.Tags[tag.Key] == "" {
 				j.Tags[tag.Key] = tag.Value
