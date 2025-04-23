@@ -291,6 +291,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}
+	for _, src := range config.Resources.SecretScopes {
+		if src.ModifiedStatus == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
 
 	return nil
 }

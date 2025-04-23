@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"context"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"reflect"
 	"testing"
 
@@ -831,6 +832,13 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 				"test_app": {
 					App: apps.App{
 						Description: "test_app",
+					},
+				},
+			},
+			SecretScopes: map[string]*resources.SecretScope{
+				"test_secret_scope": {
+					SecretScope: &workspace.SecretScope{
+						Name: "test_secret_scope",
 					},
 				},
 			},
