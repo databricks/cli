@@ -129,6 +129,7 @@ func (spec *CallSpec) PrepareCall(request dyn.Value, resourceID string) (*Call, 
 		return nil, err
 	}
 
+	// AI TODO: replace with json.MarshalIndent; use request.AsAny()
 	requestBodyBytes, err := jsonsaver.Marshal(request)
 	if err != nil {
 		return nil, err
