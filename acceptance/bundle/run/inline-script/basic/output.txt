@@ -20,4 +20,4 @@ Hello
 abc
 
 >>> [CLI] bundle run -- printf hello
-hello
+hello<EOL>

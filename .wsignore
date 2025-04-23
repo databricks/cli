@@ -14,9 +14,6 @@ experimental/python/docs/images/databricks-logo.svg
 # "bundle run" has trailing whitespace:
 acceptance/bundle/integration_whl/*/output.txt
 
-# This file does not end with a trailing newline, intentionally because this
-# tests whether output is streamed to stdout without newlines acting as a delimiter.
-acceptance/bundle/run/inline-script/basic/output.txt
 
 # "bundle init" has trailing whitespace:
 acceptance/bundle/templates-machinery/helpers-error/output.txt

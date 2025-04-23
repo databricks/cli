@@ -19,3 +19,6 @@ rm abc.txt
 
 # no newline
 trace $CLI bundle run -- printf "hello"
+
+# print newline to comply with lint
+printf "<EOL>\n"
