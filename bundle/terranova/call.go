@@ -2,6 +2,7 @@ package terranova
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -9,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/jsonsaver"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/httpclient"
@@ -129,8 +129,7 @@ func (spec *CallSpec) PrepareCall(request dyn.Value, resourceID string) (*Call, 
 		return nil, err
 	}
 
-	// AI TODO: replace with json.MarshalIndent; use request.AsAny()
-	requestBodyBytes, err := jsonsaver.Marshal(request)
+	requestBodyBytes, err := json.MarshalIndent(request.AsAny(), "", "  ")
 	if err != nil {
 		return nil, err
 	}
