@@ -319,6 +319,22 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		bundleUuid = b.Config.Bundle.Uuid
 	}
 
+	variableCount := len(b.Config.Variables)
+	complexVariableCount := int64(0)
+	lookupVariableCount := int64(0)
+	for _, v := range b.Config.Variables {
+		// If the resolved value of the variable is a complex type, we count it as a complex variable.
+		// We can't rely on the "type: complex" annotation because the annotation is optional in some contexts
+		// like bundle YAML files.
+		if v.IsComplexValued() {
+			complexVariableCount++
+		}
+
+		if v.Lookup != nil {
+			lookupVariableCount++
+		}
+	}
+
 	artifactPathType := protos.BundleDeployArtifactPathTypeUnspecified
 	if libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
 		artifactPathType = protos.BundleDeployArtifactPathTypeVolume
@@ -372,6 +388,9 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 				PythonUpdatedResourcesCount: b.Metrics.PythonUpdatedResourcesCount,
 				PythonResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
 				PythonResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
+				VariableCount:               int64(variableCount),
+				ComplexVariableCount:        complexVariableCount,
+				LookupVariableCount:         lookupVariableCount,
 			},
 		},
 	})
