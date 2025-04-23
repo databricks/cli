@@ -29,7 +29,9 @@ func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagno
 		// Fast mutators with only in-memory checks
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),
-		SingleNodeCluster(),
+		// does not like num_workers: 0 setting but this is something terraform adds so we have to as well.
+		// TODO: do this check before applying defaults
+		//SingleNodeCluster(),
 
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
