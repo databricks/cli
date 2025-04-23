@@ -187,7 +187,14 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		metadata.AnnotatePipelines(),
 	)
 
-	if !withTerranova {
+	if diags.HasError() {
+		return diags
+	}
+
+	if withTerranova {
+		// For acceptance tests, initialize terraform map
+		b.Config.Bundle.Terraform = &config.Terraform{ExecPath: ""}
+	} else {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
