@@ -15,7 +15,7 @@ type Move struct {
 
 // Example:
 // Input: {"job_id": 123, "field1": "hello", "field2": "world"}, Fields: ["field1", "field2"], Target: "data", Result: {"job_id": 123, "data": {"field1": "hello", "field2": "world"}}
-// AI TODO: Implement field syntax: !field, which means everything but field named "field". Add new test.
+// Input: {"job_id": 123, "field1": "hello", "field2": "world"}, Fields: ["!job_id"], Target: "data", Result: {"job_id": 123, "data": {"field1": "hello", "field2": "world"}}
 func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 	mapping, ok := v.AsMap()
 	if !ok {
@@ -28,15 +28,32 @@ func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 	// Create a new result mapping
 	resultMapping := dyn.NewMapping()
 
+	// Check if we have any negated fields (starting with !)
+	hasNegatedFields := false
+	negatedFields := make([]string, 0)
+	for _, field := range p.Fields {
+		if len(field) > 0 && field[0] == '!' {
+			hasNegatedFields = true
+			negatedFields = append(negatedFields, field[1:])
+		}
+	}
+
 	// Process all fields
 	for _, pair := range mapping.Pairs() {
 		key := pair.Key.MustString()
 
-		// If this is a field to move, add it to the target mapping
-		if slices.Contains(p.Fields, key) {
+		shouldMove := false
+		if hasNegatedFields {
+			// If we have negated fields, move everything EXCEPT those fields
+			shouldMove = !slices.Contains(negatedFields, key)
+		} else {
+			// Otherwise use the normal inclusion logic
+			shouldMove = slices.Contains(p.Fields, key)
+		}
+
+		if shouldMove {
 			targetMapping.SetLoc(key, pair.Key.Locations(), pair.Value)
 		} else {
-			// Otherwise, keep it in the result mapping
 			resultMapping.SetLoc(key, pair.Key.Locations(), pair.Value)
 		}
 	}

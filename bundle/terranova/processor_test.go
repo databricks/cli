@@ -75,6 +75,42 @@ func TestApplyMove(t *testing.T) {
 				"data": map[string]any{},
 			},
 		},
+		{
+			name: "negated field syntax",
+			input: map[string]any{
+				"job_id": 123,
+				"field1": "hello",
+				"field2": "world",
+			},
+			fields: []string{"!job_id"},
+			target: "data",
+			expected: map[string]any{
+				"job_id": 123,
+				"data": map[string]any{
+					"field1": "hello",
+					"field2": "world",
+				},
+			},
+		},
+		{
+			name: "multiple negated fields",
+			input: map[string]any{
+				"id":     1,
+				"name":   "test",
+				"email":  "test@example.com",
+				"active": true,
+			},
+			fields: []string{"!id", "!active"},
+			target: "contact",
+			expected: map[string]any{
+				"id":     1,
+				"active": true,
+				"contact": map[string]any{
+					"name":  "test",
+					"email": "test@example.com",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
