@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"reflect"
 	"slices"
 	"testing"
@@ -149,6 +150,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"app1": {
 						App: apps.App{
 							Name: "app1",
+						},
+					},
+				},
+				SecretScopes: map[string]*resources.SecretScope{
+					"secretScope1": {
+						SecretScope: &workspace.SecretScope{
+							Name: "secretScope1",
 						},
 					},
 				},
