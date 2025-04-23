@@ -307,3 +307,48 @@ func TestResolveNestedIndexedRefs(t *testing.T) {
 
 	assert.Equal(t, "a: a", getByPath(t, out, "a").MustString())
 }
+
+func TestResolveMapVariable(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"map": dyn.V(map[string]dyn.Value{
+			"key1": dyn.V("value1"),
+			"key2": dyn.V("value2"),
+		}),
+		"var": dyn.V("${map}"),
+	})
+
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+
+	// Verify that the map variable was interpolated correctly
+	mapVal := getByPath(t, out, "var")
+	_, ok := mapVal.AsMap()
+	require.True(t, ok, "expected map value")
+
+	// Verify the map contents
+	assert.Equal(t, "value1", getByPath(t, mapVal, "key1").MustString())
+	assert.Equal(t, "value2", getByPath(t, mapVal, "key2").MustString())
+}
+
+func TestResolveSequenceVariable(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"seq": dyn.V([]dyn.Value{
+			dyn.V("value1"),
+			dyn.V("value2"),
+		}),
+		"var": dyn.V("${seq}"),
+	})
+
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+
+	// Verify that the sequence variable was interpolated correctly
+	seqVal := getByPath(t, out, "var")
+	seq, ok := seqVal.AsSequence()
+	require.True(t, ok, "expected sequence value")
+	require.Len(t, seq, 2)
+
+	// Verify the sequence contents
+	assert.Equal(t, "value1", seq[0].MustString())
+	assert.Equal(t, "value2", seq[1].MustString())
+}
