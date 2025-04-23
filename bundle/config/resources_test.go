@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"reflect"
 	"strings"
 	"testing"
@@ -168,6 +169,12 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateServingEndpoint: serving.CreateServingEndpoint{},
 			},
 		},
+		SecretScopes: map[string]*resources.SecretScope{
+			"my_secret_scope": {
+				Name:        "0",
+				SecretScope: &workspace.SecretScope{},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -184,6 +191,9 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
+		{Name: "0"},
+	}, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
@@ -197,6 +207,9 @@ func TestResourcesBindSupport(t *testing.T) {
 
 			// bind operation requires Exists to return true
 			exists, err := r.Exists(ctx, m.WorkspaceClient, "0")
+			if err != nil {
+				panic(err)
+			}
 			assert.NoError(t, err)
 			assert.True(t, exists)
 		}

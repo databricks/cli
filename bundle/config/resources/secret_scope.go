@@ -27,9 +27,20 @@ func (s SecretScope) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	// TODO implement me
-	panic("implement me")
+func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
+	scopes, err := w.Secrets.ListScopesAll(ctx)
+
+	if err != nil {
+		return false, nil
+	}
+
+	for _, scope := range scopes {
+		if scope.Name == name {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (s SecretScope) ResourceDescription() ResourceDescription {
