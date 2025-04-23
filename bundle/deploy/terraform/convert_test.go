@@ -704,6 +704,14 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{Name: "app1"}},
 				},
 			},
+			{
+				Type: "databricks_secret_scope",
+				Mode: "managed",
+				Name: "test_secret_scope",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{Name: "secret_scope1"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
