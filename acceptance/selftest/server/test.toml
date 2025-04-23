@@ -1,5 +1,10 @@
 RecordRequests = true
 
+# Ensure that server configuration works with EnvMatrix
+[EnvMatrix]
+VARIABLE_A = ["one", "two"]
+VARIABLE_B = ["hello", "world"]
+
 [[Server]]
 Pattern = "GET /custom/endpoint"
 Response.Body = '''should not see this response, latter response takes precedence'''
