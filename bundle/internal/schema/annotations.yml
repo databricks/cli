@@ -199,6 +199,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The schema definitions for the bundle, where each key is the name of the schema.
     "markdown_description": |-
       The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
+  "secret_scopes":
+    "description": |-
+      PLACEHOLDER
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -530,6 +533,19 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SecretScope:
+  "backend_type":
+    "description": |-
+      PLACEHOLDER
+  "initial_manage_principal":
+    "description": |-
+      PLACEHOLDER
+  "keyvault_metadata":
+    "description": |-
+      PLACEHOLDER
+  "name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

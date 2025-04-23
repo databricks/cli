@@ -1304,6 +1304,36 @@
                   }
                 ]
               },
+              "resources.SecretScope": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "backend_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType"
+                      },
+                      "initial_manage_principal": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "keyvault_metadata": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "initial_manage_principal"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Volume": {
                 "oneOf": [
                   {
@@ -1842,6 +1872,9 @@
                       "description": "The schema definitions for the bundle, where each key is the name of the schema.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
                       "markdownDescription": "The schema definitions for the bundle, where each key is the name of the schema. See [schemas](https://docs.databricks.com/dev-tools/bundles/resources.html#schemas)."
+                    },
+                    "secret_scopes": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SecretScope"
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -7343,6 +7376,33 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "workspace.AzureKeyVaultSecretScopeMetadata": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "dns_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "resource_id": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "dns_name",
+                    "resource_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "workspace.ScopeBackendType": {
+              "type": "string"
             }
           }
         }
@@ -7555,6 +7615,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Schema"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SecretScope": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScope"
                       }
                     },
                     {
