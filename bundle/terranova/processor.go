@@ -72,22 +72,24 @@ type Processor struct {
 }
 
 func (p *Processor) ApplyProcessor(v dyn.Value) (dyn.Value, error) {
+	var err error
+
 	if p.Select != nil {
-		v, err := merge.Select(v, p.Select)
+		v, err = merge.Select(v, p.Select)
 		if err != nil {
 			return v, err
 		}
 	}
 
 	if p.Drop != nil {
-		v, err := merge.AntiSelect(v, p.Drop)
+		v, err = merge.AntiSelect(v, p.Drop)
 		if err != nil {
 			return v, err
 		}
 	}
 
 	for _, move := range p.Moves {
-		v, err := move.ApplyMove(v)
+		v, err = move.ApplyMove(v)
 		if err != nil {
 			return v, err
 		}

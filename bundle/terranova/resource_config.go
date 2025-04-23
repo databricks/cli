@@ -36,10 +36,18 @@ var specs = map[string]IResource{
 			ResponseIDField: "job_id",
 		},
 		Update: CallSpec{
-			Method:           "POST",
-			Path:             "/api/2.2/jobs/reset",
-			RequestDataField: "new_settings",
-			RequestIDField:   "job_id",
+			Method: "POST",
+			Path:   "/api/2.2/jobs/reset",
+			// RequestDataField: "new_settings",
+			RequestIDIntegerField: "job_id",
+			RequestProcessors: []Processor{
+				{
+					Moves: []Move{{
+						Fields: []string{"!job_id"},
+						Target: "new_settings",
+					}},
+				},
+			},
 		},
 		Delete: CallSpec{
 			Method:         "POST",
@@ -47,11 +55,19 @@ var specs = map[string]IResource{
 			RequestIDField: "job_id",
 		},
 		Read: CallSpec{
-			Method:            "GET",
-			Path:              "/api/2.2/jobs/get",
-			QueryIDField:      "job_id",
-			ResponseDataField: "settings",
+			Method:       "GET",
+			Path:         "/api/2.2/jobs/get",
+			QueryIDField: "job_id",
+			// ResponseDataField: "settings",
 			// XXX Max 100 items, returns next_page_token for more.
+			ResponseProcessors: []Processor{
+				{
+					Moves: []Move{{
+						Fields: []string{"settings"},
+						Target: "",
+					}},
+				},
+			},
 		},
 		Processors: []Processor{
 			{

@@ -36,8 +36,11 @@ type CallSpec struct {
 	// HTTP Path. Can encode resource as {}
 	Path string
 
-	// If present, request will be JSON dictionary with one pair: key=RequestIDField and value=ResourceID
+	// If present, add one pair to request dictionary: key=RequestIDField and value=ResourceID
 	RequestIDField string
+
+	// Same but resulting type is integer
+	RequestIDIntegerField string
 
 	// If present, a query parameter will be added to request with key=QueryIDField and value=ResourceID
 	QueryIDField string
@@ -49,10 +52,13 @@ type CallSpec struct {
 	RequestDataField string
 
 	// If present, response data will be extract from this field (instead of top level)
-	ResponseDataField string
+	// ResponseDataField string
 
-	// Additional processors to apply
-	Processors []Processor
+	// Additional processors to apply to request
+	RequestProcessors []Processor
+
+	// Additional processors to apply to response
+	ResponseProcessors []Processor
 }
 
 type Call struct {
@@ -74,43 +80,41 @@ func (spec *CallSpec) PrepareCall(requestBody, resourceID string) (*Call, error)
 	if resourceID != "" {
 		call.Path = strings.ReplaceAll(spec.Path, "{}", resourceID)
 
-		if spec.RequestIDField != "" {
+		var resourceIDConverted any
+		var idfield string
+		var err error
+
+		if spec.RequestIDIntegerField != "" {
+			resourceIDConverted, err = strconv.Atoi(resourceID)
+			if err != nil {
+				return nil, fmt.Errorf("Cannot convert resourceID to integer: %#v: %w", resourceID, err)
+			}
+			idfield = spec.RequestIDIntegerField
+		} else {
+			// keep string
+			resourceIDConverted = resourceID
+			idfield = spec.RequestIDField
+		}
+
+		if idfield != "" {
 			// If we have a request body, we need to unmarshal it, add the ID field, and marshal it back
 			if requestBody != "" {
 				var requestMap map[string]any
 				if err := json.Unmarshal([]byte(requestBody), &requestMap); err != nil {
 					return nil, fmt.Errorf("failed to unmarshal request body: %w", err)
 				}
-				requestMap[spec.RequestIDField] = resourceID
-				newRequestBody, err := json.Marshal(requestMap)
+				requestMap[idfield] = resourceIDConverted
+				newRequestBody, err := json.MarshalIndent(requestMap, "", "  ")
 				if err != nil {
 					return nil, fmt.Errorf("failed to marshal request body: %w", err)
 				}
 				call.RequestBody = string(newRequestBody)
 			} else {
 				// If no request body, create a simple one with just the ID field
-				idMap := map[string]any{spec.RequestIDField: resourceID}
+				idMap := map[string]any{idfield: resourceIDConverted}
 				newRequestBody, err := json.Marshal(idMap)
 				if err != nil {
 					return nil, fmt.Errorf("failed to marshal request body: %w", err)
-				}
-				call.RequestBody = string(newRequestBody)
-			}
-
-			// Apply RequestDataField if specified
-			if spec.RequestDataField != "" && call.RequestBody != "" {
-				var requestData any
-				if err := json.Unmarshal([]byte(call.RequestBody), &requestData); err != nil {
-					return nil, fmt.Errorf("failed to unmarshal request body for RequestDataField: %w", err)
-				}
-
-				wrapper := map[string]any{
-					spec.RequestDataField: requestData,
-				}
-
-				newRequestBody, err := json.Marshal(wrapper)
-				if err != nil {
-					return nil, fmt.Errorf("failed to marshal wrapped request body: %w", err)
 				}
 				call.RequestBody = string(newRequestBody)
 			}
