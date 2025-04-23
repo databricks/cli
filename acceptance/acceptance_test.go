@@ -99,8 +99,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// Download terraform and provider and create config; this also creates build directory.
 	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
 
-	wheelPath, err := buildDatabricksBundlesWheel(t, buildDir)
-	require.NoError(t, err)
+	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
 	repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
 
@@ -834,30 +833,55 @@ func getNodeTypeID(cloudEnv string) string {
 
 // buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
 // It's used to cache the wheel build between acceptance tests, because one build takes ~10 seconds.
-func buildDatabricksBundlesWheel(t *testing.T, buildDir string) (string, error) {
+func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
+	// Clean up directory, remove all but the latest wheel
+	_ = findWheel(t, buildDir)
+
 	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
 
-	files, err := os.ReadDir(buildDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to read directory %s: %s", buildDir, err)
+	latestWheel := findWheel(t, buildDir)
+	if latestWheel == "" {
+		t.Errorf("databricks-bundles wheel not found in %s", buildDir)
 	}
 
-	// we can't control output file name, so we have to search for it
+	return latestWheel
+}
 
-	var wheelName string
+func findWheel(t *testing.T, dir string) string {
+	var wheels []string
+
+	files, err := os.ReadDir(dir)
+	require.NoError(t, err)
+
+	var latestWheel string
+	var latestTime time.Time
+
+	// First pass: find the latest wheel
 	for _, file := range files {
-		if strings.HasPrefix(file.Name(), "databricks_bundles-") && strings.HasSuffix(file.Name(), ".whl") {
-			if wheelName != "" {
-				return "", fmt.Errorf("multiple wheels found: %s and %s", wheelName, file.Name())
-			} else {
-				wheelName = file.Name()
+		name := file.Name()
+		if strings.HasPrefix(name, "databricks_bundles-") && strings.HasSuffix(name, ".whl") {
+			info, err := file.Info()
+			require.NoError(t, err)
+			name = filepath.Join(dir, name)
+			wheels = append(wheels, name)
+			if info.ModTime().After(latestTime) {
+				latestWheel = name
+				latestTime = info.ModTime()
 			}
 		}
 	}
 
-	if wheelName != "" {
-		return filepath.Join(buildDir, wheelName), nil
-	} else {
-		return "", fmt.Errorf("databricks-bundles wheel not found in %s", buildDir)
+	// Second pass: delete all wheels except the latest
+	for _, wheel := range wheels {
+		if wheel != latestWheel {
+			err := os.Remove(wheel)
+			if err == nil {
+				t.Logf("Cleaning up %s", wheel)
+			} else {
+				t.Errorf("Cleaning up %s failed: %s", wheel, err)
+			}
+		}
 	}
+
+	return latestWheel
 }
