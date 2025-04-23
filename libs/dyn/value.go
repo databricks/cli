@@ -40,6 +40,8 @@ func NewValue(v any, loc []Location) Value {
 	switch vin := v.(type) {
 	case map[string]Value:
 		v = newMappingFromGoMap(vin)
+	case map[string]any:
+		v = newMappingFromGoMapAny(vin)
 	}
 
 	return Value{

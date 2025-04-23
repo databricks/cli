@@ -45,6 +45,15 @@ func newMappingFromGoMap(vin map[string]Value) Mapping {
 	return m
 }
 
+// newMappingFromGoMap creates a new Mapping from a Go map of string keys and dynamic values.
+func newMappingFromGoMapAny(vin map[string]any) Mapping {
+	m := newMappingWithSize(len(vin))
+	for k, v := range vin {
+		m.SetLoc(k, nil, V(v))
+	}
+	return m
+}
+
 // Pairs returns all the key-value pairs in the Mapping. The pairs are sorted by
 // their key in lexicographic order.
 func (m Mapping) Pairs() []Pair {
