@@ -1,6 +1,9 @@
 package terranova
 
 import (
+	"fmt"
+	"slices"
+
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 )
@@ -21,40 +24,26 @@ func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 	// Create a new mapping for the target field
 	targetMapping := dyn.NewMapping()
 	
-	// For each field to move
-	for _, field := range p.Fields {
-		// Get the value from the original mapping
-		value, ok := mapping.GetByString(field)
-		if !ok {
-			continue // Skip fields that don't exist
-		}
-		
-		// Add it to the target mapping
-		targetMapping.SetLoc(field, value.Locations(), value)
-	}
+	// Create a new result mapping
+	resultMapping := dyn.NewMapping()
 	
-	// Create a new mapping for the result
-	resultMapping := mapping.Clone()
+	// Process all fields
+	for _, pair := range mapping.Pairs() {
+		key := pair.Key.MustString()
+		
+		// If this is a field to move, add it to the target mapping
+		if slices.Contains(p.Fields, key) {
+			targetMapping.SetLoc(key, pair.Key.Locations(), pair.Value)
+		} else {
+			// Otherwise, keep it in the result mapping
+			resultMapping.SetLoc(key, pair.Key.Locations(), pair.Value)
+		}
+	}
 	
 	// Add the target mapping to the result
 	resultMapping.SetLoc(p.Target, nil, dyn.NewValue(targetMapping, nil))
 	
-	// Remove the moved fields from the result
-	for _, field := range p.Fields {
-		if i, ok := resultMapping.(*dyn.Mapping).GetPairByString(field); ok {
-			// This is a bit of a hack since there's no direct "remove" method
-			// We'd need to implement a proper Remove method in the Mapping type
-			// For now, we'll rebuild the mapping without the field
-			delete(resultMapping.(*dyn.Mapping).index, field)
-			// We'd also need to update the pairs slice, but that's not exposed
-		}
-	}
-	
-	return dyn.Value{
-		v: resultMapping,
-		k: dyn.KindMap,
-		l: v.Locations(),
-	}, nil
+	return dyn.NewValue(resultMapping, v.Locations()), nil
 }
 
 type Processor struct {
