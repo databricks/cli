@@ -45,8 +45,8 @@ func newMappingFromGoMap(vin map[string]Value) Mapping {
 	return m
 }
 
-// newMappingFromGoMap creates a new Mapping from a Go map of string keys and dynamic values.
-func newMappingFromGoMapAny(vin map[string]any) Mapping {
+// NewMappingFromGoMapAny creates a new Mapping from a Go map of string keys and dynamic values.
+func NewMappingFromGoMapAny(vin map[string]any) Mapping {
 	m := newMappingWithSize(len(vin))
 	for k, v := range vin {
 		m.SetLoc(k, nil, V(v))

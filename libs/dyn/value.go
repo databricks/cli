@@ -41,7 +41,7 @@ func NewValue(v any, loc []Location) Value {
 	case map[string]Value:
 		v = newMappingFromGoMap(vin)
 	case map[string]any:
-		v = newMappingFromGoMapAny(vin)
+		v = NewMappingFromGoMapAny(vin)
 	}
 
 	return Value{
