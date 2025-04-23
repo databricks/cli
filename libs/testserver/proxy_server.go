@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -84,24 +85,26 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 	// TODO: Since the response is always JSON, this should be specified in the header.
 	respB := map[string]any{}
 	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, r.Body, &respB)
-	require.NoError(s.t, err) // todo remove
+	assert.NoError(s.t, err)
 	if err != nil {
 		// API errors from the SDK are expected to be of the type apierr.APIError.
 		apiErr := &apierr.APIError{}
 		if errors.As(err, &apiErr) {
 			w.WriteHeader(apiErr.StatusCode)
-			w.Write(respB["message"].([]byte))
+			_, err := w.Write(respB["message"].([]byte))
+			assert.NoError(s.t, err)
 		} else {
 			// Something else went wrong.
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			_, err := w.Write([]byte(err.Error()))
+			assert.NoError(s.t, err)
 		}
 	}
 
 	// Successful response
 	w.WriteHeader(200)
 	b, err := json.Marshal(respB)
-	require.NoError(s.t, err)
+	assert.NoError(s.t, err)
 
 	if s.responseCallback != nil {
 		s.responseCallback(&request, &EncodedResponse{
@@ -110,13 +113,14 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Write(b)
+	_, err = w.Write(b)
+	assert.NoError(s.t, err)
 }
 
 // Eventually we can implement this function to allow for per-test overrides
 // even in integration tests.
 func (s *ProxyServer) Handle(method, path string, handler HandlerFunc) {
-	require.FailNow(s.t, "Not implemented")
+	s.t.Fatalf("Not implemented")
 }
 
 func (s *ProxyServer) SetRequestCallback(callback func(request *Request)) {

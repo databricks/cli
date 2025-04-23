@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/config"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
@@ -134,7 +133,7 @@ func startLocalServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) *config.Config {
+) *sdkconfig.Config {
 	s := testserver.NewLocalServer(t)
 
 	// Record API requests in out.requests.txt if RecordRequests is true
@@ -177,7 +176,7 @@ func startProxyServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) *config.Config {
+) *sdkconfig.Config {
 	s := testserver.NewProxyServer(t)
 
 	// Record API requests in out.requests.txt if RecordRequests is true
