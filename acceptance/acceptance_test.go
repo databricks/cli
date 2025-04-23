@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -25,9 +26,7 @@ import (
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -77,7 +76,41 @@ var Ignored = map[string]bool{
 	ReplsFile: true,
 }
 
+// Detects if test is run from "debug test" feature in VS Code.
+func IsInDebug() bool {
+	ex, _ := os.Executable()
+	return strings.HasPrefix(path.Base(ex), "__debug_bin")
+}
+
+// Loads debug environment from ~/.databricks/debug-env.json.
+func loadDebugEnvIfRunFromIDE(t testutil.TestingT, key string) {
+	if !IsInDebug() {
+		return
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("cannot find user home: %s", err)
+	}
+	raw, err := os.ReadFile(filepath.Join(home, ".databricks/debug-env.json"))
+	if err != nil {
+		t.Fatalf("cannot load ~/.databricks/debug-env.json: %s", err)
+	}
+	var conf map[string]map[string]string
+	err = json.Unmarshal(raw, &conf)
+	if err != nil {
+		t.Fatalf("cannot parse ~/.databricks/debug-env.json: %s", err)
+	}
+	vars, ok := conf[key]
+	if !ok {
+		t.Fatalf("~/.databricks/debug-env.json#%s not configured", key)
+	}
+	for k, v := range vars {
+		os.Setenv(k, v)
+	}
+}
+
 func TestAccept(t *testing.T) {
+	// loadDebugEnvIfRunFromIDE(t, "workspace")
 	testAccept(t, InprocessMode, "selftest/record_cloud")
 }
 
@@ -85,7 +118,8 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
-	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
+	loadDebugEnvIfRunFromIDE(t, "CLOUD_ENV")
+	require.Equal(t, 1, testAccept(t, true, "selftest/record_cloud"))
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
@@ -355,27 +389,34 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
+	cfg, user, env := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+	testdiff.PrepareReplacementsUser(t, &repls, user)
+	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+
+	if env != nil && InprocessMode {
+		testutil.NullEnvironment(t)
+		for _, kv := range env {
+			parts := strings.SplitN(kv, "=", 2)
+			require.Len(t, parts, 2)
+			t.Setenv(parts[0], parts[1])
+		}
+	}
+
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
+	if env != nil {
+		cmd.Env = env
+	}
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
-	testdiff.PrepareReplacementsUser(t, &repls, user)
-
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
-	require.NoError(t, err)
-	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, w)
-
 	// Configure resolved credentials in the environment.
-	for _, v := range auth.ProcessEnv(cfg) {
-		cmd.Env = append(cmd.Env, v)
+	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+cfg.Host)
+	if cfg.Token != "" {
+		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+cfg.Token)
 	}
-	// cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+workspaceClient.Config.Host)
-	// if workspaceClient.Config.Token != "" {
-	// 	cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+workspaceClient.Config.Token)
-	// }
+
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 
