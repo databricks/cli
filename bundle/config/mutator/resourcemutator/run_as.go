@@ -129,6 +129,16 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
+	// Secret Scopes do not support run_as in the API.
+	if len(b.Config.Resources.SecretScopes) > 0 {
+		diags = diags.Extend(reportRunAsNotSupported(
+			"secret_scopes",
+			b.Config.GetLocation("resources.secret_scopes"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
+	}
+
 	return diags
 }
 
