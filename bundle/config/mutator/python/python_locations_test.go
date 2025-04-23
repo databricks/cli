@@ -22,12 +22,11 @@ func TestMergeLocations(t *testing.T) {
 
 	input := dyn.NewValue(
 		map[string]dyn.Value{
-			"foo": dyn.NewValue(
+			"foo": dyn.V(
 				map[string]dyn.Value{
 					"baz": dyn.NewValue("baz", []dyn.Location{yamlLocation}),
 					"qux": dyn.NewValue("baz", []dyn.Location{generatedLocation, yamlLocation}),
 				},
-				[]dyn.Location{},
 			),
 			"bar": dyn.NewValue("baz", []dyn.Location{generatedLocation}),
 		},

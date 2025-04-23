@@ -25,7 +25,7 @@ func Foreach(fn MapFunc) MapFunc {
 				if err != nil {
 					return InvalidValue, err
 				}
-				m.Set(pk, nv) //nolint:errcheck
+				m.SetLoc(pk.MustString(), pk.Locations(), nv)
 			}
 			return NewValue(m, v.Locations()), nil
 		case KindSequence:

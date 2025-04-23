@@ -8,7 +8,8 @@ type ResourceBudgetPolicyCustomTags struct {
 }
 
 type ResourceBudgetPolicy struct {
-	CustomTags []ResourceBudgetPolicyCustomTags `json:"custom_tags,omitempty"`
-	PolicyId   string                           `json:"policy_id,omitempty"`
-	PolicyName string                           `json:"policy_name,omitempty"`
+	BindingWorkspaceIds []int                            `json:"binding_workspace_ids,omitempty"`
+	CustomTags          []ResourceBudgetPolicyCustomTags `json:"custom_tags,omitempty"`
+	PolicyId            string                           `json:"policy_id,omitempty"`
+	PolicyName          string                           `json:"policy_name,omitempty"`
 }

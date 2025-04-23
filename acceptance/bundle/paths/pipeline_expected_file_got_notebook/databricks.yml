@@ -1,0 +1,10 @@
+bundle:
+  name: pipeline_expected_file_got_notebook
+
+include:
+  - resources/pipeline.yml
+
+variables:
+  notebook_dir:
+    description: Directory with DLT notebooks
+    default: notebooks

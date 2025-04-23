@@ -1,0 +1,50 @@
+
+>>> [CLI] bundle validate
+Name: dependencies
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/dependencies/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading dist/test.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+[
+  {
+    "environment_key": "test_env",
+    "spec": {
+      "client": "1",
+      "dependencies": [
+        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "test_package",
+        "test_package==2.0.1",
+        "test_package>=2.0.1",
+        "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/artifacts/.internal/test.whl",
+        "/Workspace/Users/test@databricks.com/test-package.whl",
+        "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
+        "beautifulsoup4[security, tests] ~= 4.12.3",
+        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+      ]
+    }
+  }
+]
+
+>>> [CLI] bundle validate -o json
+[
+  "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+  "test_package",
+  "test_package==2.0.1",
+  "test_package>=2.0.1",
+  "./dist/*.whl",
+  "/Workspace/Users/test@databricks.com/test-package.whl",
+  "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
+  "beautifulsoup4[security, tests] ~= 4.12.3",
+  "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+]

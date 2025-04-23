@@ -1,0 +1,39 @@
+
+>>> errcode [CLI] secrets list-scopes
+Scope  Backend Type
+
+>>> errcode [CLI] secrets unknown
+Error: unknown command "unknown" for "databricks secrets"
+
+Usage:
+  databricks secrets [flags]
+  databricks secrets [command]
+
+Available Commands
+  create-scope  Create a new secret scope.
+  delete-acl    Delete an ACL.
+  delete-scope  Delete a secret scope.
+  delete-secret Delete a secret.
+  get-acl       Get secret ACL details.
+  get-secret    Get a secret.
+  list-acls     Lists ACLs.
+  list-scopes   List all scopes.
+  list-secrets  List secret keys.
+  put-acl       Create/update an ACL.
+  put-secret    Add a secret.
+
+Permission Commands
+
+Flags:
+  -h, --help   help for secrets
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks secrets [command] --help" for more information about a command.
+
+
+Exit code: 1

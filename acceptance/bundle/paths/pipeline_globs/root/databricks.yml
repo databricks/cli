@@ -1,0 +1,13 @@
+bundle:
+  name: pipeline_glob_paths
+
+include:
+  - resources/pipeline.yml
+
+variables:
+  notebook_dir:
+    description: Directory with DLT notebooks
+    default: notebooks
+  file_dir:
+    description: Directory with DLT files
+    default: files

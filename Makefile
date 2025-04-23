@@ -1,4 +1,4 @@
-default: vendor fmt lint tidy ws
+default: tidy vendor fmt lint ws
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -40,7 +40,7 @@ showcover:
 acc-showcover:
 	go tool cover -html=coverage-acceptance.txt
 
-build: vendor
+build: tidy vendor
 	go build -mod vendor
 
 snapshot:

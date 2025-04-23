@@ -29,6 +29,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "sql",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -366,11 +367,6 @@ func newGet() *cobra.Command {
 
 	var getReq sql.GetWarehouseRequest
 
-	var getSkipWait bool
-	var getTimeout time.Duration
-
-	cmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
-	cmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
 	cmd.Use = "get ID"

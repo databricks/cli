@@ -1,0 +1,18 @@
+resources:
+  pipelines:
+    nyc_taxi_pipeline:
+      libraries:
+        # globs for notebooks and files are expanded
+        - notebook: { path: "../${var.notebook_dir}/*" }
+        - file: { path: "../${var.file_dir}/*" }
+        # globs can include file extensions
+        - notebook: { path: "../${var.notebook_dir}/*.py" }
+        - file: { path: "../${var.file_dir}/*.py" }
+        # non-glob files work
+        - notebook: { path: "../${var.notebook_dir}/nyc_taxi_loader.py" }
+        # maven libraries and jars remain as-is
+        - maven: { coordinates: "org.jsoup:jsoup:1.7.2" }
+        - jar: "*/*.jar"
+        # absolute paths and paths using URLs remain as-is
+        - notebook: { path: "/Workspace/Users/me@company.com/*.ipynb" }
+        - notebook: { path: "s3://notebooks/*.ipynb" }

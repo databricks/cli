@@ -3,7 +3,7 @@
 bundle:
   name: my_jobs_as_code
   uuid: [UUID]
-  databricks_cli_version: ">= 0.238.0"
+  databricks_cli_version: ">= 0.248.0"
 
 experimental:
   python:
