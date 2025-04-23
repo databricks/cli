@@ -14,6 +14,7 @@ type Move struct {
 }
 
 // Example:
+// AI TODO: add table test cases for the example below and a few other good test caes
 // Input: {"job_id": 123, "field1": "hello", "field2": "world"}, Fields: ["field1", "field2"], Target: "data", Result: {"job_id": 123, "data": {"field1": "hello", "field2": "world"}}
 func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 	mapping, ok := v.AsMap()
@@ -23,14 +24,14 @@ func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 
 	// Create a new mapping for the target field
 	targetMapping := dyn.NewMapping()
-	
+
 	// Create a new result mapping
 	resultMapping := dyn.NewMapping()
-	
+
 	// Process all fields
 	for _, pair := range mapping.Pairs() {
 		key := pair.Key.MustString()
-		
+
 		// If this is a field to move, add it to the target mapping
 		if slices.Contains(p.Fields, key) {
 			targetMapping.SetLoc(key, pair.Key.Locations(), pair.Value)
@@ -39,10 +40,10 @@ func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 			resultMapping.SetLoc(key, pair.Key.Locations(), pair.Value)
 		}
 	}
-	
+
 	// Add the target mapping to the result
 	resultMapping.SetLoc(p.Target, nil, dyn.NewValue(targetMapping, nil))
-	
+
 	return dyn.NewValue(resultMapping, v.Locations()), nil
 }
 
