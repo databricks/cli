@@ -14,7 +14,6 @@ type SecretScope struct {
 	InitialManagePrincipal string `json:"initial_manage_principal"`
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
 
 	*workspace.SecretScope
 }
@@ -29,7 +28,6 @@ func (s SecretScope) MarshalJSON() ([]byte, error) {
 
 func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	scopes, err := w.Secrets.ListScopesAll(ctx)
-
 	if err != nil {
 		return false, nil
 	}
@@ -62,12 +60,12 @@ func (s SecretScope) GetName() string {
 }
 
 func (s SecretScope) GetURL() string {
-	return s.URL
+	// Secret scopes do not have a URL
+	return ""
 }
 
-func (s SecretScope) InitializeURL(baseURL url.URL) {
-	// TODO implement me
-	panic("implement me")
+func (s SecretScope) InitializeURL(_ url.URL) {
+	// Secret scopes do not have a URL
 }
 
 func (s SecretScope) IsNil() bool {

@@ -2,9 +2,10 @@ package terraform
 
 import (
 	"context"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"reflect"
 	"testing"
+
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
