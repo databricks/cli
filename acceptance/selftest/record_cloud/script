@@ -1,3 +1,5 @@
+# trace env | sort
+
 trace $CLI current-user me | jq .name
 
 # TODO CONTINUE(v4): I think it works fine for debugging (with the right env vars set in the currnet process).

@@ -110,8 +110,9 @@ func loadDebugEnvIfRunFromIDE(t testutil.TestingT, key string) {
 }
 
 func TestAccept(t *testing.T) {
+	// TODO: Clean this up.
 	// loadDebugEnvIfRunFromIDE(t, "workspace")
-	testAccept(t, InprocessMode, "selftest/record_cloud")
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -253,7 +254,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
 				t.Logf("Running test with env %v", expanded[0])
-				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
+				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0], InprocessMode)
 			} else {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -261,7 +262,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 						if !InprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset)
+						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset, InprocessMode)
 					})
 				}
 			}
@@ -353,7 +354,14 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	return ""
 }
 
-func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string, customEnv []string) {
+func runTest(t *testing.T,
+	dir, coverDir string,
+	repls testdiff.ReplacementsContext,
+	config internal.TestConfig,
+	configPath string,
+	customEnv []string,
+	inprocessMode bool,
+) {
 	tailOutput := Tail
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
@@ -393,7 +401,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
-	if env != nil && InprocessMode {
+	if env != nil && inprocessMode {
 		testutil.NullEnvironment(t)
 		for _, kv := range env {
 			parts := strings.SplitN(kv, "=", 2)

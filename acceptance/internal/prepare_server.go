@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
@@ -26,7 +27,7 @@ import (
 
 // TODO: Make CLI auth for with this.
 func StartDefaultServer(t *testing.T) {
-	s := testserver.New(t, false)
+	s := testserver.NewLocalServer(t)
 	addDefaultHandlers(s)
 
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
@@ -40,25 +41,14 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
+// TODO: Clean up the env story here.
 func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User, []string) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
-	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-	token := "dbapi" + tokenSuffix
-
 	// If we are running in a cloud environment AND we are recording requests,
 	// start a dedicated server to act as a reverse proxy and record requests.
 	if cloudEnv != "" && recordRequests {
-		host := startDedicatedServer(t, config.Server, recordRequests,
-			logRequests, config.IncludeRequestHeaders, outputDir,
-			true)
-
-		cfg := &sdkconfig.Config{
-			Host:  host,
-			Token: token,
-		}
-
 		// Use a non-proxy client to fetch user info so that this API call is not recorded
 		// in out.requests.txt
 		w, err := databricks.NewWorkspaceClient()
@@ -66,6 +56,9 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 		user, err := w.CurrentUser.Me(context.Background())
 		require.NoError(t, err)
+
+		// Start a proxy server that sits in front of of a real Databricks workspace.
+		cfg := startProxyServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 
 		// TODO: I only need to set these environment variables in hte inprocess mode.
 		// Support both child process and inprocess mode.
@@ -86,6 +79,11 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	// If we are not recording requests, and no custom server server stubs are configured,
 	// use the default shared server.
 	if len(config.Server) == 0 && !recordRequests {
+		// Use a unique token for each test. This allows us to maintain
+		// separate state for each test in fake workspaces.
+		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+		token := "dbapi" + tokenSuffix
+
 		cfg := &sdkconfig.Config{
 			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
 			Token: token,
@@ -97,54 +95,57 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
 	// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
 	slices.Reverse(config.Server)
-	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir, false)
-
-	cfg := &sdkconfig.Config{
-		Host:  host,
-		Token: token,
-	}
-	err := cfg.EnsureResolved()
-	require.NoError(t, err)
+	cfg := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 
 	// For the purposes of replacements, use testUser for local runs.
 	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
 	return cfg, TestUser, nil
 }
 
-func startDedicatedServer(t *testing.T,
+func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {
+	return func(request *testserver.Request) {
+		req := getLoggedRequest(request, includeHeaders)
+		reqJson, err := json.MarshalIndent(req, "", "  ")
+		assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
+
+		requestsPath := filepath.Join(outputDir, "out.requests.txt")
+		f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+		assert.NoError(t, err)
+		defer f.Close()
+
+		_, err = f.WriteString(string(reqJson) + "\n")
+		assert.NoError(t, err)
+	}
+}
+
+func logResponseCallback(t *testing.T) func(request *testserver.Request, response *testserver.EncodedResponse) {
+	return func(request *testserver.Request, response *testserver.EncodedResponse) {
+		t.Logf("%d %s %s\n%s\n%s",
+			response.StatusCode, request.Method, request.URL,
+			formatHeadersAndBody("> ", request.Headers, request.Body),
+			formatHeadersAndBody("# ", response.Headers, response.Body),
+		)
+	}
+}
+
+func startLocalServer(t *testing.T,
 	stubs []ServerStub,
 	recordRequests bool,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-	cloud bool,
-) string {
-	s := testserver.New(t, cloud)
+) *config.Config {
+	s := testserver.NewLocalServer(t)
 
+	// Record API requests in out.requests.txt if RecordRequests is true
+	// in test.toml
 	if recordRequests {
-		requestsPath := filepath.Join(outputDir, "out.requests.txt")
-		s.RequestCallback = func(request *testserver.Request) {
-			req := getLoggedRequest(request, includeHeaders)
-			reqJson, err := json.MarshalIndent(req, "", "  ")
-			assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
-
-			f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-			assert.NoError(t, err)
-			defer f.Close()
-
-			_, err = f.WriteString(string(reqJson) + "\n")
-			assert.NoError(t, err)
-		}
+		s.SetRequestCallback(recordRequestsCallback(t, includeHeaders, outputDir))
 	}
 
+	// Log API responses if the -logrequests flag is set.
 	if logRequests {
-		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
-			t.Logf("%d %s %s\n%s\n%s",
-				response.StatusCode, request.Method, request.URL,
-				formatHeadersAndBody("> ", request.Headers, request.Body),
-				formatHeadersAndBody("# ", response.Headers, response.Body),
-			)
-		}
+		s.SetResponseCallback(logResponseCallback(t))
 	}
 
 	for _, stub := range stubs {
@@ -158,11 +159,44 @@ func startDedicatedServer(t *testing.T,
 	}
 
 	// The earliest handlers take precedence, add default handlers last
-	if !cloud {
-		addDefaultHandlers(s)
+	addDefaultHandlers(s)
+
+	cfg := &sdkconfig.Config{
+		Host:  s.URL,
+		Token: "dbapi123",
+	}
+	err := cfg.EnsureResolved()
+	require.NoError(t, err)
+
+	return cfg
+}
+
+func startProxyServer(t *testing.T,
+	stubs []ServerStub,
+	recordRequests bool,
+	logRequests bool,
+	includeHeaders []string,
+	outputDir string,
+) *config.Config {
+	s := testserver.NewProxyServer(t)
+
+	// Record API requests in out.requests.txt if RecordRequests is true
+	// in test.toml
+	if recordRequests {
+		s.SetRequestCallback(recordRequestsCallback(t, includeHeaders, outputDir))
 	}
 
-	return s.URL
+	// Log API responses if the -logrequests flag is set.
+	if logRequests {
+		s.SetResponseCallback(logResponseCallback(t))
+	}
+
+	cfg := &sdkconfig.Config{
+		Host:  s.URL,
+		Token: "dbapi1234",
+	}
+
+	return cfg
 }
 
 type LoggedRequest struct {
