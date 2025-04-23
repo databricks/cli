@@ -1,0 +1,65 @@
+Name: volume_path_test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/volume_path_test/default
+
+Validation OK!
+
+>>> [CLI] bundle validate
+Error: workspace.root_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+
+Error: workspace.file_path /Volumes/test/files starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+
+Error: workspace.state_path /Volumes/test/state starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+
+Error: workspace.resource_path /Volumes/test/resources starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+
+Name: volume_path_test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Volumes/test
+
+Found 4 errors
+
+Exit code: 1
+
+>>> [CLI] bundle validate
+Error: workspace.file_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+
+Name: volume_path_test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/volume_path_test/default
+
+Found 1 error
+
+Exit code: 1
+
+>>> [CLI] bundle validate
+Error: workspace.state_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+
+Name: volume_path_test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/volume_path_test/default
+
+Found 1 error
+
+Exit code: 1
+
+>>> [CLI] bundle validate
+Error: workspace.resource_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+
+Name: volume_path_test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/volume_path_test/default
+
+Found 1 error
+
+Exit code: 1

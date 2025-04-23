@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+# Test valid artifact path with /Volumes
+cd valid
+$CLI bundle validate
+cd ..
+
+# Test invalid root path with /Volumes
+cd invalid_root
+errcode trace $CLI bundle validate
+cd ..
+
+# Test invalid file path with /Volumes
+cd invalid_file
+errcode trace $CLI bundle validate
+cd ..
+
+# Test invalid state path with /Volumes
+cd invalid_state
+errcode trace $CLI bundle validate
+cd ..
+
+# Test invalid resource path with /Volumes
+cd invalid_resource
+errcode trace $CLI bundle validate
+cd ..
