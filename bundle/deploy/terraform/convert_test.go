@@ -1036,6 +1036,18 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			SecretScopes: map[string]*resources.SecretScope{
+				"test_secret_scope": {
+					SecretScope: &workspace.SecretScope{
+						Name: "test_secret_scope",
+					},
+				},
+				"test_secret_scope_new": {
+					SecretScope: &workspace.SecretScope{
+						Name: "test_secret_scope_new",
+					},
+				},
+			},
 		},
 	}
 	tfState := resourcesState{
