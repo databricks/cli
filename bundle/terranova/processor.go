@@ -14,7 +14,6 @@ type Move struct {
 }
 
 // Example:
-// AI TODO: add table test cases for the example below and a few other good test caes
 // Input: {"job_id": 123, "field1": "hello", "field2": "world"}, Fields: ["field1", "field2"], Target: "data", Result: {"job_id": 123, "data": {"field1": "hello", "field2": "world"}}
 func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 	mapping, ok := v.AsMap()
