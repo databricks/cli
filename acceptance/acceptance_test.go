@@ -361,7 +361,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
-	cfg, user := internal.ResolveServer(t, config, LogRequests, tmpDir)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))

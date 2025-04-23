@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,13 +16,16 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: Make CLI auth for with this.
 func StartDefaultServer(t *testing.T) {
-	s := testserver.New(t)
+	s := testserver.New(t, false)
 	addDefaultHandlers(s)
 
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
@@ -35,46 +39,72 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) *databricks.WorkspaceClient {
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
-
-	// If we are running on a cloud environment, use the host configured in the
-	// environment.
-	if cloudEnv != "" {
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{})
-		require.NoError(t, err)
-
-		return w
-	}
-
 	recordRequests := isTruePtr(config.RecordRequests)
 
 	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
 	token := "dbapi" + tokenSuffix
 
+	// If we are running in a cloud environment AND we are recording requests,
+	// start a dedicated server to act as a reverse proxy and record requests.
+	if cloudEnv != "" && recordRequests {
+		host := startDedicatedServer(t, config.Server, recordRequests,
+			logRequests, config.IncludeRequestHeaders, outputDir,
+			true)
+
+		cfg := &sdkconfig.Config{
+			Host:  host,
+			Token: token,
+		}
+
+		// Use a non-proxy client to fetch user info so that this API call is not recorded
+		// in out.requests.txt
+		w, err := databricks.NewWorkspaceClient()
+		require.NoError(t, err)
+
+		user, err := w.CurrentUser.Me(context.Background())
+		require.NoError(t, err)
+
+		return cfg, *user
+	}
+
+	// If we are running on a cloud environment, use the host configured in the
+	// environment.
+	if cloudEnv != "" {
+		cfg := &sdkconfig.Config{}
+		err := cfg.EnsureResolved()
+		require.NoError(t, err)
+
+		return cfg, TestUser
+	}
+
 	// If we are not recording requests, and no custom server server stubs are configured,
 	// use the default shared server.
 	if len(config.Server) == 0 && !recordRequests {
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		cfg := &sdkconfig.Config{
 			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
 			Token: token,
-		})
-		require.NoError(t, err)
+		}
 
-		return w
+		return cfg, TestUser
 	}
 
 	// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
 	// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
 	slices.Reverse(config.Server)
-	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir, false)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	cfg := &sdkconfig.Config{
 		Host:  host,
 		Token: token,
-	})
+	}
+	err := cfg.EnsureResolved()
 	require.NoError(t, err)
-	return w
+
+	// For the purposes of replacements, use testUser for local runs.
+	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
+	return cfg, TestUser
 }
 
 func startDedicatedServer(t *testing.T,
@@ -83,8 +113,9 @@ func startDedicatedServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
+	cloud bool,
 ) string {
-	s := testserver.New(t)
+	s := testserver.New(t, cloud)
 
 	if recordRequests {
 		requestsPath := filepath.Join(outputDir, "out.requests.txt")
@@ -123,7 +154,9 @@ func startDedicatedServer(t *testing.T,
 	}
 
 	// The earliest handlers take precedence, add default handlers last
-	addDefaultHandlers(s)
+	if !cloud {
+		addDefaultHandlers(s)
+	}
 
 	return s.URL
 }
@@ -152,6 +185,8 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 	return result
 }
 
+// TODO CONTINUE: The proxy is working on aws-prod-ucws. Unblock other environments
+// and especially azure-prod-ucws which seems to be setting
 func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 	headers := make(http.Header)
 	for k, v := range h {
