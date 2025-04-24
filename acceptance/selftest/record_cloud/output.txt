@@ -1,11 +1,3 @@
 
 >>> [CLI] current-user me
-{
-  "givenName": "[USERNAME]"
-}
-
->>> cat out.requests.txt
-{
-  "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
-}
+"[USERNAME]"
