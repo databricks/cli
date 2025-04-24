@@ -91,9 +91,6 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		return cfg, TestUser, nil
 	}
 
-	// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
-	// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
-	slices.Reverse(config.Server)
 	cfg := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 
 	// For the purposes of replacements, use testUser for local runs.
@@ -147,7 +144,10 @@ func startLocalServer(t *testing.T,
 		s.SetResponseCallback(logResponseCallback(t))
 	}
 
-	for _, stub := range stubs {
+	for ind := range stubs {
+		// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
+		// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
+		stub := stubs[len(stubs)-1-ind]
 		require.NotEmpty(t, stub.Pattern)
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)

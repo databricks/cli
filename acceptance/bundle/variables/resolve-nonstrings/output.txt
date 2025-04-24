@@ -32,7 +32,6 @@
       "queue": {
         "enabled": true
       },
-      "tags": {},
       "tasks": [
         {
           "new_cluster": {

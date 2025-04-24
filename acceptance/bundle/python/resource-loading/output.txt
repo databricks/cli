@@ -22,8 +22,7 @@
         "permissions": [],
         "queue": {
           "enabled": true
-        },
-        "tags": {}
+        }
       },
       "my_job_2": {
         "deployment": {
@@ -36,8 +35,7 @@
         "permissions": [],
         "queue": {
           "enabled": true
-        },
-        "tags": {}
+        }
       },
       "my_job_3": {
         "deployment": {
@@ -50,8 +48,7 @@
         "permissions": [],
         "queue": {
           "enabled": true
-        },
-        "tags": {}
+        }
       }
     }
   },
