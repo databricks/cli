@@ -835,19 +835,25 @@ func getNodeTypeID(cloudEnv string) string {
 // It's used to cache the wheel build between acceptance tests, because one build takes ~10 seconds.
 func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// Clean up directory, remove all but the latest wheel
-	_ = findWheel(t, buildDir)
+	// Doing this avoids ambiguity if the build command below does not touch any whl files,
+	// because it considers it already good. However, we would not know which one it considered good,
+	// so we prepare here by keeping only one.
+	_ = prepareWheelBuildDirectory(t, buildDir)
 
 	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
 
-	latestWheel := findWheel(t, buildDir)
+	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
+		// Many tests don't need the wheel, so continue there rather than hard fail
 		t.Errorf("databricks-bundles wheel not found in %s", buildDir)
 	}
 
 	return latestWheel
 }
 
-func findWheel(t *testing.T, dir string) string {
+// Find all possible whl files in 'dir' and clean up all but the one with most recent mtime
+// Return that full path to the wheel with most recent mtime (that was not cleaned up)
+func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	var wheels []string
 
 	files, err := os.ReadDir(dir)
