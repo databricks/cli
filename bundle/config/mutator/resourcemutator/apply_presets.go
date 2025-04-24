@@ -34,6 +34,11 @@ func (m *applyPresets) Name() string {
 	return "ApplyPresets"
 }
 
+// appendError adds a formatted error message to diagnostics
+func appendError(diags diag.Diagnostics, format string, args ...interface{}) diag.Diagnostics {
+	return diags.Extend(diag.Errorf("failed to apply preset: "+format, args...))
+}
+
 func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -47,9 +52,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	tags := toTagArray(t.Tags)
 
 	// Jobs presets: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
+
 	for key, j := range r.Jobs {
 		if j.JobSettings == nil {
-			diags = diags.Extend(diag.Errorf("job %s is not defined", key))
+			diags = appendError(diags, "job %s is not defined", key)
 			continue
 		}
 		j.Name = prefix + j.Name
@@ -88,7 +94,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Pipelines presets: Prefix, PipelinesDevelopment
 	for key, p := range r.Pipelines {
 		if p.CreatePipeline == nil {
-			diags = diags.Extend(diag.Errorf("pipeline %s is not defined", key))
+			diags = appendError(diags, "pipeline %s is not defined", key)
 			continue
 		}
 		p.Name = prefix + p.Name
@@ -104,7 +110,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Models presets: Prefix, Tags
 	for key, m := range r.Models {
 		if m.Model == nil {
-			diags = diags.Extend(diag.Errorf("model %s is not defined", key))
+			diags = appendError(diags, "model %s is not defined", key)
 			continue
 		}
 		m.Name = prefix + m.Name
@@ -122,7 +128,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Experiments presets: Prefix, Tags
 	for key, e := range r.Experiments {
 		if e.Experiment == nil {
-			diags = diags.Extend(diag.Errorf("experiment %s is not defined", key))
+			diags = appendError(diags, "experiment %s is not defined", key)
 			continue
 		}
 		filepath := e.Name
@@ -150,7 +156,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Model serving endpoint presets: Prefix
 	for key, e := range r.ModelServingEndpoints {
 		if e.CreateServingEndpoint == nil {
-			diags = diags.Extend(diag.Errorf("model serving endpoint %s is not defined", key))
+			diags = appendError(diags, "model serving endpoint %s is not defined", key)
 			continue
 		}
 		e.Name = normalizePrefix(prefix) + e.Name
@@ -161,7 +167,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Registered models presets: Prefix
 	for key, m := range r.RegisteredModels {
 		if m.CreateRegisteredModelRequest == nil {
-			diags = diags.Extend(diag.Errorf("registered model %s is not defined", key))
+			diags = appendError(diags, "registered model %s is not defined", key)
 			continue
 		}
 		m.Name = normalizePrefix(prefix) + m.Name
@@ -173,7 +179,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	if t.TriggerPauseStatus == config.Paused {
 		for key, q := range r.QualityMonitors {
 			if q.CreateMonitor == nil {
-				diags = diags.Extend(diag.Errorf("quality monitor %s is not defined", key))
+				diags = appendError(diags, "quality monitor %s is not defined", key)
 				continue
 			}
 			// Remove all schedules from monitors, since they don't support pausing/unpausing.
@@ -188,7 +194,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Schemas: Prefix
 	for key, s := range r.Schemas {
 		if s.CreateSchema == nil {
-			diags = diags.Extend(diag.Errorf("schema %s is not defined", key))
+			diags = appendError(diags, "schema %s is not defined", key)
 			continue
 		}
 		s.Name = normalizePrefix(prefix) + s.Name
@@ -199,7 +205,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Clusters: Prefix, Tags
 	for key, c := range r.Clusters {
 		if c.ClusterSpec == nil {
-			diags = diags.Extend(diag.Errorf("cluster %s is not defined", key))
+			diags = appendError(diags, "cluster %s is not defined", key)
 			continue
 		}
 		c.ClusterName = prefix + c.ClusterName
@@ -218,7 +224,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Dashboards: Prefix
 	for key, dashboard := range r.Dashboards {
 		if dashboard == nil || dashboard.Dashboard == nil {
-			diags = diags.Extend(diag.Errorf("dashboard %s s is not defined", key))
+			diags = appendError(diags, "dashboard %s is not defined", key)
 			continue
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
