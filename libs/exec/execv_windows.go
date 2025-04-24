@@ -10,7 +10,8 @@ import (
 )
 
 // Note: Windows does not support an execv syscall that replaces the current process.
-// To emulate this, we create a child process, stream the input and output, and return the exit code.
+// To emulate this, we create a child process, pass the stdin, stdout and stderr file descriptors,
+// and return the exit code.
 // ref: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/execv-wexecv?view=msvc-170
 func execv(opts ExecvOptions) error {
 	path, err := exec.LookPath(opts.Args[0])
