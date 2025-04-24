@@ -12,6 +12,7 @@
       },
       "edit_mode": "UI_LOCKED",
       "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
       "name": "prefix-job1",
       "permissions": [],
       "queue": {
@@ -47,6 +48,7 @@
       },
       "edit_mode": "UI_LOCKED",
       "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
       "name": "[prefix]job1",
       "permissions": [],
       "queue": {
@@ -82,6 +84,7 @@
       },
       "edit_mode": "UI_LOCKED",
       "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
       "name": "job1",
       "permissions": [],
       "queue": {
