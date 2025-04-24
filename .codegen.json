@@ -10,9 +10,10 @@
         ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go"
     },
     "version": {
+      "experimental/python/README.md": "version $VERSION or above",
       "experimental/python/databricks/bundles/version.py": "__version__ = \"$VERSION\"",
       "experimental/python/pyproject.toml": "version = \"$VERSION\"",
-      "experimental/python/README.md": "version $VERSION or above",
+      "experimental/python/uv.lock": "name = \"databricks-bundles\"\nversion = \"$VERSION\"",
       "libs/template/templates/experimental-jobs-as-code/library/versions.tmpl": "{{define \"latest_databricks_bundles_version\" -}}$VERSION{{- end}}"
     },
     "toolchain": {
@@ -24,8 +25,7 @@
             "make schema",
             "echo 'bundle/internal/tf/schema/\\*.go linguist-generated=true' >> ./.gitattributes",
             "echo 'go.sum linguist-generated=true' >> ./.gitattributes",
-            "echo 'bundle/schema/jsonschema.json linguist-generated=true' >> ./.gitattributes",
-            "pushd experimental/python && uv lock"
+            "echo 'bundle/schema/jsonschema.json linguist-generated=true' >> ./.gitattributes"
         ]
     }
 }
