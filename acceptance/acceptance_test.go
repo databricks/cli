@@ -81,7 +81,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, true, "selftest/basic")
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
