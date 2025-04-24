@@ -1,9 +1,3 @@
-# Proxy server successfully records a requests and returns a response.
-trace $CLI current-user me | jq .name.givenName
-
-# Proxy server should successfully return non 200 responses.
-errcode trace $CLI jobs get 1234
-
 # Verify that the entire crud lifecycle of a pipeline works.
 title "Create a pipeline"
 export pipeline_id=$($CLI pipelines create --json @pipeline1.json | jq -r .pipeline_id)

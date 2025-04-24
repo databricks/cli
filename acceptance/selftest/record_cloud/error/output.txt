@@ -1,0 +1,5 @@
+
+>>> [CLI] jobs get 1234
+Error: Job 1234 does not exist.
+
+Exit code: 1

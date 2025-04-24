@@ -1,0 +1,58 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "content": "aGVsbG8sIHdvcmxkCg==",
+    "format": "AUTO",
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/list"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/list"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/list"
+}

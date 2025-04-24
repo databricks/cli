@@ -1,0 +1,2 @@
+# Proxy server successfully records a requests and returns a response.
+trace $CLI current-user me | jq .name.givenName

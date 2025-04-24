@@ -113,7 +113,7 @@ var Ignored = map[string]bool{
 func TestAccept(t *testing.T) {
 	// TODO: Clean this up.
 	// loadDebugEnvIfRunFromIDE(t, "workspace")
-	testAccept(t, InprocessMode, "selftest/record_cloud")
+	testAccept(t, InprocessMode, "")
 }
 
 func TestInprocessMode(t *testing.T) {
