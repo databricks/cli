@@ -122,7 +122,7 @@ func TestApplyMove(t *testing.T) {
 
 			input := dyn.NewValue(tt.input, nil)
 			result, err := move.ApplyMove(input)
-			
+
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result.AsAny())
 		})
