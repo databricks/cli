@@ -8,12 +8,10 @@ Validation OK!
 
 >>> [CLI] bundle validate
 Error: workspace.root_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+  at workspace.root_path
+  in databricks.yml:5:14
 
-Error: workspace.file_path /Volumes/test/files starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
-
-Error: workspace.state_path /Volumes/test/state starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
-
-Error: workspace.resource_path /Volumes/test/resources starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace
 
 Name: volume_path_test
 Target: default
@@ -21,12 +19,16 @@ Workspace:
   User: [USERNAME]
   Path: /Volumes/test
 
-Found 4 errors
+Found 1 error
 
 Exit code: 1
 
 >>> [CLI] bundle validate
 Error: workspace.file_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+  at workspace.file_path
+  in databricks.yml:5:14
+
+For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace
 
 Name: volume_path_test
 Target: default
@@ -40,6 +42,10 @@ Exit code: 1
 
 >>> [CLI] bundle validate
 Error: workspace.state_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+  at workspace.state_path
+  in databricks.yml:5:15
+
+For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace
 
 Name: volume_path_test
 Target: default
@@ -53,6 +59,10 @@ Exit code: 1
 
 >>> [CLI] bundle validate
 Error: workspace.resource_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
+  at workspace.resource_path
+  in databricks.yml:5:18
+
+For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace
 
 Name: volume_path_test
 Target: default

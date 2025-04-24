@@ -2,26 +2,21 @@
 set -e
 
 # Test valid artifact path with /Volumes
-cd valid
+export DATABRICKS_BUNDLE_ROOT="valid"
 $CLI bundle validate
-cd ..
 
 # Test invalid root path with /Volumes
-cd invalid_root
+export DATABRICKS_BUNDLE_ROOT="invalid_root"
 errcode trace $CLI bundle validate
-cd ..
 
 # Test invalid file path with /Volumes
-cd invalid_file
+export DATABRICKS_BUNDLE_ROOT="invalid_file"
 errcode trace $CLI bundle validate
-cd ..
 
 # Test invalid state path with /Volumes
-cd invalid_state
+export DATABRICKS_BUNDLE_ROOT="invalid_state"
 errcode trace $CLI bundle validate
-cd ..
 
 # Test invalid resource path with /Volumes
-cd invalid_resource
+export DATABRICKS_BUNDLE_ROOT="invalid_resource"
 errcode trace $CLI bundle validate
-cd ..
