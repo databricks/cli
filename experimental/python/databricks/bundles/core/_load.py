@@ -161,7 +161,7 @@ def _parse_locations(module: ModuleType) -> dict[str, Location]:
 
             locations[var_name] = Location(
                 line=stmt.lineno,
-                column=stmt.col_offset,
+                column=stmt.col_offset + 1,
                 file=file,
             )
 
