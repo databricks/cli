@@ -18,6 +18,7 @@
         }
       }
     ],
+    "max_concurrent_runs": 1,
     "name": "job",
     "permissions": [],
     "queue": {
@@ -54,6 +55,7 @@ Validation OK!
         }
       }
     ],
+    "max_concurrent_runs": 1,
     "name": "job",
     "permissions": [],
     "queue": {

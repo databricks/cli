@@ -1,4 +1,5 @@
 {
+  "max_concurrent_runs": 1,
   "name": "job",
   "permissions": [],
   "queue": {
@@ -34,6 +35,7 @@ Error: file test1.py not found
 
 Exit code: 1
 {
+  "max_concurrent_runs": 1,
   "name": "job",
   "permissions": [],
   "queue": {
