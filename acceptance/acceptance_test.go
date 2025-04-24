@@ -78,7 +78,6 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 	testAccept(t, InprocessMode, "")
 }
 
@@ -91,6 +90,11 @@ func TestInprocessMode(t *testing.T) {
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+	// Locad debug environment when debugging a single test run from an IDE.
+	if singleTest != "" && InprocessMode {
+		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+	}
+
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
