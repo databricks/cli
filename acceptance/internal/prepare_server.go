@@ -54,7 +54,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		require.NoError(t, err)
 
 		user, err := w.CurrentUser.Me(context.Background())
-		require.NoError(t, err)
+		require.NoError(t, err, "Failed to get current user")
 
 		// Start a proxy server that sits in front of of a real Databricks workspace.
 		cfg := startProxyServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
@@ -68,11 +68,15 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	// If we are running on a cloud environment, use the host configured in the
 	// environment.
 	if cloudEnv != "" {
-		cfg := &sdkconfig.Config{}
-		err := cfg.EnsureResolved()
+		// Use a non-proxy client to fetch user info so that this API call is not recorded
+		// in out.requests.txt
+		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
-		return cfg, TestUser, nil
+		user, err := w.CurrentUser.Me(context.Background())
+		require.NoError(t, err, "Failed to get current user")
+
+		return w.Config, *user, nil
 	}
 
 	// If we are not recording requests, and no custom server server stubs are configured,
