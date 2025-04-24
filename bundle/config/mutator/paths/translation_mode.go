@@ -13,10 +13,6 @@ const (
 	// TranslateModeDirectory translates a path to a remote directory.
 	TranslateModeDirectory
 
-	// TranslateModeLocalAbsoluteFile translates a path to the local absolute file path.
-	// It returns an error if the path does not exist or is a directory.
-	TranslateModeLocalAbsoluteFile
-
 	// TranslateModeLocalAbsoluteDirectory translates a path to the local absolute directory path.
 	// It returns an error if the path does not exist or is not a directory.
 	TranslateModeLocalAbsoluteDirectory
