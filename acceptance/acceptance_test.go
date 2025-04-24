@@ -96,6 +96,9 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
+	// Consistent behavior of locale-dependent tools, such as 'sort'
+	t.Setenv("LC_ALL", "C")
+
 	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
 
 	// Download terraform and provider and create config; this also creates build directory.
