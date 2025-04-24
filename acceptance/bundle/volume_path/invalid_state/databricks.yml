@@ -1,0 +1,5 @@
+bundle:
+  name: volume_path_test
+
+workspace:
+  state_path: "/Volumes/test"
