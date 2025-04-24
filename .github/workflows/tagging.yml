@@ -43,11 +43,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install PyGithub
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
-        with:
-          version: "0.6.5"
-
       - name: Run script
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
