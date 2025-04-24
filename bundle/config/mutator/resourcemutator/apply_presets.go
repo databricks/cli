@@ -34,7 +34,6 @@ func (m *applyPresets) Name() string {
 	return "ApplyPresets"
 }
 
-// appendError adds a formatted error message to diagnostics
 func appendError(diags diag.Diagnostics, format string, args ...interface{}) diag.Diagnostics {
 	return diags.Extend(diag.Errorf("failed to apply preset: "+format, args...))
 }
