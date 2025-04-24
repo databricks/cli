@@ -39,12 +39,12 @@ type Python struct {
 	// defined in Python code.
 	//
 	// Example: ["my_project.resources:load_resources"]
-	Resources []string `json:"resources"`
+	Resources []string `json:"resources,omitempty"`
 
 	// Mutators contains a list of fully qualified function paths to mutator functions.
 	//
 	// Example: ["my_project.mutators:add_default_cluster"]
-	Mutators []string `json:"mutators"`
+	Mutators []string `json:"mutators,omitempty"`
 
 	// VEnvPath is path to the virtual environment.
 	//
