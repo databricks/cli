@@ -157,6 +157,27 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 	}
 }
 
+func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
+	jobId := request.JobId
+
+	_, ok := s.jobs[request.JobId]
+	if !ok {
+		return Response{
+			StatusCode: 403,
+			Body:       "{}",
+		}
+	}
+
+	s.jobs[jobId] = jobs.Job{
+		JobId:    jobId,
+		Settings: &request.NewSettings,
+	}
+
+	return Response{
+		Body: "",
+	}
+}
+
 func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
 	pipelineId := uuid.New().String()
 
