@@ -1,5 +1,8 @@
 export username=$($CLI current-user me | jq -r .userName)
 
+# TODO CONTINUE(v5): Figure out why this is failing on windows, and it automatically
+# being recorded as as  windows file without quotes. Why the difference?
+# test run: https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/14647936035/job/41106657293
 title "create a folder"
 trace $CLI workspace mkdirs /Users/$username/$UNIQUE_NAME
 
