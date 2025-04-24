@@ -1,0 +1,5 @@
+bundle:
+  name: volume_path_test
+
+workspace:
+  artifact_path: "/Volumes/main/default/artifacts/workspace.artifact_path"

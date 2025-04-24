@@ -38,6 +38,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=validate:volume-path
 10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=ResolveVariableReferences(resources)
