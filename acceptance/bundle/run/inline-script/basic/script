@@ -1,0 +1,24 @@
+trace $CLI bundle run -- echo "hello, world"
+
+# The CLI should not parse the --help flag and should try to run it as an executable
+# instead.
+errcode trace $CLI bundle run -- --help
+
+# The error message should include the exit code.
+errcode trace $CLI bundle run -- bash -c "exit 5"
+
+# stderr should also be passed through.
+$CLI bundle run -- python3 -c "import sys; print('Hello', file=sys.stderr)" 2> stderr.txt
+trace cat stderr.txt
+rm stderr.txt
+
+# stdin should be passed through
+echo "abc" > abc.txt
+trace cat - < abc.txt
+rm abc.txt
+
+# no newline
+trace $CLI bundle run -- printf "hello"
+
+# print newline to comply with whitespace linter
+printf "<EOL>\n"
