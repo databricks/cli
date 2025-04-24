@@ -28,7 +28,6 @@ func execv(opts ExecvOptions) error {
 	cmd.Dir = opts.Dir
 	cmd.Env = opts.Env
 
-	// Start the child command.
 	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf(" %s failed: %w", strings.Join(opts.Args, " "), err)
