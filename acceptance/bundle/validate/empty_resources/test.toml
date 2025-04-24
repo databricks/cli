@@ -1,0 +1,5 @@
+Badness = "One of the tests for jobs crashed; Assymetry: most resources return errors on null but dashboards succeed (because they have defaults defined)"
+
+[[Repls]]
+Old = '(?s)Stack Trace:.*?\n\n'
+New = "<Stack Trace>\n\n"
