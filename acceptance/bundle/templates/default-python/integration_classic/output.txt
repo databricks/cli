@@ -168,7 +168,7 @@ Validation OK!
 +          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
          },
          "edit_mode": "UI_LOCKED",
-@@ -59,18 +51,15 @@
+@@ -59,12 +51,8 @@
            }
          ],
 -        "max_concurrent_runs": 4,
@@ -177,26 +177,25 @@ Validation OK!
          "permissions": [],
          "queue": {
            "enabled": true
-         },
+-        },
 -        "tags": {
 -          "dev": "[USERNAME]"
--        },
-+        "tags": {},
+         },
          "tasks": [
-           {
+@@ -72,5 +60,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
 -              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
 +              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
              },
              "task_key": "notebook_task"
-@@ -107,5 +96,4 @@
+@@ -107,5 +95,4 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
            "periodic": {
              "interval": 1,
-@@ -118,21 +106,20 @@
+@@ -118,21 +105,20 @@
        "project_name_[UNIQUE_NAME]_pipeline": {
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -223,7 +222,7 @@ Validation OK!
 +        "schema": "project_name_[UNIQUE_NAME]_prod"
        }
      }
-@@ -145,10 +132,10 @@
+@@ -145,10 +131,10 @@
    "targets": null,
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
