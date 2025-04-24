@@ -842,7 +842,6 @@ func getNodeTypeID(cloudEnv string) string {
 }
 
 // buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
-// It's used to cache the wheel build between acceptance tests, because one build takes ~10 seconds.
 func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// Clean up directory, remove all but the latest wheel
 	// Doing this avoids ambiguity if the build command below does not touch any whl files,
