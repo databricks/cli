@@ -90,7 +90,7 @@ func TestInprocessMode(t *testing.T) {
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
-	// Locad debug environment when debugging a single test run from an IDE.
+	// Load debug environment when debugging a single test run from an IDE.
 	if singleTest != "" && InprocessMode {
 		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 	}
