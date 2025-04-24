@@ -226,8 +226,6 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 	return result
 }
 
-// TODO CONTINUE: The proxy is working on aws-prod-ucws. Unblock other environments
-// and especially azure-prod-ucws which seems to be setting
 func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 	headers := make(http.Header)
 	for k, v := range h {
