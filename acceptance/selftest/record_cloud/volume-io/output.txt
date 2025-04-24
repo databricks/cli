@@ -1,0 +1,51 @@
+
+>>> [CLI] schemas create schema-[UNIQUE_NAME] main
+{
+  "full_name": "main.schema-[UNIQUE_NAME]",
+  "owner": "[USERNAME]"
+}
+
+>>> [CLI] schemas get main.schema-[UNIQUE_NAME]
+{
+  "full_name": "main.schema-[UNIQUE_NAME]",
+  "owner": "[USERNAME]"
+}
+
+>>> [CLI] volumes create main schema-[UNIQUE_NAME] volume-[UNIQUE_NAME] MANAGED
+{
+  "full_name": "main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]",
+  "owner": "[USERNAME]"
+}
+
+>>> [CLI] volumes read main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
+{
+  "full_name": "main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]",
+  "owner": "[USERNAME]"
+}
+
+>>> [CLI] fs cp ./hello.txt dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]
+./hello.txt -> dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt
+
+>>> [CLI] fs ls dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]
+hello.txt
+
+>>> [CLI] fs cat dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt
+hello, world
+
+>>> [CLI] fs rm dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt
+
+>>> [CLI] fs ls dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]
+
+>>> [CLI] volumes delete main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
+
+>>> [CLI] volumes read main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
+Error: Volume 'main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]' does not exist.
+
+Exit code: 1
+
+>>> [CLI] schemas delete main.schema-[UNIQUE_NAME]
+
+>>> [CLI] schemas get main.schema-[UNIQUE_NAME]
+Error: Schema 'main.schema-[UNIQUE_NAME]' does not exist.
+
+Exit code: 1

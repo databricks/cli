@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -120,11 +121,9 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		queryParams[k] = v[0]
 	}
 
-	// Note: This only works for JSON responses. Eventually we should add support for other types
-	// of responses as and when needed.
-	respB := map[string]any{}
 	reqBody := s.reqBody(request)
-	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, reqBody, &respB)
+	respBody := bytes.Buffer{}
+	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, reqBody, &respBody)
 
 	// API errors from the SDK are expected to be of the type [apierr.APIError]. If we
 	// get an API error then parse the error and forward it in an appropriate format.
@@ -170,8 +169,7 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 
 	// Successful response
 	w.WriteHeader(200)
-	b, err := json.Marshal(respB)
-	assert.NoError(s.t, err)
+	b := respBody.Bytes()
 
 	_, err = w.Write(b)
 	assert.NoError(s.t, err)
