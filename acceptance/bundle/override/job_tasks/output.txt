@@ -4,7 +4,6 @@
   "queue": {
     "enabled": true
   },
-  "tags": {},
   "tasks": [
     {
       "new_cluster": {
@@ -40,7 +39,6 @@ Exit code: 1
   "queue": {
     "enabled": true
   },
-  "tags": {},
   "tasks": [
     {
       "new_cluster": {

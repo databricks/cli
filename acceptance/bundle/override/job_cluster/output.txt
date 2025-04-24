@@ -22,8 +22,7 @@
     "permissions": [],
     "queue": {
       "enabled": true
-    },
-    "tags": {}
+    }
   }
 }
 
@@ -50,7 +49,6 @@
     "permissions": [],
     "queue": {
       "enabled": true
-    },
-    "tags": {}
+    }
   }
 }

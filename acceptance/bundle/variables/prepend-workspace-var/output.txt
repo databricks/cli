@@ -23,7 +23,6 @@
         "queue": {
           "enabled": true
         },
-        "tags": {},
         "tasks": [
           {
             "existing_cluster_id": "500",

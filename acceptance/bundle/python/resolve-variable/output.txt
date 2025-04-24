@@ -22,7 +22,6 @@
         "queue": {
           "enabled": true
         },
-        "tags": {},
         "tasks": [
           {
             "notebook_task": {

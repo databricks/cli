@@ -21,7 +21,6 @@ Validation OK!
   "queue": {
     "enabled": true
   },
-  "tags": {},
   "tasks": [
     {
       "description": "task_description",
