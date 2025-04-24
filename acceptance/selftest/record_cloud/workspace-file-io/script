@@ -5,9 +5,8 @@ export username=$($CLI current-user me | jq -r .userName)
 # Setting this environment variable prevents that conversion on windows.
 export MSYS_NO_PATHCONV=1
 
-# TODO CONTINUE(v5): Figure out why this is failing on windows, and it automatically
-# being recorded as as  windows file without quotes. Why the difference?
-# test run: https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/14647936035/job/41106657293
+# TODO CONTINUE(v6): Is fixed on windows? If so clean up the env story. Mostly cleanup left with this PR.
+# TODO: Try recording requests in a bundle deploy acceptance test?
 title "create a folder"
 trace $CLI workspace mkdirs /Users/$username/$UNIQUE_NAME
 
