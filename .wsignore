@@ -14,7 +14,6 @@ experimental/python/docs/images/databricks-logo.svg
 # "bundle run" has trailing whitespace:
 acceptance/bundle/integration_whl/*/output.txt
 
-
 # "bundle init" has trailing whitespace:
 acceptance/bundle/templates-machinery/helpers-error/output.txt
 
