@@ -1,3 +1,30 @@
 
 >>> [CLI] current-user me
 "[USERNAME]"
+
+>>> [CLI] jobs get 1234
+Error: Job 1234 does not exist.
+
+Exit code: 1
+
+=== Create a pipeline
+
+=== Get the pipeline
+>>> [CLI] pipelines get [UUID]
+"test-pipeline-1"
+
+=== Update the pipeline
+>>> [CLI] pipelines update [UUID] --json @pipeline2.json
+
+=== Verify the update
+>>> [CLI] pipelines get [UUID]
+"test-pipeline-2"
+
+=== Delete the pipeline
+>>> [CLI] pipelines delete [UUID]
+
+=== Verify the deletion
+>>> [CLI] pipelines get [UUID]
+Error: The specified pipeline [UUID] was not found.
+
+Exit code: 1

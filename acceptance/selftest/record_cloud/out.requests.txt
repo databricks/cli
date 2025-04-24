@@ -2,3 +2,54 @@
   "method": "GET",
   "path": "/api/2.0/preview/scim/v2/Me"
 }
+{
+  "method": "GET",
+  "path": "/api/2.2/jobs/get"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "allow_duplicate_names": true,
+    "libraries": [
+      {
+        "file": {
+          "path": "/whatever.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-1"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[UUID]",
+  "body": {
+    "allow_duplicate_names": true,
+    "libraries": [
+      {
+        "file": {
+          "path": "/whatever.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-2",
+    "pipeline_id": "[UUID]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}

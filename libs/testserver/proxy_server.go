@@ -29,6 +29,17 @@ type ProxyServer struct {
 	responseCallback func(request *Request, response *EncodedResponse)
 }
 
+// This creates a reverse proxy server that sits in front of a real Databricks
+// workspace. This is useful for recording API requests and responses in
+// integration tests.
+//
+// Note: We cannot simply proxy the request from a localhost URL to a real
+// workspace. This is because auth resolution in the Databricks SDK relies
+// what the URL actually looks like to determine the auth method to use.
+// For example, in OAuth flows, the SDK can make requests to different Microsoft
+// OAuth endpoints based on the nature of the URL.
+// For reference, see:
+// https://github.com/databricks/databricks-sdk-go/blob/79e4b3a6e9b0b7dcb1af9ad4025deb447b01d933/common/environment/environments.go#L57
 func NewProxyServer(t testutil.TestingT) *ProxyServer {
 	router := mux.NewRouter()
 	server := httptest.NewServer(router)
@@ -48,11 +59,35 @@ func NewProxyServer(t testutil.TestingT) *ProxyServer {
 	s.apiClient, err = client.New(&config.Config{})
 	require.NoError(t, err)
 
+	// Set up the proxy handler as the default handler for all requests.
 	router.NotFoundHandler = http.HandlerFunc(s.proxyToCloud)
 	return s
 }
 
-// TODO: Iterate once on this function.
+func (s *ProxyServer) reqBody(r Request) any {
+	// The SDK expects the query parameters to be specified in the "request body"
+	// argument for GET, DELETE, and HEAD requests in the .Do method.
+	if r.Method == "GET" || r.Method == "DELETE" || r.Method == "HEAD" {
+		queryParams := make(map[string]any)
+		for k, v := range r.URL.Query() {
+			queryParams[k] = v[0]
+		}
+		return queryParams
+	}
+
+	// The SDK does not support directly passing a JSON serialized request
+	// body. So we convert it to a map if the body is a JSON object.
+	if json.Valid(r.Body) {
+		m := make(map[string]any)
+		err := json.Unmarshal(r.Body, &m)
+		assert.NoError(s.t, err)
+		return m
+	}
+
+	// Otherwise, return the raw body.
+	return r.Body
+}
+
 func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 	// Process requests sequentially. It's slower but is easier to reason about.
 	// For example, requestCallback and responseCallback functions do not need
@@ -67,10 +102,13 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 
 	headers := make(map[string]string)
 	for k, v := range r.Header {
-		// Authorization headers will be set by the SDK. No need to pass them along here.
+		// Authorization headers will be set by the SDK. Do not pass them along here.
 		if k == "Authorization" {
 			continue
 		}
+		// The default HTTP client in Go sets the Accept-Encoding header to
+		// "gzip". Since it's meant for the server and will again be set by
+		// the SDK, do not pass it along here.
 		if k == "Accept-Encoding" {
 			continue
 		}
@@ -82,28 +120,60 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		queryParams[k] = v[0]
 	}
 
-	// TODO: Since the response is always JSON, this should be specified in the header.
+	// Note: This only works for JSON responses. Eventually we should add support for other types
+	// of responses as and when needed.
 	respB := map[string]any{}
-	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, r.Body, &respB)
-	assert.NoError(s.t, err)
-	if err != nil {
-		// API errors from the SDK are expected to be of the type apierr.APIError.
-		apiErr := &apierr.APIError{}
-		if errors.As(err, &apiErr) {
-			w.WriteHeader(apiErr.StatusCode)
-			_, err := w.Write(respB["message"].([]byte))
-			assert.NoError(s.t, err)
-		} else {
-			// Something else went wrong.
-			w.WriteHeader(http.StatusInternalServerError)
-			_, err := w.Write([]byte(err.Error()))
-			assert.NoError(s.t, err)
+	reqBody := s.reqBody(request)
+	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, reqBody, &respB)
+
+	// API errors from the SDK are expected to be of the type [apierr.APIError]. If we
+	// get an API error then parse the error and forward it in an appropriate format.
+	apiErr := &apierr.APIError{}
+	if errors.As(err, &apiErr) {
+		body := map[string]string{
+			"error_code": apiErr.ErrorCode,
+			"message":    apiErr.Message,
 		}
+
+		b, err := json.Marshal(body)
+		assert.NoError(s.t, err)
+
+		w.WriteHeader(apiErr.StatusCode)
+		_, err = w.Write(b)
+		assert.NoError(s.t, err)
+
+		if s.responseCallback != nil {
+			s.responseCallback(&request, &EncodedResponse{
+				StatusCode: apiErr.StatusCode,
+				Body:       []byte(apiErr.Message),
+			})
+		}
+
+		return
+	}
+
+	// Something else went wrong.
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, err := w.Write([]byte(err.Error()))
+		assert.NoError(s.t, err)
+
+		if s.responseCallback != nil {
+			s.responseCallback(&request, &EncodedResponse{
+				StatusCode: 500,
+				Body:       []byte(err.Error()),
+			})
+		}
+
+		return
 	}
 
 	// Successful response
 	w.WriteHeader(200)
 	b, err := json.Marshal(respB)
+	assert.NoError(s.t, err)
+
+	_, err = w.Write(b)
 	assert.NoError(s.t, err)
 
 	if s.responseCallback != nil {
@@ -112,9 +182,6 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 			Body:       b,
 		})
 	}
-
-	_, err = w.Write(b)
-	assert.NoError(s.t, err)
 }
 
 // Eventually we can implement this function to allow for per-test overrides
