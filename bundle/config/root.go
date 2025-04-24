@@ -320,7 +320,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"presets",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
-			return err
+			return fmt.Errorf("failed to merge target=%s field=%s: %w", name, f, err)
 		}
 	}
 
