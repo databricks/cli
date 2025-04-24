@@ -100,8 +100,10 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
-	t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
-	repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
+	if wheelPath != "" {
+		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
+		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
+	}
 
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
