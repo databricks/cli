@@ -1,5 +1,10 @@
 export username=$($CLI current-user me | jq -r .userName)
 
+# MSYS automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+export MSYS_NO_PATHCONV=1
+
 # TODO CONTINUE(v5): Figure out why this is failing on windows, and it automatically
 # being recorded as as  windows file without quotes. Why the difference?
 # test run: https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/14647936035/job/41106657293
