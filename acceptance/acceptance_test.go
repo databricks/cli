@@ -78,6 +78,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 	testAccept(t, InprocessMode, "")
 }
 
