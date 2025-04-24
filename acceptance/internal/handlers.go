@@ -152,6 +152,18 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.JobsCreate(request)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/reset", func(req testserver.Request) any {
+		var request jobs.ResetJob
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+
+		return req.Workspace.JobsReset(request)
+	})
+
 	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
 		var request pipelines.PipelineSpec
 		if err := json.Unmarshal(req.Body, &request); err != nil {

@@ -1,0 +1,90 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/JOBS/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/JOBS/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "job_clusters": [
+      {
+        "job_cluster_key": "key",
+        "new_cluster": {
+          "num_workers": 0,
+          "spark_version": "13.3.x-scala2.12"
+        }
+      }
+    ],
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+      "enabled": true
+    },
+    "trigger": {
+      "pause_status": "UNPAUSED",
+      "periodic": {
+        "interval": 1,
+        "unit": "DAYS"
+      }
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/create"
+}
+jobs foo id='1' name='foo'
+
+=== Update trigger.periodic.unit and re-deploy
+>>> update_file.py databricks.yml DAYS HOURS
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/JOBS/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "job_id": 1,
+    "new_settings": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/JOBS/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "job_clusters": [
+        {
+          "job_cluster_key": "key",
+          "new_cluster": {
+            "num_workers": 0,
+            "spark_version": "13.3.x-scala2.12"
+          }
+        }
+      ],
+      "max_concurrent_runs": 1,
+      "name": "foo",
+      "queue": {
+        "enabled": true
+      },
+      "trigger": {
+        "pause_status": "UNPAUSED",
+        "periodic": {
+          "interval": 1,
+          "unit": "HOURS"
+        }
+      }
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset"
+}
+jobs foo id='1' name='foo'
