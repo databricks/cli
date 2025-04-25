@@ -5,7 +5,7 @@ from typing import Optional
 import codegen.packages as packages
 from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import _append_description
-from codegen.jsonschema import Schema
+from codegen.jsonschema import Schema, Stage
 
 
 @dataclass(kw_only=True)
@@ -14,6 +14,7 @@ class GeneratedEnum:
     package: str
     values: dict[str, str]
     description: Optional[str]
+    experimental: bool
 
 
 def generate_enum(schema_name: str, schema: Schema) -> GeneratedEnum:
@@ -33,6 +34,7 @@ def generate_enum(schema_name: str, schema: Schema) -> GeneratedEnum:
         package=package,
         values=values,
         description=schema.description,
+        experimental=schema.stage == Stage.PRIVATE,
     )
 
 
@@ -46,7 +48,7 @@ def get_code(generated: GeneratedEnum) -> str:
     b.append(f"class {generated.class_name}(Enum):")
     b.newline()
 
-    _append_description(b, generated.description)
+    _append_description(b, generated.description, generated.experimental)
 
     # Example:
     #

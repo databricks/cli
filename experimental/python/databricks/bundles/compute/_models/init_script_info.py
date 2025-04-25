@@ -5,10 +5,6 @@ from databricks.bundles.compute._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoParam,
 )
-from databricks.bundles.compute._models.dbfs_storage_info import (
-    DbfsStorageInfo,
-    DbfsStorageInfoParam,
-)
 from databricks.bundles.compute._models.gcs_storage_info import (
     GcsStorageInfo,
     GcsStorageInfoParam,
@@ -39,35 +35,32 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class InitScriptInfo:
-    """"""
+    """
+    Config for an individual init script
+    Next ID: 11
+    """
 
     abfss: VariableOrOptional[Adlsgen2Info] = None
     """
     Contains the Azure Data Lake Storage destination path
     """
 
-    dbfs: VariableOrOptional[DbfsStorageInfo] = None
-    """
-    destination needs to be provided. e.g.
-    `{ "dbfs" : { "destination" : "dbfs:/home/cluster_log" } }`
-    """
-
     file: VariableOrOptional[LocalFileInfo] = None
     """
-    destination needs to be provided. e.g.
-    `{ "file" : { "destination" : "file:/my/local/file.sh" } }`
+    destination needs to be provided, e.g.
+    `{ "file": { "destination": "file:/my/local/file.sh" } }`
     """
 
     gcs: VariableOrOptional[GcsStorageInfo] = None
     """
-    destination needs to be provided. e.g.
+    destination needs to be provided, e.g.
     `{ "gcs": { "destination": "gs://my-bucket/file.sh" } }`
     """
 
     s3: VariableOrOptional[S3StorageInfo] = None
     """
     destination and either the region or endpoint need to be provided. e.g.
-    `{ "s3": { "destination" : "s3://cluster_log_bucket/prefix", "region" : "us-west-2" } }`
+    `{ \"s3\": { \"destination\": \"s3://cluster_log_bucket/prefix\", \"region\": \"us-west-2\" } }`
     Cluster iam role is used to access s3, please make sure the cluster iam role in
     `instance_profile_arn` has permission to write data to the s3 destination.
     """
@@ -75,13 +68,13 @@ class InitScriptInfo:
     volumes: VariableOrOptional[VolumesStorageInfo] = None
     """
     destination needs to be provided. e.g.
-    `{ "volumes" : { "destination" : "/Volumes/my-init.sh" } }`
+    `{ \"volumes\" : { \"destination\" : \"/Volumes/my-init.sh\" } }`
     """
 
     workspace: VariableOrOptional[WorkspaceStorageInfo] = None
     """
-    destination needs to be provided. e.g.
-    `{ "workspace" : { "destination" : "/Users/user1@databricks.com/my-init.sh" } }`
+    destination needs to be provided, e.g.
+    `{ "workspace": { "destination": "/cluster-init-scripts/setup-datadog.sh" } }`
     """
 
     @classmethod
@@ -100,28 +93,22 @@ class InitScriptInfoDict(TypedDict, total=False):
     Contains the Azure Data Lake Storage destination path
     """
 
-    dbfs: VariableOrOptional[DbfsStorageInfoParam]
-    """
-    destination needs to be provided. e.g.
-    `{ "dbfs" : { "destination" : "dbfs:/home/cluster_log" } }`
-    """
-
     file: VariableOrOptional[LocalFileInfoParam]
     """
-    destination needs to be provided. e.g.
-    `{ "file" : { "destination" : "file:/my/local/file.sh" } }`
+    destination needs to be provided, e.g.
+    `{ "file": { "destination": "file:/my/local/file.sh" } }`
     """
 
     gcs: VariableOrOptional[GcsStorageInfoParam]
     """
-    destination needs to be provided. e.g.
+    destination needs to be provided, e.g.
     `{ "gcs": { "destination": "gs://my-bucket/file.sh" } }`
     """
 
     s3: VariableOrOptional[S3StorageInfoParam]
     """
     destination and either the region or endpoint need to be provided. e.g.
-    `{ "s3": { "destination" : "s3://cluster_log_bucket/prefix", "region" : "us-west-2" } }`
+    `{ \"s3\": { \"destination\": \"s3://cluster_log_bucket/prefix\", \"region\": \"us-west-2\" } }`
     Cluster iam role is used to access s3, please make sure the cluster iam role in
     `instance_profile_arn` has permission to write data to the s3 destination.
     """
@@ -129,13 +116,13 @@ class InitScriptInfoDict(TypedDict, total=False):
     volumes: VariableOrOptional[VolumesStorageInfoParam]
     """
     destination needs to be provided. e.g.
-    `{ "volumes" : { "destination" : "/Volumes/my-init.sh" } }`
+    `{ \"volumes\" : { \"destination\" : \"/Volumes/my-init.sh\" } }`
     """
 
     workspace: VariableOrOptional[WorkspaceStorageInfoParam]
     """
-    destination needs to be provided. e.g.
-    `{ "workspace" : { "destination" : "/Users/user1@databricks.com/my-init.sh" } }`
+    destination needs to be provided, e.g.
+    `{ "workspace": { "destination": "/cluster-init-scripts/setup-datadog.sh" } }`
     """
 
 

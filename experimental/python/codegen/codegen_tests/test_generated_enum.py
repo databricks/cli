@@ -17,4 +17,5 @@ def test_generate_enum():
         package="databricks.bundles.jobs._models.my_enum",
         values={"MY_ENUM_VALUE": "myEnumValue"},
         description="enum description",
+        experimental=False,
     )
