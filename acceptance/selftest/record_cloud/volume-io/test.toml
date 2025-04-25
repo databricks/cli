@@ -1,1 +1,5 @@
 RequiresUnityCatalog = true
+
+[[Repls]]
+Old = '\r\n'
+New = '\n'  
