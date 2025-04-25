@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
@@ -415,19 +416,19 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
+	for _, key := range utils.SortedKeys(config.Env) {
+		if hasKey(customEnv, key) {
+			// We want EnvMatrix to take precedence.
+			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
+			continue
+		}
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key])
+	}
+
 	for _, keyvalue := range customEnv {
 		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
-		key := items[0]
-		value := items[1]
-		newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, cmd.Env)
-		if value != newValue {
-			t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
-		}
-		cmd.Env = append(cmd.Env, key+"="+newValue)
-		repls.Set(newValue, "["+key+"]")
-		// newValue won't match because parts of it were already replaced; we adding it anyway just in case but we need newValueWithPlaceholders:
-		repls.Set(newValueWithPlaceholders, "["+key+"]")
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, items[0], items[1])
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -482,6 +483,32 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	if len(unexpected) > 0 {
 		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
+}
+
+func hasKey(env []string, key string) bool {
+	for _, keyvalue := range env {
+		items := strings.SplitN(keyvalue, "=", 2)
+		if len(items) == 2 && items[0] == key {
+			return true
+		}
+	}
+	return false
+}
+
+func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string) []string {
+	newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, env)
+	if value != newValue {
+		t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
+	}
+
+	// Checking length to avoid replacements for variables like this ENABLED=1
+	if len(newValue) >= 2 && len(newValueWithPlaceholders) >= 2 {
+		repls.Set(newValue, "["+key+"]")
+		// newValue won't match because parts of it were already replaced; we adding it anyway just in case but we need newValueWithPlaceholders:
+		repls.Set(newValueWithPlaceholders, "["+key+"]")
+	}
+
+	return append(env, key+"="+newValue)
 }
 
 func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
