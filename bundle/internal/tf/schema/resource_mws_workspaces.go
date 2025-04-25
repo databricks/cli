@@ -2,11 +2,6 @@
 
 package schema
 
-type ResourceMwsWorkspacesAzureWorkspaceInfo struct {
-	ResourceGroup  string `json:"resource_group,omitempty"`
-	SubscriptionId string `json:"subscription_id,omitempty"`
-}
-
 type ResourceMwsWorkspacesCloudResourceContainerGcp struct {
 	ProjectId string `json:"project_id"`
 }
@@ -43,11 +38,13 @@ type ResourceMwsWorkspaces struct {
 	AccountId                           string                                        `json:"account_id"`
 	AwsRegion                           string                                        `json:"aws_region,omitempty"`
 	Cloud                               string                                        `json:"cloud,omitempty"`
+	ComputeMode                         string                                        `json:"compute_mode,omitempty"`
 	CreationTime                        int                                           `json:"creation_time,omitempty"`
 	CredentialsId                       string                                        `json:"credentials_id,omitempty"`
 	CustomTags                          map[string]string                             `json:"custom_tags,omitempty"`
 	CustomerManagedKeyId                string                                        `json:"customer_managed_key_id,omitempty"`
 	DeploymentName                      string                                        `json:"deployment_name,omitempty"`
+	EffectiveComputeMode                string                                        `json:"effective_compute_mode,omitempty"`
 	GcpWorkspaceSa                      string                                        `json:"gcp_workspace_sa,omitempty"`
 	Id                                  string                                        `json:"id,omitempty"`
 	IsNoPublicIpEnabled                 bool                                          `json:"is_no_public_ip_enabled,omitempty"`
@@ -63,7 +60,6 @@ type ResourceMwsWorkspaces struct {
 	WorkspaceStatus                     string                                        `json:"workspace_status,omitempty"`
 	WorkspaceStatusMessage              string                                        `json:"workspace_status_message,omitempty"`
 	WorkspaceUrl                        string                                        `json:"workspace_url,omitempty"`
-	AzureWorkspaceInfo                  *ResourceMwsWorkspacesAzureWorkspaceInfo      `json:"azure_workspace_info,omitempty"`
 	CloudResourceContainer              *ResourceMwsWorkspacesCloudResourceContainer  `json:"cloud_resource_container,omitempty"`
 	ExternalCustomerInfo                *ResourceMwsWorkspacesExternalCustomerInfo    `json:"external_customer_info,omitempty"`
 	GcpManagedNetworkConfig             *ResourceMwsWorkspacesGcpManagedNetworkConfig `json:"gcp_managed_network_config,omitempty"`
