@@ -1,0 +1,1 @@
+echo "REGULAR_VAR=$REGULAR_VAR"

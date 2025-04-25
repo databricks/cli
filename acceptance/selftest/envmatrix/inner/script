@@ -4,3 +4,4 @@
 echo "FIRST=$FIRST"
 echo "SECOND=$SECOND"
 echo "THIRD=$THIRD"
+echo "REGULAR_VAR=$REGULAR_VAR"

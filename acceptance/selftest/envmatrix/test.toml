@@ -1,3 +1,6 @@
+[Env]
+REGULAR_VAR = "yes"
+
 [EnvMatrix]
 FIRST = ["overriden-in-inner"]
 THIRD = ["three $FIRST"]
