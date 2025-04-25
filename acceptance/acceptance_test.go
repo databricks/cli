@@ -418,22 +418,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	// Apply Env before EnvMatrix because we want EnvMatrix to take priority
 	for _, key := range utils.SortedKeys(config.Env) {
-		cmd.Env = append(cmd.Env, key+"="+config.Env[key])
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key])
 	}
 
 	for _, keyvalue := range customEnv {
 		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
-		key := items[0]
-		value := items[1]
-		newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, cmd.Env)
-		if value != newValue {
-			t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
-		}
-		cmd.Env = append(cmd.Env, key+"="+newValue)
-		repls.Set(newValue, "["+key+"]")
-		// newValue won't match because parts of it were already replaced; we adding it anyway just in case but we need newValueWithPlaceholders:
-		repls.Set(newValueWithPlaceholders, "["+key+"]")
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, items[0], items[1])
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -488,6 +479,22 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	if len(unexpected) > 0 {
 		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
+}
+
+func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string) []string {
+	newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, env)
+	if value != newValue {
+		t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
+	}
+
+	// Checking length to avoid replacements for variables like this ENABLED=1
+	if len(newValue) >= 2 && len(newValueWithPlaceholders) >= 2 {
+		repls.Set(newValue, "["+key+"]")
+		// newValue won't match because parts of it were already replaced; we adding it anyway just in case but we need newValueWithPlaceholders:
+		repls.Set(newValueWithPlaceholders, "["+key+"]")
+	}
+
+	return append(env, key+"="+newValue)
 }
 
 func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {

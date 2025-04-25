@@ -1,5 +1,6 @@
 [Env]
-REGULAR_VAR = "yes"
+A_REGULAR_VAR = "yes"
+B_REGULAR_VAR = "answer:$A_REGULAR_VAR"
 
 [EnvMatrix]
 FIRST = ["overriden-in-inner"]

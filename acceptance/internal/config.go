@@ -82,6 +82,7 @@ type TestConfig struct {
 	// Environment variables
 	// If the same variable is defined both in Env and EnvMatrix, the one in EnvMatrix takes precedence
 	// regardless of which config file it is defined in.
+	// Note, keys are sorted alphabetically rather in order they are defined. This matter when one key reference another (same for EnvMatrix).
 	Env map[string]string
 
 	// Environment variables matrix.
