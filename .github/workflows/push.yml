@@ -13,8 +13,6 @@ on:
     # seed the build cache.
     branches:
       - main
-  schedule:
-    - cron: '0 0,12 * * *'  # Runs at 00:00 and 12:00 UTC daily
 
 env:
   GOTESTSUM_FORMAT: github-actions
