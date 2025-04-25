@@ -6,7 +6,10 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-trace $CLI bundle summary --output json | jq '.resources.secret_scopes.secret_scope1.name'
+trace $CLI bundle summary --output json | jq '.resources.secret_scopes.secret_scope1'
+
+trace $CLI secrets list-scopes -o json | jq '.[] | select(.name == "my-secrets")'
+trace $CLI secrets list-acls my-secrets
 
 trace $CLI secrets put-secret my-secrets my-key --string-value "my-secret-value"
 trace $CLI secrets get-secret my-secrets my-key

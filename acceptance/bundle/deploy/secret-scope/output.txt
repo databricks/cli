@@ -6,7 +6,25 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle summary --output json
-"my-secrets"
+{
+  "initial_manage_principal": "users",
+  "modified_status": "created",
+  "name": "my-secrets"
+}
+
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "my-secrets"
+}
+
+>>> [CLI] secrets list-acls my-secrets
+[
+  {
+    "permission": "MANAGE",
+    "principal": "[USERNAME]"
+  }
+]
 
 >>> [CLI] secrets put-secret my-secrets my-key --string-value my-secret-value
 
