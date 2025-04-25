@@ -108,8 +108,9 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		// The default HTTP client in Go sets the Accept-Encoding header to
-		// "gzip". Since it's meant for the server and will again be set by
-		// the SDK, do not pass it along here.
+		// "gzip". Since it is originally meant to be read by the server and
+		// will be set again when the SDK makes the request to the workspace, do
+		// not pass it along here.
 		if k == "Accept-Encoding" {
 			continue
 		}
@@ -126,7 +127,8 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, reqBody, &respBody)
 
 	// API errors from the SDK are expected to be of the type [apierr.APIError]. If we
-	// get an API error then parse the error and forward it in an appropriate format.
+	// get an API error then parse the error and forward it back to the client
+	// in an appropriate format.
 	apiErr := &apierr.APIError{}
 	if errors.As(err, &apiErr) {
 		body := map[string]string{

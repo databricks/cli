@@ -162,8 +162,6 @@ func startLocalServer(t *testing.T,
 		Host:  s.URL,
 		Token: "dbapi123",
 	}
-	err := cfg.EnsureResolved()
-	require.NoError(t, err)
 
 	return cfg
 }
