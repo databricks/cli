@@ -35,3 +35,16 @@ Response.Body = '''
     "value":"bXktc2VjcmV0LXZhbHVl"
 }
 '''
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/acls/list"
+Response.Body = '''
+{
+    "items": [
+        {
+            "permission": "MANAGE",
+            "principal": "[USERNAME]"
+        }
+    ]
+}
+'''
