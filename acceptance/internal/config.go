@@ -93,6 +93,9 @@ type TestConfig struct {
 	// If there are multiple variables defined, all combinations of tests are created,
 	// similar to github actions matrix strategy.
 	EnvMatrix map[string][]string
+
+	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
+	EnvRepl map[string]bool
 }
 
 type ServerStub struct {

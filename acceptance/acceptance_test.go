@@ -422,13 +422,13 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
 			continue
 		}
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key])
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl)
 	}
 
 	for _, keyvalue := range customEnv {
 		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, items[0], items[1])
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, items[0], items[1], config.EnvRepl)
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -495,14 +495,18 @@ func hasKey(env []string, key string) bool {
 	return false
 }
 
-func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string) []string {
+func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string, envRepl map[string]bool) []string {
 	newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, env)
 	if value != newValue {
 		t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
 	}
 
-	// Checking length to avoid replacements for variables like this ENABLED=1
-	if len(newValue) >= 2 && len(newValueWithPlaceholders) >= 2 {
+	shouldRepl, ok := envRepl[key]
+	if !ok {
+		shouldRepl = true
+	}
+
+	if shouldRepl {
 		repls.Set(newValue, "["+key+"]")
 		// newValue won't match because parts of it were already replaced; we adding it anyway just in case but we need newValueWithPlaceholders:
 		repls.Set(newValueWithPlaceholders, "["+key+"]")

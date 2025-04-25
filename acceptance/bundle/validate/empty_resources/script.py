@@ -15,24 +15,16 @@ SECTIONS = [
 ]
 
 CLI = os.environ["CLI"]
+TEMPLATE = os.path.join(os.path.dirname(__file__), "databricks.yml.tmpl")
+assert os.path.exists(TEMPLATE), TEMPLATE
 
 for section in SECTIONS:
-    for ind, content in enumerate(["{}", "", "null"]):
-        config = f"""
-bundle:
-  name: BUNDLE_{section}_{ind}
+    os.environ["SECTION"] = section
+    os.system(f"envsubst < {TEMPLATE} > databricks.yml")
+    print(f"\n=== resources.{section}.rname ===", flush=True)
 
-resources:
-  {section}:
-    rname: {content}
-"""
-        print(f"\n=== resources.{section}.rname: {content} ===", flush=True)
-
-        with open("databricks.yml", "w") as fobj:
-            fobj.write(config)
-
-        ret = os.system(CLI + " bundle validate -o json | jq .resources")
-        if ret != 0:
-            print(f"Exit code: {ret}", flush=True)
+    ret = os.system(CLI + " bundle validate -o json | jq .resources")
+    if ret != 0:
+        print(f"Exit code: {ret}", flush=True)
 
 os.unlink("databricks.yml")
