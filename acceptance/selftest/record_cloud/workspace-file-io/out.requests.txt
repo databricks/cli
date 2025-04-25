@@ -13,7 +13,7 @@
   "method": "POST",
   "path": "/api/2.0/workspace/import",
   "body": {
-    "content": "aGVsbG8sIHdvcmxkCg==",
+    "content": "[HELLO-WORLD]",
     "format": "AUTO",
     "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt"
   }
