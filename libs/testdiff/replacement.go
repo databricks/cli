@@ -137,7 +137,6 @@ func (r *ReplacementsContext) SetPathWithParents(old, new string) {
 	r.SetPath(filepath.Dir(filepath.Dir(old)), new+"_GPARENT")
 }
 
-// TODO (followup): remove this function.
 func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsContext, w *databricks.WorkspaceClient) {
 	t.Helper()
 	PrepareReplacementsWorkspaceConfig(t, r, w.Config)

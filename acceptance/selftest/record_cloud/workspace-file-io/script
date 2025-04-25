@@ -5,8 +5,6 @@ export username=$($CLI current-user me | jq -r .userName)
 # Setting this environment variable prevents that conversion on windows.
 export MSYS_NO_PATHCONV=1
 
-# TODO CONTINUE(v6): Is fixed on windows? If so clean up the env story. Mostly cleanup left with this PR.
-# TODO: Try recording requests in a bundle deploy acceptance test?
 title "create a folder"
 trace $CLI workspace mkdirs /Users/$username/$UNIQUE_NAME
 
