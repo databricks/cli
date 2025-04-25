@@ -11,6 +11,12 @@ experimental/python/docs/images/databricks-logo.svg
 **/*.zip
 **/*.whl
 
+# new lines are recorded differently on windows and unix.
+# In unix: "raw_body": "hello, world\n"
+# In windows: "raw_body": "hello, world\r\n"
+# In order to prevent that difference, hello.txt does not have a trailing newline.
+acceptance/selftest/record_cloud/volume-io/hello.txt
+
 # "bundle run" has trailing whitespace:
 acceptance/bundle/integration_whl/*/output.txt
 
