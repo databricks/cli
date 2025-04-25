@@ -1,0 +1,10 @@
+# Replace placeholder with an actual host URL and token
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# Credentials will be picked up from .databrickscfg. Unset existing credentials.
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# Should use default target, which is pat based authentication
+trace $CLI bundle run -- $CLI bundle validate -o json| jq .bundle.target

@@ -1776,11 +1776,7 @@
                       "$ref": "#/$defs/string"
                     }
                   },
-                  "additionalProperties": false,
-                  "required": [
-                    "resources",
-                    "mutators"
-                  ]
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",

@@ -1,0 +1,3 @@
+
+>>> [CLI] bundle run -- [CLI] bundle validate -o json
+"pat"

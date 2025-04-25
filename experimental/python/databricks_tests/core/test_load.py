@@ -66,7 +66,7 @@ def test_parse_locations():
     assert locations == {
         "my_job": Location(
             line=3,
-            column=0,
+            column=1,
             file="databricks_tests/fixtures/dummy_module.py",
         ),
     }

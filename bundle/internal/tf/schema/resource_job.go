@@ -255,7 +255,7 @@ type ResourceJobJobClusterNewCluster struct {
 	SingleUserName            string                                            `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                                 `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                                 `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                            `json:"spark_version"`
+	SparkVersion              string                                            `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                          `json:"ssh_public_keys,omitempty"`
 	UseMlRuntime              bool                                              `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceJobJobClusterNewClusterAutoscale         `json:"autoscale,omitempty"`
@@ -485,7 +485,7 @@ type ResourceJobNewCluster struct {
 	SingleUserName            string                                  `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                       `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                       `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                  `json:"spark_version"`
+	SparkVersion              string                                  `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                `json:"ssh_public_keys,omitempty"`
 	UseMlRuntime              bool                                    `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceJobNewClusterAutoscale         `json:"autoscale,omitempty"`
@@ -910,7 +910,7 @@ type ResourceJobTaskForEachTaskTaskNewCluster struct {
 	SingleUserName            string                                                     `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                                          `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                                          `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                                     `json:"spark_version"`
+	SparkVersion              string                                                     `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                                   `json:"ssh_public_keys,omitempty"`
 	UseMlRuntime              bool                                                       `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceJobTaskForEachTaskTaskNewClusterAutoscale         `json:"autoscale,omitempty"`
@@ -1354,7 +1354,7 @@ type ResourceJobTaskNewCluster struct {
 	SingleUserName            string                                      `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                           `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                           `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                      `json:"spark_version"`
+	SparkVersion              string                                      `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                    `json:"ssh_public_keys,omitempty"`
 	UseMlRuntime              bool                                        `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceJobTaskNewClusterAutoscale         `json:"autoscale,omitempty"`
