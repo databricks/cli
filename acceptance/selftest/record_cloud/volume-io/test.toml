@@ -2,4 +2,4 @@ RequiresUnityCatalog = true
 
 [[Repls]]
 Old = '\r\n'
-New = '\n'  
+New = '\n'
