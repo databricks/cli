@@ -67,7 +67,16 @@ jobs:
           make vendor
           pip3 install wheel==0.45.1
 
+      - name: Run tests without coverage
+        # We run tests without coverage on PR because we don't make use of coverage information
+        # and would like to run the tests as fast as possible. We run it on schedule as well, because that is what
+        # populates the cache and cache may include test results.
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'schedule' }}
+        run: make test
+
       - name: Run tests with coverage
+        # Still run 'make cover' on push to main and merge checks to make sure it does not get broken.
+        if: ${{ github.event_name != 'pull_request' && github.event_name != 'schedule' }}
         run: make cover
 
   linters:
