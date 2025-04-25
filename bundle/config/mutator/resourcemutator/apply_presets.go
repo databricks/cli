@@ -13,8 +13,12 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
 type applyPresets struct{}
@@ -47,10 +51,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	tags := toTagArray(t.Tags)
 
 	// Jobs presets: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
-	for key, j := range r.Jobs {
-		if j.JobSettings == nil {
-			diags = diags.Extend(diag.Errorf("job %s is not defined", key))
+	for _, j := range r.Jobs {
+		// Here and for other resources we follow the same approach for nil checks:
+		// If resource itself is nil, ignore it (It is currently allowed, but should have generic check with location-enriched diagnostics that disallows nils anywhere).
+		// If embedded pointer is nil, initialize it with empty struct. The fact that we embed pointer struct is implementation detail.
+		// It will remain nil if there are no fields in it that are provided by users, but that maybe ok, users could be relying on presets or defaults.
+		if j == nil {
 			continue
+		}
+		if j.JobSettings == nil {
+			j.JobSettings = &jobs.JobSettings{}
 		}
 		j.Name = prefix + j.Name
 		if len(tags) > 0 {
@@ -86,10 +96,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Pipelines presets: Prefix, PipelinesDevelopment
-	for key, p := range r.Pipelines {
-		if p.CreatePipeline == nil {
-			diags = diags.Extend(diag.Errorf("pipeline %s is not defined", key))
+	for _, p := range r.Pipelines {
+		if p == nil {
 			continue
+		}
+		if p.CreatePipeline == nil {
+			p.CreatePipeline = &pipelines.CreatePipeline{}
 		}
 		p.Name = prefix + p.Name
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
@@ -102,10 +114,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Models presets: Prefix, Tags
-	for key, m := range r.Models {
-		if m.Model == nil {
-			diags = diags.Extend(diag.Errorf("model %s is not defined", key))
+	for _, m := range r.Models {
+		if m == nil {
 			continue
+		}
+		if m.Model == nil {
+			m.Model = &ml.Model{}
 		}
 		m.Name = prefix + m.Name
 		for _, t := range tags {
@@ -120,10 +134,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Experiments presets: Prefix, Tags
-	for key, e := range r.Experiments {
-		if e.Experiment == nil {
-			diags = diags.Extend(diag.Errorf("experiment %s is not defined", key))
+	for _, e := range r.Experiments {
+		if e == nil {
 			continue
+		}
+		if e.Experiment == nil {
+			e.Experiment = &ml.Experiment{}
 		}
 		filepath := e.Name
 		dir := path.Dir(filepath)
@@ -148,10 +164,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Model serving endpoint presets: Prefix
-	for key, e := range r.ModelServingEndpoints {
-		if e.CreateServingEndpoint == nil {
-			diags = diags.Extend(diag.Errorf("model serving endpoint %s is not defined", key))
+	for _, e := range r.ModelServingEndpoints {
+		if e == nil {
 			continue
+		}
+		if e.CreateServingEndpoint == nil {
+			e.CreateServingEndpoint = &serving.CreateServingEndpoint{}
 		}
 		e.Name = normalizePrefix(prefix) + e.Name
 
@@ -159,10 +177,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Registered models presets: Prefix
-	for key, m := range r.RegisteredModels {
-		if m.CreateRegisteredModelRequest == nil {
-			diags = diags.Extend(diag.Errorf("registered model %s is not defined", key))
+	for _, m := range r.RegisteredModels {
+		if m == nil {
 			continue
+		}
+		if m.CreateRegisteredModelRequest == nil {
+			m.CreateRegisteredModelRequest = &catalog.CreateRegisteredModelRequest{}
 		}
 		m.Name = normalizePrefix(prefix) + m.Name
 
@@ -186,10 +206,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Schemas: Prefix
-	for key, s := range r.Schemas {
-		if s.CreateSchema == nil {
-			diags = diags.Extend(diag.Errorf("schema %s is not defined", key))
+	for _, s := range r.Schemas {
+		if s == nil {
 			continue
+		}
+		if s.CreateSchema == nil {
+			s.CreateSchema = &catalog.CreateSchema{}
 		}
 		s.Name = normalizePrefix(prefix) + s.Name
 		// HTTP API for schemas doesn't yet support tags. It's only supported in
@@ -197,10 +219,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Clusters: Prefix, Tags
-	for key, c := range r.Clusters {
-		if c.ClusterSpec == nil {
-			diags = diags.Extend(diag.Errorf("cluster %s is not defined", key))
+	for _, c := range r.Clusters {
+		if c == nil {
 			continue
+		}
+		if c.ClusterSpec == nil {
+			c.ClusterSpec = &compute.ClusterSpec{}
 		}
 		c.ClusterName = prefix + c.ClusterName
 		if c.CustomTags == nil {
@@ -216,10 +240,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Dashboards: Prefix
-	for key, dashboard := range r.Dashboards {
-		if dashboard == nil || dashboard.Dashboard == nil {
-			diags = diags.Extend(diag.Errorf("dashboard %s s is not defined", key))
+	for _, dashboard := range r.Dashboards {
+		if dashboard == nil {
 			continue
+		}
+		if dashboard.Dashboard == nil {
+			dashboard.Dashboard = &dashboards.Dashboard{}
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}
