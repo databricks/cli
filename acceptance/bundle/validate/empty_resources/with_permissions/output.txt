@@ -1,0 +1,125 @@
+
+=== resources.jobs.rname ===
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [DEV_VERSION]
+
+Panic Payload: runtime error: invalid memory address or nil pointer dereference
+
+<Stack Trace>
+
+=== resources.pipelines.rname ===
+Error: pipeline rname is not defined
+
+{
+  "pipelines": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
+
+=== resources.models.rname ===
+Error: model rname is not defined
+
+{
+  "models": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
+
+=== resources.experiments.rname ===
+Error: experiment rname is not defined
+
+{
+  "experiments": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
+
+=== resources.registered_models.rname ===
+Warning: unknown field: permissions
+  at resources.registered_models.rname
+  in databricks.yml:7:7
+
+Error: registered model rname is not defined
+
+{
+  "registered_models": {
+    "rname": {}
+  }
+}
+
+=== resources.quality_monitors.rname ===
+Warning: unknown field: permissions
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+{
+  "quality_monitors": {
+    "rname": {}
+  }
+}
+
+=== resources.schemas.rname ===
+Warning: unknown field: permissions
+  at resources.schemas.rname
+  in databricks.yml:7:7
+
+Error: schema rname is not defined
+
+{
+  "schemas": {
+    "rname": {}
+  }
+}
+
+=== resources.volumes.rname ===
+Warning: unknown field: permissions
+  at resources.volumes.rname
+  in databricks.yml:7:7
+
+{
+  "volumes": {
+    "rname": {
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+=== resources.clusters.rname ===
+Error: cluster rname is not defined
+
+{
+  "clusters": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
+
+=== resources.dashboards.rname ===
+{
+  "dashboards": {
+    "rname": {
+      "embed_credentials": false,
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources",
+      "permissions": []
+    }
+  }
+}
+
+=== resources.apps.rname ===
+{
+  "apps": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
