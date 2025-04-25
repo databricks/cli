@@ -1,3 +1,12 @@
+Ignore = [
+    '.venv',
+    'dist',
+    'build',
+    '*egg-info',
+    '.databricks',
+    '__pycache__',
+]
+
 [Env]
 # The lowest Python version we support. Alternative to "uv run --python 3.10"
 UV_PYTHON = "3.10"
