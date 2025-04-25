@@ -159,6 +159,7 @@ jobs:
           echo "module.exports = function(a) {
             a.addKeyword('markdownDescription');
             a.addKeyword('deprecationMessage');
+            a.addKeyword('x-databricks-preview');
           }" >> keywords.js
 
           for file in ./bundle/internal/schema/testdata/pass/*.yml; do

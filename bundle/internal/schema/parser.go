@@ -146,7 +146,7 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			basePath := getPath(typ)
 			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
-			var preview = ref.Preview
+			preview := ref.Preview
 			if preview == "PUBLIC" {
 				preview = ""
 			}
