@@ -14,6 +14,7 @@ SECTIONS = [
     "apps",
 ]
 
+CLI = os.environ["CLI"]
 
 for section in SECTIONS:
     for ind, content in enumerate(["{}", "", "null"]):
@@ -30,7 +31,7 @@ resources:
         with open("databricks.yml", "w") as fobj:
             fobj.write(config)
 
-        ret = os.system("$CLI bundle validate -o json | jq .resources")
+        ret = os.system(CLI + " bundle validate -o json | jq .resources")
         if ret != 0:
             print(f"Exit code: {ret}", flush=True)
 
