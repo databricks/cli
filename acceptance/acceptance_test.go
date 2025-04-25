@@ -485,8 +485,8 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 }
 
-func hasKey(list []string, key string) bool {
-	for _, keyvalue := range list {
+func hasKey(env []string, key string) bool {
+	for _, keyvalue := range env {
 		items := strings.SplitN(keyvalue, "=", 2)
 		if len(items) == 2 && items[0] == key {
 			return true
