@@ -6,6 +6,7 @@
 * Added inline script execution support to bundle run. You can now run scripts in the same authentication context as a DAB using the databricks bundle run command. ([#2413](https://github.com/databricks/cli/pull/2413))
 
 ### Dependency updates
+* Upgrade TF provider to 1.75.0 ([#2775](https://github.com/databricks/cli/pull/2775))
 
 ### CLI
 
