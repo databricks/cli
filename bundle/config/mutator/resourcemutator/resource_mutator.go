@@ -35,6 +35,9 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// OR corresponding fields on ForEachTask if that is present
 		// Overrides job compute settings with a specified cluster ID for development or testing
 		OverrideCompute(),
+
+		// ApplyPresets should have more priority than defaults below, so it should be run first
+		ApplyPresets(),
 	)
 
 	if diags.HasError() {
@@ -58,8 +61,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		ApplyPresets(),
-
 		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
 		// Updates (typed): b.Config.Resources.Jobs[].Queue (sets Queue.Enabled to true for jobs without queue settings)
 		// Enable queueing for jobs by default, following the behavior from API 2.2+.
