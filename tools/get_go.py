@@ -40,16 +40,16 @@ def download_and_extract(go_version, os_name, arch):
     print(f"Downloaded {size / 1024.0 / 1024.0:.1f}MB in {took:.1f}s")
 
     try:
-        os.mkdir("go_binary")
+        os.mkdir("_go_binary")
     except FileExistsError:
         pass
 
     if ext == "zip":
         with zipfile.ZipFile(filename, "r") as zip_ref:
-            zip_ref.extractall("go_binary")
+            zip_ref.extractall("_go_binary")
     else:
         with tarfile.open(filename, "r:gz") as tar_ref:
-            tar_ref.extractall("go_binary")
+            tar_ref.extractall("_go_binary")
 
 
 def main():

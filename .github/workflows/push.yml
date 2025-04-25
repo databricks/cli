@@ -51,11 +51,11 @@ jobs:
         shell: bash
         run: |
           python3 tools/get_go.py
-          echo "GOROOT=${{ github.workspace }}/go_binary/go" >> $GITHUB_ENV
+          echo "GOROOT=${{ github.workspace }}/_go_binary/go" >> $GITHUB_ENV
           if [ "${{ runner.os }}" = "Windows" ]; then
-            echo "${{ github.workspace }}/go_binary/go/bin" >> $GITHUB_PATH
+            echo "${{ github.workspace }}/_go_binary/go/bin" >> $GITHUB_PATH
           else
-            echo "PATH=${{ github.workspace }}/go_binary/go/bin:$PATH" >> $GITHUB_ENV
+            echo "PATH=${{ github.workspace }}/_go_binary/go/bin:$PATH" >> $GITHUB_ENV
           fi
 
       - name: Setup Python
