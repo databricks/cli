@@ -64,9 +64,9 @@ jobs:
 
       - name: Set go env
         run: |
+          go --version
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          go install gotest.tools/gotestsum@v1.12.0
 
       - name: Pull external libraries
         run: |
