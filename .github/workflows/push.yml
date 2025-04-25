@@ -56,8 +56,18 @@ jobs:
             echo "PATH=${{ github.workspace }}/_go_binary/go/bin:$PATH" >> $GITHUB_ENV
           fi
 
-      - name: go version
+      - name: Print Go version
         run: go version
+
+      - name: Setup cache for Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-manual-${{ hashFiles('go.sum', 'go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-go-manual-
 
       - name: Setup Python
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
