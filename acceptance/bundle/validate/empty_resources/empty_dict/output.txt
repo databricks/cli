@@ -1,43 +1,51 @@
 
 === resources.jobs.rname ===
-Error: job rname is not defined
-
 {
   "jobs": {
-    "rname": {}
+    "rname": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      }
+    }
   }
 }
 
 === resources.pipelines.rname ===
-Error: pipeline rname is not defined
-
 {
   "pipelines": {
-    "rname": {}
+    "rname": {
+      "permissions": []
+    }
   }
 }
 
 === resources.models.rname ===
-Error: model rname is not defined
-
 {
   "models": {
-    "rname": {}
+    "rname": {
+      "permissions": []
+    }
   }
 }
 
 === resources.experiments.rname ===
-Error: experiment rname is not defined
-
 {
   "experiments": {
-    "rname": {}
+    "rname": {
+      "name": ".",
+      "permissions": []
+    }
   }
 }
 
 === resources.registered_models.rname ===
-Error: registered model rname is not defined
-
 {
   "registered_models": {
     "rname": {}
@@ -52,8 +60,6 @@ Error: registered model rname is not defined
 }
 
 === resources.schemas.rname ===
-Error: schema rname is not defined
-
 {
   "schemas": {
     "rname": {}
@@ -70,11 +76,11 @@ Error: schema rname is not defined
 }
 
 === resources.clusters.rname ===
-Error: cluster rname is not defined
-
 {
   "clusters": {
-    "rname": {}
+    "rname": {
+      "custom_tags": {}
+    }
   }
 }
 
