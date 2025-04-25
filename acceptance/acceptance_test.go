@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
@@ -413,6 +414,11 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
+	}
+
+	// Apply Env before EnvMatrix because we want EnvMatrix to take priority
+	for _, key := range utils.SortedKeys(config.Env) {
+		cmd.Env = append(cmd.Env, key+"="+config.Env[key])
 	}
 
 	for _, keyvalue := range customEnv {
