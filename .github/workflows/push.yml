@@ -58,8 +58,8 @@ jobs:
             echo "PATH=${{ github.workspace }}/_go_binary/go/bin:$PATH" >> $GITHUB_ENV
           fi
           find "${{ github.workspace }}/_go_binary/go/bin"
-          go install gotest.tools/gotestsum@v1.12.0
-          find "${{ github.workspace }}/_go_binary/go/bin"
+          #go install gotest.tools/gotestsum@v1.12.0
+          #find "${{ github.workspace }}/_go_binary/go/bin"
 
       - name: Setup Python
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
