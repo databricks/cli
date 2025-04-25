@@ -1,5 +1,11 @@
 RequiresUnityCatalog = true
 
+# Windows and unix send different EOL characters in the upload request.
+# Normalize both to a single pattern for assertions.
 [[Repls]]
-Old = '\r\n'
-New = '\n'
+Old = '\\n'
+New = '<EOL>'
+
+[[Repls]]
+Old = '\\r\\n'
+New = '<EOL>'

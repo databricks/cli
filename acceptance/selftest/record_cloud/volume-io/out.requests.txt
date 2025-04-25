@@ -35,7 +35,7 @@
 {
   "method": "PUT",
   "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt",
-  "raw_body": "hello, world\n"
+  "raw_body": "hello, world<EOL>"
 }
 {
   "method": "GET",
