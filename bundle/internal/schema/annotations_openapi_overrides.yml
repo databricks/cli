@@ -299,7 +299,9 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "run_as":
     "description": |-
       PLACEHOLDER
-  "target": {}
+  "target":
+    "force_not_deprecated": |-
+      true
   "trigger":
     "deprecation_message": |-
       Use continuous instead
