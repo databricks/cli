@@ -25,6 +25,7 @@ import (
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/require"
 )
@@ -404,13 +405,23 @@ func runTest(t *testing.T,
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	cfg, user, env := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
-	if env != nil && inprocessMode {
+	// In inprocess mode, the "script" is executed in the same process as the test runner.
+	// Thus we need to modify the environment of the test runner, so that the script sees the
+	// appropriate environment variables.
+	//
+	// This is important for when a reverse proxy sits between the script and a real databricks workspace.
+	// In that case we need to modify the current process environment so that the script communicates with
+	// the reverse proxy.
+
+	// TODO: Add comment here. Remove old comment
+	processEnv := auth.ProcessEnv(cfg)
+	if inprocessMode {
 		testutil.NullEnvironment(t)
-		for _, kv := range env {
+		for _, kv := range processEnv {
 			parts := strings.SplitN(kv, "=", 2)
 			require.Len(t, parts, 2)
 			t.Setenv(parts[0], parts[1])
@@ -419,19 +430,9 @@ func runTest(t *testing.T,
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Env = os.Environ()
-	if env != nil {
-		cmd.Env = env
-	}
+	cmd.Env = processEnv
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
-
-	// Configure resolved credentials in the environment.
-	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+cfg.Host)
-	if cfg.Token != "" {
-		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+cfg.Token)
-	}
-
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 

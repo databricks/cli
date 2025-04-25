@@ -13,7 +13,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -24,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: Make CLI auth for with this.
 func StartDefaultServer(t *testing.T) {
 	s := testserver.NewLocalServer(t)
 	addDefaultHandlers(s)
@@ -40,8 +38,9 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-// TODO: Clean up the env story here.
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User, []string) {
+// This function return a configuration that contains the auth credentials that should be used
+// to run the test.
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
@@ -58,11 +57,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 		// Start a proxy server that sits in front of of a real Databricks workspace.
 		cfg := startProxyServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
-
-		// TODO: I only need to set these environment variables in hte inprocess mode.
-		// Support both child process and inprocess mode.
-		env := auth.ProcessEnv(cfg)
-		return cfg, *user, env
+		return cfg, *user
 	}
 
 	// If we are running on a cloud environment, use the host configured in the
@@ -76,7 +71,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		user, err := w.CurrentUser.Me(context.Background())
 		require.NoError(t, err, "Failed to get current user")
 
-		return w.Config, *user, nil
+		return w.Config, *user
 	}
 
 	// If we are not recording requests, and no custom server server stubs are configured,
@@ -92,14 +87,14 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			Token: token,
 		}
 
-		return cfg, TestUser, nil
+		return cfg, TestUser
 	}
 
 	cfg := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 
 	// For the purposes of replacements, use testUser for local runs.
 	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-	return cfg, TestUser, nil
+	return cfg, TestUser
 }
 
 func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {
