@@ -1,14 +1,14 @@
 
 === resources.jobs.rname ===
-The Databricks CLI unexpectedly had a fatal error.
-Please report this issue to Databricks in the form of a GitHub issue at:
-https://github.com/databricks/cli
+Error: job rname is not defined
 
-CLI Version: [DEV_VERSION]
-
-Panic Payload: runtime error: invalid memory address or nil pointer dereference
-
-<Stack Trace>
+{
+  "jobs": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
 
 === resources.pipelines.rname ===
 Error: pipeline rname is not defined
