@@ -38,14 +38,14 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-// This function return a configuration that contains the auth credentials that should be used
-// to run the test.
+// This function returns the workspace auth configuration that should be used to authenticate
+// the "script" that's executed as part of the acceptance test.
 func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
 	// If we are running in a cloud environment AND we are recording requests,
-	// start a dedicated server to act as a reverse proxy and record requests.
+	// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
 	if cloudEnv != "" && recordRequests {
 		// Use a non-proxy client to fetch user info so that this API call is not recorded
 		// in out.requests.txt
@@ -55,16 +55,13 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		user, err := w.CurrentUser.Me(context.Background())
 		require.NoError(t, err, "Failed to get current user")
 
-		// Start a proxy server that sits in front of of a real Databricks workspace.
-		cfg := startProxyServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+		cfg := startProxyServer(t, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 		return cfg, *user
 	}
 
 	// If we are running on a cloud environment, use the host configured in the
 	// environment.
 	if cloudEnv != "" {
-		// Use a non-proxy client to fetch user info so that this API call is not recorded
-		// in out.requests.txt
 		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
@@ -74,7 +71,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		return w.Config, *user
 	}
 
-	// If we are not recording requests, and no custom server server stubs are configured,
+	// If we are not recording requests, and no custom server stubs are configured,
 	// use the default shared server.
 	if len(config.Server) == 0 && !recordRequests {
 		// Use a unique token for each test. This allows us to maintain
@@ -90,6 +87,8 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		return cfg, TestUser
 	}
 
+	// Default case. Start a dedicated local server for the test with the server stubs configured
+	// as overrides.
 	cfg := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 
 	// For the purposes of replacements, use testUser for local runs.
@@ -170,7 +169,6 @@ func startLocalServer(t *testing.T,
 }
 
 func startProxyServer(t *testing.T,
-	stubs []ServerStub,
 	recordRequests bool,
 	logRequests bool,
 	includeHeaders []string,
