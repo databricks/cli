@@ -416,8 +416,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
-	// Apply Env before EnvMatrix because we want EnvMatrix to take priority
 	for _, key := range utils.SortedKeys(config.Env) {
+		if hasKey(customEnv, key) {
+			// We want EnvMatrix to take precedence.
+			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
+			continue
+		}
 		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key])
 	}
 
@@ -479,6 +483,16 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	if len(unexpected) > 0 {
 		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
+}
+
+func hasKey(list []string, key string) bool {
+	for _, keyvalue := range list {
+		items := strings.SplitN(keyvalue, "=", 2)
+		if len(items) == 2 && items[0] == key {
+			return true
+		}
+	}
+	return false
 }
 
 func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string) []string {
