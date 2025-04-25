@@ -1,3 +1,4 @@
+
 Acceptance tests are blackbox tests that are run against compiled binary.
 
 Currently these tests are run against "fake" HTTP server pretending to be Databricks API. However, they will be extended to run against real environment as regular integration tests.
