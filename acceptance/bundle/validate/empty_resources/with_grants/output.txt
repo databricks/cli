@@ -1,14 +1,16 @@
 
 === resources.jobs.rname ===
-The Databricks CLI unexpectedly had a fatal error.
-Please report this issue to Databricks in the form of a GitHub issue at:
-https://github.com/databricks/cli
+Warning: unknown field: grants
+  at resources.jobs.rname
+  in databricks.yml:7:7
 
-CLI Version: [DEV_VERSION]
+Error: job rname is not defined
 
-Panic Payload: runtime error: invalid memory address or nil pointer dereference
-
-<Stack Trace>
+{
+  "jobs": {
+    "rname": {}
+  }
+}
 
 === resources.pipelines.rname ===
 Warning: unknown field: grants

@@ -72,6 +72,9 @@ func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
 	var jobs []dyn.Path
 
 	for name, job := range b.Config.Resources.Jobs {
+		if job == nil || job.JobSettings == nil {
+			continue
+		}
 		if job.GitSource != nil {
 			jobs = append(jobs, dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key(name)))
 		}
