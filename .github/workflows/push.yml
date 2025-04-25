@@ -62,12 +62,6 @@ jobs:
         with:
           version: "0.6.5"
 
-      - name: Set go env
-        run: |
-          go version
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
       - name: Pull external libraries
         run: |
           make vendor
