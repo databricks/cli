@@ -91,7 +91,7 @@ func TestInprocessMode(t *testing.T) {
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
-func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -121,7 +121,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	execPath := ""
 
-	if InprocessMode {
+	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
@@ -210,7 +210,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Skip(skipReason)
 			}
 
-			if !InprocessMode {
+			if !inprocessMode {
 				t.Parallel()
 			}
 
@@ -225,15 +225,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
 				t.Logf("Running test with env %v", expanded[0])
-				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0], InprocessMode)
+				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode)
 			} else {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
-						if !InprocessMode {
+						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset, InprocessMode)
+						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset, inprocessMode)
 					})
 				}
 			}
