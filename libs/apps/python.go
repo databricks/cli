@@ -45,9 +45,10 @@ func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
 	return &PythonApp{config: config, spec: spec}
 }
 
-// PrepareEnvironment prepares the environment for running the app. It first checks if the app is in a virtual environment.
-// If not, it creates a virtual environment and installs the required libraries. It then installs the libraries from
-// requirements.txt if it exists.
+// PrepareEnvironment creates a Python virtual environment using uv and installs required dependencies.
+// It first creates a virtual environment, then installs default libraries specified in defaultLibraries,
+// and finally installs any additional requirements from requirements.txt if it exists.
+// Returns an error if any step fails.
 func (p *PythonApp) PrepareEnvironment() error {
 	// Create venv first
 	venvArgs := []string{"uv", "venv"}
@@ -82,17 +83,13 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 	spec := p.spec
 	// if no spec, find python file and use it to run app
 	if len(spec.Command) == 0 {
-		// find python file
-		files, err := os.ReadDir(spec.config.AppPath)
+		files, err := filepath.Glob(filepath.Join(spec.config.AppPath, "*.py"))
 		if err != nil {
 			return nil, errors.New("Error reading source code directory")
 		}
 
-		for _, file := range files {
-			// we grab the first python file we find
-			if strings.HasSuffix(file.Name(), ".py") {
-				spec.Command = []string{"python", file.Name()}
-			}
+		if len(files) > 0 {
+			spec.Command = []string{"python", files[0]}
 		}
 
 		if len(spec.Command) == 0 {
