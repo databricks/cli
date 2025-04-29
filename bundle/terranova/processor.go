@@ -30,7 +30,7 @@ func (p *Move) ApplyMove(v dyn.Value) (dyn.Value, error) {
 
 	// Check if we have any negated fields (starting with !)
 	hasNegatedFields := false
-	negatedFields := make([]string, 0)
+	var negatedFields []string
 	for _, field := range p.Fields {
 		if len(field) > 0 && field[0] == '!' {
 			hasNegatedFields = true
