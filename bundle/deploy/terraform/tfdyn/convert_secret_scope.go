@@ -2,7 +2,6 @@ package tfdyn
 
 import (
 	"context"
-
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -18,6 +17,11 @@ func (s secretScopeConverter) Convert(ctx context.Context, key string, vin dyn.V
 	for _, diag := range diags {
 		log.Debugf(ctx, "secret scope normalization diagnostic: %s", diag.Summary)
 	}
+
+	// Configure permissions for this resource
+	// need to convert permissions to a new resource: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/secret_acl
+	// TODO: add a validator to check that SecretScope has only one permission
+	out.SecretAcl =
 
 	// Add the converted resource to the output.
 	out.SecretScope[key] = vout.AsAny()
