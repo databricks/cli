@@ -3,11 +3,6 @@ from dataclasses import replace
 from codegen.jsonschema import Schema
 
 REMOVED_FIELDS = {
-    # TODO remove as a follow-up
-    "jobs.Task": {
-        "dashboard_task",
-        "power_bi_task",
-    },
     "compute.ClusterSpec": {
         # doesn't work, openapi schema needs to be updated to be enum
         "kind",
