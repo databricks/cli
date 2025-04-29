@@ -83,6 +83,7 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
   "pipelines": {
     "my_jobs_as_code_pipeline": {
       "catalog": "catalog_name",
+      "channel": "CURRENT",
       "configuration": {
         "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src"
       },
@@ -91,6 +92,7 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/state/metadata.json"
       },
       "development": true,
+      "edition": "ADVANCED",
       "libraries": [
         {
           "notebook": {
