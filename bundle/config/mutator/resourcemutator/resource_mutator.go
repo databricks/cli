@@ -51,6 +51,26 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.dashboards.*.embed_credentials", false},
 		{"resources.volumes.*.volume_type", "MANAGED"},
+
+		// Jobs:
+
+		// The defaults are the same as for terraform provider latest version (v1.75.0)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/jobs/resource_job.go#L532
+		{"resources.jobs.*.name", "Untitled"},
+		{"resources.jobs.*.max_concurrent_runs", 1},
+		{"resources.jobs.*.schedule.pause_status", "UNPAUSED"},
+		{"resources.jobs.*.trigger.pause_status", "UNPAUSED"},
+		{"resources.jobs.*.continuous.pause_status", "UNPAUSED"},
+
+		// This is converted from single-task to multi-task
+		{"resources.jobs.*.task[*].dbt_task.schema", "default"},
+		{"resources.jobs.*.task[*].for_each_task.task.dbt_task.schema", "default"},
+
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
+		// This triggers SingleNodeCluster() cluster validator. It needs to be run before applying defaults.
+		//{"resources.jobs.*.job_clusters[*].new_cluster.num_workers", 0},
+		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
+		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
 	}
 
 	for _, defaultDef := range defaults {

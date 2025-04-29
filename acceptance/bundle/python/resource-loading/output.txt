@@ -18,6 +18,7 @@
         },
         "edit_mode": "UI_LOCKED",
         "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
         "name": "Job 1",
         "permissions": [],
         "queue": {
@@ -31,6 +32,7 @@
         },
         "edit_mode": "UI_LOCKED",
         "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
         "name": "Job 2",
         "permissions": [],
         "queue": {
@@ -44,6 +46,7 @@
         },
         "edit_mode": "UI_LOCKED",
         "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
         "name": "Job 3",
         "permissions": [],
         "queue": {
