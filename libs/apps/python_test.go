@@ -34,7 +34,7 @@ func TestPythonAppGetCommand(t *testing.T) {
 			},
 			wantErr: false,
 			checkResult: func(t *testing.T, cmd []string) {
-				require.Equal(t, cmd, []string{"python", "app.py", "--port", "8080"})
+				require.Equal(t, []string{"python", "app.py", "--port", "8080"}, cmd)
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestPythonAppGetCommand(t *testing.T) {
 			},
 			wantErr: false,
 			checkResult: func(t *testing.T, cmd []string) {
-				require.Equal(t, cmd, []string{"python", filepath.Join(tempDir, "test_app1.py")})
+				require.Equal(t, []string{"python", filepath.Join(tempDir, "test_app1.py")}, cmd)
 			},
 		},
 		{
@@ -80,7 +80,7 @@ func TestPythonAppGetCommand(t *testing.T) {
 			},
 			wantErr: false,
 			checkResult: func(t *testing.T, cmd []string) {
-				require.Equal(t, cmd, []string{"python", "-m", "debugpy", "--listen", "5678", "app.py"})
+				require.Equal(t, []string{"python", "-m", "debugpy", "--listen", "5678", "app.py"}, cmd)
 			},
 		},
 	}
