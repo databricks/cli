@@ -35,6 +35,13 @@ type Extension struct {
 	// compatible with the current CLI version.
 	Version *int `json:"version,omitempty"`
 
+	// Preview indicates launch stage (e.g. PREVIEW).
+	//
+	// This field indicates whether the associated field is part of a private preview feature.
+	// Currently, it is used exclusively by Python code generation to exclude certain fields
+	// from the generated Sphinx documentation.
+	Preview string `json:"x-databricks-preview,omitempty"`
+
 	// This field is not in JSON schema spec, but it is supported in VSCode and in the Databricks Workspace
 	// It is used to provide a rich description of the field in the hover tooltip.
 	// https://code.visualstudio.com/docs/languages/json#_use-rich-formatting-in-hovers
@@ -42,6 +49,10 @@ type Extension struct {
 	MarkdownDescription string `json:"markdownDescription,omitempty"`
 
 	// This field is not in the JSON schema spec, but it is supported in VSCode
-	// It is used to provide a warning for deprectated fields
+	// It is used to provide a warning for deprecated fields
 	DeprecationMessage string `json:"deprecationMessage,omitempty"`
+
+	// This field is not in the JSON schema spec, but it is supported in VSCode
+	// It hides a property from IntelliSense (autocomplete suggestions).
+	DoNotSuggest bool `json:"doNotSuggest,omitempty"`
 }
