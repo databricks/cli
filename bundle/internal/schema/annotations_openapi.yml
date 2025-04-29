@@ -1725,11 +1725,16 @@ github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
   "_":
     "description": |-
       Configures the Lakeview Dashboard job task type.
-  "dashboard_id": {}
-  "subscription": {}
+  "dashboard_id":
+    "description": |-
+      The identifier of the dashboard to refresh.
+  "subscription":
+    "description": |-
+      Optional: subscription configuration for sending the dashboard snapshot.
   "warehouse_id":
     "description": |-
-      The warehouse id to execute the dashboard with for the schedule
+      Optional: The warehouse id to execute the dashboard with for the schedule.
+      If not specified, the default warehouse of the dashboard will be used.
 github.com/databricks/databricks-sdk-go/service/jobs.DbtTask:
   "catalog":
     "description": |-
@@ -2407,10 +2412,16 @@ github.com/databricks/databricks-sdk-go/service/jobs.Subscription:
   "paused":
     "description": |-
       When true, the subscription will not send emails.
-  "subscribers": {}
+  "subscribers":
+    "description": |-
+      The list of subscribers to send the snapshot of the dashboard to.
 github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber:
-  "destination_id": {}
-  "user_name": {}
+  "destination_id":
+    "description": |-
+      A snapshot of the dashboard will be sent to the destination when the `destination_id` field is present.
+  "user_name":
+    "description": |-
+      A snapshot of the dashboard will be sent to the user's email when the `user_name` field is present.
 github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration:
   "condition":
     "description": |-
@@ -2438,7 +2449,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
       The condition task does not require a cluster to execute and does not support retries or notifications.
   "dashboard_task":
     "description": |-
-      The task runs a DashboardTask when the `dashboard_task` field is present.
+      The task refreshes a dashboard and sends a snapshot to subscribers.
   "dbt_task":
     "description": |-
       The task runs one or more dbt commands when the `dbt_task` field is present. The dbt task requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.
