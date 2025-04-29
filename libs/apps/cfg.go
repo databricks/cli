@@ -30,7 +30,7 @@ func NewConfig(workspaceHost string, workpaceId int64, appDir string) *Config {
 		Host:          DEFAULT_HOST,
 		WorkspaceHost: workspaceHost,
 		AppPath:       appDir,
-		AppSpecFiles:  []string{"app.yaml", "app.yml"},
+		AppSpecFiles:  []string{"app.yml", "app.yaml"},
 	}
 
 	return c

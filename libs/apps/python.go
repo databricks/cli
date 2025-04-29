@@ -11,13 +11,27 @@ import (
 
 const DEBUG_PORT = "5678"
 
+// defaultLibraries is the list of libraries that will be installed by default.
+// We take the list from here: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/#installed-python-libraries
+// We install a newer version of databricks-sql-connector because it does not require compiling dependencies on the user's machine.
+// We also install debugpy to enable debugging.
 var defaultLibraries = []string{
-	"Flask==3.0.3",
-	"streamlit==1.38.0",
-	"gradio==4.44.0",
-	"uvicorn[standard]==0.30.6",
-	"databricks-sdk==0.33.0",
 	"databricks-sql-connector==3.7.3",
+	"databricks-sdk==0.33.0",
+	"mlflow-skinny==2.16.2",
+	"gradio==4.44.0",
+	"streamlit==1.38.0",
+	"shiny==1.1.0",
+	"dash==2.18.1",
+	"Flask==3.0.3",
+	"fastapi==0.115.0",
+	"uvicorn[standard]==0.30.6",
+	"gunicorn==23.0.0",
+	"dash-ag-grid==31.2.0",
+	"dash-mantine-components==0.14.4",
+	"dash-bootstrap-components==1.6.0",
+	"plotly==5.24.1",
+	"plotly-resampler==0.10.0",
 	"debugpy",
 }
 
