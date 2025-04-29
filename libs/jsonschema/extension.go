@@ -36,6 +36,10 @@ type Extension struct {
 	Version *int `json:"version,omitempty"`
 
 	// Preview indicates launch stage (e.g. PREVIEW).
+	//
+	// This field indicates whether the associated field is part of a private preview feature.
+	// Currently, it is used exclusively by Python code generation to exclude certain fields
+	// from the generated Sphinx documentation.
 	Preview string `json:"x-databricks-preview,omitempty"`
 
 	// This field is not in JSON schema spec, but it is supported in VSCode and in the Databricks Workspace
