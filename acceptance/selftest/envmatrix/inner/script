@@ -1,7 +1,8 @@
 [ "$FIRST" = "one" ] || [ "$FIRST" = "two" ]
 [ "$SECOND" = "variantA" ] || [ "$SECOND" = "variantB" ]
-[ "$THIRD" = "three" ]
 
 echo "FIRST=$FIRST"
 echo "SECOND=$SECOND"
 echo "THIRD=$THIRD"
+echo "A_REGULAR_VAR=$A_REGULAR_VAR"
+echo "B_REGULAR_VAR=$B_REGULAR_VAR"

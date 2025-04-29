@@ -1,9 +1,9 @@
 {
   "name": "job",
+  "permissions": [],
   "queue": {
     "enabled": true
   },
-  "tags": {},
   "tasks": [
     {
       "new_cluster": {
@@ -35,10 +35,10 @@ Error: file test1.py not found
 Exit code: 1
 {
   "name": "job",
+  "permissions": [],
   "queue": {
     "enabled": true
   },
-  "tags": {},
   "tasks": [
     {
       "new_cluster": {

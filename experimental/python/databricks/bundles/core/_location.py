@@ -11,8 +11,23 @@ __all__ = [
 @dataclass(kw_only=True, frozen=True)
 class Location:
     file: str
+
     line: Optional[int] = None
+    """
+    Line number in the file. Line numbers are 1-based and should be greater than 0.
+    """
+
     column: Optional[int] = None
+    """
+    Column number in the line. Column numbers are 1-based and should be greater than 0.
+    """
+
+    def __post_init__(self):
+        if self.line is not None and self.line < 1:
+            raise ValueError(f"Line number must be greater than 0, got {self.line}")
+
+        if self.column is not None and self.column < 1:
+            raise ValueError(f"Column number must be greater than 0, got {self.column}")
 
     @staticmethod
     def from_callable(fn: Callable) -> Optional["Location"]:

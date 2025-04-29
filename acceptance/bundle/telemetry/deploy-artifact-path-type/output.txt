@@ -12,6 +12,7 @@ Deployment complete!
 >>> cat out.requests.txt
 {
   "bundle_uuid": "[UUID]",
+  "deployment_id": "[UUID]",
   "resource_count": 0,
   "resource_job_count": 0,
   "resource_pipeline_count": 0,
@@ -31,12 +32,19 @@ Deployment complete!
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
     "target_count": 2,
+    "bool_values": [
+      {
+        "key": "python_wheel_wrapper_is_set",
+        "value": false
+      }
+    ],
     "bundle_mode": "TYPE_UNSPECIFIED",
     "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
   }
 }
 {
   "bundle_uuid": "[UUID]",
+  "deployment_id": "[UUID]",
   "resource_count": 0,
   "resource_job_count": 0,
   "resource_pipeline_count": 0,
@@ -56,6 +64,12 @@ Deployment complete!
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
     "target_count": 2,
+    "bool_values": [
+      {
+        "key": "python_wheel_wrapper_is_set",
+        "value": false
+      }
+    ],
     "bundle_mode": "TYPE_UNSPECIFIED",
     "workspace_artifact_path_type": "UC_VOLUME"
   }

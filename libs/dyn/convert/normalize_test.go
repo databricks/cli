@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizeStruct(t *testing.T) {
@@ -61,15 +60,13 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 	var typ Tmp
 
 	m := dyn.NewMapping()
-	err := m.Set(dyn.V("foo"), dyn.V("val-foo"))
-	require.NoError(t, err)
+	m.SetLoc("foo", nil, dyn.V("val-foo"))
 
 	// Set the unknown field, with location information.
-	err = m.Set(dyn.NewValue("bar", []dyn.Location{
+	m.SetLoc("bar", []dyn.Location{
 		{File: "hello.yaml", Line: 1, Column: 1},
 		{File: "world.yaml", Line: 2, Column: 2},
-	}), dyn.V("var-bar"))
-	require.NoError(t, err)
+	}, dyn.V("var-bar"))
 
 	vin := dyn.V(m)
 

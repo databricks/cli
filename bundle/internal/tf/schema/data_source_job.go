@@ -31,8 +31,9 @@ type DataSourceJobJobSettingsSettingsEmailNotifications struct {
 }
 
 type DataSourceJobJobSettingsSettingsEnvironmentSpec struct {
-	Client       string   `json:"client"`
-	Dependencies []string `json:"dependencies,omitempty"`
+	Client          string   `json:"client"`
+	Dependencies    []string `json:"dependencies,omitempty"`
+	JarDependencies []string `json:"jar_dependencies,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsEnvironment struct {
@@ -209,7 +210,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewCluster struct {
 	SingleUserName            string                                                                 `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                                                      `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                                                      `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                                                 `json:"spark_version"`
+	SparkVersion              string                                                                 `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                                               `json:"ssh_public_keys,omitempty"`
 	Autoscale                 *DataSourceJobJobSettingsSettingsJobClusterNewClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *DataSourceJobJobSettingsSettingsJobClusterNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
@@ -397,7 +398,7 @@ type DataSourceJobJobSettingsSettingsNewCluster struct {
 	SingleUserName            string                                                       `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                                            `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                                            `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                                       `json:"spark_version"`
+	SparkVersion              string                                                       `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                                     `json:"ssh_public_keys,omitempty"`
 	Autoscale                 *DataSourceJobJobSettingsSettingsNewClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *DataSourceJobJobSettingsSettingsNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
@@ -481,6 +482,23 @@ type DataSourceJobJobSettingsSettingsTaskConditionTask struct {
 	Right string `json:"right"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskDashboardTaskSubscriptionSubscribers struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskDashboardTaskSubscription struct {
+	CustomSubject string                                                                     `json:"custom_subject,omitempty"`
+	Paused        bool                                                                       `json:"paused,omitempty"`
+	Subscribers   []DataSourceJobJobSettingsSettingsTaskDashboardTaskSubscriptionSubscribers `json:"subscribers,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskDashboardTask struct {
+	DashboardId  string                                                         `json:"dashboard_id,omitempty"`
+	WarehouseId  string                                                         `json:"warehouse_id,omitempty"`
+	Subscription *DataSourceJobJobSettingsSettingsTaskDashboardTaskSubscription `json:"subscription,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskDbtTask struct {
 	Catalog           string   `json:"catalog,omitempty"`
 	Commands          []string `json:"commands"`
@@ -509,6 +527,23 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskConditionTask struct {
 	Left  string `json:"left"`
 	Op    string `json:"op"`
 	Right string `json:"right"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTaskSubscriptionSubscribers struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTaskSubscription struct {
+	CustomSubject string                                                                                    `json:"custom_subject,omitempty"`
+	Paused        bool                                                                                      `json:"paused,omitempty"`
+	Subscribers   []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTaskSubscriptionSubscribers `json:"subscribers,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTask struct {
+	DashboardId  string                                                                        `json:"dashboard_id,omitempty"`
+	WarehouseId  string                                                                        `json:"warehouse_id,omitempty"`
+	Subscription *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDbtTask struct {
@@ -715,7 +750,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewCluster struct {
 	SingleUserName            string                                                                          `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                                                               `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                                                               `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                                                          `json:"spark_version"`
+	SparkVersion              string                                                                          `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                                                        `json:"ssh_public_keys,omitempty"`
 	Autoscale                 *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
@@ -744,6 +779,29 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotificationSettings str
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPipelineTask struct {
 	FullRefresh bool   `json:"full_refresh,omitempty"`
 	PipelineId  string `json:"pipeline_id"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPowerBiTaskPowerBiModel struct {
+	AuthenticationMethod string `json:"authentication_method,omitempty"`
+	ModelName            string `json:"model_name,omitempty"`
+	OverwriteExisting    bool   `json:"overwrite_existing,omitempty"`
+	StorageMode          string `json:"storage_mode,omitempty"`
+	WorkspaceName        string `json:"workspace_name,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPowerBiTaskTables struct {
+	Catalog     string `json:"catalog,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Schema      string `json:"schema,omitempty"`
+	StorageMode string `json:"storage_mode,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPowerBiTask struct {
+	ConnectionResourceName string                                                                      `json:"connection_resource_name,omitempty"`
+	RefreshAfterUpdate     bool                                                                        `json:"refresh_after_update,omitempty"`
+	WarehouseId            string                                                                      `json:"warehouse_id,omitempty"`
+	PowerBiModel           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPowerBiTaskPowerBiModel `json:"power_bi_model,omitempty"`
+	Tables                 []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPowerBiTaskTables      `json:"tables,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPythonWheelTask struct {
@@ -855,6 +913,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTask struct {
 	TaskKey                string                                                                   `json:"task_key"`
 	TimeoutSeconds         int                                                                      `json:"timeout_seconds,omitempty"`
 	ConditionTask          *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskConditionTask        `json:"condition_task,omitempty"`
+	DashboardTask          *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTask        `json:"dashboard_task,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDbtTask              `json:"dbt_task,omitempty"`
 	DependsOn              []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDependsOn           `json:"depends_on,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskEmailNotifications   `json:"email_notifications,omitempty"`
@@ -864,6 +923,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTask struct {
 	NotebookTask           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotebookTask         `json:"notebook_task,omitempty"`
 	NotificationSettings   *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotificationSettings `json:"notification_settings,omitempty"`
 	PipelineTask           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPipelineTask         `json:"pipeline_task,omitempty"`
+	PowerBiTask            *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPowerBiTask          `json:"power_bi_task,omitempty"`
 	PythonWheelTask        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	RunJobTask             *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskRunJobTask           `json:"run_job_task,omitempty"`
 	SparkJarTask           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
@@ -1059,7 +1119,7 @@ type DataSourceJobJobSettingsSettingsTaskNewCluster struct {
 	SingleUserName            string                                                           `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                                                `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                                                `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                                           `json:"spark_version"`
+	SparkVersion              string                                                           `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                                         `json:"ssh_public_keys,omitempty"`
 	Autoscale                 *DataSourceJobJobSettingsSettingsTaskNewClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *DataSourceJobJobSettingsSettingsTaskNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
@@ -1088,6 +1148,29 @@ type DataSourceJobJobSettingsSettingsTaskNotificationSettings struct {
 type DataSourceJobJobSettingsSettingsTaskPipelineTask struct {
 	FullRefresh bool   `json:"full_refresh,omitempty"`
 	PipelineId  string `json:"pipeline_id"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskPowerBiTaskPowerBiModel struct {
+	AuthenticationMethod string `json:"authentication_method,omitempty"`
+	ModelName            string `json:"model_name,omitempty"`
+	OverwriteExisting    bool   `json:"overwrite_existing,omitempty"`
+	StorageMode          string `json:"storage_mode,omitempty"`
+	WorkspaceName        string `json:"workspace_name,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskPowerBiTaskTables struct {
+	Catalog     string `json:"catalog,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Schema      string `json:"schema,omitempty"`
+	StorageMode string `json:"storage_mode,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskPowerBiTask struct {
+	ConnectionResourceName string                                                       `json:"connection_resource_name,omitempty"`
+	RefreshAfterUpdate     bool                                                         `json:"refresh_after_update,omitempty"`
+	WarehouseId            string                                                       `json:"warehouse_id,omitempty"`
+	PowerBiModel           *DataSourceJobJobSettingsSettingsTaskPowerBiTaskPowerBiModel `json:"power_bi_model,omitempty"`
+	Tables                 []DataSourceJobJobSettingsSettingsTaskPowerBiTaskTables      `json:"tables,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskPythonWheelTask struct {
@@ -1199,6 +1282,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	TaskKey                string                                                    `json:"task_key"`
 	TimeoutSeconds         int                                                       `json:"timeout_seconds,omitempty"`
 	ConditionTask          *DataSourceJobJobSettingsSettingsTaskConditionTask        `json:"condition_task,omitempty"`
+	DashboardTask          *DataSourceJobJobSettingsSettingsTaskDashboardTask        `json:"dashboard_task,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskDbtTask              `json:"dbt_task,omitempty"`
 	DependsOn              []DataSourceJobJobSettingsSettingsTaskDependsOn           `json:"depends_on,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsTaskEmailNotifications   `json:"email_notifications,omitempty"`
@@ -1209,6 +1293,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	NotebookTask           *DataSourceJobJobSettingsSettingsTaskNotebookTask         `json:"notebook_task,omitempty"`
 	NotificationSettings   *DataSourceJobJobSettingsSettingsTaskNotificationSettings `json:"notification_settings,omitempty"`
 	PipelineTask           *DataSourceJobJobSettingsSettingsTaskPipelineTask         `json:"pipeline_task,omitempty"`
+	PowerBiTask            *DataSourceJobJobSettingsSettingsTaskPowerBiTask          `json:"power_bi_task,omitempty"`
 	PythonWheelTask        *DataSourceJobJobSettingsSettingsTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	RunJobTask             *DataSourceJobJobSettingsSettingsTaskRunJobTask           `json:"run_job_task,omitempty"`
 	SparkJarTask           *DataSourceJobJobSettingsSettingsTaskSparkJarTask         `json:"spark_jar_task,omitempty"`

@@ -1,0 +1,13 @@
+PREFIX="prefix-" envsubst < databricks.yml.tmpl > databricks.yml
+trace grep prefix: databricks.yml
+trace $CLI bundle validate -o json | jq .resources
+
+PREFIX="[prefix]" envsubst < databricks.yml.tmpl > databricks.yml
+trace grep prefix: databricks.yml
+trace $CLI bundle validate -o json | jq .resources
+
+PREFIX="" envsubst < databricks.yml.tmpl > databricks.yml
+trace grep prefix: databricks.yml
+trace $CLI bundle validate -o json | jq .resources
+
+rm databricks.yml

@@ -3,7 +3,10 @@ trace $CLI bundle init experimental-jobs-as-code --config-file ./input.json --ou
 cd output/my_jobs_as_code
 
 # silence uv output because it's non-deterministic
-uv sync -q
+#
+# with -f we add pre-build wheel, in addition to PyPi index,
+# if PyPi package is not yet published, it will be used instead
+uv -q sync -f $(dirname $DATABRICKS_BUNDLES_WHEEL)
 
 trace $CLI bundle validate -t dev --output json | jq ".resources"
 
@@ -14,7 +17,10 @@ rm -fr .venv resources/__pycache__ uv.lock src/my_jobs_as_code.egg-info dist
 
 # remove requires-python because it doesn't pass ruff checks after we replace
 # requires-python=">=3.10" with requires-python=">=[UV_PYTHON]"
-cat pyproject.toml | grep -v requires-python > pyproject.toml.new
+# replace databricks-bundles version with x.y.z for deterministic output
+cat pyproject.toml | \
+  grep -v requires-python | \
+  sed -E 's/databricks-bundles==[0-9]+\.[0-9]+\.[0-9]+/databricks-bundles==x.y.z/g' > pyproject.toml.new
 mv pyproject.toml.new pyproject.toml
 
 # Do not affect this repository's git behaviour #2318

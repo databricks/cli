@@ -1,0 +1,5 @@
+project-folder/blob/*
+project-folder/static/**/*.txt
+project-folder/*.sql
+project-folder/app2.py
+ignored-folder2/

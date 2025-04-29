@@ -19,8 +19,23 @@ parameter names.
 If the specified job does not use job parameters and the job has a Python file
 task or a Python wheel task, the second example applies.
 
+---------------------------------------------------------
+
+You can also use the bundle run command to execute scripts / commands in the same
+authentication context as the bundle.
+
+Authentication to the input command will be provided by setting the appropriate
+environment variables that Databricks tools use to authenticate.
+
+Example usage:
+1. databricks bundle run -- echo "hello, world"
+2. databricks bundle run -- /bin/bash -c "echo hello"
+3. databricks bundle run -- uv run pytest
+
+---------------------------------------------------------
+
 Usage:
-  databricks bundle run [flags] KEY
+  databricks bundle run [flags] [KEY]
 
 Job Flags:
       --params stringToString   comma separated k=v pairs for job parameters (default [])

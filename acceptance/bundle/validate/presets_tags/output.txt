@@ -1,0 +1,12 @@
+{
+  "job1": {
+    "env": "dev"
+  },
+  "job2": {
+    "env": "dev",
+    "team": "data"
+  },
+  "job3": {
+    "env": "prod"
+  }
+}

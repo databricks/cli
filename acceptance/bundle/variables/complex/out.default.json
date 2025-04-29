@@ -28,7 +28,6 @@
         "queue": {
           "enabled": true
         },
-        "tags": {},
         "tasks": [
           {
             "job_cluster_key": "key",

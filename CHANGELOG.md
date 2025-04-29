@@ -1,5 +1,61 @@
 # Version changelog
 
+## Release v0.249.0
+
+### CLI
+* Added `exclude-from` and `include-from` flags support to sync command ([#2660](https://github.com/databricks/cli/pull/2660))
+
+### Bundles
+* Correctly translate paths to local requirements.txt file in environment dependencies ([#2736](https://github.com/databricks/cli/pull/2736))
+* Check for running resources with --fail-on-active-runs before any mutative operation during deploy ([#2743](https://github.com/databricks/cli/pull/2743))
+
+
+## Release v0.248.0
+
+### Notable Changes
+* Python for Databricks Asset Bundles is now in Public Preview. This feature extends bundles so that you can define jobs and pipelines as Python code, dynamically create jobs and pipelines using metadata, and modify jobs and pipelines defined in YAML or Python during bundle deployment. For more information and to get started see [Configuration in Python](https://docs.databricks.com/aws/en/dev-tools/bundles/python).
+* Fixed a regression with pipeline library globs introduced in 0.247.0 ([#2723](https://github.com/databricks/cli/pull/2723)). The issue caused glob patterns to fail when using paths relative to a directory that is not the bundle root.
+
+### Dependency updates
+* Upgraded Go SDK to 0.63.0 ([#2716](https://github.com/databricks/cli/pull/2716))
+* Upgraded TF provider to 1.73.0 ([#2728](https://github.com/databricks/cli/pull/2728))
+
+### CLI
+* Added an error when invalid subcommand is provided for CLI commands ([#2655](https://github.com/databricks/cli/pull/2655))
+* Added dry-run flag support to sync command ([#2657](https://github.com/databricks/cli/pull/2657))
+
+### Bundles
+* Do not use app config section in test templates and generated app configuration ([#2599](https://github.com/databricks/cli/pull/2599))
+* Do not exit early when checking incompatible tasks for specified DBR ([#2692](https://github.com/databricks/cli/pull/2692))
+* Removed include/exclude flags support from bundle sync command ([#2718](https://github.com/databricks/cli/pull/2718))
+* Do not clean up Python artifacts dist and build folder in "bundle validate", do it in "bundle deploy". This reverts the behaviour introduced in 0.245.0 ([#2722](https://github.com/databricks/cli/pull/2722))
+
+### API Changes
+* Added enable-export-notebook, enable-notebook-table-clipboard and enable-results-downloading workspace-level commands.
+* Removed unused `timeout` and `no-wait` flags for clusters and pipelines
+
+
+## Release v0.247.1
+
+### Notable Changes
+* Fix git source regression introduced in v0.247.0 ([#2699](https://github.com/databricks/cli/pull/2699))
+
+
+## Release v0.247.0
+
+### CLI
+* Added include/exclude flags support to sync command ([#2650](https://github.com/databricks/cli/pull/2650))
+
+### Bundles
+* Added support for model serving endpoints in deployment bind/unbind commands ([#2634](https://github.com/databricks/cli/pull/2634))
+* Added include/exclude flags support to bundle sync command ([#2650](https://github.com/databricks/cli/pull/2650))
+* Added JSON schema for resource permissions ([#2674](https://github.com/databricks/cli/pull/2674))
+* Removed pipeline 'deployment' field from jsonschema ([#2653](https://github.com/databricks/cli/pull/2653))
+* Updated JSON schema for deprecated pipeline fields ([#2646](https://github.com/databricks/cli/pull/2646))
+* The --config-dir and --source-dir flags for "bundle generate app" are now relative to CWD, not bundle root ([#2683](https://github.com/databricks/cli/pull/2683))
+* Reverts [#2549](https://github.com/databricks/cli/pull/2549) to resolve issues with Web Terminal host mismatch ([#2685](https://github.com/databricks/cli/pull/2685))
+
+
 ## Release v0.246.0
 
 ### Notable Changes

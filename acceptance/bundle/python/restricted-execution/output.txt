@@ -4,7 +4,6 @@
 {
   "pydabs": {},
   "python": {
-    "resources": null,
     "mutators": [
       "mutators:read_envs"
     ]

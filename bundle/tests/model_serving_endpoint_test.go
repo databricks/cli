@@ -13,8 +13,10 @@ func assertExpected(t *testing.T, p *resources.ModelServingEndpoint) {
 	assert.Equal(t, "1", p.Config.ServedModels[0].ModelVersion)
 	assert.Equal(t, "model-name-1", p.Config.TrafficConfig.Routes[0].ServedModelName)
 	assert.Equal(t, 100, p.Config.TrafficConfig.Routes[0].TrafficPercentage)
-	assert.Equal(t, "users", p.Permissions[0].GroupName)
-	assert.Equal(t, "CAN_QUERY", p.Permissions[0].Level)
+	assert.Equal(t, resources.ModelServingEndpointPermission{
+		GroupName: "users",
+		Level:     "CAN_QUERY",
+	}, p.Permissions[0])
 }
 
 func TestModelServingEndpointDevelopment(t *testing.T) {

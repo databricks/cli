@@ -10,7 +10,7 @@ Please refer to the README.md file for "getting started" instructions.
 See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
 >>> [CLI] bundle validate -t dev --output json
-Warning: Ignoring Databricks CLI version constraint for development build. Required: >= 0.238.0, current: [DEV_VERSION]
+Warning: Ignoring Databricks CLI version constraint for development build. Required: >= 0.248.0, current: [DEV_VERSION]
 
 {
   "jobs": {
@@ -78,6 +78,29 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
           "unit": "DAYS"
         }
       }
+    }
+  },
+  "pipelines": {
+    "my_jobs_as_code_pipeline": {
+      "catalog": "catalog_name",
+      "configuration": {
+        "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src"
+      },
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/state/metadata.json"
+      },
+      "development": true,
+      "libraries": [
+        {
+          "notebook": {
+            "path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/dlt_pipeline"
+          }
+        }
+      ],
+      "name": "[dev [USERNAME]] my_jobs_as_code_pipeline",
+      "permissions": [],
+      "target": "my_jobs_as_code_dev"
     }
   }
 }

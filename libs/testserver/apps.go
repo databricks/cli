@@ -20,7 +20,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	}
 
 	if name != "" {
-		_, ok := s.apps[name]
+		_, ok := s.Apps[name]
 		if !ok {
 			return Response{
 				StatusCode: 404,
@@ -47,37 +47,10 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"
-	app.Id = strconv.Itoa(len(s.apps) + 1000)
+	app.Id = strconv.Itoa(len(s.Apps) + 1000)
 
-	s.apps[name] = app
+	s.Apps[name] = app
 	return Response{
 		Body: app,
 	}
-}
-
-func (s *FakeWorkspace) AppsGet(name string) Response {
-	info, ok := s.apps[name]
-
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	return Response{
-		Body: info,
-	}
-}
-
-func (s *FakeWorkspace) AppsDelete(name string) Response {
-	_, ok := s.apps[name]
-
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	delete(s.apps, name)
-	return Response{}
 }

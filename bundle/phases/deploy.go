@@ -192,6 +192,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
+		terraform.CheckRunningResource(),
 		artifacts.CleanUp(),
 		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
 		// know what are the actual library paths.
@@ -209,7 +210,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		permissions.ApplyWorkspaceRootPermissions(),
 		terraform.Interpolate(),
 		terraform.Write(),
-		terraform.CheckRunningResource(),
 		terraform.Plan(terraform.PlanGoal("deploy")),
 	)
 
@@ -319,6 +319,22 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		bundleUuid = b.Config.Bundle.Uuid
 	}
 
+	variableCount := len(b.Config.Variables)
+	complexVariableCount := int64(0)
+	lookupVariableCount := int64(0)
+	for _, v := range b.Config.Variables {
+		// If the resolved value of the variable is a complex type, we count it as a complex variable.
+		// We can't rely on the "type: complex" annotation because the annotation is optional in some contexts
+		// like bundle YAML files.
+		if v.IsComplexValued() {
+			complexVariableCount++
+		}
+
+		if v.Lookup != nil {
+			lookupVariableCount++
+		}
+	}
+
 	artifactPathType := protos.BundleDeployArtifactPathTypeUnspecified
 	if libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
 		artifactPathType = protos.BundleDeployArtifactPathTypeVolume
@@ -333,9 +349,15 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 		mode = protos.BundleModeProduction
 	}
 
+	experimentalConfig := b.Config.Experimental
+	if experimentalConfig == nil {
+		experimentalConfig = &config.Experimental{}
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
-			BundleUuid: bundleUuid,
+			BundleUuid:   bundleUuid,
+			DeploymentId: b.Metrics.DeploymentId.String(),
 
 			ResourceCount:                     resourcesCount,
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
@@ -357,10 +379,18 @@ func logTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourceDashboardIDs: dashboardIds,
 
 			Experimental: &protos.BundleDeployExperimental{
-				BundleMode:                mode,
-				ConfigurationFileCount:    b.Metrics.ConfigurationFileCount,
-				TargetCount:               b.Metrics.TargetCount,
-				WorkspaceArtifactPathType: artifactPathType,
+				BundleMode:                  mode,
+				ConfigurationFileCount:      b.Metrics.ConfigurationFileCount,
+				TargetCount:                 b.Metrics.TargetCount,
+				WorkspaceArtifactPathType:   artifactPathType,
+				BoolValues:                  b.Metrics.BoolValues,
+				PythonAddedResourcesCount:   b.Metrics.PythonAddedResourcesCount,
+				PythonUpdatedResourcesCount: b.Metrics.PythonUpdatedResourcesCount,
+				PythonResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
+				PythonResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
+				VariableCount:               int64(variableCount),
+				ComplexVariableCount:        complexVariableCount,
+				LookupVariableCount:         lookupVariableCount,
 			},
 		},
 	})

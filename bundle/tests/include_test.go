@@ -3,14 +3,13 @@ package config_tests
 import (
 	"context"
 	"path/filepath"
-	"sort"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
 
 func TestIncludeInvalid(t *testing.T) {
@@ -25,8 +24,7 @@ func TestIncludeInvalid(t *testing.T) {
 func TestIncludeWithGlob(t *testing.T) {
 	b := load(t, "./include_with_glob")
 
-	keys := maps.Keys(b.Config.Resources.Jobs)
-	sort.Strings(keys)
+	keys := utils.SortedKeys(b.Config.Resources.Jobs)
 	assert.Equal(t, []string{"my_job"}, keys)
 
 	job := b.Config.Resources.Jobs["my_job"]
@@ -46,8 +44,7 @@ func TestIncludeForMultipleMatches(t *testing.T) {
 	b := load(t, "./include_multiple")
 
 	// Test that both jobs were loaded.
-	keys := maps.Keys(b.Config.Resources.Jobs)
-	sort.Strings(keys)
+	keys := utils.SortedKeys(b.Config.Resources.Jobs)
 	assert.Equal(t, []string{"my_first_job", "my_second_job"}, keys)
 
 	first := b.Config.Resources.Jobs["my_first_job"]

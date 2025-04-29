@@ -22,8 +22,7 @@
     "permissions": [],
     "queue": {
       "enabled": true
-    },
-    "tags": {}
+    }
   }
 }
 
@@ -59,8 +58,7 @@ Validation OK!
     "permissions": [],
     "queue": {
       "enabled": true
-    },
-    "tags": {}
+    }
   }
 }
 

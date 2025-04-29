@@ -1,10 +1,12 @@
 trace $CLI bundle deploy
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs.[] | fromjson'
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson'
 
 cmd_exec_id=$(extract_command_exec_id.py)
+deployment_id=$(cat .databricks/bundle/default/deployment.json | jq -r .id)
 
 update_file.py output.txt $cmd_exec_id  '[CMD-EXEC-ID]'
 update_file.py output.txt "11111111-2222-3333-4444-555555555555"  '[BUNDLE_UUID]'
+update_file.py output.txt $deployment_id  '[DEPLOYMENT_ID]'
 
 rm out.requests.txt

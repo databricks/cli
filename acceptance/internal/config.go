@@ -79,6 +79,12 @@ type TestConfig struct {
 
 	CompiledIgnoreObject *ignore.GitIgnore
 
+	// Environment variables
+	// If the same variable is defined both in Env and EnvMatrix, the one in EnvMatrix takes precedence
+	// regardless of which config file it is defined in.
+	// Note, keys are sorted alphabetically rather in order they are defined. This matter when one key reference another (same for EnvMatrix).
+	Env map[string]string
+
 	// Environment variables matrix.
 	// For each key you can specify zero, one or more values.
 	// If you specify zero, the key is omitted, as if it was not defined at all.
@@ -87,6 +93,9 @@ type TestConfig struct {
 	// If there are multiple variables defined, all combinations of tests are created,
 	// similar to github actions matrix strategy.
 	EnvMatrix map[string][]string
+
+	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
+	EnvRepl map[string]bool
 }
 
 type ServerStub struct {

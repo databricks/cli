@@ -3,9 +3,10 @@ package python
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
 	"github.com/databricks/cli/libs/dyn/merge"
 
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
@@ -16,9 +17,9 @@ type applyPythonOutputTestCase struct {
 	input  dyn.Value
 	output dyn.Value
 
-	added   []mutator.ResourceKey
-	updated []mutator.ResourceKey
-	deleted []mutator.ResourceKey
+	added   []resourcemutator.ResourceKey
+	updated []resourcemutator.ResourceKey
+	deleted []resourcemutator.ResourceKey
 }
 
 func TestApplyPythonOutput(t *testing.T) {
@@ -30,7 +31,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "add job (0)",
 			input:  emptyMap(),
 			output: mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
-			added: []mutator.ResourceKey{
+			added: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -41,7 +42,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "add job (1)",
 			input:  mapOf("resources", emptyMap()),
 			output: mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
-			added: []mutator.ResourceKey{
+			added: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -52,7 +53,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "add job (2)",
 			input:  mapOf("resources", mapOf("jobs", emptyMap())),
 			output: mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
-			added: []mutator.ResourceKey{
+			added: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -63,7 +64,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "add job (3)",
 			input:  mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
 			output: mapOf("resources", mapOf("jobs", mapOf2("job_1", job1, "job_2", job2))),
-			added: []mutator.ResourceKey{
+			added: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_2",
@@ -74,7 +75,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "delete job (0)",
 			input:  mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
 			output: emptyMap(),
-			deleted: []mutator.ResourceKey{
+			deleted: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -85,7 +86,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "delete job (1)",
 			input:  mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
 			output: mapOf("resources", emptyMap()),
-			deleted: []mutator.ResourceKey{
+			deleted: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -96,7 +97,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "delete job (2)",
 			input:  mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
 			output: mapOf("resources", mapOf("jobs", emptyMap())),
-			deleted: []mutator.ResourceKey{
+			deleted: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -107,7 +108,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "update job",
 			input:  mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
 			output: mapOf("resources", mapOf("jobs", mapOf("job_1", job2))),
-			updated: []mutator.ResourceKey{
+			updated: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -118,7 +119,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			name:   "update job through 'name' delete",
 			input:  mapOf("resources", mapOf("jobs", mapOf("job_1", job1))),
 			output: mapOf("resources", mapOf("jobs", mapOf("job_1", emptyMap()))),
-			updated: []mutator.ResourceKey{
+			updated: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -133,7 +134,7 @@ func TestApplyPythonOutput(t *testing.T) {
 			output: mapOf("resources", mapOf("jobs",
 				mapOf("job_1", mapOf2("name", dyn.V("name"), "description", dyn.V("description"))),
 			)),
-			updated: []mutator.ResourceKey{
+			updated: []resourcemutator.ResourceKey{
 				{
 					Type: "jobs",
 					Name: "job_1",
@@ -253,9 +254,9 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 }
 
 func mapOf(key string, value dyn.Value) dyn.Value {
-	return dyn.NewValue(map[string]dyn.Value{
+	return dyn.V(map[string]dyn.Value{
 		key: value,
-	}, []dyn.Location{})
+	})
 }
 
 func mapOf2(key1 string, value1 dyn.Value, key2 string, value2 dyn.Value) dyn.Value {
@@ -266,5 +267,5 @@ func mapOf2(key1 string, value1 dyn.Value, key2 string, value2 dyn.Value) dyn.Va
 }
 
 func emptyMap() dyn.Value {
-	return dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{})
+	return dyn.V(map[string]dyn.Value{})
 }

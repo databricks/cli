@@ -7,15 +7,6 @@ Ignore = [
 ]
 
 [[Server]]
-Pattern = "POST /api/2.1/unity-catalog/schemas"
-Response.Body = '''
-{
-    "catalog_name":"main",
-    "full_name":"main.test-schema-rmodel-6260d50f-e8ff-4905-8f28-812345678903"
-}
-'''
-
-[[Server]]
 Pattern = "POST /api/2.1/unity-catalog/models"
 Response.Body = '''
 {
@@ -38,6 +29,3 @@ Response.Body = '''
 
 [[Server]]
 Pattern = "DELETE /api/2.1/unity-catalog/models/{model_full_name}"
-
-[[Server]]
-Pattern = "DELETE /api/2.1/unity-catalog/schemas/{schema_full_name}"
