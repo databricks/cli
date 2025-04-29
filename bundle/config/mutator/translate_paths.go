@@ -141,8 +141,6 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeDirectory:
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeLocalAbsoluteFile:
-		interp, err = t.translateLocalAbsoluteFilePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalAbsoluteDirectory:
 		interp, err = t.translateLocalAbsoluteDirectoryPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalRelative:
@@ -230,20 +228,6 @@ func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, 
 		return "", fmt.Errorf("%s is not a directory", filepath.FromSlash(localFullPath))
 	}
 	return path.Join(t.remoteRoot, localRelPath), nil
-}
-
-func (t *translateContext) translateLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
-	info, err := t.b.SyncRoot.Stat(localRelPath)
-	if errors.Is(err, fs.ErrNotExist) {
-		return "", fmt.Errorf("file %s not found", literal)
-	}
-	if err != nil {
-		return "", fmt.Errorf("unable to determine if %s is a file: %w", filepath.FromSlash(localFullPath), err)
-	}
-	if info.IsDir() {
-		return "", fmt.Errorf("expected %s to be a file but found a directory", literal)
-	}
-	return localFullPath, nil
 }
 
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {

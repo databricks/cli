@@ -146,6 +146,11 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
 		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
 		CaptureSchemaDependency(),
+
+		// Reads (dynamic): resources.dashboards.*.file_path
+		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
+		// Drops (dynamic): resources.dashboards.*.file_path
+		ConfigureDashboardSerializedDashboard(),
 	)
 }
 
