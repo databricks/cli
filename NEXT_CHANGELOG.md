@@ -7,6 +7,7 @@
 
 ### Dependency updates
 * Upgrade TF provider to 1.75.0 ([#2775](https://github.com/databricks/cli/pull/2775))
+* Upgrade Go SDK to 0.65.0 ([#2786](https://github.com/databricks/cli/pull/2786))
 
 ### CLI
 

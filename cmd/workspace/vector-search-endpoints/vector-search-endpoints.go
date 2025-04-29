@@ -35,6 +35,8 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeleteEndpoint())
 	cmd.AddCommand(newGetEndpoint())
 	cmd.AddCommand(newListEndpoints())
+	cmd.AddCommand(newUpdateEndpointBudgetPolicy())
+	cmd.AddCommand(newUpdateEndpointCustomTags())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -67,6 +69,8 @@ func newCreateEndpoint() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
+
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
 	cmd.Short = `Create an endpoint.`
 	cmd.Long = `Create an endpoint.
@@ -74,8 +78,8 @@ func newCreateEndpoint() *cobra.Command {
   Create a new endpoint.
 
   Arguments:
-    NAME: Name of endpoint
-    ENDPOINT_TYPE: Type of endpoint. 
+    NAME: Name of the vector search endpoint
+    ENDPOINT_TYPE: Type of endpoint 
       Supported values: [STANDARD]`
 
 	cmd.Annotations = make(map[string]string)
@@ -176,9 +180,11 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Use = "delete-endpoint ENDPOINT_NAME"
 	cmd.Short = `Delete an endpoint.`
 	cmd.Long = `Delete an endpoint.
+  
+  Delete a vector search endpoint.
 
   Arguments:
-    ENDPOINT_NAME: Name of the endpoint`
+    ENDPOINT_NAME: Name of the vector search endpoint`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -232,6 +238,8 @@ func newGetEndpoint() *cobra.Command {
 	cmd.Use = "get-endpoint ENDPOINT_NAME"
 	cmd.Short = `Get an endpoint.`
 	cmd.Long = `Get an endpoint.
+  
+  Get details for a single vector search endpoint.
 
   Arguments:
     ENDPOINT_NAME: Name of the endpoint`
@@ -289,7 +297,9 @@ func newListEndpoints() *cobra.Command {
 
 	cmd.Use = "list-endpoints"
 	cmd.Short = `List all endpoints.`
-	cmd.Long = `List all endpoints.`
+	cmd.Long = `List all endpoints.
+  
+  List all vector search endpoints in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -314,6 +324,167 @@ func newListEndpoints() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listEndpointsOverrides {
 		fn(cmd, &listEndpointsReq)
+	}
+
+	return cmd
+}
+
+// start update-endpoint-budget-policy command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateEndpointBudgetPolicyOverrides []func(
+	*cobra.Command,
+	*vectorsearch.PatchEndpointBudgetPolicyRequest,
+)
+
+func newUpdateEndpointBudgetPolicy() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateEndpointBudgetPolicyReq vectorsearch.PatchEndpointBudgetPolicyRequest
+	var updateEndpointBudgetPolicyJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateEndpointBudgetPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "update-endpoint-budget-policy ENDPOINT_NAME BUDGET_POLICY_ID"
+	cmd.Short = `Update the budget policy of an endpoint.`
+	cmd.Long = `Update the budget policy of an endpoint.
+  
+  Update the budget policy of an endpoint
+
+  Arguments:
+    ENDPOINT_NAME: Name of the vector search endpoint
+    BUDGET_POLICY_ID: The budget policy id to be applied`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only ENDPOINT_NAME as positional arguments. Provide 'budget_policy_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateEndpointBudgetPolicyJson.Unmarshal(&updateEndpointBudgetPolicyReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateEndpointBudgetPolicyReq.EndpointName = args[0]
+		if !cmd.Flags().Changed("json") {
+			updateEndpointBudgetPolicyReq.BudgetPolicyId = args[1]
+		}
+
+		response, err := w.VectorSearchEndpoints.UpdateEndpointBudgetPolicy(ctx, updateEndpointBudgetPolicyReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateEndpointBudgetPolicyOverrides {
+		fn(cmd, &updateEndpointBudgetPolicyReq)
+	}
+
+	return cmd
+}
+
+// start update-endpoint-custom-tags command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateEndpointCustomTagsOverrides []func(
+	*cobra.Command,
+	*vectorsearch.UpdateEndpointCustomTagsRequest,
+)
+
+func newUpdateEndpointCustomTags() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateEndpointCustomTagsReq vectorsearch.UpdateEndpointCustomTagsRequest
+	var updateEndpointCustomTagsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateEndpointCustomTagsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "update-endpoint-custom-tags ENDPOINT_NAME"
+	cmd.Short = `Update the custom tags of an endpoint.`
+	cmd.Long = `Update the custom tags of an endpoint.
+
+  Arguments:
+    ENDPOINT_NAME: Name of the vector search endpoint`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateEndpointCustomTagsJson.Unmarshal(&updateEndpointCustomTagsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		updateEndpointCustomTagsReq.EndpointName = args[0]
+
+		response, err := w.VectorSearchEndpoints.UpdateEndpointCustomTags(ctx, updateEndpointCustomTagsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateEndpointCustomTagsOverrides {
+		fn(cmd, &updateEndpointCustomTagsReq)
 	}
 
 	return cmd

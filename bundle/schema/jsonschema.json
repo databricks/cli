@@ -3825,7 +3825,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Subscription"
                     },
                     "warehouse_id": {
-                      "description": "The warehouse id to execute the dashboard with for the schedule",
+                      "description": "Optional: The warehouse id to execute the dashboard with for the schedule.\nIf not specified, the default warehouse of the dashboard will be used.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5173,7 +5173,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask"
                     },
                     "dashboard_task": {
-                      "description": "The task runs a DashboardTask when the `dashboard_task` field is present.",
+                      "description": "The task refreshes a dashboard and sends a snapshot to subscribers.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask"
                     },
                     "dbt_task": {
