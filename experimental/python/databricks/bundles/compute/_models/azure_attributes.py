@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class AzureAttributes:
-    """"""
+    """
+    Attributes set during cluster creation which are related to Microsoft Azure.
+    """
 
     availability: VariableOrOptional[AzureAvailability] = None
 

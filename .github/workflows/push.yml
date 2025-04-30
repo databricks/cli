@@ -186,6 +186,5 @@ jobs:
           if ! ( git diff --exit-code ); then
             echo "Generated Python code is not up-to-date. Please run 'pushd experimental/python && make codegen' and commit the changes."
 
-            # TODO block PR if this fails once diffs are fixed
-            # exit 1
+            exit 1
           fi

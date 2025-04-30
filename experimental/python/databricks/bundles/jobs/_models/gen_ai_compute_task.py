@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 class GenAiComputeTask:
     """
     :meta private: [EXPERIMENTAL]
-
-    Next field: 9
     """
 
     dl_runtime_image: VariableOr[str]

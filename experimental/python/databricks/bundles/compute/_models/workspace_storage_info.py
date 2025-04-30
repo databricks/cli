@@ -11,11 +11,13 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class WorkspaceStorageInfo:
-    """"""
+    """
+    A storage location in Workspace Filesystem (WSFS)
+    """
 
     destination: VariableOr[str]
     """
-    workspace files destination, e.g. `/Users/user1@databricks.com/my-init.sh`
+    wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
     """
 
     @classmethod
@@ -31,7 +33,7 @@ class WorkspaceStorageInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    workspace files destination, e.g. `/Users/user1@databricks.com/my-init.sh`
+    wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
     """
 
 

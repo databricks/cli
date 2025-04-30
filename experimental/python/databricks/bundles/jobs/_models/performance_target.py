@@ -12,10 +12,9 @@ class PerformanceTarget(Enum):
     """
 
     PERFORMANCE_OPTIMIZED = "PERFORMANCE_OPTIMIZED"
-    COST_OPTIMIZED = "COST_OPTIMIZED"
-    BALANCED = "BALANCED"
+    STANDARD = "STANDARD"
 
 
 PerformanceTargetParam = (
-    Literal["PERFORMANCE_OPTIMIZED", "COST_OPTIMIZED", "BALANCED"] | PerformanceTarget
+    Literal["PERFORMANCE_OPTIMIZED", "STANDARD"] | PerformanceTarget
 )

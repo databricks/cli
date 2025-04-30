@@ -114,7 +114,6 @@ class Job(Resource):
     job_clusters: VariableOrList[JobCluster] = field(default_factory=list)
     """
     A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
-    If more than 100 job clusters are available, you can paginate through them using :method:jobs/get.
     """
 
     max_concurrent_runs: VariableOrOptional[int] = None
@@ -146,7 +145,10 @@ class Job(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
+    The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run.
+    
+    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+    * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
     """
 
     permissions: VariableOrList[JobPermission] = field(default_factory=list)
@@ -171,7 +173,8 @@ class Job(Resource):
     tasks: VariableOrList[Task] = field(default_factory=list)
     """
     A list of task specifications to be executed by this job.
-    If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
+    It supports up to 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset, :method:jobs/update, :method:jobs/submit).
+    Read endpoints return only 100 tasks. If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
     """
 
     timeout_seconds: VariableOrOptional[int] = None
@@ -244,7 +247,6 @@ class JobDict(TypedDict, total=False):
     job_clusters: VariableOrList[JobClusterParam]
     """
     A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
-    If more than 100 job clusters are available, you can paginate through them using :method:jobs/get.
     """
 
     max_concurrent_runs: VariableOrOptional[int]
@@ -276,7 +278,10 @@ class JobDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    PerformanceTarget defines how performant or cost efficient the execution of run on serverless should be.
+    The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run.
+    
+    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+    * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
     """
 
     permissions: VariableOrList[JobPermissionParam]
@@ -301,7 +306,8 @@ class JobDict(TypedDict, total=False):
     tasks: VariableOrList[TaskParam]
     """
     A list of task specifications to be executed by this job.
-    If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
+    It supports up to 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset, :method:jobs/update, :method:jobs/submit).
+    Read endpoints return only 100 tasks. If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.
     """
 
     timeout_seconds: VariableOrOptional[int]
