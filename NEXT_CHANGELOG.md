@@ -10,6 +10,7 @@
 * Upgrade Go SDK to 0.65.0 ([#2786](https://github.com/databricks/cli/pull/2786))
 
 ### CLI
+* Added `databricks apps run-local` command to run Databricks apps locally ([#2555](https://github.com/databricks/cli/pull/2555))
 
 ### Bundles
 * Raise an error when Unity Catalog volumes are used for paths other than artifacts ([#2754](https://github.com/databricks/cli/pull/2754))
