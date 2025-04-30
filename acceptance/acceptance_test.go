@@ -368,8 +368,20 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
+	timeout := config.Timeout
+
+	if timeout == 0 {
+		if isRunningOnCloud {
+			timeout = 150 * time.Second
+		} else {
+			timeout = 15 * time.Second
+		}
+	}
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
@@ -806,15 +818,24 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
+	processErrCh := make(chan error, 1)
+
+	cmd.Cancel = func() error {
+		processErrCh <- errors.New("Test script killed due to a timeout")
+		_ = cmd.Process.Kill()
+		_ = w.Close()
+		return nil
+	}
 
 	start := time.Now()
 	err := cmd.Start()
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 
-	processErrCh := make(chan error, 1)
 	go func() {
 		processErrCh <- cmd.Wait()
-		w.Close()
+		_ = w.Close()
 	}()
 
 	reader := bufio.NewReader(r)

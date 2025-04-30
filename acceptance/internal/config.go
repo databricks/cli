@@ -96,6 +96,9 @@ type TestConfig struct {
 
 	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
 	EnvRepl map[string]bool
+
+	// Kill test after specified timeout; default is 15s for local and 150s for cloud tests
+	Timeout time.Duration
 }
 
 type ServerStub struct {

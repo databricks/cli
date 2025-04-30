@@ -1,0 +1,3 @@
+# Manually check that test takes about 0.3s:
+# PASS: TestAccept/selftest/timeout (0.31s)
+Timeout = '300ms'
