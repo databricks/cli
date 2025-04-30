@@ -9,7 +9,7 @@
 * Upgrade TF provider to 1.75.0 ([#2775](https://github.com/databricks/cli/pull/2775))
 
 ### CLI
-* Added `databricks apps run-local command` to run Databricks apps locally ([#2555](https://github.com/databricks/cli/pull/2555))
+* Added `databricks apps run-local` command to run Databricks apps locally ([#2555](https://github.com/databricks/cli/pull/2555))
 
 ### Bundles
 * Raise an error when Unity Catalog volumes are used for paths other than artifacts ([#2754](https://github.com/databricks/cli/pull/2754))
