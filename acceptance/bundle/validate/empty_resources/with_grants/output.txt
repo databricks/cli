@@ -31,6 +31,12 @@ Warning: unknown field: grants
 {
   "pipelines": {
     "rname": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
       "permissions": []
     }
   }

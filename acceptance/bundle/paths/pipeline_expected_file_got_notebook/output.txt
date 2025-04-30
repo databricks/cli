@@ -8,6 +8,8 @@ Exit code: 1
   "resources": {
     "pipelines": {
       "nyc_taxi_pipeline": {
+        "channel": "CURRENT",
+        "edition": "ADVANCED",
         "libraries": [
           {
             "file": {

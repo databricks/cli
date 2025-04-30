@@ -71,6 +71,11 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		//{"resources.jobs.*.job_clusters[*].new_cluster.num_workers", 0},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
+
+		// Pipelines (same as terraform)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
+		{"resources.pipelines.*.edition", "ADVANCED"},
+		{"resources.pipelines.*.channel", "CURRENT"},
 	}
 
 	for _, defaultDef := range defaults {
