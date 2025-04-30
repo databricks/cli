@@ -60,13 +60,19 @@ Resources:
 +        "id": "[NUMBER]",
          "job_clusters": [
            {
-@@ -61,5 +62,4 @@
+@@ -55,5 +56,4 @@
+               "data_security_mode": "SINGLE_USER",
+               "node_type_id": "[NODE_TYPE_ID]",
+-              "num_workers": 0,
+               "spark_version": "15.4.x-scala2.12"
+             }
+@@ -62,5 +62,4 @@
          "max_concurrent_runs": 4,
          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
 -        "permissions": [],
          "queue": {
            "enabled": true
-@@ -112,5 +112,6 @@
+@@ -113,5 +112,6 @@
              "unit": "DAYS"
            }
 -        }
@@ -74,13 +80,13 @@ Resources:
 +        "url": "[DATABRICKS_URL]/jobs/[NUMBER]"
        }
      },
-@@ -127,4 +128,5 @@
+@@ -128,4 +128,5 @@
          "development": true,
          "edition": "ADVANCED",
 +        "id": "[UUID]",
          "libraries": [
            {
-@@ -135,6 +137,6 @@
+@@ -136,6 +137,6 @@
          ],
          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
 -        "permissions": [],
@@ -89,7 +95,7 @@ Resources:
 +        "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
      }
-@@ -145,5 +147,4 @@
+@@ -146,5 +147,4 @@
      ]
    },
 -  "targets": null,
@@ -168,7 +174,7 @@ Validation OK!
 +          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
          },
          "edit_mode": "UI_LOCKED",
-@@ -59,12 +51,9 @@
+@@ -60,12 +52,9 @@
            }
          ],
 -        "max_concurrent_runs": 4,
@@ -183,21 +189,21 @@ Validation OK!
 -          "dev": "[USERNAME]"
          },
          "tasks": [
-@@ -72,5 +61,5 @@
+@@ -73,5 +62,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
 -              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
 +              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
              },
              "task_key": "notebook_task"
-@@ -107,5 +96,5 @@
+@@ -108,5 +97,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -119,22 +108,21 @@
+@@ -120,22 +109,21 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -225,7 +231,7 @@ Validation OK!
 +        "schema": "project_name_[UNIQUE_NAME]_prod"
        }
      }
-@@ -147,10 +135,10 @@
+@@ -148,10 +136,10 @@
    "targets": null,
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",

@@ -61,7 +61,7 @@ func ApplyBundlePermissions() bundle.Mutator {
 }
 
 func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := validate(b)
+	err := validatePermissions(b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -119,7 +119,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	return nil
 }
 
-func validate(b *bundle.Bundle) error {
+func validatePermissions(b *bundle.Bundle) error {
 	for _, p := range b.Config.Permissions {
 		if !slices.Contains(allowedLevels, p.Level) {
 			return fmt.Errorf("invalid permission level: %s, allowed values: [%s]", p.Level, strings.Join(allowedLevels, ", "))
