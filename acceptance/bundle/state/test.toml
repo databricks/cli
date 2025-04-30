@@ -1,1 +1,2 @@
 RecordRequests = true
+Timeout = '30s'
