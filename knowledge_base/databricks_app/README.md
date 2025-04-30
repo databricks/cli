@@ -22,3 +22,12 @@ Run `databricks bundle run job_manager` to start the app and execute app deploym
 When you change app code or config, you need to run `databricks bundle deploy` and `databricks bundle run job_manager` to update the app source code and configuration.
 
 Run `databricks bundle open` to navigate to the deployed app in your browser. Alternatively, run `databricks bundle summary` to display its URL.
+
+### Running an app locally
+
+Starting from Databricks CLI v0.250.0 it's possible to start your Databricks app locally using Databricks CLI.
+
+To do so, run the following command in the root of the app folder
+```
+databricks apps run-local --prepare-environment --debug
+```
