@@ -21,6 +21,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Databricks Apps send a SIGKILL signal 15 seconds after a SIGTERM
+// https://docs.databricks.com/aws/en/dev-tools/databricks-apps/app-development#important-guidelines-for-implementing-databricks-apps
 const SHUTDOWN_TIMEOUT = 15 * time.Second
 
 func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string) (*apps.Config, *apps.AppSpec, error) {

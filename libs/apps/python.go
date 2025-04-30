@@ -97,7 +97,8 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 		}
 
 	} else {
-		// replace port bash style with the one in the config
+		// Replace port bash style with the one in the config
+		// We just match the behavior of the Databricks runtime here
 		for i, cd := range spec.Command {
 			if strings.Contains(cd, "$DATABRICKS_APP_PORT") {
 				spec.Command[i] = strings.ReplaceAll(cd, "$DATABRICKS_APP_PORT", strconv.Itoa(spec.config.Port))
