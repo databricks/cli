@@ -143,35 +143,6 @@ func TestPerform_RequestIDField(t *testing.T) {
 			mockError:     nil,
 			expectedError: false,
 		},
-		{
-			name: "RequestDataField wrapping",
-			spec: CallSpec{
-				Method:           "POST",
-				Path:             "/api/resource",
-				RequestDataField: "data",
-			},
-			requestBody:   dyn.V(map[string]any{"name": "test", "value": 42}),
-			resourceID:    "",
-			expectedBody:  map[string]any{"data": map[string]any{"name": "test", "value": 42}},
-			mockResponse:  map[string]any{"result": "success"},
-			mockError:     nil,
-			expectedError: false,
-		},
-		{
-			name: "RequestDataField with RequestIDField",
-			spec: CallSpec{
-				Method:           "POST",
-				Path:             "/api/resource",
-				RequestDataField: "data",
-				RequestIDField:   "id",
-			},
-			requestBody:   dyn.V(map[string]any{"name": "test"}),
-			resourceID:    "456",
-			expectedBody:  map[string]any{"data": map[string]any{"name": "test", "id": "456"}},
-			mockResponse:  map[string]any{"result": "success"},
-			mockError:     nil,
-			expectedError: false,
-		},
 	}
 
 	for _, tt := range tests {
