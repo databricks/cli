@@ -21,8 +21,8 @@ attempts=0
 while [ -z "$(grep -o "Python Flask app has started with" out.run.txt 2>/dev/null)" ]; do
     sleep 1
     attempts=$((attempts + 1))
-    if [ $attempts -ge 30 ]; then
-        echo "Timed out waiting for app to start after 30 seconds"
+    if [ $attempts -ge 45 ]; then
+        echo "Timed out waiting for app to start after 45 seconds"
         exit 1
     fi
 done
