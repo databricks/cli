@@ -3,7 +3,7 @@ default: tidy vendor fmt lint ws
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
-GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped
+GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
 
 
 lint:
