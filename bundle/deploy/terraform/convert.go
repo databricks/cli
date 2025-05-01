@@ -224,6 +224,7 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				config.Resources.SecretScopes[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
+			case "databricks_secret_acl":
 				// Ignore; no need to pull these back into the configuration.
 			default:
 				return fmt.Errorf("missing mapping for %s", resource.Type)

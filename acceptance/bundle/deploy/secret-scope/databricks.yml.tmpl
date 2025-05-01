@@ -5,8 +5,9 @@ resources:
   secret_scopes:
     secret_scope1:
       name: $SECRET_SCOPE_NAME
-      initial_manage_principal: users
       backend_type: "DATABRICKS"
       permissions:
-        - group_name: test_group1
+        - user_name: admins
           level: WRITE
+        - user_name: users
+          level: READ

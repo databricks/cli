@@ -1,8 +1,6 @@
 Cloud = true
 Local = true
 
-RecordRequests = true
-
 Ignore = [
     "databricks.yml",
 ]
@@ -17,7 +15,7 @@ Response.Body = '''
     "scopes": [
         {
             "backend_type": "DATABRICKS",
-            "name": "my-secrets"
+            "name": "my-secrets-6260d50f-e8ff-4905-8f28-812345678903"
         }
     ]
 }
@@ -28,6 +26,9 @@ Pattern = "POST /api/2.0/secrets/scopes/delete"
 
 [[Server]]
 Pattern = "POST /api/2.0/secrets/put"
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/acls/put"
 
 [[Server]]
 Pattern = "GET /api/2.0/secrets/get"
@@ -44,9 +45,23 @@ Response.Body = '''
 {
     "items": [
         {
+            "permission": "READ",
+            "principal": "users"
+        },
+        {
+            "permission": "WRITE",
+            "principal": "admins"
+        },
+        {
             "permission": "MANAGE",
             "principal": "[USERNAME]"
         }
     ]
 }
 '''
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/acls/get"
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/acls/delete"

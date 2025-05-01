@@ -7,28 +7,47 @@ Deployment complete!
 
 >>> [CLI] bundle summary --output json
 {
-  "initial_manage_principal": "users",
+  "backend_type": "DATABRICKS",
+  "initial_manage_principal": "",
   "modified_status": "created",
-  "name": "my-secrets"
+  "name": "my-secrets-[UUID]",
+  "permissions": [
+    {
+      "level": "WRITE",
+      "user_name": "admins"
+    },
+    {
+      "level": "READ",
+      "user_name": "users"
+    }
+  ]
 }
 
 >>> [CLI] secrets list-scopes -o json
 {
   "backend_type": "DATABRICKS",
-  "name": "my-secrets"
+  "name": "my-secrets-[UUID]"
 }
 
->>> [CLI] secrets list-acls my-secrets
+>>> [CLI] secrets list-acls my-secrets-[UUID]
 [
+  {
+    "permission": "READ",
+    "principal": "users"
+  },
+  {
+    "permission": "WRITE",
+    "principal": "admins"
+  },
   {
     "permission": "MANAGE",
     "principal": "[USERNAME]"
   }
 ]
 
->>> [CLI] secrets put-secret my-secrets my-key --string-value my-secret-value
+>>> [CLI] secrets put-secret my-secrets-[UUID] my-key --string-value my-secret-value
 
->>> [CLI] secrets get-secret my-secrets my-key
+>>> [CLI] secrets get-secret my-secrets-[UUID] my-key
 {
   "key":"my-key",
   "value":"bXktc2VjcmV0LXZhbHVl"
@@ -36,6 +55,8 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete secret_acl secret_acl_secret_scope1_0
+  delete secret_acl secret_acl_secret_scope1_1
   delete secret_scope secret_scope1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default
