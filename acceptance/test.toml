@@ -6,3 +6,6 @@ Cloud = false
 Timeout = '20s'
 TimeoutWindows = '60s'
 TimeoutCloud = '120s'
+
+Env.PYTHONDONTWRITEBYTECODE = "1"
+EnvRepl.PYTHONDONTWRITEBYTECODE = false
