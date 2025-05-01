@@ -26,6 +26,9 @@ ws:
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
 
+slowest:
+	go tool gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
+
 cover:
 	rm -fr ./acceptance/build/cover/
 	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES}
