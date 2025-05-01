@@ -34,13 +34,13 @@ func (c SDKHTTPClient) MakeHTTPCall(ctx context.Context, method, path, requestBo
 type CallSpec struct {
 	Method string
 
-	// HTTP Path. Can encode resource as {}
+	// HTTP Path. Can encode resource ID as {}
 	Path string
 
 	// If present, add one pair to request dictionary: key=RequestIDField and value=ResourceID
 	RequestIDField string
 
-	// Same but resulting type is integer
+	// Same but convert ResourceID to integer
 	RequestIDIntegerField string
 
 	// If present, a query parameter will be added to request with key=QueryIDField and value=ResourceID
@@ -48,12 +48,6 @@ type CallSpec struct {
 
 	// If present, response will be parsed as JSON dictionary and value from key=ResponseIDField will be extracted as ResourceID
 	ResponseIDField string
-
-	// If present, request data will be put under this field (instead of top level)
-	RequestDataField string
-
-	// If present, response data will be extract from this field (instead of top level)
-	// ResponseDataField string
 
 	// Additional processors to apply to request
 	RequestProcessors []Processor
