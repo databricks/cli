@@ -1,5 +1,6 @@
 RecordRequests = false
 Timeout = '60s'
+TimeoutWindows = '90s'
 
 Ignore = [
     '.venv',
