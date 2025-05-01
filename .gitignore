@@ -29,3 +29,6 @@ __pycache__
 .vscode/tasks.json
 
 .ruff_cache
+
+# Test results from 'make test'
+test-output.json

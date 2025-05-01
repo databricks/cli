@@ -79,6 +79,9 @@ jobs:
         if: ${{ github.event_name != 'pull_request' && github.event_name != 'schedule' }}
         run: make cover
 
+      - name: Analyze slow tests
+        run: make slowest
+
   linters:
     needs: cleanups
     name: lint
