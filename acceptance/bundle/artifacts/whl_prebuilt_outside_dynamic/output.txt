@@ -16,6 +16,14 @@ Deployment complete!
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
 [
   {
+    "environment_key": "test_env",
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "my_test_code"
+    },
+    "task_key": "ServerlessTestTask"
+  },
+  {
     "existing_cluster_id": "0717-132531-5opeqon1",
     "libraries": [
       {
@@ -30,6 +38,20 @@ Deployment complete!
       "package_name": "my_test_code"
     },
     "task_key": "TestTask"
+  }
+]
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+[
+  {
+    "environment_key": "test_env",
+    "spec": {
+      "client": "1",
+      "dependencies": [
+        "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl",
+        "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+      ]
+    }
   }
 ]
 

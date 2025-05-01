@@ -9,6 +9,7 @@ cd ..
 
 title "Expecting 2 wheels in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
 
 title "Expecting 2 wheels to be uploaded"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
