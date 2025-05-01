@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/dyn/merge"
 
@@ -38,6 +39,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 		// ApplyPresets should have more priority than defaults below, so it should be run first
 		ApplyPresets(),
+
+		validate.SingleNodeCluster(),
 	)
 
 	if diags.HasError() {
@@ -68,7 +71,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
 		// This triggers SingleNodeCluster() cluster validator. It needs to be run before applying defaults.
-		//{"resources.jobs.*.job_clusters[*].new_cluster.num_workers", 0},
+		{"resources.jobs.*.job_clusters[*].new_cluster.num_workers", 0},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
 
