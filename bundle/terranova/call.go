@@ -91,7 +91,6 @@ func (spec *CallSpec) PrepareCall(request dyn.Value, resourceID string) (*Call, 
 		}
 
 		if idfield != "" {
-			// If we have a request body, we need to unmarshal it, add the ID field, and marshal it back
 			var requestMap dyn.Mapping
 			switch request.Kind() {
 			case dyn.KindNil:
