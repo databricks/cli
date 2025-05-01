@@ -24,6 +24,7 @@ type ResourceSpec struct {
 	Processors []Processor
 
 	// TODO: move to []WaitConfig
+	// TODO: this is not actually used yet
 	ReadinessField        string
 	ReadinessFieldSuccess []string
 	ReadinessFieldFailure []string
