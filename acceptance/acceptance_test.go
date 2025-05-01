@@ -561,7 +561,9 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The test produced an unexpected output file.
 	if !okRef && okNew {
 		t.Errorf("Unexpected output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
-		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		if shouldShowDiff(pathNew, valueNew) {
+			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		}
 		if testdiff.OverwriteMode {
 			t.Logf("Writing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
@@ -584,6 +586,20 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		}
 		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
+}
+
+func shouldShowDiff(pathNew, valueNew string) bool {
+	if strings.Contains(pathNew, "site-packages") {
+		return false
+	}
+	if strings.Contains(pathNew, ".venv") {
+		return false
+	}
+	if len(valueNew) > 10_000 {
+		return false
+	}
+	// if file itself starts with "out" then it's likely to be intended to be recorded
+	return strings.HasPrefix(filepath.Base(pathNew), "out")
 }
 
 // Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
