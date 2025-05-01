@@ -9,11 +9,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+type SecretScopePermissionLevel string
+
+// SecretScopePermission holds the permission level setting for a single principal.
+// Multiple of these can be defined on any secret scope.
+// Secret scopes permissions are mapped to Secret ACLs
+type SecretScopePermission struct {
+	Level SecretScopePermissionLevel `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
 type SecretScope struct {
 	Name                   string `json:"name"`
 	InitialManagePrincipal string `json:"initial_manage_principal"`
 
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	Permissions    []SecretScopePermission `json:"permissions,omitempty"`
+	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
 
 	*workspace.SecretScope
 }
