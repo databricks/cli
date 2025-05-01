@@ -53,7 +53,7 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 						log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s to %s", jobName, taskInd, libInd, lib.Whl, repl)
 						foreachptr.Task.Libraries[libInd].Whl = repl
 					} else {
-						log.Debugf(ctx, "Not updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s. Available replacements: %v", jobName, taskInd, libInd, lib.Whl, repl, utils.SortedKeys(replacements))
+						log.Debugf(ctx, "Not updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s. Available replacements: %v", jobName, taskInd, libInd, lib.Whl, utils.SortedKeys(replacements))
 					}
 				}
 			}
@@ -71,7 +71,7 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 					log.Debugf(ctx, "Updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s to %s", jobName, envInd, depInd, dep, repl)
 					specptr.Dependencies[depInd] = repl
 				} else {
-					log.Debugf(ctx, "Not updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s. Available replacements: %v", jobName, envInd, depInd, dep, repl, utils.SortedKeys(replacements))
+					log.Debugf(ctx, "Not updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s. Available replacements: %v", jobName, envInd, depInd, dep, utils.SortedKeys(replacements))
 				}
 			}
 		}
