@@ -20,6 +20,10 @@ title Waiting for the app to start...
 attempts=0
 while [ -z "$(grep -o "Python Flask app has started with" out.run.txt 2>/dev/null)" ]; do
     sleep 1
+    if ! kill -0 $PID 2>/dev/null; then
+        echo "Background process is no longer running"
+        exit 1
+    fi
     attempts=$((attempts + 1))
     if [ $attempts -ge 45 ]; then
         echo "Timed out waiting for app to start after 45 seconds"
