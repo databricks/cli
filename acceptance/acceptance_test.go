@@ -370,17 +370,14 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 
 	timeout := config.Timeout
 
-	if timeout == 0 {
+	if runtime.GOOS == "windows" {
 		if isRunningOnCloud {
-			timeout = 150 * time.Second
+			timeout = max(timeout, config.TimeoutWindows, config.TimeoutCloud)
 		} else {
-			if runtime.GOOS == "Windows" {
-				// Windows runner on CI has more frequent timeouts
-				timeout = 40 * time.Second
-			} else {
-				timeout = 20 * time.Second
-			}
+			timeout = max(timeout, config.TimeoutWindows)
 		}
+	} else if isRunningOnCloud {
+		timeout = max(timeout, config.TimeoutCloud)
 	}
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)

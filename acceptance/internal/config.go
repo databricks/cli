@@ -97,8 +97,15 @@ type TestConfig struct {
 	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
 	EnvRepl map[string]bool
 
-	// Kill test after specified timeout; default is 15s for local and 150s for cloud tests
+	// Maximum amount of time the test is allowed to run, will be killed after that.
 	Timeout time.Duration
+
+	// On windows/local run, max(Timeout, TimeoutWindows) is used for timeout
+	TimeoutWindows time.Duration
+
+	// For cloud tests, max(Timeout, TimeoutCloud) is used for timeout
+	// For cloud+windows tests, max(Timeout, TimeoutWindows, TimeoutCloud) is used for timeout
+	TimeoutCloud time.Duration
 }
 
 type ServerStub struct {
