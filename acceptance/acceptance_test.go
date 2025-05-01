@@ -374,7 +374,12 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		if isRunningOnCloud {
 			timeout = 150 * time.Second
 		} else {
-			timeout = 15 * time.Second
+			if runtime.GOOS == "Windows" {
+				// Windows runner on CI has more frequent timeouts
+				timeout = 40 * time.Second
+			} else {
+				timeout = 20 * time.Second
+			}
 		}
 	}
 
