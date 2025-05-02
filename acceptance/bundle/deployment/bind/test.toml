@@ -1,0 +1,1 @@
+BundleConfig.default_name.bundle.name = "test-bundle-$UNIQUE_NAME"

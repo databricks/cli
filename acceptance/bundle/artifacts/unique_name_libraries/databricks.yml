@@ -1,6 +1,3 @@
-bundle:
-  name: unique_name_libraries
-
 variables:
   cluster:
     default:

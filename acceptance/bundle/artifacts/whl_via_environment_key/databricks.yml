@@ -1,6 +1,3 @@
-bundle:
-  name: environment_key
-
 artifacts:
     my_test_code:
       type: whl

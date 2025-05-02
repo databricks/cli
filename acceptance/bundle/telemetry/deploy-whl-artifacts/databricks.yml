@@ -1,6 +1,3 @@
-bundle:
-  name: deploy-artifacts
-
 variables:
   wrapper:
     default: false
