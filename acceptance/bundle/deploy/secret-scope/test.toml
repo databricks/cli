@@ -20,6 +20,10 @@ Response.Body = '''
         {
             "backend_type": "AZURE_KEYVAULT",
             "name": "test-secrets-azure-backend"
+        },
+        {
+            "backend_type": "DATABRICKS",
+            "name": "test-secrets-permissions"
         }
     ]
 }

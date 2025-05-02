@@ -1,0 +1,5 @@
+Local = true
+RecordRequests = true
+
+[[Server]]
+Pattern = "PUT /api/2.0/permissions/directories/{objectId}"
