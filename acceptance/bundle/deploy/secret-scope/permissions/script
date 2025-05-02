@@ -1,0 +1,4 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy #--log-level TRACE
+trace jq -s '.[] | select(.path=="/api/2.0/secrets/acls/put") | .body' out.requests.txt
+rm out.requests.txt
