@@ -1,0 +1,19 @@
+bundle:
+  name: "my-bundle-2"
+
+# This comment should remain in the result, because BundleConfig values have no effect
+
+resources:
+  jobs:
+    example_job:
+      list2: 123456
+      name: Example Job 2
+      new_list:
+        - abc 2
+        - def 2
+      new_map:
+        key: value 2
+      new_string: hello 2
+      string2:
+        - item1 2
+        - item2 2

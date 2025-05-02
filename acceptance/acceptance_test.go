@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"slices"
@@ -24,6 +25,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
@@ -392,6 +394,11 @@ func runTest(t *testing.T,
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
+
+	toIgnore := applyBundleConfig(t, tmpDir, config.BundleConfig)
+	if toIgnore != "" {
+		inputs[toIgnore] = true
+	}
 
 	timeout := config.Timeout
 
@@ -1000,4 +1007,86 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	}
 
 	return latestWheel
+}
+
+func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any) string {
+	validConfig := make(map[string]map[string]any, len(bundleConfig))
+
+	for _, configName := range utils.SortedKeys(bundleConfig) {
+		configValue := bundleConfig[configName]
+		if configValue == "" {
+			continue
+		}
+		// either "" or a map are allowed
+		cfg, ok := configValue.(map[string]any)
+		if !ok {
+			t.Fatalf("Unexpected type for BundleConfig.%s: %#v", configName, configValue)
+		}
+		validConfig[configName] = cfg
+	}
+
+	if len(validConfig) == 0 {
+		return ""
+	}
+
+	var configPath, configData string
+	filenames := []string{"databricks.yml", "databricks.yml.tmpl"}
+
+	for _, filename := range filenames {
+		path := filepath.Join(tmpDir, filename)
+		exists := false
+		configData, exists = tryReading(t, path)
+		if exists {
+			configPath = path
+			break
+		}
+	}
+
+	toIgnore := ""
+
+	if configPath == "" {
+		configPath = filepath.Join(tmpDir, filenames[0])
+		toIgnore = filenames[0]
+		configData = ""
+	}
+
+	newConfigData := configData
+	var applied []string
+
+	for _, configName := range utils.SortedKeys(validConfig) {
+		configValue := validConfig[configName]
+		updated, err := internal.MergeBundleConfig(newConfigData, configValue)
+		if err != nil {
+			t.Fatalf("Failed to merge BundleConfig.%s: %s\nvvalue: %#v\ntext:\n%s", configName, err, configValue, newConfigData)
+		}
+		if isSameYAMLContent(newConfigData, updated) {
+			t.Logf("No effective updates from BundleConfig.%s", configName)
+		} else {
+			newConfigData = updated
+			applied = append(applied, configName)
+		}
+	}
+
+	if newConfigData != configData {
+		t.Logf("Writing updated bundle config to %s. BundleConfig sections: %s", filepath.Base(configPath), strings.Join(applied, ", "))
+		testutil.WriteFile(t, configPath, newConfigData)
+		return toIgnore
+	}
+
+	return ""
+}
+
+// Returns true if both strings are deep-equal after unmarshalling
+func isSameYAMLContent(str1, str2 string) bool {
+	var obj1, obj2 any
+
+	if err := yaml.Unmarshal([]byte(str1), &obj1); err != nil {
+		return false
+	}
+
+	if err := yaml.Unmarshal([]byte(str2), &obj2); err != nil {
+		return false
+	}
+
+	return reflect.DeepEqual(obj1, obj2)
 }
