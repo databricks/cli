@@ -55,7 +55,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 			}
 
 			// Drop the "file_path" field. It is mutually exclusive with "serialized_dashboard".
-			return dyn.DropKeys(v, []string{"file_path"})
+			return dyn.DropKeys(v, []string{filePathFieldName})
 		})
 	})
 
