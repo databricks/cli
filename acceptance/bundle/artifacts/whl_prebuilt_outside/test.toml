@@ -1,5 +1,3 @@
-Badness = "Expect this to work, but deploy fails: ... is not contained in sync root path"
-
 [[Repls]]
 Old = '\\'
 New = '/'
