@@ -45,6 +45,9 @@ var (
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
 // the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
+//
+// To debug integration tests you can run the "deco env flip workspace" command to configure a workspace
+// and then click on "debug test" near TestInprocessMode.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -93,6 +96,11 @@ func TestInprocessMode(t *testing.T) {
 }
 
 func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+	// Load debug environment when debugging a single test run from an IDE.
+	if singleTest != "" && InprocessMode {
+		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+	}
+
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
