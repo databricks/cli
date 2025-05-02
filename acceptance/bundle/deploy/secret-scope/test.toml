@@ -16,6 +16,10 @@ Response.Body = '''
         {
             "backend_type": "DATABRICKS",
             "name": "my-secrets-6260d50f-e8ff-4905-8f28-812345678903"
+        },
+        {
+            "backend_type": "AZURE_KEYVAULT",
+            "name": "test-secrets-azure-backend"
         }
     ]
 }
