@@ -5,14 +5,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> jq -s .[] | select(.path=="/api/2.0/secrets/acls/put") | .body out.requests.txt
-{
-  "permission": "MANAGE",
-  "principal": "admins",
-  "scope": "test-secrets-permissions"
-}
-{
-  "permission": "READ",
-  "principal": "users",
-  "scope": "test-secrets-permissions"
-}
+>>> jq -s -c .[] | select(.path=="/api/2.0/secrets/acls/put") | .body out.requests.txt
+{"permission":"MANAGE","principal":"admins","scope":"test-secrets-permissions"}
+{"permission":"READ","principal":"users","scope":"test-secrets-permissions"}
