@@ -721,7 +721,10 @@ func tryReading(t *testing.T, path string) (string, bool) {
 		return "", false
 	}
 
-	if !utf8.Valid(data) {
+	// Do not check output.txt for UTF8 validity, because 'deploy --debug' logs binary request/responses
+	doUTF8Check := filepath.Base(path) != "output.txt"
+
+	if doUTF8Check && !utf8.Valid(data) {
 		t.Errorf("%s: not valid utf-8", path)
 		return "", false
 	}
