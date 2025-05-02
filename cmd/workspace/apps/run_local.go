@@ -25,7 +25,7 @@ import (
 // https://docs.databricks.com/aws/en/dev-tools/databricks-apps/app-development#important-guidelines-for-implementing-databricks-apps
 const SHUTDOWN_TIMEOUT = 15 * time.Second
 
-func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string) (*apps.Config, *apps.AppSpec, error) {
+func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int) (*apps.Config, *apps.AppSpec, error) {
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
 	workspaceId, err := w.CurrentWorkspaceID(ctx)
@@ -38,7 +38,7 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string) (*apps.Confi
 		return nil, nil, err
 	}
 
-	config := apps.NewConfig(w.Config.Host, workspaceId, cwd)
+	config := apps.NewConfig(w.Config.Host, workspaceId, cwd, apps.DEFAULT_HOST, appPort)
 	if entryPoint != "" {
 		config.AppSpecFiles = []string{entryPoint}
 	}
@@ -88,12 +88,13 @@ func startAppProcess(cmd *cobra.Command, config *apps.Config, app apps.App, env 
 	appCmd.Stdout = cmd.OutOrStdout()
 	appCmd.Stderr = cmd.ErrOrStderr()
 
+	var appCmdEnv []string
 	appEnvs := apps.GetBaseEnvVars(config)
 	for _, envVar := range appEnvs {
-		env = append(env, envVar.String())
+		appCmdEnv = append(appCmdEnv, envVar.String())
 	}
-
-	appCmd.Env = env
+	appCmdEnv = append(appCmdEnv, env...)
+	appCmd.Env = appCmdEnv
 	appCmd.Dir = config.AppPath
 
 	err = appCmd.Start()
@@ -129,7 +130,7 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *apps.Config, w 
 	}()
 
 	if debug {
-		cmdio.LogString(ctx, "To debug your app, attach a debugger to port "+apps.DEBUG_PORT)
+		cmdio.LogString(ctx, "To debug your app, attach a debugger to port "+config.DebugPort)
 	}
 
 	return nil
@@ -173,6 +174,8 @@ func newRunLocal() *cobra.Command {
 		prepareEnvironment bool
 		entryPoint         string
 		customEnv          []string
+		debugPort          string
+		appPort            int
 	)
 
 	cmd := &cobra.Command{}
@@ -183,21 +186,26 @@ func newRunLocal() *cobra.Command {
 
 	  This command starts an app locally.`
 
-	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app")
+	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app app proxy")
+	cmd.Flags().IntVar(&appPort, "app-port", apps.DEFAULT_PORT, "Port on which to run the app")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Enable debug mode")
 	cmd.Flags().BoolVar(&prepareEnvironment, "prepare-environment", false, "Prepares the environment for running the app. Requires 'uv' to be installed.")
 	cmd.Flags().StringSliceVar(&customEnv, "env", nil, "Set environment variables")
 	cmd.Flags().StringVar(&entryPoint, "entry-point", "", "Specify the custom entry point with configuration (.yml file) for the app. Defaults to app.yml")
-
+	cmd.Flags().StringVar(&debugPort, "debug-port", "", "Port on which to run the debugger")
 	cmd.PreRunE = root.MustWorkspaceClient
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		config, spec, err := setupWorkspaceAndConfig(cmd, entryPoint)
+		config, spec, err := setupWorkspaceAndConfig(cmd, entryPoint, appPort)
 		if err != nil {
 			return err
+		}
+
+		if debugPort != "" {
+			config.DebugPort = debugPort
 		}
 
 		app, env, err := setupApp(cmd, config, spec, customEnv, prepareEnvironment)

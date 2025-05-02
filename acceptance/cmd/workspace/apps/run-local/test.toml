@@ -10,3 +10,11 @@ Ignore = [
 [[Repls]]
 Old='curl/[0-9]+\.[0-9]+\.[0-9]+'
 New='curl/(version)'
+
+[[Repls]]
+Old='127.0.0.1:[0-9]+'
+New='http://127.0.0.1:$(port)'
+
+[[Repls]]
+Old='To debug your app, attach a debugger to port [0-9]+'
+New='To debug your app, attach a debugger to port $(debug_port)'

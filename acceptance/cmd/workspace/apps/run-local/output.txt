@@ -9,11 +9,11 @@ Hello, world
 === Starting the app in background...
 === Waiting
 === Checking app is running...
->>> curl -s -o - http://127.0.0.1:8001
+>>> curl -s -o - http://http://127.0.0.1:$(port)
 {
   "Accept": "*/*",
   "Accept-Encoding": "gzip",
-  "Host": "127.0.0.1:8000",
+  "Host": "http://127.0.0.1:$(port)",
   "User-Agent": "curl/(version)",
   "X-Forwarded-Email": "[USERNAME]",
   "X-Forwarded-Host": "localhost",
@@ -24,11 +24,11 @@ Hello, world
 }
 
 === Sending shutdown request...
->>> curl -s -o /dev/null http://127.0.0.1:8001/shutdown
+>>> curl -s -o /dev/null http://http://127.0.0.1:$(port)/shutdown
 
 === Checking CLI command output...
->>> grep To debug your app, attach a debugger to port 5678 ./out.run.txt
-To debug your app, attach a debugger to port 5678
+>>> grep To debug your app, attach a debugger to port ./out.run.txt
+To debug your app, attach a debugger to port $(debug_port)
 
 >>> grep -o Python Flask app has started with: test ./out.run.txt
 Python Flask app has started with: test

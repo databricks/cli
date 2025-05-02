@@ -6,8 +6,17 @@ trace errcode $CLI apps run-local --entry-point value-from.yml 2>&1
 # so we don't need to start it in background. It will install the dependencies as part of the command
 trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
 
+# Get 3 unique ports sequentially to avoid conflicts
+PORTS=$(allocate_ports.py 3)
+
+# Read ports into array
+PORTS_ARR=($(echo "$PORTS"))
+PORT="${PORTS_ARR[0]}"
+DEBUG_PORT="${PORTS_ARR[1]}"
+PROXY_PORT="${PORTS_ARR[2]}"
+
 title "Starting the app in background..."
-$CLI apps run-local --prepare-environment --debug > ../out.run.txt 2>&1 &
+trace $CLI apps run-local --prepare-environment --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$PORT" > ../out.run.txt 2>&1 &
 PID=$!
 # Ensure background process is killed on script exit
 trap 'kill $PID 2>/dev/null || true' EXIT
@@ -22,13 +31,13 @@ while [ -z "$(grep -o "Python Flask app has started with" out.run.txt 2>/dev/nul
 done
 
 title "Checking app is running..."
-trace curl -s -o - http://127.0.0.1:8001 | jq
+trace curl -s -o - http://127.0.0.1:$PROXY_PORT | jq
 
 title "Sending shutdown request..."
-trace curl -s -o /dev/null  http://127.0.0.1:8001/shutdown || true
+trace curl -s -o /dev/null  http://127.0.0.1:$PROXY_PORT/shutdown || true
 
 title "Checking CLI command output..."
 
-trace grep "To debug your app, attach a debugger to port 5678" ./out.run.txt
+trace grep "To debug your app, attach a debugger to port" ./out.run.txt
 trace grep -o "Python Flask app has started with: test" ./out.run.txt
 rm out.run.txt
