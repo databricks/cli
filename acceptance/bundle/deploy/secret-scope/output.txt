@@ -30,20 +30,9 @@ Deployment complete!
 }
 
 >>> [CLI] secrets list-acls my-secrets-[UUID]
-[
-  {
-    "permission": "READ",
-    "principal": "users"
-  },
-  {
-    "permission": "WRITE",
-    "principal": "admins"
-  },
-  {
-    "permission": "MANAGE",
-    "principal": "[USERNAME]"
-  }
-]
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"READ","principal":"users"}
+{"permission":"WRITE","principal":"admins"}
 
 >>> [CLI] secrets put-secret my-secrets-[UUID] my-key --string-value my-secret-value
 
