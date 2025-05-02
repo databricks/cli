@@ -1,6 +1,3 @@
-bundle:
-  name: trampoline_warning_message_with_new_spark
-
 targets:
   dev:
     mode: development

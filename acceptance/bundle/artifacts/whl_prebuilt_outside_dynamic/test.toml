@@ -1,3 +1,5 @@
+BundleConfig.default_name = ""
+
 [[Repls]]
 Old = '\\'
 New = '/'

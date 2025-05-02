@@ -1,6 +1,3 @@
-bundle:
-  name: chicken
-
 variables:
   v1:
     description: var 1
