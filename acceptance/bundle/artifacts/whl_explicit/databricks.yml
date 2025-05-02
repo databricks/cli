@@ -1,6 +1,3 @@
-bundle:
-  name: python-wheel
-
 artifacts:
     my_test_code:
       type: whl

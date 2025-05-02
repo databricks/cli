@@ -1,6 +1,3 @@
-bundle:
-  name: override_job_tasks
-
 resources:
   jobs:
     foo:

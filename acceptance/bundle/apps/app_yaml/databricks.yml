@@ -1,6 +1,3 @@
-bundle:
-  name: apps_yaml
-
 resources:
   apps:
     myapp:

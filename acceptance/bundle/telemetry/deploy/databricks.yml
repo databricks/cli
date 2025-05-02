@@ -1,7 +1,3 @@
-bundle:
-  name: rabbit
-  uuid: 11111111-2222-3333-4444-555555555555
-
 resources:
   jobs:
     job_one:

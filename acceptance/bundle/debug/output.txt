@@ -1,7 +1,7 @@
-Name: debug
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/debug/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Validation OK!
