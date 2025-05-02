@@ -55,19 +55,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 			}
 
 			// Drop the "file_path" field. It is mutually exclusive with "serialized_dashboard".
-			return dyn.Walk(v, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				switch len(p) {
-				case 0:
-					return v, nil
-				case 1:
-					if p[0] == dyn.Key(filePathFieldName) {
-						return v, dyn.ErrDrop
-					}
-				}
-
-				// Skip everything else.
-				return v, dyn.ErrSkip
-			})
+			return dyn.DropKeys(v, []string{filePathFieldName})
 		})
 	})
 
