@@ -76,6 +76,22 @@ func References(b *bundle.Bundle, filters ...Filter) (Map, Map) {
 	return keyOnly, keyWithType
 }
 
+type ResourceNotFoundError struct {
+	Key string
+}
+
+func (e ResourceNotFoundError) Error() string {
+	return fmt.Sprintf("resource with key %q not found", e.Key)
+}
+
+type ResourceKeyConflictError struct {
+	Key string
+}
+
+func (e ResourceKeyConflictError) Error() string {
+	return fmt.Sprintf("multiple resources with key %q found", e.Key)
+}
+
 // Lookup returns the resource with the specified key.
 // If the key maps to more than one resource, an error is returned.
 // If the key does not map to any resource, an error is returned.
@@ -85,7 +101,7 @@ func Lookup(b *bundle.Bundle, key string, filters ...Filter) (Reference, error) 
 	if !ok {
 		refs, ok = keyWithTypeRefs[key]
 		if !ok {
-			return Reference{}, fmt.Errorf("resource with key %q not found", key)
+			return Reference{}, ResourceNotFoundError{Key: key}
 		}
 	}
 
@@ -93,7 +109,7 @@ func Lookup(b *bundle.Bundle, key string, filters ...Filter) (Reference, error) 
 	case len(refs) == 1:
 		return refs[0], nil
 	case len(refs) > 1:
-		return Reference{}, fmt.Errorf("multiple resources with key %q found", key)
+		return Reference{}, ResourceKeyConflictError{Key: key}
 	default:
 		panic("unreachable")
 	}

@@ -74,6 +74,8 @@ type Root struct {
 	// Locations is an output-only field that holds configuration location
 	// information for every path in the configuration tree.
 	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
+
+	Scripts map[string]Script `json:"scripts,omitempty"`
 }
 
 // Load loads the bundle configuration file at the specified path.

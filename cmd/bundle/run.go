@@ -62,18 +62,41 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 
 func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	// Locate the resource to run.
-	ref, err := resources.Lookup(b, arg, run.IsRunnable)
-	if err != nil {
-		return nil, err
+	ref, resourceLookupErr := resources.Lookup(b, arg, run.IsRunnable)
+	if resourceLookupErr != nil {
+		return nil, resourceLookupErr
 	}
 
-	// Convert the resource to a runnable resource.
-	runner, err := run.ToRunner(b, ref)
-	if err != nil {
-		return nil, err
+	// If multiple resources with the same key are found, return
+	// early.
+	if errors.As(resourceLookupErr, &resources.ResourceKeyConflictError{}) {
+		return nil, resourceLookupErr
 	}
 
-	return runner, nil
+	// If the error is not a resource not found error, return early.
+	if !errors.As(resourceLookupErr, &resources.ResourceNotFoundError{}) {
+		return nil, resourceLookupErr
+	}
+
+	script, scriptFound := b.Config.Scripts[arg]
+
+	// TODO CONTINUE: Clean this up a bit and implement a script runner.
+	switch {
+	case resourceLookupErr == nil && scriptFound:
+		return nil, fmt.Errorf("both a resource and a ")
+	case resourceLookupErr == nil && !scriptFound:
+		// Convert the resource to a runnable resource.
+		runner, err := run.ToRunner(b, ref)
+		if err != nil {
+			return nil, err
+		}
+		return runner, nil
+	case errors.As(resourceLookupErr, &resources.ResourceNotFoundError{}) && scriptFound:
+		// Run the script.
+	}
+
+
+	return nil, resourceLookupErr
 }
 
 func newRunCommand() *cobra.Command {
@@ -237,14 +260,17 @@ Example usage:
 	return cmd
 }
 
-func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
-	cmdEnv := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
+// TODO: Add validation that content does not contain ${}
+// TODO: Add validation that the script key is unique between resources and scripts.
+// TODO: Add scripts to the CLI autocompletor.
+func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
+	out := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
 
 	// If user has specified a target, pass it to the child command.
 	//
 	// This is only useful for when the Databricks CLI is the child command.
 	if b.Config.Bundle.Target != "" {
-		cmdEnv = append(cmdEnv, env.TargetVariable+"="+b.Config.Bundle.Target)
+		out = append(out, env.TargetVariable+"="+b.Config.Bundle.Target)
 	}
 
 	// If the bundle has a profile configured, explicitly pass it to the child command.
@@ -253,9 +279,20 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	// since if we do not explicitly pass the profile, the CLI will use the
 	// auth configured in the bundle YAML configuration (if any).
 	if b.Config.Workspace.Profile != "" {
-		cmdEnv = append(cmdEnv, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+		out = append(out, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 	}
 
+	return out
+}
+
+func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
+	return exec.ShellExecv(content, exec.ExecvOptions{
+		Env: scriptEnv(cmd, b),
+		Dir: b.BundleRootPath,
+	})
+}
+
+func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return err
@@ -263,7 +300,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 
 	return exec.Execv(exec.ExecvOptions{
 		Args: args,
-		Env:  cmdEnv,
+		Env:  scriptEnv(cmd, b),
 		Dir:  dir,
 	})
 }
