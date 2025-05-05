@@ -44,23 +44,6 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
-	// If we are running in a cloud environment AND we are recording requests,
-	// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
-	if cloudEnv != "" && recordRequests {
-		// Use a non-proxy client to fetch user info so that this API call is not recorded
-		// in out.requests.txt
-		w, err := databricks.NewWorkspaceClient()
-		require.NoError(t, err)
-
-		user, err := w.CurrentUser.Me(context.Background())
-		require.NoError(t, err, "Failed to get current user")
-
-		cfg := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
-		return cfg, *user
-	}
-
-	// If we are running on a cloud environment, use the host configured in the
-	// environment.
 	if cloudEnv != "" {
 		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
@@ -68,7 +51,15 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		user, err := w.CurrentUser.Me(context.Background())
 		require.NoError(t, err, "Failed to get current user")
 
-		return w.Config, *user
+		cfg := w.Config
+
+		// If we are running in a cloud environment AND we are recording requests,
+		// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
+		if recordRequests {
+			cfg = startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
+		}
+
+		return cfg, *user
 	}
 
 	// If we are not recording requests, and no custom server stubs are configured,
