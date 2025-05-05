@@ -55,7 +55,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		user, err := w.CurrentUser.Me(context.Background())
 		require.NoError(t, err, "Failed to get current user")
 
-		cfg := startProxyServer(t, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+		cfg := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
 		return cfg, *user
 	}
 
@@ -167,18 +167,14 @@ func startLocalServer(t *testing.T,
 }
 
 func startProxyServer(t *testing.T,
-	recordRequests bool,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
 ) *sdkconfig.Config {
 	s := testserver.NewProxyServer(t)
 
-	// Record API requests in out.requests.txt if RecordRequests is true
-	// in test.toml
-	if recordRequests {
-		s.SetRequestCallback(recordRequestsCallback(t, includeHeaders, outputDir))
-	}
+	// Always record requests for a proxy server.
+	s.SetRequestCallback(recordRequestsCallback(t, includeHeaders, outputDir))
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {
