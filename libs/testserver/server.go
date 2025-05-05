@@ -18,6 +18,12 @@ type Server interface {
 	SetResponseCallback(func(request *Request, response *EncodedResponse))
 }
 
+// Both ProxyServer and LocalServer implement the server interface.
+var (
+	_ Server = &ProxyServer{}
+	_ Server = &LocalServer{}
+)
+
 type HandlerFunc func(req Request) any
 
 type Request struct {
