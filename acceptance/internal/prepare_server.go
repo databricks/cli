@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/testproxy"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
@@ -164,14 +165,14 @@ func startProxyServer(t *testing.T,
 	includeHeaders []string,
 	outputDir string,
 ) (string, string) {
-	s := testserver.NewProxyServer(t)
+	s := testproxy.New(t)
 
 	// Always record requests for a proxy server.
-	s.SetRequestCallback(recordRequestsCallback(t, includeHeaders, outputDir))
+	s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {
-		s.SetResponseCallback(logResponseCallback(t))
+		s.ResponseCallback = logResponseCallback(t)
 	}
 
 	return s.URL, "dbapi1234"
