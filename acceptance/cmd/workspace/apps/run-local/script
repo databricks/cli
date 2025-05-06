@@ -7,7 +7,7 @@ trace errcode $CLI apps run-local --entry-point value-from.yml 2>&1
 trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
 
 # Get 3 unique ports sequentially to avoid conflicts
-PORTS=$(allocate_ports.py 3)
+PORTS=$(allocate_ports.py 3 | tr -d '\r')
 
 # Read ports into array
 PORTS_ARR=($(echo "$PORTS"))
