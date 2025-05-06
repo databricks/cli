@@ -23,8 +23,7 @@ type SecretScopePermission struct {
 }
 
 type SecretScope struct {
-	Name                   string `json:"name"`
-	InitialManagePrincipal string `json:"initial_manage_principal"`
+	Name string `json:"name"`
 
 	Permissions    []SecretScopePermission `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
