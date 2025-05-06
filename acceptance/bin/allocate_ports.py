@@ -6,11 +6,7 @@ if len(sys.argv) != 2:
     print("Usage: allocate_ports.py <number_of_ports>", file=sys.stderr)
     sys.exit(1)
 
-try:
-    num_ports = int(sys.argv[1])
-except ValueError:
-    print("Error: number of ports must be an integer", file=sys.stderr)
-    sys.exit(1)
+num_ports = int(sys.argv[1])
 
 ports = []
 sockets = []
