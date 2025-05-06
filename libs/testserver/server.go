@@ -11,21 +11,32 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gorilla/mux"
+
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/gorilla/mux"
 )
 
 type Server struct {
 	*httptest.Server
-
-	t      testutil.TestingT
-	mu     *sync.Mutex
 	router *mux.Router
 
-	fakeWorkspaces   map[string]*FakeWorkspace
+	t testutil.TestingT
+
+	fakeWorkspaces map[string]*FakeWorkspace
+	mu             *sync.Mutex
+
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
+}
+
+type Request struct {
+	Method    string
+	URL       *url.URL
+	Headers   http.Header
+	Body      []byte
+	Vars      map[string]string
+	Workspace *FakeWorkspace
 }
 
 func New(t testutil.TestingT) *Server {
@@ -83,6 +94,8 @@ Response.Body = '<response body here>'
 	return s
 }
 
+type HandlerFunc func(req Request) any
+
 func (s *Server) Handle(method, path string, handler HandlerFunc) {
 	s.router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		// For simplicity we process requests sequentially. It's fast enough because
@@ -126,17 +139,6 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			return
 		}
 	}).Methods(method)
-}
-
-type HandlerFunc func(req Request) any
-
-type Request struct {
-	Method    string
-	URL       *url.URL
-	Headers   http.Header
-	Body      []byte
-	Vars      map[string]string
-	Workspace *FakeWorkspace
 }
 
 type Response struct {
