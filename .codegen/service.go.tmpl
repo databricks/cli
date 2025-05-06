@@ -119,11 +119,13 @@ var {{.CamelName}}Overrides []func(
 )
 
 {{- $excludeFromJson := list "http-request"}}
+{{- $onlyJsonUpdates := list "budget-policy"}}
 
 func new{{.PascalName}}() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	{{- $canUseJson := and .CanUseJson (not (in $excludeFromJson .KebabName )) -}}
+	{{- $jsonOnly := or (or .IsJsonOnly .MustUseJson) (and (in $onlyJsonUpdates $serviceName) (eq .KebabName "update")) -}}
 	{{- if .Request}}
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
@@ -151,7 +153,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
 	{{- end}}
     {{$method := .}}
-	{{ if not .IsJsonOnly }}
+	{{ if not $jsonOnly }}
 	{{range .AllFields -}}
 		{{- if not .Required -}}
 			{{if .Entity.IsObject}}{{if not (eq . $method.RequestBodyField) }}// TODO: complex arg: {{.Name}}{{end}}
@@ -263,7 +265,7 @@ func new{{.PascalName}}() *cobra.Command {
 							return err
 						}
 					}
-			}{{end}}{{ if .MustUseJson }}else {
+			}{{end}}{{ if $jsonOnly }}else {
 				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 			}{{- end}}
 			{{- if $hasPosArgs }}

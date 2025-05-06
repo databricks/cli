@@ -62,8 +62,6 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, ``)
-
 	cmd.Use = "create"
 	cmd.Short = `Create a file.`
 	cmd.Long = `Create a file.
@@ -263,9 +261,6 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `List files.`
