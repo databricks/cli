@@ -95,9 +95,9 @@ func TestInprocessMode(t *testing.T) {
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
-func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Load debug environment when debugging a single test run from an IDE.
-	if singleTest != "" && InprocessMode {
+	if singleTest != "" && inprocessMode {
 		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 	}
 
@@ -130,7 +130,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	execPath := ""
 
-	if InprocessMode {
+	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
@@ -219,7 +219,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Skip(skipReason)
 			}
 
-			if !InprocessMode {
+			if !inprocessMode {
 				t.Parallel()
 			}
 
@@ -239,7 +239,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
-						if !InprocessMode {
+						if !inprocessMode {
 							t.Parallel()
 						}
 						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset)
