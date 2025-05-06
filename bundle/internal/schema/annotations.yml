@@ -539,9 +539,6 @@ github.com/databricks/cli/bundle/config/resources.SecretScope:
   "backend_type":
     "description": |-
       PLACEHOLDER
-  "initial_manage_principal":
-    "description": |-
-      PLACEHOLDER
   "keyvault_metadata":
     "description": |-
       PLACEHOLDER
