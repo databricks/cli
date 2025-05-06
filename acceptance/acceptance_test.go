@@ -2,6 +2,7 @@ package acceptance_test
 
 import (
 	"bufio"
+	"context"
 	"encoding/base32"
 	"encoding/json"
 	"errors"
@@ -44,6 +45,9 @@ var (
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
 // the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
+//
+// To debug integration tests you can run the "deco env flip workspace" command to configure a workspace
+// and then click on "debug test" near TestInprocessMode.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -92,6 +96,11 @@ func TestInprocessMode(t *testing.T) {
 }
 
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+	// Load debug environment when debugging a single test run from an IDE.
+	if singleTest != "" && InprocessMode {
+		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+	}
+
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -374,6 +383,20 @@ func runTest(t *testing.T,
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
+	timeout := config.Timeout
+
+	if runtime.GOOS == "windows" {
+		if isRunningOnCloud {
+			timeout = max(timeout, config.TimeoutWindows, config.TimeoutCloud)
+		} else {
+			timeout = max(timeout, config.TimeoutWindows)
+		}
+	} else if isRunningOnCloud {
+		timeout = max(timeout, config.TimeoutCloud)
+	}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
+
 	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
@@ -392,8 +415,9 @@ func runTest(t *testing.T,
 	}
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Env = processEnv
+
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
@@ -548,7 +572,9 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The test produced an unexpected output file.
 	if !okRef && okNew {
 		t.Errorf("Unexpected output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
-		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		if shouldShowDiff(pathNew, valueNew) {
+			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		}
 		if testdiff.OverwriteMode {
 			t.Logf("Writing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
@@ -571,6 +597,20 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		}
 		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
+}
+
+func shouldShowDiff(pathNew, valueNew string) bool {
+	if strings.Contains(pathNew, "site-packages") {
+		return false
+	}
+	if strings.Contains(pathNew, ".venv") {
+		return false
+	}
+	if len(valueNew) > 10_000 {
+		return false
+	}
+	// if file itself starts with "out" then it's likely to be intended to be recorded
+	return strings.HasPrefix(filepath.Base(pathNew), "out")
 }
 
 // Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
@@ -692,7 +732,10 @@ func tryReading(t *testing.T, path string) (string, bool) {
 		return "", false
 	}
 
-	if !utf8.Valid(data) {
+	// Do not check output.txt for UTF8 validity, because 'deploy --debug' logs binary request/responses
+	doUTF8Check := filepath.Base(path) != "output.txt"
+
+	if doUTF8Check && !utf8.Valid(data) {
 		t.Errorf("%s: not valid utf-8", path)
 		return "", false
 	}
@@ -807,15 +850,24 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
+	processErrCh := make(chan error, 1)
+
+	cmd.Cancel = func() error {
+		processErrCh <- errors.New("Test script killed due to a timeout")
+		_ = cmd.Process.Kill()
+		_ = w.Close()
+		return nil
+	}
 
 	start := time.Now()
 	err := cmd.Start()
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 
-	processErrCh := make(chan error, 1)
 	go func() {
 		processErrCh <- cmd.Wait()
-		w.Close()
+		_ = w.Close()
 	}()
 
 	reader := bufio.NewReader(r)

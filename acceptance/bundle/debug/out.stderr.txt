@@ -40,6 +40,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=validate:volume-path
 10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
+10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=ResolveVariableReferences(resources)
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=NormalizePaths
@@ -48,7 +49,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
 10:07:59 Debug: Apply pid=12345 mutator=CheckPermissions
-10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
 10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonWrapperWarning
 10:07:59 Debug: Apply pid=12345 mutator=artifacts.Prepare
@@ -70,7 +70,6 @@
 10:07:59 Debug: ApplyParallel pid=12345 mutator=validate:validate_sync_patterns
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:job_cluster_key_defined
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:job_task_cluster_spec
-10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:SingleNodeCluster
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:artifact_paths
 10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/debug/default/files
 < HTTP/1.1 404 Not Found

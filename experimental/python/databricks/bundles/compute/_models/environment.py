@@ -29,6 +29,13 @@ class Environment:
     List of pip dependencies, as supported by the version of pip in this environment.
     """
 
+    jar_dependencies: VariableOrList[str] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
+    """
+
     @classmethod
     def from_dict(cls, value: "EnvironmentDict") -> "Self":
         return _transform(cls, value)
@@ -51,6 +58,13 @@ class EnvironmentDict(TypedDict, total=False):
     dependencies: VariableOrList[str]
     """
     List of pip dependencies, as supported by the version of pip in this environment.
+    """
+
+    jar_dependencies: VariableOrList[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
     """
 
 

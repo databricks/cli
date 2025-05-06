@@ -53,10 +53,10 @@ func newGetEnableNotebookTableClipboard() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "get-enable-notebook-table-clipboard"
-	cmd.Short = `Get the Enable Notebook Table Clipboard setting.`
-	cmd.Long = `Get the Enable Notebook Table Clipboard setting.
+	cmd.Short = `Get the Results Table Clipboard features setting.`
+	cmd.Long = `Get the Results Table Clipboard features setting.
   
-  Gets the Enable Notebook Table Clipboard setting.`
+  Gets the Results Table Clipboard features setting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -102,10 +102,10 @@ func newPatchEnableNotebookTableClipboard() *cobra.Command {
 	cmd.Flags().Var(&patchEnableNotebookTableClipboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-notebook-table-clipboard"
-	cmd.Short = `Update the Enable Notebook Table Clipboard setting.`
-	cmd.Long = `Update the Enable Notebook Table Clipboard setting.
+	cmd.Short = `Update the Results Table Clipboard features setting.`
+	cmd.Long = `Update the Results Table Clipboard features setting.
   
-  Updates the Enable Notebook Table Clipboard setting. The model follows
+  Updates the Results Table Clipboard features setting. The model follows
   eventual consistency, which means the get after the update operation might
   receive stale values for some time.`
 

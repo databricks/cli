@@ -1,0 +1,12 @@
+RecordRequests = false
+Timeout = '1m'
+TimeoutWindows = '5m'
+
+Ignore = [
+    '.venv',
+    '__pycache__'
+]
+
+[[Repls]]
+Old='curl/[0-9]+\.[0-9]+\.[0-9]+'
+New='curl/(version)'

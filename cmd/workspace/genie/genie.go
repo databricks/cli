@@ -310,16 +310,16 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	cmd.Short = `Generate full query result download.`
 	cmd.Long = `Generate full query result download.
   
-  Initiate full SQL query result download and obtain a download_id to track
-  the download progress. This call initiates a new SQL execution to generate the
-  query result. The result is stored in an external link can be retrieved using
-  the [Get Download Full Query Result](:method:genie/getdownloadfullqueryresult)
-  API. Warning: Databricks strongly recommends that you protect the URLs that
-  are returned by the EXTERNAL_LINKS disposition. See [Execute
+  Initiates a new SQL execution and returns a download_id that you can use to
+  track the progress of the download. The query result is stored in an external
+  link and can be retrieved using the [Get Download Full Query
+  Result](:method:genie/getdownloadfullqueryresult) API. Warning: Databricks
+  strongly recommends that you protect the URLs that are returned by the
+  EXTERNAL_LINKS disposition. See [Execute
   Statement](:method:statementexecution/executestatement) for more details.
 
   Arguments:
-    SPACE_ID: Space ID
+    SPACE_ID: Genie space ID
     CONVERSATION_ID: Conversation ID
     MESSAGE_ID: Message ID
     ATTACHMENT_ID: Attachment ID`
@@ -385,19 +385,17 @@ func newGetDownloadFullQueryResult() *cobra.Command {
   
   After [Generating a Full Query Result
   Download](:method:genie/getdownloadfullqueryresult) and successfully receiving
-  a download_id, use this API to Poll download progress and retrieve the SQL
-  query result external link(s) upon completion. Warning: Databricks strongly
-  recommends that you protect the URLs that are returned by the EXTERNAL_LINKS
-  disposition. When you use the EXTERNAL_LINKS disposition, a short-lived,
-  presigned URL is generated, which can be used to download the results directly
-  from Amazon S3. As a short-lived access credential is embedded in this
-  presigned URL, you should protect the URL. Because presigned URLs are already
-  generated with embedded temporary access credentials, you must not set an
-  Authorization header in the download requests. See [Execute
-  Statement](:method:statementexecution/executestatement) for more details.
+  a download_id, use this API to poll the download progress. When the download
+  is complete, the API returns one or more external links to the query result
+  files. Warning: Databricks strongly recommends that you protect the URLs that
+  are returned by the EXTERNAL_LINKS disposition. You must not set an
+  Authorization header in download requests. When using the EXTERNAL_LINKS
+  disposition, Databricks returns presigned URLs that grant temporary access to
+  data. See [Execute Statement](:method:statementexecution/executestatement) for
+  more details.
 
   Arguments:
-    SPACE_ID: Space ID
+    SPACE_ID: Genie space ID
     CONVERSATION_ID: Conversation ID
     MESSAGE_ID: Message ID
     ATTACHMENT_ID: Attachment ID

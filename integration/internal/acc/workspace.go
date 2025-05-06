@@ -22,7 +22,7 @@ type WorkspaceT struct {
 
 func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 	t.Helper()
-	loadDebugEnvIfRunFromIDE(t, "workspace")
+	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 
 	t.Logf("CLOUD_ENV=%s", testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
@@ -43,7 +43,7 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 // Run the workspace test only on UC workspaces.
 func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 	t.Helper()
-	loadDebugEnvIfRunFromIDE(t, "workspace")
+	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 
 	t.Logf("CLOUD_ENV=%s", testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 

@@ -20,9 +20,9 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "enable-export-notebook",
-		Short: `Controls whether users can export notebooks and files from the Workspace.`,
-		Long: `Controls whether users can export notebooks and files from the Workspace. By
-  default, this setting is enabled.`,
+		Short: `Controls whether users can export notebooks and files from the Workspace UI.`,
+		Long: `Controls whether users can export notebooks and files from the Workspace UI.
+  By default, this setting is enabled.`,
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -53,10 +53,10 @@ func newGetEnableExportNotebook() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "get-enable-export-notebook"
-	cmd.Short = `Get the Enable Export Notebook setting.`
-	cmd.Long = `Get the Enable Export Notebook setting.
+	cmd.Short = `Get the Notebook and File exporting setting.`
+	cmd.Long = `Get the Notebook and File exporting setting.
   
-  Gets the Enable Export Notebook setting.`
+  Gets the Notebook and File exporting setting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -102,10 +102,10 @@ func newPatchEnableExportNotebook() *cobra.Command {
 	cmd.Flags().Var(&patchEnableExportNotebookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-export-notebook"
-	cmd.Short = `Update the Enable Export Notebook setting.`
-	cmd.Long = `Update the Enable Export Notebook setting.
+	cmd.Short = `Update the Notebook and File exporting setting.`
+	cmd.Long = `Update the Notebook and File exporting setting.
   
-  Updates the Enable Export Notebook setting. The model follows eventual
+  Updates the Notebook and File exporting setting. The model follows eventual
   consistency, which means the get after the update operation might receive
   stale values for some time.`
 

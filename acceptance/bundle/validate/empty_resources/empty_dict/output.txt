@@ -9,6 +9,8 @@
       },
       "edit_mode": "UI_LOCKED",
       "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
       "permissions": [],
       "queue": {
         "enabled": true
@@ -21,6 +23,12 @@
 {
   "pipelines": {
     "rname": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
       "permissions": []
     }
   }

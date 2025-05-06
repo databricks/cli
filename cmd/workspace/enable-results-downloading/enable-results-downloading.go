@@ -53,10 +53,10 @@ func newGetEnableResultsDownloading() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "get-enable-results-downloading"
-	cmd.Short = `Get the Enable Results Downloading setting.`
-	cmd.Long = `Get the Enable Results Downloading setting.
+	cmd.Short = `Get the Notebook results download setting.`
+	cmd.Long = `Get the Notebook results download setting.
   
-  Gets the Enable Results Downloading setting.`
+  Gets the Notebook results download setting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -102,10 +102,10 @@ func newPatchEnableResultsDownloading() *cobra.Command {
 	cmd.Flags().Var(&patchEnableResultsDownloadingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-results-downloading"
-	cmd.Short = `Update the Enable Results Downloading setting.`
-	cmd.Long = `Update the Enable Results Downloading setting.
+	cmd.Short = `Update the Notebook results download setting.`
+	cmd.Long = `Update the Notebook results download setting.
   
-  Updates the Enable Results Downloading setting. The model follows eventual
+  Updates the Notebook results download setting. The model follows eventual
   consistency, which means the get after the update operation might receive
   stale values for some time.`
 

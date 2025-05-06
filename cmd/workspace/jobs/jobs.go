@@ -1151,6 +1151,7 @@ func newRepairRun() *cobra.Command {
 	// TODO: map via StringToStringVar: job_parameters
 	cmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair.`)
 	// TODO: map via StringToStringVar: notebook_params
+	cmd.Flags().Var(&repairRunReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params

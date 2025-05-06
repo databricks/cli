@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/dyn/merge"
 
@@ -38,6 +39,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 		// ApplyPresets should have more priority than defaults below, so it should be run first
 		ApplyPresets(),
+
+		validate.SingleNodeCluster(),
 	)
 
 	if diags.HasError() {
@@ -51,6 +54,31 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.dashboards.*.embed_credentials", false},
 		{"resources.volumes.*.volume_type", "MANAGED"},
+
+		// Jobs:
+
+		// The defaults are the same as for terraform provider latest version (v1.75.0)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/jobs/resource_job.go#L532
+		{"resources.jobs.*.name", "Untitled"},
+		{"resources.jobs.*.max_concurrent_runs", 1},
+		{"resources.jobs.*.schedule.pause_status", "UNPAUSED"},
+		{"resources.jobs.*.trigger.pause_status", "UNPAUSED"},
+		{"resources.jobs.*.continuous.pause_status", "UNPAUSED"},
+
+		// This is converted from single-task to multi-task
+		{"resources.jobs.*.task[*].dbt_task.schema", "default"},
+		{"resources.jobs.*.task[*].for_each_task.task.dbt_task.schema", "default"},
+
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
+		// This triggers SingleNodeCluster() cluster validator. It needs to be run before applying defaults.
+		{"resources.jobs.*.job_clusters[*].new_cluster.num_workers", 0},
+		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
+		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
+
+		// Pipelines (same as terraform)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
+		{"resources.pipelines.*.edition", "ADVANCED"},
+		{"resources.pipelines.*.channel", "CURRENT"},
 	}
 
 	for _, defaultDef := range defaults {
@@ -126,6 +154,11 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
 		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
 		CaptureSchemaDependency(),
+
+		// Reads (dynamic): resources.dashboards.*.file_path
+		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
+		// Drops (dynamic): resources.dashboards.*.file_path
+		ConfigureDashboardSerializedDashboard(),
 	)
 }
 

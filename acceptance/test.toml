@@ -1,3 +1,18 @@
 # Default settings that apply to all tests unless overriden by test.toml files in inner directories.
 Local = true
 Cloud = false
+
+# default timeouts
+Timeout = '20s'
+TimeoutWindows = '60s'
+
+# Slowest test I saw:
+# github.com/databricks/cli/acceptance TestAccept/bundle/integration_whl/interactive_single_user 18m8.69s
+# http://go/deco/tests/14775362030/job/41482560953
+TimeoutCloud = '25m'
+
+Env.PYTHONDONTWRITEBYTECODE = "1"
+EnvRepl.PYTHONDONTWRITEBYTECODE = false
+
+Env.PYTHONUNBUFFERED = "1"
+EnvRepl.PYTHONUNBUFFERED = false
