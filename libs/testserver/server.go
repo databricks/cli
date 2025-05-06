@@ -44,109 +44,6 @@ type Response struct {
 	Headers    http.Header
 	Body       any
 }
-
-func New(t testutil.TestingT) *Server {
-	router := mux.NewRouter()
-	server := httptest.NewServer(router)
-	t.Cleanup(server.Close)
-
-	s := &Server{
-		Server:         server,
-		router:         router,
-		t:              t,
-		mu:             &sync.Mutex{},
-		fakeWorkspaces: map[string]*FakeWorkspace{},
-	}
-
-	// Set up the not found handler as fallback.
-	s.router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pattern := r.Method + " " + r.URL.Path
-		bodyBytes, err := io.ReadAll(r.Body)
-		var body string
-		if err != nil {
-			body = fmt.Sprintf("failed to read the body: %s", err)
-		} else {
-			body = fmt.Sprintf("[%d bytes] %s", len(bodyBytes), bodyBytes)
-		}
-
-		t.Errorf(`No handler for URL: %s
-Body: %s
-
-For acceptance tests, add this to test.toml:
-[[Server]]
-Pattern = %q
-Response.Body = '<response body here>'
-# Response.StatusCode = <response code if not 200>
-`, r.URL, body, pattern)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotImplemented)
-
-		resp := apierr.APIError{
-			Message: "No stub found for pattern: " + pattern,
-		}
-
-		respBytes, err := json.Marshal(resp)
-		if err != nil {
-			t.Errorf("JSON encoding error: %s", err)
-			respBytes = []byte("{\"message\": \"JSON encoding error\"}")
-		}
-
-		if _, err := w.Write(respBytes); err != nil {
-			t.Errorf("Response write error: %s", err)
-		}
-	})
-
-	return s
-}
-
-type HandlerFunc func(req Request) any
-
-func (s *Server) Handle(method, path string, handler HandlerFunc) {
-	s.router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		// For simplicity we process requests sequentially. It's fast enough because
-		// we don't do any IO except reading and writing request/response bodies.
-		s.mu.Lock()
-		defer s.mu.Unlock()
-
-		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
-		// it's own fake fakeWorkspace to avoid interference between tests.
-		var fakeWorkspace *FakeWorkspace = nil
-		token := getToken(r)
-		if token != "" {
-			if _, ok := s.fakeWorkspaces[token]; !ok {
-				s.fakeWorkspaces[token] = NewFakeWorkspace()
-			}
-
-			fakeWorkspace = s.fakeWorkspaces[token]
-		}
-
-		request := NewRequest(s.t, r, fakeWorkspace)
-
-		if s.RequestCallback != nil {
-			s.RequestCallback(&request)
-		}
-
-		respAny := handler(request)
-		resp := normalizeResponse(s.t, respAny)
-
-		for k, v := range resp.Headers {
-			w.Header()[k] = v
-		}
-
-		w.WriteHeader(resp.StatusCode)
-
-		if s.ResponseCallback != nil {
-			s.ResponseCallback(&request, &resp)
-		}
-
-		if _, err := w.Write(resp.Body); err != nil {
-			s.t.Errorf("Failed to write response: %s", err)
-			return
-		}
-	}).Methods(method)
-}
-
 type EncodedResponse struct {
 	StatusCode int
 	Headers    http.Header
@@ -277,6 +174,108 @@ func getHeaders(value []byte) http.Header {
 			"Content-Type": {"text/plain"},
 		}
 	}
+}
+
+func New(t testutil.TestingT) *Server {
+	router := mux.NewRouter()
+	server := httptest.NewServer(router)
+	t.Cleanup(server.Close)
+
+	s := &Server{
+		Server:         server,
+		router:         router,
+		t:              t,
+		mu:             &sync.Mutex{},
+		fakeWorkspaces: map[string]*FakeWorkspace{},
+	}
+
+	// Set up the not found handler as fallback.
+	s.router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pattern := r.Method + " " + r.URL.Path
+		bodyBytes, err := io.ReadAll(r.Body)
+		var body string
+		if err != nil {
+			body = fmt.Sprintf("failed to read the body: %s", err)
+		} else {
+			body = fmt.Sprintf("[%d bytes] %s", len(bodyBytes), bodyBytes)
+		}
+
+		t.Errorf(`No handler for URL: %s
+Body: %s
+
+For acceptance tests, add this to test.toml:
+[[Server]]
+Pattern = %q
+Response.Body = '<response body here>'
+# Response.StatusCode = <response code if not 200>
+`, r.URL, body, pattern)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotImplemented)
+
+		resp := apierr.APIError{
+			Message: "No stub found for pattern: " + pattern,
+		}
+
+		respBytes, err := json.Marshal(resp)
+		if err != nil {
+			t.Errorf("JSON encoding error: %s", err)
+			respBytes = []byte("{\"message\": \"JSON encoding error\"}")
+		}
+
+		if _, err := w.Write(respBytes); err != nil {
+			t.Errorf("Response write error: %s", err)
+		}
+	})
+
+	return s
+}
+
+type HandlerFunc func(req Request) any
+
+func (s *Server) Handle(method, path string, handler HandlerFunc) {
+	s.router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		// For simplicity we process requests sequentially. It's fast enough because
+		// we don't do any IO except reading and writing request/response bodies.
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
+		// it's own fake fakeWorkspace to avoid interference between tests.
+		var fakeWorkspace *FakeWorkspace = nil
+		token := getToken(r)
+		if token != "" {
+			if _, ok := s.fakeWorkspaces[token]; !ok {
+				s.fakeWorkspaces[token] = NewFakeWorkspace()
+			}
+
+			fakeWorkspace = s.fakeWorkspaces[token]
+		}
+
+		request := NewRequest(s.t, r, fakeWorkspace)
+
+		if s.RequestCallback != nil {
+			s.RequestCallback(&request)
+		}
+
+		respAny := handler(request)
+		resp := normalizeResponse(s.t, respAny)
+
+		for k, v := range resp.Headers {
+			w.Header()[k] = v
+		}
+
+		w.WriteHeader(resp.StatusCode)
+
+		if s.ResponseCallback != nil {
+			s.ResponseCallback(&request, &resp)
+		}
+
+		if _, err := w.Write(resp.Body); err != nil {
+			s.t.Errorf("Failed to write response: %s", err)
+			return
+		}
+	}).Methods(method)
 }
 
 func getToken(r *http.Request) string {
