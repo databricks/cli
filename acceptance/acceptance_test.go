@@ -404,9 +404,16 @@ func runTest(t *testing.T,
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 	defer cancelFunc()
 
+	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+
 	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+
+	cmd.Env = auth.ProcessEnv(cfg)
+	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
+	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
 	// In inprocess mode, we need to modify the environment of the test runner, so that the script sees the
 	// appropriate environment variables. This is necessary because any $CLI invocations in the "script"
@@ -421,12 +428,6 @@ func runTest(t *testing.T,
 		}
 	}
 
-	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	cmd.Env = processEnv
-
-	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
-	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 
