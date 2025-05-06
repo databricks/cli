@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.core._variable import VariableOr, VariableOrOptional
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigParam,
@@ -17,14 +17,19 @@ if TYPE_CHECKING:
 class TableSpec:
     """"""
 
-    destination_catalog: VariableOrOptional[str] = None
+    destination_catalog: VariableOr[str]
     """
     Required. Destination catalog to store table.
     """
 
-    destination_schema: VariableOrOptional[str] = None
+    destination_schema: VariableOr[str]
     """
     Required. Destination schema to store table.
+    """
+
+    source_table: VariableOr[str]
+    """
+    Required. Table name in the source database.
     """
 
     destination_table: VariableOrOptional[str] = None
@@ -40,11 +45,6 @@ class TableSpec:
     source_schema: VariableOrOptional[str] = None
     """
     Schema name in the source database. Might be optional depending on the type of source.
-    """
-
-    source_table: VariableOrOptional[str] = None
-    """
-    Required. Table name in the source database.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
@@ -63,14 +63,19 @@ class TableSpec:
 class TableSpecDict(TypedDict, total=False):
     """"""
 
-    destination_catalog: VariableOrOptional[str]
+    destination_catalog: VariableOr[str]
     """
     Required. Destination catalog to store table.
     """
 
-    destination_schema: VariableOrOptional[str]
+    destination_schema: VariableOr[str]
     """
     Required. Destination schema to store table.
+    """
+
+    source_table: VariableOr[str]
+    """
+    Required. Table name in the source database.
     """
 
     destination_table: VariableOrOptional[str]
@@ -86,11 +91,6 @@ class TableSpecDict(TypedDict, total=False):
     source_schema: VariableOrOptional[str]
     """
     Schema name in the source database. Might be optional depending on the type of source.
-    """
-
-    source_table: VariableOrOptional[str]
-    """
-    Required. Table name in the source database.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]

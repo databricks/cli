@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.core._variable import VariableOr, VariableOrOptional
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -15,14 +15,19 @@ class IngestionGatewayPipelineDefinition:
     :meta private: [EXPERIMENTAL]
     """
 
-    connection_name: VariableOrOptional[str] = None
+    connection_name: VariableOr[str]
     """
     Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
-    gateway_storage_catalog: VariableOrOptional[str] = None
+    gateway_storage_catalog: VariableOr[str]
     """
     Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
+    """
+
+    gateway_storage_schema: VariableOr[str]
+    """
+    Required, Immutable. The name of the schema for the gateway pipelines's storage location.
     """
 
     gateway_storage_name: VariableOrOptional[str] = None
@@ -30,12 +35,6 @@ class IngestionGatewayPipelineDefinition:
     Optional. The Unity Catalog-compatible name for the gateway storage location.
     This is the destination to use for the data that is extracted by the gateway.
     Delta Live Tables system will automatically create the storage location under the catalog and schema.
-    
-    """
-
-    gateway_storage_schema: VariableOrOptional[str] = None
-    """
-    Required, Immutable. The name of the schema for the gateway pipelines's storage location.
     """
 
     @classmethod
@@ -49,14 +48,19 @@ class IngestionGatewayPipelineDefinition:
 class IngestionGatewayPipelineDefinitionDict(TypedDict, total=False):
     """"""
 
-    connection_name: VariableOrOptional[str]
+    connection_name: VariableOr[str]
     """
     Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
-    gateway_storage_catalog: VariableOrOptional[str]
+    gateway_storage_catalog: VariableOr[str]
     """
     Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
+    """
+
+    gateway_storage_schema: VariableOr[str]
+    """
+    Required, Immutable. The name of the schema for the gateway pipelines's storage location.
     """
 
     gateway_storage_name: VariableOrOptional[str]
@@ -64,12 +68,6 @@ class IngestionGatewayPipelineDefinitionDict(TypedDict, total=False):
     Optional. The Unity Catalog-compatible name for the gateway storage location.
     This is the destination to use for the data that is extracted by the gateway.
     Delta Live Tables system will automatically create the storage location under the catalog and schema.
-    
-    """
-
-    gateway_storage_schema: VariableOrOptional[str]
-    """
-    Required, Immutable. The name of the schema for the gateway pipelines's storage location.
     """
 
 

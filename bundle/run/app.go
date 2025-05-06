@@ -155,7 +155,7 @@ func (a *appRunner) deploy(ctx context.Context) error {
 	sourceCodePath := app.SourceCodePath
 	wait, err := w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
 		AppName: app.Name,
-		AppDeployment: &apps.AppDeployment{
+		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
 			SourceCodePath: sourceCodePath,
 		},
@@ -176,7 +176,7 @@ func (a *appRunner) deploy(ctx context.Context) error {
 		// Now we can try to deploy the app again
 		wait, err = w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
 			AppName: app.Name,
-			AppDeployment: &apps.AppDeployment{
+			AppDeployment: apps.AppDeployment{
 				Mode:           apps.AppDeploymentModeSnapshot,
 				SourceCodePath: sourceCodePath,
 			},
