@@ -22,4 +22,5 @@ for _ in range(num_ports):
     sockets.append(s)
 for s in sockets:
     s.close()
-print("\n".join(ports))
+sys.stdout.write("\n".join(ports))
+sys.stdout.flush()
