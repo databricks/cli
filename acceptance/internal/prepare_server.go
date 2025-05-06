@@ -13,9 +13,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testproxy"
 	"github.com/databricks/cli/libs/testserver"

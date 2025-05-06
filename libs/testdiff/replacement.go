@@ -139,11 +139,6 @@ func (r *ReplacementsContext) SetPathWithParents(old, new string) {
 
 func PrepareReplacementsWorkspaceConfig(t testutil.TestingT, r *ReplacementsContext, cfg *config.Config) {
 	t.Helper()
-	PrepareReplacementsWorkspaceConfig(t, r, w.Config)
-}
-
-func PrepareReplacementsWorkspaceConfig(t testutil.TestingT, r *ReplacementsContext, cfg *config.Config) {
-	t.Helper()
 	// in some clouds (gcp) w.Config.Host includes "https://" prefix in others it's really just a host (azure)
 	host := strings.TrimPrefix(strings.TrimPrefix(cfg.Host, "http://"), "https://")
 	r.Set("https://"+host, "[DATABRICKS_URL]")
