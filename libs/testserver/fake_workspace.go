@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -19,6 +20,8 @@ import (
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
+	mu sync.Mutex
+
 	directories map[string]bool
 	files       map[string][]byte
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
@@ -31,8 +34,18 @@ type FakeWorkspace struct {
 	Schemas   map[string]catalog.SchemaInfo
 }
 
+func (w *FakeWorkspace) LockUnlock() func() {
+	if w == nil {
+		panic("LockUnlock called on nil FakeWorkspace")
+	}
+	w.mu.Lock()
+	return func() { w.mu.Unlock() }
+}
+
 // Generic functions to handle map operations
-func MapGet[T any](collection map[string]T, key string) Response {
+func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Response {
+	defer w.LockUnlock()()
+
 	value, ok := collection[key]
 	if !ok {
 		return Response{
@@ -44,7 +57,9 @@ func MapGet[T any](collection map[string]T, key string) Response {
 	}
 }
 
-func MapDelete[T any](collection map[string]T, key string) Response {
+func MapDelete[T any](w *FakeWorkspace, collection map[string]T, key string) Response {
+	defer w.LockUnlock()()
+
 	_, ok := collection[key]
 	if !ok {
 		return Response{
@@ -72,6 +87,8 @@ func NewFakeWorkspace() *FakeWorkspace {
 }
 
 func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
+	defer s.LockUnlock()()
+
 	if s.directories[path] {
 		return Response{
 			Body: &workspace.ObjectInfo{
@@ -96,14 +113,17 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 }
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
+	defer s.LockUnlock()()
 	s.directories[request.Path] = true
 }
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
+	defer s.LockUnlock()()
 	return s.files[path]
 }
 
 func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
+	defer s.LockUnlock()()
 	if !recursive {
 		s.files[path] = nil
 	} else {
@@ -116,6 +136,8 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 }
 
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
+	defer s.LockUnlock()()
+
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
@@ -135,6 +157,8 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 }
 
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
+	defer s.LockUnlock()()
+
 	jobId := s.nextJobId
 	s.nextJobId++
 
@@ -158,6 +182,8 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 }
 
 func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
+	defer s.LockUnlock()()
+
 	jobId := request.JobId
 
 	_, ok := s.jobs[request.JobId]
@@ -179,6 +205,8 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 }
 
 func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
+	defer s.LockUnlock()()
+
 	pipelineId := uuid.New().String()
 
 	s.Pipelines[pipelineId] = r
@@ -201,6 +229,8 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 		}
 	}
 
+	defer s.LockUnlock()()
+
 	job, ok := s.jobs[jobIdInt]
 	if !ok {
 		return Response{
@@ -214,6 +244,8 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 }
 
 func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
+	defer s.LockUnlock()()
+
 	spec, ok := s.Pipelines[pipelineId]
 	if !ok {
 		return Response{
@@ -230,6 +262,8 @@ func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
 }
 
 func (s *FakeWorkspace) JobsList() Response {
+	defer s.LockUnlock()()
+
 	list := make([]jobs.BaseJob, 0, len(s.jobs))
 	for _, job := range s.jobs {
 		baseJob := jobs.BaseJob{}

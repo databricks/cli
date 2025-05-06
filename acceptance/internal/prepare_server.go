@@ -90,6 +90,9 @@ func startDedicatedServer(t *testing.T,
 		s.RequestCallback = func(request *testserver.Request) {
 			req := getLoggedRequest(request, includeHeaders)
 			reqJson, err := json.MarshalIndent(req, "", "  ")
+
+			defer s.LockUnlock()()
+
 			assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
 
 			f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
@@ -103,6 +106,8 @@ func startDedicatedServer(t *testing.T,
 
 	if logRequests {
 		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
+			defer s.LockUnlock()()
+
 			t.Logf("%d %s %s\n%s\n%s",
 				response.StatusCode, request.Method, request.URL,
 				formatHeadersAndBody("> ", request.Headers, request.Body),
