@@ -56,7 +56,11 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		// If we are running in a cloud environment AND we are recording requests,
 		// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
 		if recordRequests {
-			cfg = startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
+			host, token := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
+			cfg = &sdkconfig.Config{
+				Host:  host,
+				Token: token,
+			}
 		}
 
 		return cfg, *user
@@ -80,7 +84,11 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	// Default case. Start a dedicated local server for the test with the server stubs configured
 	// as overrides.
-	cfg := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	host, token := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	cfg := &sdkconfig.Config{
+		Host:  host,
+		Token: token,
+	}
 
 	// For the purposes of replacements, use testUser for local runs.
 	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
@@ -119,7 +127,7 @@ func startLocalServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) *sdkconfig.Config {
+) (string, string) {
 	s := testserver.NewLocalServer(t)
 
 	// Record API requests in out.requests.txt if RecordRequests is true
@@ -148,20 +156,14 @@ func startLocalServer(t *testing.T,
 
 	// The earliest handlers take precedence, add default handlers last
 	addDefaultHandlers(s)
-
-	cfg := &sdkconfig.Config{
-		Host:  s.URL,
-		Token: "dbapi123",
-	}
-
-	return cfg
+	return s.URL, "dbapi123"
 }
 
 func startProxyServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) *sdkconfig.Config {
+) (string, string) {
 	s := testserver.NewProxyServer(t)
 
 	// Always record requests for a proxy server.
@@ -172,12 +174,7 @@ func startProxyServer(t *testing.T,
 		s.SetResponseCallback(logResponseCallback(t))
 	}
 
-	cfg := &sdkconfig.Config{
-		Host:  s.URL,
-		Token: "dbapi1234",
-	}
-
-	return cfg
+	return s.URL, "dbapi1234"
 }
 
 type LoggedRequest struct {
