@@ -57,7 +57,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq catalog.CreateOnlineTableRequest
-	createReq.Table = &catalog.OnlineTable{}
+	createReq.Table = catalog.OnlineTable{}
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool

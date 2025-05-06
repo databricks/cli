@@ -58,7 +58,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq cleanrooms.CreateCleanRoomRequest
-	createReq.CleanRoom = &cleanrooms.CleanRoom{}
+	createReq.CleanRoom = cleanrooms.CleanRoom{}
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
@@ -141,7 +141,7 @@ func newCreateOutputCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createOutputCatalogReq cleanrooms.CreateCleanRoomOutputCatalogRequest
-	createOutputCatalogReq.OutputCatalog = &cleanrooms.CleanRoomOutputCatalog{}
+	createOutputCatalogReq.OutputCatalog = cleanrooms.CleanRoomOutputCatalog{}
 	var createOutputCatalogJson flags.JsonFlag
 
 	// TODO: short flags

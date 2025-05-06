@@ -128,7 +128,7 @@ func new{{.PascalName}}() *cobra.Command {
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
 	{{- if .RequestBodyField }}
-	{{.CamelName}}Req.{{.RequestBodyField.PascalName}} = &{{.Service.Package.Name}}.{{.RequestBodyField.Entity.PascalName}}{}
+	{{.CamelName}}Req.{{.RequestBodyField.PascalName}} = {{ if .RequestBodyField.IsOptionalObject }}&{{end}}{{.Service.Package.Name}}.{{.RequestBodyField.Entity.PascalName}}{}
 	{{- end }}
 	{{- if $canUseJson}}
 	var {{.CamelName}}Json flags.JsonFlag

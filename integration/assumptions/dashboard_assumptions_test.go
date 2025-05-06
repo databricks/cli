@@ -31,7 +31,7 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 	dir := acc.TemporaryWorkspaceDir(wt, "dashboard-assumptions-")
 
 	dashboard, err := wt.W.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-		Dashboard: &dashboards.Dashboard{
+		Dashboard: dashboards.Dashboard{
 			DisplayName:         dashboardName,
 			ParentPath:          dir,
 			SerializedDashboard: string(dashboardPayload),
@@ -65,7 +65,7 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 	// Try to overwrite the dashboard via the Lakeview API (and expect failure).
 	{
 		_, err := wt.W.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-			Dashboard: &dashboards.Dashboard{
+			Dashboard: dashboards.Dashboard{
 				DisplayName:         dashboardName,
 				ParentPath:          dir,
 				SerializedDashboard: string(dashboardPayload),
