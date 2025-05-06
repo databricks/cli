@@ -263,6 +263,8 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		// we can precisely track resources that are added/updated, so sum doesn't double-count
 		b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
 		b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
+	} else {
+		mutateDiags = mutateDiags.Extend(diag.Warningf("experimental/pydabs is deprecated and will be removed in future versions, use experimental/python instead"))
 	}
 
 	if err == mutateDiagsHasError {
