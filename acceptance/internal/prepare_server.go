@@ -24,7 +24,7 @@ import (
 )
 
 func StartDefaultServer(t *testing.T) {
-	s := testserver.NewLocalServer(t)
+	s := testserver.New(t)
 	addDefaultHandlers(s)
 
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
@@ -128,17 +128,17 @@ func startLocalServer(t *testing.T,
 	includeHeaders []string,
 	outputDir string,
 ) (string, string) {
-	s := testserver.NewLocalServer(t)
+	s := testserver.New(t)
 
 	// Record API requests in out.requests.txt if RecordRequests is true
 	// in test.toml
 	if recordRequests {
-		s.SetRequestCallback(recordRequestsCallback(t, includeHeaders, outputDir))
+		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
 	}
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {
-		s.SetResponseCallback(logResponseCallback(t))
+		s.ResponseCallback = logResponseCallback(t)
 	}
 
 	for ind := range stubs {

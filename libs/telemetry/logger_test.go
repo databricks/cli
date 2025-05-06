@@ -14,7 +14,7 @@ import (
 )
 
 func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
-	server := testserver.NewLocalServer(t)
+	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
 	count := 0
@@ -57,7 +57,7 @@ func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 }
 
 func uploadRetriesFor(t *testing.T, statusCode int) {
-	server := testserver.NewLocalServer(t)
+	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
 	count := 0
@@ -118,7 +118,7 @@ func TestTelemetryUploadRetriesForStatusCodes(t *testing.T) {
 }
 
 func TestTelemetryUploadMaxRetries(t *testing.T) {
-	server := testserver.NewLocalServer(t)
+	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	count := 0
 
