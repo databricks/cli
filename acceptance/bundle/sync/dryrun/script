@@ -14,5 +14,4 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
-trace $CLI bundle sync --dry-run --output text | grep -v "^Action: " | sort
+trace $CLI bundle sync --dry-run --output text | sort
