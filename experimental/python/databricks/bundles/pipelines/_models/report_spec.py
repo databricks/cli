@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.core._variable import VariableOr, VariableOrOptional
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigParam,
@@ -17,24 +17,24 @@ if TYPE_CHECKING:
 class ReportSpec:
     """"""
 
-    destination_catalog: VariableOrOptional[str] = None
+    destination_catalog: VariableOr[str]
     """
     Required. Destination catalog to store table.
     """
 
-    destination_schema: VariableOrOptional[str] = None
+    destination_schema: VariableOr[str]
     """
     Required. Destination schema to store table.
+    """
+
+    source_url: VariableOr[str]
+    """
+    Required. Report URL in the source system.
     """
 
     destination_table: VariableOrOptional[str] = None
     """
     Required. Destination table name. The pipeline fails if a table with that name already exists.
-    """
-
-    source_url: VariableOrOptional[str] = None
-    """
-    Required. Report URL in the source system.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
@@ -53,24 +53,24 @@ class ReportSpec:
 class ReportSpecDict(TypedDict, total=False):
     """"""
 
-    destination_catalog: VariableOrOptional[str]
+    destination_catalog: VariableOr[str]
     """
     Required. Destination catalog to store table.
     """
 
-    destination_schema: VariableOrOptional[str]
+    destination_schema: VariableOr[str]
     """
     Required. Destination schema to store table.
+    """
+
+    source_url: VariableOr[str]
+    """
+    Required. Report URL in the source system.
     """
 
     destination_table: VariableOrOptional[str]
     """
     Required. Destination table name. The pipeline fails if a table with that name already exists.
-    """
-
-    source_url: VariableOrOptional[str]
-    """
-    Required. Report URL in the source system.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]

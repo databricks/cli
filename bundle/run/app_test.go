@@ -110,7 +110,7 @@ func setupTestApp(t *testing.T, initialAppState apps.ApplicationState, initialCo
 	}
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
+		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
 			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
 		},
@@ -213,7 +213,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 	// First deployment fails
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
+		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
 			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
 		},
@@ -237,7 +237,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 	// Second one should succeeed
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
+		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
 			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
 		},

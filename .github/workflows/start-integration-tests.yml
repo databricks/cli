@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Generate GitHub App Token
         id: generate-token
-        uses: actions/create-github-app-token@136412a57a7081aa63c935a2cc2918f76c34f514 # v1.11.2
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
         with:
           app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
           private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}

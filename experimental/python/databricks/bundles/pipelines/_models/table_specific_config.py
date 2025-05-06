@@ -17,6 +17,23 @@ if TYPE_CHECKING:
 class TableSpecificConfig:
     """"""
 
+    exclude_columns: VariableOrList[str] = field(default_factory=list)
+    """
+    A list of column names to be excluded for the ingestion.
+    When not specified, include_columns fully controls what columns to be ingested.
+    When specified, all other columns including future ones will be automatically included for ingestion.
+    This field in mutually exclusive with `include_columns`.
+    """
+
+    include_columns: VariableOrList[str] = field(default_factory=list)
+    """
+    A list of column names to be included for the ingestion.
+    When not specified, all columns except ones in exclude_columns will be included. Future
+    columns will be automatically included.
+    When specified, all other future columns will be automatically excluded from ingestion.
+    This field in mutually exclusive with `exclude_columns`.
+    """
+
     primary_keys: VariableOrList[str] = field(default_factory=list)
     """
     The primary key of the table used to apply changes.
@@ -51,6 +68,23 @@ class TableSpecificConfig:
 
 class TableSpecificConfigDict(TypedDict, total=False):
     """"""
+
+    exclude_columns: VariableOrList[str]
+    """
+    A list of column names to be excluded for the ingestion.
+    When not specified, include_columns fully controls what columns to be ingested.
+    When specified, all other columns including future ones will be automatically included for ingestion.
+    This field in mutually exclusive with `include_columns`.
+    """
+
+    include_columns: VariableOrList[str]
+    """
+    A list of column names to be included for the ingestion.
+    When not specified, all columns except ones in exclude_columns will be included. Future
+    columns will be automatically included.
+    When specified, all other future columns will be automatically excluded from ingestion.
+    This field in mutually exclusive with `exclude_columns`.
+    """
 
     primary_keys: VariableOrList[str]
     """

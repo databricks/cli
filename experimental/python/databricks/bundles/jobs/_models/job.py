@@ -143,9 +143,7 @@ class Job(Resource):
 
     performance_target: VariableOrOptional[PerformanceTarget] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run.
+    The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
     
     * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
@@ -276,9 +274,7 @@ class JobDict(TypedDict, total=False):
 
     performance_target: VariableOrOptional[PerformanceTargetParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run.
+    The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
     
     * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.

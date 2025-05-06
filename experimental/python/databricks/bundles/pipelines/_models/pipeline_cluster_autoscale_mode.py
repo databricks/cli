@@ -9,7 +9,6 @@ class PipelineClusterAutoscaleMode(Enum):
     the data processing latency of your pipelines. Enhanced Autoscaling is available
     for `updates` clusters only. The legacy autoscaling feature is used for `maintenance`
     clusters.
-
     """
 
     ENHANCED = "ENHANCED"
