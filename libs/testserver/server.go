@@ -39,6 +39,12 @@ type Request struct {
 	Workspace *FakeWorkspace
 }
 
+type Response struct {
+	StatusCode int
+	Headers    http.Header
+	Body       any
+}
+
 func New(t testutil.TestingT) *Server {
 	router := mux.NewRouter()
 	server := httptest.NewServer(router)
@@ -139,12 +145,6 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			return
 		}
 	}).Methods(method)
-}
-
-type Response struct {
-	StatusCode int
-	Headers    http.Header
-	Body       any
 }
 
 type EncodedResponse struct {
