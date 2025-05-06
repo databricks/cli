@@ -58,7 +58,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq cleanrooms.CreateCleanRoomAssetRequest
-	createReq.Asset = &cleanrooms.CleanRoomAsset{}
+	createReq.Asset = cleanrooms.CleanRoomAsset{}
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
@@ -335,7 +335,7 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq cleanrooms.UpdateCleanRoomAssetRequest
-	updateReq.Asset = &cleanrooms.CleanRoomAsset{}
+	updateReq.Asset = cleanrooms.CleanRoomAsset{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags

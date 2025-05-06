@@ -349,12 +349,10 @@ github.com/databricks/cli/bundle/config/resources.Job:
       Job-level parameter definitions
   "performance_target":
     "description": |-
-      The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run.
+      The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
 
       * `STANDARD`: Enables cost-efficient execution of serverless workloads.
       * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
-    "x-databricks-preview": |-
-      PRIVATE
   "queue":
     "description": |-
       The queue settings of the job.
@@ -1410,7 +1408,8 @@ github.com/databricks/databricks-sdk-go/service/compute.EbsVolumeType:
 github.com/databricks/databricks-sdk-go/service/compute.Environment:
   "_":
     "description": |-
-      The environment entity used to preserve serverless environment side panel and jobs' environment for non-notebook task.
+      The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
+      (Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)
       In this minimal environment spec, only pip dependencies are supported.
   "client":
     "description": |-
@@ -1981,7 +1980,8 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
       The key of an environment. It has to be unique within a job.
   "spec":
     "description": |-
-      The environment entity used to preserve serverless environment side panel and jobs' environment for non-notebook task.
+      The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
+      (Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)
       In this minimal environment spec, only pip dependencies are supported.
 github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
   "no_alert_for_canceled_runs":
@@ -2583,8 +2583,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "power_bi_task":
     "description": |-
       The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
-    "x-databricks-preview": |-
-      PRIVATE
   "python_wheel_task":
     "description": |-
       The task runs a Python wheel when the `python_wheel_task` field is present.
@@ -2819,7 +2817,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek:
         SUNDAY
 github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind:
   "_":
-    "description": |
+    "description": |-
       The deployment method that manages the pipeline:
       - BUNDLE: The pipeline is managed by a Databricks Asset Bundle.
     "enum":
@@ -2841,7 +2839,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.EventLogSpec:
 github.com/databricks/databricks-sdk-go/service/pipelines.FileLibrary:
   "path":
     "description": |-
-      The absolute path of the file.
+      The absolute path of the source code.
 github.com/databricks/databricks-sdk-go/service/pipelines.Filters:
   "exclude":
     "description": |-
@@ -2872,7 +2870,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipeli
     "description": |-
       Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
   "gateway_storage_name":
-    "description": |
+    "description": |-
       Optional. The Unity Catalog-compatible name for the gateway storage location.
       This is the destination to use for the data that is extracted by the gateway.
       Delta Live Tables system will automatically create the storage location under the catalog and schema.
@@ -2896,10 +2894,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":
     "description": |-
-      The absolute path of the notebook.
+      The absolute path of the source code.
 github.com/databricks/databricks-sdk-go/service/pipelines.Notifications:
   "alerts":
-    "description": |
+    "description": |-
       A list of alerts that trigger the sending of notifications to the configured
       destinations. The supported alerts are:
 
@@ -2908,7 +2906,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.Notifications:
       * `on-update-fatal-failure`: A pipeline update fails with a non-retryable (fatal) error.
       * `on-flow-failure`: A single data flow fails.
   "email_recipients":
-    "description": |
+    "description": |-
       A list of email addresses notified when a configured alert is triggered.
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster:
   "apply_policy_default_values":
@@ -2927,7 +2925,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster:
       Attributes related to clusters running on Microsoft Azure.
       If not specified at cluster creation, a set of default values will be used.
   "cluster_log_conf":
-    "description": |
+    "description": |-
       The configuration for delivering spark logs to a long-term storage destination.
       Only dbfs destinations are supported. Only one destination can be specified
       for one cluster. If the conf is given, the logs will be delivered to the destination every
@@ -2968,7 +2966,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster:
     "description": |-
       A label for the cluster specification, either `default` to configure the default cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.
   "node_type_id":
-    "description": |
+    "description": |-
       This field encodes, through a single value, the resources available to each of
       the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
       and optimized for memory or compute intensive workloads. A list of available node
@@ -2987,7 +2985,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster:
     "description": |-
       The ID of the cluster policy used to create the cluster if applicable.
   "spark_conf":
-    "description": |
+    "description": |-
       An object containing a set of optional, user-specified Spark configuration key-value pairs.
       See :method:clusters/create for more details.
   "spark_env_vars":
@@ -3017,7 +3015,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutosca
       The minimum number of workers the cluster can scale down to when underutilized.
       It is also the initial number of workers the cluster will have after creation.
   "mode":
-    "description": |
+    "description": |-
       Databricks Enhanced Autoscaling optimizes cluster utilization by automatically
       allocating cluster resources based on workload volume, with minimal impact to
       the data processing latency of your pipelines. Enhanced Autoscaling is available
@@ -3025,7 +3023,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutosca
       clusters.
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutoscaleMode:
   "_":
-    "description": |
+    "description": |-
       Databricks Enhanced Autoscaling optimizes cluster utilization by automatically
       allocating cluster resources based on workload volume, with minimal impact to
       the data processing latency of your pipelines. Enhanced Autoscaling is available
@@ -3045,20 +3043,20 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineDeployment:
       The path to the file containing metadata about the deployment.
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
   "file":
-    "description": |
+    "description": |-
       The path to a file that defines a pipeline and is stored in the Databricks Repos.
   "jar":
-    "description": |
+    "description": |-
       URI of the jar to be installed. Currently only DBFS is supported.
     "x-databricks-preview": |-
       PRIVATE
   "maven":
-    "description": |
+    "description": |-
       Specification of a maven library to be installed.
     "x-databricks-preview": |-
       PRIVATE
   "notebook":
-    "description": |
+    "description": |-
       The path to a notebook that defines a pipeline and is stored in the Databricks workspace.
   "whl":
     "description": |-
@@ -3148,6 +3146,19 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
     "description": |-
       Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
+  "exclude_columns":
+    "description": |-
+      A list of column names to be excluded for the ingestion.
+      When not specified, include_columns fully controls what columns to be ingested.
+      When specified, all other columns including future ones will be automatically included for ingestion.
+      This field in mutually exclusive with `include_columns`.
+  "include_columns":
+    "description": |-
+      A list of column names to be included for the ingestion.
+      When not specified, all columns except ones in exclude_columns will be included. Future
+      columns will be automatically included.
+      When specified, all other future columns will be automatically excluded from ingestion.
+      This field in mutually exclusive with `exclude_columns`.
   "primary_keys":
     "description": |-
       The primary key of the table used to apply changes.
@@ -3692,7 +3703,7 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
       Whether the compute resources for the served entity should scale down to zero.
   "workload_size":
     "description": |-
-      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
+      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
   "workload_type":
     "description": |-
       The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
@@ -3719,19 +3730,10 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
       Whether the compute resources for the served entity should scale down to zero.
   "workload_size":
     "description": |-
-      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
+      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
   "workload_type":
     "description": |-
       The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
-github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadSize:
-  "_":
-    "enum":
-      - |-
-        Small
-      - |-
-        Medium
-      - |-
-        Large
 github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadType:
   "_":
     "description": |-

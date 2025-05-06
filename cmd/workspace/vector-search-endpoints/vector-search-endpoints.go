@@ -357,9 +357,6 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
     ENDPOINT_NAME: Name of the vector search endpoint
     BUDGET_POLICY_ID: The budget policy id to be applied`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
