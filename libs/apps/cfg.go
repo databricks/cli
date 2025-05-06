@@ -21,7 +21,7 @@ const (
 	DEFAULT_PORT     = 8000
 )
 
-func NewConfig(workspaceHost string, workpaceId int64, appDir string, host string, port int) *Config {
+func NewConfig(workspaceHost string, workpaceId int64, appDir, host string, port int) *Config {
 	c := &Config{
 		AppName:       DEFAULT_APP_NAME,
 		AppURL:        fmt.Sprintf("http://%s:%d", host, port),
