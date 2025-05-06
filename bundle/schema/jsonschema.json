@@ -1312,9 +1312,6 @@
                       "backend_type": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType"
                       },
-                      "initial_manage_principal": {
-                        "$ref": "#/$defs/string"
-                      },
                       "keyvault_metadata": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata"
                       },
@@ -1327,8 +1324,7 @@
                     },
                     "additionalProperties": false,
                     "required": [
-                      "name",
-                      "initial_manage_principal"
+                      "name"
                     ]
                   },
                   {
