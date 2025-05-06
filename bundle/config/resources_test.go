@@ -208,9 +208,6 @@ func TestResourcesBindSupport(t *testing.T) {
 
 			// bind operation requires Exists to return true
 			exists, err := r.Exists(ctx, m.WorkspaceClient, "0")
-			if err != nil {
-				panic(err)
-			}
 			assert.NoError(t, err)
 			assert.True(t, exists)
 		}
