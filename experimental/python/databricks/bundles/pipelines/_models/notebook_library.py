@@ -15,7 +15,7 @@ class NotebookLibrary:
 
     path: VariableOrOptional[str] = None
     """
-    The absolute path of the notebook.
+    The absolute path of the source code.
     """
 
     @classmethod
@@ -31,7 +31,7 @@ class NotebookLibraryDict(TypedDict, total=False):
 
     path: VariableOrOptional[str]
     """
-    The absolute path of the notebook.
+    The absolute path of the source code.
     """
 
 
