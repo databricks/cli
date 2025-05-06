@@ -71,6 +71,7 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Flags().StringVar(&createExperimentReq.CustomWeightsColumn, "custom-weights-column", createExperimentReq.CustomWeightsColumn, `The column in the training table used to customize weights for each time series.`)
 	cmd.Flags().StringVar(&createExperimentReq.ExperimentPath, "experiment-path", createExperimentReq.ExperimentPath, `The path in the workspace to store the created experiment.`)
+	cmd.Flags().StringVar(&createExperimentReq.FutureFeatureDataPath, "future-feature-data-path", createExperimentReq.FutureFeatureDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store future feature data for predictions.`)
 	// TODO: array: holiday_regions
 	// TODO: array: include_features
 	cmd.Flags().Int64Var(&createExperimentReq.MaxRuntime, "max-runtime", createExperimentReq.MaxRuntime, `The maximum duration for the experiment in minutes.`)
@@ -88,7 +89,7 @@ func newCreateExperiment() *cobra.Command {
   Creates a serverless forecasting experiment. Returns the experiment ID.
 
   Arguments:
-    TRAIN_DATA_PATH: The fully qualified name of a Unity Catalog table, formatted as
+    TRAIN_DATA_PATH: The fully qualified path of a Unity Catalog table, formatted as
       catalog_name.schema_name.table_name, used as training data for the
       forecasting model.
     TARGET_COLUMN: The column in the input training table used as the prediction target for

@@ -37,6 +37,7 @@ cmd/workspace/access-control/access-control.go linguist-generated=true
 cmd/workspace/aibi-dashboard-embedding-access-policy/aibi-dashboard-embedding-access-policy.go linguist-generated=true
 cmd/workspace/aibi-dashboard-embedding-approved-domains/aibi-dashboard-embedding-approved-domains.go linguist-generated=true
 cmd/workspace/alerts-legacy/alerts-legacy.go linguist-generated=true
+cmd/workspace/alerts-v2/alerts-v2.go linguist-generated=true
 cmd/workspace/alerts/alerts.go linguist-generated=true
 cmd/workspace/apps/apps.go linguist-generated=true
 cmd/workspace/artifact-allowlists/artifact-allowlists.go linguist-generated=true

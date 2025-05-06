@@ -298,14 +298,13 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq billing.UpdateBudgetPolicyRequest
-	updateReq.Policy = &billing.BudgetPolicy{}
+	updateReq.Policy = billing.BudgetPolicy{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: limit_config
-
 	// TODO: array: binding_workspace_ids
 	// TODO: array: custom_tags
 	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)

@@ -45,7 +45,7 @@ func TestDashboards(t *testing.T) {
 	// Make an out of band modification to the dashboard and confirm that it is detected.
 	_, err = wt.W.Lakeview.Update(ctx, dashboards.UpdateDashboardRequest{
 		DashboardId: oi.ResourceId,
-		Dashboard: &dashboards.Dashboard{
+		Dashboard: dashboards.Dashboard{
 			SerializedDashboard: dashboard.SerializedDashboard,
 		},
 	})

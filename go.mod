@@ -9,7 +9,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0 // MIT
 	github.com/Masterminds/semver/v3 v3.3.1 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.65.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.67.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause

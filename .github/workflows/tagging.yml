@@ -48,4 +48,4 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python internal/genkit/tagging.py
+          python tagging.py

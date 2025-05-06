@@ -10,17 +10,19 @@
         ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go"
     },
     "version": {
-      "experimental/python/README.md": "version $VERSION or above",
-      "experimental/python/databricks/bundles/version.py": "__version__ = \"$VERSION\"",
-      "experimental/python/pyproject.toml": "version = \"$VERSION\"",
-      "experimental/python/uv.lock": "name = \"databricks-bundles\"\nversion = \"$VERSION\"",
-      "libs/template/templates/experimental-jobs-as-code/library/versions.tmpl": "{{define \"latest_databricks_bundles_version\" -}}$VERSION{{- end}}"
+        "experimental/python/README.md": "version $VERSION or above",
+        "experimental/python/databricks/bundles/version.py": "__version__ = \"$VERSION\"",
+        "experimental/python/pyproject.toml": "version = \"$VERSION\"",
+        "experimental/python/uv.lock": "name = \"databricks-bundles\"\nversion = \"$VERSION\"",
+        "libs/template/templates/experimental-jobs-as-code/library/versions.tmpl": "{{define \"latest_databricks_bundles_version\" -}}$VERSION{{- end}}"
     },
     "toolchain": {
         "required": [
             "go"
         ],
         "post_generate": [
+            "[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py",
+            "rm .github/workflows/next-changelog.yml",
             "go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build",
             "make schema",
             "echo 'bundle/internal/tf/schema/\\*.go linguist-generated=true' >> ./.gitattributes",
