@@ -1367,7 +1367,20 @@
                 ]
               },
               "resources.SecretScopePermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "READ",
+                      "WRITE",
+                      "MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Volume": {
                 "oneOf": [
