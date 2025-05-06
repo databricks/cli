@@ -42,6 +42,9 @@ type PythonApp struct {
 }
 
 func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
+	if config.DebugPort == "" {
+		config.DebugPort = DEBUG_PORT
+	}
 	return &PythonApp{config: config, spec: spec}
 }
 
@@ -123,9 +126,9 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 func (p *PythonApp) enableDebugging() {
 	spec := p.spec
 	if spec.Command[0] != "python" {
-		spec.Command = append([]string{"python", "-m", "debugpy", "--listen", DEBUG_PORT, "-m"}, spec.Command...)
+		spec.Command = append([]string{"python", "-m", "debugpy", "--listen", p.config.DebugPort, "-m"}, spec.Command...)
 	} else {
-		spec.Command = append([]string{"python", "-m", "debugpy", "--listen", DEBUG_PORT}, spec.Command[1:]...)
+		spec.Command = append([]string{"python", "-m", "debugpy", "--listen", p.config.DebugPort}, spec.Command[1:]...)
 	}
 }
 

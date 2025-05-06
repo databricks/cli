@@ -12,6 +12,7 @@ type Config struct {
 	Port          int
 	AppPath       string
 	AppSpecFiles  []string
+	DebugPort     string
 }
 
 const (
@@ -20,14 +21,14 @@ const (
 	DEFAULT_PORT     = 8000
 )
 
-func NewConfig(workspaceHost string, workpaceId int64, appDir string) *Config {
+func NewConfig(workspaceHost string, workpaceId int64, appDir, host string, port int) *Config {
 	c := &Config{
 		AppName:       DEFAULT_APP_NAME,
-		AppURL:        fmt.Sprintf("http://%s:%d", DEFAULT_HOST, DEFAULT_PORT),
+		AppURL:        fmt.Sprintf("http://%s:%d", host, port),
 		WorkspaceId:   workpaceId,
-		ServerName:    DEFAULT_HOST,
-		Port:          DEFAULT_PORT,
-		Host:          DEFAULT_HOST,
+		ServerName:    host,
+		Port:          port,
+		Host:          host,
 		WorkspaceHost: workspaceHost,
 		AppPath:       appDir,
 		AppSpecFiles:  []string{"app.yml", "app.yaml"},
