@@ -70,5 +70,6 @@ generate:
 	genkit update-sdk
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
+	pushd experimental/python && make codegen
 
 .PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs ws
