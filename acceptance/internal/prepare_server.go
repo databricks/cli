@@ -117,7 +117,12 @@ func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir str
 }
 
 func logResponseCallback(t *testing.T) func(request *testserver.Request, response *testserver.EncodedResponse) {
+	mu := sync.Mutex{}
+
 	return func(request *testserver.Request, response *testserver.EncodedResponse) {
+		mu.Lock()
+		defer mu.Unlock()
+
 		t.Logf("%d %s %s\n%s\n%s",
 			response.StatusCode, request.Method, request.URL,
 			formatHeadersAndBody("> ", request.Headers, request.Body),

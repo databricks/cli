@@ -71,7 +71,8 @@ def main():
         if f in ignores:
             n_skipped += 1
             continue
-        data = open(f, "rb").read()
+        with open(f, "rb") as file:
+            data = file.read()
         error = False
         for msg in validate_contents(data):
             print(f"{f}:{msg}")
