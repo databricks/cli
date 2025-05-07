@@ -71,7 +71,7 @@
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:job_cluster_key_defined
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:job_task_cluster_spec
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:artifact_paths
-10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/debug/default/files
+10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files
 < HTTP/1.1 404 Not Found
 < {
 <   "message": "Workspace path not found"
