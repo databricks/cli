@@ -401,7 +401,7 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	// This mutex is used to synchronoize recording requests
+	// This mutex is used to synchronize recording requests
 	var serverMutex sync.Mutex
 
 	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, &serverMutex)
