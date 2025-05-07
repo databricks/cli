@@ -169,11 +169,20 @@ Stack Trace:
 		exitCode = 1
 	}
 
+	commandStr := commandString(cmd)
+
+	// Log bundle deploy failures.
+	if commandStr == "bundle_deploy" && exitCode != 0 {
+		telemetry.Log(ctx, protos.DatabricksCliLog{
+			BundleDeployEvent: &protos.BundleDeployEvent{},
+		})
+	}
+
 	ctx = cmd.Context()
 	telemetryErr := telemetry.Upload(ctx, protos.ExecutionContext{
 		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
-		Command:         commandString(cmd),
+		Command:         commandStr,
 		OperatingSystem: runtime.GOOS,
 		DbrVersion:      dbr.RuntimeVersion(ctx),
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
