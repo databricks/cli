@@ -189,7 +189,7 @@ func New(t testutil.TestingT) *Server {
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
 
-	// Set up the not found handler as fallback.
+	// Set up the not found handler as fallback
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := r.Method + " " + r.URL.Path
 		bodyBytes, err := io.ReadAll(r.Body)
