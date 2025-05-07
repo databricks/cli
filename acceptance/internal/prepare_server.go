@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -39,7 +40,7 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, mu *sync.Mutex) (*sdkconfig.Config, iam.User) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	// If we are running on a cloud environment, use the host configured in the
@@ -68,7 +69,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		}, TestUser
 	}
 
-	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir, mu)
 
 	return &sdkconfig.Config{
 		Host:  host,
@@ -82,6 +83,7 @@ func startDedicatedServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
+	mu *sync.Mutex,
 ) string {
 	s := testserver.New(t)
 
@@ -91,7 +93,8 @@ func startDedicatedServer(t *testing.T,
 			req := getLoggedRequest(request, includeHeaders)
 			reqJson, err := json.MarshalIndent(req, "", "  ")
 
-			defer s.LockUnlock()()
+			mu.Lock()
+			defer mu.Unlock()
 
 			assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
 
@@ -106,7 +109,8 @@ func startDedicatedServer(t *testing.T,
 
 	if logRequests {
 		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
-			defer s.LockUnlock()()
+			mu.Lock()
+			defer mu.Unlock()
 
 			t.Logf("%d %s %s\n%s\n%s",
 				response.StatusCode, request.Method, request.URL,

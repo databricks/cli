@@ -236,18 +236,14 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 		return nil
 	}
 
-	defer s.LockUnlock()()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if _, ok := s.fakeWorkspaces[token]; !ok {
 		s.fakeWorkspaces[token] = NewFakeWorkspace()
 	}
 
 	return s.fakeWorkspaces[token]
-}
-
-func (s *Server) LockUnlock() func() {
-	s.mu.Lock()
-	return func() { s.mu.Unlock() }
 }
 
 type HandlerFunc func(req Request) any
