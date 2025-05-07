@@ -104,6 +104,12 @@ func startDedicatedServer(t *testing.T,
 
 			_, err = f.WriteString(string(reqJson) + "\n")
 			assert.NoError(t, err)
+
+			// Sync the file to ensure that the request is written to disk.
+			// This can help avoid race conditions when file is not flushed to
+			// disk but is being read by the test.
+			err = f.Sync()
+			assert.NoError(t, err)
 		}
 	}
 
