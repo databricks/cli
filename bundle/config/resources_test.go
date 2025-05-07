@@ -153,7 +153,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {
-				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{},
+				CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{},
 			},
 		},
 		Apps: map[string]*resources.App{

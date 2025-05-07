@@ -44,7 +44,7 @@ func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *reso
 }
 
 func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
-	if v == nil || v.CreateVolumeRequestContent == nil {
+	if v == nil {
 		return
 	}
 	schemaK, schema := findSchema(b, v.CatalogName, v.SchemaName)

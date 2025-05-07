@@ -133,7 +133,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
 				},
 				Volumes: map[string]*resources.Volume{
-					"volume1": {CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{Name: "volume1"}},
+					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},

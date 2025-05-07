@@ -808,7 +808,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Volumes: map[string]*resources.Volume{
 				"test_volume": {
-					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 						Name: "test_volume",
 					},
 				},
@@ -982,12 +982,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Volumes: map[string]*resources.Volume{
 				"test_volume": {
-					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 						Name: "test_volume",
 					},
 				},
 				"test_volume_new": {
-					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 						Name: "test_volume_new",
 					},
 				},

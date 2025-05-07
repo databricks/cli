@@ -21,7 +21,7 @@ type Volume struct {
 	// the terraform state after deployment succeeds.
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
-	*catalog.CreateVolumeRequestContent
+	catalog.CreateVolumeRequestContent
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
@@ -83,5 +83,5 @@ func (v *Volume) GetName() string {
 }
 
 func (v *Volume) IsNil() bool {
-	return v.CreateVolumeRequestContent == nil
+	return false
 }
