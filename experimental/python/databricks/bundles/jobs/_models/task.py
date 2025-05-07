@@ -24,6 +24,10 @@ from databricks.bundles.jobs._models.condition_task import (
     ConditionTask,
     ConditionTaskParam,
 )
+from databricks.bundles.jobs._models.dashboard_task import (
+    DashboardTask,
+    DashboardTaskParam,
+)
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
 from databricks.bundles.jobs._models.for_each_task import (
     ForEachTask,
@@ -45,6 +49,7 @@ from databricks.bundles.jobs._models.pipeline_task import (
     PipelineTask,
     PipelineTaskParam,
 )
+from databricks.bundles.jobs._models.power_bi_task import PowerBiTask, PowerBiTaskParam
 from databricks.bundles.jobs._models.python_wheel_task import (
     PythonWheelTask,
     PythonWheelTaskParam,
@@ -109,6 +114,11 @@ class Task:
     """
     The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.
     The condition task does not require a cluster to execute and does not support retries or notifications.
+    """
+
+    dashboard_task: VariableOrOptional[DashboardTask] = None
+    """
+    The task refreshes a dashboard and sends a snapshot to subscribers.
     """
 
     dbt_task: VariableOrOptional[DbtTask] = None
@@ -201,6 +211,13 @@ class Task:
     pipeline_task: VariableOrOptional[PipelineTask] = None
     """
     The task triggers a pipeline update when the `pipeline_task` field is present. Only pipelines configured to use triggered more are supported.
+    """
+
+    power_bi_task: VariableOrOptional[PowerBiTask] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
     """
 
     python_wheel_task: VariableOrOptional[PythonWheelTask] = None
@@ -299,6 +316,11 @@ class TaskDict(TypedDict, total=False):
     The condition task does not require a cluster to execute and does not support retries or notifications.
     """
 
+    dashboard_task: VariableOrOptional[DashboardTaskParam]
+    """
+    The task refreshes a dashboard and sends a snapshot to subscribers.
+    """
+
     dbt_task: VariableOrOptional[DbtTaskParam]
     """
     The task runs one or more dbt commands when the `dbt_task` field is present. The dbt task requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.
@@ -389,6 +411,13 @@ class TaskDict(TypedDict, total=False):
     pipeline_task: VariableOrOptional[PipelineTaskParam]
     """
     The task triggers a pipeline update when the `pipeline_task` field is present. Only pipelines configured to use triggered more are supported.
+    """
+
+    power_bi_task: VariableOrOptional[PowerBiTaskParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
     """
 
     python_wheel_task: VariableOrOptional[PythonWheelTaskParam]
