@@ -69,15 +69,6 @@ func (s *ProxyServer) reqBody(r testserver.Request) any {
 		return queryParams
 	}
 
-	// The SDK does not support directly passing a JSON serialized request
-	// body. So we convert it to a map if the body is a JSON object.
-	if json.Valid(r.Body) {
-		m := make(map[string]any)
-		err := json.Unmarshal(r.Body, &m)
-		assert.NoError(s.t, err)
-		return m
-	}
-
 	// Otherwise, return the raw body.
 	return r.Body
 }
