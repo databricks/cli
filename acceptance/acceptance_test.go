@@ -415,19 +415,6 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
-	// In inprocess mode, we need to modify the environment of the test runner, so that the script sees the
-	// appropriate environment variables. This is necessary because any $CLI invocations in the "script"
-	// will be executed in the same process as the test runner.
-	processEnv := auth.ProcessEnv(cfg)
-	if inprocessMode {
-		testutil.NullEnvironment(t)
-		for _, kv := range processEnv {
-			parts := strings.SplitN(kv, "=", 2)
-			require.Len(t, parts, 2)
-			t.Setenv(parts[0], parts[1])
-		}
-	}
-
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 
