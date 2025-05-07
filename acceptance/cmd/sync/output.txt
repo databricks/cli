@@ -1,5 +1,6 @@
 
 >>> [CLI] sync . /Users/[USERNAME]
+Action: PUT: .gitignore, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded project-folder
@@ -8,26 +9,31 @@ Uploaded project-folder/app.yaml
 Uploaded project-folder/query.sql
 
 >>> [CLI] sync . /Users/[USERNAME] --exclude project-folder/app.*
+Action: DELETE: project-folder/app.py, project-folder/app.yaml
 Deleted project-folder/app.py
 Deleted project-folder/app.yaml
 Initial Sync Complete
 
 >>> [CLI] sync . /Users/[USERNAME] --exclude project-folder/app.* --exclude project-folder/query.sql
+Action: DELETE: project-folder/query.sql
 Deleted project-folder
 Deleted project-folder/query.sql
 Initial Sync Complete
 
 >>> [CLI] sync . /Users/[USERNAME] --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py
+Action: PUT: ignored-folder/script.py
 Initial Sync Complete
 Uploaded ignored-folder
 Uploaded ignored-folder/script.py
 
 >>> [CLI] sync . /Users/[USERNAME] --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py
+Action: PUT: ignored-folder/folder1/script.py
 Initial Sync Complete
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 
 >>> [CLI] sync . /Users/[USERNAME] --include ignored-folder/** --include !ignored-folder/folder1/big-blob
+Action: PUT: ignored-folder/folder1/script.yaml, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql
 Initial Sync Complete
 Uploaded ignored-folder/folder1/script.yaml
 Uploaded project-folder
@@ -36,6 +42,7 @@ Uploaded project-folder/app.yaml
 Uploaded project-folder/query.sql
 
 >>> [CLI] sync . /Users/[USERNAME]
+Action: DELETE: ignored-folder/folder1/script.py, ignored-folder/folder1/script.yaml, ignored-folder/script.py
 Deleted ignored-folder
 Deleted ignored-folder/folder1
 Deleted ignored-folder/folder1/script.py
