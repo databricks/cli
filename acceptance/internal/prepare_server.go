@@ -40,8 +40,6 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-// This function returns the workspace auth configuration that should be used to authenticate
-// the "script" that's executed as part of the acceptance test.
 func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
