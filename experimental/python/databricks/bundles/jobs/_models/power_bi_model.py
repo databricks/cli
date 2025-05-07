@@ -16,9 +16,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class PowerBiModel:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     authentication_method: VariableOrOptional[AuthenticationMethod] = None
     """

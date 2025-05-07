@@ -215,8 +215,6 @@ class Task:
 
     power_bi_task: VariableOrOptional[PowerBiTask] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
     """
 
@@ -415,8 +413,6 @@ class TaskDict(TypedDict, total=False):
 
     power_bi_task: VariableOrOptional[PowerBiTaskParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
     """
 

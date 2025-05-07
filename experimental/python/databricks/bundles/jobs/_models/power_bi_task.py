@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class PowerBiTask:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     connection_resource_name: VariableOrOptional[str] = None
     """
