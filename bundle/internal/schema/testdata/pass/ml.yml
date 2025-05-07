@@ -26,6 +26,7 @@ variables:
 resources:
   models:
     mymodel:
+      name: mymodel
       creation_timestamp: 123
       description: "my model"
       latest_versions:
