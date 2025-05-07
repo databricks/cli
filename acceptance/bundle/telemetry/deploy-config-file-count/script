@@ -1,8 +1,5 @@
 trace $CLI bundle deploy
 
-# Ensure the file is fully written
-sync
-
 trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > out.telemetry.txt
 
 cmd_exec_id=$(extract_command_exec_id.py)
