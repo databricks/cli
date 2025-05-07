@@ -136,11 +136,12 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 }
 
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
-	defer s.LockUnlock()()
-
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
+
+	defer s.LockUnlock()()
+
 	s.files[filePath] = body
 
 	// Add all directories in the path to the directories map
@@ -153,6 +154,9 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
+
+	defer s.LockUnlock()()
+
 	return s.files[path]
 }
 
