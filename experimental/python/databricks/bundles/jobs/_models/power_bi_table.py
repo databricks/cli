@@ -12,9 +12,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class PowerBiTable:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     catalog: VariableOrOptional[str] = None
     """

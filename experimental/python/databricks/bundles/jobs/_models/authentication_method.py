@@ -3,10 +3,6 @@ from typing import Literal
 
 
 class AuthenticationMethod(Enum):
-    """
-    :meta private: [EXPERIMENTAL]
-    """
-
     OAUTH = "OAUTH"
     PAT = "PAT"
 
