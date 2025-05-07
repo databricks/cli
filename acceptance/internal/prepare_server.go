@@ -109,9 +109,6 @@ func startDedicatedServer(t *testing.T,
 
 	if logRequests {
 		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
-			mu.Lock()
-			defer mu.Unlock()
-
 			t.Logf("%d %s %s\n%s\n%s",
 				response.StatusCode, request.Method, request.URL,
 				formatHeadersAndBody("> ", request.Headers, request.Body),
