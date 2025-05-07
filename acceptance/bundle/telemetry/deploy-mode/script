@@ -2,9 +2,6 @@ trace $CLI bundle deploy -t dev
 
 trace $CLI bundle deploy -t prod
 
-# Ensure the file is fully written
-sync
-
 trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event'
 
 rm out.requests.txt
