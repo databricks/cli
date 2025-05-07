@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testserver"
@@ -23,7 +22,6 @@ type ProxyServer struct {
 	*httptest.Server
 
 	t      testutil.TestingT
-	mu     *sync.Mutex
 	router *mux.Router
 
 	apiClient        *client.DatabricksClient
@@ -51,7 +49,6 @@ func New(t testutil.TestingT) *ProxyServer {
 		Server: server,
 		t:      t,
 		router: router,
-		mu:     &sync.Mutex{},
 	}
 
 	// Create an API client using the current authentication context.
