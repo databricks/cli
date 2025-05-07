@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"golang.org/x/mod/semver"
 )
@@ -136,29 +137,27 @@ func (r *ReplacementsContext) SetPathWithParents(old, new string) {
 	r.SetPath(filepath.Dir(filepath.Dir(old)), new+"_GPARENT")
 }
 
-func PrepareReplacementsWorkspaceClient(t testutil.TestingT, r *ReplacementsContext, w *databricks.WorkspaceClient) {
+func PrepareReplacementsWorkspaceConfig(t testutil.TestingT, r *ReplacementsContext, cfg *config.Config) {
 	t.Helper()
 	// in some clouds (gcp) w.Config.Host includes "https://" prefix in others it's really just a host (azure)
-	host := strings.TrimPrefix(strings.TrimPrefix(w.Config.Host, "http://"), "https://")
+	host := strings.TrimPrefix(strings.TrimPrefix(cfg.Host, "http://"), "https://")
 	r.Set("https://"+host, "[DATABRICKS_URL]")
 	r.Set("http://"+host, "[DATABRICKS_URL]")
 	r.Set(host, "[DATABRICKS_HOST]")
-	r.Set(w.Config.ClusterID, "[DATABRICKS_CLUSTER_ID]")
-	r.Set(w.Config.WarehouseID, "[DATABRICKS_WAREHOUSE_ID]")
-	r.Set(w.Config.ServerlessComputeID, "[DATABRICKS_SERVERLESS_COMPUTE_ID]")
-	r.Set(w.Config.AccountID, "[DATABRICKS_ACCOUNT_ID]")
-	r.Set(w.Config.Username, "[DATABRICKS_USERNAME]")
-	r.SetPath(w.Config.Profile, "[DATABRICKS_CONFIG_PROFILE]")
-	r.Set(w.Config.ConfigFile, "[DATABRICKS_CONFIG_FILE]")
-	r.Set(w.Config.GoogleServiceAccount, "[DATABRICKS_GOOGLE_SERVICE_ACCOUNT]")
-	r.Set(w.Config.AzureResourceID, "[DATABRICKS_AZURE_RESOURCE_ID]")
-	r.Set(w.Config.AzureClientID, testerName)
-	r.Set(w.Config.AzureTenantID, "[ARM_TENANT_ID]")
-	r.Set(w.Config.AzureEnvironment, "[ARM_ENVIRONMENT]")
-	r.Set(w.Config.ClientID, "[DATABRICKS_CLIENT_ID]")
-	r.SetPath(w.Config.DatabricksCliPath, "[DATABRICKS_CLI_PATH]")
-	// This is set to words like "path" that happen too frequently
-	// r.Set(w.Config.AuthType, "[DATABRICKS_AUTH_TYPE]")
+	r.Set(cfg.ClusterID, "[DATABRICKS_CLUSTER_ID]")
+	r.Set(cfg.WarehouseID, "[DATABRICKS_WAREHOUSE_ID]")
+	r.Set(cfg.ServerlessComputeID, "[DATABRICKS_SERVERLESS_COMPUTE_ID]")
+	r.Set(cfg.AccountID, "[DATABRICKS_ACCOUNT_ID]")
+	r.Set(cfg.Username, "[DATABRICKS_USERNAME]")
+	r.SetPath(cfg.Profile, "[DATABRICKS_CONFIG_PROFILE]")
+	r.Set(cfg.ConfigFile, "[DATABRICKS_CONFIG_FILE]")
+	r.Set(cfg.GoogleServiceAccount, "[DATABRICKS_GOOGLE_SERVICE_ACCOUNT]")
+	r.Set(cfg.AzureResourceID, "[DATABRICKS_AZURE_RESOURCE_ID]")
+	r.Set(cfg.AzureClientID, testerName)
+	r.Set(cfg.AzureTenantID, "[ARM_TENANT_ID]")
+	r.Set(cfg.AzureEnvironment, "[ARM_ENVIRONMENT]")
+	r.Set(cfg.ClientID, "[DATABRICKS_CLIENT_ID]")
+	r.SetPath(cfg.DatabricksCliPath, "[DATABRICKS_CLI_PATH]")
 }
 
 func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.User) {

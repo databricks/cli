@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,9 +9,13 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
@@ -35,16 +40,19 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) *databricks.WorkspaceClient {
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, mu *sync.Mutex) (*sdkconfig.Config, iam.User) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	// If we are running on a cloud environment, use the host configured in the
 	// environment.
 	if cloudEnv != "" {
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{})
+		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
-		return w
+		user, err := w.CurrentUser.Me(context.Background())
+		require.NoError(t, err, "Failed to get current user")
+
+		return w.Config, *user
 	}
 
 	recordRequests := isTruePtr(config.RecordRequests)
@@ -55,23 +63,18 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	// If we are not recording requests, and no custom server server stubs are configured,
 	// use the default shared server.
 	if len(config.Server) == 0 && !recordRequests {
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		return &sdkconfig.Config{
 			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
 			Token: token,
-		})
-		require.NoError(t, err)
-
-		return w
+		}, TestUser
 	}
 
-	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir, mu)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	return &sdkconfig.Config{
 		Host:  host,
 		Token: token,
-	})
-	require.NoError(t, err)
-	return w
+	}, TestUser
 }
 
 func startDedicatedServer(t *testing.T,
@@ -80,6 +83,7 @@ func startDedicatedServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
+	mu *sync.Mutex,
 ) string {
 	s := testserver.New(t)
 
@@ -88,6 +92,10 @@ func startDedicatedServer(t *testing.T,
 		s.RequestCallback = func(request *testserver.Request) {
 			req := getLoggedRequest(request, includeHeaders)
 			reqJson, err := json.MarshalIndent(req, "", "  ")
+
+			mu.Lock()
+			defer mu.Unlock()
+
 			assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
 
 			f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)

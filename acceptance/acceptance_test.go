@@ -18,6 +18,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -26,9 +27,9 @@ import (
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,6 +46,9 @@ var (
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
 // the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
+//
+// To debug integration tests you can run the "deco env flip workspace" command to configure a workspace
+// and then click on "debug test" near TestInprocessMode.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -92,7 +96,12 @@ func TestInprocessMode(t *testing.T) {
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
-func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+	// Load debug environment when debugging a single test run from an IDE.
+	if singleTest != "" && inprocessMode {
+		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+	}
+
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -122,7 +131,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	execPath := ""
 
-	if InprocessMode {
+	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
@@ -143,6 +152,11 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
+
+	// UV_CACHE_DIR only applies to packages but not Python installations.
+	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
+	uvInstall := filepath.Join(uvCache, "python_installs")
+	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
@@ -211,7 +225,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Skip(skipReason)
 			}
 
-			if !InprocessMode {
+			if !inprocessMode {
 				t.Parallel()
 			}
 
@@ -225,13 +239,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
-				t.Logf("Running test with env %v", expanded[0])
+				if len(expanded[0]) > 0 {
+					t.Logf("Running test with env %v", expanded[0])
+				}
 				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
 			} else {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
-						if !InprocessMode {
+						if !inprocessMode {
 							t.Parallel()
 						}
 						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset)
@@ -368,32 +384,33 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
+	timeout := config.Timeout
+
+	if runtime.GOOS == "windows" {
+		if isRunningOnCloud {
+			timeout = max(timeout, config.TimeoutWindows, config.TimeoutCloud)
+		} else {
+			timeout = max(timeout, config.TimeoutWindows)
+		}
+	} else if isRunningOnCloud {
+		timeout = max(timeout, config.TimeoutCloud)
+	}
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Env = os.Environ()
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+
+	// This mutex is used to synchronize recording requests
+	var serverMutex sync.Mutex
+
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, &serverMutex)
+	testdiff.PrepareReplacementsUser(t, &repls, user)
+	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+
+	cmd.Env = auth.ProcessEnv(cfg)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
-
-	workspaceClient := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
-
-	// Configure resolved credentials in the environment.
-	cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+workspaceClient.Config.Host)
-	if workspaceClient.Config.Token != "" {
-		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+workspaceClient.Config.Token)
-	}
-
-	var user iam.User
-	if isRunningOnCloud {
-		pUser, err := workspaceClient.CurrentUser.Me(context.Background())
-		require.NoError(t, err, "Failed to get current user")
-		user = *pUser
-	} else {
-		// For the purposes of replacements, use testUser for local runs.
-		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-		user = internal.TestUser
-	}
-	testdiff.PrepareReplacementsUser(t, &repls, user)
-	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
@@ -547,7 +564,9 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The test produced an unexpected output file.
 	if !okRef && okNew {
 		t.Errorf("Unexpected output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
-		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		if shouldShowDiff(pathNew, valueNew) {
+			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		}
 		if testdiff.OverwriteMode {
 			t.Logf("Writing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
@@ -570,6 +589,20 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		}
 		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
+}
+
+func shouldShowDiff(pathNew, valueNew string) bool {
+	if strings.Contains(pathNew, "site-packages") {
+		return false
+	}
+	if strings.Contains(pathNew, ".venv") {
+		return false
+	}
+	if len(valueNew) > 10_000 {
+		return false
+	}
+	// if file itself starts with "out" then it's likely to be intended to be recorded
+	return strings.HasPrefix(filepath.Base(pathNew), "out")
 }
 
 // Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
@@ -691,7 +724,10 @@ func tryReading(t *testing.T, path string) (string, bool) {
 		return "", false
 	}
 
-	if !utf8.Valid(data) {
+	// Do not check output.txt for UTF8 validity, because 'deploy --debug' logs binary request/responses
+	doUTF8Check := filepath.Base(path) != "output.txt"
+
+	if doUTF8Check && !utf8.Valid(data) {
 		t.Errorf("%s: not valid utf-8", path)
 		return "", false
 	}
@@ -806,15 +842,24 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
+	processErrCh := make(chan error, 1)
+
+	cmd.Cancel = func() error {
+		processErrCh <- errors.New("Test script killed due to a timeout")
+		_ = cmd.Process.Kill()
+		_ = w.Close()
+		return nil
+	}
 
 	start := time.Now()
 	err := cmd.Start()
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 
-	processErrCh := make(chan error, 1)
 	go func() {
 		processErrCh <- cmd.Wait()
-		w.Close()
+		_ = w.Close()
 	}()
 
 	reader := bufio.NewReader(r)

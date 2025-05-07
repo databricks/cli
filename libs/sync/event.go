@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -54,9 +55,11 @@ func (e *EventChanges) IsEmpty() bool {
 func (e *EventChanges) String() string {
 	var changes []string
 	if len(e.Put) > 0 {
+		sort.Strings(e.Put)
 		changes = append(changes, "PUT: "+strings.Join(e.Put, ", "))
 	}
 	if len(e.Delete) > 0 {
+		sort.Strings(e.Delete)
 		changes = append(changes, "DELETE: "+strings.Join(e.Delete, ", "))
 	}
 	return strings.Join(changes, ", ")

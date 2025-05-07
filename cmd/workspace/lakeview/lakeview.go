@@ -72,7 +72,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq dashboards.CreateDashboardRequest
-	createReq.Dashboard = &dashboards.Dashboard{}
+	createReq.Dashboard = dashboards.Dashboard{}
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
@@ -145,7 +145,7 @@ func newCreateSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createScheduleReq dashboards.CreateScheduleRequest
-	createScheduleReq.Schedule = &dashboards.Schedule{}
+	createScheduleReq.Schedule = dashboards.Schedule{}
 	var createScheduleJson flags.JsonFlag
 
 	// TODO: short flags
@@ -185,6 +185,8 @@ func newCreateSchedule() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		createScheduleReq.DashboardId = args[0]
 
@@ -220,7 +222,7 @@ func newCreateSubscription() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createSubscriptionReq dashboards.CreateSubscriptionRequest
-	createSubscriptionReq.Subscription = &dashboards.Subscription{}
+	createSubscriptionReq.Subscription = dashboards.Subscription{}
 	var createSubscriptionJson flags.JsonFlag
 
 	// TODO: short flags
@@ -257,6 +259,8 @@ func newCreateSubscription() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		createSubscriptionReq.DashboardId = args[0]
 		createSubscriptionReq.ScheduleId = args[1]
@@ -1092,7 +1096,7 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq dashboards.UpdateDashboardRequest
-	updateReq.Dashboard = &dashboards.Dashboard{}
+	updateReq.Dashboard = dashboards.Dashboard{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
@@ -1169,7 +1173,7 @@ func newUpdateSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateScheduleReq dashboards.UpdateScheduleRequest
-	updateScheduleReq.Schedule = &dashboards.Schedule{}
+	updateScheduleReq.Schedule = dashboards.Schedule{}
 	var updateScheduleJson flags.JsonFlag
 
 	// TODO: short flags
@@ -1210,6 +1214,8 @@ func newUpdateSchedule() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateScheduleReq.DashboardId = args[0]
 		updateScheduleReq.ScheduleId = args[1]
