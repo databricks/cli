@@ -19,7 +19,7 @@ import (
 
 type Server struct {
 	*httptest.Server
-	router *mux.Router
+	Router *mux.Router
 
 	t testutil.TestingT
 
@@ -183,13 +183,13 @@ func New(t testutil.TestingT) *Server {
 
 	s := &Server{
 		Server:         server,
-		router:         router,
+		Router:         router,
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
 
 	// Set up the not found handler as fallback.
-	s.router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s.Router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := r.Method + " " + r.URL.Path
 		bodyBytes, err := io.ReadAll(r.Body)
 		var body string
@@ -248,7 +248,7 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 type HandlerFunc func(req Request) any
 
 func (s *Server) Handle(method, path string, handler HandlerFunc) {
-	s.router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
 		// it's own fake fakeWorkspace to avoid interference between tests.
 		fakeWorkspace := s.getWorkspaceForToken(getToken(r))
