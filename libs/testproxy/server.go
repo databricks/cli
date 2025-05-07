@@ -104,6 +104,8 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 	respBody := bytes.Buffer{}
 	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, reqBody, &respBody)
 
+	var encodedResponse *testserver.EncodedResponse
+
 	// API errors from the SDK are expected to be of the type [apierr.APIError]. If we
 	// get an API error then parse the error and forward it back to the client
 	// in an appropriate format.
@@ -117,47 +119,35 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		b, err := json.Marshal(body)
 		assert.NoError(s.t, err)
 
-		w.WriteHeader(apiErr.StatusCode)
-		_, err = w.Write(b)
-		assert.NoError(s.t, err)
-
-		if s.ResponseCallback != nil {
-			s.ResponseCallback(&request, &testserver.EncodedResponse{
-				StatusCode: apiErr.StatusCode,
-				Body:       []byte(apiErr.Message),
-			})
+		encodedResponse = &testserver.EncodedResponse{
+			StatusCode: apiErr.StatusCode,
+			Body:       b,
 		}
-
-		return
 	}
 
 	// Something else went wrong.
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_, err := w.Write([]byte(err.Error()))
-		assert.NoError(s.t, err)
-
-		if s.ResponseCallback != nil {
-			s.ResponseCallback(&request, &testserver.EncodedResponse{
-				StatusCode: 500,
-				Body:       []byte(err.Error()),
-			})
+	if encodedResponse == nil && err != nil {
+		encodedResponse = &testserver.EncodedResponse{
+			StatusCode: 500,
+			Body:       []byte(err.Error()),
 		}
-
-		return
 	}
 
 	// Successful response
-	w.WriteHeader(200)
-	b := respBody.Bytes()
+	if encodedResponse == nil {
+		encodedResponse = &testserver.EncodedResponse{
+			StatusCode: 200,
+			Body:       respBody.Bytes(),
+		}
+	}
 
-	_, err = w.Write(b)
+	// Send response to client.
+	w.WriteHeader(encodedResponse.StatusCode)
+
+	_, err = w.Write(encodedResponse.Body)
 	assert.NoError(s.t, err)
 
 	if s.ResponseCallback != nil {
-		s.ResponseCallback(&request, &testserver.EncodedResponse{
-			StatusCode: 200,
-			Body:       b,
-		})
+		s.ResponseCallback(&request, encodedResponse)
 	}
 }
