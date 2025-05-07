@@ -33,8 +33,8 @@ type ProxyServer struct {
 // workspace. This is useful for recording API requests and responses in
 // integration tests.
 //
-// Note: We cannot simply proxy the request from a localhost URL to a real
-// workspace. This is because auth resolution in the Databricks SDK relies
+// Note: We cannot directly proxy the request from a localhost URL to a real
+// workspace as is. This is because auth resolution in the Databricks SDK relies
 // what the URL actually looks like to determine the auth method to use.
 // For example, in OAuth flows, the SDK can make requests to different Microsoft
 // OAuth endpoints based on the nature of the URL.
