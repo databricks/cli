@@ -1,5 +1,9 @@
 trace $CLI bundle deploy
 
+# Write to a temporary file first to ensure complete writes
+cat out.requests.txt > out.requests.tmp
+mv out.requests.tmp out.requests.txt
+
 trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson'
 
 cmd_exec_id=$(extract_command_exec_id.py)

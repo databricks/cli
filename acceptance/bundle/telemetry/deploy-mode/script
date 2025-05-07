@@ -2,6 +2,10 @@ trace $CLI bundle deploy -t dev
 
 trace $CLI bundle deploy -t prod
 
+# Write to a temporary file first to ensure complete writes
+cat out.requests.txt > out.requests.tmp
+mv out.requests.tmp out.requests.txt
+
 trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event'
 
 rm out.requests.txt
