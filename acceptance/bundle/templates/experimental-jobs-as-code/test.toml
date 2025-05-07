@@ -1,1 +1,6 @@
+Ignore = [
+    '.venv',
+]
+
+Timeout = '40s'
 TimeoutWindows = '120s'
