@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,8 +20,7 @@ import (
 type ProxyServer struct {
 	*httptest.Server
 
-	t      testutil.TestingT
-	router *mux.Router
+	t testutil.TestingT
 
 	apiClient        *client.DatabricksClient
 	RequestCallback  func(request *testserver.Request)
@@ -41,14 +39,8 @@ type ProxyServer struct {
 // For reference, see:
 // https://github.com/databricks/databricks-sdk-go/blob/79e4b3a6e9b0b7dcb1af9ad4025deb447b01d933/common/environment/environments.go#L57
 func New(t testutil.TestingT) *ProxyServer {
-	router := mux.NewRouter()
-	server := httptest.NewServer(router)
-	t.Cleanup(server.Close)
-
 	s := &ProxyServer{
-		Server: server,
-		t:      t,
-		router: router,
+		t: t,
 	}
 
 	// Create an API client using the current authentication context.
@@ -59,7 +51,10 @@ func New(t testutil.TestingT) *ProxyServer {
 	require.NoError(t, err)
 
 	// Set up the proxy handler as the default handler for all requests.
-	router.NotFoundHandler = http.HandlerFunc(s.proxyToCloud)
+	server := httptest.NewServer(http.HandlerFunc(s.proxyToCloud))
+	t.Cleanup(server.Close)
+
+	s.Server = server
 	return s
 }
 
