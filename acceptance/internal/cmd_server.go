@@ -8,12 +8,19 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
 func StartCmdServer(t *testing.T) *testserver.Server {
 	server := testserver.New(t)
+
+	// Unset all environment variables when executing CLI commands in process.
+	// All required environment variables will be provided as the `env` query parameter
+	// in the request.
+	testutil.NullEnvironment(t)
+
 	server.Handle("GET", "/", func(r testserver.Request) any {
 		q := r.URL.Query()
 		args := strings.Split(q.Get("args"), " ")
