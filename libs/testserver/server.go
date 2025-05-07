@@ -24,7 +24,7 @@ type Server struct {
 	t testutil.TestingT
 
 	fakeWorkspaces map[string]*FakeWorkspace
-	mu             *sync.Mutex
+	mu             sync.Mutex
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
@@ -186,7 +186,6 @@ func New(t testutil.TestingT) *Server {
 		Server:         server,
 		Router:         router,
 		t:              t,
-		mu:             &sync.Mutex{},
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 	}
 
@@ -232,26 +231,28 @@ Response.Body = '<response body here>'
 	return s
 }
 
+func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
+	if token == "" {
+		return nil
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.fakeWorkspaces[token]; !ok {
+		s.fakeWorkspaces[token] = NewFakeWorkspace()
+	}
+
+	return s.fakeWorkspaces[token]
+}
+
 type HandlerFunc func(req Request) any
 
 func (s *Server) Handle(method, path string, handler HandlerFunc) {
 	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		// For simplicity we process requests sequentially. It's fast enough because
-		// we don't do any IO except reading and writing request/response bodies.
-		s.mu.Lock()
-		defer s.mu.Unlock()
-
 		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
 		// it's own fake fakeWorkspace to avoid interference between tests.
-		var fakeWorkspace *FakeWorkspace = nil
-		token := getToken(r)
-		if token != "" {
-			if _, ok := s.fakeWorkspaces[token]; !ok {
-				s.fakeWorkspaces[token] = NewFakeWorkspace()
-			}
-
-			fakeWorkspace = s.fakeWorkspaces[token]
-		}
+		fakeWorkspace := s.getWorkspaceForToken(getToken(r))
 
 		request := NewRequest(s.t, r, fakeWorkspace)
 

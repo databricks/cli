@@ -18,6 +18,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -400,7 +401,10 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+	// This mutex is used to synchronize recording requests
+	var serverMutex sync.Mutex
+
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, &serverMutex)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 

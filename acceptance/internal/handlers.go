@@ -220,7 +220,7 @@ func addDefaultHandlers(server *testserver.Server) {
 	// Quality monitors:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
-		return testserver.MapGet(req.Workspace.Monitors, req.Vars["table_name"])
+		return testserver.MapGet(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
@@ -232,13 +232,13 @@ func addDefaultHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
-		return testserver.MapDelete(req.Workspace.Monitors, req.Vars["table_name"])
+		return testserver.MapDelete(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])
 	})
 
 	// Apps:
 
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-		return testserver.MapGet(req.Workspace.Apps, req.Vars["name"])
+		return testserver.MapGet(req.Workspace, req.Workspace.Apps, req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.0/apps", func(req testserver.Request) any {
@@ -250,13 +250,13 @@ func addDefaultHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-		return testserver.MapDelete(req.Workspace.Apps, req.Vars["name"])
+		return testserver.MapDelete(req.Workspace, req.Workspace.Apps, req.Vars["name"])
 	})
 
 	// Schemas:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/schemas/{full_name}", func(req testserver.Request) any {
-		return testserver.MapGet(req.Workspace.Schemas, req.Vars["full_name"])
+		return testserver.MapGet(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/schemas", func(req testserver.Request) any {
@@ -268,6 +268,6 @@ func addDefaultHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req testserver.Request) any {
-		return testserver.MapDelete(req.Workspace.Schemas, req.Vars["full_name"])
+		return testserver.MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 }
