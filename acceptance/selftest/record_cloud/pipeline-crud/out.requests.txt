@@ -29,8 +29,7 @@
         }
       }
     ],
-    "name": "test-pipeline-2",
-    "pipeline_id": "[UUID]"
+    "name": "test-pipeline-2"
   }
 }
 {
