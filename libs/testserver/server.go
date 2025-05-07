@@ -44,6 +44,7 @@ type Response struct {
 	Headers    http.Header
 	Body       any
 }
+
 type EncodedResponse struct {
 	StatusCode int
 	Headers    http.Header
@@ -189,7 +190,7 @@ func New(t testutil.TestingT) *Server {
 	}
 
 	// Set up the not found handler as fallback.
-	s.Router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := r.Method + " " + r.URL.Path
 		bodyBytes, err := io.ReadAll(r.Body)
 		var body string
