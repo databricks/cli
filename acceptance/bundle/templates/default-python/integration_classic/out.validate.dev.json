@@ -54,6 +54,7 @@
               },
               "data_security_mode": "SINGLE_USER",
               "node_type_id": "[NODE_TYPE_ID]",
+              "num_workers": 0,
               "spark_version": "15.4.x-scala2.12"
             }
           }
@@ -116,6 +117,7 @@
     },
     "pipelines": {
       "project_name_[UNIQUE_NAME]_pipeline": {
+        "channel": "CURRENT",
         "configuration": {
           "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
         },
@@ -124,6 +126,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
         },
         "development": true,
+        "edition": "ADVANCED",
         "libraries": [
           {
             "notebook": {

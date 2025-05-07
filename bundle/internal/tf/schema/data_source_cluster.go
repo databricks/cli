@@ -336,7 +336,7 @@ type DataSourceClusterClusterInfoSpec struct {
 	SingleUserName            string                                             `json:"single_user_name,omitempty"`
 	SparkConf                 map[string]string                                  `json:"spark_conf,omitempty"`
 	SparkEnvVars              map[string]string                                  `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                             `json:"spark_version"`
+	SparkVersion              string                                             `json:"spark_version,omitempty"`
 	SshPublicKeys             []string                                           `json:"ssh_public_keys,omitempty"`
 	UseMlRuntime              bool                                               `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *DataSourceClusterClusterInfoSpecAutoscale         `json:"autoscale,omitempty"`

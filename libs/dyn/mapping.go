@@ -1,7 +1,6 @@
 package dyn
 
 import (
-	"fmt"
 	"maps"
 	"slices"
 )
@@ -41,7 +40,7 @@ func newMappingWithSize(size int) Mapping {
 func newMappingFromGoMap(vin map[string]Value) Mapping {
 	m := newMappingWithSize(len(vin))
 	for k, v := range vin {
-		m.Set(V(k), v) //nolint:errcheck
+		m.SetLoc(k, nil, v)
 	}
 	return m
 }
@@ -91,28 +90,21 @@ func (m *Mapping) GetByString(skey string) (Value, bool) {
 }
 
 // Set sets the value for the given key in the mapping.
-// If the key already exists, the value is updated.
+// If the key already exists, the value is updated. The location loc is ignored.
 // If the key does not exist, a new key-value pair is added.
-// The key must be a string, otherwise an error is returned.
-func (m *Mapping) Set(key, value Value) error {
-	skey, ok := key.AsString()
-	if !ok {
-		return fmt.Errorf("key must be a string, got %s", key.Kind())
-	}
-
+func (m *Mapping) SetLoc(skey string, loc []Location, value Value) {
 	// If the key already exists, update the value.
 	if i, ok := m.index[skey]; ok {
 		m.pairs[i].Value = value
-		return nil
+		return
 	}
 
 	// Otherwise, add a new pair.
-	m.pairs = append(m.pairs, Pair{key, value})
+	m.pairs = append(m.pairs, Pair{NewValue(skey, loc), value})
 	if m.index == nil {
 		m.index = make(map[string]int)
 	}
 	m.index[skey] = len(m.pairs) - 1
-	return nil
 }
 
 // Keys returns all the keys in the Mapping.
@@ -144,6 +136,6 @@ func (m Mapping) Clone() Mapping {
 // Merge merges the key-value pairs from another Mapping into the current Mapping.
 func (m *Mapping) Merge(n Mapping) {
 	for _, p := range n.pairs {
-		m.Set(p.Key, p.Value) //nolint:errcheck
+		m.SetLoc(p.Key.MustString(), p.Key.Locations(), p.Value)
 	}
 }

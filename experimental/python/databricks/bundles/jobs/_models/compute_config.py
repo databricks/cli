@@ -13,8 +13,6 @@ if TYPE_CHECKING:
 class ComputeConfig:
     """
     :meta private: [EXPERIMENTAL]
-
-    Next field: 4
     """
 
     gpu_node_pool_id: VariableOr[str]

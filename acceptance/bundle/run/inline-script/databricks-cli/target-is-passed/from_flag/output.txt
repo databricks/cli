@@ -1,0 +1,3 @@
+
+>>> [CLI] bundle run -t oauth -- [CLI] bundle validate -o json
+"oauth"

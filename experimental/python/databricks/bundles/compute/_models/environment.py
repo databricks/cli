@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Environment:
     """
-    The environment entity used to preserve serverless environment side panel and jobs' environment for non-notebook task.
+    The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
+    (Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)
     In this minimal environment spec, only pip dependencies are supported.
     """
 
@@ -27,6 +28,13 @@ class Environment:
     dependencies: VariableOrList[str] = field(default_factory=list)
     """
     List of pip dependencies, as supported by the version of pip in this environment.
+    """
+
+    jar_dependencies: VariableOrList[str] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
     """
 
     @classmethod
@@ -51,6 +59,13 @@ class EnvironmentDict(TypedDict, total=False):
     dependencies: VariableOrList[str]
     """
     List of pip dependencies, as supported by the version of pip in this environment.
+    """
+
+    jar_dependencies: VariableOrList[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
     """
 
 

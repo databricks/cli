@@ -580,7 +580,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition"
                       },
                       "performance_target": {
-                        "description": "The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
+                        "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
                       },
                       "permissions": {
@@ -884,7 +884,9 @@
                       },
                       "rate_limits": {
                         "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.RateLimit"
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.RateLimit",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true
                       },
                       "route_optimized": {
                         "description": "Enable route optimization for the serving endpoint.",
@@ -992,7 +994,9 @@
                     "properties": {
                       "budget_policy_id": {
                         "description": "Budget policy of this pipeline.",
-                        "$ref": "#/$defs/string"
+                        "$ref": "#/$defs/string",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "catalog": {
                         "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
@@ -1032,7 +1036,9 @@
                       },
                       "gateway_definition": {
                         "description": "The definition of a gateway pipeline to support change data capture.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "id": {
                         "description": "Unique identifier for this pipeline.",
@@ -1063,10 +1069,14 @@
                       },
                       "restart_window": {
                         "description": "Restart window of this pipeline.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "run_as": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "schema": {
                         "description": "The default schema (database) where tables are read from or published to.",
@@ -1165,7 +1175,9 @@
                       },
                       "data_classification_config": {
                         "description": "The data classification config for the monitor.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig"
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "inference_log": {
                         "description": "Configuration for monitoring inference logs.",
@@ -1776,11 +1788,7 @@
                       "$ref": "#/$defs/string"
                     }
                   },
-                  "additionalProperties": false,
-                  "required": [
-                    "resources",
-                    "mutators"
-                  ]
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -2493,7 +2501,9 @@
                       "$ref": "#/$defs/bool"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
                 },
                 {
                   "type": "string",
@@ -2653,7 +2663,9 @@
                     },
                     "on_new_classification_tag_detected": {
                       "description": "Who to send notifications to when new data classification tags are detected.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -3167,7 +3179,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "The environment entity used to preserve serverless environment side panel and jobs' environment for non-notebook task.\nIn this minimal environment spec, only pip dependencies are supported.",
+                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\n(Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)\nIn this minimal environment spec, only pip dependencies are supported.",
                   "properties": {
                     "client": {
                       "description": "Client version used by the environment\nThe client is the user-facing environment of the runtime.\nEach client comes with a specific set of pre-installed libraries.\nThe version is a string, consisting of the major client version.",
@@ -3179,7 +3191,9 @@
                     },
                     "jar_dependencies": {
                       "description": "List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -3216,7 +3230,9 @@
                     },
                     "use_preemptible_executors": {
                       "description": "This field determines whether the spark executors will be scheduled to run on preemptible\nVMs (when set to true) versus standard compute engine VMs (when set to false; default).\nNote: Soon to be deprecated, use the 'availability' field instead.",
-                      "$ref": "#/$defs/bool"
+                      "$ref": "#/$defs/bool",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "zone_id": {
                       "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default].\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from\nhttps://cloud.google.com/compute/docs/regions-zones.",
@@ -3282,7 +3298,9 @@
                     },
                     "dbfs": {
                       "description": "destination needs to be provided. e.g.\n`{ \"dbfs\": { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DbfsStorageInfo"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DbfsStorageInfo",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "file": {
                       "description": "destination needs to be provided, e.g.\n`{ \"file\": { \"destination\": \"file:/my/local/file.sh\" } }`",
@@ -3327,7 +3345,9 @@
                     },
                     "egg": {
                       "description": "Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.",
-                      "$ref": "#/$defs/string"
+                      "$ref": "#/$defs/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "jar": {
                       "description": "URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"jar\": \"/Workspace/path/to/library.jar\" }`, `{ \"jar\" : \"/Volumes/path/to/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI.",
@@ -3829,7 +3849,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Subscription"
                     },
                     "warehouse_id": {
-                      "description": "The warehouse id to execute the dashboard with for the schedule",
+                      "description": "Optional: The warehouse id to execute the dashboard with for the schedule.\nIf not specified, the default warehouse of the dashboard will be used.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4176,7 +4196,9 @@
                   "properties": {
                     "no_alert_for_skipped_runs": {
                       "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
-                      "$ref": "#/$defs/bool"
+                      "$ref": "#/$defs/bool",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "on_duration_warning_threshold_exceeded": {
                       "description": "A list of email addresses to be notified when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the `health` field for the job, notifications are not sent.",
@@ -4759,11 +4781,19 @@
                   "properties": {
                     "dbt_commands": {
                       "description": "An array of commands to execute for jobs with the dbt task, for example `\"dbt_commands\": [\"dbt deps\", \"dbt seed\", \"dbt deps\", \"dbt seed\", \"dbt run\"]`",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     },
                     "jar_params": {
                       "description": "A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     },
                     "job_id": {
                       "description": "ID of the job to trigger.",
@@ -4775,26 +4805,46 @@
                     },
                     "notebook_params": {
                       "description": "A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
-                      "$ref": "#/$defs/map/string"
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     },
                     "pipeline_params": {
                       "description": "Controls whether the pipeline should perform a full refresh",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams"
                     },
                     "python_named_params": {
-                      "$ref": "#/$defs/map/string"
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     },
                     "python_params": {
                       "description": "A list of parameters for jobs with Python tasks, for example `\"python_params\": [\"john doe\", \"35\"]`.\nThe parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite\nthe parameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     },
                     "spark_submit_params": {
                       "description": "A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     },
                     "sql_params": {
                       "description": "A map from keys to values for jobs with SQL task, for example `\"sql_params\": {\"name\": \"john doe\", \"age\": \"35\"}`. The SQL alert task does not support custom parameters.",
-                      "$ref": "#/$defs/map/string"
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     }
                   },
                   "additionalProperties": false,
@@ -4831,7 +4881,9 @@
                   "properties": {
                     "jar_uri": {
                       "description": "Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.",
-                      "$ref": "#/$defs/string"
+                      "$ref": "#/$defs/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "main_class_name": {
                       "description": "The full name of the class containing the main method to be executed. This class must be contained in a JAR provided as a library.\n\nThe code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail.",
@@ -4843,7 +4895,9 @@
                     },
                     "run_as_repl": {
                       "description": "Deprecated. A value of `false` is no longer supported.",
-                      "$ref": "#/$defs/bool"
+                      "$ref": "#/$defs/bool",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     }
                   },
                   "additionalProperties": false
@@ -5177,7 +5231,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask"
                     },
                     "dashboard_task": {
-                      "description": "The task runs a DashboardTask when the `dashboard_task` field is present.",
+                      "description": "The task refreshes a dashboard and sends a snapshot to subscribers.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask"
                     },
                     "dbt_task": {
@@ -5213,7 +5267,9 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ForEachTask"
                     },
                     "gen_ai_compute_task": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "health": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules"
@@ -5342,7 +5398,9 @@
                   "properties": {
                     "no_alert_for_skipped_runs": {
                       "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
-                      "$ref": "#/$defs/bool"
+                      "$ref": "#/$defs/bool",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "on_duration_warning_threshold_exceeded": {
                       "description": "A list of email addresses to be notified when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the `health` field for the job, notifications are not sent.",
@@ -5418,10 +5476,16 @@
                     },
                     "table": {
                       "description": "Old table trigger settings name. Deprecated in favor of `table_update`.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
                     },
                     "table_update": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -5681,7 +5745,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
+                  "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.",
                   "enum": [
                     "BUNDLE"
                   ]
@@ -5725,7 +5789,7 @@
                   "type": "object",
                   "properties": {
                     "path": {
-                      "description": "The absolute path of the file.",
+                      "description": "The absolute path of the source code.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5792,7 +5856,9 @@
                   "properties": {
                     "connection_id": {
                       "description": "[Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
-                      "$ref": "#/$defs/string"
+                      "$ref": "#/$defs/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "connection_name": {
                       "description": "Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
@@ -5803,7 +5869,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "gateway_storage_name": {
-                      "description": "Optional. The Unity Catalog-compatible name for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nDelta Live Tables system will automatically create the storage location under the catalog and schema.\n",
+                      "description": "Optional. The Unity Catalog-compatible name for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nDelta Live Tables system will automatically create the storage location under the catalog and schema.",
                       "$ref": "#/$defs/string"
                     },
                     "gateway_storage_schema": {
@@ -5811,7 +5877,12 @@
                       "$ref": "#/$defs/string"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "required": [
+                    "connection_name",
+                    "gateway_storage_catalog",
+                    "gateway_storage_schema"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5867,7 +5938,7 @@
                   "type": "object",
                   "properties": {
                     "path": {
-                      "description": "The absolute path of the notebook.",
+                      "description": "The absolute path of the source code.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5885,11 +5956,11 @@
                   "type": "object",
                   "properties": {
                     "alerts": {
-                      "description": "A list of alerts that trigger the sending of notifications to the configured\ndestinations. The supported alerts are:\n\n* `on-update-success`: A pipeline update completes successfully.\n* `on-update-failure`: Each time a pipeline update fails.\n* `on-update-fatal-failure`: A pipeline update fails with a non-retryable (fatal) error.\n* `on-flow-failure`: A single data flow fails.\n",
+                      "description": "A list of alerts that trigger the sending of notifications to the configured\ndestinations. The supported alerts are:\n\n* `on-update-success`: A pipeline update completes successfully.\n* `on-update-failure`: Each time a pipeline update fails.\n* `on-update-fatal-failure`: A pipeline update fails with a non-retryable (fatal) error.\n* `on-flow-failure`: A single data flow fails.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "email_recipients": {
-                      "description": "A list of email addresses notified when a configured alert is triggered.\n",
+                      "description": "A list of email addresses notified when a configured alert is triggered.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -5923,7 +5994,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes"
                     },
                     "cluster_log_conf": {
-                      "description": "The configuration for delivering spark logs to a long-term storage destination.\nOnly dbfs destinations are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.\n",
+                      "description": "The configuration for delivering spark logs to a long-term storage destination.\nOnly dbfs destinations are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf"
                     },
                     "custom_tags": {
@@ -5959,7 +6030,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "node_type_id": {
-                      "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.\n",
+                      "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
                       "$ref": "#/$defs/string"
                     },
                     "num_workers": {
@@ -5971,7 +6042,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "spark_conf": {
-                      "description": "An object containing a set of optional, user-specified Spark configuration key-value pairs.\nSee :method:clusters/create for more details.\n",
+                      "description": "An object containing a set of optional, user-specified Spark configuration key-value pairs.\nSee :method:clusters/create for more details.",
                       "$ref": "#/$defs/map/string"
                     },
                     "spark_env_vars": {
@@ -6005,7 +6076,7 @@
                       "$ref": "#/$defs/int"
                     },
                     "mode": {
-                      "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n",
+                      "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutoscaleMode"
                     }
                   },
@@ -6025,7 +6096,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n",
+                  "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.",
                   "enum": [
                     "ENHANCED",
                     "LEGACY"
@@ -6051,7 +6122,10 @@
                       "$ref": "#/$defs/string"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "required": [
+                    "kind"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6065,19 +6139,23 @@
                   "type": "object",
                   "properties": {
                     "file": {
-                      "description": "The path to a file that defines a pipeline and is stored in the Databricks Repos.\n",
+                      "description": "The path to a file that defines a pipeline and is stored in the Databricks Repos.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileLibrary"
                     },
                     "jar": {
-                      "description": "URI of the jar to be installed. Currently only DBFS is supported.\n",
-                      "$ref": "#/$defs/string"
+                      "description": "URI of the jar to be installed. Currently only DBFS is supported.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "maven": {
-                      "description": "Specification of a maven library to be installed.\n",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary"
+                      "description": "Specification of a maven library to be installed.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "notebook": {
-                      "description": "The path to a notebook that defines a pipeline and is stored in the Databricks workspace.\n",
+                      "description": "The path to a notebook that defines a pipeline and is stored in the Databricks workspace.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary"
                     },
                     "whl": {
@@ -6141,7 +6219,12 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "required": [
+                    "destination_catalog",
+                    "destination_schema",
+                    "source_url"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6227,7 +6310,12 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "required": [
+                    "destination_catalog",
+                    "destination_schema",
+                    "source_schema"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6269,7 +6357,12 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "required": [
+                    "destination_catalog",
+                    "destination_schema",
+                    "source_table"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6282,17 +6375,29 @@
                 {
                   "type": "object",
                   "properties": {
+                    "exclude_columns": {
+                      "description": "A list of column names to be excluded for the ingestion.\nWhen not specified, include_columns fully controls what columns to be ingested.\nWhen specified, all other columns including future ones will be automatically included for ingestion.\nThis field in mutually exclusive with `include_columns`.",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "include_columns": {
+                      "description": "A list of column names to be included for the ingestion.\nWhen not specified, all columns except ones in exclude_columns will be included. Future\ncolumns will be automatically included.\nWhen specified, all other future columns will be automatically excluded from ingestion.\nThis field in mutually exclusive with `exclude_columns`.",
+                      "$ref": "#/$defs/slice/string"
+                    },
                     "primary_keys": {
                       "description": "The primary key of the table used to apply changes.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "salesforce_include_formula_fields": {
                       "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector",
-                      "$ref": "#/$defs/bool"
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "scd_type": {
                       "description": "The SCD type to use to ingest the table.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType"
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "sequence_by": {
                       "description": "The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.",
@@ -7228,7 +7333,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "workload_size": {
-                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.",
+                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.",
                       "$ref": "#/$defs/string"
                     },
                     "workload_type": {
@@ -7280,8 +7385,8 @@
                       "$ref": "#/$defs/bool"
                     },
                     "workload_size": {
-                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadSize"
+                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.",
+                      "$ref": "#/$defs/string"
                     },
                     "workload_type": {
                       "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
@@ -7293,22 +7398,6 @@
                     "model_name",
                     "model_version",
                     "scale_to_zero_enabled"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "serving.ServedModelInputWorkloadSize": {
-              "oneOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "Small",
-                    "Medium",
-                    "Large"
                   ]
                 },
                 {

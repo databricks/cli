@@ -320,7 +320,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"presets",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
-			return err
+			return fmt.Errorf("failed to merge target=%s field=%s: %w", name, f, err)
 		}
 	}
 
@@ -555,7 +555,7 @@ func (r Root) GetLocation(path string) dyn.Location {
 func (r Root) GetLocations(path string) []dyn.Location {
 	v, err := dyn.Get(r.value, path)
 	if err != nil {
-		return []dyn.Location{}
+		return nil
 	}
 	return v.Locations()
 }

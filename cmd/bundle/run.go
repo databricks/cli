@@ -5,16 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
@@ -73,7 +78,7 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run [flags] KEY",
+		Use:   "run [flags] [KEY]",
 		Short: "Run a job or pipeline update",
 		Long: `Run the job or pipeline identified by KEY.
 
@@ -93,6 +98,21 @@ parameter names.
 
 If the specified job does not use job parameters and the job has a Python file
 task or a Python wheel task, the second example applies.
+
+---------------------------------------------------------
+
+You can also use the bundle run command to execute scripts / commands in the same
+authentication context as the bundle.
+
+Authentication to the input command will be provided by setting the appropriate
+environment variables that Databricks tools use to authenticate.
+
+Example usage:
+1. databricks bundle run -- echo "hello, world"
+2. databricks bundle run -- /bin/bash -c "echo hello"
+3. databricks bundle run -- uv run pytest
+
+---------------------------------------------------------
 `,
 	}
 
@@ -109,6 +129,13 @@ task or a Python wheel task, the second example applies.
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
 		if err := diags.Error(); err != nil {
 			return diags.Error()
+		}
+
+		// If user runs the bundle run command as:
+		// databricks bundle run -- <command> <args>
+		// we execute the command inline.
+		if cmd.ArgsLenAtDash() == 0 && len(args) > 0 {
+			return executeInline(cmd, args, b)
 		}
 
 		diags = phases.Initialize(ctx, b)
@@ -208,4 +235,35 @@ task or a Python wheel task, the second example applies.
 	}
 
 	return cmd
+}
+
+func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
+	cmdEnv := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
+
+	// If user has specified a target, pass it to the child command.
+	//
+	// This is only useful for when the Databricks CLI is the child command.
+	if b.Config.Bundle.Target != "" {
+		cmdEnv = append(cmdEnv, env.TargetVariable+"="+b.Config.Bundle.Target)
+	}
+
+	// If the bundle has a profile configured, explicitly pass it to the child command.
+	//
+	// This is only useful for when the Databricks CLI is the child command,
+	// since if we do not explicitly pass the profile, the CLI will use the
+	// auth configured in the bundle YAML configuration (if any).
+	if b.Config.Workspace.Profile != "" {
+		cmdEnv = append(cmdEnv, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+	}
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	return exec.Execv(exec.ExecvOptions{
+		Args: args,
+		Env:  cmdEnv,
+		Dir:  dir,
+	})
 }

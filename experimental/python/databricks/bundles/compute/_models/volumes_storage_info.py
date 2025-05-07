@@ -11,11 +11,14 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class VolumesStorageInfo:
-    """"""
+    """
+    A storage location back by UC Volumes.
+    """
 
     destination: VariableOr[str]
     """
-    Unity Catalog volumes file destination, e.g. `/Volumes/catalog/schema/volume/dir/file`
+    UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
+    or `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
     """
 
     @classmethod
@@ -31,7 +34,8 @@ class VolumesStorageInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    Unity Catalog volumes file destination, e.g. `/Volumes/catalog/schema/volume/dir/file`
+    UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
+    or `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
     """
 
 

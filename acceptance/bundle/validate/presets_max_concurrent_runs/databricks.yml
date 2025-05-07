@@ -1,0 +1,14 @@
+bundle:
+  name: BUNDLE
+
+resources:
+  jobs:
+    job1:
+      name: job1
+
+    job2:
+      name: job2
+      max_concurrent_runs: 3
+
+presets:
+  jobs_max_concurrent_runs: 5

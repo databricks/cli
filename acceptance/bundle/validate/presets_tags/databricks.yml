@@ -1,0 +1,21 @@
+bundle:
+  name: BUNDLE
+
+resources:
+  jobs:
+    job1:
+      name: job1
+
+    job2:
+      name: job2
+      tags:
+        team: data
+
+    job3:
+      name: job3
+      tags:
+        env: prod
+
+presets:
+  tags:
+    env: dev

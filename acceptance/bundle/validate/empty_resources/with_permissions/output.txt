@@ -1,0 +1,130 @@
+
+=== resources.jobs.rname ===
+{
+  "jobs": {
+    "rname": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      }
+    }
+  }
+}
+
+=== resources.pipelines.rname ===
+{
+  "pipelines": {
+    "rname": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "permissions": []
+    }
+  }
+}
+
+=== resources.models.rname ===
+{
+  "models": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
+
+=== resources.experiments.rname ===
+{
+  "experiments": {
+    "rname": {
+      "name": ".",
+      "permissions": []
+    }
+  }
+}
+
+=== resources.registered_models.rname ===
+Warning: unknown field: permissions
+  at resources.registered_models.rname
+  in databricks.yml:7:7
+
+{
+  "registered_models": {
+    "rname": {}
+  }
+}
+
+=== resources.quality_monitors.rname ===
+Warning: unknown field: permissions
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+{
+  "quality_monitors": {
+    "rname": {}
+  }
+}
+
+=== resources.schemas.rname ===
+Warning: unknown field: permissions
+  at resources.schemas.rname
+  in databricks.yml:7:7
+
+{
+  "schemas": {
+    "rname": {}
+  }
+}
+
+=== resources.volumes.rname ===
+Warning: unknown field: permissions
+  at resources.volumes.rname
+  in databricks.yml:7:7
+
+{
+  "volumes": {
+    "rname": {
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+=== resources.clusters.rname ===
+{
+  "clusters": {
+    "rname": {
+      "custom_tags": {},
+      "permissions": []
+    }
+  }
+}
+
+=== resources.dashboards.rname ===
+{
+  "dashboards": {
+    "rname": {
+      "embed_credentials": false,
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources",
+      "permissions": []
+    }
+  }
+}
+
+=== resources.apps.rname ===
+{
+  "apps": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}

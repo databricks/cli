@@ -1,6 +1,7 @@
 package dyn_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -47,4 +48,41 @@ func TestPatternAppendAlwaysNew(t *testing.T) {
 	p1 := p.Append(dyn.Index(1))
 	p2 := p.Append(dyn.Index(2))
 	assert.NotEqual(t, p1, p2)
+}
+
+func TestPatternSplitKey(t *testing.T) {
+	p := dyn.NewPattern(
+		dyn.Key("foo"),
+		dyn.Key("bar"),
+	)
+
+	pat, key := p.SplitKey()
+	assert.Equal(t, "bar", key)
+	assert.Equal(t, dyn.NewPattern(dyn.Key("foo")), pat)
+}
+
+func TestPatternSplitKeyError(t *testing.T) {
+	patterns := []dyn.Pattern{
+		dyn.NewPattern(
+			dyn.Key("foo"),
+			dyn.AnyKey(),
+		),
+		dyn.NewPattern(
+			dyn.Key("foo"),
+			dyn.AnyIndex(),
+		),
+		dyn.NewPattern(
+			dyn.Key("foo"),
+			dyn.Index(1),
+		),
+		dyn.NewPattern(),
+	}
+
+	for ind, p := range patterns {
+		t.Run(fmt.Sprintf("%d %#v", ind, p), func(t *testing.T) {
+			pat, key := p.SplitKey()
+			assert.Equal(t, "", key)
+			assert.Empty(t, pat)
+		})
+	}
 }

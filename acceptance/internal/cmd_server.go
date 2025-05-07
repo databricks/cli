@@ -21,11 +21,11 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 		var env map[string]string
 		require.NoError(t, json.Unmarshal([]byte(q.Get("env")), &env))
 
-		for key, val := range env {
-			defer Setenv(t, key, val)()
-		}
+		// Change current process's environment to match the callsite.
+		defer configureEnv(t, env)()
 
-		defer Chdir(t, q.Get("cwd"))()
+		// Change current working directory to match the callsite.
+		defer chdir(t, q.Get("cwd"))()
 
 		c := testcli.NewRunner(t, context.Background(), args...)
 		c.Verbose = false
@@ -44,9 +44,9 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 	return server
 }
 
-// Chdir variant that is intended to be used with defer so that it can switch back before function ends.
+// chdir variant that is intended to be used with defer so that it can switch back before function ends.
 // This is unlike testutil.Chdir which switches back only when tests end.
-func Chdir(t *testing.T, cwd string) func() {
+func chdir(t *testing.T, cwd string) func() {
 	require.NotEmpty(t, cwd)
 	prevDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -57,18 +57,21 @@ func Chdir(t *testing.T, cwd string) func() {
 	}
 }
 
-// Setenv variant that is intended to be used with defer so that it can switch back before function ends.
-// This is unlike t.Setenv which switches back only when tests end.
-func Setenv(t *testing.T, key, value string) func() {
-	prevVal, exists := os.LookupEnv(key)
+func configureEnv(t *testing.T, env map[string]string) func() {
+	oldEnv := os.Environ()
 
-	require.NoError(t, os.Setenv(key, value))
+	// Set current process's environment to match the input.
+	os.Clearenv()
+	for key, val := range env {
+		os.Setenv(key, val)
+	}
 
+	// Function callback to use with defer to restore original environment.
 	return func() {
-		if exists {
-			_ = os.Setenv(key, prevVal)
-		} else {
-			_ = os.Unsetenv(key)
+		os.Clearenv()
+		for _, kv := range oldEnv {
+			kvs := strings.SplitN(kv, "=", 2)
+			os.Setenv(kvs[0], kvs[1])
 		}
 	}
 }

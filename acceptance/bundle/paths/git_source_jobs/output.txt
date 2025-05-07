@@ -13,12 +13,12 @@
           "git_provider": "gitHub",
           "git_url": "https://github.com/foo"
         },
+        "max_concurrent_runs": 1,
         "name": "my_job",
         "permissions": [],
         "queue": {
           "enabled": true
         },
-        "tags": {},
         "tasks": [
           {
             "libraries": [

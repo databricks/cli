@@ -52,7 +52,7 @@ func TestDeployBundleWithApp(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, replacements, *user)
-	testdiff.PrepareReplacementsWorkspaceClient(t, replacements, wt.W)
+	testdiff.PrepareReplacementsWorkspaceConfig(t, replacements, wt.W.Config)
 	testdiff.PrepareReplacementsUUID(t, replacements)
 	testdiff.PrepareReplacementsNumber(t, replacements)
 	testdiff.PrepareReplacementsTemporaryDirectory(t, replacements)

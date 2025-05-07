@@ -15,11 +15,13 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class WorkloadType:
-    """"""
+    """
+    Cluster Attributes showing for clusters workload types.
+    """
 
     clients: VariableOr[ClientsTypes]
     """
-     defined what type of clients can use the cluster. E.g. Notebooks, Jobs
+    defined what type of clients can use the cluster. E.g. Notebooks, Jobs
     """
 
     @classmethod
@@ -35,7 +37,7 @@ class WorkloadTypeDict(TypedDict, total=False):
 
     clients: VariableOr[ClientsTypesParam]
     """
-     defined what type of clients can use the cluster. E.g. Notebooks, Jobs
+    defined what type of clients can use the cluster. E.g. Notebooks, Jobs
     """
 
 

@@ -41,7 +41,7 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 
 				// Return an updated map value.
 				m = m.Clone()
-				m.Set(V(component.key), nv) //nolint:errcheck
+				m.SetLoc(component.key, nil, nv)
 				return Value{
 					v: m,
 					k: KindMap,

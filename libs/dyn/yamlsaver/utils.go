@@ -57,10 +57,7 @@ func sortMapAlphabetically(mv dyn.Value) (dyn.Value, error) {
 				return dyn.InvalidValue, err
 			}
 		}
-		err = sortedMap.Set(key, value)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
+		sortedMap.SetLoc(key.MustString(), key.Locations(), value)
 	}
 
 	return dyn.V(sortedMap), nil

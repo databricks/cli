@@ -18,6 +18,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -26,12 +27,9 @@ import (
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
-	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/stretchr/testify/assert"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,11 +40,15 @@ var (
 	Tail        bool
 	Forcerun    bool
 	LogRequests bool
+	LogConfig   bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
 // the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
+//
+// To debug integration tests you can run the "deco env flip workspace" command to configure a workspace
+// and then click on "debug test" near TestInprocessMode.
 
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
@@ -60,6 +62,7 @@ func init() {
 	flag.BoolVar(&Tail, "tail", false, "Log output of script in real time. Use with -v to see the logs: -tail -v")
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
+	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 }
 
 const (
@@ -93,20 +96,29 @@ func TestInprocessMode(t *testing.T) {
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
-func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
+func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+	// Load debug environment when debugging a single test run from an IDE.
+	if singleTest != "" && inprocessMode {
+		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+	}
+
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
+
+	// Consistent behavior of locale-dependent tools, such as 'sort'
+	t.Setenv("LC_ALL", "C")
 
 	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
 
 	// Download terraform and provider and create config; this also creates build directory.
 	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
 
-	wheelPath, err := buildDatabricksBundlesWheel(t, buildDir)
-	require.NoError(t, err)
-	t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
-	repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
+	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
+	if wheelPath != "" {
+		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
+		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
+	}
 
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
@@ -119,7 +131,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 	execPath := ""
 
-	if InprocessMode {
+	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
@@ -141,16 +153,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
+	// UV_CACHE_DIR only applies to packages but not Python installations.
+	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
+	uvInstall := filepath.Join(uvCache, "python_installs")
+	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
+
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		defaultServer := testserver.New(t)
-		internal.AddHandlers(defaultServer)
-		t.Setenv("DATABRICKS_DEFAULT_HOST", defaultServer.URL)
-
-		homeDir := t.TempDir()
-		// Do not read user's ~/.databrickscfg
-		t.Setenv(env.HomeEnvVar(), homeDir)
+		internal.StartDefaultServer(t)
 	}
 
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
@@ -214,7 +225,7 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 				t.Skip(skipReason)
 			}
 
-			if !InprocessMode {
+			if !inprocessMode {
 				t.Parallel()
 			}
 
@@ -228,13 +239,15 @@ func testAccept(t *testing.T, InprocessMode bool, singleTest string) int {
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
-				t.Logf("Running test with env %v", expanded[0])
+				if len(expanded[0]) > 0 {
+					t.Logf("Running test with env %v", expanded[0])
+				}
 				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0])
 			} else {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
-						if !InprocessMode {
+						if !inprocessMode {
 							t.Parallel()
 						}
 						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset)
@@ -330,6 +343,12 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 }
 
 func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsContext, config internal.TestConfig, configPath string, customEnv []string) {
+	if LogConfig {
+		configBytes, err := json.MarshalIndent(config, "", "  ")
+		require.NoError(t, err)
+		t.Log(string(configBytes))
+	}
+
 	tailOutput := Tail
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
@@ -365,102 +384,33 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
-	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
+	timeout := config.Timeout
 
-	var workspaceClient *databricks.WorkspaceClient
-	var user iam.User
-
-	// Start a new server with a custom configuration if the acceptance test
-	// specifies a custom server stubs.
-	var server *testserver.Server
-
-	if !isRunningOnCloud {
-		// Start a new server for this test if either:
-		// 1. A custom server spec is defined in the test configuration.
-		// 2. The test is configured to record requests and assert on them. We need
-		//    a duplicate of the default server to record requests because the default
-		//    server otherwise is a shared resource.
-
-		databricksLocalHost := os.Getenv("DATABRICKS_DEFAULT_HOST")
-
-		if len(config.Server) > 0 || isTruePtr(config.RecordRequests) {
-			server = testserver.New(t)
-			if isTruePtr(config.RecordRequests) {
-				requestsPath := filepath.Join(tmpDir, "out.requests.txt")
-				server.RequestCallback = func(request *testserver.Request) {
-					req := getLoggedRequest(request, config.IncludeRequestHeaders)
-					reqJson, err := json.MarshalIndent(req, "", "  ")
-					assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
-
-					f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-					assert.NoError(t, err)
-					defer f.Close()
-
-					_, err = f.WriteString(string(reqJson) + "\n")
-					assert.NoError(t, err)
-				}
-			}
-
-			if LogRequests {
-				server.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
-					t.Logf("%d %s %s\n%s\n%s",
-						response.StatusCode, request.Method, request.URL,
-						formatHeadersAndBody("> ", request.Headers, request.Body),
-						formatHeadersAndBody("# ", response.Headers, response.Body),
-					)
-				}
-			}
-
-			// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
-			// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
-			slices.Reverse(config.Server)
-
-			for _, stub := range config.Server {
-				require.NotEmpty(t, stub.Pattern)
-				items := strings.Split(stub.Pattern, " ")
-				require.Len(t, items, 2)
-				server.Handle(items[0], items[1], func(req testserver.Request) any {
-					time.Sleep(stub.Delay)
-					return stub.Response
-				})
-			}
-
-			// The earliest handlers take precedence, add default handlers last
-			internal.AddHandlers(server)
-			databricksLocalHost = server.URL
+	if runtime.GOOS == "windows" {
+		if isRunningOnCloud {
+			timeout = max(timeout, config.TimeoutWindows, config.TimeoutCloud)
+		} else {
+			timeout = max(timeout, config.TimeoutWindows)
 		}
-
-		// Each local test should use a new token that will result into a new fake workspace,
-		// so that test don't interfere with each other.
-		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-		config := databricks.Config{
-			Host:  databricksLocalHost,
-			Token: "dbapi" + tokenSuffix,
-		}
-		workspaceClient, err = databricks.NewWorkspaceClient(&config)
-		require.NoError(t, err)
-
-		cmd.Env = append(cmd.Env, "DATABRICKS_HOST="+config.Host)
-		cmd.Env = append(cmd.Env, "DATABRICKS_TOKEN="+config.Token)
-
-		// For the purposes of replacements, use testUser.
-		// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-		user = internal.TestUser
-	} else {
-		// Use whatever authentication mechanism is configured by the test runner.
-		workspaceClient, err = databricks.NewWorkspaceClient(&databricks.Config{})
-		require.NoError(t, err)
-		pUser, err := workspaceClient.CurrentUser.Me(context.Background())
-		require.NoError(t, err, "Failed to get current user")
-		user = *pUser
+	} else if isRunningOnCloud {
+		timeout = max(timeout, config.TimeoutCloud)
 	}
 
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
+	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+
+	// This mutex is used to synchronize recording requests
+	var serverMutex sync.Mutex
+
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, &serverMutex)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
-	testdiff.PrepareReplacementsWorkspaceClient(t, &repls, workspaceClient)
+	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+
+	cmd.Env = auth.ProcessEnv(cfg)
+	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
+	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
@@ -483,19 +433,19 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
+	for _, key := range utils.SortedKeys(config.Env) {
+		if hasKey(customEnv, key) {
+			// We want EnvMatrix to take precedence.
+			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
+			continue
+		}
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl)
+	}
+
 	for _, keyvalue := range customEnv {
 		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
-		key := items[0]
-		value := items[1]
-		newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, cmd.Env)
-		if value != newValue {
-			t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
-		}
-		cmd.Env = append(cmd.Env, key+"="+newValue)
-		repls.Set(newValue, "["+key+"]")
-		// newValue won't match because parts of it were already replaced; we adding it anyway just in case but we need newValueWithPlaceholders:
-		repls.Set(newValueWithPlaceholders, "["+key+"]")
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, items[0], items[1], config.EnvRepl)
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -552,6 +502,36 @@ func runTest(t *testing.T, dir, coverDir string, repls testdiff.ReplacementsCont
 	}
 }
 
+func hasKey(env []string, key string) bool {
+	for _, keyvalue := range env {
+		items := strings.SplitN(keyvalue, "=", 2)
+		if len(items) == 2 && items[0] == key {
+			return true
+		}
+	}
+	return false
+}
+
+func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string, envRepl map[string]bool) []string {
+	newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, env)
+	if value != newValue {
+		t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
+	}
+
+	shouldRepl, ok := envRepl[key]
+	if !ok {
+		shouldRepl = true
+	}
+
+	if shouldRepl {
+		repls.Set(newValue, "["+key+"]")
+		// newValue won't match because parts of it were already replaced; we adding it anyway just in case but we need newValueWithPlaceholders:
+		repls.Set(newValueWithPlaceholders, "["+key+"]")
+	}
+
+	return append(env, key+"="+newValue)
+}
+
 func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
@@ -584,7 +564,9 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The test produced an unexpected output file.
 	if !okRef && okNew {
 		t.Errorf("Unexpected output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
-		testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		if shouldShowDiff(pathNew, valueNew) {
+			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
+		}
 		if testdiff.OverwriteMode {
 			t.Logf("Writing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
@@ -607,6 +589,20 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		}
 		t.Log("Available replacements:\n" + strings.Join(items, "\n"))
 	}
+}
+
+func shouldShowDiff(pathNew, valueNew string) bool {
+	if strings.Contains(pathNew, "site-packages") {
+		return false
+	}
+	if strings.Contains(pathNew, ".venv") {
+		return false
+	}
+	if len(valueNew) > 10_000 {
+		return false
+	}
+	// if file itself starts with "out" then it's likely to be intended to be recorded
+	return strings.HasPrefix(filepath.Base(pathNew), "out")
 }
 
 // Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
@@ -728,7 +724,10 @@ func tryReading(t *testing.T, path string) (string, bool) {
 		return "", false
 	}
 
-	if !utf8.Valid(data) {
+	// Do not check output.txt for UTF8 validity, because 'deploy --debug' logs binary request/responses
+	doUTF8Check := filepath.Base(path) != "output.txt"
+
+	if doUTF8Check && !utf8.Valid(data) {
 		t.Errorf("%s: not valid utf-8", path)
 		return "", false
 	}
@@ -835,33 +834,6 @@ type LoggedRequest struct {
 	RawBody string      `json:"raw_body,omitempty"`
 }
 
-func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedRequest {
-	result := LoggedRequest{
-		Method:  req.Method,
-		Path:    req.URL.Path,
-		Headers: filterHeaders(req.Headers, includedHeaders),
-	}
-
-	if json.Valid(req.Body) {
-		result.Body = json.RawMessage(req.Body)
-	} else {
-		result.RawBody = string(req.Body)
-	}
-
-	return result
-}
-
-func filterHeaders(h http.Header, includedHeaders []string) http.Header {
-	headers := make(http.Header)
-	for k, v := range h {
-		if !slices.Contains(includedHeaders, k) {
-			continue
-		}
-		headers[k] = v
-	}
-	return headers
-}
-
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
@@ -870,15 +842,24 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
+	processErrCh := make(chan error, 1)
+
+	cmd.Cancel = func() error {
+		processErrCh <- errors.New("Test script killed due to a timeout")
+		_ = cmd.Process.Kill()
+		_ = w.Close()
+		return nil
+	}
 
 	start := time.Now()
 	err := cmd.Start()
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 
-	processErrCh := make(chan error, 1)
 	go func() {
 		processErrCh <- cmd.Wait()
-		w.Close()
+		_ = w.Close()
 	}()
 
 	reader := bufio.NewReader(r)
@@ -940,53 +921,61 @@ func getNodeTypeID(cloudEnv string) string {
 }
 
 // buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
-// It's used to cache the wheel build between acceptance tests, because one build takes ~10 seconds.
-func buildDatabricksBundlesWheel(t *testing.T, buildDir string) (string, error) {
+func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
+	// Clean up directory, remove all but the latest wheel
+	// Doing this avoids ambiguity if the build command below does not touch any whl files,
+	// because it considers it already good. However, we would not know which one it considered good,
+	// so we prepare here by keeping only one.
+	_ = prepareWheelBuildDirectory(t, buildDir)
+
 	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
 
-	files, err := os.ReadDir(buildDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to read directory %s: %s", buildDir, err)
+	latestWheel := prepareWheelBuildDirectory(t, buildDir)
+	if latestWheel == "" {
+		// Many tests don't need the wheel, so continue there rather than hard fail
+		t.Errorf("databricks-bundles wheel not found in %s", buildDir)
 	}
 
-	// we can't control output file name, so we have to search for it
+	return latestWheel
+}
 
-	var wheelName string
+// Find all possible whl files in 'dir' and clean up all but the one with most recent mtime
+// Return that full path to the wheel with most recent mtime (that was not cleaned up)
+func prepareWheelBuildDirectory(t *testing.T, dir string) string {
+	var wheels []string
+
+	files, err := os.ReadDir(dir)
+	require.NoError(t, err)
+
+	var latestWheel string
+	var latestTime time.Time
+
+	// First pass: find the latest wheel
 	for _, file := range files {
-		if strings.HasPrefix(file.Name(), "databricks_bundles-") && strings.HasSuffix(file.Name(), ".whl") {
-			if wheelName != "" {
-				return "", fmt.Errorf("multiple wheels found: %s and %s", wheelName, file.Name())
-			} else {
-				wheelName = file.Name()
+		name := file.Name()
+		if strings.HasPrefix(name, "databricks_bundles-") && strings.HasSuffix(name, ".whl") {
+			info, err := file.Info()
+			require.NoError(t, err)
+			name = filepath.Join(dir, name)
+			wheels = append(wheels, name)
+			if info.ModTime().After(latestTime) {
+				latestWheel = name
+				latestTime = info.ModTime()
 			}
 		}
 	}
 
-	if wheelName != "" {
-		return filepath.Join(buildDir, wheelName), nil
-	} else {
-		return "", fmt.Errorf("databricks-bundles wheel not found in %s", buildDir)
+	// Second pass: delete all wheels except the latest
+	for _, wheel := range wheels {
+		if wheel != latestWheel {
+			err := os.Remove(wheel)
+			if err == nil {
+				t.Logf("Cleaning up %s", wheel)
+			} else {
+				t.Errorf("Cleaning up %s failed: %s", wheel, err)
+			}
+		}
 	}
-}
 
-func formatHeadersAndBody(prefix string, headers http.Header, body []byte) string {
-	var result []string
-	for key, values := range headers {
-		if len(values) == 1 {
-			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values[0]))
-		} else {
-			result = append(result, fmt.Sprintf("%s%s: %s", prefix, key, values))
-		}
-	}
-	if len(body) > 0 {
-		var s string
-		if utf8.Valid(body) {
-			s = string(body)
-		} else {
-			s = fmt.Sprintf("[Binary %d bytes]", len(body))
-		}
-		s = strings.ReplaceAll(s, "\n", "\n"+prefix)
-		result = append(result, prefix+s)
-	}
-	return strings.Join(result, "\n")
+	return latestWheel
 }

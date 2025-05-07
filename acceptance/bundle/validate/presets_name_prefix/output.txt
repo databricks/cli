@@ -1,0 +1,108 @@
+
+>>> grep prefix: databricks.yml
+  name_prefix: "prefix-"
+
+>>> [CLI] bundle validate -o json
+{
+  "jobs": {
+    "job1": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "prefix-job1",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      }
+    }
+  },
+  "schemas": {
+    "schema1": {
+      "name": "prefixschema1"
+    }
+  },
+  "volumes": {
+    "volume1": {
+      "catalog_name": "catalog1",
+      "name": "volume1",
+      "schema_name": "schema1",
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+>>> grep prefix: databricks.yml
+  name_prefix: "[prefix]"
+
+>>> [CLI] bundle validate -o json
+{
+  "jobs": {
+    "job1": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "[prefix]job1",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      }
+    }
+  },
+  "schemas": {
+    "schema1": {
+      "name": "prefix_schema1"
+    }
+  },
+  "volumes": {
+    "volume1": {
+      "catalog_name": "catalog1",
+      "name": "volume1",
+      "schema_name": "schema1",
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+>>> grep prefix: databricks.yml
+  name_prefix: ""
+
+>>> [CLI] bundle validate -o json
+{
+  "jobs": {
+    "job1": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "job1",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      }
+    }
+  },
+  "schemas": {
+    "schema1": {
+      "name": "schema1"
+    }
+  },
+  "volumes": {
+    "volume1": {
+      "catalog_name": "catalog1",
+      "name": "volume1",
+      "schema_name": "schema1",
+      "volume_type": "MANAGED"
+    }
+  }
+}

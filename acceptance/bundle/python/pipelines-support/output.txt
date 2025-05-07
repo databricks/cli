@@ -14,18 +14,22 @@
   "resources": {
     "pipelines": {
       "my_pipeline_1": {
+        "channel": "CURRENT",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
         },
+        "edition": "ADVANCED",
         "name": "My Pipeline 1 (updated)",
         "permissions": []
       },
       "my_pipeline_2": {
+        "channel": "CURRENT",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
         },
+        "edition": "ADVANCED",
         "name": "My Pipeline 2 (updated)",
         "permissions": []
       }

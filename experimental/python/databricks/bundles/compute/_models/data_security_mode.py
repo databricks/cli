@@ -24,12 +24,8 @@ class DataSecurityMode(Enum):
     * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
     * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
     * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
-
     """
 
-    DATA_SECURITY_MODE_AUTO = "DATA_SECURITY_MODE_AUTO"
-    DATA_SECURITY_MODE_STANDARD = "DATA_SECURITY_MODE_STANDARD"
-    DATA_SECURITY_MODE_DEDICATED = "DATA_SECURITY_MODE_DEDICATED"
     NONE = "NONE"
     SINGLE_USER = "SINGLE_USER"
     USER_ISOLATION = "USER_ISOLATION"
@@ -37,13 +33,13 @@ class DataSecurityMode(Enum):
     LEGACY_PASSTHROUGH = "LEGACY_PASSTHROUGH"
     LEGACY_SINGLE_USER = "LEGACY_SINGLE_USER"
     LEGACY_SINGLE_USER_STANDARD = "LEGACY_SINGLE_USER_STANDARD"
+    DATA_SECURITY_MODE_STANDARD = "DATA_SECURITY_MODE_STANDARD"
+    DATA_SECURITY_MODE_DEDICATED = "DATA_SECURITY_MODE_DEDICATED"
+    DATA_SECURITY_MODE_AUTO = "DATA_SECURITY_MODE_AUTO"
 
 
 DataSecurityModeParam = (
     Literal[
-        "DATA_SECURITY_MODE_AUTO",
-        "DATA_SECURITY_MODE_STANDARD",
-        "DATA_SECURITY_MODE_DEDICATED",
         "NONE",
         "SINGLE_USER",
         "USER_ISOLATION",
@@ -51,6 +47,9 @@ DataSecurityModeParam = (
         "LEGACY_PASSTHROUGH",
         "LEGACY_SINGLE_USER",
         "LEGACY_SINGLE_USER_STANDARD",
+        "DATA_SECURITY_MODE_STANDARD",
+        "DATA_SECURITY_MODE_DEDICATED",
+        "DATA_SECURITY_MODE_AUTO",
     ]
     | DataSecurityMode
 )
