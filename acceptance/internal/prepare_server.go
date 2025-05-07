@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -97,7 +98,12 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 }
 
 func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {
+	mu := sync.Mutex{}
+
 	return func(request *testserver.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
 		req := getLoggedRequest(request, includeHeaders)
 		reqJson, err := json.MarshalIndent(req, "", "  ")
 		assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
@@ -113,7 +119,12 @@ func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir str
 }
 
 func logResponseCallback(t *testing.T) func(request *testserver.Request, response *testserver.EncodedResponse) {
+	mu := sync.Mutex{}
+
 	return func(request *testserver.Request, response *testserver.EncodedResponse) {
+		mu.Lock()
+		defer mu.Unlock()
+
 		t.Logf("%d %s %s\n%s\n%s",
 			response.StatusCode, request.Method, request.URL,
 			formatHeadersAndBody("> ", request.Headers, request.Body),

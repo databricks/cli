@@ -91,12 +91,6 @@ func (s *ProxyServer) reqBody(r testserver.Request) any {
 }
 
 func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
-	// Process requests sequentially. It's slower but is easier to reason about.
-	// For example, requestCallback and responseCallback functions do not need
-	// to be thread-safe.
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	request := testserver.NewRequest(s.t, r, nil)
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)
