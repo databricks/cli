@@ -1,9 +1,9 @@
 trace $CLI bundle deploy
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson'
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > out.telemetry.txt
 
 cmd_exec_id=$(extract_command_exec_id.py)
 
-update_file.py output.txt $cmd_exec_id  '[CMD-EXEC-ID]'
+update_file.py out.telemetry.txt $cmd_exec_id  '[CMD-EXEC-ID]'
 
 rm out.requests.txt
