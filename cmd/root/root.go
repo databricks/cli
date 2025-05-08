@@ -181,7 +181,7 @@ Stack Trace:
 		})
 	}
 
-	telemetry.Upload(cmd.Context(), protos.ExecutionContext{
+	telemetryErr := telemetry.Upload(cmd.Context(), protos.ExecutionContext{
 		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
 		Command:         commandStr,
@@ -190,6 +190,9 @@ Stack Trace:
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 		ExitCode:        int64(exitCode),
 	})
+	if telemetryErr != nil {
+		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)
+	}
 	return err
 }
 
