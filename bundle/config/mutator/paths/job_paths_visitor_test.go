@@ -51,7 +51,7 @@ func TestVisitJobPaths(t *testing.T) {
 	}
 
 	job0 := &resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Tasks: []jobs.Task{
 				task0,
 				task1,
@@ -96,7 +96,7 @@ func TestVisitJobPaths_environments(t *testing.T) {
 		},
 	}
 	job0 := &resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Environments: []jobs.JobEnvironment{
 				environment0,
 			},
@@ -131,7 +131,7 @@ func TestVisitJobPaths_foreach(t *testing.T) {
 		},
 	}
 	job0 := &resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Tasks: []jobs.Task{
 				task0,
 			},

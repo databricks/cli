@@ -28,7 +28,7 @@ type MlflowExperiment struct {
 	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string                       `json:"url,omitempty" bundle:"internal"`
 
-	*ml.Experiment
+	ml.Experiment
 }
 
 func (s *MlflowExperiment) UnmarshalJSON(b []byte) error {
@@ -78,8 +78,4 @@ func (s *MlflowExperiment) GetName() string {
 
 func (s *MlflowExperiment) GetURL() string {
 	return s.URL
-}
-
-func (s *MlflowExperiment) IsNil() bool {
-	return s.Experiment == nil
 }

@@ -53,7 +53,7 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							GitSource: &jobs.GitSource{
 								GitBranch:   "somebranch",
 								GitCommit:   "somecommit",
@@ -126,7 +126,7 @@ func TestTranslatePaths(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
@@ -181,7 +181,7 @@ func TestTranslatePaths(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
@@ -303,7 +303,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
@@ -336,7 +336,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									File: &pipelines.FileLibrary{
@@ -399,7 +399,7 @@ func TestTranslatePathsOutsideSyncRoot(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
@@ -431,7 +431,7 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
@@ -463,7 +463,7 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
@@ -495,7 +495,7 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
@@ -540,7 +540,7 @@ func TestPipelineNotebookDoesNotExistErrorWithoutExtension(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"pipeline": {
-								CreatePipeline: &pipelines.CreatePipeline{
+								CreatePipeline: pipelines.CreatePipeline{
 									Libraries: []pipelines.PipelineLibrary{
 										{
 											Notebook: &pipelines.NotebookLibrary{
@@ -581,7 +581,7 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									File: &pipelines.FileLibrary{
@@ -617,7 +617,7 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
@@ -653,7 +653,7 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
@@ -689,7 +689,7 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
@@ -725,7 +725,7 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									File: &pipelines.FileLibrary{
@@ -759,7 +759,7 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Environments: []jobs.JobEnvironment{
 								{
 									Spec: &compute.Environment{
@@ -816,7 +816,7 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey: "test",
@@ -881,7 +881,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
@@ -931,7 +931,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{

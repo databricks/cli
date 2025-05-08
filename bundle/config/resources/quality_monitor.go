@@ -20,7 +20,7 @@ type QualityMonitor struct {
 	TableName string `json:"table_name"`
 
 	// This struct defines the creation payload for a monitor.
-	*catalog.CreateMonitor
+	catalog.CreateMonitor
 }
 
 func (s *QualityMonitor) UnmarshalJSON(b []byte) error {
@@ -70,8 +70,4 @@ func (s *QualityMonitor) GetName() string {
 
 func (s *QualityMonitor) GetURL() string {
 	return s.URL
-}
-
-func (s *QualityMonitor) IsNil() bool {
-	return s.CreateMonitor == nil
 }

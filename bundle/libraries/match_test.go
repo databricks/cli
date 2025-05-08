@@ -23,7 +23,7 @@ func TestValidateEnvironments(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Environments: []jobs.JobEnvironment{
 								{
 									Spec: &compute.Environment{
@@ -55,7 +55,7 @@ func TestValidateEnvironmentsNoFile(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Environments: []jobs.JobEnvironment{
 								{
 									Spec: &compute.Environment{
@@ -89,7 +89,7 @@ func TestValidateTaskLibraries(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									Libraries: []compute.Library{
@@ -122,7 +122,7 @@ func TestValidateTaskLibrariesNoFile(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									Libraries: []compute.Library{

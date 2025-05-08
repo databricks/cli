@@ -38,7 +38,7 @@ func TestDefaultQueueingApplyJobsAlreadyEnabled(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Queue: &jobs.QueueSettings{Enabled: true},
 						},
 					},
@@ -57,7 +57,7 @@ func TestDefaultQueueingApplyEnableQueueing(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job",
 						},
 					},
@@ -77,17 +77,17 @@ func TestDefaultQueueingApplyWithMultipleJobs(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Queue: &jobs.QueueSettings{Enabled: false},
 						},
 					},
 					"job2": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job",
 						},
 					},
 					"job3": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Queue: &jobs.QueueSettings{Enabled: true},
 						},
 					},

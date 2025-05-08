@@ -69,7 +69,7 @@ func TestGenerateTrampoline(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: tasks,
 						},
 					},

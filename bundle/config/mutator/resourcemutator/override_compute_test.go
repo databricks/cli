@@ -26,7 +26,7 @@ func TestOverrideComputeModeDevelopment(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job1": {JobSettings: &jobs.JobSettings{
+					"job1": {JobSettings: jobs.JobSettings{
 						Name: "job1",
 						Tasks: []jobs.Task{
 							{
@@ -73,7 +73,7 @@ func TestOverrideComputeModeDefaultIgnoresVariable(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job1": {JobSettings: &jobs.JobSettings{
+					"job1": {JobSettings: jobs.JobSettings{
 						Name: "job1",
 						Tasks: []jobs.Task{
 							{
@@ -102,7 +102,7 @@ func TestOverrideComputePipelineTask(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job1": {JobSettings: &jobs.JobSettings{
+					"job1": {JobSettings: jobs.JobSettings{
 						Name: "job1",
 						Tasks: []jobs.Task{
 							{
@@ -127,7 +127,7 @@ func TestOverrideComputeForEachTask(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job1": {JobSettings: &jobs.JobSettings{
+					"job1": {JobSettings: jobs.JobSettings{
 						Name: "job1",
 						Tasks: []jobs.Task{
 							{
@@ -155,7 +155,7 @@ func TestOverrideComputeModeProduction(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job1": {JobSettings: &jobs.JobSettings{
+					"job1": {JobSettings: jobs.JobSettings{
 						Name: "job1",
 						Tasks: []jobs.Task{
 							{
@@ -188,7 +188,7 @@ func TestOverrideComputeModeProductionIgnoresVariable(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job1": {JobSettings: &jobs.JobSettings{
+					"job1": {JobSettings: jobs.JobSettings{
 						Name: "job1",
 						Tasks: []jobs.Task{
 							{

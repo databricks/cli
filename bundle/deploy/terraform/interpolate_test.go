@@ -22,7 +22,7 @@ func TestInterpolate(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"my_job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tags: map[string]string{
 								"other_pipeline":         "${resources.pipelines.other_pipeline.id}",
 								"other_job":              "${resources.jobs.other_job.id}",
@@ -51,7 +51,7 @@ func TestInterpolate(t *testing.T) {
 				},
 				Models: map[string]*resources.MlflowModel{
 					"my_model": {
-						Model: &ml.Model{
+						Model: ml.Model{
 							Name: "my_model",
 						},
 					},
@@ -86,7 +86,7 @@ func TestInterpolateUnknownResourceType(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"my_job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tags: map[string]string{
 								"other_unknown": "${resources.unknown.other_unknown.id}",
 							},
