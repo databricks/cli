@@ -19,7 +19,7 @@ func TestConvertApp(t *testing.T) {
 		Config: map[string]any{
 			"command": []string{"python", "app.py"},
 		},
-		App: &apps.App{
+		App: apps.App{
 			Name:        "app_id",
 			Description: "app description",
 			Resources: []apps.AppResource{
@@ -104,7 +104,7 @@ func TestConvertAppWithNoDescription(t *testing.T) {
 		Config: map[string]any{
 			"command": []string{"python", "app.py"},
 		},
-		App: &apps.App{
+		App: apps.App{
 			Name: "app_id",
 			Resources: []apps.AppResource{
 				{

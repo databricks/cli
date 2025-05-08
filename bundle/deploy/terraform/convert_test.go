@@ -45,7 +45,7 @@ func convertToResourceStruct[T any](t *testing.T, resource *T, data any) {
 
 func TestBundleToTerraformJob(t *testing.T) {
 	src := resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Name: "my job",
 			JobClusters: []jobs.JobCluster{
 				{
@@ -123,7 +123,7 @@ func TestBundleToTerraformJobPermissions(t *testing.T) {
 
 func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 	src := resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Name: "my job",
 			Tasks: []jobs.Task{
 				{
@@ -160,7 +160,7 @@ func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 
 func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 	src := resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Name: "my job",
 			Tasks: []jobs.Task{
 				{
@@ -203,7 +203,7 @@ func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 
 func TestBundleToTerraformPipeline(t *testing.T) {
 	src := resources.Pipeline{
-		CreatePipeline: &pipelines.CreatePipeline{
+		CreatePipeline: pipelines.CreatePipeline{
 			Name: "my pipeline",
 			Libraries: []pipelines.PipelineLibrary{
 				{
@@ -292,7 +292,7 @@ func TestBundleToTerraformPipelinePermissions(t *testing.T) {
 
 func TestBundleToTerraformModel(t *testing.T) {
 	src := resources.MlflowModel{
-		Model: &ml.Model{
+		Model: ml.Model{
 			Name:        "name",
 			Description: "description",
 			Tags: []ml.ModelTag{
@@ -332,7 +332,7 @@ func TestBundleToTerraformModel(t *testing.T) {
 
 func TestBundleToTerraformModelPermissions(t *testing.T) {
 	src := resources.MlflowModel{
-		Model: &ml.Model{
+		Model: ml.Model{
 			Name: "name",
 		},
 		Permissions: []resources.MlflowModelPermission{
@@ -363,7 +363,7 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 
 func TestBundleToTerraformExperiment(t *testing.T) {
 	src := resources.MlflowExperiment{
-		Experiment: &ml.Experiment{
+		Experiment: ml.Experiment{
 			Name: "name",
 		},
 	}
@@ -386,7 +386,7 @@ func TestBundleToTerraformExperiment(t *testing.T) {
 
 func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 	src := resources.MlflowExperiment{
-		Experiment: &ml.Experiment{
+		Experiment: ml.Experiment{
 			Name: "name",
 		},
 		Permissions: []resources.MlflowExperimentPermission{
@@ -417,7 +417,7 @@ func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 
 func TestBundleToTerraformModelServing(t *testing.T) {
 	src := resources.ModelServingEndpoint{
-		CreateServingEndpoint: &serving.CreateServingEndpoint{
+		CreateServingEndpoint: serving.CreateServingEndpoint{
 			Name: "name",
 			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
@@ -464,7 +464,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 
 func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 	src := resources.ModelServingEndpoint{
-		CreateServingEndpoint: &serving.CreateServingEndpoint{
+		CreateServingEndpoint: serving.CreateServingEndpoint{
 			Name: "name",
 
 			// Need to specify this to satisfy the equivalence test:
@@ -513,7 +513,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 
 func TestBundleToTerraformRegisteredModel(t *testing.T) {
 	src := resources.RegisteredModel{
-		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 			Name:        "name",
 			CatalogName: "catalog",
 			SchemaName:  "schema",
@@ -542,7 +542,7 @@ func TestBundleToTerraformRegisteredModel(t *testing.T) {
 
 func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 	src := resources.RegisteredModel{
-		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 			Name:        "name",
 			CatalogName: "catalog",
 			SchemaName:  "schema",
@@ -575,11 +575,11 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 
 func TestBundleToTerraformDeletedResources(t *testing.T) {
 	job1 := resources.Job{
-		JobSettings: &jobs.JobSettings{},
+		JobSettings: jobs.JobSettings{},
 	}
 	job2 := resources.Job{
 		ModifiedStatus: resources.ModifiedStatusDeleted,
-		JobSettings:    &jobs.JobSettings{},
+		JobSettings:    jobs.JobSettings{},
 	}
 	config := config.Root{
 		Resources: config.Resources{
@@ -752,84 +752,84 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"test_job": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "test_job",
 					},
 				},
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					CreatePipeline: &pipelines.CreatePipeline{
+					CreatePipeline: pipelines.CreatePipeline{
 						Name: "test_pipeline",
 					},
 				},
 			},
 			Models: map[string]*resources.MlflowModel{
 				"test_mlflow_model": {
-					Model: &ml.Model{
+					Model: ml.Model{
 						Name: "test_mlflow_model",
 					},
 				},
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					Experiment: &ml.Experiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment",
 					},
 				},
 			},
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"test_model_serving": {
-					CreateServingEndpoint: &serving.CreateServingEndpoint{
+					CreateServingEndpoint: serving.CreateServingEndpoint{
 						Name: "test_model_serving",
 					},
 				},
 			},
 			RegisteredModels: map[string]*resources.RegisteredModel{
 				"test_registered_model": {
-					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 						Name: "test_registered_model",
 					},
 				},
 			},
 			QualityMonitors: map[string]*resources.QualityMonitor{
 				"test_monitor": {
-					CreateMonitor: &catalog.CreateMonitor{
+					CreateMonitor: catalog.CreateMonitor{
 						TableName: "test_monitor",
 					},
 				},
 			},
 			Schemas: map[string]*resources.Schema{
 				"test_schema": {
-					CreateSchema: &catalog.CreateSchema{
+					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema",
 					},
 				},
 			},
 			Volumes: map[string]*resources.Volume{
 				"test_volume": {
-					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 						Name: "test_volume",
 					},
 				},
 			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
-					ClusterSpec: &compute.ClusterSpec{
+					ClusterSpec: compute.ClusterSpec{
 						ClusterName: "test_cluster",
 					},
 				},
 			},
 			Dashboards: map[string]*resources.Dashboard{
 				"test_dashboard": {
-					Dashboard: &dashboards.Dashboard{
+					Dashboard: dashboards.Dashboard{
 						DisplayName: "test_dashboard",
 					},
 				},
 			},
 			Apps: map[string]*resources.App{
 				"test_app": {
-					App: &apps.App{
+					App: apps.App{
 						Description: "test_app",
 					},
 				},
@@ -886,144 +886,144 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"test_job": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "test_job",
 					},
 				},
 				"test_job_new": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "test_job_new",
 					},
 				},
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					CreatePipeline: &pipelines.CreatePipeline{
+					CreatePipeline: pipelines.CreatePipeline{
 						Name: "test_pipeline",
 					},
 				},
 				"test_pipeline_new": {
-					CreatePipeline: &pipelines.CreatePipeline{
+					CreatePipeline: pipelines.CreatePipeline{
 						Name: "test_pipeline_new",
 					},
 				},
 			},
 			Models: map[string]*resources.MlflowModel{
 				"test_mlflow_model": {
-					Model: &ml.Model{
+					Model: ml.Model{
 						Name: "test_mlflow_model",
 					},
 				},
 				"test_mlflow_model_new": {
-					Model: &ml.Model{
+					Model: ml.Model{
 						Name: "test_mlflow_model_new",
 					},
 				},
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					Experiment: &ml.Experiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment",
 					},
 				},
 				"test_mlflow_experiment_new": {
-					Experiment: &ml.Experiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment_new",
 					},
 				},
 			},
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"test_model_serving": {
-					CreateServingEndpoint: &serving.CreateServingEndpoint{
+					CreateServingEndpoint: serving.CreateServingEndpoint{
 						Name: "test_model_serving",
 					},
 				},
 				"test_model_serving_new": {
-					CreateServingEndpoint: &serving.CreateServingEndpoint{
+					CreateServingEndpoint: serving.CreateServingEndpoint{
 						Name: "test_model_serving_new",
 					},
 				},
 			},
 			RegisteredModels: map[string]*resources.RegisteredModel{
 				"test_registered_model": {
-					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 						Name: "test_registered_model",
 					},
 				},
 				"test_registered_model_new": {
-					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 						Name: "test_registered_model_new",
 					},
 				},
 			},
 			QualityMonitors: map[string]*resources.QualityMonitor{
 				"test_monitor": {
-					CreateMonitor: &catalog.CreateMonitor{
+					CreateMonitor: catalog.CreateMonitor{
 						TableName: "test_monitor",
 					},
 				},
 				"test_monitor_new": {
-					CreateMonitor: &catalog.CreateMonitor{
+					CreateMonitor: catalog.CreateMonitor{
 						TableName: "test_monitor_new",
 					},
 				},
 			},
 			Schemas: map[string]*resources.Schema{
 				"test_schema": {
-					CreateSchema: &catalog.CreateSchema{
+					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema",
 					},
 				},
 				"test_schema_new": {
-					CreateSchema: &catalog.CreateSchema{
+					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema_new",
 					},
 				},
 			},
 			Volumes: map[string]*resources.Volume{
 				"test_volume": {
-					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 						Name: "test_volume",
 					},
 				},
 				"test_volume_new": {
-					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 						Name: "test_volume_new",
 					},
 				},
 			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
-					ClusterSpec: &compute.ClusterSpec{
+					ClusterSpec: compute.ClusterSpec{
 						ClusterName: "test_cluster",
 					},
 				},
 				"test_cluster_new": {
-					ClusterSpec: &compute.ClusterSpec{
+					ClusterSpec: compute.ClusterSpec{
 						ClusterName: "test_cluster_new",
 					},
 				},
 			},
 			Dashboards: map[string]*resources.Dashboard{
 				"test_dashboard": {
-					Dashboard: &dashboards.Dashboard{
+					Dashboard: dashboards.Dashboard{
 						DisplayName: "test_dashboard",
 					},
 				},
 				"test_dashboard_new": {
-					Dashboard: &dashboards.Dashboard{
+					Dashboard: dashboards.Dashboard{
 						DisplayName: "test_dashboard_new",
 					},
 				},
 			},
 			Apps: map[string]*resources.App{
 				"test_app": {
-					App: &apps.App{
+					App: apps.App{
 						Name: "test_app",
 					},
 				},
 				"test_app_new": {
-					App: &apps.App{
+					App: apps.App{
 						Name: "test_app_new",
 					},
 				},

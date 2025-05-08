@@ -121,7 +121,7 @@ const (
 
 func (r *jobRunner) posArgsHandler() argsHandler {
 	job := r.job
-	if job == nil || job.JobSettings == nil {
+	if job == nil {
 		return nopArgsHandler{}
 	}
 

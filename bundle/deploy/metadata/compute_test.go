@@ -37,13 +37,13 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
 						ID: "1111",
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "My Job One",
 						},
 					},
 					"my-job-2": {
 						ID: "2222",
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "My Job Two",
 						},
 					},

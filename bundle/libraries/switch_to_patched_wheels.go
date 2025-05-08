@@ -25,11 +25,7 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 			continue
 		}
 
-		job := jobRef.JobSettings
-
-		if job == nil {
-			continue
-		}
+		job := &jobRef.JobSettings
 
 		for taskInd, task := range job.Tasks {
 			// Update resources.jobs.*.task[*].libraries[*].whl

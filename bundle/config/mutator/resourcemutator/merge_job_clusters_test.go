@@ -20,7 +20,7 @@ func TestMergeJobClusters(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "foo",
@@ -77,7 +77,7 @@ func TestMergeJobClustersWithNilKey(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
 									NewCluster: compute.ClusterSpec{

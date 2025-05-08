@@ -19,7 +19,7 @@ func TestMergeJobParameters(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Parameters: []jobs.JobParameterDefinition{
 								{
 									Name:    "foo",
@@ -59,7 +59,7 @@ func TestMergeJobParametersWithNilKey(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Parameters: []jobs.JobParameterDefinition{
 								{
 									Default: "v1",

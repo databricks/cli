@@ -66,17 +66,17 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"job_one": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "foo",
 					},
 				},
 				"job_two": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "bar",
 					},
 				},
 				"job_three": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "baz",
 					},
 				},

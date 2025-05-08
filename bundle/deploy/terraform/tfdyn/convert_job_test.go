@@ -16,7 +16,7 @@ import (
 
 func TestConvertJob(t *testing.T) {
 	src := resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Name: "my job",
 			JobClusters: []jobs.JobCluster{
 				{
