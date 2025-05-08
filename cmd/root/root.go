@@ -193,6 +193,7 @@ Stack Trace:
 	if telemetryErr != nil {
 		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)
 	}
+	
 	return err
 }
 
