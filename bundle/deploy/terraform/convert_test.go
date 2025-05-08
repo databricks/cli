@@ -829,7 +829,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Apps: map[string]*resources.App{
 				"test_app": {
-					App: &apps.App{
+					App: apps.App{
 						Description: "test_app",
 					},
 				},
@@ -1018,12 +1018,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Apps: map[string]*resources.App{
 				"test_app": {
-					App: &apps.App{
+					App: apps.App{
 						Name: "test_app",
 					},
 				},
 				"test_app_new": {
-					App: &apps.App{
+					App: apps.App{
 						Name: "test_app_new",
 					},
 				},

@@ -32,7 +32,7 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"app": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "My App",
 						},
 						SourceCodePath: "../src/app",

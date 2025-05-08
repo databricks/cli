@@ -147,7 +147,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Apps: map[string]*resources.App{
 					"app1": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "app1",
 						},
 					},

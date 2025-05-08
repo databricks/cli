@@ -158,7 +158,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Apps: map[string]*resources.App{
 			"my_app": {
-				App: &apps.App{},
+				App: apps.App{},
 			},
 		},
 		QualityMonitors: map[string]*resources.QualityMonitor{

@@ -17,7 +17,7 @@ func TestAppInterpolateVariables(t *testing.T) {
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"my_app_1": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "my_app_1",
 						},
 						Config: map[string]any{
@@ -28,7 +28,7 @@ func TestAppInterpolateVariables(t *testing.T) {
 						},
 					},
 					"my_app_2": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "my_app_2",
 						},
 					},

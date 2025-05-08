@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
