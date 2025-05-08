@@ -23,4 +23,3 @@ EnvRepl.DATABRICKS_CLI_DEPLOYMENT = false
 [[Repls]]
 Old = '"exec_path": " "'
 New = '"exec_path": "[TERRAFORM]"'
->>>>>>> 5814bd694 (WIP - deploying without terraform)
