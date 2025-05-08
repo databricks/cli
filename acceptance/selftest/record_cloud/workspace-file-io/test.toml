@@ -1,0 +1,9 @@
+# hello, world\n base64 encoded in unix
+[[Repls]]
+Old = "aGVsbG8sIHdvcmxkCg=="
+New = "[HELLO-WORLD]"
+
+# hello, world\n base64 encoded in windows
+[[Repls]]
+Old = "aGVsbG8sIHdvcmxkDQo="
+New = "[HELLO-WORLD]"

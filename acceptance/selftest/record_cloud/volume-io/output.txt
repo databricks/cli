@@ -1,0 +1,155 @@
+
+>>> [CLI] schemas create schema-[UNIQUE_NAME] main
+{
+  "full_name": "main.schema-[UNIQUE_NAME]",
+  "owner": "[USERNAME]"
+}
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "name": "schema-[UNIQUE_NAME]"
+  }
+}
+
+>>> [CLI] schemas get main.schema-[UNIQUE_NAME]
+{
+  "full_name": "main.schema-[UNIQUE_NAME]",
+  "owner": "[USERNAME]"
+}
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema-[UNIQUE_NAME]"
+}
+
+>>> [CLI] volumes create main schema-[UNIQUE_NAME] volume-[UNIQUE_NAME] MANAGED
+{
+  "full_name": "main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]",
+  "owner": "[USERNAME]"
+}
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "name": "volume-[UNIQUE_NAME]",
+    "schema_name": "schema-[UNIQUE_NAME]",
+    "volume_type": "MANAGED"
+  }
+}
+
+>>> [CLI] volumes read main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
+{
+  "full_name": "main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]",
+  "owner": "[USERNAME]"
+}
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]"
+}
+
+>>> [CLI] fs cp ./hello.txt dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]
+./hello.txt -> dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt
+
+>>> print_requests
+{
+  "method": "HEAD",
+  "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
+}
+{
+  "method": "HEAD",
+  "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt",
+  "raw_body": "hello, world"
+}
+
+>>> [CLI] fs ls dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]
+hello.txt
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
+}
+
+>>> [CLI] fs cat dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt
+hello, world
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
+}
+
+>>> [CLI] fs rm dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt
+
+>>> print_requests
+{
+  "method": "HEAD",
+  "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
+}
+{
+  "method": "HEAD",
+  "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
+}
+
+>>> [CLI] fs ls dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
+}
+
+>>> [CLI] volumes delete main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/volumes/main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]"
+}
+
+>>> [CLI] volumes read main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
+Error: Volume 'main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]' does not exist.
+
+Exit code: 1
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]"
+}
+
+>>> [CLI] schemas delete main.schema-[UNIQUE_NAME]
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema-[UNIQUE_NAME]"
+}
+
+>>> [CLI] schemas get main.schema-[UNIQUE_NAME]
+Error: Schema 'main.schema-[UNIQUE_NAME]' does not exist.
+
+Exit code: 1
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema-[UNIQUE_NAME]"
+}
