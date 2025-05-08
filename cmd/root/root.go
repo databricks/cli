@@ -169,8 +169,7 @@ Stack Trace:
 		exitCode = 1
 	}
 
-	ctx = cmd.Context()
-	telemetryErr := telemetry.Upload(ctx, protos.ExecutionContext{
+	logTelemetry(ctx, protos.ExecutionContext{
 		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
 		Command:         commandString(cmd),
@@ -179,11 +178,21 @@ Stack Trace:
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 		ExitCode:        int64(exitCode),
 	})
-	if telemetryErr != nil {
-		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)
-	}
-
 	return err
+}
+
+func logTelemetry(ctx context.Context, ec protos.ExecutionContext) {
+	defer func() {
+		if r := recover(); r != nil {
+			// panics from telemetry Uploaad should never be visible to the end user.
+			log.Infof(ctx, "recovered from panic during telemetry.Upload: %v", r)
+		}
+	}()
+
+	err := telemetry.Upload(ctx, ec)
+	if err != nil {
+		log.Infof(ctx, "telemetry upload failed: %s", err)
+	}
 }
 
 // This function is used to report an unknown subcommand.
