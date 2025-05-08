@@ -53,7 +53,7 @@ func TestRunAsForAllowed(t *testing.T) {
 
 	// Assert other resources are not affected.
 	assert.Equal(t, ml.CreateModelRequest{Name: "skynet"}, b.Config.Resources.Models["model_one"].CreateModelRequest)
-	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
+	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
 	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, b.Config.Resources.Experiments["experiment_one"].Experiment)
 }
 
@@ -93,7 +93,7 @@ func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
 
 	// Assert other resources are not affected.
 	assert.Equal(t, ml.CreateModelRequest{Name: "skynet"}, b.Config.Resources.Models["model_one"].CreateModelRequest)
-	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
+	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
 	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, b.Config.Resources.Experiments["experiment_one"].Experiment)
 }
 
