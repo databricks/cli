@@ -54,7 +54,7 @@ func TestRunAsForAllowed(t *testing.T) {
 	// Assert other resources are not affected.
 	assert.Equal(t, ml.Model{Name: "skynet"}, b.Config.Resources.Models["model_one"].Model)
 	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
-	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
+	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, b.Config.Resources.Experiments["experiment_one"].Experiment)
 }
 
 func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
@@ -94,7 +94,7 @@ func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
 	// Assert other resources are not affected.
 	assert.Equal(t, ml.Model{Name: "skynet"}, b.Config.Resources.Models["model_one"].Model)
 	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
-	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
+	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, b.Config.Resources.Experiments["experiment_one"].Experiment)
 }
 
 func TestRunAsErrorForPipelines(t *testing.T) {
@@ -310,6 +310,6 @@ func TestLegacyRunAs(t *testing.T) {
 	// Assert other resources are not affected.
 	assert.Equal(t, ml.Model{Name: "skynet"}, b.Config.Resources.Models["model_one"].Model)
 	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
-	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
-	assert.Equal(t, serving.CreateServingEndpoint{Name: "skynet"}, *b.Config.Resources.ModelServingEndpoints["model_serving_one"].CreateServingEndpoint)
+	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, b.Config.Resources.Experiments["experiment_one"].Experiment)
+	assert.Equal(t, serving.CreateServingEndpoint{Name: "skynet"}, b.Config.Resources.ModelServingEndpoints["model_serving_one"].CreateServingEndpoint)
 }

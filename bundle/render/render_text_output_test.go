@@ -546,7 +546,7 @@ func TestRenderSummary(t *testing.T) {
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"endpoint1": {
 						ID: "7",
-						CreateServingEndpoint: &serving.CreateServingEndpoint{
+						CreateServingEndpoint: serving.CreateServingEndpoint{
 							Name: "my_serving_endpoint",
 						},
 						URL: "https://url4",

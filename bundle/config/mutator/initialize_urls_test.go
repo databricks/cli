@@ -50,7 +50,7 @@ func TestInitializeURLs(t *testing.T) {
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {
 						ID: "my_serving_endpoint",
-						CreateServingEndpoint: &serving.CreateServingEndpoint{
+						CreateServingEndpoint: serving.CreateServingEndpoint{
 							Name: "my_serving_endpoint",
 						},
 					},

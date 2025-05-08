@@ -165,7 +165,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 			"my_model_serving_endpoint": {
-				CreateServingEndpoint: &serving.CreateServingEndpoint{},
+				CreateServingEndpoint: serving.CreateServingEndpoint{},
 			},
 		},
 	}

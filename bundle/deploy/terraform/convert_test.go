@@ -417,7 +417,7 @@ func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 
 func TestBundleToTerraformModelServing(t *testing.T) {
 	src := resources.ModelServingEndpoint{
-		CreateServingEndpoint: &serving.CreateServingEndpoint{
+		CreateServingEndpoint: serving.CreateServingEndpoint{
 			Name: "name",
 			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
@@ -464,7 +464,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 
 func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 	src := resources.ModelServingEndpoint{
-		CreateServingEndpoint: &serving.CreateServingEndpoint{
+		CreateServingEndpoint: serving.CreateServingEndpoint{
 			Name: "name",
 
 			// Need to specify this to satisfy the equivalence test:
@@ -780,7 +780,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"test_model_serving": {
-					CreateServingEndpoint: &serving.CreateServingEndpoint{
+					CreateServingEndpoint: serving.CreateServingEndpoint{
 						Name: "test_model_serving",
 					},
 				},
@@ -934,12 +934,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"test_model_serving": {
-					CreateServingEndpoint: &serving.CreateServingEndpoint{
+					CreateServingEndpoint: serving.CreateServingEndpoint{
 						Name: "test_model_serving",
 					},
 				},
 				"test_model_serving_new": {
-					CreateServingEndpoint: &serving.CreateServingEndpoint{
+					CreateServingEndpoint: serving.CreateServingEndpoint{
 						Name: "test_model_serving_new",
 					},
 				},

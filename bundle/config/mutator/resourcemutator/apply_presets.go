@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
 type applyPresets struct{}
@@ -153,9 +152,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	for _, e := range r.ModelServingEndpoints {
 		if e == nil {
 			continue
-		}
-		if e.CreateServingEndpoint == nil {
-			e.CreateServingEndpoint = &serving.CreateServingEndpoint{}
 		}
 		e.Name = normalizePrefix(prefix) + e.Name
 
