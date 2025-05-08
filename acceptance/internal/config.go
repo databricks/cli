@@ -191,7 +191,7 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 
 	var config TestConfig
 	meta, err := toml.Decode(string(bytes), &config)
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to parse %s", path)
 
 	keys := meta.Undecoded()
 	if len(keys) > 0 {
