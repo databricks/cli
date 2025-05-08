@@ -169,19 +169,11 @@ Stack Trace:
 		exitCode = 1
 	}
 
-	logTelemetry(ctx, protos.ExecutionContext{
-		CmdExecID:       cmdctx.ExecId(ctx),
-		Version:         build.GetInfo().Version,
-		Command:         commandString(cmd),
-		OperatingSystem: runtime.GOOS,
-		DbrVersion:      dbr.RuntimeVersion(ctx),
-		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
-		ExitCode:        int64(exitCode),
-	})
+	logTelemetry(cmd.Context(), commandString(cmd), time.Since(startTime).Milliseconds(), exitCode)
 	return err
 }
 
-func logTelemetry(ctx context.Context, ec protos.ExecutionContext) {
+func logTelemetry(ctx context.Context, commandStr string, executionTimeMs int64, exitCode int) {
 	defer func() {
 		if r := recover(); r != nil {
 			// panics from telemetry Uploaad should never be visible to the end user.
@@ -189,7 +181,15 @@ func logTelemetry(ctx context.Context, ec protos.ExecutionContext) {
 		}
 	}()
 
-	err := telemetry.Upload(ctx, ec)
+	err := telemetry.Upload(ctx, protos.ExecutionContext{
+		CmdExecID:       cmdctx.ExecId(ctx),
+		Version:         build.GetInfo().Version,
+		Command:         commandStr,
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      dbr.RuntimeVersion(ctx),
+		ExecutionTimeMs: executionTimeMs,
+		ExitCode:        int64(exitCode),
+	})
 	if err != nil {
 		log.Infof(ctx, "telemetry upload failed: %s", err)
 	}
