@@ -143,7 +143,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Clusters: map[string]*resources.Cluster{
 			"my_cluster": {
-				ClusterSpec: compute.ClusterSpec{},
+				ClusterSpec: &compute.ClusterSpec{},
 			},
 		},
 		Dashboards: map[string]*resources.Dashboard{
