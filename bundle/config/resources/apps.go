@@ -37,7 +37,7 @@ type App struct {
 	ModifiedStatus ModifiedStatus  `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string          `json:"url,omitempty" bundle:"internal"`
 
-	*apps.App
+	apps.App
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {
@@ -88,5 +88,5 @@ func (a *App) GetURL() string {
 }
 
 func (a *App) IsNil() bool {
-	return a.App == nil
+	return false
 }
