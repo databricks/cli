@@ -122,7 +122,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Pipelines: map[string]*resources.Pipeline{
 			"my_pipeline": {
-				CreatePipeline: &pipelines.CreatePipeline{},
+				CreatePipeline: pipelines.CreatePipeline{},
 			},
 		},
 		Experiments: map[string]*resources.MlflowExperiment{

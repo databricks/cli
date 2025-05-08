@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
@@ -95,9 +94,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	for _, p := range r.Pipelines {
 		if p == nil {
 			continue
-		}
-		if p.CreatePipeline == nil {
-			p.CreatePipeline = &pipelines.CreatePipeline{}
 		}
 		p.Name = prefix + p.Name
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {

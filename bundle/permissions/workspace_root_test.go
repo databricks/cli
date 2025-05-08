@@ -38,8 +38,8 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline_1": {CreatePipeline: &pipelines.CreatePipeline{}},
-					"pipeline_2": {CreatePipeline: &pipelines.CreatePipeline{}},
+					"pipeline_1": {CreatePipeline: pipelines.CreatePipeline{}},
+					"pipeline_2": {CreatePipeline: pipelines.CreatePipeline{}},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model_1": {Model: &ml.Model{}},
@@ -98,8 +98,8 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline_1": {CreatePipeline: &pipelines.CreatePipeline{}},
-					"pipeline_2": {CreatePipeline: &pipelines.CreatePipeline{}},
+					"pipeline_1": {CreatePipeline: pipelines.CreatePipeline{}},
+					"pipeline_2": {CreatePipeline: pipelines.CreatePipeline{}},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model_1": {Model: &ml.Model{}},

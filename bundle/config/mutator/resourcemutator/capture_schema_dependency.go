@@ -56,7 +56,7 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 }
 
 func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
-	if p == nil || p.CreatePipeline == nil {
+	if p == nil {
 		return
 	}
 	if p.Schema == "" {
@@ -71,7 +71,7 @@ func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
 }
 
 func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
-	if p == nil || p.CreatePipeline == nil {
+	if p == nil {
 		return
 	}
 	if p.Target == "" {

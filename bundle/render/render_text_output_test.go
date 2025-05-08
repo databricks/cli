@@ -526,12 +526,12 @@ func TestRenderSummary(t *testing.T) {
 					"pipeline2": {
 						ID: "4",
 						// no URL
-						CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline2-name"},
+						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline2-name"},
 					},
 					"pipeline1": {
 						ID:             "3",
 						URL:            "https://url3",
-						CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline1-name"},
+						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1-name"},
 					},
 				},
 				Schemas: map[string]*resources.Schema{

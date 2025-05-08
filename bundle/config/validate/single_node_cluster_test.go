@@ -238,7 +238,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"foo": {
-								CreatePipeline: &pipelines.CreatePipeline{
+								CreatePipeline: pipelines.CreatePipeline{
 									Clusters: []pipelines.PipelineCluster{
 										{
 											SparkConf:  tc.sparkConf,
@@ -493,7 +493,7 @@ func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"foo": {
-								CreatePipeline: &pipelines.CreatePipeline{
+								CreatePipeline: pipelines.CreatePipeline{
 									Clusters: []pipelines.PipelineCluster{
 										{
 											SparkConf:  tc.sparkConf,
