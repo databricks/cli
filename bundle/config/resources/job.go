@@ -29,7 +29,7 @@ type Job struct {
 	ModifiedStatus ModifiedStatus  `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string          `json:"url,omitempty" bundle:"internal"`
 
-	jobs.JobSettings `json:",omitempty"`
+	jobs.JobSettings
 }
 
 func (s *Job) UnmarshalJSON(b []byte) error {
