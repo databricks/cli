@@ -1,5 +1,5 @@
 Local = false
-CloudSlow = true
+Cloud = true
 Ignore = [
     ".databricks",
     ".venv",
