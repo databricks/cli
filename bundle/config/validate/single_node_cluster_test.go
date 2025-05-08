@@ -380,7 +380,7 @@ func TestValidateSingleNodeClusterPassInteractiveClusters(t *testing.T) {
 					Resources: config.Resources{
 						Clusters: map[string]*resources.Cluster{
 							"foo": {
-								ClusterSpec: &compute.ClusterSpec{
+								ClusterSpec: compute.ClusterSpec{
 									SparkConf:  tc.sparkConf,
 									CustomTags: tc.customTags,
 									PolicyId:   tc.policyId,

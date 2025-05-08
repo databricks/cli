@@ -28,7 +28,7 @@ type Cluster struct {
 	ModifiedStatus ModifiedStatus      `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string              `json:"url,omitempty" bundle:"internal"`
 
-	*compute.ClusterSpec
+	compute.ClusterSpec
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {
