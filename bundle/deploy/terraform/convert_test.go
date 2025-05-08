@@ -815,7 +815,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
-					ClusterSpec: &compute.ClusterSpec{
+					ClusterSpec: compute.ClusterSpec{
 						ClusterName: "test_cluster",
 					},
 				},
@@ -994,12 +994,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
-					ClusterSpec: &compute.ClusterSpec{
+					ClusterSpec: compute.ClusterSpec{
 						ClusterName: "test_cluster",
 					},
 				},
 				"test_cluster_new": {
-					ClusterSpec: &compute.ClusterSpec{
+					ClusterSpec: compute.ClusterSpec{
 						ClusterName: "test_cluster_new",
 					},
 				},

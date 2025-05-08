@@ -136,7 +136,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
 				},
 				Clusters: map[string]*resources.Cluster{
-					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
+					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
