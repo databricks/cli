@@ -18,15 +18,13 @@ func GetEnvOrSkipTest(t TestingT, name string) string {
 	return value
 }
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 // RandomName gives random name with optional prefix. e.g. qa.RandomName("tf-")
 func RandomName(prefix ...string) string {
 	out := ""
 	for _, p := range prefix {
 		out += p
 	}
-	out += uuid.New().String()
+	out += strings.ReplaceAll(uuid.New().String(), "-", "")
 	return out
 }
 
