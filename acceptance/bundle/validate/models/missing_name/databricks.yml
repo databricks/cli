@@ -1,0 +1,6 @@
+bundle:
+  name: test-bundle
+
+resources:
+  models:
+    mymodel: {}
