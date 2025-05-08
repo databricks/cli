@@ -19,19 +19,19 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "foobar",
 						},
 					},
 					"schema2": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog2",
 							Name:        "foobar",
 						},
 					},
 					"schema3": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "barfoo",
 						},
@@ -96,19 +96,19 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "foobar",
 						},
 					},
 					"schema2": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog2",
 							Name:        "foobar",
 						},
 					},
 					"schema3": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "barfoo",
 						},
@@ -192,19 +192,19 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "foobar",
 						},
 					},
 					"schema2": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog2",
 							Name:        "foobar",
 						},
 					},
 					"schema3": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "barfoo",
 						},

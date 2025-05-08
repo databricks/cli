@@ -36,7 +36,7 @@ func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *reso
 	}
 
 	for k, s := range b.Config.Resources.Schemas {
-		if s != nil && s.CreateSchema != nil && s.CatalogName == catalogName && s.Name == schemaName {
+		if s != nil && s.CatalogName == catalogName && s.Name == schemaName {
 			return k, s
 		}
 	}

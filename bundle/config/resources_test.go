@@ -132,12 +132,12 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		RegisteredModels: map[string]*resources.RegisteredModel{
 			"my_registered_model": {
-				CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{},
+				CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{},
 			},
 		},
 		Schemas: map[string]*resources.Schema{
 			"my_schema": {
-				CreateSchema: &catalog.CreateSchema{},
+				CreateSchema: catalog.CreateSchema{},
 			},
 		},
 		Clusters: map[string]*resources.Cluster{
@@ -145,7 +145,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {
-				Dashboard: &dashboards.Dashboard{},
+				Dashboard: dashboards.Dashboard{},
 			},
 		},
 		Volumes: map[string]*resources.Volume{
@@ -160,7 +160,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		QualityMonitors: map[string]*resources.QualityMonitor{
 			"my_quality_monitor": {
-				CreateMonitor: &catalog.CreateMonitor{},
+				CreateMonitor: catalog.CreateMonitor{},
 			},
 		},
 		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{

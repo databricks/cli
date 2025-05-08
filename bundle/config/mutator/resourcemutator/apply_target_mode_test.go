@@ -103,25 +103,25 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"servingendpoint1": {CreateServingEndpoint: serving.CreateServingEndpoint{Name: "servingendpoint1"}},
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
-					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
+					"registeredmodel1": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
 					"qualityMonitor1": {
 						TableName: "qualityMonitor1",
-						CreateMonitor: &catalog.CreateMonitor{
+						CreateMonitor: catalog.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
 						},
 					},
 					"qualityMonitor2": {
 						TableName: "qualityMonitor2",
-						CreateMonitor: &catalog.CreateMonitor{
+						CreateMonitor: catalog.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
 							Schedule:         &catalog.MonitorCronSchedule{},
 						},
 					},
 					"qualityMonitor3": {
 						TableName: "qualityMonitor3",
-						CreateMonitor: &catalog.CreateMonitor{
+						CreateMonitor: catalog.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
 							Schedule: &catalog.MonitorCronSchedule{
 								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
@@ -130,7 +130,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					},
 				},
 				Schemas: map[string]*resources.Schema{
-					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
+					"schema1": {CreateSchema: catalog.CreateSchema{Name: "schema1"}},
 				},
 				Volumes: map[string]*resources.Volume{
 					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
@@ -140,7 +140,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
-						Dashboard: &dashboards.Dashboard{
+						Dashboard: dashboards.Dashboard{
 							DisplayName: "dashboard1",
 						},
 					},

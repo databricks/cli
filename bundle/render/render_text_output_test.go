@@ -537,7 +537,7 @@ func TestRenderSummary(t *testing.T) {
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
 						ID: "catalog.schema",
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							Name: "schema",
 						},
 						// no URL

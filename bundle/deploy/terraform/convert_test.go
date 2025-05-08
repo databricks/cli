@@ -513,7 +513,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 
 func TestBundleToTerraformRegisteredModel(t *testing.T) {
 	src := resources.RegisteredModel{
-		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 			Name:        "name",
 			CatalogName: "catalog",
 			SchemaName:  "schema",
@@ -542,7 +542,7 @@ func TestBundleToTerraformRegisteredModel(t *testing.T) {
 
 func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 	src := resources.RegisteredModel{
-		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 			Name:        "name",
 			CatalogName: "catalog",
 			SchemaName:  "schema",
@@ -787,21 +787,21 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			RegisteredModels: map[string]*resources.RegisteredModel{
 				"test_registered_model": {
-					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 						Name: "test_registered_model",
 					},
 				},
 			},
 			QualityMonitors: map[string]*resources.QualityMonitor{
 				"test_monitor": {
-					CreateMonitor: &catalog.CreateMonitor{
+					CreateMonitor: catalog.CreateMonitor{
 						TableName: "test_monitor",
 					},
 				},
 			},
 			Schemas: map[string]*resources.Schema{
 				"test_schema": {
-					CreateSchema: &catalog.CreateSchema{
+					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema",
 					},
 				},
@@ -822,7 +822,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Dashboards: map[string]*resources.Dashboard{
 				"test_dashboard": {
-					Dashboard: &dashboards.Dashboard{
+					Dashboard: dashboards.Dashboard{
 						DisplayName: "test_dashboard",
 					},
 				},
@@ -946,36 +946,36 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			RegisteredModels: map[string]*resources.RegisteredModel{
 				"test_registered_model": {
-					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 						Name: "test_registered_model",
 					},
 				},
 				"test_registered_model_new": {
-					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 						Name: "test_registered_model_new",
 					},
 				},
 			},
 			QualityMonitors: map[string]*resources.QualityMonitor{
 				"test_monitor": {
-					CreateMonitor: &catalog.CreateMonitor{
+					CreateMonitor: catalog.CreateMonitor{
 						TableName: "test_monitor",
 					},
 				},
 				"test_monitor_new": {
-					CreateMonitor: &catalog.CreateMonitor{
+					CreateMonitor: catalog.CreateMonitor{
 						TableName: "test_monitor_new",
 					},
 				},
 			},
 			Schemas: map[string]*resources.Schema{
 				"test_schema": {
-					CreateSchema: &catalog.CreateSchema{
+					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema",
 					},
 				},
 				"test_schema_new": {
-					CreateSchema: &catalog.CreateSchema{
+					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema_new",
 					},
 				},
@@ -1006,12 +1006,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Dashboards: map[string]*resources.Dashboard{
 				"test_dashboard": {
-					Dashboard: &dashboards.Dashboard{
+					Dashboard: dashboards.Dashboard{
 						DisplayName: "test_dashboard",
 					},
 				},
 				"test_dashboard_new": {
-					Dashboard: &dashboards.Dashboard{
+					Dashboard: dashboards.Dashboard{
 						DisplayName: "test_dashboard_new",
 					},
 				},

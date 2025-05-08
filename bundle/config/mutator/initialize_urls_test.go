@@ -58,7 +58,7 @@ func TestInitializeURLs(t *testing.T) {
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {
 						ID: "8",
-						CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 							Name: "my_registered_model",
 						},
 					},
@@ -66,13 +66,13 @@ func TestInitializeURLs(t *testing.T) {
 				QualityMonitors: map[string]*resources.QualityMonitor{
 					"qualityMonitor1": {
 						TableName:     "catalog.schema.qualityMonitor1",
-						CreateMonitor: &catalog.CreateMonitor{},
+						CreateMonitor: catalog.CreateMonitor{},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
 						ID: "catalog.schema",
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							Name: "schema",
 						},
 					},
@@ -88,7 +88,7 @@ func TestInitializeURLs(t *testing.T) {
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
 						ID: "01ef8d56871e1d50ae30ce7375e42478",
-						Dashboard: &dashboards.Dashboard{
+						Dashboard: dashboards.Dashboard{
 							DisplayName: "My special dashboard",
 						},
 					},
