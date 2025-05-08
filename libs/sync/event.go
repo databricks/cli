@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -50,10 +51,8 @@ type EventChanges struct {
 
 // creates EventChanges with filenames in Put and Delete sorted alphabetically
 func newEventChanges(put, delete []string) *EventChanges {
-	putCopy := make([]string, len(put))
-	copy(putCopy, put)
-	deleteCopy := make([]string, len(delete))
-	copy(deleteCopy, delete)
+	putCopy := slices.Clone(put)
+	deleteCopy := slices.Clone(delete)
 
 	sort.Strings(putCopy)
 	sort.Strings(deleteCopy)
