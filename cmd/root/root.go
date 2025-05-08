@@ -170,15 +170,18 @@ Stack Trace:
 	}
 
 	commandStr := commandString(cmd)
+	ctx = cmd.Context()
 
-	// Log bundle deploy failures.
-	if commandStr == "bundle_deploy" && exitCode != 0 {
+	// Log bundle deploy failures. Only log if we have successfully configured
+	// an authenticated Databricks client. We cannot log unauthenticated telemetry
+	// from the CLI yet.
+	if cmdctx.HasConfigUsed(ctx) && commandStr == "bundle_deploy" && exitCode != 0 {
 		telemetry.Log(ctx, protos.DatabricksCliLog{
 			BundleDeployEvent: &protos.BundleDeployEvent{},
 		})
 	}
 
-	logTelemetry(ctx, protos.ExecutionContext{
+	telemetry.Upload(cmd.Context(), protos.ExecutionContext{
 		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
 		Command:         commandStr,
@@ -188,20 +191,6 @@ Stack Trace:
 		ExitCode:        int64(exitCode),
 	})
 	return err
-}
-
-func logTelemetry(ctx context.Context, ec protos.ExecutionContext) {
-	defer func() {
-		if r := recover(); r != nil {
-			// panics from telemetry Uploaad should never be visible to the end user.
-			log.Infof(ctx, "recovered from panic during telemetry.Upload: %v", r)
-		}
-	}()
-
-	err := telemetry.Upload(ctx, ec)
-	if err != nil {
-		log.Infof(ctx, "telemetry upload failed: %s", err)
-	}
 }
 
 // This function is used to report an unknown subcommand.
