@@ -96,5 +96,6 @@ func newDeployCommand() *cobra.Command {
 
 		return nil
 	}
+
 	return cmd
 }
