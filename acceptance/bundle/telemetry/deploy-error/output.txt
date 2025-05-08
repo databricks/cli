@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle deploy
+Error: unable to locate bundle root: databricks.yml not found
+
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [DEV_VERSION]
+
+Panic Payload: cannot get *config.Config. Please report it as a bug
+
+Stack Trace:
+goroutine 1 [running]:
+runtime/debug.Stack()
+	/Users/shreyas.goenka/go/pkg/mod/golang.org/toolchain@v0.0.1-go[GO_VERSION].[OS]-arm64/src/runtime/debug/stack.go:26 +0x64
+github.com/databricks/cli/cmd/root.Execute.func1()
+	/Users/shreyas.goenka/repos/cli2/cmd/root/root.go:112 +0xa4
+panic({0x1019771c0?, 0x101cf6600?})
+	/Users/shreyas.goenka/go/pkg/mod/golang.org/toolchain@v0.0.1-go[GO_VERSION].[OS]-arm64/src/runtime/panic.go:792 +0x124
+github.com/databricks/cli/libs/cmdctx.ConfigUsed(...)
+	/Users/shreyas.goenka/repos/cli2/libs/cmdctx/config_used.go:16
+github.com/databricks/cli/libs/telemetry.Upload({0x101d0cfc8, 0x14000349350}, {{0x14000043830, 0x24}, {0x1400012f0c8, 0x16}, {0x140005a2380, 0xd}, {0x1016173ef, 0x6}, ...})
+	/Users/shreyas.goenka/repos/cli2/libs/telemetry/logger.go:79 +0x908
+github.com/databricks/cli/cmd/root.Execute({0x101d0cf90, 0x1027eafa0}, 0x1400032b508)
+	/Users/shreyas.goenka/repos/cli2/cmd/root/root.go:182 +0x638
+main.main()
+	/Users/shreyas.goenka/repos/cli2/main.go:13 +0x44
+
+Exit code: 1
