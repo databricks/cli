@@ -127,9 +127,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if e == nil {
 			continue
 		}
-		if e.Experiment == nil {
-			e.Experiment = &ml.Experiment{}
-		}
 		filepath := e.Name
 		dir := path.Dir(filepath)
 		base := path.Base(filepath)

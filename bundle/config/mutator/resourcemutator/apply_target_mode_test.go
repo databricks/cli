@@ -93,8 +93,8 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment1": {Experiment: &ml.Experiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
-					"experiment2": {Experiment: &ml.Experiment{Name: "experiment2"}},
+					"experiment1": {Experiment: ml.Experiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
+					"experiment2": {Experiment: ml.Experiment{Name: "experiment2"}},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model1": {Model: ml.Model{Name: "model1"}},

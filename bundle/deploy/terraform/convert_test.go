@@ -363,7 +363,7 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 
 func TestBundleToTerraformExperiment(t *testing.T) {
 	src := resources.MlflowExperiment{
-		Experiment: &ml.Experiment{
+		Experiment: ml.Experiment{
 			Name: "name",
 		},
 	}
@@ -386,7 +386,7 @@ func TestBundleToTerraformExperiment(t *testing.T) {
 
 func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 	src := resources.MlflowExperiment{
-		Experiment: &ml.Experiment{
+		Experiment: ml.Experiment{
 			Name: "name",
 		},
 		Permissions: []resources.MlflowExperimentPermission{
@@ -773,7 +773,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					Experiment: &ml.Experiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment",
 					},
 				},
@@ -922,12 +922,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					Experiment: &ml.Experiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment",
 					},
 				},
 				"test_mlflow_experiment_new": {
-					Experiment: &ml.Experiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment_new",
 					},
 				},
