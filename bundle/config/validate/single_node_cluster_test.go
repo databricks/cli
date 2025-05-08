@@ -99,7 +99,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 					Resources: config.Resources{
 						Clusters: map[string]*resources.Cluster{
 							"foo": {
-								ClusterSpec: &compute.ClusterSpec{
+								ClusterSpec: compute.ClusterSpec{
 									SparkConf:  tc.sparkConf,
 									CustomTags: tc.customTags,
 								},
@@ -289,7 +289,7 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 										{
 											ForEachTask: &jobs.ForEachTask{
 												Task: jobs.Task{
-													NewCluster: &compute.ClusterSpec{
+													NewCluster: compute.ClusterSpec{
 														ClusterName: "my_cluster",
 														SparkConf:   tc.sparkConf,
 														CustomTags:  tc.customTags,
