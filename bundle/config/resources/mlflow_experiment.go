@@ -79,7 +79,3 @@ func (s *MlflowExperiment) GetName() string {
 func (s *MlflowExperiment) GetURL() string {
 	return s.URL
 }
-
-func (s *MlflowExperiment) IsNil() bool {
-	return false
-}

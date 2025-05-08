@@ -86,7 +86,3 @@ func (a *App) GetName() string {
 func (a *App) GetURL() string {
 	return a.URL
 }
-
-func (a *App) IsNil() bool {
-	return false
-}

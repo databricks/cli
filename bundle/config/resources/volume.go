@@ -81,7 +81,3 @@ func (v *Volume) GetURL() string {
 func (v *Volume) GetName() string {
 	return v.Name
 }
-
-func (v *Volume) IsNil() bool {
-	return false
-}

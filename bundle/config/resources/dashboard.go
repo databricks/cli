@@ -101,7 +101,3 @@ func (r *Dashboard) GetName() string {
 func (r *Dashboard) GetURL() string {
 	return r.URL
 }
-
-func (r *Dashboard) IsNil() bool {
-	return false
-}

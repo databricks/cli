@@ -87,7 +87,3 @@ func (s *ModelServingEndpoint) GetName() string {
 func (s *ModelServingEndpoint) GetURL() string {
 	return s.URL
 }
-
-func (s *ModelServingEndpoint) IsNil() bool {
-	return false
-}

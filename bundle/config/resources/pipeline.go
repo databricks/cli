@@ -79,7 +79,3 @@ func (p *Pipeline) GetName() string {
 func (s *Pipeline) GetURL() string {
 	return s.URL
 }
-
-func (s *Pipeline) IsNil() bool {
-	return false
-}
