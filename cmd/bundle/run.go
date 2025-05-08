@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// TODO: Add script prompting as well? Or should we skip it?
 func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
@@ -57,6 +58,8 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 		return "", nil, errors.New("expected a KEY of the resource to run")
 	}
 
+	// TODO: Should we support positional arguments for script execution?
+	// can start with no.
 	return args[0], args[1:], nil
 }
 
@@ -94,7 +97,6 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	case errors.As(resourceLookupErr, &resources.ResourceNotFoundError{}) && scriptFound:
 		// Run the script.
 	}
-
 
 	return nil, resourceLookupErr
 }
@@ -147,6 +149,7 @@ Example usage:
 	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
+	// TODO: Add validation that the script does not include interpolation syntax.
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
@@ -165,6 +168,9 @@ Example usage:
 		if err := diags.Error(); err != nil {
 			return err
 		}
+
+		// TODO: Short circuit script execution.
+		// TODO: Append additional args to the script.
 
 		key, args, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
