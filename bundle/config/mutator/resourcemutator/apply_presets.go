@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -222,9 +221,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	for _, c := range r.Clusters {
 		if c == nil {
 			continue
-		}
-		if c.ClusterSpec == nil {
-			c.ClusterSpec = &compute.ClusterSpec{}
 		}
 		c.ClusterName = prefix + c.ClusterName
 		if c.CustomTags == nil {

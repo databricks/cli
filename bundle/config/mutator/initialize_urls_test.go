@@ -80,7 +80,7 @@ func TestInitializeURLs(t *testing.T) {
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {
 						ID: "1017-103929-vlr7jzcf",
-						ClusterSpec: &compute.ClusterSpec{
+						ClusterSpec: compute.ClusterSpec{
 							ClusterName: "cluster1",
 						},
 					},

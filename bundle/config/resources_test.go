@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -142,9 +141,7 @@ func TestResourcesBindSupport(t *testing.T) {
 			},
 		},
 		Clusters: map[string]*resources.Cluster{
-			"my_cluster": {
-				ClusterSpec: &compute.ClusterSpec{},
-			},
+			"my_cluster": {},
 		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {

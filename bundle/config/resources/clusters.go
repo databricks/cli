@@ -79,5 +79,5 @@ func (s *Cluster) GetURL() string {
 }
 
 func (s *Cluster) IsNil() bool {
-	return s.ClusterSpec == nil
+	return false
 }
