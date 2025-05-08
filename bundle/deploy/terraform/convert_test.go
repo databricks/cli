@@ -292,7 +292,7 @@ func TestBundleToTerraformPipelinePermissions(t *testing.T) {
 
 func TestBundleToTerraformModel(t *testing.T) {
 	src := resources.MlflowModel{
-		Model: &ml.Model{
+		Model: ml.Model{
 			Name:        "name",
 			Description: "description",
 			Tags: []ml.ModelTag{
@@ -332,7 +332,7 @@ func TestBundleToTerraformModel(t *testing.T) {
 
 func TestBundleToTerraformModelPermissions(t *testing.T) {
 	src := resources.MlflowModel{
-		Model: &ml.Model{
+		Model: ml.Model{
 			Name: "name",
 		},
 		Permissions: []resources.MlflowModelPermission{
@@ -766,7 +766,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Models: map[string]*resources.MlflowModel{
 				"test_mlflow_model": {
-					Model: &ml.Model{
+					Model: ml.Model{
 						Name: "test_mlflow_model",
 					},
 				},
@@ -910,12 +910,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Models: map[string]*resources.MlflowModel{
 				"test_mlflow_model": {
-					Model: &ml.Model{
+					Model: ml.Model{
 						Name: "test_mlflow_model",
 					},
 				},
 				"test_mlflow_model_new": {
-					Model: &ml.Model{
+					Model: ml.Model{
 						Name: "test_mlflow_model_new",
 					},
 				},

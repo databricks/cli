@@ -28,7 +28,7 @@ type MlflowModel struct {
 	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string                  `json:"url,omitempty" bundle:"internal"`
 
-	*ml.Model
+	ml.Model
 }
 
 func (s *MlflowModel) UnmarshalJSON(b []byte) error {
@@ -81,5 +81,5 @@ func (s *MlflowModel) GetURL() string {
 }
 
 func (s *MlflowModel) IsNil() bool {
-	return s.Model == nil
+	return false
 }

@@ -52,7 +52,7 @@ func TestRunAsForAllowed(t *testing.T) {
 	assert.Equal(t, "", jobs["job_three"].RunAs.UserName)
 
 	// Assert other resources are not affected.
-	assert.Equal(t, ml.Model{Name: "skynet"}, *b.Config.Resources.Models["model_one"].Model)
+	assert.Equal(t, ml.Model{Name: "skynet"}, b.Config.Resources.Models["model_one"].Model)
 	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
 	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
 }
@@ -92,7 +92,7 @@ func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
 	assert.Equal(t, "", jobs["job_three"].RunAs.UserName)
 
 	// Assert other resources are not affected.
-	assert.Equal(t, ml.Model{Name: "skynet"}, *b.Config.Resources.Models["model_one"].Model)
+	assert.Equal(t, ml.Model{Name: "skynet"}, b.Config.Resources.Models["model_one"].Model)
 	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
 	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
 }
@@ -308,7 +308,7 @@ func TestLegacyRunAs(t *testing.T) {
 	}, pipelines["nyc_taxi_pipeline"].Permissions[1])
 
 	// Assert other resources are not affected.
-	assert.Equal(t, ml.Model{Name: "skynet"}, *b.Config.Resources.Models["model_one"].Model)
+	assert.Equal(t, ml.Model{Name: "skynet"}, b.Config.Resources.Models["model_one"].Model)
 	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
 	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
 	assert.Equal(t, serving.CreateServingEndpoint{Name: "skynet"}, *b.Config.Resources.ModelServingEndpoints["model_serving_one"].CreateServingEndpoint)

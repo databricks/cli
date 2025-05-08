@@ -97,7 +97,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"experiment2": {Experiment: &ml.Experiment{Name: "experiment2"}},
 				},
 				Models: map[string]*resources.MlflowModel{
-					"model1": {Model: &ml.Model{Name: "model1"}},
+					"model1": {Model: ml.Model{Name: "model1"}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {CreateServingEndpoint: &serving.CreateServingEndpoint{Name: "servingendpoint1"}},

@@ -110,9 +110,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if m == nil {
 			continue
 		}
-		if m.Model == nil {
-			m.Model = &ml.Model{}
-		}
 		m.Name = prefix + m.Name
 		for _, t := range tags {
 			exists := slices.ContainsFunc(m.Tags, func(modelTag ml.ModelTag) bool {

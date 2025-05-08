@@ -51,7 +51,7 @@ func TestInterpolate(t *testing.T) {
 				},
 				Models: map[string]*resources.MlflowModel{
 					"my_model": {
-						Model: &ml.Model{
+						Model: ml.Model{
 							Name: "my_model",
 						},
 					},

@@ -42,8 +42,8 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 					"pipeline_2": {CreatePipeline: pipelines.CreatePipeline{}},
 				},
 				Models: map[string]*resources.MlflowModel{
-					"model_1": {Model: &ml.Model{}},
-					"model_2": {Model: &ml.Model{}},
+					"model_1": {Model: ml.Model{}},
+					"model_2": {Model: ml.Model{}},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment_1": {Experiment: &ml.Experiment{}},
@@ -102,8 +102,8 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 					"pipeline_2": {CreatePipeline: pipelines.CreatePipeline{}},
 				},
 				Models: map[string]*resources.MlflowModel{
-					"model_1": {Model: &ml.Model{}},
-					"model_2": {Model: &ml.Model{}},
+					"model_1": {Model: ml.Model{}},
+					"model_2": {Model: ml.Model{}},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment_1": {Experiment: &ml.Experiment{}},
