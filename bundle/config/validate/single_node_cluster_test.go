@@ -140,7 +140,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									JobClusters: []jobs.JobCluster{
 										{
 											NewCluster: compute.ClusterSpec{
@@ -189,7 +189,7 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									Tasks: []jobs.Task{
 										{
 											NewCluster: &compute.ClusterSpec{
@@ -284,7 +284,7 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									Tasks: []jobs.Task{
 										{
 											ForEachTask: &jobs.ForEachTask{
@@ -413,7 +413,7 @@ func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									JobClusters: []jobs.JobCluster{
 										{
 											NewCluster: compute.ClusterSpec{
@@ -453,7 +453,7 @@ func TestValidateSingleNodeClusterPassJobTaskClusters(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									Tasks: []jobs.Task{
 										{
 											NewCluster: &compute.ClusterSpec{
@@ -530,7 +530,7 @@ func TestValidateSingleNodeClusterPassJobForEachTaskCluster(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									Tasks: []jobs.Task{
 										{
 											ForEachTask: &jobs.ForEachTask{

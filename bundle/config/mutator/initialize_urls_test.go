@@ -26,7 +26,7 @@ func TestInitializeURLs(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						ID:          "1",
-						JobSettings: &jobs.JobSettings{Name: "job1"},
+						JobSettings: jobs.JobSettings{Name: "job1"},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
@@ -127,7 +127,7 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						ID:          "1",
-						JobSettings: &jobs.JobSettings{Name: "job1"},
+						JobSettings: jobs.JobSettings{Name: "job1"},
 					},
 				},
 			},

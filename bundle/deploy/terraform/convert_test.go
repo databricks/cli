@@ -45,7 +45,7 @@ func convertToResourceStruct[T any](t *testing.T, resource *T, data any) {
 
 func TestBundleToTerraformJob(t *testing.T) {
 	src := resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Name: "my job",
 			JobClusters: []jobs.JobCluster{
 				{
@@ -123,7 +123,7 @@ func TestBundleToTerraformJobPermissions(t *testing.T) {
 
 func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 	src := resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Name: "my job",
 			Tasks: []jobs.Task{
 				{
@@ -160,7 +160,7 @@ func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 
 func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 	src := resources.Job{
-		JobSettings: &jobs.JobSettings{
+		JobSettings: jobs.JobSettings{
 			Name: "my job",
 			Tasks: []jobs.Task{
 				{
@@ -575,11 +575,11 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 
 func TestBundleToTerraformDeletedResources(t *testing.T) {
 	job1 := resources.Job{
-		JobSettings: &jobs.JobSettings{},
+		JobSettings: jobs.JobSettings{},
 	}
 	job2 := resources.Job{
 		ModifiedStatus: resources.ModifiedStatusDeleted,
-		JobSettings:    &jobs.JobSettings{},
+		JobSettings:    jobs.JobSettings{},
 	}
 	config := config.Root{
 		Resources: config.Resources{
@@ -752,7 +752,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"test_job": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "test_job",
 					},
 				},
@@ -886,12 +886,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"test_job": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "test_job",
 					},
 				},
 				"test_job_new": {
-					JobSettings: &jobs.JobSettings{
+					JobSettings: jobs.JobSettings{
 						Name: "test_job_new",
 					},
 				},

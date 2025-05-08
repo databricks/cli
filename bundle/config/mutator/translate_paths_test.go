@@ -53,7 +53,7 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							GitSource: &jobs.GitSource{
 								GitBranch:   "somebranch",
 								GitCommit:   "somecommit",
@@ -126,7 +126,7 @@ func TestTranslatePaths(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
@@ -303,7 +303,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
@@ -399,7 +399,7 @@ func TestTranslatePathsOutsideSyncRoot(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
@@ -431,7 +431,7 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
@@ -463,7 +463,7 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
@@ -617,7 +617,7 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
@@ -653,7 +653,7 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
@@ -759,7 +759,7 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Environments: []jobs.JobEnvironment{
 								{
 									Spec: &compute.Environment{
@@ -816,7 +816,7 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey: "test",
@@ -881,7 +881,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{

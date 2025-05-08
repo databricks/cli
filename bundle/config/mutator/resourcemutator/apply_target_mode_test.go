@@ -53,7 +53,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job1",
 							Schedule: &jobs.CronSchedule{
 								QuartzCronExpression: "* * * * *",
@@ -62,7 +62,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 					"job2": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job2",
 							Schedule: &jobs.CronSchedule{
 								QuartzCronExpression: "* * * * *",
@@ -71,7 +71,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 					"job3": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job3",
 							Trigger: &jobs.TriggerSettings{
 								FileArrival: &jobs.FileArrivalTriggerConfiguration{
@@ -81,7 +81,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 					"job4": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job4",
 							Continuous: &jobs.Continuous{
 								PauseStatus: jobs.PauseStatusPaused,

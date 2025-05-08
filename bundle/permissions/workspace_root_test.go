@@ -34,8 +34,8 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
+					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
+					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline_1": {CreatePipeline: &pipelines.CreatePipeline{}},
@@ -94,8 +94,8 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
+					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
+					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline_1": {CreatePipeline: &pipelines.CreatePipeline{}},

@@ -11,7 +11,7 @@ import (
 func TestJobParameterArgs(t *testing.T) {
 	a := jobParameterArgs{
 		&resources.Job{
-			JobSettings: &jobs.JobSettings{
+			JobSettings: jobs.JobSettings{
 				Parameters: []jobs.JobParameterDefinition{
 					{
 						Name:    "foo",
@@ -70,7 +70,7 @@ func TestJobParameterArgs(t *testing.T) {
 func TestJobTaskNotebookParamArgs(t *testing.T) {
 	a := jobTaskNotebookParamArgs{
 		&resources.Job{
-			JobSettings: &jobs.JobSettings{
+			JobSettings: jobs.JobSettings{
 				Tasks: []jobs.Task{
 					{
 						NotebookTask: &jobs.NotebookTask{

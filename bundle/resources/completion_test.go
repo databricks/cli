@@ -17,10 +17,10 @@ func TestCompletions_SkipDuplicates(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{},
+						JobSettings: jobs.JobSettings{},
 					},
 					"bar": {
-						JobSettings: &jobs.JobSettings{},
+						JobSettings: jobs.JobSettings{},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
@@ -45,7 +45,7 @@ func TestCompletions_Filter(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{},
+						JobSettings: jobs.JobSettings{},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{

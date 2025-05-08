@@ -30,10 +30,10 @@ func TestLookup_NotFound(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{},
+						JobSettings: jobs.JobSettings{},
 					},
 					"bar": {
-						JobSettings: &jobs.JobSettings{},
+						JobSettings: jobs.JobSettings{},
 					},
 				},
 			},
@@ -51,7 +51,7 @@ func TestLookup_MultipleFound(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{},
+						JobSettings: jobs.JobSettings{},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
@@ -74,7 +74,7 @@ func TestLookup_Nominal(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "Foo job",
 						},
 					},
@@ -102,7 +102,7 @@ func TestLookup_NominalWithFilters(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-						JobSettings: &jobs.JobSettings{},
+						JobSettings: jobs.JobSettings{},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{

@@ -117,7 +117,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	supportedResources := &Resources{
 		Jobs: map[string]*resources.Job{
 			"my_job": {
-				JobSettings: &jobs.JobSettings{},
+				JobSettings: jobs.JobSettings{},
 			},
 		},
 		Pipelines: map[string]*resources.Pipeline{

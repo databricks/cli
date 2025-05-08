@@ -63,7 +63,7 @@ func TestUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									Libraries: []compute.Library{
@@ -127,7 +127,7 @@ func TestUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Environments: []jobs.JobEnvironment{
 								{
 									Spec: &compute.Environment{
@@ -196,7 +196,7 @@ func TestUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									Libraries: []compute.Library{

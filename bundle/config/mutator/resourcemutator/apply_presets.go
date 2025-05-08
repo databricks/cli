@@ -58,9 +58,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if j == nil {
 			continue
 		}
-		if j.JobSettings == nil {
-			j.JobSettings = &jobs.JobSettings{}
-		}
 		j.Name = prefix + j.Name
 		if len(tags) > 0 {
 			if j.Tags == nil {

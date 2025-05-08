@@ -18,7 +18,7 @@ func TestJobClusterKeyDefined(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job1",
 							JobClusters: []jobs.JobCluster{
 								{JobClusterKey: "do-not-exist"},
@@ -44,7 +44,7 @@ func TestJobClusterKeyNotDefined(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job1",
 							Tasks: []jobs.Task{
 								{JobClusterKey: "do-not-exist"},
@@ -69,7 +69,7 @@ func TestJobClusterKeyDefinedInDifferentJob(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job1",
 							Tasks: []jobs.Task{
 								{JobClusterKey: "do-not-exist"},
@@ -77,7 +77,7 @@ func TestJobClusterKeyDefinedInDifferentJob(t *testing.T) {
 						},
 					},
 					"job2": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job2",
 							JobClusters: []jobs.JobCluster{
 								{JobClusterKey: "do-not-exist"},
