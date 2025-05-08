@@ -176,7 +176,7 @@ Stack Trace:
 func logTelemetry(ctx context.Context, commandStr string, executionTimeMs int64, exitCode int) {
 	defer func() {
 		if r := recover(); r != nil {
-			// panics from telemetry Uploaad should never be visible to the end user.
+			// panics from telemetry upload should never be visible to the end user.
 			log.Infof(ctx, "recovered from panic during telemetry.Upload: %v", r)
 		}
 	}()
