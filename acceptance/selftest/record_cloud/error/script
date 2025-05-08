@@ -1,0 +1,2 @@
+# Proxy server should successfully return non 200 responses.
+errcode trace $CLI jobs get 1234

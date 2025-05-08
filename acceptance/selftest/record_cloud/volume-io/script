@@ -1,0 +1,56 @@
+print_requests() {
+    cat out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI schemas create schema-$UNIQUE_NAME main | jq '{full_name, owner}'
+
+trace print_requests
+
+trace $CLI schemas get main.schema-$UNIQUE_NAME | jq '{full_name, owner}'
+
+trace print_requests
+
+trace $CLI volumes create main schema-$UNIQUE_NAME volume-$UNIQUE_NAME MANAGED | jq '{full_name, owner}'
+
+trace print_requests
+
+trace $CLI volumes read main.schema-$UNIQUE_NAME.volume-$UNIQUE_NAME | jq '{full_name, owner}'
+
+trace print_requests
+
+trace $CLI fs cp ./hello.txt dbfs:/Volumes/main/schema-$UNIQUE_NAME/volume-$UNIQUE_NAME
+
+trace print_requests
+
+trace $CLI fs ls dbfs:/Volumes/main/schema-$UNIQUE_NAME/volume-$UNIQUE_NAME
+
+trace print_requests
+
+trace $CLI fs cat dbfs:/Volumes/main/schema-$UNIQUE_NAME/volume-$UNIQUE_NAME/hello.txt
+
+trace print_requests
+
+trace $CLI fs rm dbfs:/Volumes/main/schema-$UNIQUE_NAME/volume-$UNIQUE_NAME/hello.txt
+
+trace print_requests
+
+trace $CLI fs ls dbfs:/Volumes/main/schema-$UNIQUE_NAME/volume-$UNIQUE_NAME
+
+trace print_requests
+
+trace $CLI volumes delete main.schema-$UNIQUE_NAME.volume-$UNIQUE_NAME
+
+trace print_requests
+
+errcode trace $CLI volumes read main.schema-$UNIQUE_NAME.volume-$UNIQUE_NAME
+
+trace print_requests
+
+trace $CLI schemas delete main.schema-$UNIQUE_NAME
+
+trace print_requests
+
+errcode trace $CLI schemas get main.schema-$UNIQUE_NAME
+
+trace print_requests
