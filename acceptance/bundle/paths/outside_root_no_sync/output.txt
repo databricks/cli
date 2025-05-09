@@ -1,0 +1,28 @@
+
+>>> [CLI] bundle validate --output json
+Error: path [TEST_TMP_DIR]/src/notebook.py is not contained in sync root path
+
+{
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "max_concurrent_runs": 1,
+        "name": "include_outside_root",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tasks": [
+          {
+            "notebook_task": {
+              "notebook_path": "../src/notebook.py"
+            },
+            "task_key": "task_key"
+          }
+        ]
+      }
+    }
+  }
+}
+
+Exit code: 1

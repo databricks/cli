@@ -1,0 +1,2 @@
+cd bundle
+trace $CLI bundle validate --output json | jq 'pick(.resources)'

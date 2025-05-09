@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-func TestVisitJobPaths(t *testing.T) {
+func TestVisitJobLibrariesPaths(t *testing.T) {
 	task0 := jobs.Task{
 		NotebookTask: &jobs.NotebookTask{
 			NotebookPath: "abc",
@@ -51,7 +51,7 @@ func TestVisitJobPaths(t *testing.T) {
 	}
 
 	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
+		JobSettings: &jobs.JobSettings{
 			Tasks: []jobs.Task{
 				task0,
 				task1,
@@ -72,19 +72,16 @@ func TestVisitJobPaths(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobPaths)
+	actual := collectVisitedPaths(t, root, VisitJobLibrariesPaths)
 	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.tasks[0].notebook_task.notebook_path"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[1].spark_python_task.python_file"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[2].dbt_task.project_directory"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[3].sql_task.file.path"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[6].libraries[0].requirements"),
+		dyn.MustPathFromString("resources.jobs.job0.tasks[4].libraries[0].whl"),
+		dyn.MustPathFromString("resources.jobs.job0.tasks[5].libraries[0].jar"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)
 }
 
-func TestVisitJobPaths_environments(t *testing.T) {
+func TestVisitJobLibrariesPaths_environments(t *testing.T) {
 	environment0 := jobs.JobEnvironment{
 		Spec: &compute.Environment{
 			Dependencies: []string{
@@ -94,7 +91,7 @@ func TestVisitJobPaths_environments(t *testing.T) {
 		},
 	}
 	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
+		JobSettings: &jobs.JobSettings{
 			Environments: []jobs.JobEnvironment{
 				environment0,
 			},
@@ -109,41 +106,10 @@ func TestVisitJobPaths_environments(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	expected := []dyn.Path{}
-
-	assert.ElementsMatch(t, expected, actual)
-}
-
-func TestVisitJobPaths_foreach(t *testing.T) {
-	task0 := jobs.Task{
-		ForEachTask: &jobs.ForEachTask{
-			Task: jobs.Task{
-				NotebookTask: &jobs.NotebookTask{
-					NotebookPath: "abc",
-				},
-			},
-		},
-	}
-	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Tasks: []jobs.Task{
-				task0,
-			},
-		},
-	}
-
-	root := config.Root{
-		Resources: config.Resources{
-			Jobs: map[string]*resources.Job{
-				"job0": job0,
-			},
-		},
-	}
-
-	actual := collectVisitedPaths(t, root, VisitJobPaths)
+	actual := collectVisitedPaths(t, root, VisitJobLibrariesPaths)
 	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.tasks[0].for_each_task.task.notebook_task.notebook_path"),
+		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[0]"),
+		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[1]"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)

@@ -1,7 +1,6 @@
 package paths
 
 import (
-	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -38,16 +37,6 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
-			TranslateModeLocalRelative,
-			noSkipRewrite,
-		},
-		{
-			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
-			TranslateModeLocalRelative,
-			noSkipRewrite,
-		},
-		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
 			TranslateModeFile,
 			noSkipRewrite,
@@ -65,52 +54,9 @@ func jobRewritePatterns() []jobRewritePattern {
 		dyn.AnyIndex(),
 	)
 
-	// Compile list of patterns and their respective rewrite functions.
-	jobEnvironmentsPatterns := []jobRewritePattern{
-		{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("jobs"),
-				dyn.AnyKey(),
-				dyn.Key("environments"),
-				dyn.AnyIndex(),
-				dyn.Key("spec"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			TranslateModeLocalRelativeWithPrefix,
-			func(s string) bool {
-				return !libraries.IsLibraryLocal(s)
-			},
-		},
-	}
-
-	jobEnvironmentsWithRequirementsPatterns := []jobRewritePattern{
-		{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("jobs"),
-				dyn.AnyKey(),
-				dyn.Key("environments"),
-				dyn.AnyIndex(),
-				dyn.Key("spec"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			TranslateModeEnvironmentRequirements,
-			func(s string) bool {
-				_, ok := libraries.IsLocalRequirementsFile(s)
-				return !ok
-			},
-		},
-	}
-
 	taskPatterns := jobTaskRewritePatterns(base)
 	forEachPatterns := jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
-	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
-	allPatterns = append(allPatterns, jobEnvironmentsWithRequirementsPatterns...)
-	allPatterns = append(allPatterns, forEachPatterns...)
-	return allPatterns
+	return append(taskPatterns, forEachPatterns...)
 }
 
 // VisitJobPaths visits all paths in job resources and applies a function to each path.
