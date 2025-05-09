@@ -13,9 +13,9 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run foo
-Error: cannot start job
+Run URL: [DATABRICKS_URL]/job/run/1
 
-Exit code: 1
+[DATE] HH:MM:SS "foobar" TERMINATED 
 
 === no resource key with --
 >>> [CLI] bundle run --
@@ -25,9 +25,9 @@ Exit code: 1
 
 === resource key with parameters
 >>> [CLI] bundle run foo -- arg1 arg2
-Error: cannot start job
+Run URL: [DATABRICKS_URL]/job/run/1
 
-Exit code: 1
+[DATE] HH:MM:SS "foobar" TERMINATED 
 
 === inline script
 >>> [CLI] bundle run -- echo hello
