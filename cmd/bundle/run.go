@@ -25,12 +25,17 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// TODO: Add script prompting as well? Or should we skip it?
 func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
 	for k, ref := range resources.Completions(b, run.IsRunnable) {
 		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
+		inv[title] = k
+	}
+
+	// Include scripts in the prompt options
+	for k := range b.Config.Scripts {
+		title := fmt.Sprintf("Script: %s", k)
 		inv[title] = k
 	}
 
@@ -155,6 +160,12 @@ Example usage:
 			return err
 		}
 
+		if _, ok := b.Config.Scripts[key]; ok {
+			// TODO: Validate that the content of the script is not empty.
+			return executeScript(b.Config.Scripts[key].Content, cmd, b)
+		}
+
+		// Load resource IDs from terraform state.
 		diags = bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
