@@ -1,0 +1,6 @@
+resources:
+  apps:
+    out:
+      name: my_app
+      description: This is a test app
+      source_code_path: out

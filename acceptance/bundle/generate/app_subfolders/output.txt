@@ -1,0 +1,3 @@
+Loading app 'my_app' configuration
+File successfully saved to out/sub/folder/1.py
+App configuration successfully saved to out.app.yml

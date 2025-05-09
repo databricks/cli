@@ -1,0 +1,1 @@
+$CLI bundle generate app --existing-app-name my_app --config-dir . --key out --source-dir out
