@@ -65,40 +65,18 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 
 func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	// Locate the resource to run.
-	ref, resourceLookupErr := resources.Lookup(b, arg, run.IsRunnable)
-	if resourceLookupErr != nil {
-		return nil, resourceLookupErr
+	ref, err := resources.Lookup(b, arg, run.IsRunnable)
+	if err != nil {
+		return nil, err
 	}
 
-	// If multiple resources with the same key are found, return
-	// early.
-	if errors.As(resourceLookupErr, &resources.ResourceKeyConflictError{}) {
-		return nil, resourceLookupErr
+	// Convert the resource to a runnable resource.
+	runner, err := run.ToRunner(b, ref)
+	if err != nil {
+		return nil, err
 	}
 
-	// If the error is not a resource not found error, return early.
-	if !errors.As(resourceLookupErr, &resources.ResourceNotFoundError{}) {
-		return nil, resourceLookupErr
-	}
-
-	script, scriptFound := b.Config.Scripts[arg]
-
-	// TODO CONTINUE: Clean this up a bit and implement a script runner.
-	switch {
-	case resourceLookupErr == nil && scriptFound:
-		return nil, fmt.Errorf("both a resource and a ")
-	case resourceLookupErr == nil && !scriptFound:
-		// Convert the resource to a runnable resource.
-		runner, err := run.ToRunner(b, ref)
-		if err != nil {
-			return nil, err
-		}
-		return runner, nil
-	case errors.As(resourceLookupErr, &resources.ResourceNotFoundError{}) && scriptFound:
-		// Run the script.
-	}
-
-	return nil, resourceLookupErr
+	return runner, nil
 }
 
 func newRunCommand() *cobra.Command {
