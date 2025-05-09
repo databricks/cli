@@ -59,7 +59,7 @@ func (s SecretScope) ResourceDescription() ResourceDescription {
 		SingularName:          "secret_scope",
 		PluralName:            "secret_scopes",
 		SingularTitle:         "Secret Scope",
-		PluralTitle:           "Secret Scope",
+		PluralTitle:           "Secret Scopes",
 		TerraformResourceName: "databricks_secret_scope",
 	}
 }
