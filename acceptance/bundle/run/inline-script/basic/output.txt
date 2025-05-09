@@ -1,3 +1,21 @@
-script: line 86: syntax error near unexpected token `<<<'
 
-Exit code: 2
+>>> [CLI] bundle run -- echo hello, world
+hello, world
+
+>>> [CLI] bundle run -- --help
+Error: looking up "--help" failed: exec: "--help": executable file not found in PATH
+
+Exit code: 1
+
+>>> [CLI] bundle run -- bash -c exit 5
+
+Exit code: 5
+
+>>> cat stderr.txt
+Hello
+
+>>> cat -
+abc
+
+>>> [CLI] bundle run -- printf hello
+hello<EOL>
