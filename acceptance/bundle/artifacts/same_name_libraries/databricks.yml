@@ -1,3 +1,6 @@
+bundle:
+  name: same_name_libraries
+
 variables:
   cluster:
     default:
