@@ -1,0 +1,11 @@
+bundle:
+  name: outside_root_no_sync
+
+resources:
+  jobs:
+    my_job:
+      name: include_outside_root
+      tasks:
+        - task_key: task_key
+          notebook_task:
+            notebook_path: "../src/notebook.py"
