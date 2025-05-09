@@ -1,6 +1,0 @@
-
->>> [CLI] bundle run -- [CLI] current-user me
-{
-  "id":"[USERID]",
-  "userName":"[USERNAME]"
-}
