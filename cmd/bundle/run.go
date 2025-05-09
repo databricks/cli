@@ -47,6 +47,11 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
+// TODO CONTINUE: Continue testing and adding acceptance tests for the scripts section.
+// - Analyse whether anything goes wrong because of us using the shell execv.
+// - do add a test for environment variable interpolation in script
+// - shell bash shell features?... Will the acceptance test work on windows?
+
 // resolveRunArgument resolves the resource key to run.
 // It returns the remaining arguments to pass to the runner, if applicable.
 func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
