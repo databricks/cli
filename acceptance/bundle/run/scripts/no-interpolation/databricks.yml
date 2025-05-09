@@ -4,3 +4,5 @@ bundle:
 scripts:
   one:
     content: "echo ${FOO}"
+  two:
+    content: "echo ${var.BAR}"

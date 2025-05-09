@@ -25,17 +25,26 @@ func (f *noInterpolationSyntaxInScripts) Apply(ctx context.Context, b *bundle.Bu
 
 	re := regexp.MustCompile(`\$\{.*\}`)
 	for k, script := range b.Config.Scripts {
-		if re.MatchString(script.Content) {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Interpolation syntax ${...} in scripts is not allowed",
-				Detail: `We do not support the ${...} interpolation syntax in scripts because
+		match := re.FindString(script.Content)
+		if match == "" {
+			continue
+		}
+
+		p := dyn.NewPath(dyn.Key("scripts"), dyn.Key(k), dyn.Key("content"))
+		v, err := dyn.GetByPath(b.Config.Value(), p)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("Found %s in script %s. Interpolation syntax ${...} is not allowed in scripts", match, k),
+			Detail: `We do not support the ${...} interpolation syntax in scripts because
 it's ambiguous whether it's a variable reference or reference to an
 environment variable.`,
-				Locations: b.Config.Value().Get(fmt.Sprintf("scripts.%s.content", k)).Locations(),
-				Paths:     []dyn.Path{dyn.NewPath(dyn.Key("scripts"), dyn.Key(k), dyn.Key("content"))},
-			})
-		}
+			Locations: v.Locations(),
+			Paths:     []dyn.Path{p},
+		})
 	}
 
 	return diags
