@@ -19,6 +19,7 @@ acceptance/selftest/record_cloud/volume-io/hello.txt
 
 # "bundle run" has trailing whitespace:
 acceptance/bundle/integration_whl/*/output.txt
+acceptance/bundle/run/basic/output.txt
 
 # "bundle init" has trailing whitespace:
 acceptance/bundle/templates-machinery/helpers-error/output.txt
