@@ -103,7 +103,6 @@ Warning: unknown field: permissions
 {
   "clusters": {
     "rname": {
-      "custom_tags": {},
       "permissions": []
     }
   }

@@ -115,9 +115,7 @@ Warning: unknown field: grants
 
 {
   "clusters": {
-    "rname": {
-      "custom_tags": {}
-    }
+    "rname": {}
   }
 }
 
