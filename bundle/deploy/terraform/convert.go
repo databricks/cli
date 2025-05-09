@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
-
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
@@ -218,7 +216,7 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur := config.Resources.SecretScopes[resource.Name]
 				if cur == nil {
-					cur = &resources.SecretScope{ModifiedStatus: resources.ModifiedStatusDeleted, SecretScope: &workspace.SecretScope{}}
+					cur = &resources.SecretScope{ModifiedStatus: resources.ModifiedStatusDeleted}
 				}
 				cur.Name = instance.Attributes.Name
 				config.Resources.SecretScopes[resource.Name] = cur

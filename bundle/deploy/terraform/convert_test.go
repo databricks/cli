@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
-
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
@@ -846,9 +844,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			SecretScopes: map[string]*resources.SecretScope{
 				"test_secret_scope": {
-					SecretScope: &workspace.SecretScope{
-						Name: "test_secret_scope",
-					},
+					Name: "test_secret_scope",
 				},
 			},
 		},
@@ -1047,14 +1043,10 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			SecretScopes: map[string]*resources.SecretScope{
 				"test_secret_scope": {
-					SecretScope: &workspace.SecretScope{
-						Name: "test_secret_scope",
-					},
+					Name: "test_secret_scope",
 				},
 				"test_secret_scope_new": {
-					SecretScope: &workspace.SecretScope{
-						Name: "test_secret_scope_new",
-					},
+					Name: "test_secret_scope_new",
 				},
 			},
 		},
