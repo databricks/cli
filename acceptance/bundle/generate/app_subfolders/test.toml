@@ -35,3 +35,7 @@ Pattern = "GET /api/2.0/workspace/export"
 Response.Body = '''
 print("Hello, World!")
 '''
+
+[[Repls]]
+Old="out\\sub\\folder\\1.py"
+New="out/sub/folder/2.py"
