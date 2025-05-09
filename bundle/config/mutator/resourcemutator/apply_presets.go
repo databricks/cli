@@ -195,14 +195,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			continue
 		}
 		c.ClusterName = prefix + c.ClusterName
-		if c.CustomTags == nil {
-			c.CustomTags = make(map[string]string)
-		}
-		for _, tag := range tags {
-			normalisedKey := b.Tagging.NormalizeKey(tag.Key)
-			normalisedValue := b.Tagging.NormalizeValue(tag.Value)
-			if _, ok := c.CustomTags[normalisedKey]; !ok {
-				c.CustomTags[normalisedKey] = normalisedValue
+		if len(tags) > 0 {
+			if c.CustomTags == nil {
+				c.CustomTags = make(map[string]string, len(tags))
+			}
+			for _, tag := range tags {
+				normalisedKey := b.Tagging.NormalizeKey(tag.Key)
+				normalisedValue := b.Tagging.NormalizeValue(tag.Value)
+				if _, ok := c.CustomTags[normalisedKey]; !ok {
+					c.CustomTags[normalisedKey] = normalisedValue
+				}
 			}
 		}
 	}

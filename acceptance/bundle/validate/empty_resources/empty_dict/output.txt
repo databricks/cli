@@ -86,9 +86,7 @@
 === resources.clusters.rname ===
 {
   "clusters": {
-    "rname": {
-      "custom_tags": {}
-    }
+    "rname": {}
   }
 }
 
