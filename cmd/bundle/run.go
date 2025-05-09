@@ -127,7 +127,7 @@ Example usage:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
+		if diags.HasError() {
 			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
@@ -138,8 +138,8 @@ Example usage:
 			return executeInline(cmd, args, b)
 		}
 
-		diags = phases.Initialize(ctx, b)
-		if err := diags.Error(); err != nil {
+		diags = diags.Extend(phases.Initialize(ctx, b))
+		if diags.HasError() {
 			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
@@ -148,13 +148,13 @@ Example usage:
 			return err
 		}
 
-		diags = bundle.ApplySeq(ctx, b,
+		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),
 			terraform.Load(terraform.ErrorOnEmptyState),
-		)
-		if err := diags.Error(); err != nil {
+		))
+		if diags.HasError() {
 			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
