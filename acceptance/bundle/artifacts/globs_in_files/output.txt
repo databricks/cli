@@ -2,11 +2,11 @@
 >>> [CLI] bundle validate -o json
 Error: a*.txt: no matching files
   at artifacts.test.files[0].source
-  in databricks.yml:4:17
+  in databricks.yml:7:17
 
 Error: subdir/*.txt: no matching files
   at artifacts.test.files[1].source
-  in databricks.yml:5:17
+  in databricks.yml:8:17
 
 
 Exit code: 1
@@ -27,7 +27,7 @@ Exit code: 1
 >>> [CLI] bundle validate -o json
 Error: subdir/*.txt: no matching files
   at artifacts.test.files[1].source
-  in databricks.yml:5:17
+  in databricks.yml:8:17
 
 
 Exit code: 1
