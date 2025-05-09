@@ -1,0 +1,18 @@
+
+>>> [CLI] bundle deploy
+Error: Interpolation syntax ${...} in scripts is not allowed
+  at scripts.one.content
+
+We do not support the ${...} interpolation syntax in scripts because
+it's ambiguous whether it's a variable reference or reference to an
+environment variable.
+
+
+Exit code: 1
+
+>>> [CLI] bundle run foo
+Error: We do not support the ${...} interpolation syntax in scripts because
+it's ambiguous whether it's a variable reference or reference to an
+environment variable.
+
+Exit code: 1
