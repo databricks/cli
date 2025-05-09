@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
@@ -101,9 +103,6 @@ task or a Python wheel task, the second example applies.
 
 You can also use the bundle run command to execute scripts / commands in the same
 authentication context as the bundle.
-
-Note: The current working directory of the provided command will be set to the root
-of the bundle.
 
 Authentication to the input command will be provided by setting the appropriate
 environment variables that Databricks tools use to authenticate.
@@ -239,13 +238,13 @@ Example usage:
 }
 
 func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
-	env := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
+	cmdEnv := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
 
 	// If user has specified a target, pass it to the child command.
 	//
 	// This is only useful for when the Databricks CLI is the child command.
-	if target := root.GetTarget(cmd); target != "" {
-		env = append(env, "DATABRICKS_CONFIG_TARGET="+target)
+	if b.Config.Bundle.Target != "" {
+		cmdEnv = append(cmdEnv, env.TargetVariable+"="+b.Config.Bundle.Target)
 	}
 
 	// If the bundle has a profile configured, explicitly pass it to the child command.
@@ -254,19 +253,17 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	// since if we do not explicitly pass the profile, the CLI will use the
 	// auth configured in the bundle YAML configuration (if any).
 	if b.Config.Workspace.Profile != "" {
-		env = append(env, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+		cmdEnv = append(cmdEnv, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+	}
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
 	}
 
 	return exec.Execv(exec.ExecvOptions{
 		Args: args,
-		Env:  env,
-		// Execute all scripts from the bundle root directory. This behavior can
-		// be surprising in isolation, but we do it to keep the behavior consistent
-		// for both these cases:
-		// 1. One shot commands like `databricks bundle exec -- echo hello`
-		// 2. (upcoming) Scripts that are defined in the scripts section of the DAB.
-		Dir:    b.BundleRootPath,
-		Stderr: cmd.ErrOrStderr(),
-		Stdout: cmd.OutOrStdout(),
+		Env:  cmdEnv,
+		Dir:  dir,
 	})
 }
