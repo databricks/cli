@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class GcsStorageInfo:
-    """"""
+    """
+    A storage location in Google Cloud Platform's GCS
+    """
 
     destination: VariableOr[str]
     """

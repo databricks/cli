@@ -103,7 +103,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq oauth2.CreateAccountFederationPolicyRequest
-	createReq.Policy = &oauth2.FederationPolicy{}
+	createReq.Policy = oauth2.FederationPolicy{}
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
@@ -338,7 +338,7 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq oauth2.UpdateAccountFederationPolicyRequest
-	updateReq.Policy = &oauth2.FederationPolicy{}
+	updateReq.Policy = oauth2.FederationPolicy{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags

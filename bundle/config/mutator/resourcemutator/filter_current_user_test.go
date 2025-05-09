@@ -132,13 +132,13 @@ func testFixture(userName string) *bundle.Bundle {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job1",
 						},
 						Permissions: jobPermissions,
 					},
 					"job2": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job2",
 						},
 						Permissions: jobPermissions,

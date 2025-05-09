@@ -13,12 +13,8 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
 type applyPresets struct{}
@@ -59,9 +55,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if j == nil {
 			continue
 		}
-		if j.JobSettings == nil {
-			j.JobSettings = &jobs.JobSettings{}
-		}
 		j.Name = prefix + j.Name
 		if len(tags) > 0 {
 			if j.Tags == nil {
@@ -100,9 +93,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if p == nil {
 			continue
 		}
-		if p.CreatePipeline == nil {
-			p.CreatePipeline = &pipelines.CreatePipeline{}
-		}
 		p.Name = prefix + p.Name
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
 			p.Development = true
@@ -117,9 +107,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	for _, m := range r.Models {
 		if m == nil {
 			continue
-		}
-		if m.Model == nil {
-			m.Model = &ml.Model{}
 		}
 		m.Name = prefix + m.Name
 		for _, t := range tags {
@@ -137,9 +124,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	for _, e := range r.Experiments {
 		if e == nil {
 			continue
-		}
-		if e.Experiment == nil {
-			e.Experiment = &ml.Experiment{}
 		}
 		filepath := e.Name
 		dir := path.Dir(filepath)
@@ -168,9 +152,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if e == nil {
 			continue
 		}
-		if e.CreateServingEndpoint == nil {
-			e.CreateServingEndpoint = &serving.CreateServingEndpoint{}
-		}
 		e.Name = normalizePrefix(prefix) + e.Name
 
 		// As of 2024-06, model serving endpoints don't yet support tags
@@ -181,9 +162,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if m == nil {
 			continue
 		}
-		if m.CreateRegisteredModelRequest == nil {
-			m.CreateRegisteredModelRequest = &catalog.CreateRegisteredModelRequest{}
-		}
 		m.Name = normalizePrefix(prefix) + m.Name
 
 		// As of 2024-06, registered models don't yet support tags
@@ -191,11 +169,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Quality monitors presets: Schedule
 	if t.TriggerPauseStatus == config.Paused {
-		for key, q := range r.QualityMonitors {
-			if q.CreateMonitor == nil {
-				diags = diags.Extend(diag.Errorf("quality monitor %s is not defined", key))
-				continue
-			}
+		for _, q := range r.QualityMonitors {
 			// Remove all schedules from monitors, since they don't support pausing/unpausing.
 			// Quality monitors might support the "pause" property in the future, so at the
 			// CLI level we do respect that property if it is set to "unpaused."
@@ -210,9 +184,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if s == nil {
 			continue
 		}
-		if s.CreateSchema == nil {
-			s.CreateSchema = &catalog.CreateSchema{}
-		}
 		s.Name = normalizePrefix(prefix) + s.Name
 		// HTTP API for schemas doesn't yet support tags. It's only supported in
 		// the Databricks UI and via the SQL API.
@@ -222,9 +193,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	for _, c := range r.Clusters {
 		if c == nil {
 			continue
-		}
-		if c.ClusterSpec == nil {
-			c.ClusterSpec = &compute.ClusterSpec{}
 		}
 		c.ClusterName = prefix + c.ClusterName
 		if c.CustomTags == nil {
@@ -243,9 +211,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	for _, dashboard := range r.Dashboards {
 		if dashboard == nil {
 			continue
-		}
-		if dashboard.Dashboard == nil {
-			dashboard.Dashboard = &dashboards.Dashboard{}
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}

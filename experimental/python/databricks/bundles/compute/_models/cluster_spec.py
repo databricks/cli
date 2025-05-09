@@ -55,7 +55,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class ClusterSpec:
-    """"""
+    """
+    Contains a snapshot of the latest user specified settings that were used to create/edit the cluster.
+    """
 
     apply_policy_default_values: VariableOrOptional[bool] = None
     """
@@ -101,7 +103,6 @@ class ClusterSpec:
     """
     Cluster name requested by the user. This doesn't have to be unique.
     If not specified at creation, the cluster name will be an empty string.
-    
     """
 
     custom_tags: VariableOrDict[str] = field(default_factory=dict)
@@ -127,10 +128,12 @@ class ClusterSpec:
 
     driver_node_type_id: VariableOrOptional[str] = None
     """
-    The node type of the Spark driver. Note that this field is optional;
-    if unset, the driver node type will be set as the same value
+    The node type of the Spark driver.
+    Note that this field is optional; if unset, the driver node type will be set as the same value
     as `node_type_id` defined above.
     
+    This field, along with node_type_id, should not be set if virtual_cluster_size is set.
+    If both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.
     """
 
     enable_elastic_disk: VariableOrOptional[bool] = None
@@ -153,7 +156,9 @@ class ClusterSpec:
 
     init_scripts: VariableOrList[InitScriptInfo] = field(default_factory=list)
     """
-    The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
+    The configuration for storing init scripts. Any number of destinations can be specified.
+    The scripts are executed sequentially in the order provided.
+    If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
     """
 
     instance_pool_id: VariableOrOptional[str] = None
@@ -166,7 +171,6 @@ class ClusterSpec:
     This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
-    
     """
 
     node_type_id: VariableOrOptional[str] = None
@@ -175,7 +179,6 @@ class ClusterSpec:
     the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
     and optimized for memory or compute intensive workloads. A list of available node
     types can be retrieved by using the :method:clusters/listNodeTypes API call.
-    
     """
 
     num_workers: VariableOrOptional[int] = None
@@ -207,7 +210,6 @@ class ClusterSpec:
     An object containing a set of optional, user-specified Spark configuration key-value pairs.
     Users can also pass in a string of extra JVM options to the driver and the executors via
     `spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.
-    
     """
 
     spark_env_vars: VariableOrDict[str] = field(default_factory=dict)
@@ -230,7 +232,6 @@ class ClusterSpec:
     The Spark version of the cluster, e.g. `3.3.x-scala2.11`.
     A list of available Spark versions can be retrieved by using
     the :method:clusters/sparkVersions API call.
-    
     """
 
     ssh_public_keys: VariableOrList[str] = field(default_factory=list)
@@ -245,7 +246,6 @@ class ClusterSpec:
     This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
-    
     """
 
     workload_type: VariableOrOptional[WorkloadType] = None
@@ -305,7 +305,6 @@ class ClusterSpecDict(TypedDict, total=False):
     """
     Cluster name requested by the user. This doesn't have to be unique.
     If not specified at creation, the cluster name will be an empty string.
-    
     """
 
     custom_tags: VariableOrDict[str]
@@ -331,10 +330,12 @@ class ClusterSpecDict(TypedDict, total=False):
 
     driver_node_type_id: VariableOrOptional[str]
     """
-    The node type of the Spark driver. Note that this field is optional;
-    if unset, the driver node type will be set as the same value
+    The node type of the Spark driver.
+    Note that this field is optional; if unset, the driver node type will be set as the same value
     as `node_type_id` defined above.
     
+    This field, along with node_type_id, should not be set if virtual_cluster_size is set.
+    If both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.
     """
 
     enable_elastic_disk: VariableOrOptional[bool]
@@ -357,7 +358,9 @@ class ClusterSpecDict(TypedDict, total=False):
 
     init_scripts: VariableOrList[InitScriptInfoParam]
     """
-    The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
+    The configuration for storing init scripts. Any number of destinations can be specified.
+    The scripts are executed sequentially in the order provided.
+    If `cluster_log_conf` is specified, init script logs are sent to `<destination>/<cluster-ID>/init_scripts`.
     """
 
     instance_pool_id: VariableOrOptional[str]
@@ -370,7 +373,6 @@ class ClusterSpecDict(TypedDict, total=False):
     This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
-    
     """
 
     node_type_id: VariableOrOptional[str]
@@ -379,7 +381,6 @@ class ClusterSpecDict(TypedDict, total=False):
     the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
     and optimized for memory or compute intensive workloads. A list of available node
     types can be retrieved by using the :method:clusters/listNodeTypes API call.
-    
     """
 
     num_workers: VariableOrOptional[int]
@@ -411,7 +412,6 @@ class ClusterSpecDict(TypedDict, total=False):
     An object containing a set of optional, user-specified Spark configuration key-value pairs.
     Users can also pass in a string of extra JVM options to the driver and the executors via
     `spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.
-    
     """
 
     spark_env_vars: VariableOrDict[str]
@@ -434,7 +434,6 @@ class ClusterSpecDict(TypedDict, total=False):
     The Spark version of the cluster, e.g. `3.3.x-scala2.11`.
     A list of available Spark versions can be retrieved by using
     the :method:clusters/sparkVersions API call.
-    
     """
 
     ssh_public_keys: VariableOrList[str]
@@ -449,7 +448,6 @@ class ClusterSpecDict(TypedDict, total=False):
     This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
-    
     """
 
     workload_type: VariableOrOptional[WorkloadTypeParam]

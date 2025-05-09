@@ -24,8 +24,8 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
+					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
+					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
 				},
 			},
 		},
@@ -49,8 +49,8 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
+					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
+					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
 				},
 			},
 		},

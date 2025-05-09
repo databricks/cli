@@ -48,7 +48,7 @@ func TestResolveVariableReferencesWithSourceLinkedDeployment(t *testing.T) {
 				Resources: config.Resources{
 					Pipelines: map[string]*resources.Pipeline{
 						"pipeline1": {
-							CreatePipeline: &pipelines.CreatePipeline{
+							CreatePipeline: pipelines.CreatePipeline{
 								Configuration: map[string]string{
 									"source": "${workspace.file_path}",
 								},

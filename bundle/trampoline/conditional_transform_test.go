@@ -29,7 +29,7 @@ func TestNoTransformByDefault(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey: "key1",
@@ -78,7 +78,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey: "key1",

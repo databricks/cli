@@ -3,6 +3,7 @@
 {
   "pipelines": {
     "my_pipeline": {
+      "channel": "CURRENT",
       "clusters": [
         {
           "label": "default",
@@ -14,6 +15,7 @@
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/use-default-variable-values/state/metadata.json"
       },
+      "edition": "ADVANCED",
       "name": "a_string",
       "permissions": []
     }
@@ -24,6 +26,7 @@
 {
   "pipelines": {
     "my_pipeline": {
+      "channel": "CURRENT",
       "clusters": [
         {
           "label": "default",
@@ -35,6 +38,7 @@
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-string-variable/state/metadata.json"
       },
+      "edition": "ADVANCED",
       "name": "overridden_string",
       "permissions": []
     }
@@ -45,6 +49,7 @@
 {
   "pipelines": {
     "my_pipeline": {
+      "channel": "CURRENT",
       "clusters": [
         {
           "label": "default",
@@ -56,6 +61,7 @@
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-int-variable/state/metadata.json"
       },
+      "edition": "ADVANCED",
       "name": "a_string",
       "permissions": []
     }
@@ -66,6 +72,7 @@
 {
   "pipelines": {
     "my_pipeline": {
+      "channel": "CURRENT",
       "clusters": [
         {
           "label": "default",
@@ -77,6 +84,7 @@
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-both-bool-and-string-variables/state/metadata.json"
       },
+      "edition": "ADVANCED",
       "name": "overridden_string",
       "permissions": []
     }

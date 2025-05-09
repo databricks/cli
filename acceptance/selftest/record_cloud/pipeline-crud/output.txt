@@ -1,0 +1,80 @@
+
+=== Create a pipeline
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "allow_duplicate_names": true,
+    "libraries": [
+      {
+        "file": {
+          "path": "/whatever.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-1"
+  }
+}
+
+=== Get the pipeline
+>>> [CLI] pipelines get [UUID]
+"test-pipeline-1"
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+
+=== Update the pipeline
+>>> [CLI] pipelines update [UUID] --json @pipeline2.json
+
+>>> print_requests
+{
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[UUID]",
+  "body": {
+    "allow_duplicate_names": true,
+    "libraries": [
+      {
+        "file": {
+          "path": "/whatever.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-2"
+  }
+}
+
+=== Verify the update
+>>> [CLI] pipelines get [UUID]
+"test-pipeline-2"
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+
+=== Delete the pipeline
+>>> [CLI] pipelines delete [UUID]
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+
+=== Verify the deletion
+>>> [CLI] pipelines get [UUID]
+Error: The specified pipeline [UUID] was not found.
+
+Exit code: 1
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}

@@ -53,7 +53,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job1",
 							Schedule: &jobs.CronSchedule{
 								QuartzCronExpression: "* * * * *",
@@ -62,7 +62,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 					"job2": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job2",
 							Schedule: &jobs.CronSchedule{
 								QuartzCronExpression: "* * * * *",
@@ -71,7 +71,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 					"job3": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job3",
 							Trigger: &jobs.TriggerSettings{
 								FileArrival: &jobs.FileArrivalTriggerConfiguration{
@@ -81,7 +81,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 					"job4": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job4",
 							Continuous: &jobs.Continuous{
 								PauseStatus: jobs.PauseStatusPaused,
@@ -90,38 +90,38 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
+					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment1": {Experiment: &ml.Experiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
-					"experiment2": {Experiment: &ml.Experiment{Name: "experiment2"}},
+					"experiment1": {Experiment: ml.Experiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
+					"experiment2": {Experiment: ml.Experiment{Name: "experiment2"}},
 				},
 				Models: map[string]*resources.MlflowModel{
-					"model1": {Model: &ml.Model{Name: "model1"}},
+					"model1": {CreateModelRequest: ml.CreateModelRequest{Name: "model1"}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"servingendpoint1": {CreateServingEndpoint: &serving.CreateServingEndpoint{Name: "servingendpoint1"}},
+					"servingendpoint1": {CreateServingEndpoint: serving.CreateServingEndpoint{Name: "servingendpoint1"}},
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
-					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
+					"registeredmodel1": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
 					"qualityMonitor1": {
 						TableName: "qualityMonitor1",
-						CreateMonitor: &catalog.CreateMonitor{
+						CreateMonitor: catalog.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
 						},
 					},
 					"qualityMonitor2": {
 						TableName: "qualityMonitor2",
-						CreateMonitor: &catalog.CreateMonitor{
+						CreateMonitor: catalog.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
 							Schedule:         &catalog.MonitorCronSchedule{},
 						},
 					},
 					"qualityMonitor3": {
 						TableName: "qualityMonitor3",
-						CreateMonitor: &catalog.CreateMonitor{
+						CreateMonitor: catalog.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
 							Schedule: &catalog.MonitorCronSchedule{
 								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
@@ -130,24 +130,24 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					},
 				},
 				Schemas: map[string]*resources.Schema{
-					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
+					"schema1": {CreateSchema: catalog.CreateSchema{Name: "schema1"}},
 				},
 				Volumes: map[string]*resources.Volume{
-					"volume1": {CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{Name: "volume1"}},
+					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
 				},
 				Clusters: map[string]*resources.Cluster{
-					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
+					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
-						Dashboard: &dashboards.Dashboard{
+						Dashboard: dashboards.Dashboard{
 							DisplayName: "dashboard1",
 						},
 					},
 				},
 				Apps: map[string]*resources.App{
 					"app1": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "app1",
 						},
 					},

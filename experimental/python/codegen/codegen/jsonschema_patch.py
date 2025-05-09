@@ -3,42 +3,9 @@ from dataclasses import replace
 from codegen.jsonschema import Schema
 
 REMOVED_FIELDS = {
-    "jobs.RunJobTask": {
-        # all params except job_parameters should be deprecated and should not be supported
-        "jar_params",
-        "notebook_params",
-        "python_params",
-        "spark_submit_params",
-        "python_named_params",
-        "sql_params",
-        "dbt_commands",
-        # except pipeline_params, that is not deprecated
-    },
-    "jobs.TriggerSettings": {
-        # Old table trigger settings name. Deprecated in favor of `table_update`
-        "table",
-    },
     "compute.ClusterSpec": {
         # doesn't work, openapi schema needs to be updated to be enum
         "kind",
-    },
-    "jobs.TaskEmailNotifications": {
-        # Deprecated
-        "no_alert_for_skipped_runs",
-    },
-    "jobs.SparkJarTask": {
-        # Deprecated. A value of `false` is no longer supported.
-        "run_as_repl",
-        # Deprecated
-        "jar_uri",
-    },
-    "resources.Pipeline": {
-        # Deprecated
-        "trigger",
-    },
-    "pipelines.PipelineLibrary": {
-        # Deprecated
-        "whl",
     },
 }
 

@@ -23,7 +23,7 @@ type RegisteredModel struct {
 
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
-	*catalog.CreateRegisteredModelRequest
+	catalog.CreateRegisteredModelRequest
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
@@ -76,8 +76,4 @@ func (s *RegisteredModel) GetName() string {
 
 func (s *RegisteredModel) GetURL() string {
 	return s.URL
-}
-
-func (s *RegisteredModel) IsNil() bool {
-	return s.CreateRegisteredModelRequest == nil
 }

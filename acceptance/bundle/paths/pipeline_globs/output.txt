@@ -4,10 +4,12 @@
   "resources": {
     "pipelines": {
       "nyc_taxi_pipeline": {
+        "channel": "CURRENT",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/state/metadata.json"
         },
+        "edition": "ADVANCED",
         "libraries": [
           {
             "notebook": {

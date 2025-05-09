@@ -35,7 +35,6 @@ class PipelineClusterAutoscale:
     the data processing latency of your pipelines. Enhanced Autoscaling is available
     for `updates` clusters only. The legacy autoscaling feature is used for `maintenance`
     clusters.
-    
     """
 
     @classmethod
@@ -67,7 +66,6 @@ class PipelineClusterAutoscaleDict(TypedDict, total=False):
     the data processing latency of your pipelines. Enhanced Autoscaling is available
     for `updates` clusters only. The legacy autoscaling feature is used for `maintenance`
     clusters.
-    
     """
 
 

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,13 +9,17 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/testproxy"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,78 +40,115 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) *databricks.WorkspaceClient {
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
-
-	// If we are running on a cloud environment, use the host configured in the
-	// environment.
-	if cloudEnv != "" {
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{})
-		require.NoError(t, err)
-
-		return w
-	}
-
 	recordRequests := isTruePtr(config.RecordRequests)
 
-	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-	token := "dbapi" + tokenSuffix
-
-	// If we are not recording requests, and no custom server server stubs are configured,
-	// use the default shared server.
-	if len(config.Server) == 0 && !recordRequests {
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{
-			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
-			Token: token,
-		})
+	if cloudEnv != "" {
+		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
-		return w
+		user, err := w.CurrentUser.Me(context.Background())
+		require.NoError(t, err, "Failed to get current user")
+
+		cfg := w.Config
+
+		// If we are running in a cloud environment AND we are recording requests,
+		// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
+		if recordRequests {
+			host, token := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
+			cfg = &sdkconfig.Config{
+				Host:  host,
+				Token: token,
+			}
+		}
+
+		return cfg, *user
 	}
 
-	host := startDedicatedServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	// If we are not recording requests, and no custom server stubs are configured,
+	// use the default shared server.
+	if len(config.Server) == 0 && !recordRequests {
+		// Use a unique token for each test. This allows us to maintain
+		// separate state for each test in fake workspaces.
+		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+		token := "dbapi" + tokenSuffix
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		cfg := &sdkconfig.Config{
+			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
+			Token: token,
+		}
+
+		return cfg, TestUser
+	}
+
+	// Default case. Start a dedicated local server for the test with the server stubs configured
+	// as overrides.
+	host, token := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	cfg := &sdkconfig.Config{
 		Host:  host,
 		Token: token,
-	})
-	require.NoError(t, err)
-	return w
+	}
+
+	// For the purposes of replacements, use testUser for local runs.
+	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
+	return cfg, TestUser
 }
 
-func startDedicatedServer(t *testing.T,
+func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {
+	mu := sync.Mutex{}
+
+	return func(request *testserver.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		req := getLoggedRequest(request, includeHeaders)
+		reqJson, err := json.MarshalIndent(req, "", "  ")
+		assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
+
+		requestsPath := filepath.Join(outputDir, "out.requests.txt")
+		f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+		assert.NoError(t, err)
+		defer f.Close()
+
+		_, err = f.WriteString(string(reqJson) + "\n")
+		assert.NoError(t, err)
+	}
+}
+
+func logResponseCallback(t *testing.T) func(request *testserver.Request, response *testserver.EncodedResponse) {
+	mu := sync.Mutex{}
+
+	return func(request *testserver.Request, response *testserver.EncodedResponse) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		t.Logf("%d %s %s\n%s\n%s",
+			response.StatusCode, request.Method, request.URL,
+			formatHeadersAndBody("> ", request.Headers, request.Body),
+			formatHeadersAndBody("# ", response.Headers, response.Body),
+		)
+	}
+}
+
+func startLocalServer(t *testing.T,
 	stubs []ServerStub,
 	recordRequests bool,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) string {
+) (string, string) {
 	s := testserver.New(t)
 
+	// Record API requests in out.requests.txt if RecordRequests is true
+	// in test.toml
 	if recordRequests {
-		requestsPath := filepath.Join(outputDir, "out.requests.txt")
-		s.RequestCallback = func(request *testserver.Request) {
-			req := getLoggedRequest(request, includeHeaders)
-			reqJson, err := json.MarshalIndent(req, "", "  ")
-			assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
-
-			f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-			assert.NoError(t, err)
-			defer f.Close()
-
-			_, err = f.WriteString(string(reqJson) + "\n")
-			assert.NoError(t, err)
-		}
+		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
 	}
 
+	// Log API responses if the -logrequests flag is set.
 	if logRequests {
-		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
-			t.Logf("%d %s %s\n%s\n%s",
-				response.StatusCode, request.Method, request.URL,
-				formatHeadersAndBody("> ", request.Headers, request.Body),
-				formatHeadersAndBody("# ", response.Headers, response.Body),
-			)
-		}
+		s.ResponseCallback = logResponseCallback(t)
 	}
 
 	for ind := range stubs {
@@ -124,8 +166,25 @@ func startDedicatedServer(t *testing.T,
 
 	// The earliest handlers take precedence, add default handlers last
 	addDefaultHandlers(s)
+	return s.URL, "dbapi123"
+}
 
-	return s.URL
+func startProxyServer(t *testing.T,
+	logRequests bool,
+	includeHeaders []string,
+	outputDir string,
+) (string, string) {
+	s := testproxy.New(t)
+
+	// Always record requests for a proxy server.
+	s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+
+	// Log API responses if the -logrequests flag is set.
+	if logRequests {
+		s.ResponseCallback = logResponseCallback(t)
+	}
+
+	return s.URL, "dbapi1234"
 }
 
 type LoggedRequest struct {

@@ -99,7 +99,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 					Resources: config.Resources{
 						Clusters: map[string]*resources.Cluster{
 							"foo": {
-								ClusterSpec: &compute.ClusterSpec{
+								ClusterSpec: compute.ClusterSpec{
 									SparkConf:  tc.sparkConf,
 									CustomTags: tc.customTags,
 								},
@@ -140,7 +140,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									JobClusters: []jobs.JobCluster{
 										{
 											NewCluster: compute.ClusterSpec{
@@ -189,7 +189,7 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									Tasks: []jobs.Task{
 										{
 											NewCluster: &compute.ClusterSpec{
@@ -238,7 +238,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"foo": {
-								CreatePipeline: &pipelines.CreatePipeline{
+								CreatePipeline: pipelines.CreatePipeline{
 									Clusters: []pipelines.PipelineCluster{
 										{
 											SparkConf:  tc.sparkConf,
@@ -284,7 +284,7 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									Tasks: []jobs.Task{
 										{
 											ForEachTask: &jobs.ForEachTask{
@@ -380,7 +380,7 @@ func TestValidateSingleNodeClusterPassInteractiveClusters(t *testing.T) {
 					Resources: config.Resources{
 						Clusters: map[string]*resources.Cluster{
 							"foo": {
-								ClusterSpec: &compute.ClusterSpec{
+								ClusterSpec: compute.ClusterSpec{
 									SparkConf:  tc.sparkConf,
 									CustomTags: tc.customTags,
 									PolicyId:   tc.policyId,
@@ -413,7 +413,7 @@ func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									JobClusters: []jobs.JobCluster{
 										{
 											NewCluster: compute.ClusterSpec{
@@ -453,7 +453,7 @@ func TestValidateSingleNodeClusterPassJobTaskClusters(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									Tasks: []jobs.Task{
 										{
 											NewCluster: &compute.ClusterSpec{
@@ -493,7 +493,7 @@ func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"foo": {
-								CreatePipeline: &pipelines.CreatePipeline{
+								CreatePipeline: pipelines.CreatePipeline{
 									Clusters: []pipelines.PipelineCluster{
 										{
 											SparkConf:  tc.sparkConf,
@@ -530,7 +530,7 @@ func TestValidateSingleNodeClusterPassJobForEachTaskCluster(t *testing.T) {
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
 							"foo": {
-								JobSettings: &jobs.JobSettings{
+								JobSettings: jobs.JobSettings{
 									Tasks: []jobs.Task{
 										{
 											ForEachTask: &jobs.ForEachTask{

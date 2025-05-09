@@ -2,6 +2,8 @@ __all__ = [
     "Adlsgen2Info",
     "Adlsgen2InfoDict",
     "Adlsgen2InfoParam",
+    "AuthenticationMethod",
+    "AuthenticationMethodParam",
     "AutoScale",
     "AutoScaleDict",
     "AutoScaleParam",
@@ -43,6 +45,9 @@ __all__ = [
     "CronSchedule",
     "CronScheduleDict",
     "CronScheduleParam",
+    "DashboardTask",
+    "DashboardTaskDict",
+    "DashboardTaskParam",
     "DataSecurityMode",
     "DataSecurityModeParam",
     "DbfsStorageInfo",
@@ -153,6 +158,15 @@ __all__ = [
     "PipelineTask",
     "PipelineTaskDict",
     "PipelineTaskParam",
+    "PowerBiModel",
+    "PowerBiModelDict",
+    "PowerBiModelParam",
+    "PowerBiTable",
+    "PowerBiTableDict",
+    "PowerBiTableParam",
+    "PowerBiTask",
+    "PowerBiTaskDict",
+    "PowerBiTaskParam",
     "PythonPyPiLibrary",
     "PythonPyPiLibraryDict",
     "PythonPyPiLibraryParam",
@@ -204,6 +218,14 @@ __all__ = [
     "SqlTaskSubscription",
     "SqlTaskSubscriptionDict",
     "SqlTaskSubscriptionParam",
+    "StorageMode",
+    "StorageModeParam",
+    "Subscription",
+    "SubscriptionDict",
+    "SubscriptionParam",
+    "SubscriptionSubscriber",
+    "SubscriptionSubscriberDict",
+    "SubscriptionSubscriberParam",
     "TableUpdateTriggerConfiguration",
     "TableUpdateTriggerConfigurationDict",
     "TableUpdateTriggerConfigurationParam",
@@ -384,6 +406,10 @@ from databricks.bundles.compute._models.workspace_storage_info import (
     WorkspaceStorageInfoDict,
     WorkspaceStorageInfoParam,
 )
+from databricks.bundles.jobs._models.authentication_method import (
+    AuthenticationMethod,
+    AuthenticationMethodParam,
+)
 from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTask,
     CleanRoomsNotebookTaskDict,
@@ -413,6 +439,11 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleDict,
     CronScheduleParam,
+)
+from databricks.bundles.jobs._models.dashboard_task import (
+    DashboardTask,
+    DashboardTaskDict,
+    DashboardTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskDict, DbtTaskParam
 from databricks.bundles.jobs._models.file_arrival_trigger_configuration import (
@@ -523,6 +554,21 @@ from databricks.bundles.jobs._models.pipeline_task import (
     PipelineTaskDict,
     PipelineTaskParam,
 )
+from databricks.bundles.jobs._models.power_bi_model import (
+    PowerBiModel,
+    PowerBiModelDict,
+    PowerBiModelParam,
+)
+from databricks.bundles.jobs._models.power_bi_table import (
+    PowerBiTable,
+    PowerBiTableDict,
+    PowerBiTableParam,
+)
+from databricks.bundles.jobs._models.power_bi_task import (
+    PowerBiTask,
+    PowerBiTaskDict,
+    PowerBiTaskParam,
+)
 from databricks.bundles.jobs._models.python_wheel_task import (
     PythonWheelTask,
     PythonWheelTaskDict,
@@ -580,6 +626,17 @@ from databricks.bundles.jobs._models.sql_task_subscription import (
     SqlTaskSubscription,
     SqlTaskSubscriptionDict,
     SqlTaskSubscriptionParam,
+)
+from databricks.bundles.jobs._models.storage_mode import StorageMode, StorageModeParam
+from databricks.bundles.jobs._models.subscription import (
+    Subscription,
+    SubscriptionDict,
+    SubscriptionParam,
+)
+from databricks.bundles.jobs._models.subscription_subscriber import (
+    SubscriptionSubscriber,
+    SubscriptionSubscriberDict,
+    SubscriptionSubscriberParam,
 )
 from databricks.bundles.jobs._models.table_update_trigger_configuration import (
     TableUpdateTriggerConfiguration,

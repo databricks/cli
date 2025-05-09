@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class S3StorageInfo:
-    """"""
+    """
+    A storage location in Amazon S3
+    """
 
     destination: VariableOr[str]
     """

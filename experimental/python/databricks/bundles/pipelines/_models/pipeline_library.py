@@ -28,7 +28,6 @@ class PipelineLibrary:
     file: VariableOrOptional[FileLibrary] = None
     """
     The path to a file that defines a pipeline and is stored in the Databricks Repos.
-    
     """
 
     jar: VariableOrOptional[str] = None
@@ -36,7 +35,6 @@ class PipelineLibrary:
     :meta private: [EXPERIMENTAL]
     
     URI of the jar to be installed. Currently only DBFS is supported.
-    
     """
 
     maven: VariableOrOptional[MavenLibrary] = None
@@ -44,13 +42,11 @@ class PipelineLibrary:
     :meta private: [EXPERIMENTAL]
     
     Specification of a maven library to be installed.
-    
     """
 
     notebook: VariableOrOptional[NotebookLibrary] = None
     """
     The path to a notebook that defines a pipeline and is stored in the Databricks workspace.
-    
     """
 
     @classmethod
@@ -67,7 +63,6 @@ class PipelineLibraryDict(TypedDict, total=False):
     file: VariableOrOptional[FileLibraryParam]
     """
     The path to a file that defines a pipeline and is stored in the Databricks Repos.
-    
     """
 
     jar: VariableOrOptional[str]
@@ -75,7 +70,6 @@ class PipelineLibraryDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     URI of the jar to be installed. Currently only DBFS is supported.
-    
     """
 
     maven: VariableOrOptional[MavenLibraryParam]
@@ -83,13 +77,11 @@ class PipelineLibraryDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     Specification of a maven library to be installed.
-    
     """
 
     notebook: VariableOrOptional[NotebookLibraryParam]
     """
     The path to a notebook that defines a pipeline and is stored in the Databricks workspace.
-    
     """
 
 

@@ -514,34 +514,30 @@ func TestRenderSummary(t *testing.T) {
 					"job1": {
 						ID:          "1",
 						URL:         "https://url1",
-						JobSettings: &jobs.JobSettings{Name: "job1-name"},
+						JobSettings: jobs.JobSettings{Name: "job1-name"},
 					},
 					"job2": {
 						ID:          "2",
 						URL:         "https://url2",
-						JobSettings: &jobs.JobSettings{Name: "job2-name"},
-					},
-					"job3": {
-						ID:  "3",
-						URL: "https://url3", // This emulates deleted job
+						JobSettings: jobs.JobSettings{Name: "job2-name"},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline2": {
 						ID: "4",
 						// no URL
-						CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline2-name"},
+						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline2-name"},
 					},
 					"pipeline1": {
 						ID:             "3",
 						URL:            "https://url3",
-						CreatePipeline: &pipelines.CreatePipeline{Name: "pipeline1-name"},
+						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1-name"},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
 						ID: "catalog.schema",
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							Name: "schema",
 						},
 						// no URL
@@ -550,7 +546,7 @@ func TestRenderSummary(t *testing.T) {
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"endpoint1": {
 						ID: "7",
-						CreateServingEndpoint: &serving.CreateServingEndpoint{
+						CreateServingEndpoint: serving.CreateServingEndpoint{
 							Name: "my_serving_endpoint",
 						},
 						URL: "https://url4",

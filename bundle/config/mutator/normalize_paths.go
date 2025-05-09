@@ -72,7 +72,7 @@ func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
 	var jobs []dyn.Path
 
 	for name, job := range b.Config.Resources.Jobs {
-		if job == nil || job.JobSettings == nil {
+		if job == nil {
 			continue
 		}
 		if job.GitSource != nil {

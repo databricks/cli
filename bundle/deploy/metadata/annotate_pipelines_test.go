@@ -21,12 +21,12 @@ func TestAnnotatePipelinesMutator(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline-1": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline One",
 						},
 					},
 					"my-pipeline-2": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline Two",
 						},
 					},

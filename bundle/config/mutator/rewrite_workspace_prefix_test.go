@@ -26,7 +26,7 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test_job": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{

@@ -1,12 +1,11 @@
 package testutil
 
 import (
-	"fmt"
-	"math/rand"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,19 +18,14 @@ func GetEnvOrSkipTest(t TestingT, name string) string {
 	return value
 }
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 // RandomName gives random name with optional prefix. e.g. qa.RandomName("tf-")
 func RandomName(prefix ...string) string {
-	randLen := 12
-	b := make([]byte, randLen)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+	out := ""
+	for _, p := range prefix {
+		out += p
 	}
-	if len(prefix) > 0 {
-		return fmt.Sprintf("%s%s", strings.Join(prefix, ""), b)
-	}
-	return string(b)
+	out += strings.ReplaceAll(uuid.New().String(), "-", "")
+	return out
 }
 
 func SkipUntil(t TestingT, date string) {

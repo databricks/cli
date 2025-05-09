@@ -15,7 +15,7 @@ import (
 
 func TestConvertSchema(t *testing.T) {
 	src := resources.Schema{
-		CreateSchema: &catalog.CreateSchema{
+		CreateSchema: catalog.CreateSchema{
 			Name:        "name",
 			CatalogName: "catalog",
 			Comment:     "comment",

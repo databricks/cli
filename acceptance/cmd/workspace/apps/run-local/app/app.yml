@@ -1,0 +1,7 @@
+command:
+  - flask
+  - run
+
+env:
+  - name: TEST
+    value: "test"

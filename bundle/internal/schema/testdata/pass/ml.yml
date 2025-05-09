@@ -26,12 +26,8 @@ variables:
 resources:
   models:
     mymodel:
-      creation_timestamp: 123
+      name: mymodel
       description: "my model"
-      latest_versions:
-        - creation_timestamp: 123
-          tags: ${var.complexvar.key1}
-          status: READY
       permissions:
         - service_principal_name: myserviceprincipal
           level: CAN_MANAGE

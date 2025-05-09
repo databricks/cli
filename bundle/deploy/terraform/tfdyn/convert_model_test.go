@@ -15,7 +15,7 @@ import (
 
 func TestConvertModel(t *testing.T) {
 	src := resources.MlflowModel{
-		Model: &ml.Model{
+		CreateModelRequest: ml.CreateModelRequest{
 			Name:        "name",
 			Description: "description",
 			Tags: []ml.ModelTag{

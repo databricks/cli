@@ -1,0 +1,5 @@
+# Manually check that test takes about 0.1s:
+# PASS: TestAccept/selftest/timeout (0.10s)
+Timeout = '100ms'
+TimeoutWindows = '300ms'
+TimeoutCloud = '300ms'

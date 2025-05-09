@@ -27,7 +27,7 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 			Resources: config.Resources{
 				Volumes: map[string]*resources.Volume{
 					"foo": {
-						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalogN",
 							Name:        "volumeN",
 							SchemaName:  "schemaN",
@@ -182,7 +182,7 @@ func TestFindVolumeInBundle(t *testing.T) {
 			Resources: config.Resources{
 				Volumes: map[string]*resources.Volume{
 					"foo": {
-						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "main",
 							Name:        "my_volume",
 							SchemaName:  "my_schema",

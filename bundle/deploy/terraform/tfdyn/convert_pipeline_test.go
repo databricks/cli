@@ -15,7 +15,7 @@ import (
 
 func TestConvertPipeline(t *testing.T) {
 	src := resources.Pipeline{
-		CreatePipeline: &pipelines.CreatePipeline{
+		CreatePipeline: pipelines.CreatePipeline{
 			Name: "my pipeline",
 			// This fields is not part of TF schema yet, but once we upgrade to TF version that supports it, this test will fail because run_as
 			// will be exposed which is expected and test will need to be updated.
