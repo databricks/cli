@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -49,6 +50,10 @@ func (n *downloader) markFileForDownload(ctx context.Context, filePath *string) 
 	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath)
 	if err != nil {
 		return err
+	}
+
+	if n.basePath == "" {
+		n.basePath = path.Dir(*filePath)
 	}
 
 	// Remove the base path prefix
@@ -113,6 +118,10 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 	}
 
 	ext := notebook.GetExtensionByLanguage(info)
+
+	if n.basePath == "" {
+		n.basePath = path.Dir(*notebookPath)
+	}
 
 	// Remove the base path prefix
 	relPath := strings.TrimPrefix(*notebookPath, n.basePath)
