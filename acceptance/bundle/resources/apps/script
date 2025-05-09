@@ -1,9 +1,14 @@
+print_requests() {
+    jq 'select(.method != "GET" and (.path | contains("/apps")))' < out.requests.txt
+    rm out.requests.txt
+}
+
 trace $CLI bundle deploy
-jq 'select(.path | contains("/apps"))' < out.requests.txt > out.requests-deploy1.txt
-rm out.requests.txt
+trace print_requests
+read_state.py apps myapp name description
 
 title "Update description and re-deploy"
 trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 trace $CLI bundle deploy
-jq 'select(.path | contains("/apps"))' < out.requests.txt > out.requests-deploy2.txt
-rm out.requests.txt
+trace print_requests
+read_state.py apps myapp name description

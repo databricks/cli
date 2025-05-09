@@ -2,6 +2,7 @@ package trampoline
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -29,22 +30,32 @@ func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return nil
 	}
 
-	if hasIncompatibleWheelTasks(ctx, b) {
-		return diag.Errorf("Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.")
+	diags := hasIncompatibleWheelTasks(ctx, b)
+	if len(diags) > 0 {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.",
+		})
 	}
-	return nil
+	return diags
 }
 
 func isPythonWheelWrapperOn(b *bundle.Bundle) bool {
 	return b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
 }
 
-func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
+func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	tasks := libraries.FindTasksWithLocalLibraries(b)
 	for _, task := range tasks {
 		if task.NewCluster != nil {
 			if lowerThanExpectedVersion(task.NewCluster.SparkVersion) {
-				return true
+				diags = append(diags, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", task.TaskKey, task.NewCluster.SparkVersion),
+				})
+				continue
 			}
 		}
 
@@ -53,7 +64,11 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 				for _, cluster := range job.JobClusters {
 					if task.JobClusterKey == cluster.JobClusterKey && cluster.NewCluster.SparkVersion != "" {
 						if lowerThanExpectedVersion(cluster.NewCluster.SparkVersion) {
-							return true
+							diags = append(diags, diag.Diagnostic{
+								Severity: diag.Error,
+								Summary:  fmt.Sprintf("job cluster %s uses incompatible DBR version %s", cluster.JobClusterKey, cluster.NewCluster.SparkVersion),
+							})
+							continue
 						}
 					}
 				}
@@ -70,19 +85,19 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 				p, ok := dynvar.PureReferenceToPath(task.ExistingClusterId)
 				if !ok || len(p) < 3 {
 					log.Warnf(ctx, "unable to parse cluster key from %s", task.ExistingClusterId)
-					return false
+					continue
 				}
 
 				if p[0].Key() != "resources" || p[1].Key() != "clusters" {
 					log.Warnf(ctx, "incorrect variable reference for cluster id %s", task.ExistingClusterId)
-					return false
+					continue
 				}
 
 				clusterKey := p[2].Key()
 				cluster, ok := b.Config.Resources.Clusters[clusterKey]
 				if !ok {
 					log.Warnf(ctx, "unable to find cluster with key %s", clusterKey)
-					return false
+					continue
 				}
 				version = cluster.SparkVersion
 			} else {
@@ -90,17 +105,21 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 				// If there's error getting spark version for cluster, do not mark it as incompatible
 				if err != nil {
 					log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())
-					return false
+					continue
 				}
 			}
 
 			if lowerThanExpectedVersion(version) {
-				return true
+				diags = append(diags, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", task.TaskKey, version),
+				})
+				continue
 			}
 		}
 	}
 
-	return false
+	return diags
 }
 
 func lowerThanExpectedVersion(sparkVersion string) bool {

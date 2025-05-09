@@ -36,7 +36,7 @@ func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *reso
 	}
 
 	for k, s := range b.Config.Resources.Schemas {
-		if s != nil && s.CreateSchema != nil && s.CatalogName == catalogName && s.Name == schemaName {
+		if s != nil && s.CatalogName == catalogName && s.Name == schemaName {
 			return k, s
 		}
 	}
@@ -44,7 +44,7 @@ func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *reso
 }
 
 func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
-	if v == nil || v.CreateVolumeRequestContent == nil {
+	if v == nil {
 		return
 	}
 	schemaK, schema := findSchema(b, v.CatalogName, v.SchemaName)
@@ -56,7 +56,7 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 }
 
 func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
-	if p == nil || p.CreatePipeline == nil {
+	if p == nil {
 		return
 	}
 	if p.Schema == "" {
@@ -71,7 +71,7 @@ func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
 }
 
 func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
-	if p == nil || p.CreatePipeline == nil {
+	if p == nil {
 		return
 	}
 	if p.Target == "" {

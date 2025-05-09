@@ -1,0 +1,36 @@
+print_requests() {
+    cat out.requests.txt
+    rm out.requests.txt
+}
+
+# Verify that the entire crud lifecycle of a pipeline works.
+title "Create a pipeline"
+export pipeline_id=$($CLI pipelines create --json @pipeline1.json | jq -r .pipeline_id)
+echo ""
+
+trace print_requests
+
+title "Get the pipeline"
+trace $CLI pipelines get $pipeline_id  | jq .name
+
+trace print_requests
+
+title "Update the pipeline"
+trace $CLI pipelines update $pipeline_id --json @pipeline2.json
+
+trace print_requests
+
+title "Verify the update"
+trace $CLI pipelines get $pipeline_id | jq .name
+
+trace print_requests
+
+title "Delete the pipeline"
+trace $CLI pipelines delete $pipeline_id
+
+trace print_requests
+
+title "Verify the deletion"
+errcode trace $CLI pipelines get $pipeline_id
+
+trace print_requests

@@ -29,7 +29,7 @@ type Dashboard struct {
 	ModifiedStatus ModifiedStatus        `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string                `json:"url,omitempty" bundle:"internal"`
 
-	*dashboards.Dashboard
+	dashboards.Dashboard
 
 	// =========================
 	// === Additional fields ===
@@ -100,8 +100,4 @@ func (r *Dashboard) GetName() string {
 
 func (r *Dashboard) GetURL() string {
 	return r.URL
-}
-
-func (r *Dashboard) IsNil() bool {
-	return r.Dashboard == nil
 }

@@ -1,0 +1,8 @@
+command:
+- python
+- -c
+- "print('Hello, world')"
+
+env:
+  - name: VALUE_FROM
+    valueFrom: "value-from-secret"

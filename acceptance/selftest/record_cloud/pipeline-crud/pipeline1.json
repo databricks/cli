@@ -1,0 +1,11 @@
+{
+    "name": "test-pipeline-1",
+    "allow_duplicate_names": true,
+    "libraries": [
+        {
+            "file": {
+                "path": "/whatever.py"
+            }
+        }
+    ]
+}

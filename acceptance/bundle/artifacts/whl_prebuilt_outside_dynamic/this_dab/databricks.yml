@@ -1,0 +1,46 @@
+bundle:
+  name: python-wheel
+
+artifacts:
+  art1:
+    type: whl
+    files:
+      - source: ../other_dab/dist/*.whl
+    dynamic_version: true
+  art2:
+    type: whl
+    files:
+      - source: ../other_dab/dist/lib/other_test_code*.whl
+    dynamic_version: true
+
+sync:
+  paths:
+  - ../other_dab
+  exclude:
+  - ../other_dab/**
+
+resources:
+  jobs:
+    test_job:
+      name: "[${bundle.target}] My Wheel Job"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "0717-132531-5opeqon1"
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
+          libraries:
+          - whl: ../other_dab/dist/*.whl
+          - whl: ../other_dab/dist/lib/other_test_code-0.0.1-py3-none-any.whl
+        - task_key: ServerlessTestTask
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
+          environment_key:  "test_env"
+      environments:
+        - environment_key:  "test_env"
+          spec:
+            client: "1"
+            dependencies:
+             - ../other_dab/dist/*.whl
+             - ../other_dab/dist/lib/other_test_code-0.0.1-py3-none-any.whl

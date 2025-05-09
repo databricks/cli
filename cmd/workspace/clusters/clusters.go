@@ -52,6 +52,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "compute",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -622,9 +623,11 @@ func newEvents() *cobra.Command {
 
 	cmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds.`)
 	// TODO: array: event_types
-	cmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `The maximum number of events to include in a page of events.`)
-	cmd.Flags().Int64Var(&eventsReq.Offset, "offset", eventsReq.Offset, `The offset in the result set.`)
+	cmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `Deprecated: use page_token in combination with page_size instead.`)
+	cmd.Flags().Int64Var(&eventsReq.Offset, "offset", eventsReq.Offset, `Deprecated: use page_token in combination with page_size instead.`)
 	cmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC". Supported values: [ASC, DESC]`)
+	cmd.Flags().IntVar(&eventsReq.PageSize, "page-size", eventsReq.PageSize, `The maximum number of events to include in a page of events.`)
+	cmd.Flags().StringVar(&eventsReq.PageToken, "page-token", eventsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of events respectively.`)
 	cmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", eventsReq.StartTime, `The start time in epoch milliseconds.`)
 
 	cmd.Use = "events CLUSTER_ID"
@@ -718,11 +721,6 @@ func newGet() *cobra.Command {
 
 	var getReq compute.GetClusterRequest
 
-	var getSkipWait bool
-	var getTimeout time.Duration
-
-	cmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
-	cmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
 	cmd.Use = "get CLUSTER_ID"

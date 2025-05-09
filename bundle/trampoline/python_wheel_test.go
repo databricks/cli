@@ -77,7 +77,7 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey:         "key1",
@@ -123,7 +123,7 @@ func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey:      "notebook_task",

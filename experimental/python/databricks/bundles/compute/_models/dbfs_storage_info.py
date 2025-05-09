@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class DbfsStorageInfo:
-    """"""
+    """
+    A storage location in DBFS
+    """
 
     destination: VariableOr[str]
     """

@@ -146,14 +146,40 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			basePath := getPath(typ)
 			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
+			preview := ref.Preview
+			if preview == "PUBLIC" {
+				preview = ""
+			}
+			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" || preview != "" {
+				if ref.Deprecated && ref.DeprecationMessage == "" {
+					ref.DeprecationMessage = "This field is deprecated"
+				}
 
-			if ref.Description != "" || ref.Enum != nil {
-				pkg[RootTypeKey] = annotation.Descriptor{Description: ref.Description, Enum: ref.Enum}
+				pkg[RootTypeKey] = annotation.Descriptor{
+					Description:        ref.Description,
+					Enum:               ref.Enum,
+					DeprecationMessage: ref.DeprecationMessage,
+					Preview:            preview,
+				}
 			}
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Properties[k]; ok {
-					pkg[k] = annotation.Descriptor{Description: refProp.Description, Enum: refProp.Enum}
+					preview = refProp.Preview
+					if preview == "PUBLIC" {
+						preview = ""
+					}
+
+					if refProp.Deprecated && refProp.DeprecationMessage == "" {
+						refProp.DeprecationMessage = "This field is deprecated"
+					}
+
+					pkg[k] = annotation.Descriptor{
+						Description:        refProp.Description,
+						Enum:               refProp.Enum,
+						Preview:            preview,
+						DeprecationMessage: refProp.DeprecationMessage,
+					}
 					if refProp.Description == "" {
 						addEmptyOverride(k, basePath, overrides)
 					}

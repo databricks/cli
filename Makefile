@@ -1,9 +1,9 @@
-default: vendor fmt lint tidy ws
+default: tidy vendor fmt lint ws
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
-GOTESTSUM_CMD ?= gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped
+GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
 
 
 lint:
@@ -26,6 +26,9 @@ ws:
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
 
+slowest:
+	go tool gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
+
 cover:
 	rm -fr ./acceptance/build/cover/
 	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES}
@@ -40,7 +43,7 @@ showcover:
 acc-showcover:
 	go tool cover -html=coverage-acceptance.txt
 
-build: vendor
+build: tidy vendor
 	go build -mod vendor
 
 snapshot:
@@ -55,7 +58,7 @@ schema:
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
-INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
+INTEGRATION = go tool gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
 
 integration: vendor
 	$(INTEGRATION)
@@ -67,5 +70,6 @@ generate:
 	genkit update-sdk
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
+	pushd experimental/python && make codegen
 
 .PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs ws

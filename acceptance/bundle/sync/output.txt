@@ -1,40 +1,11 @@
 
 >>> [CLI] bundle sync --output text
+Action: PUT: .gitignore, databricks.yml, dryrun/databricks.yml, ignored-folder/folder1/script.py, ignored-folder/script.py
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded databricks.yml
-Uploaded project-folder
-Uploaded project-folder/app.py
-Uploaded project-folder/app.yaml
-Uploaded project-folder/query.sql
-
->>> [CLI] bundle sync --exclude project-folder/app.* --output text
-Deleted project-folder/app.py
-Deleted project-folder/app.yaml
-Initial Sync Complete
-
->>> [CLI] bundle sync --exclude project-folder/app.* --exclude project-folder/query.sql --output text
-Deleted project-folder
-Deleted project-folder/query.sql
-Initial Sync Complete
-
->>> [CLI] bundle sync --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py --output text
-Initial Sync Complete
-Uploaded ignored-folder
-Uploaded ignored-folder/script.py
-
->>> [CLI] bundle sync --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py --output text
-Initial Sync Complete
+Uploaded dryrun
+Uploaded dryrun/databricks.yml
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
-
->>> [CLI] bundle sync --output text
-Deleted ignored-folder
-Deleted ignored-folder/folder1
-Deleted ignored-folder/folder1/script.py
-Deleted ignored-folder/script.py
-Initial Sync Complete
-Uploaded project-folder
-Uploaded project-folder/app.py
-Uploaded project-folder/app.yaml
-Uploaded project-folder/query.sql
+Uploaded ignored-folder/script.py

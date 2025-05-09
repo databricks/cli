@@ -32,7 +32,7 @@ var NilValue = Value{
 
 // V constructs a new Value with the given value.
 func V(v any) Value {
-	return NewValue(v, []Location{})
+	return NewValue(v, nil)
 }
 
 // NewValue constructs a new Value with the given value and location.

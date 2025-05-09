@@ -37,7 +37,7 @@ func TestAppUploadConfig(t *testing.T) {
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"my_app": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "my_app",
 						},
 						SourceCodePath: "./my_app",

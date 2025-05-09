@@ -24,6 +24,8 @@
       },
       "edit_mode": "UI_LOCKED",
       "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
       "notification_settings": {
         "no_alert_for_canceled_runs": true,
         "no_alert_for_skipped_runs": false
@@ -32,7 +34,6 @@
       "queue": {
         "enabled": true
       },
-      "tags": {},
       "tasks": [
         {
           "new_cluster": {

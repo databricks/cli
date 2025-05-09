@@ -4,8 +4,7 @@ This file only template directives; it is skipped for the actual output.
 
 {{skip "__preamble"}}
 
-# TODO add DLT support, placeholder for now
-{{$notDLT := true }}
+{{$notDLT := not (eq .include_dlt "yes")}}
 {{$notNotebook := not (eq .include_notebook "yes")}}
 {{$notPython := not (eq .include_python "yes")}}
 

@@ -71,7 +71,6 @@ class PipelineCluster:
     for one cluster. If the conf is given, the logs will be delivered to the destination every
     `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
     the destination of executor logs is `$destination/$clusterId/executor`.
-    
     """
 
     custom_tags: VariableOrDict[str] = field(default_factory=dict)
@@ -130,7 +129,6 @@ class PipelineCluster:
     the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
     and optimized for memory or compute intensive workloads. A list of available node
     types can be retrieved by using the :method:clusters/listNodeTypes API call.
-    
     """
 
     num_workers: VariableOrOptional[int] = None
@@ -154,7 +152,6 @@ class PipelineCluster:
     """
     An object containing a set of optional, user-specified Spark configuration key-value pairs.
     See :method:clusters/create for more details.
-    
     """
 
     spark_env_vars: VariableOrDict[str] = field(default_factory=dict)
@@ -220,7 +217,6 @@ class PipelineClusterDict(TypedDict, total=False):
     for one cluster. If the conf is given, the logs will be delivered to the destination every
     `5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while
     the destination of executor logs is `$destination/$clusterId/executor`.
-    
     """
 
     custom_tags: VariableOrDict[str]
@@ -279,7 +275,6 @@ class PipelineClusterDict(TypedDict, total=False):
     the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
     and optimized for memory or compute intensive workloads. A list of available node
     types can be retrieved by using the :method:clusters/listNodeTypes API call.
-    
     """
 
     num_workers: VariableOrOptional[int]
@@ -303,7 +298,6 @@ class PipelineClusterDict(TypedDict, total=False):
     """
     An object containing a set of optional, user-specified Spark configuration key-value pairs.
     See :method:clusters/create for more details.
-    
     """
 
     spark_env_vars: VariableOrDict[str]

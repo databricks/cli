@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class Adlsgen2Info:
-    """"""
+    """
+    A storage location in Adls Gen2
+    """
 
     destination: VariableOr[str]
     """

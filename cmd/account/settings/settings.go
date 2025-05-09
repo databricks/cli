@@ -3,6 +3,7 @@
 package settings
 
 import (
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
 	csp_enablement_account "github.com/databricks/cli/cmd/account/csp-enablement-account"
@@ -25,6 +26,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "settings",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add subservices

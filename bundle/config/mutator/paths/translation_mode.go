@@ -13,10 +13,6 @@ const (
 	// TranslateModeDirectory translates a path to a remote directory.
 	TranslateModeDirectory
 
-	// TranslateModeLocalAbsoluteFile translates a path to the local absolute file path.
-	// It returns an error if the path does not exist or is a directory.
-	TranslateModeLocalAbsoluteFile
-
 	// TranslateModeLocalAbsoluteDirectory translates a path to the local absolute directory path.
 	// It returns an error if the path does not exist or is not a directory.
 	TranslateModeLocalAbsoluteDirectory
@@ -29,4 +25,7 @@ const (
 	// It a "./" prefix to the path if it does not already have one.
 	// This allows for disambiguating between paths and PyPI package names.
 	TranslateModeLocalRelativeWithPrefix
+
+	// TranslateModeEnvironmentRequirements translates a local requirements file path to be absolute.
+	TranslateModeEnvironmentRequirements
 )

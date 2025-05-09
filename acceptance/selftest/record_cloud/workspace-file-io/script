@@ -1,0 +1,62 @@
+export username=$($CLI current-user me | jq -r .userName)
+
+# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+export MSYS_NO_PATHCONV=1
+
+print_requests() {
+    cat out.requests.txt
+    rm out.requests.txt
+}
+
+title "create a folder"
+trace $CLI workspace mkdirs /Users/$username/$UNIQUE_NAME
+
+trace print_requests
+
+title "upload a file"
+trace $CLI workspace import /Users/$username/$UNIQUE_NAME/hello.txt --format AUTO --file ./hello.txt
+
+trace print_requests
+
+title "list the folder"
+trace $CLI workspace list /Users/$username/$UNIQUE_NAME --output json | jq '.[] | {path, object_type}'
+
+trace print_requests
+
+title "stat the file"
+trace $CLI workspace get-status /Users/$username/$UNIQUE_NAME/hello.txt | jq '{path, object_type}'
+
+trace print_requests
+
+title "download the file"
+trace $CLI workspace export /Users/$username/$UNIQUE_NAME/hello.txt --format AUTO --file ./hello2.txt
+
+trace cat hello2.txt
+rm hello2.txt
+
+trace print_requests
+
+title "delete the file"
+trace $CLI workspace delete /Users/$username/$UNIQUE_NAME/hello.txt
+
+trace print_requests
+
+title "stat the file again"
+errcode trace $CLI workspace get-status /Users/$username/$UNIQUE_NAME/hello.txt
+
+trace print_requests
+
+title "list the folder"
+trace $CLI workspace list /Users/$username/$UNIQUE_NAME
+
+title "delete the folder"
+trace $CLI workspace delete /Users/$username/$UNIQUE_NAME
+
+trace print_requests
+
+title "list the folder again"
+errcode trace $CLI workspace list /Users/$username/$UNIQUE_NAME
+
+trace print_requests

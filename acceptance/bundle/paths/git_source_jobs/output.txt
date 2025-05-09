@@ -1,0 +1,39 @@
+{
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/hello/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "git_source": {
+          "git_branch": "main",
+          "git_provider": "gitHub",
+          "git_url": "https://github.com/foo"
+        },
+        "max_concurrent_runs": 1,
+        "name": "my_job",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tasks": [
+          {
+            "libraries": [
+              {
+                "whl": "../mywheel.whl"
+              }
+            ],
+            "notebook_task": {
+              "notebook_path": "path/in/repo/should/not/change",
+              "source": "GIT"
+            },
+            "task_key": "my_task"
+          }
+        ]
+      }
+    }
+  }
+}

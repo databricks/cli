@@ -15,7 +15,7 @@ class FileLibrary:
 
     path: VariableOrOptional[str] = None
     """
-    The absolute path of the file.
+    The absolute path of the source code.
     """
 
     @classmethod
@@ -31,7 +31,7 @@ class FileLibraryDict(TypedDict, total=False):
 
     path: VariableOrOptional[str]
     """
-    The absolute path of the file.
+    The absolute path of the source code.
     """
 
 

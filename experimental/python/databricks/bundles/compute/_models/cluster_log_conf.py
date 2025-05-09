@@ -23,7 +23,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class ClusterLogConf:
-    """"""
+    """
+    Cluster log delivery config
+    """
 
     dbfs: VariableOrOptional[DbfsStorageInfo] = None
     """
@@ -41,8 +43,8 @@ class ClusterLogConf:
 
     volumes: VariableOrOptional[VolumesStorageInfo] = None
     """
-    destination needs to be provided. e.g.
-    `{ "volumes" : { "destination" : "/Volumes/catalog/schema/volume/cluster_log" } }`
+    destination needs to be provided, e.g.
+    `{ "volumes": { "destination": "/Volumes/catalog/schema/volume/cluster_log" } }`
     """
 
     @classmethod
@@ -72,8 +74,8 @@ class ClusterLogConfDict(TypedDict, total=False):
 
     volumes: VariableOrOptional[VolumesStorageInfoParam]
     """
-    destination needs to be provided. e.g.
-    `{ "volumes" : { "destination" : "/Volumes/catalog/schema/volume/cluster_log" } }`
+    destination needs to be provided, e.g.
+    `{ "volumes": { "destination": "/Volumes/catalog/schema/volume/cluster_log" } }`
     """
 
 

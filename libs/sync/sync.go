@@ -41,6 +41,8 @@ type SyncOptions struct {
 	Host string
 
 	OutputHandler OutputHandler
+
+	DryRun bool
 }
 
 type Sync struct {
@@ -156,11 +158,11 @@ func (s *Sync) notifyStart(ctx context.Context, d diff) {
 	if s.seq > 0 && d.IsEmpty() {
 		return
 	}
-	s.notifier.Notify(ctx, newEventStart(s.seq, d.put, d.delete))
+	s.notifier.Notify(ctx, newEventStart(s.seq, d.put, d.delete, s.DryRun))
 }
 
 func (s *Sync) notifyProgress(ctx context.Context, action EventAction, path string, progress float32) {
-	s.notifier.Notify(ctx, newEventProgress(s.seq, action, path, progress))
+	s.notifier.Notify(ctx, newEventProgress(s.seq, action, path, progress, s.DryRun))
 }
 
 func (s *Sync) notifyComplete(ctx context.Context, d diff) {
@@ -168,7 +170,7 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 	if s.seq > 0 && d.IsEmpty() {
 		return
 	}
-	s.notifier.Notify(ctx, newEventComplete(s.seq, d.put, d.delete))
+	s.notifier.Notify(ctx, newEventComplete(s.seq, d.put, d.delete, s.DryRun))
 	s.seq++
 }
 
@@ -199,10 +201,12 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 		return files, err
 	}
 
-	err = s.snapshot.Save(ctx)
-	if err != nil {
-		log.Errorf(ctx, "cannot store snapshot: %s", err)
-		return files, err
+	if !s.DryRun {
+		err = s.snapshot.Save(ctx)
+		if err != nil {
+			log.Errorf(ctx, "cannot store snapshot: %s", err)
+			return files, err
+		}
 	}
 
 	s.notifyComplete(ctx, change)

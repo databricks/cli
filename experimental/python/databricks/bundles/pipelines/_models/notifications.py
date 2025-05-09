@@ -22,13 +22,11 @@ class Notifications:
     * `on-update-failure`: Each time a pipeline update fails.
     * `on-update-fatal-failure`: A pipeline update fails with a non-retryable (fatal) error.
     * `on-flow-failure`: A single data flow fails.
-    
     """
 
     email_recipients: VariableOrList[str] = field(default_factory=list)
     """
     A list of email addresses notified when a configured alert is triggered.
-    
     """
 
     @classmethod
@@ -51,13 +49,11 @@ class NotificationsDict(TypedDict, total=False):
     * `on-update-failure`: Each time a pipeline update fails.
     * `on-update-fatal-failure`: A pipeline update fails with a non-retryable (fatal) error.
     * `on-flow-failure`: A single data flow fails.
-    
     """
 
     email_recipients: VariableOrList[str]
     """
     A list of email addresses notified when a configured alert is triggered.
-    
     """
 
 

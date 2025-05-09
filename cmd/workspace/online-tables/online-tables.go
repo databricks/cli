@@ -28,6 +28,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "catalog",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -56,7 +57,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq catalog.CreateOnlineTableRequest
-	createReq.Table = &catalog.OnlineTable{}
+	createReq.Table = catalog.OnlineTable{}
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool

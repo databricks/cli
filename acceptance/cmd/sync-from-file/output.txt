@@ -1,0 +1,24 @@
+
+>>> [CLI] sync . /Users/[USERNAME] --exclude-from ignore.test-fixture
+Action: PUT: .gitignore, ignore.test-fixture, project-folder/app.py, project-folder/app.yaml
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded ignore.test-fixture
+Uploaded project-folder
+Uploaded project-folder/app.py
+Uploaded project-folder/app.yaml
+
+>>> [CLI] sync . /Users/[USERNAME] --include-from ignore.test-fixture
+Action: PUT: ignored-folder2/app.py, project-folder/app2.py, project-folder/blob/1, project-folder/blob/2, project-folder/query.sql, project-folder/static/folder1/1.txt, project-folder/static/folder2/2.txt
+Initial Sync Complete
+Uploaded ignored-folder2
+Uploaded ignored-folder2/app.py
+Uploaded project-folder/app2.py
+Uploaded project-folder/blob
+Uploaded project-folder/blob/1
+Uploaded project-folder/blob/2
+Uploaded project-folder/query.sql
+Uploaded project-folder/static/folder1
+Uploaded project-folder/static/folder1/1.txt
+Uploaded project-folder/static/folder2
+Uploaded project-folder/static/folder2/2.txt

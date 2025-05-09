@@ -31,7 +31,7 @@ type jobRunner struct {
 }
 
 func (r *jobRunner) Name() string {
-	if r.job == nil || r.job.JobSettings == nil {
+	if r.job == nil {
 		return ""
 	}
 	return r.job.JobSettings.Name

@@ -9,14 +9,8 @@ repls.json
 EOF
 
 cleanup() {
-  rm -rf project-folder ignored-folder .git
+  rm -rf project-folder ignored-folder .git .gitignore
 }
 trap cleanup EXIT
 
-# Note: output line starting with "Action: " lists files in non-deterministic order so we filter it out
-trace $CLI bundle sync --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --exclude 'project-folder/app.*' --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --include 'ignored-folder/*.py' --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --exclude 'project-folder/app.*' --exclude 'project-folder/query.sql' --include 'ignored-folder/**/*.py' --output text | grep -v "^Action: " | sort
-trace $CLI bundle sync --output text | grep -v "^Action: " | sort
+trace $CLI bundle sync --output text | sort

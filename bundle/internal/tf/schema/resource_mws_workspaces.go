@@ -38,11 +38,13 @@ type ResourceMwsWorkspaces struct {
 	AccountId                           string                                        `json:"account_id"`
 	AwsRegion                           string                                        `json:"aws_region,omitempty"`
 	Cloud                               string                                        `json:"cloud,omitempty"`
+	ComputeMode                         string                                        `json:"compute_mode,omitempty"`
 	CreationTime                        int                                           `json:"creation_time,omitempty"`
 	CredentialsId                       string                                        `json:"credentials_id,omitempty"`
 	CustomTags                          map[string]string                             `json:"custom_tags,omitempty"`
 	CustomerManagedKeyId                string                                        `json:"customer_managed_key_id,omitempty"`
 	DeploymentName                      string                                        `json:"deployment_name,omitempty"`
+	EffectiveComputeMode                string                                        `json:"effective_compute_mode,omitempty"`
 	GcpWorkspaceSa                      string                                        `json:"gcp_workspace_sa,omitempty"`
 	Id                                  string                                        `json:"id,omitempty"`
 	IsNoPublicIpEnabled                 bool                                          `json:"is_no_public_ip_enabled,omitempty"`

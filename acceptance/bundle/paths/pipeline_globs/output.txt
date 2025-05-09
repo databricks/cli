@@ -1,0 +1,62 @@
+
+>>> [CLI] bundle validate --output json
+{
+  "resources": {
+    "pipelines": {
+      "nyc_taxi_pipeline": {
+        "channel": "CURRENT",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "libraries": [
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/notebooks/nyc_taxi_loader"
+            }
+          },
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/files/nyc_taxi_loader.py"
+            }
+          },
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/notebooks/nyc_taxi_loader"
+            }
+          },
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/files/nyc_taxi_loader.py"
+            }
+          },
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline_glob_paths/default/files/notebooks/nyc_taxi_loader"
+            }
+          },
+          {
+            "maven": {
+              "coordinates": "org.jsoup:jsoup:1.7.2"
+            }
+          },
+          {
+            "jar": "*/*.jar"
+          },
+          {
+            "notebook": {
+              "path": "/Workspace/Users/me@company.com/*.ipynb"
+            }
+          },
+          {
+            "notebook": {
+              "path": "s3://notebooks/*.ipynb"
+            }
+          }
+        ],
+        "permissions": []
+      }
+    }
+  }
+}

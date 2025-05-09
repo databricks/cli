@@ -55,7 +55,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"my_app": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "my_app",
 						},
 						SourceCodePath: "./my_app",
@@ -110,7 +110,7 @@ func setupTestApp(t *testing.T, initialAppState apps.ApplicationState, initialCo
 	}
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
+		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
 			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
 		},
@@ -213,7 +213,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 	// First deployment fails
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
+		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
 			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
 		},
@@ -237,7 +237,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 	// Second one should succeeed
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
+		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
 			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
 		},

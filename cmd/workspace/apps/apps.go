@@ -29,6 +29,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "apps",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -68,7 +69,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq apps.CreateAppRequest
-	createReq.App = &apps.App{}
+	createReq.App = apps.App{}
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -244,7 +245,7 @@ func newDeploy() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deployReq apps.CreateAppDeploymentRequest
-	deployReq.AppDeployment = &apps.AppDeployment{}
+	deployReq.AppDeployment = apps.AppDeployment{}
 	var deployJson flags.JsonFlag
 
 	var deploySkipWait bool
@@ -934,7 +935,7 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq apps.UpdateAppRequest
-	updateReq.App = &apps.App{}
+	updateReq.App = apps.App{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags

@@ -1,0 +1,124 @@
+
+=== create a folder
+>>> [CLI] workspace mkdirs /Users/[USERNAME]/[UNIQUE_NAME]
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
+  }
+}
+
+=== upload a file
+>>> [CLI] workspace import /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt --format AUTO --file ./hello.txt
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/import",
+  "body": {
+    "content": "[HELLO-WORLD]",
+    "format": "AUTO",
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt"
+  }
+}
+
+=== list the folder
+>>> [CLI] workspace list /Users/[USERNAME]/[UNIQUE_NAME] --output json
+{
+  "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt",
+  "object_type": "FILE"
+}
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/list"
+}
+
+=== stat the file
+>>> [CLI] workspace get-status /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt
+{
+  "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt",
+  "object_type": "FILE"
+}
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+
+=== download the file
+>>> [CLI] workspace export /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt --format AUTO --file ./hello2.txt
+
+>>> cat hello2.txt
+hello, world
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export"
+}
+
+=== delete the file
+>>> [CLI] workspace delete /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt"
+  }
+}
+
+=== stat the file again
+>>> [CLI] workspace get-status /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt
+Error: Path (/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt) doesn't exist.
+
+Exit code: 1
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+
+=== list the folder
+>>> [CLI] workspace list /Users/[USERNAME]/[UNIQUE_NAME]
+ID  Type  Language  Path
+
+=== delete the folder
+>>> [CLI] workspace delete /Users/[USERNAME]/[UNIQUE_NAME]
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/list"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
+  }
+}
+
+=== list the folder again
+>>> [CLI] workspace list /Users/[USERNAME]/[UNIQUE_NAME]
+Error: Path (/Users/[USERNAME]/[UNIQUE_NAME]) doesn't exist.
+
+Exit code: 1
+
+>>> print_requests
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/list"
+}

@@ -33,6 +33,7 @@ func New() *cobra.Command {
   This setting requires a restart of clusters and SQL warehouses to take effect.
   Additionally, the default namespace only applies when using Unity
   Catalog-enabled compute.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

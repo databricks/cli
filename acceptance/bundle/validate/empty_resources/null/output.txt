@@ -1,0 +1,121 @@
+
+=== resources.jobs.rname ===
+Error: job rname is not defined
+  at resources.jobs.rname
+  in databricks.yml:6:12
+
+{
+  "jobs": {
+    "rname": null
+  }
+}
+
+=== resources.pipelines.rname ===
+Error: pipeline rname is not defined
+  at resources.pipelines.rname
+  in databricks.yml:6:12
+
+{
+  "pipelines": {
+    "rname": null
+  }
+}
+
+=== resources.models.rname ===
+Error: model rname is not defined
+  at resources.models.rname
+  in databricks.yml:6:12
+
+{
+  "models": {
+    "rname": null
+  }
+}
+
+=== resources.experiments.rname ===
+Error: experiment rname is not defined
+  at resources.experiments.rname
+  in databricks.yml:6:12
+
+{
+  "experiments": {
+    "rname": null
+  }
+}
+
+=== resources.registered_models.rname ===
+Error: registered_model rname is not defined
+  at resources.registered_models.rname
+  in databricks.yml:6:12
+
+{
+  "registered_models": {
+    "rname": null
+  }
+}
+
+=== resources.quality_monitors.rname ===
+Error: quality_monitor rname is not defined
+  at resources.quality_monitors.rname
+  in databricks.yml:6:12
+
+{
+  "quality_monitors": {
+    "rname": null
+  }
+}
+
+=== resources.schemas.rname ===
+Error: schema rname is not defined
+  at resources.schemas.rname
+  in databricks.yml:6:12
+
+{
+  "schemas": {
+    "rname": null
+  }
+}
+
+=== resources.volumes.rname ===
+Error: volume rname is not defined
+  at resources.volumes.rname
+  in databricks.yml:6:12
+
+{
+  "volumes": {
+    "rname": null
+  }
+}
+
+=== resources.clusters.rname ===
+Error: cluster rname is not defined
+  at resources.clusters.rname
+  in databricks.yml:6:12
+
+{
+  "clusters": {
+    "rname": null
+  }
+}
+
+=== resources.dashboards.rname ===
+Error: dashboard rname is not defined
+  at resources.dashboards.rname
+  in databricks.yml:6:12
+
+{
+  "dashboards": {
+    "rname": null
+  }
+}
+
+=== resources.apps.rname ===
+Error: app rname is not defined
+  at resources.apps.rname
+  in databricks.yml:6:12
+
+{
+  "apps": {
+    "rname": null
+  }
+}

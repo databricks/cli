@@ -44,6 +44,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "jobs",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -626,7 +627,7 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob to request the next page of the job's sub-resources.`)
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties.`)
 
 	cmd.Use = "get JOB_ID"
 	cmd.Short = `Get a single job.`
@@ -634,10 +635,13 @@ func newGet() *cobra.Command {
   
   Retrieves the details for a single job.
   
-  In Jobs API 2.2, requests for a single job support pagination of tasks and
-  job_clusters when either exceeds 100 elements. Use the next_page_token
-  field to check for more results and pass its value as the page_token in
-  subsequent requests. Arrays with fewer than 100 elements in a page will be
+  Large arrays in the results will be paginated when they exceed 100 elements. A
+  request for a single job will return all properties for that job, and the
+  first 100 elements of array properties (tasks, job_clusters,
+  environments and parameters). Use the next_page_token field to check for
+  more results and pass its value as the page_token in subsequent requests. If
+  any array properties have more than 100 elements, additional results will be
+  returned on subsequent requests. Arrays without additional results will be
   empty on later pages.
 
   Arguments:
@@ -847,16 +851,11 @@ func newGetRun() *cobra.Command {
 
 	var getRunReq jobs.GetRunRequest
 
-	var getRunSkipWait bool
-	var getRunTimeout time.Duration
-
-	cmd.Flags().BoolVar(&getRunSkipWait, "no-wait", getRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
-	cmd.Flags().DurationVar(&getRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
 	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response.`)
-	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `Use next_page_token returned from the previous GetRun to request the next page of the run's sub-resources.`)
+	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `Use next_page_token returned from the previous GetRun response to request the next page of the run's array properties.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a single job run.`
@@ -864,10 +863,13 @@ func newGetRun() *cobra.Command {
   
   Retrieves the metadata of a run.
   
-  In Jobs API 2.2, requests for a single job run support pagination of tasks
-  and job_clusters when either exceeds 100 elements. Use the next_page_token
-  field to check for more results and pass its value as the page_token in
-  subsequent requests. Arrays with fewer than 100 elements in a page will be
+  Large arrays in the results will be paginated when they exceed 100 elements. A
+  request for a single run will return all properties for that run, and the
+  first 100 elements of array properties (tasks, job_clusters,
+  job_parameters and repair_history). Use the next_page_token field to check
+  for more results and pass its value as the page_token in subsequent requests.
+  If any array properties have more than 100 elements, additional results will
+  be returned on subsequent requests. Arrays without additional results will be
   empty on later pages.
 
   Arguments:
@@ -1149,6 +1151,7 @@ func newRepairRun() *cobra.Command {
 	// TODO: map via StringToStringVar: job_parameters
 	cmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair.`)
 	// TODO: map via StringToStringVar: notebook_params
+	cmd.Flags().Var(&repairRunReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
@@ -1355,7 +1358,7 @@ func newRunNow() *cobra.Command {
 	// TODO: map via StringToStringVar: job_parameters
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: array: only
-	cmd.Flags().Var(&runNowReq.PerformanceTarget, "performance-target", `PerformanceTarget defines how performant or cost efficient the execution of run on serverless compute should be. Supported values: [BALANCED, COST_OPTIMIZED, PERFORMANCE_OPTIMIZED]`)
+	cmd.Flags().Var(&runNowReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params

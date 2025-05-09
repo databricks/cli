@@ -1,3 +1,4 @@
 [EnvMatrix]
+B_REGULAR_VAR = ["hello"]
 FIRST = ["one", "two"]
 SECOND = ["variantA", "variantB"]

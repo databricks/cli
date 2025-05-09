@@ -5,6 +5,17 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "body": {
+    "description": "my_app_description",
+    "name": "myapp"
+  }
+}
+apps myapp name='myapp' description='my_app_description'
+
 === Update description and re-deploy
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 
@@ -13,3 +24,15 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/APPS/default/files
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> print_requests
+{
+  "method": "PATCH",
+  "path": "/api/2.0/apps/myapp",
+  "body": {
+    "description": "MY_APP_DESCRIPTION",
+    "name": "myapp",
+    "url": "myapp-123.cloud.databricksapps.com"
+  }
+}
+apps myapp name='myapp' description='MY_APP_DESCRIPTION'

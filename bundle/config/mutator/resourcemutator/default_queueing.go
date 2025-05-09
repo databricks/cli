@@ -24,9 +24,6 @@ func (m *defaultQueueing) Name() string {
 func (m *defaultQueueing) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	r := b.Config.Resources
 	for i := range r.Jobs {
-		if r.Jobs[i].JobSettings == nil {
-			r.Jobs[i].JobSettings = &jobs.JobSettings{}
-		}
 		if r.Jobs[i].Queue != nil {
 			continue
 		}

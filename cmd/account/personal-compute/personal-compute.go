@@ -33,6 +33,7 @@ func New() *cobra.Command {
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
+		RunE:   root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -22,11 +22,19 @@ func New() *cobra.Command {
 		Use:   "network-connectivity",
 		Short: `These APIs provide configurations for the network connectivity of your workspaces for serverless compute resources.`,
 		Long: `These APIs provide configurations for the network connectivity of your
-  workspaces for serverless compute resources.`,
+  workspaces for serverless compute resources. This API provides stable subnets
+  for your workspace so that you can configure your firewalls on your Azure
+  Storage accounts to allow access from Databricks. You can also use the API to
+  provision private endpoints for Databricks to privately connect serverless
+  compute resources to your Azure resources using Azure Private Link. See
+  [configure serverless secure connectivity].
+  
+  [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security`,
 		GroupID: "settings",
 		Annotations: map[string]string{
 			"package": "settings",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -38,6 +46,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetPrivateEndpointRule())
 	cmd.AddCommand(newListNetworkConnectivityConfigurations())
 	cmd.AddCommand(newListPrivateEndpointRules())
+	cmd.AddCommand(newUpdateNccAzurePrivateEndpointRulePublic())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -60,6 +69,7 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createNetworkConnectivityConfigurationReq settings.CreateNetworkConnectivityConfigRequest
+	createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig = settings.CreateNetworkConnectivityConfiguration{}
 	var createNetworkConnectivityConfigurationJson flags.JsonFlag
 
 	// TODO: short flags
@@ -68,12 +78,26 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.Use = "create-network-connectivity-configuration NAME REGION"
 	cmd.Short = `Create a network connectivity configuration.`
 	cmd.Long = `Create a network connectivity configuration.
+  
+  Creates a network connectivity configuration (NCC), which provides stable
+  Azure service subnets when accessing your Azure Storage accounts. You can also
+  use a network connectivity configuration to create Databricks managed private
+  endpoints so that Databricks serverless compute resources privately access
+  your resources.
+  
+  **IMPORTANT**: After you create the network connectivity configuration, you
+  must assign one or more workspaces to the new network connectivity
+  configuration. You can share one network connectivity configuration with
+  multiple workspaces from the same Azure region within the same Databricks
+  account. See [configure serverless secure connectivity].
+  
+  [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security
 
   Arguments:
     NAME: The name of the network connectivity configuration. The name can contain
       alphanumeric characters, hyphens, and underscores. The length must be
       between 3 and 30 characters. The name must match the regular expression
-      ^[0-9a-zA-Z-_]{3,30}$.
+      ^[0-9a-zA-Z-_]{3,30}$
     REGION: The region for the network connectivity configuration. Only workspaces in
       the same region can be attached to the network connectivity configuration.`
 
@@ -97,7 +121,7 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq)
+			diags := createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -109,10 +133,10 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createNetworkConnectivityConfigurationReq.Name = args[0]
+			createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig.Name = args[0]
 		}
 		if !cmd.Flags().Changed("json") {
-			createNetworkConnectivityConfigurationReq.Region = args[1]
+			createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig.Region = args[1]
 		}
 
 		response, err := a.NetworkConnectivity.CreateNetworkConnectivityConfiguration(ctx, createNetworkConnectivityConfigurationReq)
@@ -147,12 +171,16 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createPrivateEndpointRuleReq settings.CreatePrivateEndpointRuleRequest
+	createPrivateEndpointRuleReq.PrivateEndpointRule = settings.CreatePrivateEndpointRule{}
 	var createPrivateEndpointRuleJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createPrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "create-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID RESOURCE_ID GROUP_ID"
+	// TODO: array: domain_names
+	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, `Only used by private endpoints to Azure first-party services.`)
+
+	cmd.Use = "create-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID RESOURCE_ID"
 	cmd.Short = `Create a private endpoint rule.`
 	cmd.Long = `Create a private endpoint rule.
   
@@ -168,12 +196,8 @@ func newCreatePrivateEndpointRule() *cobra.Command {
   [serverless private link]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security/serverless-private-link
 
   Arguments:
-    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
-    RESOURCE_ID: The Azure resource ID of the target resource.
-    GROUP_ID: The sub-resource type (group ID) of the target resource. Note that to
-      connect to workspace root storage (root DBFS), you need two endpoints, one
-      for blob and one for dfs. 
-      Supported values: [blob, dfs, mysqlServer, sqlServer]`
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.
+    RESOURCE_ID: The Azure resource ID of the target resource.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -181,11 +205,11 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NETWORK_CONNECTIVITY_CONFIG_ID as positional arguments. Provide 'resource_id', 'group_id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only NETWORK_CONNECTIVITY_CONFIG_ID as positional arguments. Provide 'resource_id' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(3)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -195,7 +219,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq)
+			diags := createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq.PrivateEndpointRule)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -208,13 +232,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 		}
 		createPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
 		if !cmd.Flags().Changed("json") {
-			createPrivateEndpointRuleReq.ResourceId = args[1]
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createPrivateEndpointRuleReq.GroupId)
-			if err != nil {
-				return fmt.Errorf("invalid GROUP_ID: %s", args[2])
-			}
+			createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId = args[1]
 		}
 
 		response, err := a.NetworkConnectivity.CreatePrivateEndpointRule(ctx, createPrivateEndpointRuleReq)
@@ -259,7 +277,7 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
   Deletes a network connectivity configuration.
 
   Arguments:
-    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -382,7 +400,7 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
   Gets a network connectivity configuration.
 
   Arguments:
-    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -434,8 +452,8 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
-	cmd.Short = `Get a private endpoint rule.`
-	cmd.Long = `Get a private endpoint rule.
+	cmd.Short = `Gets a private endpoint rule.`
+	cmd.Long = `Gets a private endpoint rule.
   
   Gets the private endpoint rule.
 
@@ -581,6 +599,87 @@ func newListPrivateEndpointRules() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listPrivateEndpointRulesOverrides {
 		fn(cmd, &listPrivateEndpointRulesReq)
+	}
+
+	return cmd
+}
+
+// start update-ncc-azure-private-endpoint-rule-public command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateNccAzurePrivateEndpointRulePublicOverrides []func(
+	*cobra.Command,
+	*settings.UpdateNccAzurePrivateEndpointRulePublicRequest,
+)
+
+func newUpdateNccAzurePrivateEndpointRulePublic() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateNccAzurePrivateEndpointRulePublicReq settings.UpdateNccAzurePrivateEndpointRulePublicRequest
+	updateNccAzurePrivateEndpointRulePublicReq.PrivateEndpointRule = settings.UpdatePrivateEndpointRule{}
+	var updateNccAzurePrivateEndpointRulePublicJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateNccAzurePrivateEndpointRulePublicJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: domain_names
+
+	cmd.Use = "update-ncc-azure-private-endpoint-rule-public NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
+	cmd.Short = `Update a private endpoint rule.`
+	cmd.Long = `Update a private endpoint rule.
+  
+  Updates a private endpoint rule. Currently only a private endpoint rule to
+  customer-managed resources is allowed to be updated.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateNccAzurePrivateEndpointRulePublicJson.Unmarshal(&updateNccAzurePrivateEndpointRulePublicReq.PrivateEndpointRule)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateNccAzurePrivateEndpointRulePublicReq.NetworkConnectivityConfigId = args[0]
+		updateNccAzurePrivateEndpointRulePublicReq.PrivateEndpointRuleId = args[1]
+
+		response, err := a.NetworkConnectivity.UpdateNccAzurePrivateEndpointRulePublic(ctx, updateNccAzurePrivateEndpointRulePublicReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateNccAzurePrivateEndpointRulePublicOverrides {
+		fn(cmd, &updateNccAzurePrivateEndpointRulePublicReq)
 	}
 
 	return cmd

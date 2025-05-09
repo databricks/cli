@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle
+
+resources:
+  models:
+    mymodel:
+      user_id: 123

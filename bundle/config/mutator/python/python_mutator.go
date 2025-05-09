@@ -258,6 +258,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return newRoot, nil
 	})
 
+	// don't instrument deprecated phases
+	if m.phase == PythonMutatorPhaseLoadResources || m.phase == PythonMutatorPhaseApplyMutators {
+		// we can precisely track resources that are added/updated, so sum doesn't double-count
+		b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
+		b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
+	} else {
+		mutateDiags = mutateDiags.Extend(diag.Warningf("experimental/pydabs is deprecated and will be removed in future versions, use experimental/python instead"))
+	}
+
 	if err == mutateDiagsHasError {
 		if !mutateDiags.HasError() {
 			panic("mutateDiags has no error, but error is expected")

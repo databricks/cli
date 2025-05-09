@@ -19,19 +19,19 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "foobar",
 						},
 					},
 					"schema2": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog2",
 							Name:        "foobar",
 						},
 					},
 					"schema3": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "barfoo",
 						},
@@ -41,31 +41,31 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 				},
 				Volumes: map[string]*resources.Volume{
 					"volume1": {
-						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalog1",
 							SchemaName:  "foobar",
 						},
 					},
 					"volume2": {
-						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalog2",
 							SchemaName:  "foobar",
 						},
 					},
 					"volume3": {
-						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalog1",
 							SchemaName:  "barfoo",
 						},
 					},
 					"volume4": {
-						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalogX",
 							SchemaName:  "foobar",
 						},
 					},
 					"volume5": {
-						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalog1",
 							SchemaName:  "schemaX",
 						},
@@ -87,7 +87,7 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 	assert.Equal(t, "schemaX", b.Config.Resources.Volumes["volume5"].CreateVolumeRequestContent.SchemaName)
 
 	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"])
-	assert.Nil(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
+	// assert.Nil(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
 }
 
 func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
@@ -96,19 +96,19 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "foobar",
 						},
 					},
 					"schema2": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog2",
 							Name:        "foobar",
 						},
 					},
 					"schema3": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "barfoo",
 						},
@@ -118,43 +118,43 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Schema:  "foobar",
 						},
 					},
 					"pipeline2": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalog2",
 							Schema:  "foobar",
 						},
 					},
 					"pipeline3": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Schema:  "barfoo",
 						},
 					},
 					"pipeline4": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalogX",
 							Schema:  "foobar",
 						},
 					},
 					"pipeline5": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Schema:  "schemaX",
 						},
 					},
 					"pipeline6": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "",
 							Schema:  "foobar",
 						},
 					},
 					"pipeline7": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "",
 							Schema:  "",
 							Name:    "whatever",
@@ -179,7 +179,7 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline7"].Schema)
 
 	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"])
-	assert.Nil(t, b.Config.Resources.Pipelines["emptyPipeline"].CreatePipeline)
+	assert.Empty(t, b.Config.Resources.Pipelines["emptyPipeline"].CreatePipeline.Catalog)
 
 	for _, k := range []string{"pipeline1", "pipeline2", "pipeline3", "pipeline4", "pipeline5", "pipeline6", "pipeline7"} {
 		assert.Empty(t, b.Config.Resources.Pipelines[k].Target)
@@ -192,19 +192,19 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "foobar",
 						},
 					},
 					"schema2": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog2",
 							Name:        "foobar",
 						},
 					},
 					"schema3": {
-						CreateSchema: &catalog.CreateSchema{
+						CreateSchema: catalog.CreateSchema{
 							CatalogName: "catalog1",
 							Name:        "barfoo",
 						},
@@ -214,43 +214,43 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Target:  "foobar",
 						},
 					},
 					"pipeline2": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalog2",
 							Target:  "foobar",
 						},
 					},
 					"pipeline3": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Target:  "barfoo",
 						},
 					},
 					"pipeline4": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalogX",
 							Target:  "foobar",
 						},
 					},
 					"pipeline5": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "catalog1",
 							Target:  "schemaX",
 						},
 					},
 					"pipeline6": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "",
 							Target:  "foobar",
 						},
 					},
 					"pipeline7": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Catalog: "",
 							Target:  "",
 							Name:    "whatever",

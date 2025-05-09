@@ -29,6 +29,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "sql",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -65,6 +66,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createReq.AutoResolveDisplayName, "auto-resolve-display-name", createReq.AutoResolveDisplayName, `If true, automatically resolve query display name conflicts.`)
 	// TODO: complex arg: query
 
 	cmd.Use = "create"

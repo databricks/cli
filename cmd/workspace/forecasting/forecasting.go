@@ -31,6 +31,7 @@ func New() *cobra.Command {
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
+		RunE:   root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -68,14 +69,16 @@ func newCreateExperiment() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createExperimentReq.CustomWeightsColumn, "custom-weights-column", createExperimentReq.CustomWeightsColumn, `Name of the column in the input training table used to customize the weight for each time series to calculate weighted metrics.`)
-	cmd.Flags().StringVar(&createExperimentReq.ExperimentPath, "experiment-path", createExperimentReq.ExperimentPath, `The path to the created experiment.`)
+	cmd.Flags().StringVar(&createExperimentReq.CustomWeightsColumn, "custom-weights-column", createExperimentReq.CustomWeightsColumn, `The column in the training table used to customize weights for each time series.`)
+	cmd.Flags().StringVar(&createExperimentReq.ExperimentPath, "experiment-path", createExperimentReq.ExperimentPath, `The path in the workspace to store the created experiment.`)
+	cmd.Flags().StringVar(&createExperimentReq.FutureFeatureDataPath, "future-feature-data-path", createExperimentReq.FutureFeatureDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store future feature data for predictions.`)
 	// TODO: array: holiday_regions
-	cmd.Flags().Int64Var(&createExperimentReq.MaxRuntime, "max-runtime", createExperimentReq.MaxRuntime, `The maximum duration in minutes for which the experiment is allowed to run.`)
-	cmd.Flags().StringVar(&createExperimentReq.PredictionDataPath, "prediction-data-path", createExperimentReq.PredictionDataPath, `The three-level (fully qualified) path to a unity catalog table.`)
+	// TODO: array: include_features
+	cmd.Flags().Int64Var(&createExperimentReq.MaxRuntime, "max-runtime", createExperimentReq.MaxRuntime, `The maximum duration for the experiment in minutes.`)
+	cmd.Flags().StringVar(&createExperimentReq.PredictionDataPath, "prediction-data-path", createExperimentReq.PredictionDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store predictions.`)
 	cmd.Flags().StringVar(&createExperimentReq.PrimaryMetric, "primary-metric", createExperimentReq.PrimaryMetric, `The evaluation metric used to optimize the forecasting model.`)
-	cmd.Flags().StringVar(&createExperimentReq.RegisterTo, "register-to", createExperimentReq.RegisterTo, `The three-level (fully qualified) path to a unity catalog model.`)
-	cmd.Flags().StringVar(&createExperimentReq.SplitColumn, "split-column", createExperimentReq.SplitColumn, `Name of the column in the input training table used for custom data splits.`)
+	cmd.Flags().StringVar(&createExperimentReq.RegisterTo, "register-to", createExperimentReq.RegisterTo, `The fully qualified path of a Unity Catalog model, formatted as catalog_name.schema_name.model_name, used to store the best model.`)
+	cmd.Flags().StringVar(&createExperimentReq.SplitColumn, "split-column", createExperimentReq.SplitColumn, `// The column in the training table used for custom data splits.`)
 	// TODO: array: timeseries_identifier_columns
 	// TODO: array: training_frameworks
 
@@ -86,20 +89,21 @@ func newCreateExperiment() *cobra.Command {
   Creates a serverless forecasting experiment. Returns the experiment ID.
 
   Arguments:
-    TRAIN_DATA_PATH: The three-level (fully qualified) name of a unity catalog table. This
-      table serves as the training data for the forecasting model.
-    TARGET_COLUMN: Name of the column in the input training table that serves as the
-      prediction target. The values in this column will be used as the ground
-      truth for model training.
-    TIME_COLUMN: Name of the column in the input training table that represents the
-      timestamp of each row.
-    FORECAST_GRANULARITY: The granularity of the forecast. This defines the time interval between
-      consecutive rows in the time series data. Possible values: '1 second', '1
-      minute', '5 minutes', '10 minutes', '15 minutes', '30 minutes', 'Hourly',
-      'Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'.
-    FORECAST_HORIZON: The number of time steps into the future for which predictions should be
-      made. This value represents a multiple of forecast_granularity determining
-      how far ahead the model will forecast.`
+    TRAIN_DATA_PATH: The fully qualified path of a Unity Catalog table, formatted as
+      catalog_name.schema_name.table_name, used as training data for the
+      forecasting model.
+    TARGET_COLUMN: The column in the input training table used as the prediction target for
+      model training. The values in this column are used as the ground truth for
+      model training.
+    TIME_COLUMN: The column in the input training table that represents each row's
+      timestamp.
+    FORECAST_GRANULARITY: The time interval between consecutive rows in the time series data.
+      Possible values include: '1 second', '1 minute', '5 minutes', '10
+      minutes', '15 minutes', '30 minutes', 'Hourly', 'Daily', 'Weekly',
+      'Monthly', 'Quarterly', 'Yearly'.
+    FORECAST_HORIZON: The number of time steps into the future to make predictions, calculated
+      as a multiple of forecast_granularity. This value represents how far ahead
+      the model should forecast.`
 
 	cmd.Annotations = make(map[string]string)
 

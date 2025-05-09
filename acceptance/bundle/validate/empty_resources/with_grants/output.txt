@@ -1,0 +1,150 @@
+
+=== resources.jobs.rname ===
+Warning: unknown field: grants
+  at resources.jobs.rname
+  in databricks.yml:7:7
+
+{
+  "jobs": {
+    "rname": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      }
+    }
+  }
+}
+
+=== resources.pipelines.rname ===
+Warning: unknown field: grants
+  at resources.pipelines.rname
+  in databricks.yml:7:7
+
+{
+  "pipelines": {
+    "rname": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "permissions": []
+    }
+  }
+}
+
+=== resources.models.rname ===
+Warning: unknown field: grants
+  at resources.models.rname
+  in databricks.yml:7:7
+
+{
+  "models": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
+
+=== resources.experiments.rname ===
+Warning: unknown field: grants
+  at resources.experiments.rname
+  in databricks.yml:7:7
+
+{
+  "experiments": {
+    "rname": {
+      "name": ".",
+      "permissions": []
+    }
+  }
+}
+
+=== resources.registered_models.rname ===
+{
+  "registered_models": {
+    "rname": {
+      "grants": []
+    }
+  }
+}
+
+=== resources.quality_monitors.rname ===
+Warning: unknown field: grants
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+{
+  "quality_monitors": {
+    "rname": {}
+  }
+}
+
+=== resources.schemas.rname ===
+{
+  "schemas": {
+    "rname": {
+      "grants": []
+    }
+  }
+}
+
+=== resources.volumes.rname ===
+{
+  "volumes": {
+    "rname": {
+      "grants": [],
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+=== resources.clusters.rname ===
+Warning: unknown field: grants
+  at resources.clusters.rname
+  in databricks.yml:7:7
+
+{
+  "clusters": {
+    "rname": {
+      "custom_tags": {}
+    }
+  }
+}
+
+=== resources.dashboards.rname ===
+Warning: unknown field: grants
+  at resources.dashboards.rname
+  in databricks.yml:7:7
+
+{
+  "dashboards": {
+    "rname": {
+      "embed_credentials": false,
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources",
+      "permissions": []
+    }
+  }
+}
+
+=== resources.apps.rname ===
+Warning: unknown field: grants
+  at resources.apps.rname
+  in databricks.yml:7:7
+
+{
+  "apps": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}

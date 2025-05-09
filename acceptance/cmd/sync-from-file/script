@@ -1,0 +1,13 @@
+mkdir "project-folder" "project-folder/blob" "project-folder/static" "project-folder/static/folder1" "project-folder/static/folder2" "ignored-folder" "ignored-folder/folder1" "ignored-folder2" ".git"
+touch "project-folder/app.yaml" "project-folder/app.py" "project-folder/app2.py" "project-folder/query.sql" "project-folder/blob/1" "project-folder/blob/2" "ignored-folder2/app.py"
+touch "project-folder/static/folder1/1.txt" "project-folder/static/folder2/2.txt"
+touch "ignored-folder/script.py" "ignored-folder/folder1/script.py" "ignored-folder/folder1/script.yaml" "ignored-folder/folder1/big-blob"
+mv gitignore.test-fixture .gitignore
+
+cleanup() {
+  rm -rf project-folder ignored-folder ignored-folder2 .git
+}
+trap cleanup EXIT
+
+trace $CLI sync . /Users/$CURRENT_USER_NAME --exclude-from 'ignore.test-fixture' | sort
+trace $CLI sync . /Users/$CURRENT_USER_NAME --include-from 'ignore.test-fixture' | sort

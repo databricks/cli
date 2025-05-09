@@ -15,7 +15,7 @@ func TestVisitPipelinePaths(t *testing.T) {
 		Resources: config.Resources{
 			Pipelines: map[string]*resources.Pipeline{
 				"pipeline0": {
-					CreatePipeline: &pipelines.CreatePipeline{
+					CreatePipeline: pipelines.CreatePipeline{
 						Libraries: []pipelines.PipelineLibrary{
 							{
 								File: &pipelines.FileLibrary{

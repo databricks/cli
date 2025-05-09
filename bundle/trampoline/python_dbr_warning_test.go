@@ -20,7 +20,7 @@ func TestIncompatibleWheelTasksWithNewCluster(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey:         "key1",
@@ -50,7 +50,8 @@ func TestIncompatibleWheelTasksWithNewCluster(t *testing.T) {
 		},
 	}
 
-	require.True(t, hasIncompatibleWheelTasks(context.Background(), b))
+	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	require.NotEmpty(t, diags)
 }
 
 func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
@@ -59,7 +60,7 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
@@ -99,10 +100,11 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 		},
 	}
 
-	require.True(t, hasIncompatibleWheelTasks(context.Background(), b))
+	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	require.NotEmpty(t, diags)
 
-	diags := bundle.Apply(context.Background(), b, WrapperWarning())
-	require.ErrorContains(t, diags.Error(), "require compute with DBR 13.3")
+	diags = bundle.Apply(context.Background(), b, WrapperWarning())
+	require.ErrorContains(t, diags.Error(), "uses incompatible DBR version 12.2.x-scala2.12")
 }
 
 func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
@@ -111,7 +113,7 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey:           "key1",
@@ -143,8 +145,13 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-1").Return(&compute.ClusterDetails{
 		SparkVersion: "12.2.x-scala2.12",
 	}, nil)
+	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-2").Return(&compute.ClusterDetails{
+		SparkVersion: "12.2.x-scala2.12",
+	}, nil)
 
-	require.True(t, hasIncompatibleWheelTasks(context.Background(), b))
+	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	require.NotEmpty(t, diags)
+	require.ErrorContains(t, diags.Error(), "uses cluster with incompatible DBR version 12.2.x-scala2.12")
 }
 
 func TestNoIncompatibleWheelTasks(t *testing.T) {
@@ -153,7 +160,7 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
@@ -249,7 +256,8 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 		SparkVersion: "13.2.x-scala2.12",
 	}, nil)
 
-	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
+	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	require.Empty(t, diags)
 }
 
 func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
@@ -258,7 +266,7 @@ func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
@@ -289,7 +297,8 @@ func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
+	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	require.Empty(t, diags)
 }
 
 func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
@@ -301,7 +310,7 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey:         "key1",

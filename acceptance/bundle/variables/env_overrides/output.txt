@@ -22,7 +22,7 @@ Found 1 error
 Exit code: 1
 
 >>> errcode [CLI] bundle validate -t env-using-an-undefined-variable
-Error: variable c is not defined but is assigned a value
+Error: failed to perform target override for target=env-using-an-undefined-variable: variable c is not defined but is assigned a value
 
 Name: test bundle
 

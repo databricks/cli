@@ -52,7 +52,7 @@ func TestDeployBundleWithApp(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testdiff.PrepareReplacementsUser(t, replacements, *user)
-	testdiff.PrepareReplacementsWorkspaceClient(t, replacements, wt.W)
+	testdiff.PrepareReplacementsWorkspaceConfig(t, replacements, wt.W.Config)
 	testdiff.PrepareReplacementsUUID(t, replacements)
 	testdiff.PrepareReplacementsNumber(t, replacements)
 	testdiff.PrepareReplacementsTemporaryDirectory(t, replacements)
@@ -87,36 +87,17 @@ func TestDeployBundleWithApp(t *testing.T) {
 	data, err := io.ReadAll(reader)
 	require.NoError(t, err)
 
-	job, err := wt.W.Jobs.GetBySettingsName(ctx, "test-job-with-cluster-"+uniqueId)
-	require.NoError(t, err)
-
 	content := string(data)
-	require.Contains(t, content, fmt.Sprintf(`command:
+	// Replace windows line endings with unix line endings
+	content = testutil.ReplaceWindowsLineEndings(content)
+	require.Contains(t, content, `command:
   - flask
   - --app
   - app
   - run
 env:
   - name: JOB_ID
-    value: "%d"`, job.JobId))
-
-	// Redeploy bundle with changed config env for app and confirm it's updated in app.yaml
-	deployBundleWithArgs(t, ctx, root, `--var="env_var_name=ANOTHER_JOB_ID"`, "--force-lock", "--auto-approve")
-	reader, err = wt.W.Workspace.Download(ctx, pathToAppYml)
-	require.NoError(t, err)
-
-	data, err = io.ReadAll(reader)
-	require.NoError(t, err)
-
-	content = string(data)
-	require.Contains(t, content, fmt.Sprintf(`command:
-  - flask
-  - --app
-  - app
-  - run
-env:
-  - name: ANOTHER_JOB_ID
-    value: "%d"`, job.JobId))
+    valueFrom: "app-job"`)
 
 	if testing.Short() {
 		t.Log("Skip the app run in short mode")

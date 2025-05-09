@@ -31,6 +31,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "dashboards",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -38,6 +39,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGenerateDownloadFullQueryResult())
+	cmd.AddCommand(newGetDownloadFullQueryResult())
 	cmd.AddCommand(newGetMessage())
 	cmd.AddCommand(newGetMessageAttachmentQueryResult())
 	cmd.AddCommand(newGetMessageQueryResult())
@@ -308,12 +310,16 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	cmd.Short = `Generate full query result download.`
 	cmd.Long = `Generate full query result download.
   
-  Initiate full SQL query result download and obtain a transient ID for tracking
-  the download progress. This call initiates a new SQL execution to generate the
-  query result.
+  Initiates a new SQL execution and returns a download_id that you can use to
+  track the progress of the download. The query result is stored in an external
+  link and can be retrieved using the [Get Download Full Query
+  Result](:method:genie/getdownloadfullqueryresult) API. Warning: Databricks
+  strongly recommends that you protect the URLs that are returned by the
+  EXTERNAL_LINKS disposition. See [Execute
+  Statement](:method:statementexecution/executestatement) for more details.
 
   Arguments:
-    SPACE_ID: Space ID
+    SPACE_ID: Genie space ID
     CONVERSATION_ID: Conversation ID
     MESSAGE_ID: Message ID
     ATTACHMENT_ID: Attachment ID`
@@ -352,6 +358,85 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range generateDownloadFullQueryResultOverrides {
 		fn(cmd, &generateDownloadFullQueryResultReq)
+	}
+
+	return cmd
+}
+
+// start get-download-full-query-result command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getDownloadFullQueryResultOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetDownloadFullQueryResultRequest,
+)
+
+func newGetDownloadFullQueryResult() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getDownloadFullQueryResultReq dashboards.GenieGetDownloadFullQueryResultRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID DOWNLOAD_ID"
+	cmd.Short = `Get download full query result.`
+	cmd.Long = `Get download full query result.
+  
+  After [Generating a Full Query Result
+  Download](:method:genie/getdownloadfullqueryresult) and successfully receiving
+  a download_id, use this API to poll the download progress. When the download
+  is complete, the API returns one or more external links to the query result
+  files. Warning: Databricks strongly recommends that you protect the URLs that
+  are returned by the EXTERNAL_LINKS disposition. You must not set an
+  Authorization header in download requests. When using the EXTERNAL_LINKS
+  disposition, Databricks returns presigned URLs that grant temporary access to
+  data. See [Execute Statement](:method:statementexecution/executestatement) for
+  more details.
+
+  Arguments:
+    SPACE_ID: Genie space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+    ATTACHMENT_ID: Attachment ID
+    DOWNLOAD_ID: Download ID. This ID is provided by the [Generate Download
+      endpoint](:method:genie/generateDownloadFullQueryResult)`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(5)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getDownloadFullQueryResultReq.SpaceId = args[0]
+		getDownloadFullQueryResultReq.ConversationId = args[1]
+		getDownloadFullQueryResultReq.MessageId = args[2]
+		getDownloadFullQueryResultReq.AttachmentId = args[3]
+		getDownloadFullQueryResultReq.DownloadId = args[4]
+
+		response, err := w.Genie.GetDownloadFullQueryResult(ctx, getDownloadFullQueryResultReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getDownloadFullQueryResultOverrides {
+		fn(cmd, &getDownloadFullQueryResultReq)
 	}
 
 	return cmd

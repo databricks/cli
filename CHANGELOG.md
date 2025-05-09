@@ -1,5 +1,74 @@
 # Version changelog
 
+## Release v0.251.0
+
+### Dependency updates
+* Upgrade to use Go SDK 0.68.0 ([#2823](https://github.com/databricks/cli/pull/2823))
+
+### Bundles
+* Fix dynamic\_version when sync root != bundle root ([#2805](https://github.com/databricks/cli/pull/2805))
+
+
+## Release v0.250.0
+
+### Notable Changes
+* Added inline script execution support to bundle run. You can now run scripts in the same authentication context as a DAB using the databricks bundle run command. ([#2413](https://github.com/databricks/cli/pull/2413))
+
+### Dependency updates
+* Upgrade TF provider to 1.75.0 ([#2775](https://github.com/databricks/cli/pull/2775))
+* Upgrade Go SDK to 0.65.0 ([#2786](https://github.com/databricks/cli/pull/2786))
+
+### CLI
+* Added `databricks apps run-local` command to run Databricks apps locally ([#2555](https://github.com/databricks/cli/pull/2555))
+
+### Bundles
+* Raise an error when Unity Catalog volumes are used for paths other than artifacts ([#2754](https://github.com/databricks/cli/pull/2754))
+* Fixed issue with jobs and pipelines declared in Python not showing in "Bundle resource explorer" in VSCode ([#2764](https://github.com/databricks/cli/pull/2764))
+* Made `experimental/python/mutators` and `experimental/python/resources` fields optional in JSON schema ([#2761](https://github.com/databricks/cli/pull/2761))
+* Annotated deprecated fields in JSON schema ([#2770](https://github.com/databricks/cli/pull/2770))
+
+
+## Release v0.249.0
+
+### CLI
+* Added `exclude-from` and `include-from` flags support to sync command ([#2660](https://github.com/databricks/cli/pull/2660))
+
+### Bundles
+* Correctly translate paths to local requirements.txt file in environment dependencies ([#2736](https://github.com/databricks/cli/pull/2736))
+* Check for running resources with --fail-on-active-runs before any mutative operation during deploy ([#2743](https://github.com/databricks/cli/pull/2743))
+
+
+## Release v0.248.0
+
+### Notable Changes
+* Python for Databricks Asset Bundles is now in Public Preview. This feature extends bundles so that you can define jobs and pipelines as Python code, dynamically create jobs and pipelines using metadata, and modify jobs and pipelines defined in YAML or Python during bundle deployment. For more information and to get started see [Configuration in Python](https://docs.databricks.com/aws/en/dev-tools/bundles/python).
+* Fixed a regression with pipeline library globs introduced in 0.247.0 ([#2723](https://github.com/databricks/cli/pull/2723)). The issue caused glob patterns to fail when using paths relative to a directory that is not the bundle root.
+
+### Dependency updates
+* Upgraded Go SDK to 0.63.0 ([#2716](https://github.com/databricks/cli/pull/2716))
+* Upgraded TF provider to 1.73.0 ([#2728](https://github.com/databricks/cli/pull/2728))
+
+### CLI
+* Added an error when invalid subcommand is provided for CLI commands ([#2655](https://github.com/databricks/cli/pull/2655))
+* Added dry-run flag support to sync command ([#2657](https://github.com/databricks/cli/pull/2657))
+
+### Bundles
+* Do not use app config section in test templates and generated app configuration ([#2599](https://github.com/databricks/cli/pull/2599))
+* Do not exit early when checking incompatible tasks for specified DBR ([#2692](https://github.com/databricks/cli/pull/2692))
+* Removed include/exclude flags support from bundle sync command ([#2718](https://github.com/databricks/cli/pull/2718))
+* Do not clean up Python artifacts dist and build folder in "bundle validate", do it in "bundle deploy". This reverts the behaviour introduced in 0.245.0 ([#2722](https://github.com/databricks/cli/pull/2722))
+
+### API Changes
+* Added enable-export-notebook, enable-notebook-table-clipboard and enable-results-downloading workspace-level commands.
+* Removed unused `timeout` and `no-wait` flags for clusters and pipelines
+
+
+## Release v0.247.1
+
+### Notable Changes
+* Fix git source regression introduced in v0.247.0 ([#2699](https://github.com/databricks/cli/pull/2699))
+
+
 ## Release v0.247.0
 
 ### CLI

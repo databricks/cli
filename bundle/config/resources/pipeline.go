@@ -28,7 +28,7 @@ type Pipeline struct {
 	ModifiedStatus ModifiedStatus       `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string               `json:"url,omitempty" bundle:"internal"`
 
-	*pipelines.CreatePipeline
+	pipelines.CreatePipeline
 }
 
 func (s *Pipeline) UnmarshalJSON(b []byte) error {
@@ -78,8 +78,4 @@ func (p *Pipeline) GetName() string {
 
 func (s *Pipeline) GetURL() string {
 	return s.URL
-}
-
-func (s *Pipeline) IsNil() bool {
-	return s.CreatePipeline == nil
 }

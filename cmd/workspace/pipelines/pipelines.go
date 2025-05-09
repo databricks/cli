@@ -40,6 +40,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "pipelines",
 		},
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -213,11 +214,6 @@ func newGet() *cobra.Command {
 
 	var getReq pipelines.GetPipelineRequest
 
-	var getSkipWait bool
-	var getTimeout time.Duration
-
-	cmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
-	cmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
 	cmd.Use = "get PIPELINE_ID"
@@ -495,7 +491,10 @@ func newListPipelineEvents() *cobra.Command {
 	cmd.Short = `List pipeline events.`
 	cmd.Long = `List pipeline events.
   
-  Retrieves events for a pipeline.`
+  Retrieves events for a pipeline.
+
+  Arguments:
+    PIPELINE_ID: The pipeline to return events for.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -512,14 +511,14 @@ func newListPipelineEvents() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The pipeline to return events for")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return fmt.Errorf("expected to have the pipeline to return events for")
 		}
 		listPipelineEventsReq.PipelineId = args[0]
 
@@ -774,7 +773,7 @@ func newStartUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `. Supported values: [
+	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `What triggered this update. Supported values: [
   API_CALL,
   JOB_TASK,
   RETRY_ON_FAILURE,
@@ -974,7 +973,6 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications
 	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
-	cmd.Flags().StringVar(&updateReq.PipelineId, "pipeline-id", updateReq.PipelineId, `Unique identifier for this pipeline.`)
 	// TODO: complex arg: restart_window
 	// TODO: complex arg: run_as
 	cmd.Flags().StringVar(&updateReq.Schema, "schema", updateReq.Schema, `The default schema (database) where tables are read from or published to.`)

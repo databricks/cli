@@ -15,7 +15,7 @@ import (
 
 func TestConvertModelServingEndpoint(t *testing.T) {
 	src := resources.ModelServingEndpoint{
-		CreateServingEndpoint: &serving.CreateServingEndpoint{
+		CreateServingEndpoint: serving.CreateServingEndpoint{
 			Name: "name",
 			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{

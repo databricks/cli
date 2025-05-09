@@ -41,8 +41,10 @@ github.com/databricks/cli/bundle/config/resources.App:
 github.com/databricks/cli/bundle/config/resources.AppPermissionLevel:
   "_":
     "enum":
-      - CAN_MANAGE
-      - CAN_USE
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
     "markdown_description": |-
@@ -94,9 +96,12 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
 github.com/databricks/cli/bundle/config/resources.ClusterPermissionLevel:
   "_":
     "enum":
-      - CAN_MANAGE
-      - CAN_RESTART
-      - CAN_ATTACH_TO
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_RESTART
+      - |-
+        CAN_ATTACH_TO
 github.com/databricks/cli/bundle/config/resources.Dashboard:
   "_":
     "markdown_description": |-
@@ -127,10 +132,14 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
 github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
   "_":
     "enum":
-      - CAN_READ
-      - CAN_RUN
-      - CAN_EDIT
-      - CAN_MANAGE
+      - |-
+        CAN_READ
+      - |-
+        CAN_RUN
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
 github.com/databricks/cli/bundle/config/resources.Job:
   "_":
     "markdown_description": |-
@@ -162,10 +171,14 @@ github.com/databricks/cli/bundle/config/resources.Job:
 github.com/databricks/cli/bundle/config/resources.JobPermissionLevel:
   "_":
     "enum":
-      - CAN_MANAGE
-      - CAN_MANAGE_RUN
-      - CAN_VIEW
-      - IS_OWNER
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_MANAGE_RUN
+      - |-
+        CAN_VIEW
+      - |-
+        IS_OWNER
 github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
   "_":
     "markdown_description": |-
@@ -189,9 +202,12 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
 github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermissionLevel:
   "_":
     "enum":
-      - CAN_MANAGE
-      - CAN_EDIT
-      - CAN_READ
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_READ
 github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "_":
     "markdown_description": |-
@@ -202,11 +218,16 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
 github.com/databricks/cli/bundle/config/resources.MlflowModelPermissionLevel:
   "_":
     "enum":
-      - CAN_EDIT
-      - CAN_MANAGE
-      - CAN_MANAGE_STAGING_VERSIONS
-      - CAN_MANAGE_PRODUCTION_VERSIONS
-      - CAN_READ
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_MANAGE_STAGING_VERSIONS
+      - |-
+        CAN_MANAGE_PRODUCTION_VERSIONS
+      - |-
+        CAN_READ
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "_":
     "markdown_description": |-
@@ -239,9 +260,12 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermissionLevel:
   "_":
     "enum":
-      - CAN_MANAGE
-      - CAN_QUERY
-      - CAN_VIEW
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_QUERY
+      - |-
+        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.Pipeline:
   "_":
     "markdown_description": |-
@@ -276,18 +300,22 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
     "description": |-
       PLACEHOLDER
   "target":
-    # should not be marked as deprecated until its possible to switch
-    # existing pipelines to use 'schema' instead
-    "deprecation_message": ""
+    "force_not_deprecated": |-
+      true
   "trigger":
-    "deprecation_message": Use continuous instead
+    "deprecation_message": |-
+      Use continuous instead
 github.com/databricks/cli/bundle/config/resources.PipelinePermissionLevel:
   "_":
     "enum":
-      - CAN_MANAGE
-      - IS_OWNER
-      - CAN_RUN
-      - CAN_VIEW
+      - |-
+        CAN_MANAGE
+      - |-
+        IS_OWNER
+      - |-
+        CAN_RUN
+      - |-
+        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "_":
     "markdown_description": |-
@@ -569,6 +597,13 @@ github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_workspace_id":
     "description": |-
       The workspace ID for the Azure Log Analytics agent configuration
+github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
+  "dashboard_id":
+    "description": |-
+      PLACEHOLDER
+  "subscription":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
   "compute":
     "description": |-
@@ -596,6 +631,17 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
   "python_named_params":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.Subscription:
+  "subscribers":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber:
+  "destination_id":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "gen_ai_compute_task":
     "description": |-
@@ -618,6 +664,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
   "timezone_id":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
+  "whl":
+    "deprecation_message": |-
+      This field is deprecated
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "cron":
     "description": |-
@@ -625,9 +675,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "manual":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
-  "whl":
-    "deprecation_message": "This field is deprecated"
 github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
   "entity_version":
     "description": |-

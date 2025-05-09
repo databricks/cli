@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/libraries"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -91,6 +92,11 @@ func (t *translateContext) rewritePath(
 	input string,
 	opts translateOptions,
 ) (string, error) {
+	// If the input is a local requirements file, we need to translate it to an absolute path.
+	if reqPath, ok := libraries.IsLocalRequirementsFile(input); ok {
+		input = reqPath
+	}
+
 	// We assume absolute paths point to a location in the workspace
 	if path.IsAbs(input) {
 		return "", nil
@@ -135,14 +141,16 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeDirectory:
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeLocalAbsoluteFile:
-		interp, err = t.translateLocalAbsoluteFilePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalAbsoluteDirectory:
 		interp, err = t.translateLocalAbsoluteDirectoryPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalRelative:
 		interp, err = t.translateLocalRelativePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalRelativeWithPrefix:
 		interp, err = t.translateLocalRelativeWithPrefixPath(ctx, input, localPath, localRelPath)
+	case paths.TranslateModeEnvironmentRequirements:
+		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
+		// Add the -r flag to the path to indicate it's a requirements file used for environment dependencies.
+		interp = "-r " + interp
 	default:
 		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)
 	}
@@ -220,20 +228,6 @@ func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, 
 		return "", fmt.Errorf("%s is not a directory", filepath.FromSlash(localFullPath))
 	}
 	return path.Join(t.remoteRoot, localRelPath), nil
-}
-
-func (t *translateContext) translateLocalAbsoluteFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
-	info, err := t.b.SyncRoot.Stat(localRelPath)
-	if errors.Is(err, fs.ErrNotExist) {
-		return "", fmt.Errorf("file %s not found", literal)
-	}
-	if err != nil {
-		return "", fmt.Errorf("unable to determine if %s is a file: %w", filepath.FromSlash(localFullPath), err)
-	}
-	if info.IsDir() {
-		return "", fmt.Errorf("expected %s to be a file but found a directory", literal)
-	}
-	return localFullPath, nil
 }
 
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {

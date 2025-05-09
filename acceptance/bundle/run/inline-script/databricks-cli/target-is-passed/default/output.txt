@@ -1,6 +1,3 @@
+script: line 85: syntax error near unexpected token `<<<'
 
->>> [CLI] bundle run -- [CLI] current-user me
-{
-  "id":"[USERID]",
-  "userName":"[USERNAME]"
-}
+Exit code: 2

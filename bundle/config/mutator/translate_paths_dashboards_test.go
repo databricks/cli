@@ -29,7 +29,7 @@ func TestTranslatePathsDashboards_FilePathRelativeSubDirectory(t *testing.T) {
 			Resources: config.Resources{
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard": {
-						Dashboard: &dashboards.Dashboard{
+						Dashboard: dashboards.Dashboard{
 							DisplayName: "My Dashboard",
 						},
 						FilePath: "../src/my_dashboard.lvdash.json",
@@ -49,7 +49,7 @@ func TestTranslatePathsDashboards_FilePathRelativeSubDirectory(t *testing.T) {
 	// Assert that the file path for the dashboard has been converted to its local absolute path.
 	assert.Equal(
 		t,
-		filepath.ToSlash(filepath.Join(dir, "src", "my_dashboard.lvdash.json")),
+		filepath.ToSlash(filepath.Join("src", "my_dashboard.lvdash.json")),
 		b.Config.Resources.Dashboards["dashboard"].FilePath,
 	)
 }
