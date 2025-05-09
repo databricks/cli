@@ -33,6 +33,12 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 		inv[title] = k
 	}
 
+	// Include scripts in the prompt options
+	for k := range b.Config.Scripts {
+		title := fmt.Sprintf("Script: %s", k)
+		inv[title] = k
+	}
+
 	key, err := cmdio.Select(ctx, inv, "Resource to run")
 	if err != nil {
 		return "", err
@@ -40,6 +46,11 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 
 	return key, nil
 }
+
+// TODO CONTINUE: Continue testing and adding acceptance tests for the scripts section.
+// - Analyse whether anything goes wrong because of us using the shell execv.
+// - do add a test for environment variable interpolation in script
+// - shell bash shell features?... Will the acceptance test work on windows?
 
 // resolveRunArgument resolves the resource key to run.
 // It returns the remaining arguments to pass to the runner, if applicable.
@@ -124,6 +135,7 @@ Example usage:
 	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
+	// TODO: Add validation that the script does not include interpolation syntax.
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
@@ -143,11 +155,24 @@ Example usage:
 			return err
 		}
 
+		// TODO: Short circuit script execution.
+		// TODO: Append additional args to the script.
+
 		key, args, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
 		}
 
+		if _, ok := b.Config.Scripts[key]; ok {
+			if len(args) > 0 {
+				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v", args)
+			}
+
+			// TODO: Validate that the content of the script is not empty.
+			return executeScript(b.Config.Scripts[key].Content, cmd, b)
+		}
+
+		// Load resource IDs from terraform state.
 		diags = bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
@@ -237,14 +262,17 @@ Example usage:
 	return cmd
 }
 
-func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
-	cmdEnv := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
+// TODO: Add validation that content does not contain ${}
+// TODO: Add validation that the script key is unique between resources and scripts.
+// TODO: Add scripts to the CLI autocompletor.
+func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
+	out := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
 
 	// If user has specified a target, pass it to the child command.
 	//
 	// This is only useful for when the Databricks CLI is the child command.
 	if b.Config.Bundle.Target != "" {
-		cmdEnv = append(cmdEnv, env.TargetVariable+"="+b.Config.Bundle.Target)
+		out = append(out, env.TargetVariable+"="+b.Config.Bundle.Target)
 	}
 
 	// If the bundle has a profile configured, explicitly pass it to the child command.
@@ -253,9 +281,20 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	// since if we do not explicitly pass the profile, the CLI will use the
 	// auth configured in the bundle YAML configuration (if any).
 	if b.Config.Workspace.Profile != "" {
-		cmdEnv = append(cmdEnv, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+		out = append(out, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 	}
 
+	return out
+}
+
+func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
+	return exec.ShellExecv(content, exec.ExecvOptions{
+		Env: scriptEnv(cmd, b),
+		Dir: b.BundleRootPath,
+	})
+}
+
+func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return err
@@ -263,7 +302,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 
 	return exec.Execv(exec.ExecvOptions{
 		Args: args,
-		Env:  cmdEnv,
+		Env:  scriptEnv(cmd, b),
 		Dir:  dir,
 	})
 }

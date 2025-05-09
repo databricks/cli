@@ -1,0 +1,6 @@
+bundle:
+  name: "basic"
+
+scripts:
+  foo:
+    content: "echo 'hello'"
