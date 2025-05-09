@@ -76,7 +76,6 @@ func References(b *bundle.Bundle, filters ...Filter) (Map, Map) {
 	return keyOnly, keyWithType
 }
 
-
 // Lookup returns the resource with the specified key.
 // If the key maps to more than one resource, an error is returned.
 // If the key does not map to any resource, an error is returned.
