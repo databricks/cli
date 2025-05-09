@@ -17,3 +17,8 @@ func ConfigUsed(ctx context.Context) *config.Config {
 	}
 	return cfg
 }
+
+func HasConfigUsed(ctx context.Context) bool {
+	_, ok := ctx.Value(configUsedKey).(*config.Config)
+	return ok
+}

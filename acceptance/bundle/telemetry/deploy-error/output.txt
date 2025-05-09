@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle deploy
+Error: unable to define default workspace root: bundle name not defined
+
+
+Exit code: 1
+
+>>> cat out.requests.txt

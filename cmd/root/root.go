@@ -169,11 +169,22 @@ Stack Trace:
 		exitCode = 1
 	}
 
+	commandStr := commandString(cmd)
 	ctx = cmd.Context()
-	telemetryErr := telemetry.Upload(ctx, protos.ExecutionContext{
+
+	// Log bundle deploy failures. Only log if we have successfully configured
+	// an authenticated Databricks client. We cannot log unauthenticated telemetry
+	// from the CLI yet.
+	if cmdctx.HasConfigUsed(ctx) && commandStr == "bundle_deploy" && exitCode != 0 {
+		telemetry.Log(ctx, protos.DatabricksCliLog{
+			BundleDeployEvent: &protos.BundleDeployEvent{},
+		})
+	}
+
+	telemetryErr := telemetry.Upload(cmd.Context(), protos.ExecutionContext{
 		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
-		Command:         commandString(cmd),
+		Command:         commandStr,
 		OperatingSystem: runtime.GOOS,
 		DbrVersion:      dbr.RuntimeVersion(ctx),
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
