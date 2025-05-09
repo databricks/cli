@@ -23,6 +23,9 @@ fmt:
 ws:
 	./tools/validate_whitespace.py
 
+nilaway:
+	./.nilaway/run_nilaway.py run ./...
+
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
 
