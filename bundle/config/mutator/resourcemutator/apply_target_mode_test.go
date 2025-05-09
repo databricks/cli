@@ -6,8 +6,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -156,9 +154,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				SecretScopes: map[string]*resources.SecretScope{
 					"secretScope1": {
-						SecretScope: &workspace.SecretScope{
-							Name: "secretScope1",
-						},
+						Name: "secretScope1",
 					},
 				},
 			},

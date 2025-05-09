@@ -23,12 +23,16 @@ type SecretScopePermission struct {
 }
 
 type SecretScope struct {
+	// A unique name to identify the secret scope.
 	Name string `json:"name"`
 
 	Permissions    []SecretScopePermission `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
 
-	*workspace.SecretScope
+	// The type of secret scope backend.
+	BackendType workspace.ScopeBackendType `json:"backend_type,omitempty"`
+	// The metadata for the secret scope if the type is `AZURE_KEYVAULT`
+	KeyvaultMetadata *workspace.AzureKeyVaultSecretScopeMetadata `json:"keyvault_metadata,omitempty"`
 }
 
 func (s *SecretScope) UnmarshalJSON(b []byte) error {
@@ -79,8 +83,4 @@ func (s SecretScope) GetURL() string {
 
 func (s SecretScope) InitializeURL(_ url.URL) {
 	// Secret scopes do not have a URL
-}
-
-func (s SecretScope) IsNil() bool {
-	return s.SecretScope == nil
 }

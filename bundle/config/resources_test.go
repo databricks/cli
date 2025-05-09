@@ -172,8 +172,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		SecretScopes: map[string]*resources.SecretScope{
 			"my_secret_scope": {
-				Name:        "0",
-				SecretScope: &workspace.SecretScope{},
+				Name: "0",
 			},
 		},
 	}
