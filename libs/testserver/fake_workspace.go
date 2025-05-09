@@ -22,11 +22,16 @@ import (
 type FakeWorkspace struct {
 	mu sync.Mutex
 
+	// URL of the workspace server.
+	url string
+
 	directories map[string]bool
 	files       map[string][]byte
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
 	nextJobId int64
 	jobs      map[int64]jobs.Job
+	jobRuns   map[int64]jobs.Run
+	runCount  int64
 
 	Pipelines map[string]pipelines.PipelineSpec
 	Monitors  map[string]catalog.MonitorInfo
@@ -70,8 +75,9 @@ func MapDelete[T any](w *FakeWorkspace, collection map[string]T, key string) Res
 	return Response{}
 }
 
-func NewFakeWorkspace() *FakeWorkspace {
+func NewFakeWorkspace(url string) *FakeWorkspace {
 	return &FakeWorkspace{
+		url: url,
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
@@ -248,6 +254,7 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 }
 
 func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
+	defer s.LockUnlock()()
 	_, ok := s.jobs[jobId]
 	if !ok {
 		return Response{
@@ -255,10 +262,39 @@ func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 		}
 	}
 
+	runId := s.runCount
+	s.jobRuns[runId] = jobs.Run{
+		RunId: runId,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateRunning,
+		},
+		RunPageUrl: fmt.Sprintf("%s/job/run/%d", s.url, runId),
+		RunType:    jobs.RunTypeJobRun,
+		RunName:    "run-name",
+	}
+	s.runCount++
+
 	return Response{
 		Body: jobs.RunNowResponse{
-			RunId: 1,
+			RunId: runId,
 		},
+	}
+}
+
+func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
+	defer s.LockUnlock()()
+
+	run, ok := s.jobRuns[runId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	// Terminate the run on the first GET call.
+	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
+	return Response{
+		Body: run,
 	}
 }
 
