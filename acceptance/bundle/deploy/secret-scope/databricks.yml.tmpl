@@ -1,0 +1,13 @@
+bundle:
+  name: deploy-secret-scope-test-$UNIQUE_NAME
+
+resources:
+  secret_scopes:
+    secret_scope1:
+      name: $SECRET_SCOPE_NAME
+      backend_type: "DATABRICKS"
+      permissions:
+        - user_name: admins
+          level: WRITE
+        - user_name: users
+          level: READ

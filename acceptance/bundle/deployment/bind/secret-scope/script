@@ -1,0 +1,26 @@
+SECRET_SCOPE_NAME="test-secret-scope-$(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    SECRET_SCOPE_NAME="test-secret-scope-6260d50f-e8ff-4905-8f28-812345678903" # use hard-coded uuid when running locally
+fi
+export SECRET_SCOPE_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Create a pre-defined volume:
+trace $CLI secrets create-scope "${SECRET_SCOPE_NAME}"
+
+cleanup() {
+    trace $CLI secrets delete-scope "${SECRET_SCOPE_NAME}"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deployment bind secret_scope1 "${SECRET_SCOPE_NAME}" --auto-approve
+
+trace $CLI bundle deploy
+
+trace $CLI secrets list-scopes -o json | jq --arg value ${SECRET_SCOPE_NAME} '.[] | select(.name == $value)'
+
+trace $CLI bundle deployment unbind secret_scope1
+
+trace $CLI bundle destroy --auto-approve
+
+trace $CLI secrets list-scopes -o json | jq --arg value ${SECRET_SCOPE_NAME} '.[] | select(.name == $value)'

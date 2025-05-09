@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/workspace"
+
 	"github.com/databricks/databricks-sdk-go/service/serving"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -168,6 +170,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateServingEndpoint: serving.CreateServingEndpoint{},
 			},
 		},
+		SecretScopes: map[string]*resources.SecretScope{
+			"my_secret_scope": {
+				Name: "0",
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -184,6 +191,9 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
+		{Name: "0"},
+	}, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

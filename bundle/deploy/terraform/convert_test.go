@@ -703,6 +703,14 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{Name: "app1"}},
 				},
 			},
+			{
+				Type: "databricks_secret_scope",
+				Mode: "managed",
+				Name: "test_secret_scope",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{Name: "secret_scope1"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -832,6 +840,11 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 					App: apps.App{
 						Description: "test_app",
 					},
+				},
+			},
+			SecretScopes: map[string]*resources.SecretScope{
+				"test_secret_scope": {
+					Name: "test_secret_scope",
 				},
 			},
 		},
@@ -1026,6 +1039,14 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					App: apps.App{
 						Name: "test_app_new",
 					},
+				},
+			},
+			SecretScopes: map[string]*resources.SecretScope{
+				"test_secret_scope": {
+					Name: "test_secret_scope",
+				},
+				"test_secret_scope_new": {
+					Name: "test_secret_scope_new",
 				},
 			},
 		},

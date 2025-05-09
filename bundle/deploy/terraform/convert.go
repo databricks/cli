@@ -210,8 +210,19 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.Name = instance.Attributes.Name
 				config.Resources.Apps[resource.Name] = cur
+			case "databricks_secret_scope":
+				if config.Resources.SecretScopes == nil {
+					config.Resources.SecretScopes = make(map[string]*resources.SecretScope)
+				}
+				cur := config.Resources.SecretScopes[resource.Name]
+				if cur == nil {
+					cur = &resources.SecretScope{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.Name = instance.Attributes.Name
+				config.Resources.SecretScopes[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
+			case "databricks_secret_acl":
 				// Ignore; no need to pull these back into the configuration.
 			default:
 				return fmt.Errorf("missing mapping for %s", resource.Type)
@@ -275,6 +286,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.Apps {
+		if src.ModifiedStatus == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.SecretScopes {
 		if src.ModifiedStatus == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}

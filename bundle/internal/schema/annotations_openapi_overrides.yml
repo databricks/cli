@@ -45,6 +45,15 @@ github.com/databricks/cli/bundle/config/resources.AppPermissionLevel:
         CAN_MANAGE
       - |-
         CAN_USE
+github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        READ
+      - |-
+        WRITE
+      - |-
+        MANAGE
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
     "markdown_description": |-
