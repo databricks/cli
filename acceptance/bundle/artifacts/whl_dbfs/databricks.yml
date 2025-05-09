@@ -1,6 +1,3 @@
-bundle:
-  name: python-wheel
-
 resources:
   jobs:
     test_job:

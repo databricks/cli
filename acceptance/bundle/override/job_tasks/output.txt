@@ -68,11 +68,11 @@ Exit code: 1
 >>> errcode [CLI] bundle validate -t staging
 Error: file test1.py not found
 
-Name: override_job_tasks
+Name: test-bundle
 Target: staging
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/override_job_tasks/staging
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/staging
 
 Found 1 error
 

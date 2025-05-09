@@ -1,6 +1,3 @@
-bundle:
-  name: clusters
-
 resources:
   clusters:
     foo:
