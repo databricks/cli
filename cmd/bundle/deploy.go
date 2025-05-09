@@ -3,7 +3,6 @@ package bundle
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -85,22 +84,18 @@ func newDeployCommand() *cobra.Command {
 			}
 		}
 
-		return renderDiagnostics(cmd.OutOrStdout(), diags)
+		renderOpts := render.RenderOptions{RenderSummaryTable: false}
+		err := render.RenderDiagnostics(cmd.OutOrStdout(), b, diags, renderOpts)
+		if err != nil {
+			return fmt.Errorf("failed to render output: %w", err)
+		}
+
+		if diags.HasError() {
+			return root.ErrAlreadyPrinted
+		}
+
+		return nil
 	}
 
 	return cmd
-}
-
-func renderDiagnostics(w io.Writer, diags diag.Diagnostics) error {
-	renderOpts := render.RenderOptions{RenderSummaryTable: false}
-	err := render.RenderDiagnostics(w, nil, diags, renderOpts)
-	if err != nil {
-		return fmt.Errorf("failed to render output: %w", err)
-	}
-
-	if diags.HasError() {
-		return root.ErrAlreadyPrinted
-	}
-
-	return nil
 }
