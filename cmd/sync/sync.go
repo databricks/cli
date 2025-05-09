@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -94,8 +93,8 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 }
 
 func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
-	if len(args) != 2 {
-		return nil, flag.ErrHelp
+	if err := root.ExactArgs(2)(cmd, args); err != nil {
+		return nil, err
 	}
 
 	var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
