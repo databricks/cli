@@ -217,15 +217,7 @@ func addDefaultHandlers(server *testserver.Server) {
 			}
 		}
 
-		return jobs.Run{
-			RunId: runIdInt,
-			State: &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			},
-			RunPageUrl: fmt.Sprintf("%s/job/run/%d", server.URL, runIdInt),
-			RunType:    jobs.RunTypeJobRun,
-			RunName:    "foobar",
-		}
+		return req.Workspace.JobsGetRun(runIdInt)
 	})
 
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ testserver.Request) any {

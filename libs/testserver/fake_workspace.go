@@ -20,13 +20,16 @@ import (
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
-	mu sync.Mutex
+	mu  sync.Mutex
+	url string
 
 	directories map[string]bool
 	files       map[string][]byte
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
-	nextJobId int64
-	jobs      map[int64]jobs.Job
+	nextJobId    int64
+	nextJobRunId int64
+	jobs         map[int64]jobs.Job
+	jobRuns      map[int64]jobs.Run
 
 	Pipelines map[string]pipelines.PipelineSpec
 	Monitors  map[string]catalog.MonitorInfo
@@ -70,19 +73,21 @@ func MapDelete[T any](w *FakeWorkspace, collection map[string]T, key string) Res
 	return Response{}
 }
 
-func NewFakeWorkspace() *FakeWorkspace {
+func NewFakeWorkspace(url string) *FakeWorkspace {
 	return &FakeWorkspace{
+		url: url,
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
-		files:     map[string][]byte{},
-		jobs:      map[int64]jobs.Job{},
-		nextJobId: 1,
-
-		Pipelines: map[string]pipelines.PipelineSpec{},
-		Monitors:  map[string]catalog.MonitorInfo{},
-		Apps:      map[string]apps.App{},
-		Schemas:   map[string]catalog.SchemaInfo{},
+		files:        map[string][]byte{},
+		jobs:         map[int64]jobs.Job{},
+		jobRuns:      map[int64]jobs.Run{},
+		nextJobId:    1,
+		nextJobRunId: 1,
+		Pipelines:    map[string]pipelines.PipelineSpec{},
+		Monitors:     map[string]catalog.MonitorInfo{},
+		Apps:         map[string]apps.App{},
+		Schemas:      map[string]catalog.SchemaInfo{},
 	}
 }
 
@@ -248,6 +253,8 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 }
 
 func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
+	defer s.LockUnlock()()
+
 	_, ok := s.jobs[jobId]
 	if !ok {
 		return Response{
@@ -255,10 +262,39 @@ func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 		}
 	}
 
+	runId := s.nextJobRunId
+	s.nextJobRunId++
+	s.jobRuns[runId] = jobs.Run{
+		RunId: runId,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateRunning,
+		},
+		RunPageUrl: fmt.Sprintf("%s/job/run/%d", s.url, runId),
+		RunType:    jobs.RunTypeJobRun,
+		RunName:    "run-name",
+	}
+
 	return Response{
 		Body: jobs.RunNowResponse{
-			RunId: 1,
+			RunId: runId,
 		},
+	}
+}
+
+func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
+	defer s.LockUnlock()()
+
+	run, ok := s.jobRuns[runId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	// Mark the run as terminated.
+	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
+	return Response{
+		Body: run,
 	}
 }
 

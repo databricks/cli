@@ -240,7 +240,7 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	defer s.mu.Unlock()
 
 	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace()
+		s.fakeWorkspaces[token] = NewFakeWorkspace(s.Server.URL)
 	}
 
 	return s.fakeWorkspaces[token]
