@@ -1,3 +1,6 @@
+bundle:
+  name: expand_globs
+
 artifacts:
   test:
     files:
