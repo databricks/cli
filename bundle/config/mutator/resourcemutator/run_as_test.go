@@ -143,6 +143,7 @@ var allowList = []string{
 	"registered_models",
 	"experiments",
 	"schemas",
+	"secret_scopes",
 	"volumes",
 }
 
