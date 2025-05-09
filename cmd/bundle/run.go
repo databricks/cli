@@ -63,8 +63,6 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 		return "", nil, errors.New("expected a KEY of the resource to run")
 	}
 
-	// TODO: Should we support positional arguments for script execution?
-	// can start with no.
 	return args[0], args[1:], nil
 }
 
@@ -161,6 +159,10 @@ Example usage:
 		}
 
 		if _, ok := b.Config.Scripts[key]; ok {
+			if len(args) > 0 {
+				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v", args)
+			}
+
 			// TODO: Validate that the content of the script is not empty.
 			return executeScript(b.Config.Scripts[key].Content, cmd, b)
 		}

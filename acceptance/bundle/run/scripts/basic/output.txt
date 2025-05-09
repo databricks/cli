@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle run foo
+hello
+
+>>> [CLI] bundle run foo arg1 arg2
+Error: additional arguments are not supported for scripts. Got: [arg1 arg2]
+
+Exit code: 1

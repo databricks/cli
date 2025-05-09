@@ -1,0 +1,3 @@
+trace $CLI bundle run foo
+
+errcode trace $CLI bundle run foo arg1 arg2
