@@ -188,7 +188,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 
 	waiter, err := w.Jobs.RunNow(ctx, *req)
 	if err != nil {
-		return nil, fmt.Errorf("cannot start job: %w", err)
+		return nil, errors.New("cannot start job")
 	}
 
 	if opts.NoWait {
