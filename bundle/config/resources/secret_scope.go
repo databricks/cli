@@ -29,6 +29,13 @@ type SecretScope struct {
 	Permissions    []SecretScopePermission `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
 
+	// Secret scope configuration is explicitly defined here with individual fields
+	// to maintain API stability and prevent unintended configuration changes.
+	// This approach decouples our configuration from potential upstream model/SDK changes
+	// to `workspace.SecretScope`. While the upstream type serves as a response payload
+	// for workspace.ListScopesResponse, we adopt its field naming conventions
+	// for better developer experience compared to `workspace.CreateScope`.
+
 	// The type of secret scope backend.
 	BackendType workspace.ScopeBackendType `json:"backend_type,omitempty"`
 	// The metadata for the secret scope if the type is `AZURE_KEYVAULT`
