@@ -154,7 +154,6 @@ Example usage:
 			return err
 		}
 
-		// TODO: Append additional args to the script.
 		key, args, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
@@ -263,9 +262,6 @@ Example usage:
 	return cmd
 }
 
-// TODO: Add validation that content does not contain ${}
-// TODO: Add validation that the script key is unique between resources and scripts.
-// TODO: Add scripts to the CLI autocompletor.
 func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
 	out := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
 
