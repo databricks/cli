@@ -3,4 +3,8 @@ bundle:
 
 scripts:
   foo:
-    content: "echo 'hello'"
+    content: |
+      echo 'hello'
+
+  bar:
+    content:

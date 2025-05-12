@@ -135,7 +135,6 @@ Example usage:
 	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
-	// TODO: Add validation that the script does not include interpolation syntax.
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
@@ -155,9 +154,7 @@ Example usage:
 			return err
 		}
 
-		// TODO: Short circuit script execution.
 		// TODO: Append additional args to the script.
-
 		key, args, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
@@ -168,8 +165,12 @@ Example usage:
 				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v", args)
 			}
 
-			// TODO: Validate that the content of the script is not empty.
-			return executeScript(b.Config.Scripts[key].Content, cmd, b)
+			content := b.Config.Scripts[key].Content
+			if content == "" {
+				return fmt.Errorf("script %s has no content", key)
+			}
+
+			return executeScript(content, cmd, b)
 		}
 
 		// Load resource IDs from terraform state.

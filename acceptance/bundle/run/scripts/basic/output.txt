@@ -6,3 +6,8 @@ hello
 Error: additional arguments are not supported for scripts. Got: [arg1 arg2]
 
 Exit code: 1
+
+>>> [CLI] bundle run bar
+Error: script bar has no content
+
+Exit code: 1
