@@ -1,0 +1,10 @@
+resources:
+  jobs:
+    test_job:
+      name: "Test Job"
+      environments:
+        - environment_key: "test_env"
+          spec:
+            client: "1"
+            dependencies:
+              - "-r ../requirements.txt"

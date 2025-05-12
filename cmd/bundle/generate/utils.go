@@ -148,13 +148,6 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 	// First check that all files can be written
 	for targetPath := range n.files {
-		// Create parent directories if they don't exist
-		dir := filepath.Dir(targetPath)
-		err := os.MkdirAll(dir, 0o755)
-		if err != nil {
-			return err
-		}
-
 		info, err := os.Stat(targetPath)
 		if err == nil {
 			if info.IsDir() {
@@ -168,6 +161,12 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 
 	errs, errCtx := errgroup.WithContext(ctx)
 	for targetPath, filePath := range n.files {
+		// Create parent directories if they don't exist
+		dir := filepath.Dir(targetPath)
+		err := os.MkdirAll(dir, 0o755)
+		if err != nil {
+			return err
+		}
 		errs.Go(func() error {
 			reader, err := n.w.Workspace.Download(errCtx, filePath)
 			if err != nil {
