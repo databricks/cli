@@ -1351,7 +1351,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level. This field translates to a `principal` field in secret scope ACL.",
+                        "description": "The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
