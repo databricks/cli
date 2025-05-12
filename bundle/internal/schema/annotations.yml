@@ -557,7 +557,7 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
       The allowed permission for user, group, service principal defined for this permission.
   "service_principal_name":
     "description": |-
-      The name of the service principal that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+      The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
