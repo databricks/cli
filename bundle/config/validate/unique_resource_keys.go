@@ -48,7 +48,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		return diags
 	}
 
-	addLocationToMetadata := func(k string, prefix string, p dyn.Path, v dyn.Value) {
+	addLocationToMetadata := func(k, prefix string, p dyn.Path, v dyn.Value) {
 		mv, ok := resourceAndScriptMetadata[k]
 		if !ok {
 			mv = &metadata{
