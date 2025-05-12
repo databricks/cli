@@ -12,5 +12,3 @@ rm stdout.txt
 trace $CLI bundle run stderr 2> stderr.txt
 cat stderr.txt
 rm stderr.txt
-
-# TODO CONTINUE: Get this test working.

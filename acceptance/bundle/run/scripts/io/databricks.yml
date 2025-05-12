@@ -2,6 +2,12 @@ bundle:
   name: bat
 
 scripts:
-  stdin: cat -
-  stderr: python3 -c "import sys; print('Hello', file=sys.stderr)"
-  stdout: python3 -c "import sys; print('World')"
+  stdin:
+    content: |
+      cat -
+  stderr:
+    content: |
+      python3 -c "import sys; print('Hello', file=sys.stderr)"
+  stdout:
+    content: |
+      python3 -c "import sys; print('World')"

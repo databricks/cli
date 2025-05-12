@@ -164,6 +164,8 @@ Example usage:
 				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: foo=bar databricks bundle run my_script.", args)
 			}
 
+			// TODO: content has to be required. Add a test where a script is defined as a string instead of as a
+			// object and look into whether we can improve the error message there.
 			content := b.Config.Scripts[key].Content
 			if content == "" {
 				return fmt.Errorf("script %s has no content", key)

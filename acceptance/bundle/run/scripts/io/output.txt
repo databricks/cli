@@ -1,5 +1,9 @@
 
 >>> [CLI] bundle run stdin
-Error: no deployment state. Did you forget to run 'databricks bundle deploy'?
+abc
 
-Exit code: 1
+>>> [CLI] bundle run stdout
+World
+
+>>> [CLI] bundle run stderr
+Hello

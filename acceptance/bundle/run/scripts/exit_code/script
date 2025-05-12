@@ -1,3 +1,1 @@
 errcode trace $CLI bundle run foo
-
-# TODO: Fix the root cause of this generating a .databricks/.gitignore file.
