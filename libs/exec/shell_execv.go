@@ -1,11 +1,11 @@
 package exec
 
-import "fmt"
+import "errors"
 
 // Variant of [Execv] that runs the given script through a shell
 func ShellExecv(content string, opts ExecvOptions) error {
 	if opts.Args != nil {
-		return fmt.Errorf("ShellExecv: Args is not supported")
+		return errors.New("ShellExecv: Args is not supported")
 	}
 
 	shell, err := findShell()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -24,7 +25,17 @@ func (f *noInterpolationSyntaxInScripts) Apply(ctx context.Context, b *bundle.Bu
 	diags := diag.Diagnostics{}
 
 	re := regexp.MustCompile(`\$\{.*\}`)
-	for k, script := range b.Config.Scripts {
+
+	// Sort the scripts to have a deterministic order for the
+	// generated diagnostics.
+	scriptKeys := []string{}
+	for k := range b.Config.Scripts {
+		scriptKeys = append(scriptKeys, k)
+	}
+	sort.Strings(scriptKeys)
+
+	for _, k := range scriptKeys {
+		script := b.Config.Scripts[k]
 		match := re.FindString(script.Content)
 		if match == "" {
 			continue

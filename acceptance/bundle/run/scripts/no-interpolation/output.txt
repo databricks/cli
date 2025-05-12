@@ -1,16 +1,16 @@
 
 >>> [CLI] bundle deploy
-Error: Found ${var.BAR} in script two. Interpolation syntax ${...} is not allowed in scripts
-  at scripts.two.content
-  in databricks.yml:8:14
+Error: Found ${FOO} in script one. Interpolation syntax ${...} is not allowed in scripts
+  at scripts.one.content
+  in databricks.yml:6:14
 
 We do not support the ${...} interpolation syntax in scripts because
 it's ambiguous whether it's a variable reference or reference to an
 environment variable.
 
-Error: Found ${FOO} in script one. Interpolation syntax ${...} is not allowed in scripts
-  at scripts.one.content
-  in databricks.yml:6:14
+Error: Found ${var.BAR} in script two. Interpolation syntax ${...} is not allowed in scripts
+  at scripts.two.content
+  in databricks.yml:8:14
 
 We do not support the ${...} interpolation syntax in scripts because
 it's ambiguous whether it's a variable reference or reference to an
