@@ -62,6 +62,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 		resourceAndScriptMetadata[k] = mv
 	}
+
 	// Gather the paths and locations of all resources
 	_, err := dyn.MapByPattern(
 		rv,
