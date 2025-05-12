@@ -1,0 +1,7 @@
+bundle:
+  name: ed sheeran
+
+scripts:
+  foo:
+    content: |
+      exit 42
