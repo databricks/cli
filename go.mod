@@ -28,7 +28,6 @@ require (
 	github.com/spf13/cobra v1.9.1 // Apache 2.0
 	github.com/spf13/pflag v1.0.6 // BSD-3-Clause
 	github.com/stretchr/testify v1.10.0 // MIT
-	github.com/wI2L/jsondiff v0.6.1 // MIT
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/mod v0.24.0
 	golang.org/x/oauth2 v0.29.0
@@ -68,10 +67,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/tidwall/gjson v1.18.0 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.1 // indirect
-	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/zclconf/go-cty v1.16.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
