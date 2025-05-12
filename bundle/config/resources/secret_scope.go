@@ -44,6 +44,13 @@ func (s SecretScope) MarshalJSON() ([]byte, error) {
 }
 
 func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
+	// NOTE: Scope lookup by name is not directly supported by the Secret scopes API
+	// As of May 2025 there is no direct API method to retrieve a scope using its name as an identifier.
+	// While scope names serve as unique identifiers, the API only provides:
+	// - List operations that returns a list of scopes
+	// - Other operational methods (e.g., reading a secret from a scope and parsing error messages)
+	//
+	// The indirect methods are not semantically ideal for simple existence checks, so we use the list API here
 	scopes, err := w.Secrets.ListScopesAll(ctx)
 	if err != nil {
 		return false, nil
