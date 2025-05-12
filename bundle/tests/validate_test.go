@@ -123,56 +123,6 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "duplicate_resource_and_script_name_root",
-			diagnostics: diag.Diagnostics{
-				{
-					Severity: diag.Error,
-					Summary:  "multiple resources or scripts have been defined with the same key: foo",
-					Locations: []dyn.Location{
-						{File: filepath.FromSlash("validate/duplicate_resource_and_script_name_root/databricks.yml"), Line: 9, Column: 5},
-						{File: filepath.FromSlash("validate/duplicate_resource_and_script_name_root/databricks.yml"), Line: 15, Column: 7},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.foo"),
-						dyn.MustPathFromString("scripts.foo"),
-					},
-				},
-			},
-		},
-		{
-			name: "duplicate_resource_and_script_subconfigurations",
-			diagnostics: diag.Diagnostics{
-				{
-					Severity: diag.Error,
-					Summary:  "multiple resources or scripts have been defined with the same key: foo",
-					Locations: []dyn.Location{
-						{File: filepath.FromSlash("validate/duplicate_resource_and_script_subconfigurations/resource.yml"), Line: 4, Column: 7},
-						{File: filepath.FromSlash("validate/duplicate_resource_and_script_subconfigurations/script.yml"), Line: 3, Column: 5},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.pipelines.foo"),
-						dyn.MustPathFromString("scripts.foo"),
-					},
-				},
-			},
-		},
-		{
-			name: "duplicate_script_names_in_subconfiguration",
-			diagnostics: diag.Diagnostics{
-				{
-					Severity: diag.Error,
-					Summary:  "multiple resources or scripts have been defined with the same key: foo",
-					Locations: []dyn.Location{
-						{File: filepath.FromSlash("validate/duplicate_script_names_in_subconfiguration/script1.yml"), Line: 3, Column: 5},
-						{File: filepath.FromSlash("validate/duplicate_script_names_in_subconfiguration/script2.yml"), Line: 3, Column: 5},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("scripts.foo"),
-					},
-				},
-			},
-		},
 	}
 
 	for _, tc := range tcases {

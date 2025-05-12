@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle validate
 Error: multiple resources or scripts have been defined with the same key: foo
-  at scripts.foo
-  in script1.yml:3:5
-     script2.yml:3:5
+  at resources.pipelines.foo
+     scripts.foo
+  in resource.yml:4:7
+     script.yml:3:5
 
 Name: test
 
