@@ -28,7 +28,7 @@ func (f *noInterpolationSyntaxInScripts) Apply(ctx context.Context, b *bundle.Bu
 
 	// Sort the scripts to have a deterministic order for the
 	// generated diagnostics.
-	scriptKeys := []string{}
+	var scriptKeys []string
 	for k := range b.Config.Scripts {
 		scriptKeys = append(scriptKeys, k)
 	}
