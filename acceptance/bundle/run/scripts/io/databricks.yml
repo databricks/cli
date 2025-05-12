@@ -1,0 +1,7 @@
+bundle:
+  name: bat
+
+scripts:
+  stdin: cat -
+  stderr: python3 -c "import sys; print('Hello', file=sys.stderr)"
+  stdout: python3 -c "import sys; print('World')"
