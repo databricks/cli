@@ -35,7 +35,7 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 
 	// Include scripts in the prompt options
 	for k := range b.Config.Scripts {
-		title := fmt.Sprintf("Script: %s", k)
+		title := "Script: " + k
 		inv[title] = k
 	}
 
