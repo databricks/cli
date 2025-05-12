@@ -108,6 +108,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Consistent behavior of locale-dependent tools, such as 'sort'
 	t.Setenv("LC_ALL", "C")
 
+	// MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+	// C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+	// Setting this environment variable prevents that conversion on windows.
+	// This is fine to do globally because:
+	// 1. In most contexts an absolute path refers to a file in a Databricks workspace.
+	// 2. Most if not all tests will use relative paths for local files.
+	t.Setenv("MSYS_NO_PATHCONV", "1")
+
 	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
 
 	// Download terraform and provider and create config; this also creates build directory.
