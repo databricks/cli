@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle run foo
+Error: multiple resources or scripts have been defined with the same key: foo
+
+Exit code: 1

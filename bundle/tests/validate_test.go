@@ -157,6 +157,22 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "duplicate_script_names_in_subconfiguration",
+			diagnostics: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "multiple resources or scripts have been defined with the same key: foo",
+					Locations: []dyn.Location{
+						{File: filepath.FromSlash("validate/duplicate_script_names_in_subconfiguration/script1.yml"), Line: 3, Column: 5},
+						{File: filepath.FromSlash("validate/duplicate_script_names_in_subconfiguration/script2.yml"), Line: 3, Column: 5},
+					},
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("scripts.foo"),
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tcases {

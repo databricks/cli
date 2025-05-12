@@ -40,14 +40,6 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 	// Maps of key to the paths and locations the resource / script is defined at.
 	resourceAndScriptMetadata := map[string]*metadata{}
-
-	rv := b.Config.Value().Get("resources")
-
-	// return early if no resources are defined or the resources block is empty.
-	if rv.Kind() == dyn.KindInvalid || rv.Kind() == dyn.KindNil {
-		return diags
-	}
-
 	addLocationToMetadata := func(k, prefix string, p dyn.Path, v dyn.Value) {
 		mv, ok := resourceAndScriptMetadata[k]
 		if !ok {
@@ -64,24 +56,27 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	}
 
 	// Gather the paths and locations of all resources
-	_, err := dyn.MapByPattern(
-		rv,
-		dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// The key for the resource. Eg: "my_job" for jobs.my_job.
-			k := p[1].Key()
-			addLocationToMetadata(k, "resources", p, v)
-			return v, nil
-		},
-	)
-	if err != nil {
-		return diag.FromErr(err)
+	rv := b.Config.Value().Get("resources")
+	if rv.Kind() != dyn.KindInvalid && rv.Kind() != dyn.KindNil {
+		_, err := dyn.MapByPattern(
+			rv,
+			dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
+			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				// The key for the resource. Eg: "my_job" for jobs.my_job.
+				k := p[1].Key()
+				addLocationToMetadata(k, "resources", p, v)
+				return v, nil
+			},
+		)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	// track locations for all scripts.
 	sv := b.Config.Value().Get("scripts")
 	if sv.Kind() != dyn.KindInvalid && sv.Kind() != dyn.KindNil {
-		_, err = dyn.MapByPattern(
+		_, err := dyn.MapByPattern(
 			sv,
 			dyn.NewPattern(dyn.AnyKey()),
 			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -96,6 +91,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		}
 	}
 
+	// If duplicate keys are found, report an error.
 	for k, v := range resourceAndScriptMetadata {
 		if len(v.locations) <= 1 {
 			continue
