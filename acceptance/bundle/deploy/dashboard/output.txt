@@ -10,7 +10,7 @@ Deployment complete!
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]",
   "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
-  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}"
+  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"pageType\":\"PAGE_TYPE_UNSPECIFIED\"}]}"
 }
 
 >>> [CLI] bundle destroy --auto-approve
