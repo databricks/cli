@@ -52,12 +52,13 @@ func (n *downloader) markFileForDownload(ctx context.Context, filePath *string) 
 		return err
 	}
 
-	if n.basePath == "" {
-		n.basePath = path.Dir(*filePath)
+	basePath := path.Dir(*filePath)
+	if n.basePath != "" {
+		basePath = n.basePath
 	}
 
 	// Remove the base path prefix
-	relPath := strings.TrimPrefix(*filePath, n.basePath)
+	relPath := strings.TrimPrefix(*filePath, basePath)
 	if relPath[0] == '/' {
 		relPath = relPath[1:]
 	}
@@ -119,12 +120,13 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 
 	ext := notebook.GetExtensionByLanguage(info)
 
-	if n.basePath == "" {
-		n.basePath = path.Dir(*notebookPath)
+	basePath := path.Dir(*notebookPath)
+	if n.basePath != "" {
+		basePath = n.basePath
 	}
 
 	// Remove the base path prefix
-	relPath := strings.TrimPrefix(*notebookPath, n.basePath)
+	relPath := strings.TrimPrefix(*notebookPath, basePath)
 	if relPath[0] == '/' {
 		relPath = relPath[1:]
 	}
