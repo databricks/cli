@@ -73,6 +73,10 @@ func TestNormalizePath_requirementsFile(t *testing.T) {
 	value, err := normalizePath("-r ../requirements.txt", location, tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-r requirements.txt", value)
+
+	value, err = normalizePath("-r      ../requirements.txt", location, tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "-r requirements.txt", value)
 }
 
 func TestLocationDirectory(t *testing.T) {

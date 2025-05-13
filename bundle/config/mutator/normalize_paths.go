@@ -89,6 +89,7 @@ func normalizePath(path string, location dyn.Location, bundleRootPath string) (s
 	reqPath, ok := strings.CutPrefix(path, "-r ")
 	if ok {
 		// Normalize the path part
+		reqPath = strings.TrimSpace(reqPath)
 		normalizedPath, err := normalizePath(reqPath, location, bundleRootPath)
 		if err != nil {
 			return "", err
