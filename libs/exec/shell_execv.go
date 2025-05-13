@@ -2,28 +2,37 @@ package exec
 
 import "errors"
 
-// Variant of [Execv] that runs the given script through a shell
-func ShellExecv(content string, opts ExecvOptions) error {
+func shellExecvOpts(content string, opts ExecvOptions) (ExecvOptions, error) {
 	if opts.Args != nil {
-		return errors.New("ShellExecv: Args is not supported")
+		return ExecvOptions{}, errors.New("ShellExecv: Args is not supported")
 	}
 
 	shell, err := findShell()
 	if err != nil {
-		return err
+		return ExecvOptions{}, err
 	}
 
 	ec, err := shell.prepare(content)
 	if err != nil {
-		return err
+		return ExecvOptions{}, err
 	}
 
 	args := []string{ec.executable}
 	args = append(args, ec.args...)
 
-	return Execv(ExecvOptions{
+	return ExecvOptions{
 		Args: args,
 		Env:  opts.Env,
 		Dir:  opts.Dir,
-	})
+	}, nil
+}
+
+// Variant of [Execv] that runs the given script through a shell
+func ShellExecv(content string, opts ExecvOptions) error {
+	newOpts, err := shellExecvOpts(content, opts)
+	if err != nil {
+		return err
+	}
+
+	return Execv(newOpts)
 }
