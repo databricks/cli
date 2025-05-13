@@ -1,0 +1,28 @@
+bundle:
+  name: outside_of_bundle_root
+
+variables:
+  cluster:
+    default:
+      spark_version: 15.4.x-scala2.12
+      node_type_id: i3.xlarge
+      data_security_mode: SINGLE_USER
+      num_workers: 0
+      spark_conf:
+          spark.master: "local[*, 4]"
+          spark.databricks.cluster.profile: singleNode
+      custom_tags:
+        ResourceClass: SingleNode
+
+resources:
+  jobs:
+    test:
+      name: "test"
+      tasks:
+        - task_key: task1
+          new_cluster: ${var.cluster}
+          python_wheel_task:
+            entry_point: main
+            package_name: my_default_python
+          libraries:
+            - whl: ../*.whl
