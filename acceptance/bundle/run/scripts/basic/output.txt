@@ -2,6 +2,12 @@
 >>> [CLI] bundle run foo
 hello
 
+>>> [CLI] bundle run me
+{
+  "id":"[USERID]",
+  "userName":"[USERNAME]"
+}
+
 >>> [CLI] bundle run foo arg1 arg2
 Error: additional arguments are not supported for scripts. Got: [arg1 arg2]. We recommend using environment variables to pass runtime arguments to a script. For example: foo=bar databricks bundle run my_script.
 
