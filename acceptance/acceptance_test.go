@@ -522,7 +522,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 
 	shouldRepl, ok := envRepl[key]
 	if !ok {
-		shouldRepl = true
+		shouldRepl = len(value) >= 8
 	}
 
 	if shouldRepl {

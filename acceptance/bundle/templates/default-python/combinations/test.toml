@@ -1,12 +1,8 @@
 Ignore = ["my_default_python", "input.json"]
 EnvMatrix.INCLUDE_NOTEBOOK = ["yes", "no"]
-EnvRepl.INCLUDE_NOTEBOOK = false
 EnvMatrix.INCLUDE_DLT = ["yes", "no"]
-EnvRepl.INCLUDE_DLT = false
 EnvMatrix.INCLUDE_PYTHON = ["yes", "no"]
-EnvRepl.INCLUDE_PYTHON = false
 EnvMatrix.SERVERLESS = ["yes", "no"]
-EnvRepl.SERVERLESS = false
 
 [[Repls]]
 Old = '202\d{5}.\d{5,}'

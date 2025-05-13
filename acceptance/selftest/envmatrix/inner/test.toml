@@ -2,3 +2,7 @@
 B_REGULAR_VAR = ["hello"]
 FIRST = ["one", "two"]
 SECOND = ["variantA", "variantB"]
+
+[EnvRepl]
+# By default, replacement is not enabled for values less than 8 chars; override that:
+FIRST = true
