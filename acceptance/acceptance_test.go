@@ -241,15 +241,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
-				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode)
 			} else {
-				for _, envset := range expanded {
+				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset, inprocessMode)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, configPath, envset, inprocessMode)
 					})
 				}
 			}
@@ -342,7 +342,9 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 }
 
 func runTest(t *testing.T,
-	dir, coverDir string,
+	dir string,
+	variant int,
+	coverDir string,
 	repls testdiff.ReplacementsContext,
 	config internal.TestConfig,
 	configPath string,
@@ -429,7 +431,11 @@ func runTest(t *testing.T,
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
 		// +error: coverage meta-data emit failed: writing ... rename .../tmp.covmeta.b3f... .../covmeta.b3f2c...: no such file or directory
+		// Note: should not use dir, because single dir can generate multiple tests via EnvMatrix
 		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
+		if variant != 0 {
+			coverDir += fmt.Sprint(variant)
+		}
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
