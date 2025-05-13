@@ -20,7 +20,7 @@ func TestMergePipelineClusters(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"foo": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Clusters: []pipelines.PipelineCluster{
 								{
 									NodeTypeId: "i3.xlarge",
@@ -69,7 +69,7 @@ func TestMergePipelineClustersCaseInsensitive(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"foo": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Clusters: []pipelines.PipelineCluster{
 								{
 									Label:      "default",

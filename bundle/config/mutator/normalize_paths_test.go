@@ -22,7 +22,7 @@ func TestNormalizePaths(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job1": {JobSettings: &jobs.JobSettings{
+					"job1": {JobSettings: jobs.JobSettings{
 						Tasks: []jobs.Task{
 							{
 								NotebookTask: &jobs.NotebookTask{
@@ -65,6 +65,18 @@ func TestNormalizePath_url(t *testing.T) {
 	value, err := normalizePath("s3:///path/to/notebook.py", dyn.Location{}, "/tmp")
 	assert.NoError(t, err)
 	assert.Equal(t, "s3:///path/to/notebook.py", value)
+}
+
+func TestNormalizePath_requirementsFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	location := dyn.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
+	value, err := normalizePath("-r ../requirements.txt", location, tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "-r requirements.txt", value)
+
+	value, err = normalizePath("-r      ../requirements.txt", location, tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "-r requirements.txt", value)
 }
 
 func TestLocationDirectory(t *testing.T) {

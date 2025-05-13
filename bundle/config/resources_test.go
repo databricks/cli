@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -118,57 +117,55 @@ func TestResourcesBindSupport(t *testing.T) {
 	supportedResources := &Resources{
 		Jobs: map[string]*resources.Job{
 			"my_job": {
-				JobSettings: &jobs.JobSettings{},
+				JobSettings: jobs.JobSettings{},
 			},
 		},
 		Pipelines: map[string]*resources.Pipeline{
 			"my_pipeline": {
-				CreatePipeline: &pipelines.CreatePipeline{},
+				CreatePipeline: pipelines.CreatePipeline{},
 			},
 		},
 		Experiments: map[string]*resources.MlflowExperiment{
 			"my_experiment": {
-				Experiment: &ml.Experiment{},
+				Experiment: ml.Experiment{},
 			},
 		},
 		RegisteredModels: map[string]*resources.RegisteredModel{
 			"my_registered_model": {
-				CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{},
+				CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{},
 			},
 		},
 		Schemas: map[string]*resources.Schema{
 			"my_schema": {
-				CreateSchema: &catalog.CreateSchema{},
+				CreateSchema: catalog.CreateSchema{},
 			},
 		},
 		Clusters: map[string]*resources.Cluster{
-			"my_cluster": {
-				ClusterSpec: &compute.ClusterSpec{},
-			},
+			"my_cluster": {},
 		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {
-				Dashboard: &dashboards.Dashboard{},
+				Dashboard: dashboards.Dashboard{},
 			},
 		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {
-				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{},
+				CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{},
 			},
 		},
 		Apps: map[string]*resources.App{
 			"my_app": {
-				App: &apps.App{},
+				App: apps.App{},
 			},
 		},
 		QualityMonitors: map[string]*resources.QualityMonitor{
 			"my_quality_monitor": {
-				CreateMonitor: &catalog.CreateMonitor{},
+				CreateMonitor: catalog.CreateMonitor{},
 			},
 		},
 		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 			"my_model_serving_endpoint": {
-				CreateServingEndpoint: &serving.CreateServingEndpoint{},
+				CreateServingEndpoint: serving.CreateServingEndpoint{},
 			},
 		},
 	}

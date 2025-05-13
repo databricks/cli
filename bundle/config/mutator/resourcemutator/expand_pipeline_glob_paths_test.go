@@ -52,7 +52,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: &pipelines.CreatePipeline{
+						CreatePipeline: pipelines.CreatePipeline{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{

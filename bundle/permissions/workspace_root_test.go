@@ -34,24 +34,24 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
+					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
+					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline_1": {CreatePipeline: &pipelines.CreatePipeline{}},
-					"pipeline_2": {CreatePipeline: &pipelines.CreatePipeline{}},
+					"pipeline_1": {CreatePipeline: pipelines.CreatePipeline{}},
+					"pipeline_2": {CreatePipeline: pipelines.CreatePipeline{}},
 				},
 				Models: map[string]*resources.MlflowModel{
-					"model_1": {Model: &ml.Model{}},
-					"model_2": {Model: &ml.Model{}},
+					"model_1": {},
+					"model_2": {},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment_1": {Experiment: &ml.Experiment{}},
-					"experiment_2": {Experiment: &ml.Experiment{}},
+					"experiment_1": {Experiment: ml.Experiment{}},
+					"experiment_2": {Experiment: ml.Experiment{}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"endpoint_1": {CreateServingEndpoint: &serving.CreateServingEndpoint{}},
-					"endpoint_2": {CreateServingEndpoint: &serving.CreateServingEndpoint{}},
+					"endpoint_1": {CreateServingEndpoint: serving.CreateServingEndpoint{}},
+					"endpoint_2": {CreateServingEndpoint: serving.CreateServingEndpoint{}},
 				},
 			},
 		},
@@ -94,24 +94,24 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
+					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
+					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline_1": {CreatePipeline: &pipelines.CreatePipeline{}},
-					"pipeline_2": {CreatePipeline: &pipelines.CreatePipeline{}},
+					"pipeline_1": {CreatePipeline: pipelines.CreatePipeline{}},
+					"pipeline_2": {CreatePipeline: pipelines.CreatePipeline{}},
 				},
 				Models: map[string]*resources.MlflowModel{
-					"model_1": {Model: &ml.Model{}},
-					"model_2": {Model: &ml.Model{}},
+					"model_1": {},
+					"model_2": {},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment_1": {Experiment: &ml.Experiment{}},
-					"experiment_2": {Experiment: &ml.Experiment{}},
+					"experiment_1": {Experiment: ml.Experiment{}},
+					"experiment_2": {Experiment: ml.Experiment{}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"endpoint_1": {CreateServingEndpoint: &serving.CreateServingEndpoint{}},
-					"endpoint_2": {CreateServingEndpoint: &serving.CreateServingEndpoint{}},
+					"endpoint_1": {CreateServingEndpoint: serving.CreateServingEndpoint{}},
+					"endpoint_2": {CreateServingEndpoint: serving.CreateServingEndpoint{}},
 				},
 			},
 		},

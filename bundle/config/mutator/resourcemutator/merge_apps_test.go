@@ -19,7 +19,7 @@ func TestMergeApps(t *testing.T) {
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"foo": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "foo",
 							Resources: []apps.AppResource{
 								{

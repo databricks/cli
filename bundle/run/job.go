@@ -31,7 +31,7 @@ type jobRunner struct {
 }
 
 func (r *jobRunner) Name() string {
-	if r.job == nil || r.job.JobSettings == nil {
+	if r.job == nil {
 		return ""
 	}
 	return r.job.JobSettings.Name
@@ -188,7 +188,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 
 	waiter, err := w.Jobs.RunNow(ctx, *req)
 	if err != nil {
-		return nil, errors.New("cannot start job")
+		return nil, fmt.Errorf("cannot start job: %w", err)
 	}
 
 	if opts.NoWait {

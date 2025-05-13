@@ -25,7 +25,7 @@ type ModelServingEndpointPermission struct {
 type ModelServingEndpoint struct {
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
-	*serving.CreateServingEndpoint
+	serving.CreateServingEndpoint
 
 	// This represents the id (ie serving_endpoint_id) that can be used
 	// as a reference in other resources. This value is returned by terraform.
@@ -86,8 +86,4 @@ func (s *ModelServingEndpoint) GetName() string {
 
 func (s *ModelServingEndpoint) GetURL() string {
 	return s.URL
-}
-
-func (s *ModelServingEndpoint) IsNil() bool {
-	return s.CreateServingEndpoint == nil
 }

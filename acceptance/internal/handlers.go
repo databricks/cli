@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -192,6 +193,31 @@ func addDefaultHandlers(server *testserver.Server) {
 
 	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
 		return req.Workspace.JobsList()
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/run-now", func(req testserver.Request) any {
+		var request jobs.RunNow
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+
+		return req.Workspace.JobsRunNow(request.JobId)
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		runId := req.URL.Query().Get("run_id")
+		runIdInt, err := strconv.ParseInt(runId, 10, 64)
+		if err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+
+		return req.Workspace.JobsGetRun(runIdInt)
 	})
 
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ testserver.Request) any {

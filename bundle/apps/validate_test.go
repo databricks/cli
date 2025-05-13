@@ -32,13 +32,13 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"app1": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "app1",
 						},
 						SourceCodePath: "./app1",
 					},
 					"app2": {
-						App: &apps.App{
+						App: apps.App{
 							Name: "app2",
 						},
 						SourceCodePath: "./app1",

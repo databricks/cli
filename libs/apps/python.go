@@ -2,6 +2,7 @@ package apps
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,7 +89,7 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 	if len(spec.Command) == 0 {
 		files, err := filepath.Glob(filepath.Join(spec.config.AppPath, "*.py"))
 		if err != nil {
-			return nil, errors.New("Error reading source code directory")
+			return nil, fmt.Errorf("Error reading source code directory: %w", err)
 		}
 
 		if len(files) > 0 {

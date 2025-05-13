@@ -30,12 +30,12 @@ func TestApplyBundlePermissions(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job_1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job_1",
 						},
 					},
 					"job_2": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job_2",
 						},
 					},
@@ -139,7 +139,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job_1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job_1",
 						},
 						Permissions: []resources.JobPermission{
@@ -147,7 +147,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 						},
 					},
 					"job_2": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Name: "job_2",
 						},
 						Permissions: []resources.JobPermission{

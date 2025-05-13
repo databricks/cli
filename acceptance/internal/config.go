@@ -185,13 +185,11 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 
 func DoLoadConfig(t *testing.T, path string) TestConfig {
 	bytes, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("failed to read config: %s", err)
-	}
+	require.NoError(t, err, "Failed to read test config %s: %s", path, err)
 
 	var config TestConfig
 	meta, err := toml.Decode(string(bytes), &config)
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to parse config %s", path)
 
 	keys := meta.Undecoded()
 	if len(keys) > 0 {

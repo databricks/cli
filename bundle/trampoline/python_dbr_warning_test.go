@@ -20,7 +20,7 @@ func TestIncompatibleWheelTasksWithNewCluster(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey:         "key1",
@@ -60,7 +60,7 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
@@ -113,7 +113,7 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey:           "key1",
@@ -160,7 +160,7 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
@@ -266,7 +266,7 @@ func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
@@ -310,7 +310,7 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						JobSettings: &jobs.JobSettings{
+						JobSettings: jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
 									TaskKey:         "key1",

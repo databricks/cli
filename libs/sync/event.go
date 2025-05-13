@@ -3,7 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 )
@@ -48,6 +48,11 @@ type EventChanges struct {
 	Delete []string `json:"delete,omitempty"`
 }
 
+// creates EventChanges with filenames in Put and Delete sorted alphabetically
+func newEventChanges(put, delete []string) *EventChanges {
+	return &EventChanges{Put: slices.Sorted(slices.Values(put)), Delete: slices.Sorted(slices.Values(delete))}
+}
+
 func (e *EventChanges) IsEmpty() bool {
 	return len(e.Put) == 0 && len(e.Delete) == 0
 }
@@ -55,11 +60,9 @@ func (e *EventChanges) IsEmpty() bool {
 func (e *EventChanges) String() string {
 	var changes []string
 	if len(e.Put) > 0 {
-		sort.Strings(e.Put)
 		changes = append(changes, "PUT: "+strings.Join(e.Put, ", "))
 	}
 	if len(e.Delete) > 0 {
-		sort.Strings(e.Delete)
 		changes = append(changes, "DELETE: "+strings.Join(e.Delete, ", "))
 	}
 	return strings.Join(changes, ", ")
@@ -81,7 +84,7 @@ func (e *EventStart) String() string {
 func newEventStart(seq int, put, delete []string, dryRun bool) Event {
 	return &EventStart{
 		EventBase:    newEventBase(seq, EventTypeStart, dryRun),
-		EventChanges: &EventChanges{Put: put, Delete: delete},
+		EventChanges: newEventChanges(put, delete),
 	}
 }
 
@@ -141,7 +144,7 @@ func (e *EventSyncComplete) String() string {
 func newEventComplete(seq int, put, delete []string, dryRun bool) Event {
 	return &EventSyncComplete{
 		EventBase:    newEventBase(seq, EventTypeComplete, dryRun),
-		EventChanges: &EventChanges{Put: put, Delete: delete},
+		EventChanges: newEventChanges(put, delete),
 	}
 }
 

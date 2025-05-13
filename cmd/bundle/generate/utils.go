@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/notebook"
@@ -22,6 +23,7 @@ type downloader struct {
 	w         *databricks.WorkspaceClient
 	sourceDir string
 	configDir string
+	basePath  string
 }
 
 func (n *downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
@@ -50,8 +52,8 @@ func (n *downloader) markFileForDownload(ctx context.Context, filePath *string) 
 		return err
 	}
 
-	filename := path.Base(*filePath)
-	targetPath := filepath.Join(n.sourceDir, filename)
+	relPath := n.relativePath(*filePath)
+	targetPath := filepath.Join(n.sourceDir, relPath)
 
 	n.files[targetPath] = *filePath
 
@@ -68,6 +70,11 @@ func (n *downloader) markDirectoryForDownload(ctx context.Context, dirPath *stri
 	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath)
 	if err != nil {
 		return err
+	}
+
+	if n.basePath == "" {
+		// Set the base path for relative path calculations
+		n.basePath = *dirPath
 	}
 
 	objects, err := n.w.Workspace.RecursiveList(ctx, *dirPath)
@@ -101,10 +108,8 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		return err
 	}
 
-	ext := notebook.GetExtensionByLanguage(info)
-
-	filename := path.Base(*notebookPath) + ext
-	targetPath := filepath.Join(n.sourceDir, filename)
+	relPath := n.relativePath(*notebookPath) + notebook.GetExtensionByLanguage(info)
+	targetPath := filepath.Join(n.sourceDir, relPath)
 
 	n.files[targetPath] = *notebookPath
 
@@ -118,12 +123,22 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 	return nil
 }
 
-func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
-	err := os.MkdirAll(n.sourceDir, 0o755)
-	if err != nil {
-		return err
+func (n *downloader) relativePath(fullPath string) string {
+	basePath := path.Dir(fullPath)
+	if n.basePath != "" {
+		basePath = n.basePath
 	}
 
+	// Remove the base path prefix
+	relPath := strings.TrimPrefix(fullPath, basePath)
+	if relPath[0] == '/' {
+		relPath = relPath[1:]
+	}
+
+	return relPath
+}
+
+func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 	// First check that all files can be written
 	for targetPath := range n.files {
 		info, err := os.Stat(targetPath)
@@ -139,6 +154,12 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 
 	errs, errCtx := errgroup.WithContext(ctx)
 	for targetPath, filePath := range n.files {
+		// Create parent directories if they don't exist
+		dir := filepath.Dir(targetPath)
+		err := os.MkdirAll(dir, 0o755)
+		if err != nil {
+			return err
+		}
 		errs.Go(func() error {
 			reader, err := n.w.Workspace.Download(errCtx, filePath)
 			if err != nil {

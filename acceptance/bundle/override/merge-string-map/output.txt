@@ -7,7 +7,6 @@ Warning: expected map, found string
 {
   "clusters": {
     "my_cluster": {
-      "custom_tags": {},
       "spark_version": "25"
     }
   }

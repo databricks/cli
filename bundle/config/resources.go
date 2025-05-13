@@ -46,9 +46,6 @@ type ConfigResource interface {
 
 	// InitializeURL initializes the URL field of the resource.
 	InitializeURL(baseURL url.URL)
-
-	// IsNil returns true if the resource is nil, for example, when it was removed from the bundle.
-	IsNil() bool
 }
 
 // ResourceGroup represents a group of resources of the same type.
@@ -65,9 +62,6 @@ func collectResourceMap[T ConfigResource](
 ) ResourceGroup {
 	r := make(map[string]ConfigResource)
 	for key, resource := range input {
-		if resource.IsNil() {
-			continue
-		}
 		r[key] = resource
 	}
 	return ResourceGroup{
