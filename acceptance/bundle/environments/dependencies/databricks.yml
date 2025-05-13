@@ -1,6 +1,8 @@
 bundle:
   name: "dependencies"
 
+include:
+  - resources/*.yml
 
 resources:
   jobs:

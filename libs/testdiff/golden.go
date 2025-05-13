@@ -5,7 +5,6 @@ import (
 	"flag"
 	"os"
 	"strings"
-	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
@@ -43,21 +42,6 @@ func AssertOutput(t testutil.TestingT, ctx context.Context, out, outTitle, expec
 
 	if out != expected {
 		AssertEqualTexts(t, expectedPath, outTitle, expected, out)
-
-		if OverwriteMode {
-			WriteFile(t, expectedPath, out)
-		}
-	}
-}
-
-func AssertOutputJQ(t testutil.TestingT, ctx context.Context, out, outTitle, expectedPath string, ignorePaths []string) {
-	t.Helper()
-	expected := ReadFile(t, ctx, expectedPath)
-
-	out = ReplaceOutput(t, ctx, out)
-
-	if out != expected {
-		AssertEqualJQ(t.(*testing.T), expectedPath, outTitle, expected, out, ignorePaths)
 
 		if OverwriteMode {
 			WriteFile(t, expectedPath, out)
