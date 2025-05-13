@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -434,7 +435,7 @@ func runTest(t *testing.T,
 		// Note: should not use dir, because single dir can generate multiple tests via EnvMatrix
 		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
 		if variant != 0 {
-			coverDir += fmt.Sprint(variant)
+			coverDir += strconv.Itoa(variant)
 		}
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
