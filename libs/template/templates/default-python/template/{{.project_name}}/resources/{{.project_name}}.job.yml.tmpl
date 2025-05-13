@@ -66,7 +66,7 @@ resources:
 {{- end -}}
 {{else}}
 {{- end}}
-{{if $with_serverless}}
+{{if $with_serverless}}{{if (eq .include_python "yes")}}
       # A list of task execution environment specifications that can be referenced by tasks of this job.
       environments:
         - environment_key: default
@@ -77,7 +77,7 @@ resources:
             client: "1"
             dependencies:
               - ../dist/*.whl
-{{ else }}
+{{end}}{{ else }}
       job_clusters:
         - job_cluster_key: job_cluster
           new_cluster:
