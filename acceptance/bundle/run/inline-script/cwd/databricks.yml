@@ -1,8 +1,2 @@
 bundle:
   name: foobar
-
-
-scripts:
-  foo:
-    content: |
-      echo 'hello'
