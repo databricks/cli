@@ -2,5 +2,5 @@ trace cd a/b/c
 
 trace python3 -c 'import os; print(os.getcwd())'
 
-# Scripts that bundle run executes inline should run from the working directory.
+# Scripts that bundle run executes inline should run from the current working directory.
 trace $CLI bundle run -- python3 -c 'import os; print(os.getcwd())'
