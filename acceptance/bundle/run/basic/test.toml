@@ -1,3 +1,5 @@
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # "bundle run" not implemented yet
+
 [[Repls]]
 Old = "(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]"
 New = "HH:MM:SS"
