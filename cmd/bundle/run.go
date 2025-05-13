@@ -52,6 +52,8 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 // - do add a test for environment variable interpolation in script
 // - shell bash shell features?... Will the acceptance test work on windows?
 
+// TODO: We need a tes / validation that every script section has a content field defined.
+
 // resolveRunArgument resolves the resource key to run.
 // It returns the remaining arguments to pass to the runner, if applicable.
 func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
