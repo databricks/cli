@@ -7,6 +7,7 @@ import (
 	"net/url"
 	pathlib "path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator/paths"
@@ -84,6 +85,19 @@ func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
 }
 
 func normalizePath(path string, location dyn.Location, bundleRootPath string) (string, error) {
+	// Handle requirements file paths with -r flag
+	reqPath, ok := strings.CutPrefix(path, "-r ")
+	if ok {
+		// Normalize the path part
+		normalizedPath, err := normalizePath(reqPath, location, bundleRootPath)
+		if err != nil {
+			return "", err
+		}
+
+		// Reconstruct the path with -r flag
+		return "-r " + normalizedPath, nil
+	}
+
 	pathAsUrl, err := url.Parse(path)
 	if err != nil {
 		return "", err
