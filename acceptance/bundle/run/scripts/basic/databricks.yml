@@ -9,6 +9,5 @@ scripts:
   bar:
     content:
 
-
   me:
     content: $CLI current-user me
