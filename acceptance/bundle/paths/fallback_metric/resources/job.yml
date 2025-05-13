@@ -1,0 +1,18 @@
+resources:
+  jobs:
+    my_job:
+      name: "placeholder"
+      tasks:
+        - task_key: notebook_example
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            data_security_mode: SINGLE_USER
+            num_workers: 0
+            spark_conf:
+                spark.master: "local[*, 4]"
+                spark.databricks.cluster.profile: singleNode
+            custom_tags:
+              ResourceClass: SingleNode
+          notebook_task:
+            notebook_path: "../src/notebook.py"
