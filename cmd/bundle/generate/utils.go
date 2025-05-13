@@ -52,17 +52,7 @@ func (n *downloader) markFileForDownload(ctx context.Context, filePath *string) 
 		return err
 	}
 
-	basePath := path.Dir(*filePath)
-	if n.basePath != "" {
-		basePath = n.basePath
-	}
-
-	// Remove the base path prefix
-	relPath := strings.TrimPrefix(*filePath, basePath)
-	if relPath[0] == '/' {
-		relPath = relPath[1:]
-	}
-
+	relPath := n.relativePath(*filePath)
 	targetPath := filepath.Join(n.sourceDir, relPath)
 
 	n.files[targetPath] = *filePath
@@ -118,21 +108,7 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		return err
 	}
 
-	ext := notebook.GetExtensionByLanguage(info)
-
-	basePath := path.Dir(*notebookPath)
-	if n.basePath != "" {
-		basePath = n.basePath
-	}
-
-	// Remove the base path prefix
-	relPath := strings.TrimPrefix(*notebookPath, basePath)
-	if relPath[0] == '/' {
-		relPath = relPath[1:]
-	}
-
-	// Add the extension to the path
-	relPath = relPath + ext
+	relPath := n.relativePath(*notebookPath) + notebook.GetExtensionByLanguage(info)
 	targetPath := filepath.Join(n.sourceDir, relPath)
 
 	n.files[targetPath] = *notebookPath
@@ -145,6 +121,21 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 
 	*notebookPath = rel
 	return nil
+}
+
+func (n *downloader) relativePath(fullPath string) string {
+	basePath := path.Dir(fullPath)
+	if n.basePath != "" {
+		basePath = n.basePath
+	}
+
+	// Remove the base path prefix
+	relPath := strings.TrimPrefix(fullPath, basePath)
+	if relPath[0] == '/' {
+		relPath = relPath[1:]
+	}
+
+	return relPath
 }
 
 func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
