@@ -12,7 +12,4 @@ TimeoutWindows = '60s'
 TimeoutCloud = '25m'
 
 Env.PYTHONDONTWRITEBYTECODE = "1"
-EnvRepl.PYTHONDONTWRITEBYTECODE = false
-
 Env.PYTHONUNBUFFERED = "1"
-EnvRepl.PYTHONUNBUFFERED = false
