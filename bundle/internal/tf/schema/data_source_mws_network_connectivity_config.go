@@ -18,16 +18,17 @@ type DataSourceMwsNetworkConnectivityConfigEgressConfigDefaultRules struct {
 }
 
 type DataSourceMwsNetworkConnectivityConfigEgressConfigTargetRulesAzurePrivateEndpointRules struct {
-	ConnectionState             string `json:"connection_state,omitempty"`
-	CreationTime                int    `json:"creation_time,omitempty"`
-	Deactivated                 bool   `json:"deactivated,omitempty"`
-	DeactivatedAt               int    `json:"deactivated_at,omitempty"`
-	EndpointName                string `json:"endpoint_name,omitempty"`
-	GroupId                     string `json:"group_id,omitempty"`
-	NetworkConnectivityConfigId string `json:"network_connectivity_config_id,omitempty"`
-	ResourceId                  string `json:"resource_id,omitempty"`
-	RuleId                      string `json:"rule_id,omitempty"`
-	UpdatedTime                 int    `json:"updated_time,omitempty"`
+	ConnectionState             string   `json:"connection_state,omitempty"`
+	CreationTime                int      `json:"creation_time,omitempty"`
+	Deactivated                 bool     `json:"deactivated,omitempty"`
+	DeactivatedAt               int      `json:"deactivated_at,omitempty"`
+	DomainNames                 []string `json:"domain_names,omitempty"`
+	EndpointName                string   `json:"endpoint_name,omitempty"`
+	GroupId                     string   `json:"group_id,omitempty"`
+	NetworkConnectivityConfigId string   `json:"network_connectivity_config_id,omitempty"`
+	ResourceId                  string   `json:"resource_id,omitempty"`
+	RuleId                      string   `json:"rule_id,omitempty"`
+	UpdatedTime                 int      `json:"updated_time,omitempty"`
 }
 
 type DataSourceMwsNetworkConnectivityConfigEgressConfigTargetRules struct {

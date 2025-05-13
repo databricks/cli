@@ -6,6 +6,7 @@ type Config struct {
 	AccountId                  string `json:"account_id,omitempty"`
 	ActionsIdTokenRequestToken string `json:"actions_id_token_request_token,omitempty"`
 	ActionsIdTokenRequestUrl   string `json:"actions_id_token_request_url,omitempty"`
+	Audience                   string `json:"audience,omitempty"`
 	AuthType                   string `json:"auth_type,omitempty"`
 	AzureClientId              string `json:"azure_client_id,omitempty"`
 	AzureClientSecret          string `json:"azure_client_secret,omitempty"`
@@ -19,6 +20,7 @@ type Config struct {
 	ClusterId                  string `json:"cluster_id,omitempty"`
 	ConfigFile                 string `json:"config_file,omitempty"`
 	DatabricksCliPath          string `json:"databricks_cli_path,omitempty"`
+	DatabricksIdTokenFilepath  string `json:"databricks_id_token_filepath,omitempty"`
 	DebugHeaders               bool   `json:"debug_headers,omitempty"`
 	DebugTruncateBytes         int    `json:"debug_truncate_bytes,omitempty"`
 	GoogleCredentials          string `json:"google_credentials,omitempty"`
@@ -26,6 +28,7 @@ type Config struct {
 	Host                       string `json:"host,omitempty"`
 	HttpTimeoutSeconds         int    `json:"http_timeout_seconds,omitempty"`
 	MetadataServiceUrl         string `json:"metadata_service_url,omitempty"`
+	OidcTokenEnv               string `json:"oidc_token_env,omitempty"`
 	Password                   string `json:"password,omitempty"`
 	Profile                    string `json:"profile,omitempty"`
 	RateLimit                  int    `json:"rate_limit,omitempty"`
