@@ -16,6 +16,7 @@ from databricks.bundles.build import (
     _relativize_location,
     _write_diagnostics,
     _write_locations,
+    _write_output,
 )
 from databricks.bundles.core import (
     Bundle,
@@ -98,6 +99,14 @@ def test_write_location():
         out.getvalue()
         == '{"path": "resources.jobs.job_0", "file": "foo.py", "line": 42, "column": 1}\n'
     )
+
+
+def test_write_output_unicode():
+    out = StringIO()
+
+    _write_output(out, {"unicode": "🔥🔥🔥"})
+
+    assert out.getvalue() == '{"unicode": "🔥🔥🔥"}'
 
 
 def test_relativize_location():
