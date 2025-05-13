@@ -1,0 +1,6 @@
+Cloud = false
+RecordRequests = true
+
+Ignore = [
+    ".databricks"
+]

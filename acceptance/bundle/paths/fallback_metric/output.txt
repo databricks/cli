@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/fallback_metric/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deploy -t fallback
+Warn: path ../src/notebook.py is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/fallback_metric/fallback/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> cat out.requests.txt
+[
+  {
+    "key": "python_wheel_wrapper_is_set",
+    "value": false
+  }
+]
+[
+  {
+    "key": "is_job_path_fallback",
+    "value": true
+  },
+  {
+    "key": "python_wheel_wrapper_is_set",
+    "value": false
+  }
+]

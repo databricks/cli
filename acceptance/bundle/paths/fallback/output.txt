@@ -1,5 +1,13 @@
 
 >>> [CLI] bundle validate -t development -o json
+Warn: path ../src/notebook.py is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
+Warn: path ../src/file.py is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
+Warn: path ../src/dbt_project is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
+Warn: path ../src/sql.sql is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
+Warn: path ../dist/wheel2.whl is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
+Warn: path ../target/jar2.jar is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
+Warn: path ../src/notebook2.py is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
+Warn: path ../src/file2.py is defined relative to the [TEST_TMP_DIR]/resources directory. Please update the path to be relative to the file where it is used. This behaviour will be removed in the next release.
 
 >>> [CLI] bundle validate -t error
 Error: notebook "resources/this value is overridden" not found. Local notebook references are expected
