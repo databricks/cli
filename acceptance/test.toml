@@ -16,3 +16,11 @@ EnvRepl.PYTHONDONTWRITEBYTECODE = false
 
 Env.PYTHONUNBUFFERED = "1"
 EnvRepl.PYTHONUNBUFFERED = false
+
+# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+# This is fine to do for all tests because:
+# 1. In most contexts an absolute path refers to a file in a Databricks workspace.
+# 2. Most if not all tests will use relative paths for local files.
+Env.MSYS_NO_PATHCONV="1"
