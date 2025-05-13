@@ -441,13 +441,15 @@ func runTest(t *testing.T,
 			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
 			continue
 		}
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl)
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl, false)
 	}
 
 	for _, keyvalue := range customEnv {
 		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, items[0], items[1], config.EnvRepl)
+		key := items[0]
+		value := items[1]
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1)
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -514,7 +516,7 @@ func hasKey(env []string, key string) bool {
 	return false
 }
 
-func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string, envRepl map[string]bool) []string {
+func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string, envRepl map[string]bool, defaultRepl bool) []string {
 	newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, env)
 	if value != newValue {
 		t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
@@ -522,7 +524,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 
 	shouldRepl, ok := envRepl[key]
 	if !ok {
-		shouldRepl = len(value) >= 8
+		shouldRepl = defaultRepl
 	}
 
 	if shouldRepl {

@@ -1,6 +1,6 @@
-[Env]
 # The lowest Python version we support. Alternative to "uv run --python 3.10"
-UV_PYTHON = "3.10"
+Env.UV_PYTHON = "3.10"
+EnvRepl.UV_PYTHON = true
 
 [[Repls]]
 Old = '1\d{18}'
