@@ -69,6 +69,7 @@ integration-short: vendor
 generate:
 	genkit update-sdk
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
+	[ ! -f .github/workflows/tagging.yml ] || sed -i '' 's/python tagging.py/python internal\/genkit\/tagging.py/g' .github/workflows/tagging.yml
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 

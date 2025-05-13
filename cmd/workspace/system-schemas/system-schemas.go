@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -115,8 +116,12 @@ func newEnable() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var enableReq catalog.EnableRequest
+	var enableJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&enableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in.`)
 
 	cmd.Use = "enable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `Enable a system schema.`
@@ -141,6 +146,18 @@ func newEnable() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			diags := enableJson.Unmarshal(&enableReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
 		enableReq.MetastoreId = args[0]
 		enableReq.SchemaName = args[1]
 
