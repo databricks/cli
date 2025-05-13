@@ -64,7 +64,7 @@ jobs:
 
       - name: Pull external libraries
         run: |
-          make vendor
+          go mod download
           pip3 install wheel==0.45.1
 
       - name: Run tests without coverage
