@@ -3,5 +3,5 @@ Cloud = true
 
 Ignore = [
     "databricks.yml",
-    "schema.yml",
+    "test-file-*.txt",
 ]
