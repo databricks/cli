@@ -66,6 +66,8 @@ integration-short:
 generate:
 	genkit update-sdk
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
+# tagging.yml is automatically synced by update-sdk command and contains a reference to tagging.py in root
+# since we move tagging.py to different folder, we need to update this reference here as well
 	[ ! -f .github/workflows/tagging.yml ] || sed -i '' 's/python tagging.py/python internal\/genkit\/tagging.py/g' .github/workflows/tagging.yml
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
