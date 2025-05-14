@@ -3,6 +3,9 @@ import sys
 import os
 import subprocess
 
+CLOUD_ENV = os.environ.get("CLOUD_ENV")
+if CLOUD_ENV and os.environ["SERVERLESS"] == "yes" and not os.environ.get("TEST_METASTORE_ID"):
+    sys.exit(f"SKIP_TEST SERVERLESS=yes but TEST_METASTORE_ID is empty in this env {CLOUD_ENV=}")
 
 BUILDING = "Building python_artifact"
 UPLOADING = "Uploading dist/"

@@ -1,4 +1,6 @@
-Ignore = ["my_default_python", "input.json"]
+Cloud = true
+
+Ignore = ["input.json"]
 EnvMatrix.INCLUDE_NOTEBOOK = ["yes", "no"]
 EnvMatrix.INCLUDE_DLT = ["yes", "no"]
 EnvMatrix.INCLUDE_PYTHON = ["yes", "no"]
