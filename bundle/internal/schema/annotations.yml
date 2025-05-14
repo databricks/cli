@@ -277,6 +277,9 @@ github.com/databricks/cli/bundle/config.Root:
       The identity to use when running Databricks Asset Bundles workflows.
     "markdown_description": |-
       The identity to use when running Databricks Asset Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
+  "scripts":
+    "description": |-
+      PLACEHOLDER
   "sync":
     "description": |-
       The files and file paths to include or exclude in the bundle.
@@ -295,6 +298,10 @@ github.com/databricks/cli/bundle/config.Root:
       Defines the Databricks workspace for the bundle.
     "markdown_description": |-
       Defines the Databricks workspace for the bundle. See [\_](/dev-tools/bundles/settings.md#workspace).
+github.com/databricks/cli/bundle/config.Script:
+  "content":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Sync:
   "exclude":
     "description": |-
