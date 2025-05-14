@@ -1,0 +1,6 @@
+bundle:
+  name: shell-cmd
+
+artifacts:
+  my_artifact:
+    build: echo "Hello, World!" > out.shell.txt
