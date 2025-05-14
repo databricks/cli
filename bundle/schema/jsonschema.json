@@ -1304,6 +1304,88 @@
                   }
                 ]
               },
+              "resources.SecretScope": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "backend_type": {
+                        "description": "The backend type the scope will be created with. If not specified, will default to `DATABRICKS`",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType"
+                      },
+                      "keyvault_metadata": {
+                        "description": "The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata"
+                      },
+                      "name": {
+                        "description": "Scope name requested by the user. Scope names are unique.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "description": "The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SecretScopePermission"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SecretScopePermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "description": "The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "description": "The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "description": "The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SecretScopePermissionLevel": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "READ",
+                      "WRITE",
+                      "MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Volume": {
                 "oneOf": [
                   {
@@ -1842,6 +1924,9 @@
                       "description": "The schema definitions for the bundle, where each key is the name of the schema.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
                       "markdownDescription": "The schema definitions for the bundle, where each key is the name of the schema. See [schemas](https://docs.databricks.com/dev-tools/bundles/resources.html#schemas)."
+                    },
+                    "secret_scopes": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SecretScope"
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -7343,6 +7428,33 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "workspace.AzureKeyVaultSecretScopeMetadata": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "dns_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "resource_id": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "dns_name",
+                    "resource_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "workspace.ScopeBackendType": {
+              "type": "string"
             }
           }
         }
@@ -7555,6 +7667,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Schema"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SecretScope": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScope"
                       }
                     },
                     {
@@ -7819,6 +7945,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SecretScopePermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScopePermission"
                       }
                     },
                     {

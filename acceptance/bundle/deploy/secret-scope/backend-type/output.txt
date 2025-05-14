@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-azure-backend/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s .[] | select(.path=="/api/2.0/secrets/scopes/create") | .body out.requests.txt
+{
+  "backend_azure_keyvault": {
+    "dns_name": "my_azure_keyvault_dns_name",
+    "resource_id": "my_azure_keyvault_id"
+  },
+  "scope": "test-secrets-azure-backend",
+  "scope_backend_type": "AZURE_KEYVAULT"
+}
