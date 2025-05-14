@@ -1,0 +1,7 @@
+bundle:
+  name: shell-bash
+
+artifacts:
+  my_artifact:
+    executable: invalid
+    build: foobar

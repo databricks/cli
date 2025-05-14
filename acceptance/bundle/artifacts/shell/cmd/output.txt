@@ -15,31 +15,31 @@ runtime/debug.Stack()
 	/Users/shreyas.goenka/go/pkg/mod/golang.org/toolchain@v0.0.1-go[GO_VERSION].darwin-arm64/src/runtime/debug/stack.go:26 +0x64
 github.com/databricks/cli/cmd/root.Execute.func1()
 	/Users/shreyas.goenka/repos/cli/cmd/root/root.go:112 +0xa4
-panic({0x101caeee0?, 0x102a080a0?})
+panic({0x101542ee0?, 0x10229c0a0?})
 	/Users/shreyas.goenka/go/pkg/mod/golang.org/toolchain@v0.0.1-go[GO_VERSION].darwin-arm64/src/runtime/panic.go:792 +0x124
-github.com/databricks/cli/libs/exec.(*Executor).prepareCommand(0x1400024a8c0, {0x101f855c8, 0x14000239890}, {0x140000ea320?, 0x14000286fa8?})
+github.com/databricks/cli/libs/exec.(*Executor).prepareCommand(0x1400061be80, {0x1018195c8, 0x14000289200}, {0x140000ea320?, 0x140003aefa8?})
 	/Users/shreyas.goenka/repos/cli/libs/exec/exec.go:96 +0x30
-github.com/databricks/cli/libs/exec.(*Executor).Exec(0x1400004a004?, {0x101f855c8?, 0x14000239890?}, {0x140000ea320?, 0x1?})
+github.com/databricks/cli/libs/exec.(*Executor).Exec(0x1400004a004?, {0x1018195c8?, 0x14000289200?}, {0x140000ea320?, 0x1?})
 	/Users/shreyas.goenka/repos/cli/libs/exec/exec.go:128 +0x40
-github.com/databricks/cli/bundle/artifacts.doBuild({0x101f855c8, 0x14000239890}, {0x1400061c9c0, 0xb}, 0x140001153e0)
+github.com/databricks/cli/bundle/artifacts.doBuild({0x1018195c8, 0x14000289200}, {0x1400052f940, 0xb}, 0x1400010ec60)
 	/Users/shreyas.goenka/repos/cli/bundle/artifacts/build.go:121 +0x11c
-github.com/databricks/cli/bundle/artifacts.(*build).Apply(0x1400040ab58?, {0x101f855c8, 0x14000239890}, 0x1400040ab08)
+github.com/databricks/cli/bundle/artifacts.(*build).Apply(0x1400040ab58?, {0x1018195c8, 0x14000289200}, 0x1400040ab08)
 	/Users/shreyas.goenka/repos/cli/bundle/artifacts/build.go:48 +0x2ec
-github.com/databricks/cli/bundle.Apply({0x101f855c8, 0x14000151170}, 0x1400040ab08, {0x101f7d320, 0x102a616a0})
+github.com/databricks/cli/bundle.Apply({0x1018195c8, 0x14000205170}, 0x1400040ab08, {0x101811320, 0x1022f56a0})
 	/Users/shreyas.goenka/repos/cli/bundle/mutator.go:38 +0x15c
-github.com/databricks/cli/bundle.ApplySeq({0x101f855c8, 0x14000151170}, 0x1400040ab08, {0x14000287728?, 0x101d07ec0?, 0x140000021c0?})
+github.com/databricks/cli/bundle.ApplySeq({0x1018195c8, 0x14000205170}, 0x1400040ab08, {0x140003af728?, 0x10159bec0?, 0x140000021c0?})
 	/Users/shreyas.goenka/repos/cli/bundle/mutator.go:54 +0x94
-github.com/databricks/cli/bundle/phases.Build({0x101f855c8, 0x14000151170}, 0x1400040ab08)
+github.com/databricks/cli/bundle/phases.Build({0x1018195c8, 0x14000205170}, 0x1400040ab08)
 	/Users/shreyas.goenka/repos/cli/bundle/phases/build.go:19 +0x284
-github.com/databricks/cli/cmd/bundle.newDeployCommand.func1(0x14000131508, {0x102a616a0?, 0x4?, 0x10188a7a8?})
+github.com/databricks/cli/cmd/bundle.newDeployCommand.func1(0x1400016f508, {0x1022f56a0?, 0x4?, 0x10111e7a8?})
 	/Users/shreyas.goenka/repos/cli/cmd/bundle/deploy.go:79 +0x544
-github.com/spf13/cobra.(*Command).execute(0x14000131508, {0x102a616a0, 0x0, 0x0})
+github.com/spf13/cobra.(*Command).execute(0x1400016f508, {0x1022f56a0, 0x0, 0x0})
 	/Users/shreyas.goenka/repos/cli/vendor/github.com/spf13/cobra/command.go:1015 +0x828
-github.com/spf13/cobra.(*Command).ExecuteC(0x1400019c908)
+github.com/spf13/cobra.(*Command).ExecuteC(0x1400019e908)
 	/Users/shreyas.goenka/repos/cli/vendor/github.com/spf13/cobra/command.go:1148 +0x350
 github.com/spf13/cobra.(*Command).ExecuteContextC(...)
 	/Users/shreyas.goenka/repos/cli/vendor/github.com/spf13/cobra/command.go:1080
-github.com/databricks/cli/cmd/root.Execute({0x101f85590, 0x102a616a0}, 0x1400019c908)
+github.com/databricks/cli/cmd/root.Execute({0x101819590, 0x1022f56a0}, 0x1400019e908)
 	/Users/shreyas.goenka/repos/cli/cmd/root/root.go:141 +0x10c
 main.main()
 	/Users/shreyas.goenka/repos/cli/main.go:13 +0x44
