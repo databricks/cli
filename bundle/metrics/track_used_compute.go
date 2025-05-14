@@ -40,12 +40,6 @@ func (c *trackUsedCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 				continue
 			}
 
-			// If existing_cluster_id is set - then classic interactive compute is used
-			if task.ExistingClusterId != "" {
-				hasClassicInteractiveCompute = true
-				continue
-			}
-
 			// For notebook tasks if nothing is set it means serverless compute is used
 			if task.NotebookTask != nil {
 				hasServerlessCompute = true
