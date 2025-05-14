@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle deploy
+Building my_artifact...
+Error: build failed my_artifact, error: exit status 2, output: [TEST_TMP_DIR]_GPARENT/cli-exec1437258984.sh: line 1: syntax error near unexpected token `('
+
+
+
+Exit code: 1

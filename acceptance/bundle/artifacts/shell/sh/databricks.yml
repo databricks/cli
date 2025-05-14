@@ -1,0 +1,10 @@
+bundle:
+  name: shell-bash
+
+artifacts:
+  my_artifact:
+    executable: sh
+    build: |
+      echo "\n should be rendered as a newline." > out.shell.txt
+      echo "multiline scripts should work" >> out.shell.txt
+      pwd >> out.shell.txt

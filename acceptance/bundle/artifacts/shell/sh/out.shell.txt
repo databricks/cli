@@ -1,0 +1,4 @@
+
+ should be rendered as a newline.
+multiline scripts should work
+[TEST_TMP_DIR]
