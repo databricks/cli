@@ -31,9 +31,10 @@ type ResourceJobEmailNotifications struct {
 }
 
 type ResourceJobEnvironmentSpec struct {
-	Client          string   `json:"client"`
-	Dependencies    []string `json:"dependencies,omitempty"`
-	JarDependencies []string `json:"jar_dependencies,omitempty"`
+	Client             string   `json:"client"`
+	Dependencies       []string `json:"dependencies,omitempty"`
+	EnvironmentVersion string   `json:"environment_version,omitempty"`
+	JarDependencies    []string `json:"jar_dependencies,omitempty"`
 }
 
 type ResourceJobEnvironment struct {
@@ -674,7 +675,7 @@ type ResourceJobTaskForEachTaskTaskEmailNotifications struct {
 }
 
 type ResourceJobTaskForEachTaskTaskGenAiComputeTaskCompute struct {
-	GpuNodePoolId string `json:"gpu_node_pool_id"`
+	GpuNodePoolId string `json:"gpu_node_pool_id,omitempty"`
 	GpuType       string `json:"gpu_type,omitempty"`
 	NumGpus       int    `json:"num_gpus"`
 }
@@ -1118,7 +1119,7 @@ type ResourceJobTaskForEachTask struct {
 }
 
 type ResourceJobTaskGenAiComputeTaskCompute struct {
-	GpuNodePoolId string `json:"gpu_node_pool_id"`
+	GpuNodePoolId string `json:"gpu_node_pool_id,omitempty"`
 	GpuType       string `json:"gpu_type,omitempty"`
 	NumGpus       int    `json:"num_gpus"`
 }
