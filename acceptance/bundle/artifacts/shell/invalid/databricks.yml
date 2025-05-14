@@ -1,5 +1,5 @@
 bundle:
-  name: shell-bash
+  name: shell-invalid
 
 artifacts:
   my_artifact:

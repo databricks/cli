@@ -1,5 +1,5 @@
 bundle:
-  name: shell-bash
+  name: shell-sh
 
 artifacts:
   my_artifact:
