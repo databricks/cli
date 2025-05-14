@@ -32,6 +32,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const deploymentEnvVar = "DATABRICKS_CLI_DEPLOYMENT"
+
 var (
 	KeepTmp     bool
 	NoRepl      bool
@@ -210,6 +212,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	totalDirs := 0
 	selectedDirs := 0
 
+	deploymentFilter, hasFilter := os.LookupEnv(deploymentEnvVar)
+	filterEnv := ""
+	if hasFilter {
+		filterEnv = deploymentEnvVar + "=" + deploymentFilter
+
+		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
+		t.Setenv(deploymentEnvVar, "")
+	}
+
 	for _, dir := range testDirs {
 		totalDirs += 1
 
@@ -241,7 +252,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
-				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode)
+				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode, filterEnv)
 			} else {
 				for _, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -249,7 +260,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset, inprocessMode)
+						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset, inprocessMode, filterEnv)
 					})
 				}
 			}
@@ -348,6 +359,7 @@ func runTest(t *testing.T,
 	configPath string,
 	customEnv []string,
 	inprocessMode bool,
+	filterEnv string,
 ) {
 	if LogConfig {
 		configBytes, err := json.MarshalIndent(config, "", "  ")
@@ -450,6 +462,23 @@ func runTest(t *testing.T,
 		key := items[0]
 		value := items[1]
 		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1)
+	}
+
+	if filterEnv != "" {
+		filterEnvKey := strings.Split(filterEnv, "=")[0]
+		for ind := range cmd.Env {
+			// Search backwards, because the latest settings is what is actually applicable.
+			// For cases like DATABRICKS_CLI_DEPLOYMENT, there will be 2 instances: one copied from os.Environ,
+			// the other one coming from EnvMatrix.
+			envPair := cmd.Env[len(cmd.Env)-1-ind]
+			if strings.Split(envPair, "=")[0] == filterEnvKey {
+				if envPair == filterEnv {
+					break
+				} else {
+					t.Skipf("Skipping because test environment %s does not match requested env %s", envPair, filterEnv)
+				}
+			}
+		}
 	}
 
 	absDir, err := filepath.Abs(dir)

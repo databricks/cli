@@ -2,6 +2,9 @@ RecordRequests = false
 Timeout = '1m'
 TimeoutWindows = '10m'
 
+# Cannot run 2 instances of this test because it uses fixed ports
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+
 Ignore = [
     '.venv',
     '__pycache__'
