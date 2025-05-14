@@ -1,5 +1,5 @@
 bundle:
-  name: shell-cmd
+  name: shell-basic
 
 artifacts:
   my_artifact:
