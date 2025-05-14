@@ -1,12 +1,6 @@
 package exec
 
-import "errors"
-
-func shellExecvOpts(content string, opts ExecvOptions) (ExecvOptions, error) {
-	if opts.Args != nil {
-		return ExecvOptions{}, errors.New("ShellExecv: Args is not supported")
-	}
-
+func shellExecvOpts(content, dir string, env []string) (ExecvOptions, error) {
 	shell, err := findShell()
 	if err != nil {
 		return ExecvOptions{}, err
@@ -22,14 +16,14 @@ func shellExecvOpts(content string, opts ExecvOptions) (ExecvOptions, error) {
 
 	return ExecvOptions{
 		Args: args,
-		Env:  opts.Env,
-		Dir:  opts.Dir,
+		Env:  env,
+		Dir:  dir,
 	}, nil
 }
 
 // Variant of [Execv] that runs the given script through a shell
-func ShellExecv(content string, opts ExecvOptions) error {
-	newOpts, err := shellExecvOpts(content, opts)
+func ShellExecv(content, dir string, env []string) error {
+	newOpts, err := shellExecvOpts(content, dir, env)
 	if err != nil {
 		return err
 	}
