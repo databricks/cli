@@ -1581,10 +1581,7 @@
                       "markdownDescription": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`."
                     }
                   },
-                  "additionalProperties": false,
-                  "required": [
-                    "type"
-                  ]
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",

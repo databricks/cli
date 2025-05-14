@@ -17,5 +17,6 @@
 * Fix default-python template not to add environments when serverless=yes and include\_python=no ([#2866](https://github.com/databricks/cli/pull/2866))
 * Fix handling of Unicode characters in Python support ([#2873](https://github.com/databricks/cli/pull/2873))
 * Add support for secret scopes in DABs ([#2744](https://github.com/databricks/cli/pull/2744))
+* Make `artifacts.*.type` optional in bundle JSON schema ([#2881](https://github.com/databricks/cli/pull/2881))
 
 ### API Changes
