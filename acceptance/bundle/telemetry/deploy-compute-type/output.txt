@@ -197,7 +197,7 @@ Deployment complete!
       },
       {
         "key": "has_serverless_compute",
-        "value": false
+        "value": true
       },
       {
         "key": "has_classic_job_compute",

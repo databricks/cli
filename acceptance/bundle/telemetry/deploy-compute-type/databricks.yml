@@ -60,3 +60,6 @@ targets:
               existing_cluster_id: "1234"
               spark_python_task:
                 python_file: ./test.py
+            - task_key: task2
+              notebook_task:
+                notebook_path: ./notebook.py
