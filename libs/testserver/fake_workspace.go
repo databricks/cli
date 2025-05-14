@@ -190,6 +190,16 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 	}
 }
 
+func (s *FakeWorkspace) JobsDelete(request jobs.DeleteJob) Response {
+	defer s.LockUnlock()()
+
+	delete(s.jobs, request.JobId)
+
+	return Response{
+		Body: jobs.DeleteResponse{},
+	}
+}
+
 func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 	defer s.LockUnlock()()
 
