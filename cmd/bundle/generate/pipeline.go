@@ -38,7 +38,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b, diags := root.MustConfigureBundle(cmd)
+		b, diags := root.MustConfigureBundle(cmd, &configDir, &sourceDir)
 		if err := diags.Error(); err != nil {
 			return diags.Error()
 		}
