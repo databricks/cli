@@ -36,6 +36,18 @@ Deployment complete!
       {
         "key": "python_wheel_wrapper_is_set",
         "value": false
+      },
+      {
+        "key": "has_serverless_compute",
+        "value": false
+      },
+      {
+        "key": "has_classic_job_compute",
+        "value": false
+      },
+      {
+        "key": "has_classic_interactive_compute",
+        "value": false
       }
     ],
     "bundle_mode": "TYPE_UNSPECIFIED",
@@ -67,6 +79,18 @@ Deployment complete!
     "bool_values": [
       {
         "key": "python_wheel_wrapper_is_set",
+        "value": false
+      },
+      {
+        "key": "has_serverless_compute",
+        "value": false
+      },
+      {
+        "key": "has_classic_job_compute",
+        "value": false
+      },
+      {
+        "key": "has_classic_interactive_compute",
         "value": false
       }
     ],
