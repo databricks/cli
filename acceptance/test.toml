@@ -13,7 +13,6 @@ TimeoutCloud = '25m'
 
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
-EnvRepl.PYTHONUNBUFFERED = false
 
 # On Windows, MSYS2 automatically transforms absolute paths (e.g., /Users/$username/$UNIQUE_NAME)
 # into Windows-style paths (C:/Program Files/Git/Users/$username/UNIQUE_NAME) before CLI execution.
