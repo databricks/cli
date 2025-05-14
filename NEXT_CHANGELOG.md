@@ -18,5 +18,6 @@
 * Fix handling of Unicode characters in Python support ([#2873](https://github.com/databricks/cli/pull/2873))
 * Add support for secret scopes in DABs ([#2744](https://github.com/databricks/cli/pull/2744))
 * Make `artifacts.*.type` optional in bundle JSON schema ([#2881](https://github.com/databricks/cli/pull/2881))
+* Fix support for `spot_bid_max_price` field in Python support ([#2883](https://github.com/databricks/cli/pull/2883))
 
 ### API Changes
