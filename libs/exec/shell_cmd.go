@@ -11,6 +11,8 @@ type cmdShell struct {
 }
 
 func (s cmdShell) prepare(command string) (*execContext, error) {
+	// There's no way to inline a multi-line command into a single call to cmd.exe.
+	// Thus we need to pass the command in stdin of cmd.exe
 	reader := bytes.NewReader([]byte(command))
 
 	return &execContext{
