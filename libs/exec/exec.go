@@ -94,6 +94,9 @@ func (e *Executor) prepareCommand(ctx context.Context, command string) (*osexec.
 	}
 	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
 	cmd.Dir = e.dir
+	if ec.stdin != nil {
+		cmd.Stdin = ec.stdin
+	}
 	return cmd, nil
 }
 

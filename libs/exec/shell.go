@@ -14,7 +14,7 @@ type shell interface {
 type execContext struct {
 	executable string
 	args       []string
-	scriptFile string
+	stdin      io.Reader
 }
 
 func findShell() (shell, error) {

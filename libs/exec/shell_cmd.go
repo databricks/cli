@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"bytes"
 	"errors"
 	osexec "os/exec"
 )
@@ -10,9 +11,12 @@ type cmdShell struct {
 }
 
 func (s cmdShell) prepare(command string) (*execContext, error) {
+	reader := bytes.NewReader([]byte(command))
+
 	return &execContext{
 		executable: s.executable,
-		args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", command},
+		args:       []string{"/D", "/E:ON", "/V:OFF"},
+		stdin:      reader,
 	}, nil
 }
 
