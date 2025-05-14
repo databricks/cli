@@ -14,5 +14,6 @@
 * Preserve folder structure for app source code in bundle generate ([#2848](https://github.com/databricks/cli/pull/2848))
 * Fixed normalising requirements file path in dependencies section ([#2861](https://github.com/databricks/cli/pull/2861))
 * Fix default-python template not to add environments when serverless=yes and include\_python=no ([#2866](https://github.com/databricks/cli/pull/2866))
+* Fixed handling of Unicode characters in Python support ([#2873](https://github.com/databricks/cli/pull/2873))
 
 ### API Changes
