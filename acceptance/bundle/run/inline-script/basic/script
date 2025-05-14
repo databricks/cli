@@ -14,7 +14,7 @@ rm stderr.txt
 
 # stdin should be passed through
 echo "abc" > abc.txt
-trace cat - < abc.txt
+trace $CLI bundle run -- cat - < abc.txt
 rm abc.txt
 
 # no newline
