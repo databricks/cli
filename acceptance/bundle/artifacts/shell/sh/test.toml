@@ -1,0 +1,3 @@
+# Differentiating on the basis of newlines does not work on Windows.
+[GOOS]
+windows = false
