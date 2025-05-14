@@ -41,8 +41,8 @@ Deployment complete!
 >>> [CLI] bundle run some_other_job --python-params param1,param2
 Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
-[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING 
-[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS 
+[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING
+[TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS
 Hello from my func
 Got arguments:
 ['my_test_code', 'param1', 'param2']

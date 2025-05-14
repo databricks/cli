@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 )
 
 func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
@@ -65,7 +66,8 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 			originalValue := dyn.NewValue(originalPath, v.Locations())
 			nv, nerr := t.rewriteValue(ctx, p, originalValue, fallback[key], opts)
 			if nerr == nil {
-				// TODO: Emit a warning that this path should be rewritten.
+				t.b.Metrics.AddBoolValue("is_job_path_fallback", true)
+				log.Warnf(ctx, "path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.", originalPath, fallback[key], v.Location())
 				return nv, nil
 			}
 		}
