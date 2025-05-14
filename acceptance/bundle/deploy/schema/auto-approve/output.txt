@@ -1,0 +1,48 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the schema is created
+>>> [CLI] schemas get main.test-schema-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME]",
+  "comment": "This schema was created from DABs"
+}
+
+=== Assert the pipeline is created and uses the schema
+>>> [CLI] pipelines get [UUID]
+{
+  "spec": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+    },
+    "development": true,
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/nb"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "target": "main.test-schema-[UNIQUE_NAME]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline foo
+  delete schema bar
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
