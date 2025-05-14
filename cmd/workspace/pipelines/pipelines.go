@@ -775,6 +775,7 @@ func newStartUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `What triggered this update. Supported values: [
   API_CALL,
+  INFRASTRUCTURE_MAINTENANCE,
   JOB_TASK,
   RETRY_ON_FAILURE,
   SCHEMA_CHANGE,

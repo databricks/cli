@@ -1,0 +1,13 @@
+targets:
+  default:
+    default: true
+    resources:
+      jobs:
+        test_job:
+          name: "Test Job"
+          environments:
+            - environment_key: "test_env_2"
+              spec:
+                client: "1"
+                dependencies:
+                  - "-r ../requirements.txt"

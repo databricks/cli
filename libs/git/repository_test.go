@@ -138,8 +138,8 @@ func TestRepository(t *testing.T) {
 	// Check that top level ignores work.
 	assert.True(t, tr.Ignore(".DS_Store"))
 	assert.True(t, tr.Ignore("foo.pyc"))
-	assert.False(t, tr.Ignore("vendor"))
-	assert.True(t, tr.Ignore("vendor/"))
+	assert.False(t, tr.Ignore("vendor/"))
+	assert.True(t, tr.Ignore("__pycache__/"))
 
 	// Check that ignores under testdata work.
 	assert.True(t, tr.Ignore("libs/git/testdata/root.ignoreme"))

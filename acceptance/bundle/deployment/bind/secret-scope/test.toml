@@ -1,0 +1,26 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/scopes/create"
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/scopes/list"
+Response.Body = '''
+{
+    "scopes": [
+        {
+            "backend_type": "DATABRICKS",
+            "name": "test-secret-scope-6260d50f-e8ff-4905-8f28-812345678903"
+        }
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/scopes/delete"

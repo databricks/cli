@@ -7,6 +7,7 @@ type Resources struct {
 	AibiDashboardEmbeddingAccessPolicySetting    map[string]any `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
 	AibiDashboardEmbeddingApprovedDomainsSetting map[string]any `json:"databricks_aibi_dashboard_embedding_approved_domains_setting,omitempty"`
 	Alert                                        map[string]any `json:"databricks_alert,omitempty"`
+	AlertV2                                      map[string]any `json:"databricks_alert_v2,omitempty"`
 	App                                          map[string]any `json:"databricks_app,omitempty"`
 	ArtifactAllowlist                            map[string]any `json:"databricks_artifact_allowlist,omitempty"`
 	AutomaticClusterUpdateWorkspaceSetting       map[string]any `json:"databricks_automatic_cluster_update_workspace_setting,omitempty"`
@@ -25,11 +26,13 @@ type Resources struct {
 	Credential                                   map[string]any `json:"databricks_credential,omitempty"`
 	CustomAppIntegration                         map[string]any `json:"databricks_custom_app_integration,omitempty"`
 	Dashboard                                    map[string]any `json:"databricks_dashboard,omitempty"`
+	DatabaseInstance                             map[string]any `json:"databricks_database_instance,omitempty"`
 	DbfsFile                                     map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DefaultNamespaceSetting                      map[string]any `json:"databricks_default_namespace_setting,omitempty"`
 	Directory                                    map[string]any `json:"databricks_directory,omitempty"`
 	DisableLegacyAccessSetting                   map[string]any `json:"databricks_disable_legacy_access_setting,omitempty"`
 	DisableLegacyDbfsSetting                     map[string]any `json:"databricks_disable_legacy_dbfs_setting,omitempty"`
+	DisableLegacyFeaturesSetting                 map[string]any `json:"databricks_disable_legacy_features_setting,omitempty"`
 	EnhancedSecurityMonitoringWorkspaceSetting   map[string]any `json:"databricks_enhanced_security_monitoring_workspace_setting,omitempty"`
 	Entitlements                                 map[string]any `json:"databricks_entitlements,omitempty"`
 	ExternalLocation                             map[string]any `json:"databricks_external_location,omitempty"`
@@ -120,6 +123,7 @@ func NewResources() *Resources {
 		AibiDashboardEmbeddingAccessPolicySetting:    make(map[string]any),
 		AibiDashboardEmbeddingApprovedDomainsSetting: make(map[string]any),
 		Alert:                                  make(map[string]any),
+		AlertV2:                                make(map[string]any),
 		App:                                    make(map[string]any),
 		ArtifactAllowlist:                      make(map[string]any),
 		AutomaticClusterUpdateWorkspaceSetting: make(map[string]any),
@@ -134,15 +138,17 @@ func NewResources() *Resources {
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
-		Connection:                 make(map[string]any),
-		Credential:                 make(map[string]any),
-		CustomAppIntegration:       make(map[string]any),
-		Dashboard:                  make(map[string]any),
-		DbfsFile:                   make(map[string]any),
-		DefaultNamespaceSetting:    make(map[string]any),
-		Directory:                  make(map[string]any),
-		DisableLegacyAccessSetting: make(map[string]any),
-		DisableLegacyDbfsSetting:   make(map[string]any),
+		Connection:                   make(map[string]any),
+		Credential:                   make(map[string]any),
+		CustomAppIntegration:         make(map[string]any),
+		Dashboard:                    make(map[string]any),
+		DatabaseInstance:             make(map[string]any),
+		DbfsFile:                     make(map[string]any),
+		DefaultNamespaceSetting:      make(map[string]any),
+		Directory:                    make(map[string]any),
+		DisableLegacyAccessSetting:   make(map[string]any),
+		DisableLegacyDbfsSetting:     make(map[string]any),
+		DisableLegacyFeaturesSetting: make(map[string]any),
 		EnhancedSecurityMonitoringWorkspaceSetting: make(map[string]any),
 		Entitlements:                   make(map[string]any),
 		ExternalLocation:               make(map[string]any),

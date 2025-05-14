@@ -3,6 +3,8 @@
 package schema
 
 type DataSources struct {
+	AlertV2                         map[string]any `json:"databricks_alert_v2,omitempty"`
+	AlertsV2                        map[string]any `json:"databricks_alerts_v2,omitempty"`
 	App                             map[string]any `json:"databricks_app,omitempty"`
 	Apps                            map[string]any `json:"databricks_apps,omitempty"`
 	AwsAssumeRolePolicy             map[string]any `json:"databricks_aws_assume_role_policy,omitempty"`
@@ -21,6 +23,8 @@ type DataSources struct {
 	CurrentMetastore                map[string]any `json:"databricks_current_metastore,omitempty"`
 	CurrentUser                     map[string]any `json:"databricks_current_user,omitempty"`
 	Dashboards                      map[string]any `json:"databricks_dashboards,omitempty"`
+	DatabaseInstance                map[string]any `json:"databricks_database_instance,omitempty"`
+	DatabaseInstances               map[string]any `json:"databricks_database_instances,omitempty"`
 	DbfsFile                        map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                   map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                       map[string]any `json:"databricks_directory,omitempty"`
@@ -71,6 +75,8 @@ type DataSources struct {
 
 func NewDataSources() *DataSources {
 	return &DataSources{
+		AlertV2:                         make(map[string]any),
+		AlertsV2:                        make(map[string]any),
 		App:                             make(map[string]any),
 		Apps:                            make(map[string]any),
 		AwsAssumeRolePolicy:             make(map[string]any),
@@ -89,6 +95,8 @@ func NewDataSources() *DataSources {
 		CurrentMetastore:                make(map[string]any),
 		CurrentUser:                     make(map[string]any),
 		Dashboards:                      make(map[string]any),
+		DatabaseInstance:                make(map[string]any),
+		DatabaseInstances:               make(map[string]any),
 		DbfsFile:                        make(map[string]any),
 		DbfsFilePaths:                   make(map[string]any),
 		Directory:                       make(map[string]any),
