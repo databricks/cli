@@ -17,6 +17,7 @@ import (
 	enable_notebook_table_clipboard "github.com/databricks/cli/cmd/workspace/enable-notebook-table-clipboard"
 	enable_results_downloading "github.com/databricks/cli/cmd/workspace/enable-results-downloading"
 	enhanced_security_monitoring "github.com/databricks/cli/cmd/workspace/enhanced-security-monitoring"
+	llm_proxy_partner_powered_workspace "github.com/databricks/cli/cmd/workspace/llm-proxy-partner-powered-workspace"
 	restrict_workspace_admins "github.com/databricks/cli/cmd/workspace/restrict-workspace-admins"
 )
 
@@ -48,6 +49,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(enable_notebook_table_clipboard.New())
 	cmd.AddCommand(enable_results_downloading.New())
 	cmd.AddCommand(enhanced_security_monitoring.New())
+	cmd.AddCommand(llm_proxy_partner_powered_workspace.New())
 	cmd.AddCommand(restrict_workspace_admins.New())
 
 	// Apply optional overrides to this command.

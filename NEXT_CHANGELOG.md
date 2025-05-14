@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### Dependency updates
+* Upgraded Go SDK to 0.69.0 ([#2867](https://github.com/databricks/cli/pull/2867))
 * Upgraded to TF provider 1.79.0 ([#2869](https://github.com/databricks/cli/pull/2869))
 
 ### CLI

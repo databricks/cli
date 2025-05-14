@@ -27,6 +27,7 @@ import (
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
+	database_instances "github.com/databricks/cli/cmd/workspace/database-instances"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
@@ -126,6 +127,7 @@ func All() []*cobra.Command {
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
 	out = append(out, data_sources.New())
+	out = append(out, database_instances.New())
 	out = append(out, experiments.New())
 	out = append(out, external_locations.New())
 	out = append(out, functions.New())

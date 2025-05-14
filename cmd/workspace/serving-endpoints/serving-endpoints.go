@@ -45,6 +45,7 @@ func New() *cobra.Command {
 	// Add methods
 	cmd.AddCommand(newBuildLogs())
 	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newCreateProvisionedThroughputEndpoint())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newExportMetrics())
 	cmd.AddCommand(newGet())
@@ -61,6 +62,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newUpdateConfig())
 	cmd.AddCommand(newUpdatePermissions())
+	cmd.AddCommand(newUpdateProvisionedThroughputEndpointConfig())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -233,6 +235,91 @@ func newCreate() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createOverrides {
 		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+// start create-provisioned-throughput-endpoint command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createProvisionedThroughputEndpointOverrides []func(
+	*cobra.Command,
+	*serving.CreatePtEndpointRequest,
+)
+
+func newCreateProvisionedThroughputEndpoint() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createProvisionedThroughputEndpointReq serving.CreatePtEndpointRequest
+	var createProvisionedThroughputEndpointJson flags.JsonFlag
+
+	var createProvisionedThroughputEndpointSkipWait bool
+	var createProvisionedThroughputEndpointTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createProvisionedThroughputEndpointSkipWait, "no-wait", createProvisionedThroughputEndpointSkipWait, `do not wait to reach NOT_UPDATING state`)
+	cmd.Flags().DurationVar(&createProvisionedThroughputEndpointTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
+	// TODO: short flags
+	cmd.Flags().Var(&createProvisionedThroughputEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: ai_gateway
+	cmd.Flags().StringVar(&createProvisionedThroughputEndpointReq.BudgetPolicyId, "budget-policy-id", createProvisionedThroughputEndpointReq.BudgetPolicyId, `The budget policy associated with the endpoint.`)
+	// TODO: array: tags
+
+	cmd.Use = "create-provisioned-throughput-endpoint"
+	cmd.Short = `Create a new PT serving endpoint.`
+	cmd.Long = `Create a new PT serving endpoint.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createProvisionedThroughputEndpointJson.Unmarshal(&createProvisionedThroughputEndpointReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		wait, err := w.ServingEndpoints.CreateProvisionedThroughputEndpoint(ctx, createProvisionedThroughputEndpointReq)
+		if err != nil {
+			return err
+		}
+		if createProvisionedThroughputEndpointSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createProvisionedThroughputEndpointTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createProvisionedThroughputEndpointOverrides {
+		fn(cmd, &createProvisionedThroughputEndpointReq)
 	}
 
 	return cmd
@@ -1322,6 +1409,100 @@ func newUpdatePermissions() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+// start update-provisioned-throughput-endpoint-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateProvisionedThroughputEndpointConfigOverrides []func(
+	*cobra.Command,
+	*serving.UpdateProvisionedThroughputEndpointConfigRequest,
+)
+
+func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateProvisionedThroughputEndpointConfigReq serving.UpdateProvisionedThroughputEndpointConfigRequest
+	var updateProvisionedThroughputEndpointConfigJson flags.JsonFlag
+
+	var updateProvisionedThroughputEndpointConfigSkipWait bool
+	var updateProvisionedThroughputEndpointConfigTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateProvisionedThroughputEndpointConfigSkipWait, "no-wait", updateProvisionedThroughputEndpointConfigSkipWait, `do not wait to reach NOT_UPDATING state`)
+	cmd.Flags().DurationVar(&updateProvisionedThroughputEndpointConfigTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
+	// TODO: short flags
+	cmd.Flags().Var(&updateProvisionedThroughputEndpointConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "update-provisioned-throughput-endpoint-config NAME"
+	cmd.Short = `Update config of a PT serving endpoint.`
+	cmd.Long = `Update config of a PT serving endpoint.
+  
+  Updates any combination of the pt endpoint's served entities, the compute
+  configuration of those served entities, and the endpoint's traffic config.
+  Updates are instantaneous and endpoint should be updated instantly
+
+  Arguments:
+    NAME: The name of the pt endpoint to update. This field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateProvisionedThroughputEndpointConfigJson.Unmarshal(&updateProvisionedThroughputEndpointConfigReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		updateProvisionedThroughputEndpointConfigReq.Name = args[0]
+
+		wait, err := w.ServingEndpoints.UpdateProvisionedThroughputEndpointConfig(ctx, updateProvisionedThroughputEndpointConfigReq)
+		if err != nil {
+			return err
+		}
+		if updateProvisionedThroughputEndpointConfigSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(updateProvisionedThroughputEndpointConfigTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateProvisionedThroughputEndpointConfigOverrides {
+		fn(cmd, &updateProvisionedThroughputEndpointConfigReq)
 	}
 
 	return cmd
