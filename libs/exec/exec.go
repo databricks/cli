@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	osexec "os/exec"
 )
 
@@ -34,16 +33,12 @@ type Command interface {
 }
 
 type command struct {
-	cmd         *osexec.Cmd
-	execContext *execContext
-	stdout      io.ReadCloser
-	stderr      io.ReadCloser
+	cmd    *osexec.Cmd
+	stdout io.ReadCloser
+	stderr io.ReadCloser
 }
 
 func (c *command) Wait() error {
-	// After the command has finished (cmd.Wait call), remove the temporary script file
-	defer os.Remove(c.execContext.scriptFile)
-
 	err := c.cmd.Wait()
 	if err != nil {
 		return err
@@ -92,25 +87,25 @@ func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Exe
 	}, nil
 }
 
-func (e *Executor) prepareCommand(ctx context.Context, command string) (*osexec.Cmd, *execContext, error) {
+func (e *Executor) prepareCommand(ctx context.Context, command string) (*osexec.Cmd, error) {
 	ec, err := e.shell.prepare(command)
-	if err != nil {
-		return nil, nil, err
-	}
-	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
-	cmd.Dir = e.dir
-	return cmd, ec, nil
-}
-
-func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
-	cmd, ec, err := e.prepareCommand(ctx, command)
 	if err != nil {
 		return nil, err
 	}
-	return e.start(ctx, cmd, ec)
+	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
+	cmd.Dir = e.dir
+	return cmd, nil
 }
 
-func (e *Executor) start(ctx context.Context, cmd *osexec.Cmd, ec *execContext) (Command, error) {
+func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
+	cmd, err := e.prepareCommand(ctx, command)
+	if err != nil {
+		return nil, err
+	}
+	return e.start(ctx, cmd)
+}
+
+func (e *Executor) start(ctx context.Context, cmd *osexec.Cmd) (Command, error) {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -121,15 +116,14 @@ func (e *Executor) start(ctx context.Context, cmd *osexec.Cmd, ec *execContext) 
 		return nil, err
 	}
 
-	return &command{cmd, ec, stdout, stderr}, cmd.Start()
+	return &command{cmd, stdout, stderr}, cmd.Start()
 }
 
 func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
-	cmd, ec, err := e.prepareCommand(ctx, command)
+	cmd, err := e.prepareCommand(ctx, command)
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(ec.scriptFile)
 	return cmd.CombinedOutput()
 }
 

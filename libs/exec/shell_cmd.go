@@ -10,15 +10,9 @@ type cmdShell struct {
 }
 
 func (s cmdShell) prepare(command string) (*execContext, error) {
-	filename, err := createTempScript(command, ".cmd")
-	if err != nil {
-		return nil, err
-	}
-
 	return &execContext{
 		executable: s.executable,
-		args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", "CALL " + filename},
-		scriptFile: filename,
+		args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", command},
 	}, nil
 }
 

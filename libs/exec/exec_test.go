@@ -116,24 +116,6 @@ func TestExecutorNoShellFound(t *testing.T) {
 	assert.ErrorContains(t, err, "no shell found")
 }
 
-func TestExecutorCleanupsTempFiles(t *testing.T) {
-	executor, err := NewCommandExecutor(".")
-	assert.NoError(t, err)
-
-	cmd, ec, err := executor.prepareCommand(context.Background(), "echo 'Hello'")
-	assert.NoError(t, err)
-
-	command, err := executor.start(context.Background(), cmd, ec)
-	assert.NoError(t, err)
-
-	fileName := ec.args[1]
-	assert.FileExists(t, fileName)
-
-	err = command.Wait()
-	assert.NoError(t, err)
-	assert.NoFileExists(t, fileName)
-}
-
 func TestMultipleCommandsRunInParrallel(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
