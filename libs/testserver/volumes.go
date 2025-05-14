@@ -3,8 +3,9 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"net/http"
+
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 func (s *FakeWorkspace) VolumesCreate(req Request) Response {

@@ -77,9 +77,4 @@ Deleting files...
 Destroy complete!
 
 === Assert the schema is deleted
->>> errcode [CLI] schemas get main.test-schema-[UNIQUE_NAME]
-Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
-
-Exit code: 1
-
 Exit code: 1
