@@ -653,9 +653,7 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 	}
 
 	args := []string{
-		"go", "build",
-		"-mod", "vendor",
-		"-o", execPath,
+		"go", "build", "-o", execPath,
 	}
 
 	if coverDir != "" {
