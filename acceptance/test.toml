@@ -22,4 +22,3 @@ EnvRepl.PYTHONUNBUFFERED = false
 # 1. Absolute paths typically reference files within Databricks workspaces, not local filesystem paths
 # 2. For local file references, our tests predominantly use relative paths
 Env.MSYS_NO_PATHCONV = "1"
-EnvRepl.MSYS_NO_PATHCONV = false
