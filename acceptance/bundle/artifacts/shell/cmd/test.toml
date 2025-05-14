@@ -1,4 +1,4 @@
 # cmd.exe is only available on Windows.
 [GOOS]
-mac = false
+darwin = false
 linux = false
