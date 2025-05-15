@@ -395,9 +395,15 @@ func runTest(t *testing.T,
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	toIgnore := applyBundleConfig(t, tmpDir, config.BundleConfig)
-	if toIgnore != "" {
-		inputs[toIgnore] = true
+	if config.BundleConfigTarget == nil || *config.BundleConfigTarget != "" {
+		bundleConfigTarget := "databricks.yml"
+		if config.BundleConfigTarget != nil {
+			bundleConfigTarget = *config.BundleConfigTarget
+		}
+		configCreated := applyBundleConfig(t, tmpDir, config.BundleConfig, bundleConfigTarget)
+		if configCreated {
+			inputs[bundleConfigTarget] = true
+		}
 	}
 
 	timeout := config.Timeout
@@ -1009,7 +1015,9 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	return latestWheel
 }
 
-func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any) string {
+// Applies BundleConfig setting to databricks.yml and writes updated databricks.yml if there were any changes
+// Returns true if new file was created.
+func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any, bundleConfigTarget string) bool {
 	validConfig := make(map[string]map[string]any, len(bundleConfig))
 
 	for _, configName := range utils.SortedKeys(bundleConfig) {
@@ -1018,6 +1026,7 @@ func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any)
 			continue
 		}
 		// either "" or a map are allowed
+		// Empty string can be used to disable an update that was defined in parent config
 		cfg, ok := configValue.(map[string]any)
 		if !ok {
 			t.Fatalf("Unexpected type for BundleConfig.%s: %#v", configName, configValue)
@@ -1026,29 +1035,11 @@ func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any)
 	}
 
 	if len(validConfig) == 0 {
-		return ""
+		return false
 	}
 
-	var configPath, configData string
-	filenames := []string{"databricks.yml", "databricks.yml.tmpl"}
-
-	for _, filename := range filenames {
-		path := filepath.Join(tmpDir, filename)
-		exists := false
-		configData, exists = tryReading(t, path)
-		if exists {
-			configPath = path
-			break
-		}
-	}
-
-	toIgnore := ""
-
-	if configPath == "" {
-		configPath = filepath.Join(tmpDir, filenames[0])
-		toIgnore = filenames[0]
-		configData = ""
-	}
+	configPath := filepath.Join(tmpDir, bundleConfigTarget)
+	configData, configExists := tryReading(t, configPath)
 
 	newConfigData := configData
 	var applied []string
@@ -1068,12 +1059,12 @@ func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any)
 	}
 
 	if newConfigData != configData {
-		t.Logf("Writing updated bundle config to %s. BundleConfig sections: %s", filepath.Base(configPath), strings.Join(applied, ", "))
+		t.Logf("Writing updated bundle config to %s. BundleConfig sections: %s", bundleConfigTarget, strings.Join(applied, ", "))
 		testutil.WriteFile(t, configPath, newConfigData)
-		return toIgnore
+		return !configExists
 	}
 
-	return ""
+	return false
 }
 
 // Returns true if both strings are deep-equal after unmarshalling
