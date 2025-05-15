@@ -4,7 +4,7 @@ Building my_test_code...
 Building my_test_code_2...
 Uploading my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -20,10 +20,10 @@ my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl
     "existing_cluster_id": "0717-132531-5opeqon1",
     "libraries": [
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
       },
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code_2-0.0.1-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code_2-0.0.1-py3-none-any.whl"
       }
     ],
     "python_wheel_task": {
@@ -36,7 +36,7 @@ my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl
 
 === Expecting 2 wheels to be uploaded
 >>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code_2-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code_2-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl"

@@ -4,7 +4,7 @@
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/development/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/development/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -28,11 +28,11 @@
 }
 
 >>> [CLI] bundle validate -t development
-Name: override_job_cluster
+Name: test-bundle
 Target: development
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/override_job_cluster/development
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/development
 
 Validation OK!
 
@@ -41,7 +41,7 @@ Validation OK!
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/staging/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/staging/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -65,10 +65,10 @@ Validation OK!
 }
 
 >>> [CLI] bundle validate -t staging
-Name: override_job_cluster
+Name: test-bundle
 Target: staging
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/override_job_cluster/staging
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/staging
 
 Validation OK!

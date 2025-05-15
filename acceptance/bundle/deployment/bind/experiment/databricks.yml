@@ -1,6 +1,3 @@
-bundle:
-  name: bind-ml-experiment-test-$UNIQUE_NAME
-
 resources:
   experiments:
     experiment1:

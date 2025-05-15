@@ -1,6 +1,3 @@
-bundle:
-  name: override_pipeline_cluster
-
 resources:
   pipelines:
     foo:

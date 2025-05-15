@@ -1,6 +1,5 @@
 bundle:
-  name: bind-model-serving-endpoint-test-[UNIQUE_NAME]
-
+  name: test-bundle-[UNIQUE_NAME]
 resources:
   model_serving_endpoints:
     endpoint1:
@@ -33,7 +32,7 @@ Updating deployment state...
 Successfully bound model_serving_endpoint with an id 'test-endpoint-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-model-serving-endpoint-test-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -53,7 +52,7 @@ Deployment complete!
 Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-model-serving-endpoint-test-[UNIQUE_NAME]/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
