@@ -1,0 +1,104 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the pipeline is created
+>>> [CLI] pipelines get [UUID]
+{
+  "spec": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-bundle-pipeline-[UNIQUE_NAME]",
+    "storage": "dbfs:/pipelines/[UUID]"
+  }
+}
+
+=== Assert the job is created
+>>> [CLI] jobs get 873053288855182
+{
+  "created_time":1747311866507,
+  "creator_user_name":"[USERNAME]",
+  "job_id":873053288855182,
+  "run_as_user_name":"[USERNAME]",
+  "settings": {
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+    },
+    "edit_mode":"UI_LOCKED",
+    "email_notifications": {},
+    "format":"MULTI_TASK",
+    "max_concurrent_runs":1,
+    "name":"test-bundle-job-[UNIQUE_NAME]",
+    "queue": {
+      "enabled":true
+    },
+    "tasks": [
+      {
+        "email_notifications": {},
+        "new_cluster": {
+          "aws_attributes": {
+            "availability":"SPOT_WITH_FALLBACK",
+            "zone_id":"us-east-1c"
+          },
+          "data_security_mode":"SINGLE_USER",
+          "enable_elastic_disk":false,
+          "node_type_id":"[NODE_TYPE_ID]",
+          "num_workers":1,
+          "spark_version":"13.3.x-snapshot-scala2.12"
+        },
+        "notebook_task": {
+          "notebook_path":"/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/bar",
+          "source":"WORKSPACE"
+        },
+        "run_if":"ALL_SUCCESS",
+        "task_key":"my_notebook_task",
+        "timeout_seconds":0
+      }
+    ],
+    "timeout_seconds":0,
+    "webhook_notifications": {}
+  }
+}
+
+=== Remove resources from configuration.
+>>> rm resources.yml
+
+=== Try to redeploy the bundle - should fail without --auto-approve
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  delete pipeline bar
+Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
+
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job foo
+  delete pipeline bar
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1
