@@ -219,7 +219,9 @@ func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
 	pipelineId := uuid.New().String()
 
 	r.Id = pipelineId
-	r.Storage = "dbfs:/pipelines/" + pipelineId
+	if r.Catalog == "" {
+		r.Storage = "dbfs:/pipelines/" + pipelineId
+	}
 	s.Pipelines[pipelineId] = r
 
 	return Response{

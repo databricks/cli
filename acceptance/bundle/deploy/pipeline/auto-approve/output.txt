@@ -29,8 +29,7 @@ Deployment complete!
 }
 
 === Assert the job is created{
-  "name": null,
-  "queue": null
+  "name": "test-bundle-job-[UNIQUE_NAME]"
 }
 
 === Remove resources from configuration.
