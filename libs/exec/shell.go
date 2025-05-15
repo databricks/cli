@@ -3,7 +3,6 @@ package exec
 import (
 	"errors"
 	"io"
-	"os"
 )
 
 type shell interface {
@@ -14,7 +13,7 @@ type shell interface {
 type execContext struct {
 	executable string
 	args       []string
-	scriptFile string
+	stdin      io.Reader
 }
 
 func findShell() (shell, error) {
@@ -34,22 +33,4 @@ func findShell() (shell, error) {
 	}
 
 	return nil, errors.New("no shell found")
-}
-
-func createTempScript(command, extension string) (string, error) {
-	file, err := os.CreateTemp(os.TempDir(), "cli-exec*"+extension)
-	if err != nil {
-		return "", err
-	}
-
-	defer file.Close()
-
-	_, err = io.WriteString(file, command)
-	if err != nil {
-		// Try to remove the file if we failed to write to it
-		os.Remove(file.Name())
-		return "", err
-	}
-
-	return file.Name(), nil
 }
