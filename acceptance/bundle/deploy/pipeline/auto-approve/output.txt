@@ -29,7 +29,6 @@ Deployment complete!
 }
 
 === Assert the job is created{
-  "job_id": [NUMID],
   "name": null,
   "queue": null
 }
