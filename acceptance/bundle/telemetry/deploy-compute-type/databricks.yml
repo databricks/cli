@@ -20,23 +20,11 @@ targets:
             - task_key: task1
               notebook_task:
                 notebook_path: ./notebook.py
-
-  two:
-   resources:
-      jobs:
-        my_job:
-          tasks:
-            - task_key: task1
-              environment_key: env
+            - task_key: task2
+              existing_cluster_id: "1234"
               spark_python_task:
                 python_file: ./test.py
-
-  three:
-   resources:
-      jobs:
-        my_job:
-          tasks:
-            - task_key: task1
+            - task_key: task3
               new_cluster:
                 spark_version: 15.4.x-scala2.12
                 node_type_id: i3.xlarge
@@ -47,19 +35,15 @@ targets:
                     spark.databricks.cluster.profile: singleNode
                 custom_tags:
                   ResourceClass: SingleNode
-
               spark_python_task:
                 python_file: ./test.py
 
-  four:
+  two:
    resources:
       jobs:
         my_job:
           tasks:
             - task_key: task1
-              existing_cluster_id: "1234"
+              environment_key: env
               spark_python_task:
                 python_file: ./test.py
-            - task_key: task2
-              notebook_task:
-                notebook_path: ./notebook.py
