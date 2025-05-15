@@ -1071,6 +1071,10 @@ func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any,
 func isSameYAMLContent(str1, str2 string) bool {
 	var obj1, obj2 any
 
+	if str1 == str2 {
+		return true
+	}
+
 	if err := yaml.Unmarshal([]byte(str1), &obj1); err != nil {
 		return false
 	}
