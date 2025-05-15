@@ -218,6 +218,7 @@ func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
 
 	pipelineId := uuid.New().String()
 
+	r.Id = pipelineId
 	s.Pipelines[pipelineId] = r
 
 	return Response{
