@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+title "deploy empty bundle"
+trace $CLI bundle deploy --fail-on-active-runs
+
+title "Remove .databricks directory to simulate a fresh deployment"
+rm -rf .databricks
+
+title "deploy empty bundle again"
+trace $CLI bundle deploy --fail-on-active-runs

@@ -1,0 +1,25 @@
+bundle:
+  name: deploy-jobs-test-$UNIQUE_NAME
+
+variables:
+  task__key: # Note: the variable has double underscore
+    default: my_notebook_task
+
+resources:
+  jobs:
+    foo__bar: # Note: the resource has double underscore to check that TF provider can use such names
+      name: test-job-basic-$UNIQUE_NAME
+      tasks:
+        - task_key: ${var.task__key}
+          new_cluster:
+            num_workers: 1
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+          spark_python_task:
+            python_file: ./hello_world.py
+    foo:
+      name: test-job-basic-ref-$UNIQUE_NAME
+      tasks:
+        - task_key: job_task
+          run_job_task:
+            job_id: ${resources.jobs.foo__bar.id}
