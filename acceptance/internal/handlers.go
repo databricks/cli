@@ -190,8 +190,7 @@ func addDefaultHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
-		pipelineId := req.Vars["pipeline_id"]
-		return req.Workspace.PipelinesDelete(pipelineId)
+		return testserver.MapDelete(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {

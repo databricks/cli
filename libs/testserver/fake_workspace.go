@@ -228,16 +228,6 @@ func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
 	}
 }
 
-func (s *FakeWorkspace) PipelinesDelete(pipelineId string) Response {
-	defer s.LockUnlock()()
-
-	delete(s.Pipelines, pipelineId)
-
-	return Response{
-		Body: pipelines.DeletePipelineResponse{},
-	}
-}
-
 func (s *FakeWorkspace) JobsGet(jobId string) Response {
 	id := jobId
 
