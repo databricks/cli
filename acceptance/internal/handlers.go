@@ -161,8 +161,7 @@ func addDefaultHandlers(server *testserver.Server) {
 				StatusCode: 500,
 			}
 		}
-
-		return req.Workspace.JobsDelete(request)
+		return testserver.MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req testserver.Request) any {
