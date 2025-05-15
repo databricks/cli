@@ -1,0 +1,44 @@
+bundle:
+  name: job-read-secret-example
+
+# workspace:
+#   host: https://myworkspace.cloud.databricks.com
+
+resources:
+  secret_scopes:
+    my_secret_scope:
+      name: prod-secrets-scope
+      permissions:
+        - level: VIEW
+          group_name: users
+        - level: MANAGE
+          group_name: admins
+  jobs:
+    example_python_job:
+      name: "example-python-job"
+      parameters:
+        - name: "scope_name"
+          default: ${resources.secret_scopes.my_secret_scope.name}
+      tasks:
+        - task_key: example_python_task
+          spark_python_task:
+            python_file: "src/example_spark_python_task.py"
+            parameters:
+              - --scope_name={{job.parameters.scope_name}}
+
+# Defines the targets for this bundle.
+# Targets allow you to deploy the same bundle to different Databricks workspaces.
+targets:
+  prod: { 
+    # No overrides
+  }
+  dev:
+    # This target is for development purposes.
+    # It defaults to the current Databricks workspace.
+    default: true
+    mode: development
+    resources:
+      secret_scopes:
+        my_secret_scope:
+          name: ${workspace.current_user.short_name}-my-secrets
+    
