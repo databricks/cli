@@ -153,6 +153,17 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.JobsCreate(request)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/delete", func(req testserver.Request) any {
+		var request jobs.DeleteJob
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+		return testserver.MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
+	})
+
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req testserver.Request) any {
 		var request jobs.ResetJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
