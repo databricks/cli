@@ -1,10 +1,10 @@
 Local = true
 Cloud = true
 
-[[Repls]]
-Old = "[0-9]{3,}"
-New = "[NUMID]"
-
 Ignore = [
     "databricks.yml"
 ]
+
+[[Repls]]
+Old = "[0-9]{3,}"
+New = "[NUMID]"
