@@ -1,0 +1,10 @@
+Cloud=true
+Local=true
+
+Ignore = [
+    "config.json"
+]
+
+[[Repls]]
+Old = "[0-9]{1,}"
+New = "[NUMBER]"

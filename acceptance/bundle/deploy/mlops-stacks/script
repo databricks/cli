@@ -1,0 +1,27 @@
+if [ -z "${CLOUD_ENV_BASE}" ]; then
+    CLOUD_ENV_BASE="azure" # pick one of the clouds for the local test (other valid values: "aws", "gcp")
+fi
+
+envsubst < config.json.tmpl > config.json
+trace cat config.json
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+  cd ../..
+  rm -rf test_repo_mlops_stacks
+}
+trap cleanup EXIT
+
+trace $CLI bundle init mlops-stacks --config-file config.json
+trace cat test_repo_mlops_stacks/README.md | head -n 4
+
+cd "test_repo_mlops_stacks/project_name_${UNIQUE_NAME}" || exit 1
+
+trace $CLI bundle summary
+trace $CLI bundle validate
+trace $CLI bundle deploy
+trace $CLI bundle summary --output json
+
+title "Assert the batch inference job actually exists"
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.batch_inference_job.id')
+$CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'

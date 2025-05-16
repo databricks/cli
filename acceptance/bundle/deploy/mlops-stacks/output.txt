@@ -1,0 +1,387 @@
+
+>>> cat config.json
+{
+  "input_project_name": "project_name_[UNIQUE_NAME]",
+  "input_root_dir": "test_repo_mlops_stacks",
+  "input_include_models_in_unity_catalog": "no",
+  "input_cloud": "[CLOUD_ENV_BASE]"
+}
+
+>>> [CLI] bundle init mlops-stacks --config-file config.json
+Welcome to MLOps Stacks. For detailed information on project generation, see the README at https://github.com/databricks/mlops-stacks/blob/main/README.md.
+
+*** Your MLOps Stack has been created in the 'test_repo_mlops_stacks/project_name_[UNIQUE_NAME]' directory! ***
+
+Please refer to the README.md for further instructions on getting started.
+
+>>> cat test_repo_mlops_stacks/README.md
+# test_repo_mlops_stacks
+
+This directory contains an ML project based on the default
+[Databricks MLOps Stacks](https://github.com/databricks/mlops-stacks),
+
+>>> [CLI] bundle summary
+Name: project_name_[UNIQUE_NAME]
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+Resources:
+  Experiments:
+    experiment:
+      Name: /Users/[USERNAME]/[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-experiment
+      URL:  (not deployed)
+  Jobs:
+    batch_inference_job:
+      Name: [dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-batch-inference-job
+      URL:  (not deployed)
+    model_training_job:
+      Name: [dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model-training-job
+      URL:  (not deployed)
+  Models:
+    model:
+      Name: [dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model
+      URL:  (not deployed)
+
+>>> [CLI] bundle validate
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:[NUMBER]:[NUMBER]
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:[NUMBER]:[NUMBER]
+
+Name: project_name_[UNIQUE_NAME]
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+
+Found [NUMBER] warnings
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:[NUMBER]:[NUMBER]
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:[NUMBER]:[NUMBER]
+
+
+>>> [CLI] bundle summary --output json
+{
+  "variables": {
+    "experiment_name": {
+      "default": "/Users/[USERNAME]/dev-project_name_[UNIQUE_NAME]-experiment",
+      "description": "Experiment name for the model training.",
+      "value": "/Users/[USERNAME]/dev-project_name_[UNIQUE_NAME]-experiment"
+    },
+    "model_name": {
+      "default": "dev-project_name_[UNIQUE_NAME]-model",
+      "description": "Model name for the model training.",
+      "value": "dev-project_name_[UNIQUE_NAME]-model"
+    }
+  },
+  "bundle": {
+    "name": "project_name_[UNIQUE_NAME]",
+    "target": "dev",
+    "environment": "dev",
+    "terraform": {
+      "exec_path": "[TERRAFORM]"
+    },
+    "git": {
+      "bundle_root_path": "."
+    },
+    "mode": "development",
+    "deployment": {
+      "lock": {
+        "enabled": false
+      }
+    },
+    "uuid": "[UUID]"
+  },
+  "include": [
+    "resources/batch-inference-workflow-resource.yml",
+    "resources/ml-artifacts-resource.yml",
+    "resources/model-workflow-resource.yml"
+  ],
+  "workspace": {
+    "current_user": {
+      "active": true,
+      "displayName": "[USERNAME]",
+      "emails": [
+        {
+          "primary": true,
+          "type": "work",
+          "value": "[USERNAME]"
+        }
+      ],
+      "entitlements": [
+        {
+          "value": "allow-cluster-create"
+        },
+        {
+          "value": "allow-instance-pool-create"
+        }
+      ],
+      "groups": [
+        {
+          "$ref": "Groups/[USERGROUP]",
+          "display": "admins",
+          "type": "direct",
+          "value": "[USERGROUP]"
+        }
+      ],
+      "id": "[USERID]",
+      "name": {
+        "givenName": "[USERNAME]"
+      },
+      "schemas": [
+        "urn:ietf:params:scim:schemas:core:[NUMBER].[NUMBER]:User",
+        "urn:ietf:params:scim:schemas:extension:workspace:[NUMBER].[NUMBER]:User"
+      ],
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/resources",
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state"
+  },
+  "resources": {
+    "jobs": {
+      "batch_inference_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "id": "[NUMBER]",
+        "max_concurrent_runs": [NUMBER],
+        "name": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-batch-inference-job",
+        "permissions": [
+          {
+            "level": "CAN_VIEW",
+            "group_name": "users"
+          }
+        ],
+        "queue": {
+          "enabled": true
+        },
+        "schedule": {
+          "pause_status": "PAUSED",
+          "quartz_cron_expression": "[NUMBER] [NUMBER] [NUMBER] * * ?",
+          "timezone_id": "UTC"
+        },
+        "tags": {
+          "dev": "[USERNAME]"
+        },
+        "tasks": [
+          {
+            "new_cluster": {
+              "custom_tags": {
+                "clusterSource": "mlops-stacks_[NUMBER].[NUMBER]"
+              },
+              "data_security_mode": "SINGLE_USER",
+              "node_type_id": "[NODE_TYPE_ID]",
+              "num_workers": [NUMBER],
+              "spark_version": "[NUMBER].[NUMBER].x-cpu-ml-scala[NUMBER].[NUMBER]"
+            },
+            "notebook_task": {
+              "base_parameters": {
+                "env": "dev",
+                "git_source_info": "url:; branch:; commit:",
+                "input_table_name": "taxi_scoring_sample",
+                "model_name": "dev-project_name_[UNIQUE_NAME]-model",
+                "output_table_name": "dev_project_name_[UNIQUE_NAME]_predictions"
+              },
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/deployment/batch_inference/notebooks/BatchInference"
+            },
+            "task_key": "batch_inference_job"
+          }
+        ],
+        "url": "[DATABRICKS_URL]/jobs/[NUMBER]?o=[NUMBER]"
+      },
+      "model_training_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "id": "[NUMBER]",
+        "job_clusters": [
+          {
+            "job_cluster_key": "model_training_job_cluster",
+            "new_cluster": {
+              "custom_tags": {
+                "clusterSource": "mlops-stacks_[NUMBER].[NUMBER]"
+              },
+              "data_security_mode": "SINGLE_USER",
+              "node_type_id": "[NODE_TYPE_ID]",
+              "num_workers": [NUMBER],
+              "spark_version": "[NUMBER].[NUMBER].x-cpu-ml-scala[NUMBER].[NUMBER]"
+            }
+          }
+        ],
+        "max_concurrent_runs": [NUMBER],
+        "name": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model-training-job",
+        "permissions": [
+          {
+            "level": "CAN_VIEW",
+            "group_name": "users"
+          }
+        ],
+        "queue": {
+          "enabled": true
+        },
+        "schedule": {
+          "pause_status": "PAUSED",
+          "quartz_cron_expression": "[NUMBER] [NUMBER] [NUMBER] * * ?",
+          "timezone_id": "UTC"
+        },
+        "tags": {
+          "dev": "[USERNAME]"
+        },
+        "tasks": [
+          {
+            "job_cluster_key": "model_training_job_cluster",
+            "notebook_task": {
+              "base_parameters": {
+                "env": "dev",
+                "experiment_name": "/Users/[USERNAME]/dev-project_name_[UNIQUE_NAME]-experiment",
+                "git_source_info": "url:; branch:; commit:",
+                "model_name": "dev-project_name_[UNIQUE_NAME]-model",
+                "training_data_path": "/databricks-datasets/nyctaxi-with-zipcodes/subsampled"
+              },
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/training/notebooks/Train"
+            },
+            "task_key": "Train"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "Train"
+              }
+            ],
+            "job_cluster_key": "model_training_job_cluster",
+            "notebook_task": {
+              "base_parameters": {
+                "custom_metrics_loader_function": "custom_metrics",
+                "enable_baseline_comparison": "false",
+                "evaluator_config_loader_function": "evaluator_config",
+                "experiment_name": "/Users/[USERNAME]/dev-project_name_[UNIQUE_NAME]-experiment",
+                "git_source_info": "url:; branch:; commit:",
+                "model_type": "regressor",
+                "run_mode": "dry_run",
+                "targets": "fare_amount",
+                "validation_input": "SELECT * FROM delta.`dbfs:/databricks-datasets/nyctaxi-with-zipcodes/subsampled`",
+                "validation_thresholds_loader_function": "validation_thresholds"
+              },
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/validation/notebooks/ModelValidation"
+            },
+            "task_key": "ModelValidation"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "ModelValidation"
+              }
+            ],
+            "job_cluster_key": "model_training_job_cluster",
+            "notebook_task": {
+              "base_parameters": {
+                "env": "dev",
+                "git_source_info": "url:; branch:; commit:"
+              },
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/deployment/model_deployment/notebooks/ModelDeployment"
+            },
+            "task_key": "ModelDeployment"
+          }
+        ],
+        "url": "[DATABRICKS_URL]/jobs/[NUMBER]?o=[NUMBER]"
+      }
+    },
+    "models": {
+      "model": {
+        "description": "MLflow registered model for the \"project_name_[UNIQUE_NAME]\" ML Project for dev deployment target.",
+        "id": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model",
+        "name": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model",
+        "permissions": [
+          {
+            "level": "CAN_READ",
+            "group_name": "users"
+          }
+        ],
+        "tags": [
+          {
+            "key": "dev",
+            "value": "[USERNAME]"
+          }
+        ],
+        "url": "[DATABRICKS_URL]/ml/models/%[NUMBER]Bdev%[NUMBER][USERNAME]%[NUMBER]D%[NUMBER]dev-project_name_[UNIQUE_NAME]-model?o=[NUMBER]"
+      }
+    },
+    "experiments": {
+      "experiment": {
+        "id": "[NUMBER]",
+        "name": "/Users/[USERNAME]/[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-experiment",
+        "permissions": [
+          {
+            "level": "CAN_READ",
+            "group_name": "users"
+          }
+        ],
+        "tags": [
+          {
+            "key": "dev",
+            "value": "[USERNAME]"
+          }
+        ],
+        "url": "[DATABRICKS_URL]/ml/experiments/[NUMBER]?o=[NUMBER]"
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "presets": {
+    "name_prefix": "[dev [USERNAME]] ",
+    "pipelines_development": true,
+    "trigger_pause_status": "PAUSED",
+    "jobs_max_concurrent_runs": [NUMBER],
+    "tags": {
+      "dev": "[USERNAME]"
+    }
+  }
+}
+
+=== Assert the batch inference job actually exists{
+  "name": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-batch-inference-job"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job batch_inference_job
+  delete job model_training_job
+  delete mlflow_experiment experiment
+  delete mlflow_model model
+  delete permissions job_batch_inference_job
+  delete permissions job_model_training_job
+  delete permissions mlflow_experiment_experiment
+  delete permissions mlflow_model_model
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
