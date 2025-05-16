@@ -4,7 +4,7 @@ bundle:
 resources:
   jobs:
     foo:
-      name: test-job-basic-{{.unique_id}}
+      name: test-jobs-active-runs-$UNIQUE_NAME
       tasks:
         - task_key: my_notebook_task
           new_cluster:
