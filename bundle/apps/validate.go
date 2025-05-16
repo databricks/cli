@@ -20,7 +20,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 				Severity:  diag.Error,
 				Summary:   "Missing app source code path",
 				Detail:    fmt.Sprintf("app resource '%s' is missing required source_code_path field", key),
-				Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s", key)),
+				Locations: b.Config.GetLocations("resources.apps." + key),
 			})
 			continue
 		}
