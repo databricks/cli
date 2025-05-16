@@ -219,6 +219,13 @@ func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
 	pipelineId := uuid.New().String()
 
 	r.Id = pipelineId
+
+	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
+	// and if the storage location is not specified, API automatically generates a storage location
+	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
+	if r.Storage == "" && r.Catalog == "" {
+		r.Storage = "dbfs:/pipelines/" + pipelineId
+	}
 	s.Pipelines[pipelineId] = r
 
 	return Response{
