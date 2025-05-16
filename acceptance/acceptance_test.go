@@ -257,7 +257,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		})
 	}
 
-	t.Logf("Summary: %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
+	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return len(testDirs)
 }
@@ -471,7 +471,11 @@ func runTest(t *testing.T,
 	require.NoError(t, err)
 	defer out.Close()
 
-	err = runWithLog(t, cmd, out, tailOutput)
+	skipReason, err := runWithLog(t, cmd, out, tailOutput)
+
+	if skipReason != "" {
+		t.Skip("Skipping based on output: " + skipReason)
+	}
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -847,7 +851,7 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
@@ -863,13 +867,15 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	start := time.Now()
 	err := cmd.Start()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	go func() {
 		processErrCh <- cmd.Wait()
 		_ = w.Close()
 	}()
+
+	mostRecentLine := ""
 
 	reader := bufio.NewReader(r)
 	for {
@@ -882,6 +888,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 			}
 		}
 		if len(line) > 0 {
+			mostRecentLine = line
 			_, err = out.WriteString(line)
 			require.NoError(t, err)
 		}
@@ -891,7 +898,13 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 		require.NoError(t, err)
 	}
 
-	return <-processErrCh
+	mostRecentLine = strings.TrimRight(mostRecentLine, "\n")
+	skipReason := ""
+	if strings.HasPrefix(mostRecentLine, "SKIP_TEST") {
+		skipReason = mostRecentLine
+	}
+
+	return skipReason, <-processErrCh
 }
 
 func getCloudEnvBase(cloudEnv string) string {
