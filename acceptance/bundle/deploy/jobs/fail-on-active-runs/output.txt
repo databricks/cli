@@ -26,7 +26,6 @@ Deployment complete!
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete job foo
-  delete job foo__bar
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default
 
