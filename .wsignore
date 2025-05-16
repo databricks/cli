@@ -17,10 +17,6 @@ experimental/python/docs/images/databricks-logo.svg
 # In order to prevent that difference, hello.txt does not have a trailing newline.
 acceptance/selftest/record_cloud/volume-io/hello.txt
 
-# "bundle run" has trailing whitespace:
-acceptance/bundle/integration_whl/*/output.txt
-acceptance/bundle/run/basic/output.txt
-
 # "bundle init" has trailing whitespace:
 acceptance/bundle/templates-machinery/helpers-error/output.txt
 

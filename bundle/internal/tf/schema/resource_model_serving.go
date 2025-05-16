@@ -163,6 +163,7 @@ type ResourceModelServingConfigServedEntities struct {
 	MaxProvisionedThroughput int                                                    `json:"max_provisioned_throughput,omitempty"`
 	MinProvisionedThroughput int                                                    `json:"min_provisioned_throughput,omitempty"`
 	Name                     string                                                 `json:"name,omitempty"`
+	ProvisionedModelUnits    int                                                    `json:"provisioned_model_units,omitempty"`
 	ScaleToZeroEnabled       bool                                                   `json:"scale_to_zero_enabled,omitempty"`
 	WorkloadSize             string                                                 `json:"workload_size,omitempty"`
 	WorkloadType             string                                                 `json:"workload_type,omitempty"`
@@ -177,6 +178,7 @@ type ResourceModelServingConfigServedModels struct {
 	ModelName                string            `json:"model_name"`
 	ModelVersion             string            `json:"model_version"`
 	Name                     string            `json:"name,omitempty"`
+	ProvisionedModelUnits    int               `json:"provisioned_model_units,omitempty"`
 	ScaleToZeroEnabled       bool              `json:"scale_to_zero_enabled,omitempty"`
 	WorkloadSize             string            `json:"workload_size,omitempty"`
 	WorkloadType             string            `json:"workload_type,omitempty"`

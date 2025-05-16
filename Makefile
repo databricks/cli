@@ -1,4 +1,4 @@
-default: tidy vendor fmt lint ws
+default: tidy fmt lint ws
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -43,14 +43,11 @@ showcover:
 acc-showcover:
 	go tool cover -html=coverage-acceptance.txt
 
-build: tidy vendor
-	go build -mod vendor
+build: tidy
+	go build
 
 snapshot:
 	go build -o .databricks/databricks
-
-vendor:
-	go mod vendor
 
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
@@ -60,16 +57,19 @@ docs:
 
 INTEGRATION = go tool gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
 
-integration: vendor
+integration:
 	$(INTEGRATION)
 
-integration-short: vendor
+integration-short:
 	VERBOSE_TEST=1 $(INTEGRATION) -short
 
 generate:
 	genkit update-sdk
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
+# tagging.yml is automatically synced by update-sdk command and contains a reference to tagging.py in root
+# since we move tagging.py to different folder, we need to update this reference here as well
+	[ ! -f .github/workflows/tagging.yml ] || sed -i '' 's/python tagging.py/python internal\/genkit\/tagging.py/g' .github/workflows/tagging.yml
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot vendor schema integration integration-short acc-cover acc-showcover docs ws
+.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws

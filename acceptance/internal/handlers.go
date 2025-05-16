@@ -119,6 +119,18 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.WorkspaceFilesExportFile(path)
 	})
 
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req testserver.Request) any {
+		return testserver.Response{
+			Body: "dir path: " + req.Vars["dir_path"],
+		}
+	})
+
+	server.Handle("PUT", "/api/2.0/fs/files/{path:.*}", func(req testserver.Request) any {
+		path := req.Vars["path"]
+		req.Workspace.WorkspaceFilesImportFile(path, req.Body)
+		return ""
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
 		return TestMetastore
 	})
@@ -153,6 +165,17 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.JobsCreate(request)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/delete", func(req testserver.Request) any {
+		var request jobs.DeleteJob
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+		return testserver.MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
+	})
+
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req testserver.Request) any {
 		var request jobs.ResetJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -175,6 +198,10 @@ func addDefaultHandlers(server *testserver.Server) {
 		}
 
 		return req.Workspace.PipelinesCreate(request)
+	})
+
+	server.Handle("DELETE", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
@@ -295,5 +322,9 @@ func addDefaultHandlers(server *testserver.Server) {
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req testserver.Request) any {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req testserver.Request) any {
+		return req.Workspace.VolumesCreate(req)
 	})
 }

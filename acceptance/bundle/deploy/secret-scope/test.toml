@@ -1,0 +1,75 @@
+Cloud = true
+Local = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/scopes/create"
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/scopes/list"
+Response.Body = '''
+{
+    "scopes": [
+        {
+            "backend_type": "DATABRICKS",
+            "name": "my-secrets-6260d50f-e8ff-4905-8f28-812345678903"
+        },
+        {
+            "backend_type": "AZURE_KEYVAULT",
+            "name": "test-secrets-azure-backend"
+        },
+        {
+            "backend_type": "DATABRICKS",
+            "name": "test-secrets-permissions"
+        }
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/scopes/delete"
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/put"
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/acls/put"
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/get"
+Response.Body = '''
+{
+    "key":"my-key",
+    "value":"bXktc2VjcmV0LXZhbHVl"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/acls/list"
+Response.Body = '''
+{
+    "items": [
+        {
+            "permission": "READ",
+            "principal": "users"
+        },
+        {
+            "permission": "WRITE",
+            "principal": "admins"
+        },
+        {
+            "permission": "MANAGE",
+            "principal": "[USERNAME]"
+        }
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/acls/get"
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/acls/delete"

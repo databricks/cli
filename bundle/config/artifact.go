@@ -22,7 +22,7 @@ type ArtifactFile struct {
 // Artifact defines a single local code artifact that can be
 // built/uploaded/referenced in the context of this bundle.
 type Artifact struct {
-	Type ArtifactType `json:"type"`
+	Type ArtifactType `json:"type,omitempty"`
 
 	// The local path to the directory with a root of artifact,
 	// for example, where setup.py is for Python projects

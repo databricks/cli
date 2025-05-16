@@ -20,11 +20,18 @@ func (event *JobProgressEvent) String() string {
 	result := strings.Builder{}
 	result.WriteString(event.Timestamp.Format("2006-01-02 15:04:05") + " ")
 	result.WriteString(fmt.Sprintf(`"%s"`, event.RunName) + " ")
-	result.WriteString(event.State.LifeCycleState.String() + " ")
-	if event.State.ResultState.String() != "" {
-		result.WriteString(event.State.ResultState.String() + " ")
+	result.WriteString(event.State.LifeCycleState.String())
+
+	resultState := event.State.ResultState.String()
+	if resultState != "" {
+		result.WriteString(" " + resultState)
 	}
-	result.WriteString(event.State.StateMessage)
+
+	stateMessage := event.State.StateMessage
+	if stateMessage != "" {
+		result.WriteString(" " + stateMessage)
+	}
+
 	return result.String()
 }
 
