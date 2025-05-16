@@ -15,6 +15,16 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	usedSourceCodePaths := make(map[string]string)
 
 	for key, app := range b.Config.Resources.Apps {
+		if app.SourceCodePath == "" {
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Missing app source code path",
+				Detail:    fmt.Sprintf("app resource '%s' is missing required source_code_path field", key),
+				Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s", key)),
+			})
+			continue
+		}
+
 		if _, ok := usedSourceCodePaths[app.SourceCodePath]; ok {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
