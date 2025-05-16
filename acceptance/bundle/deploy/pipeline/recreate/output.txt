@@ -1,0 +1,57 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the pipeline is created
+>>> [CLI] pipelines get [UUID]
+{
+  "spec": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+    },
+    "development": true,
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/nb"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "target": "main.test-schema-[UNIQUE_NAME]"
+  }
+}
+
+=== Try to redeploy the bundle, pointing the DLT pipeline to a different UC catalog
+>>> errcode [CLI] bundle deploy --force-lock --var=catalog=another_catalog
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+  recreate schema bar
+
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate pipeline foo
+Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
+
+
+Exit code: 1
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline foo
+  delete schema bar
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
