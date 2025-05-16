@@ -109,15 +109,6 @@ func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string,
 	return stdout, stderr
 }
 
-func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string, flags []string) {
-	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	args := []string{"bundle", "deploy", "--force-lock"}
-	args = append(args, flags...)
-	c := testcli.NewRunner(t, ctx, args...)
-	_, _, err := c.Run()
-	require.NoError(t, err)
-}
-
 func runResource(t testutil.TestingT, ctx context.Context, path, key string) (string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())

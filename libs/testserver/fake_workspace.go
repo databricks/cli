@@ -29,7 +29,7 @@ type FakeWorkspace struct {
 	nextJobId    int64
 	nextJobRunId int64
 	Jobs         map[int64]jobs.Job
-	jobRuns      map[int64]jobs.Run
+	JobRuns      map[int64]jobs.Run
 
 	Pipelines map[string]pipelines.PipelineSpec
 	Monitors  map[string]catalog.MonitorInfo
@@ -60,6 +60,25 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	}
 }
 
+func MapList[K comparable, T any](w *FakeWorkspace, collection map[K]T, responseFieldName string) Response {
+	defer w.LockUnlock()()
+
+	items := make([]T, 0, len(collection))
+
+	for _, value := range collection {
+		items = append(items, value)
+	}
+
+	// Create a map with the provided field name containing the items
+	wrapper := map[string]any{
+		responseFieldName: items,
+	}
+
+	return Response{
+		Body: wrapper,
+	}
+}
+
 func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K) Response {
 	defer w.LockUnlock()()
 
@@ -81,7 +100,7 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		},
 		files:        map[string][]byte{},
 		Jobs:         map[int64]jobs.Job{},
-		jobRuns:      map[int64]jobs.Run{},
+		JobRuns:      map[int64]jobs.Run{},
 		nextJobId:    1,
 		nextJobRunId: 1,
 		Pipelines:    map[string]pipelines.PipelineSpec{},
@@ -272,7 +291,7 @@ func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 
 	runId := s.nextJobRunId
 	s.nextJobRunId++
-	s.jobRuns[runId] = jobs.Run{
+	s.JobRuns[runId] = jobs.Run{
 		RunId: runId,
 		State: &jobs.RunState{
 			LifeCycleState: jobs.RunLifeCycleStateRunning,
@@ -292,7 +311,7 @@ func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
 	defer s.LockUnlock()()
 
-	run, ok := s.jobRuns[runId]
+	run, ok := s.JobRuns[runId]
 	if !ok {
 		return Response{
 			StatusCode: 404,

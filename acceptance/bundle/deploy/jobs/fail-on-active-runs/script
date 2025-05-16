@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+title "deploy empty bundle"
+trace $CLI bundle deploy --fail-on-active-runs
+
+title "Remove .databricks directory to simulate a fresh deployment"
+rm -rf .databricks
+
+# This is a regression test for a bug (ref: https://github.com/databricks/cli/pull/1292)
+# The second run DABs used to fail with reading the state because if was pulled from remote later
+# Here we verify that the deploy does NOT fail with the flag when a local state is removed
+title "deploy empty bundle again"
+trace $CLI bundle deploy --fail-on-active-runs
