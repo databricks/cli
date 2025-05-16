@@ -1,5 +1,5 @@
 Cloud=true
-Local=true
+Local=false
 
 Ignore = [
     "config.json"

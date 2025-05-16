@@ -1,7 +1,3 @@
-if [ -z "${CLOUD_ENV_BASE}" ]; then
-    CLOUD_ENV_BASE="azure" # pick one of the clouds for the local test (other valid values: "aws", "gcp")
-fi
-
 envsubst < config.json.tmpl > config.json
 trace cat config.json
 
