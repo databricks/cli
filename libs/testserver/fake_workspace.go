@@ -70,7 +70,7 @@ func MapList[K comparable, T any](w *FakeWorkspace, collection map[K]T, response
 	}
 
 	// Create a map with the provided field name containing the items
-	wrapper := map[string]interface{}{
+	wrapper := map[string]any{
 		responseFieldName: items,
 	}
 
