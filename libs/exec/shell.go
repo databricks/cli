@@ -14,7 +14,17 @@ type shell interface {
 type execContext struct {
 	executable string
 	args       []string
+
+	// scriptFile is the file that contains the command to be executed.
+	// We only use it for the cmd.exe shell since cmd.exe does not support
+	// inlining scripts.
 	scriptFile string
+}
+
+func (e *execContext) cleanup() {
+	if e.scriptFile != "" {
+		os.Remove(e.scriptFile)
+	}
 }
 
 func findShell() (shell, error) {
