@@ -6,5 +6,5 @@ Ignore = [
 ]
 
 [[Repls]]
-Old = "[0-9]{1,}"
-New = "[NUMBER]"
+Old = "[0-9]{12,}"
+New = "[NUMID]"
