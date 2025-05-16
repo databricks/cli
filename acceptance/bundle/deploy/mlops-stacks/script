@@ -20,7 +20,8 @@ cd "test_repo_mlops_stacks/project_name_${UNIQUE_NAME}" || exit 1
 trace $CLI bundle summary
 trace $CLI bundle validate
 trace $CLI bundle deploy
-trace $CLI bundle summary --output json
+
+trace $CLI bundle summary -o json | jq -r '{experiment_id: .resources.experiments.experiment.id, model_id: .resources.models.model.id, inference_job_id: .resources.jobs.batch_inference_job.id, training_job_id: .resources.jobs.model_training_job.id}'
 
 title "Assert the batch inference job actually exists"
 JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.batch_inference_job.id')
