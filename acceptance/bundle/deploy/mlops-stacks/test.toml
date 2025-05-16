@@ -1,0 +1,10 @@
+Cloud=true
+Local=false
+
+Ignore = [
+    "config.json"
+]
+
+[[Repls]]
+Old = "[0-9]{12,}"
+New = "[NUMID]"
