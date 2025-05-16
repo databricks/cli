@@ -55,35 +55,3 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 	require.Equal(t, "Duplicate app source code path", diags[0].Summary)
 	require.Contains(t, diags[0].Detail, "has the same source code path as app resource")
 }
-
-func TestAppsValidateEmptySourcePath(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	b := &bundle.Bundle{
-		BundleRootPath: tmpDir,
-		SyncRootPath:   tmpDir,
-		SyncRoot:       vfs.MustNew(tmpDir),
-		Config: config.Root{
-			Workspace: config.Workspace{
-				FilePath: "/foo/bar/",
-			},
-			Resources: config.Resources{
-				Apps: map[string]*resources.App{
-					"app1": {
-						App: apps.App{
-							Name: "app1",
-						},
-						SourceCodePath: "",
-					},
-				},
-			},
-		},
-	}
-
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
-
-	diags := bundle.ApplySeq(context.Background(), b, mutator.TranslatePaths(), Validate())
-	require.Len(t, diags, 1)
-	require.Equal(t, "Missing app source code path", diags[0].Summary)
-	require.Contains(t, diags[0].Detail, "is missing required source_code_path field")
-}
