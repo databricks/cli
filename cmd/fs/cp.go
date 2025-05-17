@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -60,6 +61,23 @@ func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
 }
 
 func (c *copy) cpFileToDir(sourcePath, targetDir string) error {
+	// Remove trailing slash if present
+	targetDir = strings.TrimSuffix(targetDir, "/")
+
+	// Check if target directory exists
+	_, err := c.targetFiler.Stat(c.ctx, targetDir)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Create the directory if it doesn't exist
+			err = c.targetFiler.Mkdir(c.ctx, targetDir)
+			if err != nil {
+				return fmt.Errorf("failed to create target directory %s: %w", targetDir, err)
+			}
+		} else {
+			return err
+		}
+	}
+
 	fileName := filepath.Base(sourcePath)
 	targetPath := path.Join(targetDir, fileName)
 
@@ -193,6 +211,11 @@ func newCpCommand() *cobra.Command {
 		// case 2: source path is a file, and target path is a directory. In this case
 		// we copy the file to inside the directory
 		if targetInfo, err := targetFiler.Stat(ctx, targetPath); err == nil && targetInfo.IsDir() {
+			return c.cpFileToDir(sourcePath, targetPath)
+		}
+
+		// Check if target path ends with a slash, indicating it should be treated as a directory
+		if strings.HasSuffix(fullTargetPath, "/") || strings.HasSuffix(targetPath, "/") {
 			return c.cpFileToDir(sourcePath, targetPath)
 		}
 
