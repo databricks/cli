@@ -1022,11 +1022,11 @@ func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any,
 
 	for _, configName := range utils.SortedKeys(bundleConfig) {
 		configValue := bundleConfig[configName]
+		// Setting BundleConfig.<name> to empty strings, disables it.
+		// This is useful when parent directory defines some config that child test wants to cancel.
 		if configValue == "" {
 			continue
 		}
-		// either "" or a map are allowed
-		// Empty string can be used to disable an update that was defined in parent config
 		cfg, ok := configValue.(map[string]any)
 		if !ok {
 			t.Fatalf("Unexpected type for BundleConfig.%s: %#v", configName, configValue)
