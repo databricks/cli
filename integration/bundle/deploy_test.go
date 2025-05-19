@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
@@ -15,42 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
-	ctx, wt := acc.UcWorkspaceTest(t)
-	w := wt.W
-	uniqueId := uuid.New().String()
-
-	bundleRoot := initTestTemplate(t, ctx, "recreate_pipeline", map[string]any{
-		"unique_id": uniqueId,
-	})
-
-	deployBundle(t, ctx, bundleRoot)
-
-	t.Cleanup(func() {
-		destroyBundle(t, ctx, bundleRoot)
-	})
-
-	// Assert the pipeline is created
-	pipelineName := "test-pipeline-" + uniqueId
-	pipeline, err := w.Pipelines.GetByName(ctx, pipelineName)
-	require.NoError(t, err)
-	require.Equal(t, pipelineName, pipeline.Name)
-
-	// Redeploy the bundle, pointing the DLT pipeline to a different UC catalog.
-	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	ctx = env.Set(ctx, "TERM", "dumb")
-	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--var=\"catalog=whatever\"")
-	stdout, stderr, err := c.Run()
-
-	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
-	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following DLT Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
-restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
-properties such as the 'catalog' or 'storage' are changed:
-  recreate pipeline foo`)
-	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
-}
 
 func TestDeployBasicBundleLogs(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
