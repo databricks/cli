@@ -10,5 +10,5 @@ Old = "[0-9]{12,}"
 New = "[NUMID]"
 
 [[Repls]]
-Old = "\\"
-New = "/"
+Old = '\\'
+New = '/'
