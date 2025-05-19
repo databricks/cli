@@ -395,11 +395,12 @@ func runTest(t *testing.T,
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	if config.BundleConfigTarget == nil || *config.BundleConfigTarget != "" {
-		bundleConfigTarget := "databricks.yml"
-		if config.BundleConfigTarget != nil {
-			bundleConfigTarget = *config.BundleConfigTarget
-		}
+	bundleConfigTarget := "databricks.yml"
+	if config.BundleConfigTarget != nil {
+		bundleConfigTarget = *config.BundleConfigTarget
+	}
+
+	if bundleConfigTarget != "" {
 		configCreated := applyBundleConfig(t, tmpDir, config.BundleConfig, bundleConfigTarget)
 		if configCreated {
 			inputs[bundleConfigTarget] = true
