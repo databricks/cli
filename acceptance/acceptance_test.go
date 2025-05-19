@@ -1016,14 +1016,14 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	return latestWheel
 }
 
-// Applies BundleConfig setting to databricks.yml and writes updated databricks.yml if there were any changes
+// Applies BundleConfig setting to file named bundleConfigTarget and updates it in place if there were any changes.
 // Returns true if new file was created.
 func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any, bundleConfigTarget string) bool {
 	validConfig := make(map[string]map[string]any, len(bundleConfig))
 
 	for _, configName := range utils.SortedKeys(bundleConfig) {
 		configValue := bundleConfig[configName]
-		// Setting BundleConfig.<name> to empty strings, disables it.
+		// Setting BundleConfig.<name> to empty string disables it.
 		// This is useful when parent directory defines some config that child test wants to cancel.
 		if configValue == "" {
 			continue
