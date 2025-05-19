@@ -10,6 +10,8 @@ type ExecvOptions struct {
 
 	// Dir is the working directory of the child process.
 	Dir string
+
+	WindowsCleanupTempScript func()
 }
 
 func Execv(opts ExecvOptions) error {
