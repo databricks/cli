@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"slices"
@@ -24,6 +25,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
@@ -392,6 +394,18 @@ func runTest(t *testing.T,
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
+
+	bundleConfigTarget := "databricks.yml"
+	if config.BundleConfigTarget != nil {
+		bundleConfigTarget = *config.BundleConfigTarget
+	}
+
+	if bundleConfigTarget != "" {
+		configCreated := applyBundleConfig(t, tmpDir, config.BundleConfig, bundleConfigTarget)
+		if configCreated {
+			inputs[bundleConfigTarget] = true
+		}
+	}
 
 	timeout := config.Timeout
 
@@ -1000,4 +1014,75 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	}
 
 	return latestWheel
+}
+
+// Applies BundleConfig setting to file named bundleConfigTarget and updates it in place if there were any changes.
+// Returns true if new file was created.
+func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any, bundleConfigTarget string) bool {
+	validConfig := make(map[string]map[string]any, len(bundleConfig))
+
+	for _, configName := range utils.SortedKeys(bundleConfig) {
+		configValue := bundleConfig[configName]
+		// Setting BundleConfig.<name> to empty string disables it.
+		// This is useful when parent directory defines some config that child test wants to cancel.
+		if configValue == "" {
+			continue
+		}
+		cfg, ok := configValue.(map[string]any)
+		if !ok {
+			t.Fatalf("Unexpected type for BundleConfig.%s: %#v", configName, configValue)
+		}
+		validConfig[configName] = cfg
+	}
+
+	if len(validConfig) == 0 {
+		return false
+	}
+
+	configPath := filepath.Join(tmpDir, bundleConfigTarget)
+	configData, configExists := tryReading(t, configPath)
+
+	newConfigData := configData
+	var applied []string
+
+	for _, configName := range utils.SortedKeys(validConfig) {
+		configValue := validConfig[configName]
+		updated, err := internal.MergeBundleConfig(newConfigData, configValue)
+		if err != nil {
+			t.Fatalf("Failed to merge BundleConfig.%s: %s\nvvalue: %#v\ntext:\n%s", configName, err, configValue, newConfigData)
+		}
+		if isSameYAMLContent(newConfigData, updated) {
+			t.Logf("No effective updates from BundleConfig.%s", configName)
+		} else {
+			newConfigData = updated
+			applied = append(applied, configName)
+		}
+	}
+
+	if newConfigData != configData {
+		t.Logf("Writing updated bundle config to %s. BundleConfig sections: %s", bundleConfigTarget, strings.Join(applied, ", "))
+		testutil.WriteFile(t, configPath, newConfigData)
+		return !configExists
+	}
+
+	return false
+}
+
+// Returns true if both strings are deep-equal after unmarshalling
+func isSameYAMLContent(str1, str2 string) bool {
+	var obj1, obj2 any
+
+	if str1 == str2 {
+		return true
+	}
+
+	if err := yaml.Unmarshal([]byte(str1), &obj1); err != nil {
+		return false
+	}
+
+	if err := yaml.Unmarshal([]byte(str2), &obj2); err != nil {
+		return false
+	}
+
+	return reflect.DeepEqual(obj1, obj2)
 }
