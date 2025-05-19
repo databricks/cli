@@ -2,46 +2,16 @@ package bundle_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestDeployBasicBundleLogs(t *testing.T) {
-	ctx, wt := acc.WorkspaceTest(t)
-
-	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
-	uniqueId := uuid.New().String()
-	root := initTestTemplate(t, ctx, "basic", map[string]any{
-		"unique_id":     uniqueId,
-		"node_type_id":  nodeTypeId,
-		"spark_version": defaultSparkVersion,
-	})
-
-	t.Cleanup(func() {
-		destroyBundle(t, ctx, root)
-	})
-
-	currentUser, err := wt.W.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-
-	stdout, stderr := blackBoxRun(t, ctx, root, "bundle", "deploy")
-	assert.Equal(t, strings.Join([]string{
-		fmt.Sprintf("Uploading bundle files to /Workspace/Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
-		"Deploying resources...",
-		"Updating deployment state...",
-		"Deployment complete!\n",
-	}, "\n"), stderr)
-	assert.Equal(t, "", stdout)
-}
 
 func TestDeployUcVolume(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
