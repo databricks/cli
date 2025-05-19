@@ -1,0 +1,31 @@
+bundle:
+  name: test-uc-volumes-$UNIQUE_NAME
+
+variables:
+  schema_name:
+    default: ${resources.schemas.schema1.name}
+
+resources:
+  schemas:
+    schema1:
+      name: schema1-$UNIQUE_NAME
+      catalog_name: main
+      comment: This schema was created from DABs
+
+    schema2:
+      name: schema2-$UNIQUE_NAME
+      catalog_name: main
+      comment: This schema was created from DABs
+
+  volumes:
+    foo:
+      catalog_name: main
+      name: my_volume
+      schema_name: ${var.schema_name}
+      volume_type: MANAGED
+      comment: This volume was created from DABs.
+
+      grants:
+        - principal: account users
+          privileges:
+          - WRITE_VOLUME
