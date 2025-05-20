@@ -1,0 +1,22 @@
+#if [ -z "$CLOUD_ENV" ]; then
+#    DASHBOARD_DISPLAY_NAME="test bundle/deploy/ 6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
+#    export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+#fi
+
+export DASHBOARD_DISPLAY_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Assert that the dashboard exists at the expected path and is, indeed, a dashboard: "
+RESOURCE_PATH=$($CLI bundle validate -o json | jq -r '.workspace.resource_path')
+trace $CLI workspace get-status "${RESOURCE_PATH}" | jq '{object_type,path}'
+
+title "Load the dashboard by its ID and confirm its display name: "
+DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.file_reference.id')
+$CLI lakeview get $DASHBOARD_ID | jq '{display_name}'

@@ -1,0 +1,26 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert that the dashboard exists at the expected path and is, indeed, a dashboard: 
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources
+{
+  "object_type": "DIRECTORY",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources"
+}
+
+=== Load the dashboard by its ID and confirm its display name: {
+  "display_name": "test-dashboard-[UNIQUE_NAME]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete dashboard file_reference
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

@@ -72,6 +72,7 @@ func validateBundle(t testutil.TestingT, ctx context.Context, path string) ([]by
 	return stdout.Bytes(), err
 }
 
+// todo: remove
 func mustValidateBundle(t testutil.TestingT, ctx context.Context, path string) []byte {
 	data, err := validateBundle(t, ctx, path)
 	require.NoError(t, err)
