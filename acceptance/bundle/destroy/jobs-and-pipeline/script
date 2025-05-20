@@ -1,0 +1,39 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < resources.yml.tmpl > resources.yml
+
+cleanup() {
+  title "Destroy bundle"
+  trace $CLI bundle destroy --auto-approve
+
+  title "Assert pipeline is deleted"
+  trace errcode $CLI pipelines get "${PIPELINE_ID}"
+
+  title "Assert job is deleted:"
+  $CLI jobs get "${JOB_ID}" 2>&1 | sed -E 's/(Error: Job )([0-9]+)( does not exist.)/\1XXXXX\3/'
+
+  title "Assert snapshot file is deleted"
+  trace errcode ls ./databricks/bundle/default/sync-snapshots
+
+  title "Assert bundle deployment path is deleted"
+  trace errcode $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}"
+}
+trap cleanup EXIT
+
+title "Assert the snapshot file does not exist"
+trace errcode ls .databricks/bundle/default/sync-snapshots
+
+trace $CLI bundle deploy
+
+title "Assert the snapshot file exists"
+trace ls .databricks/bundle/default/sync-snapshots | sed -E 's/([^.]*)((\.[^.]+)*)$/XXXXX\2/'
+
+title "Assert bundle deployment path is created"
+trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}" | jq '{path, object_type}'
+
+title "Assert the pipeline is created"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.bar.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
+
+title "Assert the job is created"
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.foo.id')
+$CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'

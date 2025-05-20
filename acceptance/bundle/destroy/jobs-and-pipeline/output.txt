@@ -1,0 +1,71 @@
+
+=== Assert the snapshot file does not exist
+>>> errcode ls .databricks/bundle/default/sync-snapshots
+ls: .databricks/bundle/default/sync-snapshots: No such file or directory
+
+Exit code: 1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the snapshot file exists
+>>> ls .databricks/bundle/default/sync-snapshots
+XXXXX.json
+
+=== Assert bundle deployment path is created
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+{
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]",
+  "object_type": "DIRECTORY"
+}
+
+=== Assert the pipeline is created
+>>> [CLI] pipelines get [UUID]
+{
+  "spec": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-bundle-pipeline-[UNIQUE_NAME]",
+    "storage": "dbfs:/pipelines/[UUID]"
+  }
+}
+
+=== Assert the job is created{
+  "name": "test-bundle-job-[UNIQUE_NAME]"
+}
+
+=== Destroy bundle
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job foo
+  delete pipeline bar
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Assert pipeline is deleted
+>>> errcode [CLI] pipelines get [UUID]
+Error: The specified pipeline [UUID] was not found.
+
+Exit code: 1
+
+=== Assert job is deleted:Error: Job XXXXX does not exist.
+
+Exit code: 1
