@@ -30,7 +30,7 @@ Response.Body = '''
     "lifecycle_state": "ACTIVE",
     "path": "/Users/[USERNAME]/test bundle-deploy-dashboard 6260d50f-e8ff-4905-8f28-812345678903.lvdash.json",
     "parent_path": "/Users/tester@databricks.com",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"pageType\":\"PAGE_TYPE_UNSPECIFIED\"}]}"
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
 }
 '''
 
