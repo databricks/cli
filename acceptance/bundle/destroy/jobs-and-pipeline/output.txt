@@ -1,9 +1,5 @@
 
-=== Assert the snapshot file does not exist
->>> errcode ls .databricks/bundle/default/sync-snapshots
-ls: .databricks/bundle/default/sync-snapshots: No such file or directory
-
-Exit code: 1
+=== Assert the snapshot file does not exist: Directory does not exist
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -67,5 +63,13 @@ Error: The specified pipeline [UUID] was not found.
 Exit code: 1
 
 === Assert job is deleted:Error: Job XXXXX does not exist.
+
+Exit code: 1
+
+=== Assert snapshot file is deleted: Directory exists and is empty
+
+=== Assert bundle deployment path is deleted
+>>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]) doesn't exist.
 
 Exit code: 1

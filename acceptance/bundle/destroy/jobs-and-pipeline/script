@@ -1,6 +1,8 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 envsubst < resources.yml.tmpl > resources.yml
 
+SNAPSHOTS_DIR=".databricks/bundle/default/sync-snapshots"
+
 cleanup() {
   title "Destroy bundle"
   trace $CLI bundle destroy --auto-approve
@@ -9,18 +11,26 @@ cleanup() {
   trace errcode $CLI pipelines get "${PIPELINE_ID}"
 
   title "Assert job is deleted:"
-  $CLI jobs get "${JOB_ID}" 2>&1 | sed -E 's/(Error: Job )([0-9]+)( does not exist.)/\1XXXXX\3/'
+  errcode $CLI jobs get "${JOB_ID}" 2>&1 | sed -E 's/(Error: Job )([0-9]+)( does not exist.)/\1XXXXX\3/'
 
-  title "Assert snapshot file is deleted"
-  trace errcode ls ./databricks/bundle/default/sync-snapshots
+  title "Assert snapshot file is deleted: "
+  if [ -d ${SNAPSHOTS_DIR} ] && [ -z "$(ls -A ${SNAPSHOTS_DIR})" ]; then
+      echo "Directory exists and is empty"
+  else
+      echo "Directory either does not exist or is not empty. This is unexpected by this test"
+  fi
 
   title "Assert bundle deployment path is deleted"
   trace errcode $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}"
 }
 trap cleanup EXIT
 
-title "Assert the snapshot file does not exist"
-trace errcode ls .databricks/bundle/default/sync-snapshots
+title "Assert the snapshot file does not exist: "
+if [[ ! -d ".databricks/bundle/default/sync-snapshots" ]]; then
+    echo "Directory does not exist"
+else
+    echo "Directory exists and this is unexpected by this test"
+fi
 
 trace $CLI bundle deploy
 
