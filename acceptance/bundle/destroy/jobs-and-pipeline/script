@@ -3,6 +3,9 @@ envsubst < resources.yml.tmpl > resources.yml
 
 SNAPSHOTS_DIR=".databricks/bundle/default/sync-snapshots"
 
+# double slash at the start prevents Windows to apply replacements to the path
+DEPLOYMENT_PATH="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}"
+
 cleanup() {
   title "Destroy bundle"
   trace $CLI bundle destroy --auto-approve
@@ -21,7 +24,7 @@ cleanup() {
   fi
 
   title "Assert bundle deployment path is deleted"
-  trace errcode $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}"
+  trace errcode $CLI workspace get-status "${DEPLOYMENT_PATH}"
 }
 trap cleanup EXIT
 
@@ -38,7 +41,7 @@ title "Assert the snapshot file exists"
 trace ls .databricks/bundle/default/sync-snapshots | sed -E 's/([^.]*)((\.[^.]+)*)$/XXXXX\2/'
 
 title "Assert bundle deployment path is created"
-trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}" | jq '{path, object_type}'
+trace $CLI workspace get-status "${DEPLOYMENT_PATH}" | jq '{path, object_type}'
 
 title "Assert the pipeline is created"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.bar.id')

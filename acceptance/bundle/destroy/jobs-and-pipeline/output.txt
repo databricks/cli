@@ -12,9 +12,9 @@ Deployment complete!
 XXXXX.json
 
 === Assert bundle deployment path is created
->>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+>>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 {
-  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]",
+  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]",
   "object_type": "DIRECTORY"
 }
 
@@ -69,7 +69,7 @@ Exit code: 1
 === Assert snapshot file is deleted: Directory exists and is empty
 
 === Assert bundle deployment path is deleted
->>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
-Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]) doesn't exist.
+>>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+Error: Path (//Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]) doesn't exist.
 
 Exit code: 1
