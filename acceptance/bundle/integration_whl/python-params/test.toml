@@ -1,0 +1,6 @@
+# CloudSlow = true
+Cloud = true
+Local = false
+
+# serverless is only enabled if UC is enabled
+RequiresUnityCatalog = true
