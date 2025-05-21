@@ -1,3 +1,8 @@
+# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+export MSYS_NO_PATHCONV=1
+
 export DASHBOARD_DISPLAY_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 
