@@ -1,5 +1,6 @@
 Local = false
 Cloud = true
+#CloudSlow = true
 
 Ignore = [
     "databricks.yml",
