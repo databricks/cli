@@ -1,8 +1,3 @@
-#if [ -z "$CLOUD_ENV" ]; then
-#    DASHBOARD_DISPLAY_NAME="test bundle/deploy/ 6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
-#    export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
-#fi
-
 export DASHBOARD_DISPLAY_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 
@@ -13,16 +8,22 @@ trap cleanup EXIT
 
 trace $CLI bundle deploy
 
-title "Assert that the dashboard exists at the expected path and is, indeed, a dashboard: "
+title "Assert that the dashboard exists at the expected path and is, indeed, a dashboard:"
 RESOURCE_PATH=$($CLI bundle validate -o json | jq -r '.workspace.resource_path')
-trace $CLI workspace get-status "${RESOURCE_PATH}" # | jq '{object_type,path}'
+DASHBOARD_PATH="${RESOURCE_PATH}/test-dashboard-${UNIQUE_NAME}.lvdash.json"
+trace $CLI workspace get-status "${DASHBOARD_PATH}" | jq '{object_type,path}'
 
 title "Load the dashboard by its ID and confirm its display name: "
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.file_reference.id')
-$CLI lakeview get $DASHBOARD_ID # | jq '{display_name,serialized_dashboard}'
+$CLI lakeview get $DASHBOARD_ID | jq '{display_name,serialized_dashboard}'
 
-title "Make an out of band modification to the dashboard and confirm that it is detected: "
-RESOURCE_ID=$($CLI workspace get-status "${RESOURCE_PATH}" | jq -r '.resource_id')
-DASHBOARD_JSON=$($CLI bundle summary --output json | jq -r '.resources.dashboards.file_reference.serialized_dashboard')
-echo "${DASHBOARD_JSON}" > dashboard.json
-trace $CLI dashboards update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}"
+title "Make an out of band modification to the dashboard and confirm that it is detected:"
+RESOURCE_ID=$($CLI workspace get-status "${DASHBOARD_PATH}" | jq -r '.resource_id')
+DASHBOARD_JSON=$($CLI bundle summary --output json | jq '{serialized_dashboard: .resources.dashboards.file_reference.serialized_dashboard}')
+trace $CLI lakeview update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}" | jq '{lifecycle_state}'
+
+title "Try to redeploy the bundle and confirm that the out of band modification is detected:"
+trace errcode $CLI bundle deploy
+
+title "Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored:"
+trace errcode $CLI bundle deploy --force
