@@ -22,10 +22,10 @@ title "Load the dashboard by its ID and confirm its display name: "
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.file_reference.id')
 $CLI lakeview get $DASHBOARD_ID | jq '{display_name,serialized_dashboard}'
 
-title "Make an out of band modification to the dashboard and confirm that it is detected:"
+title "Make an out of band modification to the dashboard and confirm that it is detected:\n"
 RESOURCE_ID=$($CLI workspace get-status "${DASHBOARD_PATH}" | jq -r '.resource_id')
 DASHBOARD_JSON=$($CLI bundle summary --output json | jq '{serialized_dashboard: .resources.dashboards.file_reference.serialized_dashboard}')
-trace $CLI lakeview update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}" | jq '{lifecycle_state}'
+$CLI lakeview update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}" | jq '{lifecycle_state}'
 
 title "Try to redeploy the bundle and confirm that the out of band modification is detected:"
 trace errcode $CLI bundle deploy
