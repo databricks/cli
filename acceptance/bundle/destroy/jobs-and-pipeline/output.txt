@@ -9,7 +9,7 @@ Deployment complete!
 
 === Assert the snapshot file exists
 >>> ls .databricks/bundle/default/sync-snapshots
-XXXXX.json
+[ALPHANUMID].json
 
 === Assert bundle deployment path is created
 >>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
@@ -62,7 +62,7 @@ Error: The specified pipeline [UUID] was not found.
 
 Exit code: 1
 
-=== Assert job is deleted:Error: Job XXXXX does not exist.
+=== Assert job is deleted:Error: Job [NUMID] does not exist.
 
 Exit code: 1
 

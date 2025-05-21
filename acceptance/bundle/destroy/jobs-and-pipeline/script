@@ -14,7 +14,7 @@ cleanup() {
   trace errcode $CLI pipelines get "${PIPELINE_ID}"
 
   title "Assert job is deleted:"
-  errcode $CLI jobs get "${JOB_ID}" 2>&1 | sed -E 's/(Error: Job )([0-9]+)( does not exist.)/\1XXXXX\3/'
+  errcode $CLI jobs get "${JOB_ID}" 2>&1
 
   title "Assert snapshot file is deleted: "
   if [ -d ${SNAPSHOTS_DIR} ] && [ -z "$(ls -A ${SNAPSHOTS_DIR})" ]; then
@@ -38,7 +38,7 @@ fi
 trace $CLI bundle deploy
 
 title "Assert the snapshot file exists"
-trace ls .databricks/bundle/default/sync-snapshots | sed -E 's/([^.]*)((\.[^.]+)*)$/XXXXX\2/'
+trace ls .databricks/bundle/default/sync-snapshots
 
 title "Assert bundle deployment path is created"
 trace $CLI workspace get-status "${DEPLOYMENT_PATH}" | jq '{path, object_type}'
