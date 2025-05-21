@@ -1,10 +1,10 @@
 
 >>> [CLI] bundle validate
-Name: build_and_files_whl
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/build_and_files_whl/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Validation OK!
 

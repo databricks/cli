@@ -1,10 +1,10 @@
 
 >>> [CLI] bundle validate
-Name: sync_patterns
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/sync_patterns/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Validation OK!
 
@@ -22,6 +22,6 @@ Validation OK!
 }
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sync_patterns/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Deployment complete!

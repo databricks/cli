@@ -1,6 +1,9 @@
 # The lowest Python version we support. Alternative to "uv run --python 3.10"
 Env.UV_PYTHON = "3.10"
 
+[BundleConfig.default_name]
+bundle.name = "test-bundle"
+
 [[Repls]]
 Old = '1\d{18}'
 New = '[TIMESTAMP_NS]'

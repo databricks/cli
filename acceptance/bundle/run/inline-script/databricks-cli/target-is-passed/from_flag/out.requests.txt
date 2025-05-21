@@ -43,7 +43,7 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/foobar/oauth/files"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/oauth/files"
   }
 }
 {
