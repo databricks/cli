@@ -15,8 +15,14 @@ trace $CLI bundle deploy
 
 title "Assert that the dashboard exists at the expected path and is, indeed, a dashboard: "
 RESOURCE_PATH=$($CLI bundle validate -o json | jq -r '.workspace.resource_path')
-trace $CLI workspace get-status "${RESOURCE_PATH}" | jq '{object_type,path}'
+trace $CLI workspace get-status "${RESOURCE_PATH}" # | jq '{object_type,path}'
 
 title "Load the dashboard by its ID and confirm its display name: "
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.file_reference.id')
-$CLI lakeview get $DASHBOARD_ID | jq '{display_name}'
+$CLI lakeview get $DASHBOARD_ID # | jq '{display_name,serialized_dashboard}'
+
+title "Make an out of band modification to the dashboard and confirm that it is detected: "
+RESOURCE_ID=$($CLI workspace get-status "${RESOURCE_PATH}" | jq -r '.resource_id')
+DASHBOARD_JSON=$($CLI bundle summary --output json | jq -r '.resources.dashboards.file_reference.serialized_dashboard')
+echo "${DASHBOARD_JSON}" > dashboard.json
+trace $CLI dashboards update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}"

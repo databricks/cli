@@ -8,13 +8,65 @@ Deployment complete!
 === Assert that the dashboard exists at the expected path and is, indeed, a dashboard: 
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources
 {
-  "object_type": "DIRECTORY",
-  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources"
+  "object_id":14896373898859,
+  "object_type":"DIRECTORY",
+  "path":"/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
+  "resource_id":"14896373898859"
 }
 
 === Load the dashboard by its ID and confirm its display name: {
-  "display_name": "test-dashboard-[UNIQUE_NAME]"
+  "create_time":"2025-05-21T06:28:17.493Z",
+  "dashboard_id":"01f0360cc8351554a5761eb4f6f08f29",
+  "display_name":"test-dashboard-[UNIQUE_NAME]",
+  "etag":"2005126467",
+  "lifecycle_state":"ACTIVE",
+  "parent_path":"/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
+  "path":"/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json",
+  "serialized_dashboard":"{\"pages\":[{\"name\":\"fdd21a3c\",\"displayName\":\"New Page\",\"layout\":[{\"widget\":{\"name\":\"82eb9107\",\"textbox_spec\":\"# I'm a title\"},\"position\":{\"x\":0,\"y\":0,\"width\":6,\"height\":2}},{\"widget\":{\"name\":\"ffa6de4f\",\"textbox_spec\":\"Text\"},\"position\":{\"x\":0,\"y\":2,\"width\":6,\"height\":2}}],\"pageType\":\"PAGE_TYPE_CANVAS\"}]}",
+  "update_time":"2025-05-21T06:28:17.844Z",
+  "warehouse_id":"ca46a3458140daa8"
 }
+
+=== Make an out of band modification to the dashboard and confirm that it is detected: 
+>>> [CLI] dashboards update 14896373898859 --json {
+  "pages": [
+    {
+      "displayName": "New Page",
+      "layout": [
+        {
+          "position": {
+            "height": 2,
+            "width": 6,
+            "x": 0,
+            "y": 0
+          },
+          "widget": {
+            "name": "82eb9107",
+            "textbox_spec": "# I'm a title"
+          }
+        },
+        {
+          "position": {
+            "height": 2,
+            "width": 6,
+            "x": 0,
+            "y": 2
+          },
+          "widget": {
+            "name": "ffa6de4f",
+            "textbox_spec": "Text"
+          }
+        }
+      ],
+      "name": "fdd21a3c"
+    }
+  ]
+}
+Warning: unknown field: pages
+  at 
+  in (inline):2:4
+
+Error: Expected UUID, found 14896373898859
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -24,3 +76,5 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
+
+Exit code: 1
