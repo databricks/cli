@@ -445,8 +445,8 @@ func runTest(t *testing.T,
 
 	// Apply these after user replacements in case user replacement capture something like "Job \d+"
 	for offset := range 5 {
-		repls.Set(fmt.Sprint(testserver.TestJobID+offset), fmt.Sprintf("[TEST_JOB_ID+%d]", offset))
-		repls.Set(fmt.Sprint(testserver.TestRunID+offset), fmt.Sprintf("[TEST_RUN_ID+%d]", offset))
+		repls.Set(strconv.Itoa(testserver.TestJobID+offset), fmt.Sprintf("[TEST_JOB_ID+%d]", offset))
+		repls.Set(strconv.Itoa(testserver.TestRunID+offset), fmt.Sprintf("[TEST_RUN_ID+%d]", offset))
 	}
 
 	// Save replacements to temp test directory so that it can be read by diff.py
