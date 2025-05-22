@@ -1,0 +1,12 @@
+Local = false
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+    "a/b/resources.yml",
+    "metadata.json",
+]
+
+[[Repls]]
+Old = "[0-9]{12,}"
+New = "[NUMID]"

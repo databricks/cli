@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < a/b/resources.yml.tmpl > a/b/resources.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Assert job 1 is created\n"
+JOB_1_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.foo.id')
+$CLI jobs get "${JOB_1_ID}" | jq '{name: .settings.name}'
+
+title "Assert job 2 is created\n"
+JOB_2_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.bar.id')
+$CLI jobs get "${JOB_2_ID}" | jq '{name: .settings.name}'
+
+title "Read metadata object from the workspace"
+trace $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/state/metadata.json" > metadata.json
+trace cat metadata.json
+
+title "Check that metadata contains created job ids"
+trace cat metadata.json | grep "${JOB_1_ID}"
+trace cat metadata.json | grep "${JOB_2_ID}"
