@@ -5,7 +5,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-trace $CLI bundle deploy --fail-on-active-runs
+trace $CLI bundle deploy
 
 title "Cluster should exist after bundle deployment:\n"
 CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')

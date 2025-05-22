@@ -5,11 +5,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Cluster should exist after bundle deployment:
-{
-  "cluster_name": "test-cluster-[UNIQUE_NAME]",
-  "num_workers": 2
-}
+>>> [CLI] bundle run foo
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" RUNNING
+[TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" TERMINATED SUCCESS
+Hello World!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
