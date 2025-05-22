@@ -152,6 +152,11 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				SecretScopes: map[string]*resources.SecretScope{
+					"secretScope1": {
+						Name: "secretScope1",
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -318,8 +323,8 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				nameField := resource.Elem().FieldByName("Name")
 				resourceType := resources.Type().Field(i).Name
 
-				// Skip apps, as they are not renamed
-				if resourceType == "Apps" {
+				// Skip resources that are not renamed
+				if resourceType == "Apps" || resourceType == "SecretScopes" {
 					continue
 				}
 

@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < resources.yml.tmpl > resources.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Assert the pipeline is created"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.bar.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
+
+title "Assert the job is created"
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.foo.id')
+$CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'
+
+title "Remove resources from configuration."
+trace rm resources.yml
+
+title "Try to redeploy the bundle - should fail without --auto-approve"
+trace errcode $CLI bundle deploy

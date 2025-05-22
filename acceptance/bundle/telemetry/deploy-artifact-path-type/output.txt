@@ -1,11 +1,11 @@
 
 >>> [CLI] bundle deploy -t one
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sheep/one/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/one/files...
 Deploying resources...
 Deployment complete!
 
 >>> [CLI] bundle deploy -t two
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sheep/two/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/two/files...
 Deploying resources...
 Deployment complete!
 
@@ -35,6 +35,18 @@ Deployment complete!
     "bool_values": [
       {
         "key": "python_wheel_wrapper_is_set",
+        "value": false
+      },
+      {
+        "key": "has_serverless_compute",
+        "value": false
+      },
+      {
+        "key": "has_classic_job_compute",
+        "value": false
+      },
+      {
+        "key": "has_classic_interactive_compute",
         "value": false
       }
     ],
@@ -67,6 +79,18 @@ Deployment complete!
     "bool_values": [
       {
         "key": "python_wheel_wrapper_is_set",
+        "value": false
+      },
+      {
+        "key": "has_serverless_compute",
+        "value": false
+      },
+      {
+        "key": "has_classic_job_compute",
+        "value": false
+      },
+      {
+        "key": "has_classic_interactive_compute",
         "value": false
       }
     ],

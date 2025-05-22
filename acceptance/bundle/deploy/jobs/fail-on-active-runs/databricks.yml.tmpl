@@ -1,0 +1,15 @@
+bundle:
+  name: deploy-jobs-active-runs-test-$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      name: test-jobs-active-runs-$UNIQUE_NAME
+      tasks:
+        - task_key: my_notebook_task
+          new_cluster:
+            num_workers: 1
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+          spark_python_task:
+            python_file: ./hello_world.py

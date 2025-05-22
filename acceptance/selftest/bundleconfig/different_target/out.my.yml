@@ -1,0 +1,16 @@
+bundle:
+  name: my-bundle
+resources:
+  jobs:
+    example_job:
+      list2: 123
+      name: Example Job
+      new_list:
+        - abc
+        - def
+      new_map:
+        key: value
+      new_string: hello
+      string2:
+        - item1
+        - item2

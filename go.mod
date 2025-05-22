@@ -5,11 +5,11 @@ go 1.24.0
 toolchain go1.24.2
 
 require (
-	dario.cat/mergo v1.0.1 // BSD 3-Clause
+	dario.cat/mergo v1.0.2 // BSD 3-Clause
 	github.com/BurntSushi/toml v1.5.0 // MIT
 	github.com/Masterminds/semver/v3 v3.3.1 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.68.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.69.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
@@ -33,7 +33,7 @@ require (
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.14.0
 	golang.org/x/sys v0.33.0
-	golang.org/x/term v0.31.0
+	golang.org/x/term v0.32.0
 	golang.org/x/text v0.25.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 	gopkg.in/yaml.v3 v3.0.1

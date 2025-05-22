@@ -120,6 +120,11 @@ Warning: unknown field: permissions
 }
 
 === resources.apps.rname ===
+Error: Missing app source code path
+  in databricks.yml:7:7
+
+app resource 'rname' is missing required source_code_path field
+
 {
   "apps": {
     "rname": {

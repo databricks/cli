@@ -771,18 +771,18 @@
                     "type": "object",
                     "properties": {
                       "description": {
-                        "description": "Description of this `registered_model`.",
+                        "description": "Optional description for registered model.",
                         "$ref": "#/$defs/string"
                       },
                       "name": {
-                        "description": "Unique name for the model.",
+                        "description": "Register models under this name",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowModelPermission"
                       },
                       "tags": {
-                        "description": "Tags: Additional metadata key-value pairs for this `registered_model`.",
+                        "description": "Additional metadata for registered model.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ModelTag"
                       }
                     },
@@ -1304,6 +1304,88 @@
                   }
                 ]
               },
+              "resources.SecretScope": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "backend_type": {
+                        "description": "The backend type the scope will be created with. If not specified, will default to `DATABRICKS`",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType"
+                      },
+                      "keyvault_metadata": {
+                        "description": "The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata"
+                      },
+                      "name": {
+                        "description": "Scope name requested by the user. Scope names are unique.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "description": "The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SecretScopePermission"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SecretScopePermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "description": "The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "description": "The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "description": "The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SecretScopePermissionLevel": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "READ",
+                      "WRITE",
+                      "MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Volume": {
                 "oneOf": [
                   {
@@ -1499,10 +1581,7 @@
                       "markdownDescription": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`."
                     }
                   },
-                  "additionalProperties": false,
-                  "required": [
-                    "type"
-                  ]
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -1842,6 +1921,9 @@
                       "description": "The schema definitions for the bundle, where each key is the name of the schema.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
                       "markdownDescription": "The schema definitions for the bundle, where each key is the name of the schema. See [schemas](https://docs.databricks.com/dev-tools/bundles/resources.html#schemas)."
+                    },
+                    "secret_scopes": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SecretScope"
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -3176,6 +3258,12 @@
                       "description": "List of pip dependencies, as supported by the version of pip in this environment.",
                       "$ref": "#/$defs/slice/string"
                     },
+                    "environment_version": {
+                      "description": "We renamed `client` to `environment_version` in notebook exports. This field is meant solely so that imported notebooks with `environment_version` can be deserialized\ncorrectly, in a backwards-compatible way (i.e. if `client` is specified instead of `environment_version`, it will be deserialized correctly). Do NOT use this field\nfor any other purpose, e.g. notebook storage.\nThis field is not yet exposed to customers (e.g. in the jobs API).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "jar_dependencies": {
                       "description": "List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.",
                       "$ref": "#/$defs/slice/string",
@@ -3699,7 +3787,6 @@
                   },
                   "additionalProperties": false,
                   "required": [
-                    "gpu_node_pool_id",
                     "num_gpus"
                   ]
                 },
@@ -5789,12 +5876,41 @@
                       "description": "Required. Settings specifying tables to replicate and the destination for the replicated tables.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig"
                     },
+                    "source_type": {
+                      "description": "The type of the foreign source.\nThe source type will be inferred from the source connection or ingestion gateway.\nThis field is output only and will be ignored if provided.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType"
+                    },
                     "table_configuration": {
                       "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.IngestionSourceType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "MYSQL",
+                    "POSTGRESQL",
+                    "SQLSERVER",
+                    "SALESFORCE",
+                    "NETSUITE",
+                    "WORKDAY_RAAS",
+                    "GA4_RAW_DATA",
+                    "SERVICENOW",
+                    "MANAGED_POSTGRESQL",
+                    "ORACLE",
+                    "SHAREPOINT",
+                    "DYNAMICS365"
+                  ]
                 },
                 {
                   "type": "string",
@@ -5844,6 +5960,24 @@
                     "email_recipients": {
                       "description": "A list of email addresses notified when a configured alert is triggered.",
                       "$ref": "#/$defs/slice/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.PathPattern": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "include": {
+                      "description": "The source code to include for pipelines",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -6023,6 +6157,12 @@
                     "file": {
                       "description": "The path to a file that defines a pipeline and is stored in the Databricks Repos.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileLibrary"
+                    },
+                    "glob": {
+                      "description": "The unified field to include source codes.\nEach entry can be a notebook path, a file path, or a folder path that ends `/**`.\nThis field cannot be used together with `notebook` or `file`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "jar": {
                       "description": "URI of the jar to be installed. Currently only DBFS is supported.",
@@ -7210,6 +7350,10 @@
                       "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
                       "$ref": "#/$defs/string"
                     },
+                    "provisioned_model_units": {
+                      "description": "The number of model units provisioned.",
+                      "$ref": "#/$defs/int64"
+                    },
                     "scale_to_zero_enabled": {
                       "description": "Whether the compute resources for the served entity should scale down to zero.",
                       "$ref": "#/$defs/bool"
@@ -7261,6 +7405,10 @@
                     "name": {
                       "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.",
                       "$ref": "#/$defs/string"
+                    },
+                    "provisioned_model_units": {
+                      "description": "The number of model units provisioned.",
+                      "$ref": "#/$defs/int64"
                     },
                     "scale_to_zero_enabled": {
                       "description": "Whether the compute resources for the served entity should scale down to zero.",
@@ -7343,6 +7491,33 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "workspace.AzureKeyVaultSecretScopeMetadata": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "dns_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "resource_id": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "dns_name",
+                    "resource_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "workspace.ScopeBackendType": {
+              "type": "string"
             }
           }
         }
@@ -7555,6 +7730,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Schema"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SecretScope": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScope"
                       }
                     },
                     {
@@ -7819,6 +8008,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SecretScopePermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScopePermission"
                       }
                     },
                     {

@@ -1,0 +1,16 @@
+Cloud=true
+Local=false
+
+Badness = "the newly initialized bundle from the 'mlops-stacks' template contains two validation warnings in the configuration"
+
+Ignore = [
+    "config.json"
+]
+
+[[Repls]]
+Old = "[0-9]{12,}"
+New = "[NUMID]"
+
+[[Repls]]
+Old = '\\'
+New = '/'

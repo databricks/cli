@@ -1,6 +1,3 @@
-bundle:
-  name: python-wheel-notebook
-
 resources:
   jobs:
     test_job:
