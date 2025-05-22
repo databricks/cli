@@ -200,11 +200,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("NODE_TYPE_ID", nodeTypeID)
 	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
 
-	for offset := range 5 {
-		repls.Set(fmt.Sprint(testserver.TestJobID+offset), fmt.Sprintf("[TEST_JOB_ID+%d]", offset))
-		repls.Set(fmt.Sprint(testserver.TestRunID+offset), fmt.Sprintf("[TEST_RUN_ID+%d]", offset))
-	}
-
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
 
@@ -445,8 +440,14 @@ func runTest(t *testing.T,
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 
-	// User replacements come last:
+	// User replacements:
 	repls.Repls = append(repls.Repls, config.Repls...)
+
+	// Apply these after user replacements in case user replacement capture something like "Job \d+"
+	for offset := range 5 {
+		repls.Set(fmt.Sprint(testserver.TestJobID+offset), fmt.Sprintf("[TEST_JOB_ID+%d]", offset))
+		repls.Set(fmt.Sprint(testserver.TestRunID+offset), fmt.Sprintf("[TEST_RUN_ID+%d]", offset))
+	}
 
 	// Save replacements to temp test directory so that it can be read by diff.py
 	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
