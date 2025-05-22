@@ -27,7 +27,7 @@
         "resource_dashboard_count": 0,
         "resource_app_count": 0,
         "resource_job_ids": [
-          "1"
+          "[TEST_JOB_ID+0]"
         ],
         "experimental": {
           "configuration_file_count": 1,

@@ -18,6 +18,16 @@ import (
 	"github.com/google/uuid"
 )
 
+// 4611686018427387911 == 2 ** 62 + 7
+// 2305843009213693969 == 2 ** 61 + 17
+// This values cannot be represented by float64, so they can test incorrect use of json parsing
+// (encoding/json without options parses numbers into float64)
+// These are also easier to spot / replace in test output compared to numbers with one or few digits.
+const (
+	TestJobID = 4611686018427387911
+	TestRunID = 2305843009213693969
+)
+
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
 	mu  sync.Mutex
@@ -101,8 +111,8 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		files:        map[string][]byte{},
 		Jobs:         map[int64]jobs.Job{},
 		JobRuns:      map[int64]jobs.Run{},
-		nextJobId:    1,
-		nextJobRunId: 1,
+		nextJobId:    TestJobID,
+		nextJobRunId: TestRunID,
 		Pipelines:    map[string]pipelines.PipelineSpec{},
 		Monitors:     map[string]catalog.MonitorInfo{},
 		Apps:         map[string]apps.App{},

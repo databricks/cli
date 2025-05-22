@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
@@ -198,6 +199,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	nodeTypeID := getNodeTypeID(cloudEnv)
 	t.Setenv("NODE_TYPE_ID", nodeTypeID)
 	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
+
+	for offset := range 5 {
+		repls.Set(fmt.Sprint(testserver.TestJobID+offset), fmt.Sprintf("[TEST_JOB_ID+%d]", offset))
+		repls.Set(fmt.Sprint(testserver.TestRunID+offset), fmt.Sprintf("[TEST_RUN_ID+%d]", offset))
+	}
 
 	testDirs := getTests(t)
 	require.NotEmpty(t, testDirs)
