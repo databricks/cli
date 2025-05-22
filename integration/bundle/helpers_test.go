@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -72,38 +71,11 @@ func validateBundle(t testutil.TestingT, ctx context.Context, path string) ([]by
 	return stdout.Bytes(), err
 }
 
-func mustValidateBundle(t testutil.TestingT, ctx context.Context, path string) []byte {
-	data, err := validateBundle(t, ctx, path)
-	require.NoError(t, err)
-	return data
-}
-
-func unmarshalConfig(t testutil.TestingT, data []byte) *bundle.Bundle {
-	bundle := &bundle.Bundle{}
-	err := json.Unmarshal(data, &bundle.Config)
-	require.NoError(t, err)
-	return bundle
-}
-
 func deployBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
 	_, _, err := c.Run()
 	require.NoError(t, err)
-}
-
-func deployBundleWithArgsErr(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string, error) {
-	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	args = append([]string{"bundle", "deploy"}, args...)
-	c := testcli.NewRunner(t, ctx, args...)
-	stdout, stderr, err := c.Run()
-	return stdout.String(), stderr.String(), err
-}
-
-func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string) {
-	stdout, stderr, err := deployBundleWithArgsErr(t, ctx, path, args...)
-	require.NoError(t, err)
-	return stdout, stderr
 }
 
 func runResource(t testutil.TestingT, ctx context.Context, path, key string) (string, error) {
