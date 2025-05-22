@@ -41,8 +41,11 @@ func isCannotConfigureAuth(err error) bool {
 	// The prefix check is based on this:
 	//
 	// https://github.com/databricks/databricks-sdk-go/commit/ef3a65c6ee8f0de253ce6f554e6d905d6a5fdc85#diff-83d1fd7f94efd3481cd11ebab8065cc81e18ef0d8776097c29b8a183a20df52fR86
-	return strings.HasPrefix(err.Error(), "cannot configure default credentials, ")
+	return strings.Contains(err.Error(), "cannot configure default credentials, ")
 }
+
+// Referenced by cmd/labs/project/entrypoint.go.
+var ErrCannotConfigureAuth = errors.New("cannot configure default credentials, please check https://docs.databricks.com/en/dev-tools/auth.html#databricks-client-unified-authentication to configure credentials for your preferred authentication method.")
 
 func initProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
