@@ -98,18 +98,6 @@ func runResourceWithStderr(t testutil.TestingT, ctx context.Context, path, key s
 	return stdout.String(), stderr.String()
 }
 
-func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key string, params ...string) (string, error) {
-	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	ctx = cmdio.NewContext(ctx, cmdio.Default())
-
-	var args []string
-	args = append(args, "bundle", "run", key)
-	args = append(args, params...)
-	c := testcli.NewRunner(t, ctx, args...)
-	stdout, _, err := c.Run()
-	return stdout.String(), err
-}
-
 func destroyBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "destroy", "--auto-approve")
