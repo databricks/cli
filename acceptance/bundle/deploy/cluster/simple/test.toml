@@ -1,0 +1,10 @@
+Local = true
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
+New = "[CLUSTER-ID]"
