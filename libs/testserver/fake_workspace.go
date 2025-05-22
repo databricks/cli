@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/google/uuid"
 )
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
@@ -232,28 +231,6 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 	}
 }
 
-func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
-	defer s.LockUnlock()()
-
-	pipelineId := uuid.New().String()
-
-	r.Id = pipelineId
-
-	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
-	// and if the storage location is not specified, API automatically generates a storage location
-	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
-	if r.Storage == "" && r.Catalog == "" {
-		r.Storage = "dbfs:/pipelines/" + pipelineId
-	}
-	s.Pipelines[pipelineId] = r
-
-	return Response{
-		Body: pipelines.CreatePipelineResponse{
-			PipelineId: pipelineId,
-		},
-	}
-}
-
 func (s *FakeWorkspace) JobsGet(jobId string) Response {
 	id := jobId
 
@@ -322,24 +299,6 @@ func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
 	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
 	return Response{
 		Body: run,
-	}
-}
-
-func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
-	defer s.LockUnlock()()
-
-	spec, ok := s.Pipelines[pipelineId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	return Response{
-		Body: pipelines.GetPipelineResponse{
-			PipelineId: pipelineId,
-			Spec:       &spec,
-		},
 	}
 }
 
