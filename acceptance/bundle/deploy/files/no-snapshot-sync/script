@@ -1,0 +1,40 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Check that test file is in workspace"
+trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/test.py" | jq '{object_type,path}'
+trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/test_to_modify.py" | jq '{object_type,path}'
+
+title "Check that notebook is in workspace"
+trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/notebook" | jq '{object_type,path,language}'
+
+title "Check that deployment.json is synced correctly"
+trace $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/state/deployment.json" | jq '{object_type,path}'
+
+title "Remove .databricks directory to simulate a fresh deployment like in CI/CD environment"
+rm -rf .databricks
+
+title "Remove the file from the bundle"
+rm test.py
+
+title "Modify the content of another file"
+echo "print('Modified!')" > test_to_modify.py
+
+title "Remove the notebook from the bundle"
+rm notebook.py
+
+title "Deploy the bundle again"
+trace $CLI bundle deploy
+
+title "Check that removed file is not in workspace anymore"
+trace errcode $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/test.py"
+trace errcode $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/notebook"
+
+title "Check the content of modified file"
+trace $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/test_to_modify.py"
