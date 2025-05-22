@@ -34,17 +34,21 @@ Deployment complete!
 }
 
 === Remove .databricks directory to simulate a fresh deployment like in CI/CD environment
-=== Remove the file from the bundle
-=== Modify the content of another file
-=== Remove the notebook from the bundle
-=== Deploy the bundle again
+>>> rm -rf .databricks
+
+>>> rm test.py
+
+>>> rm notebook.py
+
+>>> echo print('Modified!')
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Check that removed file is not in workspace anymore
+=== Check that removed files are not in the workspace anymore
 >>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
 Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py) doesn't exist.
 
