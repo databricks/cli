@@ -1,5 +1,5 @@
 RecordRequests = false
-Timeout = '1m'
+Timeout = '2m'
 TimeoutWindows = '10m'
 
 Ignore = [

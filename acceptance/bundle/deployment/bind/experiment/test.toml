@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+BundleConfigTarget = "databricks.yml"
 
 [[Repls]]
 Old = "[0-9]{3,}"

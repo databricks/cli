@@ -1,0 +1,80 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the schema is created
+>>> [CLI] schemas get main.test-schema-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME]",
+  "comment": "This schema was created from DABs"
+}
+
+=== Assert the pipeline is created and uses the schema
+>>> [CLI] pipelines get [UUID]
+{
+  "spec": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+    },
+    "development": true,
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/nb"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "target": "main.test-schema-[UNIQUE_NAME]"
+  }
+}
+
+=== Create a volume in the schema, and add a file to it. This ensures that the
+     schema has some data in it and deletion will fail unless the generated
+     terraform configuration has force_destroy set to true.
+>>> [CLI] volumes create main test-schema-[UNIQUE_NAME] test-volume-[UNIQUE_NAME] MANAGED
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]"
+}
+
+>>> [CLI] fs cp test-file-[UNIQUE_NAME].txt dbfs:/Volumes/main/test-schema-[UNIQUE_NAME]/test-volume-[UNIQUE_NAME]
+test-file-[UNIQUE_NAME].txt -> dbfs:/Volumes/main/test-schema-[UNIQUE_NAME]/test-volume-[UNIQUE_NAME]/test-file-[UNIQUE_NAME].txt
+
+=== Remove the UC schema from the resource configuration.
+>>> rm schema.yml
+
+=== Try to redeploy the bundle - should fail without --auto-approve
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+  delete schema bar
+
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate pipeline foo
+Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
+
+
+=== Test cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline foo
+  delete schema bar
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Assert the schema is deleted
+Exit code: 1

@@ -127,8 +127,8 @@ Example usage:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		if diags.HasError() {
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		// If user runs the bundle run command as:
@@ -138,9 +138,9 @@ Example usage:
 			return executeInline(cmd, args, b)
 		}
 
-		diags = phases.Initialize(ctx, b)
-		if err := diags.Error(); err != nil {
-			return err
+		diags = diags.Extend(phases.Initialize(ctx, b))
+		if diags.HasError() {
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		key, args, err := resolveRunArgument(ctx, b, args)
@@ -148,14 +148,14 @@ Example usage:
 			return err
 		}
 
-		diags = bundle.ApplySeq(ctx, b,
+		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),
 			terraform.Load(terraform.ErrorOnEmptyState),
-		)
-		if err := diags.Error(); err != nil {
-			return err
+		))
+		if diags.HasError() {
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		runner, err := keyToRunner(b, key)

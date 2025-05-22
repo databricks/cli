@@ -199,6 +199,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The schema definitions for the bundle, where each key is the name of the schema.
     "markdown_description": |-
       The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
+  "secret_scopes":
+    "description": |-
+      PLACEHOLDER
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -532,6 +535,32 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SecretScope:
+  "backend_type":
+    "description": |-
+      The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
+  "keyvault_metadata":
+    "description": |-
+      The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
+  "name":
+    "description": |-
+      Scope name requested by the user. Scope names are unique.
+  "permissions":
+    "description": |-
+      The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-

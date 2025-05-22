@@ -16,6 +16,10 @@ from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibrary,
     NotebookLibraryParam,
 )
+from databricks.bundles.pipelines._models.path_pattern import (
+    PathPattern,
+    PathPatternParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -28,6 +32,15 @@ class PipelineLibrary:
     file: VariableOrOptional[FileLibrary] = None
     """
     The path to a file that defines a pipeline and is stored in the Databricks Repos.
+    """
+
+    glob: VariableOrOptional[PathPattern] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The unified field to include source codes.
+    Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
+    This field cannot be used together with `notebook` or `file`.
     """
 
     jar: VariableOrOptional[str] = None
@@ -63,6 +76,15 @@ class PipelineLibraryDict(TypedDict, total=False):
     file: VariableOrOptional[FileLibraryParam]
     """
     The path to a file that defines a pipeline and is stored in the Databricks Repos.
+    """
+
+    glob: VariableOrOptional[PathPatternParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The unified field to include source codes.
+    Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
+    This field cannot be used together with `notebook` or `file`.
     """
 
     jar: VariableOrOptional[str]

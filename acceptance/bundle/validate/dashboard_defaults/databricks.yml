@@ -1,6 +1,3 @@
-bundle:
-  name: BUNDLE
-
 workspace:
   resource_path: /foo/bar
 

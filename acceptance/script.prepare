@@ -46,7 +46,7 @@ git-repo-init() {
 
 title() {
     local label="$1"
-    printf "\n=== %s" "$label"
+    printf "\n=== %b" "$label"
 }
 
 withdir() {

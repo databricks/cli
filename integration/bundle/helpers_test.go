@@ -1,12 +1,10 @@
 package bundle_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -17,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
@@ -109,15 +106,6 @@ func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string,
 	return stdout, stderr
 }
 
-func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string, flags []string) {
-	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	args := []string{"bundle", "deploy", "--force-lock"}
-	args = append(args, flags...)
-	c := testcli.NewRunner(t, ctx, args...)
-	_, _, err := c.Run()
-	require.NoError(t, err)
-}
-
 func runResource(t testutil.TestingT, ctx context.Context, path, key string) (string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
@@ -163,33 +151,4 @@ func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t testutil.TestingT,
 	require.NoError(t, err)
 	root := fmt.Sprintf("/Workspace/Users/%s/.bundle/%s", me.UserName, uniqueId)
 	return root
-}
-
-func blackBoxRun(t testutil.TestingT, ctx context.Context, root string, args ...string) (stdout, stderr string) {
-	gitRoot, err := folders.FindDirWithLeaf(".", ".git")
-	require.NoError(t, err)
-
-	// Create the command
-	cmd := exec.Command("go", append([]string{"run", "main.go"}, args...)...)
-	cmd.Dir = gitRoot
-
-	// Configure the environment
-	ctx = env.Set(ctx, "BUNDLE_ROOT", root)
-	for key, value := range env.All(ctx) {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
-	}
-
-	// Create buffers to capture output
-	var outBuffer, errBuffer bytes.Buffer
-	cmd.Stdout = &outBuffer
-	cmd.Stderr = &errBuffer
-
-	// Run the command
-	err = cmd.Run()
-	require.NoError(t, err)
-
-	// Get the output
-	stdout = outBuffer.String()
-	stderr = errBuffer.String()
-	return
 }

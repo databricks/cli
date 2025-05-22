@@ -48,6 +48,8 @@ __all__ = [
     "IngestionPipelineDefinition",
     "IngestionPipelineDefinitionDict",
     "IngestionPipelineDefinitionParam",
+    "IngestionSourceType",
+    "IngestionSourceTypeParam",
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
@@ -66,6 +68,9 @@ __all__ = [
     "Notifications",
     "NotificationsDict",
     "NotificationsParam",
+    "PathPattern",
+    "PathPatternDict",
+    "PathPatternParam",
     "Pipeline",
     "PipelineCluster",
     "PipelineClusterAutoscale",
@@ -234,6 +239,10 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinitionDict,
     IngestionPipelineDefinitionParam,
 )
+from databricks.bundles.pipelines._models.ingestion_source_type import (
+    IngestionSourceType,
+    IngestionSourceTypeParam,
+)
 from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibrary,
     NotebookLibraryDict,
@@ -243,6 +252,11 @@ from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsDict,
     NotificationsParam,
+)
+from databricks.bundles.pipelines._models.path_pattern import (
+    PathPattern,
+    PathPatternDict,
+    PathPatternParam,
 )
 from databricks.bundles.pipelines._models.pipeline import (
     Pipeline,

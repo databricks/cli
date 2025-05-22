@@ -23,7 +23,7 @@
 Building my_test_code...
 Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
 Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -64,7 +64,7 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
         "existing_cluster_id": "0717-132531-5opeqon1",
         "libraries": [
           {
-            "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+            "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
           }
         ],
         "python_wheel_task": {
@@ -76,10 +76,10 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
     },
     "libraries": [
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
       },
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
       }
     ],
     "python_wheel_task": {
@@ -92,17 +92,17 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
 
 === Expecting 2 patched wheels to be uploaded
 >>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/prebuilt/other_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/prebuilt/other_test_code-0.0.1-py3-none-any.whl"
 
 === Updating the local wheel and deploying again
 >>> [CLI] bundle deploy
 Building my_test_code...
 Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
 Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -137,7 +137,7 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
         "existing_cluster_id": "0717-132531-5opeqon1",
         "libraries": [
           {
-            "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+            "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
           }
         ],
         "python_wheel_task": {
@@ -149,10 +149,10 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
     },
     "libraries": [
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
       },
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
       }
     ],
     "python_wheel_task": {
@@ -165,6 +165,6 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
 
 === Expecting 2 pached wheels to be uploaded (Bad: it is currently uploaded twice)
 >>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"

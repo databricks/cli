@@ -1,0 +1,76 @@
+
+>>> [CLI] bundle validate
+Name: test-uc-volumes-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the volume is created successfully
+>>> [CLI] volumes read main.schema1-[UNIQUE_NAME].my_volume
+{
+  "catalog_name": "main",
+  "full_name": "main.schema1-[UNIQUE_NAME].my_volume",
+  "schema_name": "schema1-[UNIQUE_NAME]",
+  "volume_type": "MANAGED"
+}
+
+=== Assert that the grants were successfully applied
+>>> [CLI] grants get VOLUME main.schema1-[UNIQUE_NAME].my_volume
+{
+  "privilege_assignments": [
+    {
+      "principal":"account users",
+      "privileges": [
+        "WRITE_VOLUME"
+      ]
+    }
+  ]
+}
+
+=== Recreation of the volume without --auto-approve should fail since prompting is not possible
+>>> errcode [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name}
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  recreate volume foo
+Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
+
+
+Exit code: 1
+
+=== Successfully recreate the volume with --auto-approve
+>>> [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name} --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  recreate volume foo
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete grants volume_foo
+  delete schema schema1
+  delete schema schema2
+  delete volume foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
