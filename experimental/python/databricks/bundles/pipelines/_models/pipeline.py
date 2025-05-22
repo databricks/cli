@@ -153,6 +153,15 @@ class Pipeline(Resource):
     Restart window of this pipeline.
     """
 
+    root_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Root path for this pipeline.
+    This is used as the root directory when editing the pipeline in the Databricks user interface and it is
+    added to sys.path when executing Python sources during pipeline execution.
+    """
+
     run_as: VariableOrOptional[RunAs] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -285,6 +294,15 @@ class PipelineDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     Restart window of this pipeline.
+    """
+
+    root_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Root path for this pipeline.
+    This is used as the root directory when editing the pipeline in the Databricks user interface and it is
+    added to sys.path when executing Python sources during pipeline execution.
     """
 
     run_as: VariableOrOptional[RunAsParam]
