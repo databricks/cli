@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
-func (s *FakeWorkspace) VolumesCreate(req Request) Response {
+func (*FakeWorkspace) VolumesCreate(req Request) Response {
 	var volume catalog.VolumeInfo
 
 	if err := json.Unmarshal(req.Body, &volume); err != nil {
