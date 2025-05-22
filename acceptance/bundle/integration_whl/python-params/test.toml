@@ -1,4 +1,4 @@
-# CloudSlow = true
+CloudSlow = false
 Cloud = true
 Local = false
 
