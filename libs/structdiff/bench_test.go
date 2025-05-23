@@ -223,6 +223,7 @@ func BenchmarkEqualJobSettings(b *testing.B) {
 		}
 		total += len(changes)
 	}
+	b.StopTimer()
 
 	b.Logf("Total: %d / %d", total, b.N)
 }
@@ -245,6 +246,7 @@ func BenchmarkDiffJobSettings(b *testing.B) {
 		}
 		total += len(changes)
 	}
+	b.StopTimer()
 
 	b.Logf("Total: %d / %d", total, b.N)
 }
