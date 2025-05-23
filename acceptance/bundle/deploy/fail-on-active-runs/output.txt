@@ -6,7 +6,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> errcode [CLI] bundle deploy --fail-on-active-runs
-Error: job 1 is running
+Error: job [TEST_JOB_ID+0] is running
 
 
 Exit code: 1
