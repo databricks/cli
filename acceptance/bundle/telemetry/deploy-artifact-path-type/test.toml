@@ -13,3 +13,10 @@ Response.Body = '''
 [[Server]]
 Pattern = "PUT /api/2.0/fs/directories/Volumes/main/a/b/c/.internal"
 Response.StatusCode = 200
+
+[[Server]]
+Pattern = "GET /api/2.0/fs/directories/Volumes/main/a/b/c/.internal"
+Response.Body = '{}'
+# I'm adding 405 because that's what this test originally do. It's somewhat
+# surprising though that CLI can receive 405 and that does not result in error anywhere.
+Response.StatusCode = 405
