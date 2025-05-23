@@ -200,9 +200,6 @@ func add(path string, v1, v2 reflect.Value, changes *[]Change) {
 }
 
 func isNil(v reflect.Value) bool {
-	if !v.IsValid() {
-		return true
-	}
 	switch v.Kind() {
 	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Chan, reflect.Func:
 		return v.IsNil()
