@@ -56,25 +56,26 @@ func diffValues(path string, v1, v2 reflect.Value, changes *[]Change) {
 		v2 = reflect.ValueOf(nil)
 	}
 
-	// Both nil (or typed-nil) – identical
-	if isNil(v1) && isNil(v2) {
-		return
-	}
-
 	// This should not happen; if it does, record this a full change
 	if v1.Type() != v2.Type() {
 		add(path, v1, v2, changes)
 		return
 	}
 
-	// Exactly one nil (interface, slice, pointer, etc.)
-	if isNil(v1) || isNil(v2) {
-		add(path, v1, v2, changes)
-		return
-	}
-
-	// From here on, both non-nil and same type
 	kind := v1.Kind()
+
+	switch kind {
+	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Chan, reflect.Func:
+		v1Nil := v1.IsNil()
+		v2Nil := v2.IsNil()
+		if v1Nil && v2Nil {
+			return
+		}
+		if v1Nil || v2Nil {
+			add(path, v1, v2, changes)
+			return
+		}
+	}
 
 	switch kind {
 	case reflect.Pointer:
@@ -196,24 +197,5 @@ func join(parent, child string) string {
 }
 
 func add(path string, v1, v2 reflect.Value, changes *[]Change) {
-	*changes = append(*changes, Change{Field: path, Old: valueOf(v1), New: valueOf(v2)})
-}
-
-func isNil(v reflect.Value) bool {
-	switch v.Kind() {
-	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Chan, reflect.Func:
-		return v.IsNil()
-	default:
-		return false
-	}
-}
-
-func valueOf(v reflect.Value) any {
-	if !v.IsValid() {
-		return nil
-	}
-	if isNil(v) {
-		return reflect.Zero(v.Type()).Interface()
-	}
-	return v.Interface()
+	*changes = append(*changes, Change{Field: path, Old: v1.Interface(), New: v2.Interface()})
 }
