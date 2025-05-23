@@ -104,6 +104,8 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 	forced1 := getForceSendFields(s1)
 	forced2 := getForceSendFields(s2)
 
+	isForceDifferent := !slices.Equal(forced1, forced2)
+
 	for i := range t.NumField() {
 		sf := t.Field(i)
 		if !sf.IsExported() || sf.Name == "ForceSendFields" {
@@ -114,23 +116,25 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
-		hasOmitEmpty := strings.Contains(sf.Tag.Get("json"), "omitempty")
+		if isForceDifferent {
+			hasOmitEmpty := strings.Contains(sf.Tag.Get("json"), "omitempty")
 
-		// Special handling when both values are zero but ForceSendFields differ.
-		if hasOmitEmpty && v1Field.IsZero() && v2Field.IsZero() && reflect.DeepEqual(valueOf(v1Field), valueOf(v2Field)) {
-			f1 := slices.Contains(forced1, sf.Name)
-			f2 := slices.Contains(forced2, sf.Name)
-			if f1 != f2 {
-				oldI := any(nil)
-				newI := any(nil)
-				if f1 { // first struct forces send – explicit empty value
-					oldI = zeroInterface(v1Field)
+			// Special handling when both values are zero but ForceSendFields differ.
+			if hasOmitEmpty && v1Field.IsZero() && v2Field.IsZero() {
+				f1 := slices.Contains(forced1, sf.Name)
+				f2 := slices.Contains(forced2, sf.Name)
+				if f1 != f2 {
+					oldI := any(nil)
+					newI := any(nil)
+					if f1 { // first struct forces send – explicit empty value
+						oldI = zeroInterface(v1Field)
+					}
+					if f2 {
+						newI = zeroInterface(v2Field)
+					}
+					*changes = append(*changes, Change{Field: fieldPath, Old: oldI, New: newI})
+					continue // no deeper diff needed – we already recorded it
 				}
-				if f2 {
-					newI = zeroInterface(v2Field)
-				}
-				*changes = append(*changes, Change{Field: fieldPath, Old: oldI, New: newI})
-				continue // no deeper diff needed – we already recorded it
 			}
 		}
 
