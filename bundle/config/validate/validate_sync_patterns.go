@@ -43,7 +43,7 @@ func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) diag
 
 func checkPatterns(patterns []string, path string, b *bundle.Bundle) (diag.Diagnostics, error) {
 	var errs errgroup.Group
-	var diags diag.ThreadsafeDiagnostics
+	var diags diag.SafeDiagnostics
 
 	for index, pattern := range patterns {
 		// If the pattern is negated, strip the negation prefix

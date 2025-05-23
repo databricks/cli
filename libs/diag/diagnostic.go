@@ -148,29 +148,29 @@ func (ds Diagnostics) Filter(severity Severity) Diagnostics {
 	return out
 }
 
-type ThreadsafeDiagnostics struct {
+type SafeDiagnostics struct {
 	Mutex sync.Mutex
 	Diags Diagnostics
 }
 
-func (t *ThreadsafeDiagnostics) Append(d Diagnostic) {
+func (t *SafeDiagnostics) Append(d Diagnostic) {
 	t.Mutex.Lock()
 	defer t.Mutex.Unlock()
 
 	t.Diags = t.Diags.Append(d)
 }
 
-func (t *ThreadsafeDiagnostics) Extend(other Diagnostics) {
+func (t *SafeDiagnostics) Extend(other Diagnostics) {
 	t.Mutex.Lock()
 	defer t.Mutex.Unlock()
 
 	t.Diags = t.Diags.Extend(other)
 }
 
-func (t *ThreadsafeDiagnostics) Errorf(msg string, args ...any) {
+func (t *SafeDiagnostics) Errorf(msg string, args ...any) {
 	t.Extend(FromErr(fmt.Errorf(msg, args...)))
 }
 
-func (t *ThreadsafeDiagnostics) Error(err error) {
+func (t *SafeDiagnostics) Error(err error) {
 	t.Extend(FromErr(err))
 }

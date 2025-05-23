@@ -22,7 +22,7 @@ type uploadConfig struct {
 }
 
 func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.ThreadsafeDiagnostics
+	var diags diag.SafeDiagnostics
 	errGroup, ctx := errgroup.WithContext(ctx)
 
 	for key, app := range b.Config.Resources.Apps {
