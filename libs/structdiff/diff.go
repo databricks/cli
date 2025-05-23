@@ -56,8 +56,10 @@ func diffValues(path string, v1, v2 reflect.Value, changes *[]Change) {
 		v2 = reflect.ValueOf(nil)
 	}
 
+	v1Type := v1.Type()
+
 	// This should not happen; if it does, record this a full change
-	if v1.Type() != v2.Type() {
+	if v1Type != v2.Type() {
 		add(path, v1, v2, changes)
 		return
 	}
@@ -92,7 +94,13 @@ func diffValues(path string, v1, v2 reflect.Value, changes *[]Change) {
 			}
 		}
 	case reflect.Map:
-		diffMap(path, v1, v2, changes)
+		if v1Type.Key().Kind() == reflect.String {
+			diffMap(path, v1, v2, changes)
+		} else {
+			if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
+				add(path, v1, v2, changes)
+			}
+		}
 	default: // primitives, interfaces, etc.
 		if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
 			add(path, v1, v2, changes)
