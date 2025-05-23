@@ -2,12 +2,12 @@ bundle:
   name: wheel-task-with-environments
 
 workspace:
-  root_path: "~/.bundle/{{.unique_id}}"
+  root_path: ~/.bundle/$UNIQUE_NAME
 
 resources:
   jobs:
     some_other_job:
-      name: "[${bundle.target}] Test Wheel Job With Environments {{.unique_id}}"
+      name: "[${bundle.target}] Test Wheel Job With Environments $UNIQUE_NAME"
       tasks:
         - task_key: TestTask
           python_wheel_task:
