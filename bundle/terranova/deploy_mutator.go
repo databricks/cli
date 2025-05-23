@@ -1,0 +1,251 @@
+package terranova
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/terranova/terranova_resources"
+	"github.com/databricks/cli/bundle/terranova/terranova_state"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dag"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/databricks-sdk-go"
+)
+
+const maxPoolSize = 10
+
+type terranovaDeployMutator struct{}
+
+func TerranovaDeploy() bundle.Mutator {
+	return &terranovaDeployMutator{}
+}
+
+func (m *terranovaDeployMutator) Name() string {
+	return "TerranovaDeploy"
+}
+
+func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.SafeDiagnostics
+
+	client := b.WorkspaceClient()
+
+	cacheDir, err := b.CacheDir(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	databasePath := filepath.Join(cacheDir, "resources.json")
+	err = b.ResourceDatabase.Open(databasePath)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	g := dag.NewGraph()
+
+	_, err = dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			section := p[1].Key()
+			resourceName := p[2].Key()
+			node := section + "." + resourceName
+			// log.Warnf(ctx, "Adding node=%s", node)
+			g.AddNode(node)
+
+			// TODO: Scan v for references and use g.AddDirectedEdge to add dependency
+			return v, nil
+		},
+	)
+
+	countDeployed := 0
+
+	err = g.Run(maxPoolSize, func(node string) {
+		// TODO func(node string) bool
+		// If function returns false, downstream callers are not called
+		// g.Run() should return list of not executed nodes
+		// log.Warnf(ctx, "Processing node=%s", node)
+
+		items := strings.SplitN(node, ".", 2)
+		if len(items) != 2 {
+			diags.AppendErrorf("internal error: unexpected DAG node %#v", node)
+			return
+		}
+
+		section := items[0]
+		name := items[1]
+
+		// TODO: resolve all resource references inside this resource. It should be possible, if graph was constructed correctly.
+		// If it is not possible, return error (and fail this and dependent resources)
+
+		config, ok := b.GetResourceConfig(section, name)
+		if !ok {
+			diags.AppendErrorf("internal error: cannot get config for %s", node)
+			return
+		}
+
+		d := Deployer{
+			client:       client,
+			db:           &b.ResourceDatabase,
+			section:      section,
+			resourceName: name,
+		}
+
+		err = d.Deploy(ctx, config)
+		if err != nil {
+			diags.AppendError(err)
+			return
+		}
+		// TODO handle error; count stats
+
+		countDeployed = countDeployed + 1
+	})
+	if err != nil {
+		diags.AppendError(err)
+	}
+
+	// Not uploading at the moment, just logging to match the output.
+	if countDeployed > 0 {
+		cmdio.LogString(ctx, "Updating deployment state...")
+	}
+
+	_ = b.ResourceDatabase.Finalize()
+	// TODO: handle errors
+
+	return diags.Diags
+}
+
+type Deployer struct {
+	client       *databricks.WorkspaceClient
+	db           *terranova_state.TerranovaState
+	section      string
+	resourceName string
+}
+
+func (d *Deployer) Deploy(ctx context.Context, inputConfig any) error {
+	err := d.deploy(ctx, inputConfig)
+	if err != nil {
+		return fmt.Errorf("deploying %s.%s: %w", d.section, d.resourceName, err)
+	}
+	return nil
+}
+
+func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
+	oldID, err := d.db.GetResourceID(d.section, d.resourceName)
+	if err != nil {
+		return err
+	}
+
+	resource, err := terranova_resources.New(d.client, d.section, d.resourceName, inputConfig)
+	if err != nil {
+		return err
+	}
+
+	config := resource.Config()
+
+	// presence of id in the state file implies that the resource was created by us
+
+	if oldID == "" {
+		newID, err := resource.DoCreate(ctx)
+		if err != nil {
+			return err
+		}
+
+		log.Infof(ctx, "Created %s.%s id=%#v", d.section, d.resourceName, newID)
+
+		err = d.db.SaveState(d.section, d.resourceName, newID, config)
+		if err != nil {
+			return err
+		}
+
+		return resource.WaitAfterCreate(ctx)
+	}
+
+	savedState, err := d.db.GetSavedState(d.section, d.resourceName, resource.GetType())
+	if err != nil {
+		return fmt.Errorf("reading state: %w", err)
+	}
+	localDiff, err := structdiff.GetStructDiff(savedState, config)
+	if err != nil {
+		return fmt.Errorf("state error: %w", err)
+	}
+	// log.Warnf(ctx, "localDiff: %#v", localDiff)
+
+	localDiffType := terranova_resources.ChangeTypeNone
+	if len(localDiff) > 0 {
+		localDiffType = resource.ClassifyChanges(localDiff)
+	}
+
+	if localDiffType.IsRecreate() {
+		return d.Recreate(ctx, resource, oldID, config)
+	}
+
+	if localDiffType.IsUpdate() {
+		return d.Update(ctx, resource, oldID, config)
+	}
+
+	// localDiffType is either None or Partial: we should proceed to remote diff
+
+	// remoteState := DoRead()
+	// compare config and remoteState
+	// OR compare config and state + config and remoteState separately
+	// decide what to do for this: config=X state=Y remoteState=X; should this trigger deploy? probably not.
+
+	log.Warnf(ctx, "Unchanged %s.%s id=%#v", d.section, d.resourceName, oldID)
+	return nil
+}
+
+func (d *Deployer) Recreate(ctx context.Context, oldResource terranova_resources.IResource, oldID string, config any) error {
+	err := oldResource.DoDelete(ctx, oldID)
+	if err != nil {
+		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
+	}
+
+	err = d.db.SaveState(d.section, d.resourceName, "", nil)
+	if err != nil {
+		return fmt.Errorf("deleting state: %w", err)
+	}
+
+	newResource, err := terranova_resources.New(d.client, d.section, d.resourceName, config)
+	if err != nil {
+		return fmt.Errorf("initializing: %w", err)
+	}
+
+	newID, err := newResource.DoCreate(ctx)
+	if err != nil {
+		return fmt.Errorf("re-creating: %w", err)
+	}
+
+	log.Warnf(ctx, "Re-created %s.%s id=%#v (previously %#v)", d.section, d.resourceName, newID, oldID)
+	err = d.db.SaveState(d.section, d.resourceName, newID, config)
+	if err != nil {
+		return fmt.Errorf("saving state: %w", err)
+	}
+
+	return newResource.WaitAfterCreate(ctx)
+}
+
+func (d *Deployer) Update(ctx context.Context, resource terranova_resources.IResource, oldID string, config any) error {
+	newID, err := resource.DoUpdate(ctx, oldID)
+	if err != nil {
+		return fmt.Errorf("updating id=%s: %w", oldID, err)
+	}
+
+	if oldID != newID {
+		log.Infof(ctx, "Updated %s.%s id=%#v (previously %#v)", d.section, d.resourceName, newID, oldID)
+	} else {
+		log.Infof(ctx, "Updated %s.%s id=%#v", d.section, d.resourceName, newID)
+	}
+
+	err = d.db.SaveState(d.section, d.resourceName, newID, config)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", oldID, err)
+	}
+
+	return resource.WaitAfterUpdate(ctx)
+}

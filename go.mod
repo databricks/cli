@@ -39,6 +39,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require github.com/jinzhu/copier v0.4.0
+
 require (
 	cloud.google.com/go/auth v0.4.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
