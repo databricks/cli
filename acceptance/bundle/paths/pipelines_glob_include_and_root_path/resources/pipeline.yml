@@ -5,7 +5,7 @@ resources:
       root_path: "../src/pipeline_one"
       libraries:
         - glob:
-            include: "a/b/c/**"
+            include: "../src/pipeline_one/a/b/c/**"
 
     # absolute paths should remain as-is
     two:

@@ -4,7 +4,7 @@
   "one_libraries": [
     {
       "glob": {
-        "include": "/Workspace/Users/[USERNAME]/.bundle/pipelines_relative_path_translation/default/files/resources/a/b/c/**"
+        "include": "/Workspace/Users/[USERNAME]/.bundle/pipelines_relative_path_translation/default/files/src/pipeline_one/a/b/c/**"
       }
     }
   ],
