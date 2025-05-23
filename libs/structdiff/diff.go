@@ -3,6 +3,7 @@ package structdiff
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -100,8 +101,8 @@ func diffValues(path string, v1, v2 reflect.Value, changes *[]Change) {
 
 func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 	t := s1.Type()
-	forced1 := forceSet(s1)
-	forced2 := forceSet(s2)
+	forced1 := getForceSendFields(s1)
+	forced2 := getForceSendFields(s2)
 
 	for i := range t.NumField() {
 		sf := t.Field(i)
@@ -117,8 +118,8 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 
 		// Special handling when both values are zero but ForceSendFields differ.
 		if hasOmitEmpty && v1Field.IsZero() && v2Field.IsZero() && reflect.DeepEqual(valueOf(v1Field), valueOf(v2Field)) {
-			f1 := forced1[sf.Name]
-			f2 := forced2[sf.Name]
+			f1 := slices.Contains(forced1, sf.Name)
+			f2 := slices.Contains(forced2, sf.Name)
 			if f1 != f2 {
 				oldI := any(nil)
 				newI := any(nil)
@@ -166,8 +167,7 @@ func diffMap(path string, m1, m2 reflect.Value, changes *[]Change) {
 	}
 }
 
-// forceSet returns a map of field names listed in the struct's ForceSendFields slice.
-func forceSet(v reflect.Value) map[string]bool {
+func getForceSendFields(v reflect.Value) []string {
 	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return nil
 	}
@@ -175,13 +175,11 @@ func forceSet(v reflect.Value) map[string]bool {
 	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
 		return nil
 	}
-	m := make(map[string]bool, fsField.Len())
-	for i := range fsField.Len() {
-		if s, ok := fsField.Index(i).Interface().(string); ok {
-			m[s] = true
-		}
+	result, ok := fsField.Interface().([]string)
+	if ok {
+		return result
 	}
-	return m
+	return nil
 }
 
 func keyToString(k reflect.Value) string { return fmt.Sprint(k.Interface()) }
