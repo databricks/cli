@@ -58,8 +58,9 @@ type DataSourceTableTableInfoTableConstraintsNamedTableConstraint struct {
 }
 
 type DataSourceTableTableInfoTableConstraintsPrimaryKeyConstraint struct {
-	ChildColumns []string `json:"child_columns"`
-	Name         string   `json:"name"`
+	ChildColumns      []string `json:"child_columns"`
+	Name              string   `json:"name"`
+	TimeseriesColumns []string `json:"timeseries_columns,omitempty"`
 }
 
 type DataSourceTableTableInfoTableConstraints struct {
