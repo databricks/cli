@@ -1,0 +1,7 @@
+bundle:
+  name: pipeline_root_path_does_not_exist
+
+resources:
+  pipelines:
+    abc:
+      root_path: "foo/bar/doesnotexist"

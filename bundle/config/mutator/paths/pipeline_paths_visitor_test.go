@@ -16,6 +16,7 @@ func TestVisitPipelinePaths(t *testing.T) {
 			Pipelines: map[string]*resources.Pipeline{
 				"pipeline0": {
 					CreatePipeline: pipelines.CreatePipeline{
+						RootPath: "src",
 						Libraries: []pipelines.PipelineLibrary{
 							{
 								File: &pipelines.FileLibrary{
@@ -25,6 +26,11 @@ func TestVisitPipelinePaths(t *testing.T) {
 							{
 								Notebook: &pipelines.NotebookLibrary{
 									Path: "src/foo.py",
+								},
+							},
+							{
+								Glob: &pipelines.PathPattern{
+									Include: "a/b/c/**",
 								},
 							},
 						},
@@ -38,6 +44,8 @@ func TestVisitPipelinePaths(t *testing.T) {
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[0].file.path"),
 		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[1].notebook.path"),
+		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[2].glob.include"),
+		dyn.MustPathFromString("resources.pipelines.pipeline0.root_path"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)
