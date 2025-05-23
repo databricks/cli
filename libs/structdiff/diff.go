@@ -127,10 +127,10 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 					oldI := any(nil)
 					newI := any(nil)
 					if f1 { // first struct forces send – explicit empty value
-						oldI = zeroInterface(v1Field)
+						oldI = v1Field.Interface()
 					}
 					if f2 {
-						newI = zeroInterface(v2Field)
+						newI = v2Field.Interface()
 					}
 					*changes = append(*changes, Change{Field: fieldPath, Old: oldI, New: newI})
 					continue // no deeper diff needed – we already recorded it
@@ -219,9 +219,4 @@ func valueOf(v reflect.Value) any {
 		return reflect.Zero(v.Type()).Interface()
 	}
 	return v.Interface()
-}
-
-// zeroInterface returns the zero value of v as an interface{} preserving type.
-func zeroInterface(v reflect.Value) any {
-	return reflect.Zero(v.Type()).Interface()
 }
