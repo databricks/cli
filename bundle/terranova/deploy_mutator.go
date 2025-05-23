@@ -30,13 +30,6 @@ func (m *terranovaDeployMutator) Name() string {
 	return "TerranovaDeploy"
 }
 
-type ResourceNode struct {
-	Section  string
-	Name     string
-	IsReady  bool
-	Resource *terranova_resources.IResource
-}
-
 func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.SafeDiagnostics
 
@@ -196,29 +189,12 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 		return d.Update(ctx, resource, oldID, config)
 	}
 
-	/*
+	// localDiffType is either None or Partial: we should proceed to remote diff
 
-		remoteConfig, ignoredFields, err = resource.DoRead(ctx, oldID)
-		if err != nil {
-			return err
-		}
-
-		remoteDiff := GetStructDiff(remoteConfig, config, remoteIgnoredFields)
-		mergedDiff := mergeDiffs(localDiff, remoteDiff, remoteIgnoredFields)
-		remoteDiffType = resource.ClassifyChanges(remoteDiff)
-
-		if remoteDiffType.IsRecreate() {
-			return Recreate(ctx, resource, db, oldID)
-		}
-
-		if remoteDiffType.IsUpdate() {
-			return Update(ctx, resource, db, oldID)
-		}
-	*/
-
-	//if remoteDiffType.IsPartialUpdate() {
-	//	return partialUpdate(ctx, resource, db, oldID, remoteDiffType)
-	//}
+	// remoteState := DoRead()
+	// compare config and remoteState
+	// OR compare config and state + config and remoteState separately
+	// decide what to do for this: config=X state=Y remoteState=X; should this trigger deploy? probably not.
 
 	log.Warnf(ctx, "Unchanged %s.%s id=%#v", d.section, d.resourceName, oldID)
 	return nil
