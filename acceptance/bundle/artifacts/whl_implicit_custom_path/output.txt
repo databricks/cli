@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading package/my_test_code-0.0.1-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-wheel-local/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -14,7 +14,7 @@ package/my_test_code-0.0.1-py3-none-any.whl
 {
   "deployment": {
     "kind": "BUNDLE",
-    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/python-wheel-local/default/state/metadata.json"
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
   },
   "edit_mode": "UI_LOCKED",
   "format": "MULTI_TASK",
@@ -42,5 +42,5 @@ package/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 1 wheel to be uploaded
 >>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/python-wheel-local/default/files/package/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/package/my_test_code-0.0.1-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/foo/bar/.internal/my_test_code-0.0.1-py3-none-any.whl"

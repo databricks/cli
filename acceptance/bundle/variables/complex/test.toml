@@ -1,0 +1,2 @@
+Badness = 'databricks.yml is broken: mapping has duplicate key task_key but "bundle validate" accepts it'
+BundleConfig.default_name = ""

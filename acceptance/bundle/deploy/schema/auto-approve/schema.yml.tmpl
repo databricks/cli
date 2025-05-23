@@ -1,0 +1,14 @@
+resources:
+  schemas:
+    bar:
+      name: test-schema-$UNIQUE_NAME
+      catalog_name: main
+      comment: This schema was created from DABs
+
+targets:
+  development:
+    resources:
+      pipelines:
+        foo:
+          target: ${resources.schemas.bar.id}
+          catalog: main

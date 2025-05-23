@@ -1,6 +1,3 @@
-bundle:
-  name: monkey
-
 targets:
   dev:
     mode: development

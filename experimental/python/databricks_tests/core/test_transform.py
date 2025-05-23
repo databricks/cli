@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
@@ -332,3 +333,15 @@ def test_forward_ref():
     out = _transform(A, {"field": {"color": "red"}})
 
     assert out == A(field=MyDataclass(color=Color.RED))
+
+
+def test_transform_float():
+    value = float(math.pi)
+
+    @dataclass
+    class Fake:
+        field: Optional[float] = None
+
+    out = _transform(Fake, {"field": value})
+
+    assert out == Fake(field=value)

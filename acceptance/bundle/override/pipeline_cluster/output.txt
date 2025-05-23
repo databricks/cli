@@ -15,7 +15,7 @@
     ],
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_pipeline_cluster/development/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/development/state/metadata.json"
     },
     "edition": "ADVANCED",
     "name": "job",
@@ -39,7 +39,7 @@
     ],
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_pipeline_cluster/staging/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/staging/state/metadata.json"
     },
     "edition": "ADVANCED",
     "name": "job",

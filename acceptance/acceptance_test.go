@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"slices"
@@ -24,6 +25,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
@@ -257,7 +259,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		})
 	}
 
-	t.Logf("Summary: %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
+	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return len(testDirs)
 }
@@ -393,6 +395,18 @@ func runTest(t *testing.T,
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
+	bundleConfigTarget := "databricks.yml"
+	if config.BundleConfigTarget != nil {
+		bundleConfigTarget = *config.BundleConfigTarget
+	}
+
+	if bundleConfigTarget != "" {
+		configCreated := applyBundleConfig(t, tmpDir, config.BundleConfig, bundleConfigTarget)
+		if configCreated {
+			inputs[bundleConfigTarget] = true
+		}
+	}
+
 	timeout := config.Timeout
 
 	if runtime.GOOS == "windows" {
@@ -416,6 +430,11 @@ func runTest(t *testing.T,
 	cmd.Env = auth.ProcessEnv(cfg)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
+
+	// populate CLOUD_ENV_BASE
+	envBase := getCloudEnvBase(cloudEnv)
+	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
+	repls.Set(envBase, "[CLOUD_ENV_BASE]")
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
@@ -471,7 +490,11 @@ func runTest(t *testing.T,
 	require.NoError(t, err)
 	defer out.Close()
 
-	err = runWithLog(t, cmd, out, tailOutput)
+	skipReason, err := runWithLog(t, cmd, out, tailOutput)
+
+	if skipReason != "" {
+		t.Skip("Skipping based on output: " + skipReason)
+	}
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -847,7 +870,7 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
@@ -863,13 +886,15 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	start := time.Now()
 	err := cmd.Start()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	go func() {
 		processErrCh <- cmd.Wait()
 		_ = w.Close()
 	}()
+
+	mostRecentLine := ""
 
 	reader := bufio.NewReader(r)
 	for {
@@ -882,6 +907,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 			}
 		}
 		if len(line) > 0 {
+			mostRecentLine = line
 			_, err = out.WriteString(line)
 			require.NoError(t, err)
 		}
@@ -891,7 +917,13 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 		require.NoError(t, err)
 	}
 
-	return <-processErrCh
+	mostRecentLine = strings.TrimRight(mostRecentLine, "\n")
+	skipReason := ""
+	if strings.HasPrefix(mostRecentLine, "SKIP_TEST") {
+		skipReason = mostRecentLine
+	}
+
+	return skipReason, <-processErrCh
 }
 
 func getCloudEnvBase(cloudEnv string) string {
@@ -987,4 +1019,75 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	}
 
 	return latestWheel
+}
+
+// Applies BundleConfig setting to file named bundleConfigTarget and updates it in place if there were any changes.
+// Returns true if new file was created.
+func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any, bundleConfigTarget string) bool {
+	validConfig := make(map[string]map[string]any, len(bundleConfig))
+
+	for _, configName := range utils.SortedKeys(bundleConfig) {
+		configValue := bundleConfig[configName]
+		// Setting BundleConfig.<name> to empty string disables it.
+		// This is useful when parent directory defines some config that child test wants to cancel.
+		if configValue == "" {
+			continue
+		}
+		cfg, ok := configValue.(map[string]any)
+		if !ok {
+			t.Fatalf("Unexpected type for BundleConfig.%s: %#v", configName, configValue)
+		}
+		validConfig[configName] = cfg
+	}
+
+	if len(validConfig) == 0 {
+		return false
+	}
+
+	configPath := filepath.Join(tmpDir, bundleConfigTarget)
+	configData, configExists := tryReading(t, configPath)
+
+	newConfigData := configData
+	var applied []string
+
+	for _, configName := range utils.SortedKeys(validConfig) {
+		configValue := validConfig[configName]
+		updated, err := internal.MergeBundleConfig(newConfigData, configValue)
+		if err != nil {
+			t.Fatalf("Failed to merge BundleConfig.%s: %s\nvvalue: %#v\ntext:\n%s", configName, err, configValue, newConfigData)
+		}
+		if isSameYAMLContent(newConfigData, updated) {
+			t.Logf("No effective updates from BundleConfig.%s", configName)
+		} else {
+			newConfigData = updated
+			applied = append(applied, configName)
+		}
+	}
+
+	if newConfigData != configData {
+		t.Logf("Writing updated bundle config to %s. BundleConfig sections: %s", bundleConfigTarget, strings.Join(applied, ", "))
+		testutil.WriteFile(t, configPath, newConfigData)
+		return !configExists
+	}
+
+	return false
+}
+
+// Returns true if both strings are deep-equal after unmarshalling
+func isSameYAMLContent(str1, str2 string) bool {
+	var obj1, obj2 any
+
+	if str1 == str2 {
+		return true
+	}
+
+	if err := yaml.Unmarshal([]byte(str1), &obj1); err != nil {
+		return false
+	}
+
+	if err := yaml.Unmarshal([]byte(str2), &obj2); err != nil {
+		return false
+	}
+
+	return reflect.DeepEqual(obj1, obj2)
 }

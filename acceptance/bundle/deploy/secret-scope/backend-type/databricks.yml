@@ -1,0 +1,11 @@
+bundle:
+  name: deploy-secret-scope-azure-backend
+
+resources:
+  secret_scopes:
+    secret_scope_azure:
+      name: test-secrets-azure-backend
+      backend_type: "AZURE_KEYVAULT"
+      keyvault_metadata:
+        resource_id: my_azure_keyvault_id
+        dns_name: my_azure_keyvault_dns_name

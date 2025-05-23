@@ -27,6 +27,8 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 		}
 	}
 
+	defer s.LockUnlock()()
+
 	if checkExists {
 		_, ok := s.Monitors[tableName]
 		if !ok {

@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Assert the pipeline is created"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
+
+title "Try to redeploy the bundle, pointing the DLT pipeline to a different UC catalog"
+trace errcode $CLI bundle deploy --force-lock --var="catalog=another_catalog"

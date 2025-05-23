@@ -1,5 +1,5 @@
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/apps_yaml/default/files/app/app.yml",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app/app.yml",
   "raw_body": "command:\n  - python\n  - app.py\n"
 }

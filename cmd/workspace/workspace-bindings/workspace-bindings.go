@@ -3,8 +3,6 @@
 package workspace_bindings
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -39,7 +37,7 @@ func New() *cobra.Command {
   introduces the ability to bind a securable in READ_ONLY mode (catalogs only).
   
   Securable types that support binding: - catalog - storage_credential -
-  external_location`,
+  credential - external_location`,
 		GroupID: "catalog",
 		Annotations: map[string]string{
 			"package": "catalog",
@@ -147,8 +145,8 @@ func newGetBindings() *cobra.Command {
   or an owner of the securable.
 
   Arguments:
-    SECURABLE_TYPE: The type of the securable to bind to a workspace. 
-      Supported values: [catalog, credential, external_location, storage_credential]
+    SECURABLE_TYPE: The type of the securable to bind to a workspace (catalog,
+      storage_credential, credential, or external_location).
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -163,10 +161,7 @@ func newGetBindings() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getBindingsReq.SecurableType)
-		if err != nil {
-			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-		}
+		getBindingsReq.SecurableType = args[0]
 		getBindingsReq.SecurableName = args[1]
 
 		response := w.WorkspaceBindings.GetBindings(ctx, getBindingsReq)
@@ -290,8 +285,8 @@ func newUpdateBindings() *cobra.Command {
   admin or an owner of the securable.
 
   Arguments:
-    SECURABLE_TYPE: The type of the securable to bind to a workspace. 
-      Supported values: [catalog, credential, external_location, storage_credential]
+    SECURABLE_TYPE: The type of the securable to bind to a workspace (catalog,
+      storage_credential, credential, or external_location).
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -318,10 +313,7 @@ func newUpdateBindings() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateBindingsReq.SecurableType)
-		if err != nil {
-			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-		}
+		updateBindingsReq.SecurableType = args[0]
 		updateBindingsReq.SecurableName = args[1]
 
 		response, err := w.WorkspaceBindings.UpdateBindings(ctx, updateBindingsReq)

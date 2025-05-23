@@ -28,8 +28,8 @@ type FakeWorkspace struct {
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
 	nextJobId    int64
 	nextJobRunId int64
-	jobs         map[int64]jobs.Job
-	jobRuns      map[int64]jobs.Run
+	Jobs         map[int64]jobs.Job
+	JobRuns      map[int64]jobs.Run
 
 	Pipelines map[string]pipelines.PipelineSpec
 	Monitors  map[string]catalog.MonitorInfo
@@ -60,7 +60,26 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	}
 }
 
-func MapDelete[T any](w *FakeWorkspace, collection map[string]T, key string) Response {
+func MapList[K comparable, T any](w *FakeWorkspace, collection map[K]T, responseFieldName string) Response {
+	defer w.LockUnlock()()
+
+	items := make([]T, 0, len(collection))
+
+	for _, value := range collection {
+		items = append(items, value)
+	}
+
+	// Create a map with the provided field name containing the items
+	wrapper := map[string]any{
+		responseFieldName: items,
+	}
+
+	return Response{
+		Body: wrapper,
+	}
+}
+
+func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K) Response {
 	defer w.LockUnlock()()
 
 	_, ok := collection[key]
@@ -80,8 +99,8 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 			"/Workspace": true,
 		},
 		files:        map[string][]byte{},
-		jobs:         map[int64]jobs.Job{},
-		jobRuns:      map[int64]jobs.Run{},
+		Jobs:         map[int64]jobs.Job{},
+		JobRuns:      map[int64]jobs.Run{},
 		nextJobId:    1,
 		nextJobRunId: 1,
 		Pipelines:    map[string]pipelines.PipelineSpec{},
@@ -180,7 +199,7 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 		}
 	}
 
-	s.jobs[jobId] = jobs.Job{
+	s.Jobs[jobId] = jobs.Job{
 		JobId:    jobId,
 		Settings: &jobSettings,
 	}
@@ -195,7 +214,7 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 
 	jobId := request.JobId
 
-	_, ok := s.jobs[request.JobId]
+	_, ok := s.Jobs[request.JobId]
 	if !ok {
 		return Response{
 			StatusCode: 403,
@@ -203,7 +222,7 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 		}
 	}
 
-	s.jobs[jobId] = jobs.Job{
+	s.Jobs[jobId] = jobs.Job{
 		JobId:    jobId,
 		Settings: &request.NewSettings,
 	}
@@ -218,6 +237,14 @@ func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
 
 	pipelineId := uuid.New().String()
 
+	r.Id = pipelineId
+
+	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
+	// and if the storage location is not specified, API automatically generates a storage location
+	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
+	if r.Storage == "" && r.Catalog == "" {
+		r.Storage = "dbfs:/pipelines/" + pipelineId
+	}
 	s.Pipelines[pipelineId] = r
 
 	return Response{
@@ -240,7 +267,7 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 
 	defer s.LockUnlock()()
 
-	job, ok := s.jobs[jobIdInt]
+	job, ok := s.Jobs[jobIdInt]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -255,7 +282,7 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 	defer s.LockUnlock()()
 
-	_, ok := s.jobs[jobId]
+	_, ok := s.Jobs[jobId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -264,7 +291,7 @@ func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 
 	runId := s.nextJobRunId
 	s.nextJobRunId++
-	s.jobRuns[runId] = jobs.Run{
+	s.JobRuns[runId] = jobs.Run{
 		RunId: runId,
 		State: &jobs.RunState{
 			LifeCycleState: jobs.RunLifeCycleStateRunning,
@@ -284,7 +311,7 @@ func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
 	defer s.LockUnlock()()
 
-	run, ok := s.jobRuns[runId]
+	run, ok := s.JobRuns[runId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -319,8 +346,8 @@ func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
 func (s *FakeWorkspace) JobsList() Response {
 	defer s.LockUnlock()()
 
-	list := make([]jobs.BaseJob, 0, len(s.jobs))
-	for _, job := range s.jobs {
+	list := make([]jobs.BaseJob, 0, len(s.Jobs))
+	for _, job := range s.Jobs {
 		baseJob := jobs.BaseJob{}
 		err := jsonConvert(job, &baseJob)
 		if err != nil {

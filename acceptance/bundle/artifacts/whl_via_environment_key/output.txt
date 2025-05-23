@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Building my_test_code...
 Uploading my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/environment_key/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -15,7 +15,7 @@ my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 {
   "deployment": {
     "kind": "BUNDLE",
-    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/environment_key/default/state/metadata.json"
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
   },
   "edit_mode": "UI_LOCKED",
   "environments": [
@@ -24,7 +24,7 @@ my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
       "spec": {
         "client": "1",
         "dependencies": [
-          "/Workspace/Users/[USERNAME]/.bundle/environment_key/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+          "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
         ]
       }
     }
@@ -50,5 +50,5 @@ my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 1 wheel to be uploaded
 >>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/environment_key/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/environment_key/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"

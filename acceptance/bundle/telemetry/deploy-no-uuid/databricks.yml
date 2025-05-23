@@ -1,6 +1,3 @@
-bundle:
-  name: pig
-
 resources:
   jobs:
     job_one:

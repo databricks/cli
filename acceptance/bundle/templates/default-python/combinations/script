@@ -1,7 +1,7 @@
 envsubst < input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json
 
-cd ./my_default_python
+cd ./X*
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
@@ -13,3 +13,5 @@ trace ../check_output.py $CLI bundle deploy -t dev
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore
 rm .databricks/.gitignore
+cd ..
+rm -fr X*
