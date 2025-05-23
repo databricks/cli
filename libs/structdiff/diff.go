@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -12,6 +13,28 @@ type Change struct {
 	Field string
 	Old   any
 	New   any
+}
+
+type pathNode struct {
+	Prev *pathNode
+	Key  string
+	// If Index >= 0, the node specifies a slice/array index in Index.
+	// If Index == -1, the node specifies a struct attribute in Key
+	// If Index == -2, the node specifies a map key in Key
+	Index int
+}
+
+func (p *pathNode) String() string {
+	if p == nil {
+		return ""
+	}
+	if p.Index >= 0 {
+		return p.Prev.String() + "[" + strconv.Itoa(p.Index) + "]"
+	}
+	if p.Index == -1 {
+		return p.Prev.String() + "." + p.Key
+	}
+	return p.Prev.String() + "[\"" + p.Key + "\"]"
 }
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
@@ -28,7 +51,7 @@ func GetStructDiff(a, b any) ([]Change, error) {
 	var changes []Change
 
 	if !v1.IsValid() || !v2.IsValid() {
-		add("", v1, v2, &changes)
+		add(nil, v1, v2, &changes)
 		return changes, nil
 	}
 
@@ -36,13 +59,13 @@ func GetStructDiff(a, b any) ([]Change, error) {
 		return nil, fmt.Errorf("type mismatch: %v vs %v", v1.Type(), v2.Type())
 	}
 
-	diffValues("", v1, v2, &changes)
+	diffValues(nil, v1, v2, &changes)
 	return changes, nil
 }
 
 // diffValues appends changes between v1 and v2 to the slice.  path is the current
 // JSON-style path (dot + brackets).  At the root path is "".
-func diffValues(path string, v1, v2 reflect.Value, changes *[]Change) {
+func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 	if !v1.IsValid() && !v2.IsValid() {
 		return
 	}
@@ -87,8 +110,8 @@ func diffValues(path string, v1, v2 reflect.Value, changes *[]Change) {
 			add(path, v1, v2, changes)
 		} else {
 			for i := range v1.Len() {
-				idxPath := fmt.Sprintf("%s[%d]", path, i)
-				diffValues(idxPath, v1.Index(i), v2.Index(i), changes)
+				node := pathNode{Prev: path, Index: i}
+				diffValues(&node, v1.Index(i), v2.Index(i), changes)
 			}
 		}
 	case reflect.Map:
@@ -106,7 +129,7 @@ func diffValues(path string, v1, v2 reflect.Value, changes *[]Change) {
 	}
 }
 
-func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
+func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 	t := s1.Type()
 	forced1 := getForceSendFields(s1)
 	forced2 := getForceSendFields(s2)
@@ -119,12 +142,12 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 			continue
 		}
 
-		fieldPath := path + "." + sf.Name
+		node := pathNode{Prev: path, Key: sf.Name, Index: -1}
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
 		if isForceEqual {
-			diffValues(fieldPath, v1Field, v2Field, changes)
+			diffValues(&node, v1Field, v2Field, changes)
 			continue
 		}
 
@@ -143,14 +166,14 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 				if f2 {
 					newI = v2Field.Interface()
 				}
-				*changes = append(*changes, Change{Field: fieldPath, Old: oldI, New: newI})
+				*changes = append(*changes, Change{Field: node.String(), Old: oldI, New: newI})
 				continue
 			}
 		}
 	}
 }
 
-func diffMap(path string, m1, m2 reflect.Value, changes *[]Change) {
+func diffMap(path *pathNode, m1, m2 reflect.Value, changes *[]Change) {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
 		keySet[keyToString(k)] = k
@@ -169,8 +192,12 @@ func diffMap(path string, m1, m2 reflect.Value, changes *[]Change) {
 		k := keySet[ks]
 		v1 := m1.MapIndex(k)
 		v2 := m2.MapIndex(k)
-		kp := fmt.Sprintf("%s[%#v]", path, ks)
-		diffValues(kp, v1, v2, changes)
+		node := pathNode{
+			Prev:  path,
+			Key:   ks,
+			Index: -2,
+		}
+		diffValues(&node, v1, v2, changes)
 	}
 }
 
@@ -191,6 +218,6 @@ func getForceSendFields(v reflect.Value) []string {
 
 func keyToString(k reflect.Value) string { return fmt.Sprint(k.Interface()) }
 
-func add(path string, v1, v2 reflect.Value, changes *[]Change) {
-	*changes = append(*changes, Change{Field: path, Old: v1.Interface(), New: v2.Interface()})
+func add(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
+	*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 }
