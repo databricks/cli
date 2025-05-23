@@ -74,8 +74,10 @@ func newAdd() *cobra.Command {
 	cmd.Short = `Register an instance profile.`
 	cmd.Long = `Register an instance profile.
   
-  In the UI, you can select the instance profile when launching clusters. This
-  API is only available to admin users.
+  Registers an instance profile in Databricks. In the UI, you can then give
+  users the permission to use this instance profile when launching clusters.
+  
+  This API is only available to admin users.
 
   Arguments:
     INSTANCE_PROFILE_ARN: The AWS ARN of the instance profile to register with Databricks. This

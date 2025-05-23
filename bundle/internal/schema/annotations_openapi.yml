@@ -89,6 +89,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
     "description": |-
       Cluster name requested by the user. This doesn't have to be unique.
       If not specified at creation, the cluster name will be an empty string.
+      For job clusters, the cluster name is automatically set based on the job and job run IDs.
   "custom_tags":
     "description": |-
       Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
@@ -510,6 +511,13 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Restart window of this pipeline.
     "x-databricks-preview": |-
       PRIVATE
+  "root_path":
+    "description": |-
+      Root path for this pipeline.
+      This is used as the root directory when editing the pipeline in the Databricks user interface and it is
+      added to sys.path when executing Python sources during pipeline execution.
+    "x-databricks-preview": |-
+      PRIVATE
   "run_as":
     "description": |-
       Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
@@ -704,6 +712,7 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "secret": {}
   "serving_endpoint": {}
   "sql_warehouse": {}
+  "uc_securable": {}
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
     "description": |-
@@ -775,6 +784,22 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlW
         CAN_USE
       - |-
         IS_OWNER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurable:
+  "permission": {}
+  "securable_full_name": {}
+  "securable_type": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurablePermission:
+  "_":
+    "enum":
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurableType:
+  "_":
+    "enum":
+      - |-
+        VOLUME
 github.com/databricks/databricks-sdk-go/service/apps.ApplicationState:
   "_":
     "enum":
@@ -1167,6 +1192,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
     "description": |-
       Cluster name requested by the user. This doesn't have to be unique.
       If not specified at creation, the cluster name will be an empty string.
+      For job clusters, the cluster name is automatically set based on the job and job run IDs.
   "custom_tags":
     "description": |-
       Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
@@ -1396,7 +1422,6 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
   "_":
     "description": |-
       The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-      (Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)
       In this minimal environment spec, only pip dependencies are supported.
   "client":
     "description": |-
@@ -1976,7 +2001,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
   "spec":
     "description": |-
       The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-      (Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)
       In this minimal environment spec, only pip dependencies are supported.
 github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
   "no_alert_for_canceled_runs":
@@ -3753,3 +3777,17 @@ github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
   "routes":
     "description": |-
       The list of routes that define traffic to each served entity.
+github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
+  "dns_name":
+    "description": |-
+      The DNS of the KeyVault
+  "resource_id":
+    "description": |-
+      The resource id of the azure KeyVault that user wants to associate the scope with.
+github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType:
+  "_":
+    "enum":
+      - |-
+        DATABRICKS
+      - |-
+        AZURE_KEYVAULT

@@ -39,32 +39,42 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateExperiment())
+	cmd.AddCommand(newCreateLoggedModel())
 	cmd.AddCommand(newCreateRun())
 	cmd.AddCommand(newDeleteExperiment())
+	cmd.AddCommand(newDeleteLoggedModel())
+	cmd.AddCommand(newDeleteLoggedModelTag())
 	cmd.AddCommand(newDeleteRun())
 	cmd.AddCommand(newDeleteRuns())
 	cmd.AddCommand(newDeleteTag())
+	cmd.AddCommand(newFinalizeLoggedModel())
 	cmd.AddCommand(newGetByName())
 	cmd.AddCommand(newGetCredentialsForTraceDataDownload())
 	cmd.AddCommand(newGetCredentialsForTraceDataUpload())
 	cmd.AddCommand(newGetExperiment())
 	cmd.AddCommand(newGetHistory())
+	cmd.AddCommand(newGetLoggedModel())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
 	cmd.AddCommand(newGetRun())
 	cmd.AddCommand(newListArtifacts())
 	cmd.AddCommand(newListExperiments())
+	cmd.AddCommand(newListLoggedModelArtifacts())
 	cmd.AddCommand(newLogBatch())
 	cmd.AddCommand(newLogInputs())
+	cmd.AddCommand(newLogLoggedModelParams())
 	cmd.AddCommand(newLogMetric())
 	cmd.AddCommand(newLogModel())
+	cmd.AddCommand(newLogOutputs())
 	cmd.AddCommand(newLogParam())
 	cmd.AddCommand(newRestoreExperiment())
 	cmd.AddCommand(newRestoreRun())
 	cmd.AddCommand(newRestoreRuns())
 	cmd.AddCommand(newSearchExperiments())
+	cmd.AddCommand(newSearchLoggedModels())
 	cmd.AddCommand(newSearchRuns())
 	cmd.AddCommand(newSetExperimentTag())
+	cmd.AddCommand(newSetLoggedModelTags())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newSetTag())
 	cmd.AddCommand(newUpdateExperiment())
@@ -163,6 +173,94 @@ func newCreateExperiment() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createExperimentOverrides {
 		fn(cmd, &createExperimentReq)
+	}
+
+	return cmd
+}
+
+// start create-logged-model command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createLoggedModelOverrides []func(
+	*cobra.Command,
+	*ml.CreateLoggedModelRequest,
+)
+
+func newCreateLoggedModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createLoggedModelReq ml.CreateLoggedModelRequest
+	var createLoggedModelJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&createLoggedModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createLoggedModelReq.ModelType, "model-type", createLoggedModelReq.ModelType, `The type of the model, such as "Agent", "Classifier", "LLM".`)
+	cmd.Flags().StringVar(&createLoggedModelReq.Name, "name", createLoggedModelReq.Name, `The name of the model (optional).`)
+	// TODO: array: params
+	cmd.Flags().StringVar(&createLoggedModelReq.SourceRunId, "source-run-id", createLoggedModelReq.SourceRunId, `The ID of the run that created the model.`)
+	// TODO: array: tags
+
+	cmd.Use = "create-logged-model EXPERIMENT_ID"
+	cmd.Short = `Create a logged model.`
+	cmd.Long = `Create a logged model.
+
+  Arguments:
+    EXPERIMENT_ID: The ID of the experiment that owns the model.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'experiment_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createLoggedModelJson.Unmarshal(&createLoggedModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createLoggedModelReq.ExperimentId = args[0]
+		}
+
+		response, err := w.Experiments.CreateLoggedModel(ctx, createLoggedModelReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createLoggedModelOverrides {
+		fn(cmd, &createLoggedModelReq)
 	}
 
 	return cmd
@@ -323,6 +421,126 @@ func newDeleteExperiment() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteExperimentOverrides {
 		fn(cmd, &deleteExperimentReq)
+	}
+
+	return cmd
+}
+
+// start delete-logged-model command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteLoggedModelOverrides []func(
+	*cobra.Command,
+	*ml.DeleteLoggedModelRequest,
+)
+
+func newDeleteLoggedModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteLoggedModelReq ml.DeleteLoggedModelRequest
+
+	// TODO: short flags
+
+	cmd.Use = "delete-logged-model MODEL_ID"
+	cmd.Short = `Delete a logged model.`
+	cmd.Long = `Delete a logged model.
+
+  Arguments:
+    MODEL_ID: The ID of the logged model to delete.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteLoggedModelReq.ModelId = args[0]
+
+		err = w.Experiments.DeleteLoggedModel(ctx, deleteLoggedModelReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteLoggedModelOverrides {
+		fn(cmd, &deleteLoggedModelReq)
+	}
+
+	return cmd
+}
+
+// start delete-logged-model-tag command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteLoggedModelTagOverrides []func(
+	*cobra.Command,
+	*ml.DeleteLoggedModelTagRequest,
+)
+
+func newDeleteLoggedModelTag() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteLoggedModelTagReq ml.DeleteLoggedModelTagRequest
+
+	// TODO: short flags
+
+	cmd.Use = "delete-logged-model-tag MODEL_ID TAG_KEY"
+	cmd.Short = `Delete a tag on a logged model.`
+	cmd.Long = `Delete a tag on a logged model.
+
+  Arguments:
+    MODEL_ID: The ID of the logged model to delete the tag from.
+    TAG_KEY: The tag key.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteLoggedModelTagReq.ModelId = args[0]
+		deleteLoggedModelTagReq.TagKey = args[1]
+
+		err = w.Experiments.DeleteLoggedModelTag(ctx, deleteLoggedModelTagReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteLoggedModelTagOverrides {
+		fn(cmd, &deleteLoggedModelTagReq)
 	}
 
 	return cmd
@@ -584,6 +802,96 @@ func newDeleteTag() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteTagOverrides {
 		fn(cmd, &deleteTagReq)
+	}
+
+	return cmd
+}
+
+// start finalize-logged-model command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var finalizeLoggedModelOverrides []func(
+	*cobra.Command,
+	*ml.FinalizeLoggedModelRequest,
+)
+
+func newFinalizeLoggedModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var finalizeLoggedModelReq ml.FinalizeLoggedModelRequest
+	var finalizeLoggedModelJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&finalizeLoggedModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "finalize-logged-model MODEL_ID STATUS"
+	cmd.Short = `Finalize a logged model.`
+	cmd.Long = `Finalize a logged model.
+
+  Arguments:
+    MODEL_ID: The ID of the logged model to finalize.
+    STATUS: Whether or not the model is ready for use.
+      "LOGGED_MODEL_UPLOAD_FAILED" indicates that something went wrong when
+      logging the model weights / agent code). 
+      Supported values: [LOGGED_MODEL_PENDING, LOGGED_MODEL_READY, LOGGED_MODEL_UPLOAD_FAILED]`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only MODEL_ID as positional arguments. Provide 'status' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := finalizeLoggedModelJson.Unmarshal(&finalizeLoggedModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		finalizeLoggedModelReq.ModelId = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &finalizeLoggedModelReq.Status)
+			if err != nil {
+				return fmt.Errorf("invalid STATUS: %s", args[1])
+			}
+		}
+
+		response, err := w.Experiments.FinalizeLoggedModel(ctx, finalizeLoggedModelReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range finalizeLoggedModelOverrides {
+		fn(cmd, &finalizeLoggedModelReq)
 	}
 
 	return cmd
@@ -891,6 +1199,65 @@ func newGetHistory() *cobra.Command {
 	return cmd
 }
 
+// start get-logged-model command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getLoggedModelOverrides []func(
+	*cobra.Command,
+	*ml.GetLoggedModelRequest,
+)
+
+func newGetLoggedModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getLoggedModelReq ml.GetLoggedModelRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-logged-model MODEL_ID"
+	cmd.Short = `Get a logged model.`
+	cmd.Long = `Get a logged model.
+
+  Arguments:
+    MODEL_ID: The ID of the logged model to retrieve.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getLoggedModelReq.ModelId = args[0]
+
+		response, err := w.Experiments.GetLoggedModel(ctx, getLoggedModelReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getLoggedModelOverrides {
+		fn(cmd, &getLoggedModelReq)
+	}
+
+	return cmd
+}
+
 // start get-permission-levels command
 
 // Slice with functions to override default command behavior.
@@ -1187,6 +1554,72 @@ func newListExperiments() *cobra.Command {
 	return cmd
 }
 
+// start list-logged-model-artifacts command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listLoggedModelArtifactsOverrides []func(
+	*cobra.Command,
+	*ml.ListLoggedModelArtifactsRequest,
+)
+
+func newListLoggedModelArtifacts() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listLoggedModelArtifactsReq ml.ListLoggedModelArtifactsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&listLoggedModelArtifactsReq.ArtifactDirectoryPath, "artifact-directory-path", listLoggedModelArtifactsReq.ArtifactDirectoryPath, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
+	cmd.Flags().StringVar(&listLoggedModelArtifactsReq.PageToken, "page-token", listLoggedModelArtifactsReq.PageToken, `Token indicating the page of artifact results to fetch.`)
+
+	cmd.Use = "list-logged-model-artifacts MODEL_ID"
+	cmd.Short = `List artifacts for a logged model.`
+	cmd.Long = `List artifacts for a logged model.
+  
+  List artifacts for a logged model. Takes an optional
+  artifact_directory_path prefix which if specified, the response contains
+  only artifacts with the specified prefix.
+
+  Arguments:
+    MODEL_ID: The ID of the logged model for which to list the artifacts.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listLoggedModelArtifactsReq.ModelId = args[0]
+
+		response, err := w.Experiments.ListLoggedModelArtifacts(ctx, listLoggedModelArtifactsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listLoggedModelArtifactsOverrides {
+		fn(cmd, &listLoggedModelArtifactsReq)
+	}
+
+	return cmd
+}
+
 // start log-batch command
 
 // Slice with functions to override default command behavior.
@@ -1389,6 +1822,86 @@ func newLogInputs() *cobra.Command {
 	return cmd
 }
 
+// start log-logged-model-params command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var logLoggedModelParamsOverrides []func(
+	*cobra.Command,
+	*ml.LogLoggedModelParamsRequest,
+)
+
+func newLogLoggedModelParams() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var logLoggedModelParamsReq ml.LogLoggedModelParamsRequest
+	var logLoggedModelParamsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&logLoggedModelParamsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: params
+
+	cmd.Use = "log-logged-model-params MODEL_ID"
+	cmd.Short = `Log params for a logged model.`
+	cmd.Long = `Log params for a logged model.
+  
+  Logs params for a logged model. A param is a key-value pair (string key,
+  string value). Examples include hyperparameters used for ML model training. A
+  param can be logged only once for a logged model, and attempting to overwrite
+  an existing param with a different value will result in an error
+
+  Arguments:
+    MODEL_ID: The ID of the logged model to log params for.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := logLoggedModelParamsJson.Unmarshal(&logLoggedModelParamsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		logLoggedModelParamsReq.ModelId = args[0]
+
+		err = w.Experiments.LogLoggedModelParams(ctx, logLoggedModelParamsReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range logLoggedModelParamsOverrides {
+		fn(cmd, &logLoggedModelParamsReq)
+	}
+
+	return cmd
+}
+
 // start log-metric command
 
 // Slice with functions to override default command behavior.
@@ -1560,6 +2073,95 @@ func newLogModel() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range logModelOverrides {
 		fn(cmd, &logModelReq)
+	}
+
+	return cmd
+}
+
+// start log-outputs command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var logOutputsOverrides []func(
+	*cobra.Command,
+	*ml.LogOutputsRequest,
+)
+
+func newLogOutputs() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var logOutputsReq ml.LogOutputsRequest
+	var logOutputsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&logOutputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: models
+
+	cmd.Use = "log-outputs RUN_ID"
+	cmd.Short = `Log outputs from a run.`
+	cmd.Long = `Log outputs from a run.
+  
+  **NOTE**: Experimental: This API may change or be removed in a future release
+  without warning.
+  
+  Logs outputs, such as models, from an MLflow Run.
+
+  Arguments:
+    RUN_ID: The ID of the Run from which to log outputs.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'run_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := logOutputsJson.Unmarshal(&logOutputsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			logOutputsReq.RunId = args[0]
+		}
+
+		err = w.Experiments.LogOutputs(ctx, logOutputsReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range logOutputsOverrides {
+		fn(cmd, &logOutputsReq)
 	}
 
 	return cmd
@@ -1992,6 +2594,84 @@ func newSearchExperiments() *cobra.Command {
 	return cmd
 }
 
+// start search-logged-models command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var searchLoggedModelsOverrides []func(
+	*cobra.Command,
+	*ml.SearchLoggedModelsRequest,
+)
+
+func newSearchLoggedModels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var searchLoggedModelsReq ml.SearchLoggedModelsRequest
+	var searchLoggedModelsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&searchLoggedModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: datasets
+	// TODO: array: experiment_ids
+	cmd.Flags().StringVar(&searchLoggedModelsReq.Filter, "filter", searchLoggedModelsReq.Filter, `A filter expression over logged model info and data that allows returning a subset of logged models.`)
+	cmd.Flags().IntVar(&searchLoggedModelsReq.MaxResults, "max-results", searchLoggedModelsReq.MaxResults, `The maximum number of Logged Models to return.`)
+	// TODO: array: order_by
+	cmd.Flags().StringVar(&searchLoggedModelsReq.PageToken, "page-token", searchLoggedModelsReq.PageToken, `The token indicating the page of logged models to fetch.`)
+
+	cmd.Use = "search-logged-models"
+	cmd.Short = `Search logged models.`
+	cmd.Long = `Search logged models.
+  
+  Search for Logged Models that satisfy specified search criteria.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := searchLoggedModelsJson.Unmarshal(&searchLoggedModelsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		response, err := w.Experiments.SearchLoggedModels(ctx, searchLoggedModelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range searchLoggedModelsOverrides {
+		fn(cmd, &searchLoggedModelsReq)
+	}
+
+	return cmd
+}
+
 // start search-runs command
 
 // Slice with functions to override default command behavior.
@@ -2151,6 +2831,81 @@ func newSetExperimentTag() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range setExperimentTagOverrides {
 		fn(cmd, &setExperimentTagReq)
+	}
+
+	return cmd
+}
+
+// start set-logged-model-tags command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setLoggedModelTagsOverrides []func(
+	*cobra.Command,
+	*ml.SetLoggedModelTagsRequest,
+)
+
+func newSetLoggedModelTags() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setLoggedModelTagsReq ml.SetLoggedModelTagsRequest
+	var setLoggedModelTagsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setLoggedModelTagsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: tags
+
+	cmd.Use = "set-logged-model-tags MODEL_ID"
+	cmd.Short = `Set a tag for a logged model.`
+	cmd.Long = `Set a tag for a logged model.
+
+  Arguments:
+    MODEL_ID: The ID of the logged model to set the tags on.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := setLoggedModelTagsJson.Unmarshal(&setLoggedModelTagsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		setLoggedModelTagsReq.ModelId = args[0]
+
+		err = w.Experiments.SetLoggedModelTags(ctx, setLoggedModelTagsReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setLoggedModelTagsOverrides {
+		fn(cmd, &setLoggedModelTagsReq)
 	}
 
 	return cmd

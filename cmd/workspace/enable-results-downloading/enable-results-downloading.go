@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short: `Controls whether users can download notebook results.`,
 		Long: `Controls whether users can download notebook results. By default, this setting
   is enabled.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

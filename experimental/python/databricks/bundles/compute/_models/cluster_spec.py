@@ -103,6 +103,7 @@ class ClusterSpec:
     """
     Cluster name requested by the user. This doesn't have to be unique.
     If not specified at creation, the cluster name will be an empty string.
+    For job clusters, the cluster name is automatically set based on the job and job run IDs.
     """
 
     custom_tags: VariableOrDict[str] = field(default_factory=dict)
@@ -305,6 +306,7 @@ class ClusterSpecDict(TypedDict, total=False):
     """
     Cluster name requested by the user. This doesn't have to be unique.
     If not specified at creation, the cluster name will be an empty string.
+    For job clusters, the cluster name is automatically set based on the job and job run IDs.
     """
 
     custom_tags: VariableOrDict[str]

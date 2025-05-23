@@ -117,7 +117,6 @@ func TestAccountClientOrPrompt(t *testing.T) {
 			// Force SDK to not try and lookup the tenant ID from the host.
 			// The host above is invalid and will not be reachable.
 			AzureTenantID: "nonempty",
-			AuthType:      "azure", // Forcing Azure auth type so that the does not try to use the new u2m auth.
 		})
 	})
 
@@ -176,7 +175,6 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 			// Force SDK to not try and lookup the tenant ID from the host.
 			// The host above is invalid and will not be reachable.
 			AzureTenantID: "nonempty",
-			AuthType:      "azure", // Forcing Azure auth type so that the does not try to use the new u2m auth.
 		})
 	})
 

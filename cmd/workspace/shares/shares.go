@@ -486,6 +486,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
+	cmd.Flags().BoolVar(&updatePermissionsReq.OmitPermissionsList, "omit-permissions-list", updatePermissionsReq.OmitPermissionsList, `Optional.`)
 
 	cmd.Use = "update-permissions NAME"
 	cmd.Short = `Update permissions.`

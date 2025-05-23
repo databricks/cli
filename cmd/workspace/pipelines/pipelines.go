@@ -975,6 +975,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: notifications
 	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
+	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)
 	// TODO: complex arg: run_as
 	cmd.Flags().StringVar(&updateReq.Schema, "schema", updateReq.Schema, `The default schema (database) where tables are read from or published to.`)
 	cmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)

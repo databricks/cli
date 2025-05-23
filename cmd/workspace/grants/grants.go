@@ -84,6 +84,7 @@ func newGet() *cobra.Command {
         CONNECTION,
         CREDENTIAL,
         EXTERNAL_LOCATION,
+        EXTERNAL_METADATA,
         FUNCTION,
         METASTORE,
         PIPELINE,
@@ -91,8 +92,10 @@ func newGet() *cobra.Command {
         RECIPIENT,
         SCHEMA,
         SHARE,
+        STAGING_TABLE,
         STORAGE_CREDENTIAL,
         TABLE,
+        UNKNOWN_SECURABLE_TYPE,
         VOLUME,
       ]
     FULL_NAME: Full name of securable.`
@@ -166,6 +169,7 @@ func newGetEffective() *cobra.Command {
         CONNECTION,
         CREDENTIAL,
         EXTERNAL_LOCATION,
+        EXTERNAL_METADATA,
         FUNCTION,
         METASTORE,
         PIPELINE,
@@ -173,8 +177,10 @@ func newGetEffective() *cobra.Command {
         RECIPIENT,
         SCHEMA,
         SHARE,
+        STAGING_TABLE,
         STORAGE_CREDENTIAL,
         TABLE,
+        UNKNOWN_SECURABLE_TYPE,
         VOLUME,
       ]
     FULL_NAME: Full name of securable.`
@@ -250,6 +256,7 @@ func newUpdate() *cobra.Command {
         CONNECTION,
         CREDENTIAL,
         EXTERNAL_LOCATION,
+        EXTERNAL_METADATA,
         FUNCTION,
         METASTORE,
         PIPELINE,
@@ -257,8 +264,10 @@ func newUpdate() *cobra.Command {
         RECIPIENT,
         SCHEMA,
         SHARE,
+        STAGING_TABLE,
         STORAGE_CREDENTIAL,
         TABLE,
+        UNKNOWN_SECURABLE_TYPE,
         VOLUME,
       ]
     FULL_NAME: Full name of securable.`

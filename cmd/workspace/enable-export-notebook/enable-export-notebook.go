@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short: `Controls whether users can export notebooks and files from the Workspace UI.`,
 		Long: `Controls whether users can export notebooks and files from the Workspace UI.
   By default, this setting is enabled.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

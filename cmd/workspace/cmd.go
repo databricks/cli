@@ -71,6 +71,7 @@ import (
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
 	query_visualizations_legacy "github.com/databricks/cli/cmd/workspace/query-visualizations-legacy"
 	recipient_activation "github.com/databricks/cli/cmd/workspace/recipient-activation"
+	recipient_federation_policies "github.com/databricks/cli/cmd/workspace/recipient-federation-policies"
 	recipients "github.com/databricks/cli/cmd/workspace/recipients"
 	redash_config "github.com/databricks/cli/cmd/workspace/redash-config"
 	registered_models "github.com/databricks/cli/cmd/workspace/registered-models"
@@ -170,6 +171,7 @@ func All() []*cobra.Command {
 	out = append(out, query_visualizations.New())
 	out = append(out, query_visualizations_legacy.New())
 	out = append(out, recipient_activation.New())
+	out = append(out, recipient_federation_policies.New())
 	out = append(out, recipients.New())
 	out = append(out, redash_config.New())
 	out = append(out, registered_models.New())
