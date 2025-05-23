@@ -43,12 +43,10 @@ func GetStructDiff(a, b any) ([]Change, error) {
 // diffValues appends changes between v1 and v2 to the slice.  path is the current
 // JSON-style path (dot + brackets).  At the root path is "".
 func diffValues(path string, v1, v2 reflect.Value, changes *[]Change) {
-	// both invalid – nothing to compare
 	if !v1.IsValid() && !v2.IsValid() {
 		return
 	}
 
-	// Promote invalid to nil interface so valueOf can handle it uniformly
 	if !v1.IsValid() {
 		v1 = reflect.ValueOf(nil)
 	}
@@ -118,7 +116,7 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 	for i := range t.NumField() {
 		sf := t.Field(i)
 		if !sf.IsExported() || sf.Name == "ForceSendFields" {
-			continue // ignore unexported and meta field itself
+			continue
 		}
 
 		fieldPath := join(path, sf.Name)
@@ -142,7 +140,7 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 						newI = v2Field.Interface()
 					}
 					*changes = append(*changes, Change{Field: fieldPath, Old: oldI, New: newI})
-					continue // no deeper diff needed – we already recorded it
+					continue
 				}
 			}
 		}
