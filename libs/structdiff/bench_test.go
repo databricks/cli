@@ -216,7 +216,7 @@ func BenchmarkEqualJobSettings(b *testing.B) {
 	total := 0
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		changes, err := GetStructDiff(&x, &y)
 		if err != nil {
 			b.Fatalf("error: %s", err)
@@ -239,7 +239,7 @@ func BenchmarkDiffJobSettings(b *testing.B) {
 	total := 0
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		changes, err := GetStructDiff(&x, &y)
 		if err != nil {
 			b.Fatalf("error: %s", err)
