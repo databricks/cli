@@ -167,10 +167,10 @@ func (t *SafeDiagnostics) Extend(other Diagnostics) {
 	t.Diags = t.Diags.Extend(other)
 }
 
-func (t *SafeDiagnostics) Errorf(msg string, args ...any) {
+func (t *SafeDiagnostics) AppendErrorf(msg string, args ...any) {
 	t.Extend(FromErr(fmt.Errorf(msg, args...)))
 }
 
-func (t *SafeDiagnostics) Error(err error) {
+func (t *SafeDiagnostics) AppendError(err error) {
 	t.Extend(FromErr(err))
 }

@@ -58,7 +58,7 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	if err := errGroup.Wait(); err != nil {
-		diags.Error(err)
+		diags.AppendError(err)
 	}
 
 	return diags.Diags
