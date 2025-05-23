@@ -3,5 +3,3 @@ bundle:
 
 include:
   - resources/*.yml
-
-    
