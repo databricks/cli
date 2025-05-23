@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"bytes"
 	"errors"
 	osexec "os/exec"
 )
@@ -10,15 +11,14 @@ type cmdShell struct {
 }
 
 func (s cmdShell) prepare(command string) (*execContext, error) {
-	filename, err := createTempScript(command, ".cmd")
-	if err != nil {
-		return nil, err
-	}
+	// There's no way to inline a multi-line command into a single call to cmd.exe.
+	// Thus we need to pass the command in stdin of cmd.exe
+	reader := bytes.NewReader([]byte(command))
 
 	return &execContext{
 		executable: s.executable,
-		args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", "CALL " + filename},
-		scriptFile: filename,
+		args:       []string{"/D", "/E:ON", "/V:OFF"},
+		stdin:      reader,
 	}, nil
 }
 
