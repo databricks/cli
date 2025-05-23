@@ -13,6 +13,10 @@ const (
 	// TranslateModeDirectory translates a path to a remote directory.
 	TranslateModeDirectory
 
+	// TranslateModeGlob translates a relative glob pattern to a remote glob pattern.
+	// It does not perform any checks on the glob pattern itself.
+	TranslateModeGlob
+
 	// TranslateModeLocalAbsoluteDirectory translates a path to the local absolute directory path.
 	// It returns an error if the path does not exist or is not a directory.
 	TranslateModeLocalAbsoluteDirectory

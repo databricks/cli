@@ -15,19 +15,26 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 		dyn.Key("resources"),
 		dyn.Key("pipelines"),
 		dyn.AnyKey(),
-		dyn.Key("libraries"),
-		dyn.AnyIndex(),
 	)
 
 	// Compile list of configuration paths to rewrite.
 	return []pipelineRewritePattern{
 		{
-			pattern: base.Append(dyn.Key("notebook"), dyn.Key("path")),
+			pattern: base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("notebook"), dyn.Key("path")),
 			mode:    TranslateModeNotebook,
 		},
 		{
-			pattern: base.Append(dyn.Key("file"), dyn.Key("path")),
+			pattern: base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("file"), dyn.Key("path")),
 			mode:    TranslateModeFile,
+		},
+		{
+			pattern: base.Append(dyn.Key("root_path")),
+			mode:    TranslateModeDirectory,
+		},
+
+		{
+			pattern: base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
+			mode:    TranslateModeGlob,
 		},
 	}
 }

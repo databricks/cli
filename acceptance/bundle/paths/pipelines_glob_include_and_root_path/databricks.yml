@@ -1,0 +1,5 @@
+bundle:
+  name: pipelines_relative_path_translation
+
+include:
+  - resources/*.yml

@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate
+Error: path [TEST_TMP_DIR]/src is not contained in sync root path
+
+Name: pipelines_root_path_outside_sync_root
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/pipelines_root_path_outside_sync_root/default
+
+Found 1 error
+
+Exit code: 1
