@@ -15,6 +15,6 @@
       }
     }
   ],
-  "one_root_path": "/Workspace/Users/[USERNAME]/.bundle/pipelines_relative_path_translation/default/files/resources/src",
+  "one_root_path": "/Workspace/Users/[USERNAME]/.bundle/pipelines_relative_path_translation/default/files/src/pipeline_one",
   "two_root_path": "/Workspace/Users/me@company.com/src"
 }
