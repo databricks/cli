@@ -144,11 +144,6 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 }
 
 func diffMap(path string, m1, m2 reflect.Value, changes *[]Change) {
-	if m1.Kind() != reflect.Map || m2.Kind() != reflect.Map {
-		add(path, m1, m2, changes)
-		return
-	}
-
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
 		keySet[keyToString(k)] = k
