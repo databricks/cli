@@ -78,37 +78,37 @@ func TestGetStructDiff(t *testing.T) {
 			name: "simple field change",
 			a:    A{X: 5},
 			b:    A{},
-			want: []Change{{Field: "X", Old: 5, New: 0}},
+			want: []Change{{Field: ".X", Old: 5, New: 0}},
 		},
 		{
 			name: "nested struct field",
 			a:    A{B: B{S: "one"}},
 			b:    A{B: B{S: "two"}},
-			want: []Change{{Field: "B.S", Old: "one", New: "two"}},
+			want: []Change{{Field: ".B.S", Old: "one", New: "two"}},
 		},
 		{
 			name: "pointer nil vs value",
 			a:    A{P: b1},
 			b:    A{},
-			want: []Change{{Field: "P", Old: b1, New: (*B)(nil)}},
+			want: []Change{{Field: ".P", Old: b1, New: (*B)(nil)}},
 		},
 		{
 			name: "pointer nested value diff",
 			a:    A{P: b1},
 			b:    A{P: b2},
-			want: []Change{{Field: "P.S", Old: "one", New: "two"}},
+			want: []Change{{Field: ".P.S", Old: "one", New: "two"}},
 		},
 		{
 			name: "map diff",
 			a:    A{M: map[string]int{"a": 1}},
 			b:    A{M: map[string]int{"a": 2}},
-			want: []Change{{Field: "M[\"a\"]", Old: 1, New: 2}},
+			want: []Change{{Field: ".M[\"a\"]", Old: 1, New: 2}},
 		},
 		{
 			name: "slice diff",
 			a:    A{L: []string{"a"}},
 			b:    A{L: []string{"a", "b"}},
-			want: []Change{{Field: "L", Old: []string{"a"}, New: []string{"a", "b"}}},
+			want: []Change{{Field: ".L", Old: []string{"a"}, New: []string{"a", "b"}}},
 		},
 
 		// ForceSendFields related cases
@@ -116,28 +116,28 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend empty string diff",
 			a:    C{ForceSendFields: []string{"Name"}}, // Name == "" zero, but forced
 			b:    C{},
-			want: []Change{{Field: "Name", Old: "", New: nil}},
+			want: []Change{{Field: ".Name", Old: "", New: nil}},
 		},
 		{
 			name: "forcesend empty int diff",
 			a:    C{ForceSendFields: []string{"Age"}},
 			b:    C{},
-			want: []Change{{Field: "Age", Old: 0, New: nil}},
+			want: []Change{{Field: ".Age", Old: 0, New: nil}},
 		},
 		{
 			name: "forcesend empty bool diff",
 			a:    C{ForceSendFields: []string{"IsEnabled"}},
 			b:    C{},
-			want: []Change{{Field: "IsEnabled", Old: false, New: nil}},
+			want: []Change{{Field: ".IsEnabled", Old: false, New: nil}},
 		},
 		{
 			name: "forcesend empty all",
 			a:    C{ForceSendFields: []string{"Name", "IsEnabled"}},
 			b:    C{ForceSendFields: []string{"Age"}},
 			want: []Change{
-				{Field: "Name", Old: "", New: nil},
-				{Field: "Age", Old: nil, New: 0},
-				{Field: "IsEnabled", Old: false, New: nil},
+				{Field: ".Name", Old: "", New: nil},
+				{Field: ".Age", Old: nil, New: 0},
+				{Field: ".IsEnabled", Old: false, New: nil},
 			},
 		},
 		{

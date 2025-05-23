@@ -119,7 +119,7 @@ func diffStruct(path string, s1, s2 reflect.Value, changes *[]Change) {
 			continue
 		}
 
-		fieldPath := join(path, sf.Name)
+		fieldPath := path + "." + sf.Name
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
@@ -189,13 +189,6 @@ func getForceSendFields(v reflect.Value) []string {
 }
 
 func keyToString(k reflect.Value) string { return fmt.Sprint(k.Interface()) }
-
-func join(parent, child string) string {
-	if parent == "" {
-		return child
-	}
-	return parent + "." + child
-}
 
 func add(path string, v1, v2 reflect.Value, changes *[]Change) {
 	*changes = append(*changes, Change{Field: path, Old: v1.Interface(), New: v2.Interface()})
