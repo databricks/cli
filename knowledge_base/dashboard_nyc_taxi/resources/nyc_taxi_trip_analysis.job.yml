@@ -1,0 +1,19 @@
+resources:
+  jobs:
+    dashboard_snapshot_job:
+      name: "Daily NYC Taxi Trip Analysis refresh"
+
+      schedule:
+        quartz_cron_expression: '0 0 8 * * ?' # daily at 8am
+        timezone_id: UTC
+
+      tasks:
+        - task_key: dashboard_task
+          dashboard_task:
+            subscription:
+              subscribers:
+                - user_name:  ${workspace.current_user.userName} # Replace this with the email of snapshot subscriber email
+              paused: false
+            warehouse_id: ${var.warehouse_id}
+            dashboard_id: ${resources.dashboards.nyc_taxi_trip_analysis.id}
+

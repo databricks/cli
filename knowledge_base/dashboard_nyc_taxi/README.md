@@ -1,28 +1,33 @@
 # Dashboard for NYC Taxi Trip Analysis
 
-This example demonstrates how to define an AI/BI dashboard in a Databricks Asset Bundle.
+This example shows how to define a Databricks Asset Bundle with an AI/BI dashboard and a job that captures a snapshot of the dashboard and emails it to a subscriber.
 
-It includes and deploys the sample __NYC Taxi Trip Analysis__ dashboard to a Databricks workspace.
+It deploys the sample __NYC Taxi Trip Analysis__ dashboard to a Databricks workspace and configures a daily schedule to run the dashboard and send the snapshot in email to a specified email address.
 
 For more information about AI/BI dashboards, please refer to the [documentation](https://docs.databricks.com/dashboards/index.html).
 
 ## Prerequisites
 
-* Databricks CLI v0.232.0 or above
+This example includes a dashboard snapshot task, which requires Databricks CLI  v0.250.0 or above. Creating dashboards in bundles is supported in Databricks CLI v0.232.0 or above.
 
 ## Usage
 
-Modify `databricks.yml`:
-* Update the `host` field under `workspace` to the Databricks workspace to deploy to.
-* Update the `warehouse` field under `warehouse_id` to the name of the SQL warehouse to use.
+1. Modify `databricks.yml`:
+    - Update the `host` field under `workspace` to the Databricks workspace to deploy to.
+    - Update the `warehouse` field under `warehouse_id` to the name of the SQL warehouse to use.
 
-Run `databricks bundle deploy` to deploy the dashboard.
+2. Modify `resources/nyc_taxi_trip_analysis.job.yml`:
+    - Update the `user_name` field under `subscribers` to the dashboard subscriber's email.
 
-Run `databricks bundle open` to navigate to the deployed dashboard in your browser. Alternatively, run `databricks bundle summary` to display its URL.
+3. Deploy the dashboard:
+    - Run `databricks bundle deploy` to deploy the dashboard.
+    - Run `databricks bundle open` to navigate to the deployed dashboard in your browser. Alternatively, run `databricks bundle summary` to display its URL.
+
+The AI/BI dashboard is created and the snapshot job is set to run daily at 8 AM, which captures a snapshot of the dashboard, and sends it in email to the specified subscriber.
 
 ### Visual modification
 
-You can use the Databricks UI to modify the dashboard, but any modifications made through the UI will not be applied to the bundle `.lvdash.json` file unless you explicitly update it. 
+You can use the Databricks UI to modify the dashboard, but any modifications made through the UI will not be applied to the bundle `.lvdash.json` file unless you explicitly update it.
 
 To update the local bundle `.lvdash.json` file, run:
 
