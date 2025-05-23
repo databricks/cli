@@ -255,7 +255,7 @@ func addDefaultHandlers(server *testserver.Server) {
 	// Pipelines:
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
-		return req.Workspace.PipelineGet(req.Vars["pipeline_id"])
+		return testserver.MapGet(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
 	})
 
 	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {

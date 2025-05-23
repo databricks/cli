@@ -40,7 +40,7 @@ type FakeWorkspace struct {
 	Jobs         map[int64]jobs.Job
 	JobRuns      map[int64]jobs.Run
 
-	Pipelines map[string]pipelines.PipelineSpec
+	Pipelines map[string]pipelines.GetPipelineResponse
 	Monitors  map[string]catalog.MonitorInfo
 	Apps      map[string]apps.App
 	Schemas   map[string]catalog.SchemaInfo
@@ -112,7 +112,7 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		JobRuns:      map[int64]jobs.Run{},
 		nextJobId:    TestJobID,
 		nextJobRunId: TestRunID,
-		Pipelines:    map[string]pipelines.PipelineSpec{},
+		Pipelines:    map[string]pipelines.GetPipelineResponse{},
 		Monitors:     map[string]catalog.MonitorInfo{},
 		Apps:         map[string]apps.App{},
 		Schemas:      map[string]catalog.SchemaInfo{},
