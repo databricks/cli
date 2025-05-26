@@ -482,7 +482,9 @@ func runTest(t *testing.T,
 		require.Len(t, items, 2)
 		key := items[0]
 		value := items[1]
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1)
+		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
+		// (to avoid matching "yes" and "no" values from template input parameters)
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1 && len(value) >= 4)
 	}
 
 	absDir, err := filepath.Abs(dir)
