@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/databricks/cli/libs/utils"
 	"github.com/google/uuid"
 )
 
@@ -27,6 +28,12 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
+type ResourceNode struct {
+	Section string
+	Name    string
+	ID      string
+}
+
 func (db *TerranovaState) SaveState(section, resourceName, newID string, state any) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -41,6 +48,20 @@ func (db *TerranovaState) SaveState(section, resourceName, newID string, state a
 		ID:    newID,
 		State: state,
 	}
+
+	return nil
+}
+
+func (db *TerranovaState) DeleteState(section, resourceName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	sectionData, ok := db.data.Resources[section]
+	if !ok {
+		return nil
+	}
+
+	delete(sectionData, resourceName)
 
 	return nil
 }
@@ -90,6 +111,23 @@ func (db *TerranovaState) GetResourceID(section, resourceName string) (string, e
 	return sectionData[resourceName].ID, nil
 }
 
+func (db *TerranovaState) GetAllResources() []ResourceNode {
+	nodes := make([]ResourceNode, 0, len(db.data.Resources)*4)
+
+	for _, section := range utils.SortedKeys(db.data.Resources) {
+		sectionData := db.data.Resources[section]
+		for _, name := range utils.SortedKeys(sectionData) {
+			nodes = append(nodes, ResourceNode{
+				Section: section,
+				Name:    name,
+				ID:      sectionData[name].ID,
+			})
+		}
+	}
+
+	return nodes
+}
+
 func (db *TerranovaState) Open(path string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -126,4 +164,18 @@ func (db *TerranovaState) unlockedSave() error {
 	}
 
 	return os.WriteFile(db.Path, data, 0o600)
+}
+
+func (r ResourceNode) Less(other ResourceNode) bool {
+	if r.Section < other.Section {
+		return true
+	}
+	if r.Section > other.Section {
+		return false
+	}
+	return r.Name < other.Name
+}
+
+func (r ResourceNode) String() string {
+	return r.Section + "." + r.Name + "#" + r.ID
 }

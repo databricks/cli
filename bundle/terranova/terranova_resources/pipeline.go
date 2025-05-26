@@ -15,8 +15,8 @@ type ResourcePipeline struct {
 	config pipelines.CreatePipeline
 }
 
-func NewResourcePipeline(client *databricks.WorkspaceClient, resource resources.Pipeline) (ResourcePipeline, error) {
-	return ResourcePipeline{
+func NewResourcePipeline(client *databricks.WorkspaceClient, resource resources.Pipeline) (*ResourcePipeline, error) {
+	return &ResourcePipeline{
 		client: client,
 		config: resource.CreatePipeline,
 	}, nil
@@ -44,12 +44,16 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) (string, err
 
 	err = r.client.Pipelines.Update(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Pipelines.Updater", Err: err}
+		return "", SDKError{Method: "Pipelines.Update", Err: err}
 	}
 	return id, nil
 }
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
+	err := r.client.Pipelines.DeleteByPipelineId(ctx, id)
+	if err != nil {
+		return SDKError{Method: "Pipelines.DeleteByPipelineId", Err: err}
+	}
 	return nil
 }
 

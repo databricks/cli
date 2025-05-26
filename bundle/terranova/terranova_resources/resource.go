@@ -51,8 +51,8 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 		if typedConfig == nil {
 			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
 		}
-		r, err := NewResourceJob(client, *typedConfig)
-		return &r, err
+		return NewResourceJob(client, *typedConfig)
+
 	case "pipelines":
 		typedConfig, ok := config.(*resources.Pipeline)
 		if !ok {
@@ -61,8 +61,8 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 		if typedConfig == nil {
 			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
 		}
-		r, err := NewResourcePipeline(client, *typedConfig)
-		return &r, err
+		return NewResourcePipeline(client, *typedConfig)
+
 	case "schemas":
 		typedConfig, ok := config.(*resources.Schema)
 		if !ok {
@@ -71,8 +71,8 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 		if typedConfig == nil {
 			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
 		}
-		r, err := NewResourceSchema(client, *typedConfig)
-		return &r, err
+		return NewResourceSchema(client, *typedConfig)
+
 	case "apps":
 		typedConfig, ok := config.(*resources.App)
 		if !ok {
@@ -81,10 +81,33 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 		if typedConfig == nil {
 			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
 		}
-		r, err := NewResourceApp(client, *typedConfig)
-		return &r, err
+		return NewResourceApp(client, *typedConfig)
 
 	default:
 		return nil, fmt.Errorf("unsupported resource type: %s", section)
 	}
+}
+
+func DestroyResource(ctx context.Context, client *databricks.WorkspaceClient, section, id string) error {
+	var err error
+	var r IResource
+
+	switch section {
+	case "jobs":
+		r, err = NewResourceJob(client, resources.Job{})
+	case "pipelines":
+		r, err = NewResourcePipeline(client, resources.Pipeline{})
+	case "schemas":
+		r, err = NewResourceSchema(client, resources.Schema{})
+	case "apps":
+		r, err = NewResourceApp(client, resources.App{})
+	default:
+		return fmt.Errorf("unsupported resource type: %s", section)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return r.DoDelete(ctx, id)
 }
