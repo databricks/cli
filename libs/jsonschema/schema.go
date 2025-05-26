@@ -109,20 +109,20 @@ func (s *Schema) GetDefinition(p string) (*Schema, error) {
 		return nil, fmt.Errorf("invalid reference %q. References must start with #/$defs/", p)
 	}
 
+	if len(parts) <= 2 {
+		return nil, fmt.Errorf("invalid reference %q. Expected more than 2 tokens", p)
+	}
+
 	curr := s.Definitions
 	var ok bool
-	for i, part := range parts[2:] {
-		if i == len(parts)-3 {
-			return anyToSchema(curr[part])
-		}
-
+	for _, part := range parts[2:] {
 		curr, ok = curr[part].(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("invalid reference %q. Failed to resolve reference at %q", p, part)
 		}
 	}
 
-	return nil, fmt.Errorf("invalid reference %q. Expected more than 2 tokens", p)
+	return anyToSchema(curr)
 }
 
 // Default value defined in a JSON Schema, represented as a string.
