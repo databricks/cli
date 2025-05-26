@@ -1,0 +1,10 @@
+bundle:
+  name: acc-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    my:
+      name: test-pipeline-$UNIQUE_NAME
+      libraries:
+        - file:
+            path: "./foo.py"

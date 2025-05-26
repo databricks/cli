@@ -1,0 +1,19 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+touch foo.py
+touch bar.py
+trace $CLI bundle deploy
+
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+    read_state.py pipelines my id name
+}
+
+trace print_requests
+
+trace update_file.py databricks.yml foo.py bar.py
+trace $CLI bundle deploy
+trace print_requests
+
+trace $CLI pipelines get $(read_id.py pipelines my)
+rm out.requests.txt
