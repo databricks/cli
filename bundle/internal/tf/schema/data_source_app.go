@@ -73,6 +73,12 @@ type DataSourceAppAppResourcesSqlWarehouse struct {
 	Permission string `json:"permission"`
 }
 
+type DataSourceAppAppResourcesUcSecurable struct {
+	Permission        string `json:"permission"`
+	SecurableFullName string `json:"securable_full_name"`
+	SecurableType     string `json:"securable_type"`
+}
+
 type DataSourceAppAppResources struct {
 	Description     string                                    `json:"description,omitempty"`
 	Job             *DataSourceAppAppResourcesJob             `json:"job,omitempty"`
@@ -80,6 +86,7 @@ type DataSourceAppAppResources struct {
 	Secret          *DataSourceAppAppResourcesSecret          `json:"secret,omitempty"`
 	ServingEndpoint *DataSourceAppAppResourcesServingEndpoint `json:"serving_endpoint,omitempty"`
 	SqlWarehouse    *DataSourceAppAppResourcesSqlWarehouse    `json:"sql_warehouse,omitempty"`
+	UcSecurable     *DataSourceAppAppResourcesUcSecurable     `json:"uc_securable,omitempty"`
 }
 
 type DataSourceAppApp struct {
