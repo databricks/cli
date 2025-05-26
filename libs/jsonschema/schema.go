@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
@@ -85,6 +86,43 @@ type Schema struct {
 	// in the future.
 	// https://json-schema.org/understanding-json-schema/reference/annotations
 	Deprecated bool `json:"deprecated,omitempty"`
+}
+
+func anyToSchema(a any) (*Schema, error) {
+	b, err := json.Marshal(a)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal any to schema: %w", err)
+	}
+
+	res := &Schema{}
+	err = json.Unmarshal(b, res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal any to schema: %w", err)
+	}
+
+	return res, nil
+}
+
+func (s *Schema) GetReference(p string) (*Schema, error) {
+	parts := strings.Split(p, "/")
+	if parts[0] != "#" || parts[1] != "$defs" {
+		return nil, fmt.Errorf("invalid reference %q. References must start with #/$defs/", p)
+	}
+
+	curr := s.Definitions
+	ok := true
+	for i, part := range parts[2:] {
+		if i == len(parts)-3 {
+			return anyToSchema(curr[part])
+		}
+
+		curr, ok = curr[part].(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid reference %q. Failed to resolve reference at token %q", p, part)
+		}
+	}
+
+	return nil, fmt.Errorf("invalid reference %q. Expected more than %d tokens", p, len(parts)-2)
 }
 
 // Default value defined in a JSON Schema, represented as a string.
