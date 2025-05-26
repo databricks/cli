@@ -27,23 +27,6 @@ type Resources struct {
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
 }
 
-func (r *Resources) GetResourceConfig(section, name string) (any, bool) {
-	// TODO: validate that the config is fully resolved
-	switch section {
-	case "jobs":
-		cfg, ok := r.Jobs[name]
-		return cfg, ok
-	case "schemas":
-		cfg, ok := r.Schemas[name]
-		return cfg, ok
-	case "apps":
-		cfg, ok := r.Schemas[name]
-		return cfg, ok
-	default:
-		return nil, false
-	}
-}
-
 type ConfigResource interface {
 	// Exists returns true if the resource exists in the workspace configured in
 	// the input workspace client.
