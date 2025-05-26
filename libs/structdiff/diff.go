@@ -34,7 +34,7 @@ func (p *pathNode) String() string {
 	if p.Index == -1 {
 		return p.Prev.String() + "." + p.Key
 	}
-	return p.Prev.String() + "[\"" + p.Key + "\"]"
+	return fmt.Sprintf("%s[%q]", p.Prev.String(), p.Key)
 }
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
