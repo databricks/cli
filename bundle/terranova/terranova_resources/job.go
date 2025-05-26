@@ -53,6 +53,14 @@ func (r *ResourceJob) DoUpdate(ctx context.Context, id string) (string, error) {
 }
 
 func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
+	idInt, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return err
+	}
+	r.client.Jobs.DeleteByJobId(ctx, idInt)
+	if err != nil {
+		return SDKError{Method: "Jobs.DeleteByJobId", Err: err}
+	}
 	return nil
 }
 
