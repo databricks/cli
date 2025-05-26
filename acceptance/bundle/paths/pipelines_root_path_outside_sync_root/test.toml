@@ -1,4 +1,3 @@
-[Repl]
-Old = '\\'
+[[Repl]]
+Old = '\'
 New = '/'
-
