@@ -75,6 +75,11 @@ const (
 	MaxFileSize      = 100_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
+
+	// ENVFILTER allows filtering subtests matching certain env var.
+	// e.g. ENVFILTER=SERVERLESS=yes will run all tests that run SERVERLESS to "yes"
+	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
+	EnvFilterVar = "ENVFILTER"
 )
 
 var Scripts = map[string]bool{
@@ -214,6 +219,22 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	totalDirs := 0
 	selectedDirs := 0
 
+	envFilter := os.Getenv(EnvFilterVar)
+	envFilters := strings.Split(os.Getenv(EnvFilterVar), ",")
+	if len(envFilters) == 1 && len(envFilters[0]) == 0 {
+		envFilters = nil
+	}
+
+	for _, filter := range envFilters {
+		items := strings.Split(filter, "=")
+		if len(items) != 2 || len(items[0]) == 0 {
+			t.Fatalf("Invalid filter %q in %s=%q", filter, EnvFilterVar, envFilter)
+		}
+		key := items[0]
+		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
+		os.Unsetenv(key)
+	}
+
 	for _, dir := range testDirs {
 		totalDirs += 1
 
@@ -245,7 +266,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode, envFilters)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -253,7 +274,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, configPath, envset, inprocessMode)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, configPath, envset, inprocessMode, envFilters)
 					})
 				}
 			}
@@ -354,6 +375,7 @@ func runTest(t *testing.T,
 	configPath string,
 	customEnv []string,
 	inprocessMode bool,
+	envFilters []string,
 ) {
 	if LogConfig {
 		configBytes, err := json.MarshalIndent(config, "", "  ")
@@ -485,6 +507,21 @@ func runTest(t *testing.T,
 		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
 		// (to avoid matching "yes" and "no" values from template input parameters)
 		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1 && len(value) >= 4)
+	}
+
+	for filterInd, filterEnv := range envFilters {
+		filterEnvKey := strings.Split(filterEnv, "=")[0]
+		for ind := range cmd.Env {
+			// Search backwards, because the latest settings is what is actually applicable.
+			envPair := cmd.Env[len(cmd.Env)-1-ind]
+			if strings.Split(envPair, "=")[0] == filterEnvKey {
+				if envPair == filterEnv {
+					break
+				} else {
+					t.Skipf("Skipping because test environment %s does not match ENVFILTER#%d: %s", envPair, filterInd, filterEnv)
+				}
+			}
+		}
 	}
 
 	absDir, err := filepath.Abs(dir)
