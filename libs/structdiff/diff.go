@@ -116,16 +116,18 @@ func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 		}
 	case reflect.Map:
 		if v1Type.Key().Kind() == reflect.String {
-			diffMap(path, v1, v2, changes)
+			diffMapStringKey(path, v1, v2, changes)
 		} else {
-			if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
-				*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
-			}
+			deepEqualValues(path, v1, v2, changes)
 		}
-	default: // primitives, interfaces, etc.
-		if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
-			*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
-		}
+	default:
+		deepEqualValues(path, v1, v2, changes)
+	}
+}
+
+func deepEqualValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
+	if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
+		*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 	}
 }
 
@@ -173,14 +175,15 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 	}
 }
 
-func diffMap(path *pathNode, m1, m2 reflect.Value, changes *[]Change) {
+func diffMapStringKey(path *pathNode, m1, m2 reflect.Value, changes *[]Change) {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
-		ks := fmt.Sprint(k.Interface())
+		// Key is always string at this point
+		ks := k.Interface().(string)
 		keySet[ks] = k
 	}
 	for _, k := range m2.MapKeys() {
-		ks := fmt.Sprint(k.Interface())
+		ks := k.Interface().(string)
 		keySet[ks] = k
 	}
 
