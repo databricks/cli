@@ -36,6 +36,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Fetch pipeline ID and verify remote state
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",

@@ -12,6 +12,18 @@ import (
 
 type edge struct{ from, to, name string }
 
+type stringWrapper struct {
+	Value string
+}
+
+func (s stringWrapper) Less(other stringWrapper) bool {
+	return s.Value < other.Value
+}
+
+func (s stringWrapper) String() string {
+	return s.Value
+}
+
 func TestRun_VariousGraphsAndPools(t *testing.T) {
 	pools := []int{1, 2, 3, 4}
 
@@ -72,19 +84,19 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 		tc := tc
 		for _, p := range pools {
 			t.Run(tc.name+fmt.Sprintf(" pool=%d", p), func(t *testing.T) {
-				g := NewGraph()
+				g := NewGraph[stringWrapper]()
 				for _, n := range tc.nodes {
-					g.AddNode(n)
+					g.AddNode(stringWrapper{n})
 				}
 				for _, e := range tc.edges {
-					_ = g.AddDirectedEdge(e.from, e.to, e.name)
+					_ = g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
 				}
 
 				var mu sync.Mutex
 				var seen []string
-				err := g.Run(p, func(n string) {
+				err := g.Run(p, func(n stringWrapper) {
 					mu.Lock()
-					seen = append(seen, n)
+					seen = append(seen, n.Value)
 					mu.Unlock()
 				})
 

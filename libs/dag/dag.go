@@ -7,61 +7,68 @@ import (
 	"sync"
 )
 
-type adjEdge struct {
-	to    string
+type Lessable[T comparable] interface {
+	comparable
+	Less(T) bool
+}
+
+type adjEdge[N Lessable[N]] struct {
+	to    N
 	label string
 }
 
-type Graph struct {
-	adj map[string][]adjEdge
+type Graph[N Lessable[N]] struct {
+	adj map[N][]adjEdge[N]
 }
 
-func NewGraph() *Graph { return &Graph{adj: make(map[string][]adjEdge)} }
+func NewGraph[N Lessable[N]]() *Graph[N] {
+	return &Graph[N]{adj: make(map[N][]adjEdge[N])}
+}
 
-func (g *Graph) AddNode(name string) {
-	if _, ok := g.adj[name]; !ok {
-		g.adj[name] = nil
+func (g *Graph[N]) AddNode(n N) {
+	if _, ok := g.adj[n]; !ok {
+		g.adj[n] = nil
 	}
 }
 
-// AddDirectedEdge inserts from → to with label.
-func (g *Graph) AddDirectedEdge(from, to, label string) error {
+func (g *Graph[N]) AddDirectedEdge(from, to N, label string) error {
 	if from == to {
-		return fmt.Errorf("self-loop %q", from)
+		return fmt.Errorf("self-loop %v", from)
 	}
+	g.AddNode(from)
 	g.AddNode(to)
-	g.adj[from] = append(g.adj[from], adjEdge{to: to, label: label})
+	g.adj[from] = append(g.adj[from], adjEdge[N]{to: to, label: label})
 	return nil
 }
 
-type CycleError struct {
-	Nodes []string
+type CycleError[N Lessable[N]] struct {
+	Nodes []N
 	Edges []string
 }
 
-func (e *CycleError) Error() string {
+func (e *CycleError[N]) Error() string {
 	if len(e.Nodes) == 0 {
 		return "cycle detected"
 	}
 	var b strings.Builder
 	b.WriteString("cycle detected: ")
-	b.WriteString(e.Nodes[0])
+	fmt.Fprint(&b, e.Nodes[0])
 	for i := 1; i < len(e.Nodes); i++ {
 		b.WriteString(" refers to ")
-		b.WriteString(e.Nodes[i])
+		fmt.Fprint(&b, e.Nodes[i])
 		b.WriteString(" via ")
 		b.WriteString(e.Edges[i-1])
 	}
 	b.WriteString(" which refers to ")
-	b.WriteString(e.Nodes[0])
+	fmt.Fprint(&b, e.Nodes[0])
 	b.WriteString(" via ")
 	b.WriteString(e.Edges[len(e.Edges)-1])
 	b.WriteString(".")
 	return b.String()
 }
 
-func (g *Graph) indegrees() map[string]int {
-	in := make(map[string]int, len(g.adj))
+func (g *Graph[N]) indegrees() map[N]int {
+	in := make(map[N]int, len(g.adj))
 	for v := range g.adj {
 		in[v] = 0
 	}
@@ -73,38 +80,40 @@ func (g *Graph) indegrees() map[string]int {
 	return in
 }
 
-/* non-recursive DFS cycle check */
-
-func (g *Graph) DetectCycle() error {
-	for _, outs := range g.adj {
-		sort.Slice(outs, func(i, j int) bool { return outs[i].to < outs[j].to })
+func (g *Graph[N]) DetectCycle() error {
+	// 1. sort every adjacency list once
+	for k, outs := range g.adj {
+		sort.Slice(outs, func(i, j int) bool { return outs[i].to.Less(outs[j].to) })
+		g.adj[k] = outs
 	}
-	roots := make([]string, 0, len(g.adj))
+
+	// 2. sorted list of roots
+	roots := make([]N, 0, len(g.adj))
 	for v := range g.adj {
 		roots = append(roots, v)
 	}
-	sort.Strings(roots)
+	sort.Slice(roots, func(i, j int) bool { return roots[i].Less(roots[j]) })
 
 	const (
 		white = 0
 		grey  = 1
 		black = 2
 	)
-	color := make(map[string]int, len(g.adj))
+	color := make(map[N]int, len(g.adj))
 
 	type frame struct {
-		node  string
-		inLbl string // edge label via which we entered this node
-		next  int    // next neighbour index to explore
+		node  N
+		inLbl string
+		next  int
 	}
 	var st stack[frame]
 
-	for _, r := range roots {
-		if color[r] != white {
+	for _, root := range roots {
+		if color[root] != white {
 			continue
 		}
-		color[r] = grey
-		st.push(frame{node: r})
+		color[root] = grey
+		st.push(frame{node: root})
 
 		for st.len() > 0 {
 			f := st.peek()
@@ -117,9 +126,10 @@ func (g *Graph) DetectCycle() error {
 				case white:
 					color[edge.to] = grey
 					st.push(frame{node: edge.to, inLbl: edge.label})
-				case grey: // back-edge → cycle
+				case grey:
 					closeLbl := edge.label
-					var nodes, edges []string
+					var nodes []N
+					var edges []string
 					for i := st.len() - 1; i >= 0; i-- {
 						nodes = append(nodes, st.data[i].node)
 						if lbl := st.data[i].inLbl; lbl != "" {
@@ -136,7 +146,7 @@ func (g *Graph) DetectCycle() error {
 						edges[i], edges[j] = edges[j], edges[i]
 					}
 					edges = append(edges, closeLbl)
-					return &CycleError{Nodes: nodes, Edges: edges}
+					return &CycleError[N]{Nodes: nodes, Edges: edges}
 				}
 			} else {
 				color[f.node] = black
@@ -147,24 +157,21 @@ func (g *Graph) DetectCycle() error {
 	return nil
 }
 
-/* Run with fixed worker pool */
-
-func (g *Graph) Run(pool int, runUnit func(string)) error {
+func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
 	if err := g.DetectCycle(); err != nil {
 		return err
 	}
-
-	if pool > len(g.adj) {
+	if pool <= 0 || pool > len(g.adj) {
 		pool = len(g.adj)
 	}
 
 	in := g.indegrees()
-	ready := make(chan string, len(in))
-	done := make(chan string, len(in))
+	ready := make(chan N, len(in))
+	done := make(chan N, len(in))
 
 	var wg sync.WaitGroup
 	wg.Add(pool)
-	for range pool {
+	for i := 0; i < pool; i++ {
 		go func() {
 			defer wg.Done()
 			for n := range ready {
@@ -174,11 +181,12 @@ func (g *Graph) Run(pool int, runUnit func(string)) error {
 		}()
 	}
 
-	keys := make([]string, 0, len(in))
+	// stable initial-ready order
+	keys := make([]N, 0, len(in))
 	for k := range in {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	sort.Slice(keys, func(i, j int) bool { return keys[i].Less(keys[j]) })
 	for _, n := range keys {
 		if in[n] == 0 {
 			ready <- n
