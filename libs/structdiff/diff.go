@@ -39,7 +39,7 @@ func (p *pathNode) String() string {
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
 // Respects ForceSendFields if present.
-// Types of and ab must match exactly, otherwise returns an error.
+// Types of a and b must match exactly, otherwise returns an error.
 func GetStructDiff(a, b any) ([]Change, error) {
 	v1 := reflect.ValueOf(a)
 	v2 := reflect.ValueOf(b)

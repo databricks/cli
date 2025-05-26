@@ -195,25 +195,17 @@ func TestGetStructDiff(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetStructDiff(tt.a, tt.b)
+			assert.Equal(t, tt.want, got)
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				return
+			} else {
+				assert.NoError(t, err)
 			}
-
-			assert.NoError(t, err)
-			assert.Equal(t, tt.want, got)
 		})
 
 		t.Run(tt.name+" mirror", func(t *testing.T) {
 			got, err := GetStructDiff(tt.b, tt.a)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NoError(t, err)
 
 			var mirrorWant []Change
 			for _, ch := range tt.want {
@@ -224,6 +216,12 @@ func TestGetStructDiff(t *testing.T) {
 				})
 			}
 			assert.Equal(t, mirrorWant, got)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 
 		t.Run(tt.name+" equal A", func(t *testing.T) {
