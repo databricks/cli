@@ -1,0 +1,21 @@
+bundle:
+  name: my_project
+
+experimental:
+  python:
+    venv_path: ".venv"
+    resources:
+    - "my_project.resources:load_resources"
+
+artifacts:
+  default:
+    type: whl
+    build: pip3 wheel -w dist .
+
+workspace:
+  host: https://myworkspace.databricks.com
+
+targets:
+  dev:
+    default: true
+    mode: development

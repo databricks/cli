@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my_project"
+requires-python = ">=3.10"
+version = "0.0.1"
+
+[project.entry-points.packages]
+python_wheel_task = "my_project.python_wheel_task:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
