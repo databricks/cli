@@ -2,6 +2,10 @@ Warning: unknown field: node_type_id
   at resources.jobs.job1.job_clusters[0]
   in databricks.yml:25:11
 
+Warning: required field "new_cluster" is not set
+  at resources.jobs.job1.job_clusters[0]
+  in databricks.yml:23:11
+
 [
   {
     "job_cluster_key": "my_cluster",

@@ -1,3 +1,11 @@
+Warning: required field "job_cluster_key" is not set
+  at resources.jobs.job1.job_clusters[0]
+  in databricks.yml:17:11
+
+Warning: required field "job_cluster_key" is not set
+  at resources.jobs.job1.job_clusters[1]
+  in databricks.yml:27:15
+
 [
   {
     "job_cluster_key": "",

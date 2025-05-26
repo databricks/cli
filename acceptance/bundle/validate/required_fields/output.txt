@@ -1,16 +1,18 @@
 
 >>> [CLI] bundle validate
-Error: required field "task_key" is not set
-  at resources.jobs.foo.tasks[0]
-  in databricks.yml:11:11
+Warning: required field "source_code_path" is not set
+  at resources.apps.bar
+  in databricks.yml:15:7
 
-Error: required field "level" is not set
+Warning: required field "level" is not set
   at permissions[0]
   in databricks.yml:5:5
 
-Error: required field "source_code_path" is not set
-  at resources.apps.bar
-  in databricks.yml:15:7
+Warning: required field "task_key" is not set
+  at resources.jobs.foo.tasks[0]
+  in databricks.yml:11:11
+
+Error: invalid permission level: , allowed values: [CAN_MANAGE, CAN_VIEW, CAN_RUN]
 
 Name: validate:required_fields
 Target: default
@@ -18,6 +20,6 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/validate:required_fields/default
 
-Found 3 errors
+Found 1 error and 3 warnings
 
 Exit code: 1

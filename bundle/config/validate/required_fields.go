@@ -12,7 +12,6 @@ import (
 
 type requiredFields struct{}
 
-// TODO: also add to fast validate.
 func RequiredFields() bundle.Mutator {
 	return &requiredFields{}
 }
@@ -30,22 +29,29 @@ func (f *requiredFields) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			return diag.FromErr(fmt.Errorf("invalid pattern %q for required field validation: %w", k, err))
 		}
 
-		dyn.MapByPattern(b.Config.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		_, err = dyn.MapByPattern(b.Config.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			for _, requiredField := range requiredFields {
 				vv := v.Get(requiredField)
 				if vv.Kind() == dyn.KindInvalid || vv.Kind() == dyn.KindNil {
 					diags = diags.Append(diag.Diagnostic{
-						Severity:  diag.Error,
+						Severity:  diag.Warning,
 						Summary:   fmt.Sprintf("required field %q is not set", requiredField),
 						Locations: v.Locations(),
 						Paths:     []dyn.Path{p},
 					})
 
-					return dyn.NilValue, fmt.Errorf("required field %q is not set", requiredField)
+					return dyn.NilValue, nil
 				}
 			}
 			return v, nil
 		})
+		if dyn.IsExpectedMapError(err) || dyn.IsExpectedSequenceError(err) || dyn.IsExpectedMapAtIndexError(err) || dyn.IsExpectedSequenceAtIndexError(err) {
+			// No map or sequence defined for this pattern, so we ignore it.
+			continue
+		}
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags

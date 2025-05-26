@@ -39,6 +39,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=validate:volume-path
+10:07:59 Debug: Apply pid=12345 mutator=validate:required_fields
 10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
 10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources
@@ -49,7 +50,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
 10:07:59 Debug: Apply pid=12345 mutator=CheckPermissions
-10:07:59 Debug: Apply pid=12345 mutator=validate:required_fields
 10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonWrapperWarning
 10:07:59 Debug: Apply pid=12345 mutator=artifacts.Prepare
