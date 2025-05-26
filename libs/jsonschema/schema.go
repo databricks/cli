@@ -103,7 +103,7 @@ func anyToSchema(a any) (*Schema, error) {
 	return res, nil
 }
 
-func (s *Schema) GetReference(p string) (*Schema, error) {
+func (s *Schema) GetDefinition(p string) (*Schema, error) {
 	parts := strings.Split(p, "/")
 	if parts[0] != "#" || parts[1] != "$defs" {
 		return nil, fmt.Errorf("invalid reference %q. References must start with #/$defs/", p)
