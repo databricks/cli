@@ -1,6 +1,8 @@
 Local = false
 Cloud = true
 
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct"]
+
 Ignore = [
     "databricks.yml",
     "a/b/resources.yml",
