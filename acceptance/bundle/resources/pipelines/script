@@ -5,8 +5,8 @@ trace $CLI bundle deploy
 
 print_requests() {
     jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
-    rm out.requests.txt
-    read_state.py pipelines my id name
+    errcode rm out.requests.txt
+    errcode read_state.py pipelines my id name
 }
 
 trace print_requests
@@ -19,12 +19,19 @@ trace $CLI bundle deploy
 #trace print_requests
 
 ppid=`read_id.py pipelines my`
+rm out.requests.txt
+
+title "Fetch pipeline ID and verify remote state"
+
+ppid=`read_id.py pipelines my`
+
+>>>>>>> 06684a8e5 (WIP: destroy mutator + test (pipelines only); Graph is now generic)
 trace $CLI pipelines get $ppid
 rm out.requests.txt
 
 title "Destroy the pipeline and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
-
 trace print_requests
+
 trace musterr $CLI pipelines get $ppid
 rm out.requests.txt

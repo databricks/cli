@@ -3,8 +3,6 @@ package terranova
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/terranova/terranova_resources"
@@ -35,28 +33,19 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	client := b.WorkspaceClient()
 
-	cacheDir, err := b.CacheDir(ctx)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	g := dag.NewGraph[terranova_state.ResourceNode]()
 
-	databasePath := filepath.Join(cacheDir, "resources.json")
-	err = b.ResourceDatabase.Open(databasePath)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	g := dag.NewGraph()
-
-	_, err = dyn.MapByPattern(
+	_, err := dyn.MapByPattern(
 		b.Config.Value(),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			section := p[1].Key()
-			resourceName := p[2].Key()
-			node := section + "." + resourceName
+			name := p[2].Key()
 			// log.Warnf(ctx, "Adding node=%s", node)
-			g.AddNode(node)
+			g.AddNode(terranova_state.ResourceNode{
+				Section: section,
+				Name:    name,
+			})
 
 			// TODO: Scan v for references and use g.AddDirectedEdge to add dependency
 			return v, nil
@@ -65,25 +54,16 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	countDeployed := 0
 
-	err = g.Run(maxPoolSize, func(node string) {
+	err = g.Run(maxPoolSize, func(node terranova_state.ResourceNode) {
 		// TODO func(node string) bool
 		// If function returns false, downstream callers are not called
 		// g.Run() should return list of not executed nodes
 		// log.Warnf(ctx, "Processing node=%s", node)
 
-		items := strings.SplitN(node, ".", 2)
-		if len(items) != 2 {
-			diags.AppendErrorf("internal error: unexpected DAG node %#v", node)
-			return
-		}
-
-		section := items[0]
-		name := items[1]
-
 		// TODO: resolve all resource references inside this resource. It should be possible, if graph was constructed correctly.
 		// If it is not possible, return error (and fail this and dependent resources)
 
-		config, ok := b.GetResourceConfig(section, name)
+		config, ok := b.GetResourceConfig(node.Section, node.Name)
 		if !ok {
 			diags.AppendErrorf("internal error: cannot get config for %s", node)
 			return
@@ -92,8 +72,8 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 		d := Deployer{
 			client:       client,
 			db:           &b.ResourceDatabase,
-			section:      section,
-			resourceName: name,
+			section:      node.Section,
+			resourceName: node.Name,
 		}
 
 		err = d.Deploy(ctx, config)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -209,6 +210,17 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			b.Config.Bundle.Terraform = &config.Terraform{ExecPath: " "}
 			return nil
 		})
+
+		cacheDir, err := b.CacheDir(ctx)
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+		}
+
+		databasePath := filepath.Join(cacheDir, "resources.json")
+		err = b.ResourceDatabase.Open(databasePath)
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+		}
 	} else {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
