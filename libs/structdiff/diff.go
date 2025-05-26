@@ -51,7 +51,7 @@ func GetStructDiff(a, b any) ([]Change, error) {
 	var changes []Change
 
 	if !v1.IsValid() || !v2.IsValid() {
-		add(nil, v1, v2, &changes)
+		changes = append(changes, Change{Field: "", Old: v1.Interface(), New: v2.Interface()})
 		return changes, nil
 	}
 
@@ -81,7 +81,7 @@ func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 
 	// This should not happen; if it does, record this a full change
 	if v1Type != v2.Type() {
-		add(path, v1, v2, changes)
+		*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 		return
 	}
 
@@ -95,7 +95,7 @@ func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 			return
 		}
 		if v1Nil || v2Nil {
-			add(path, v1, v2, changes)
+			*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 			return
 		}
 	}
@@ -107,7 +107,7 @@ func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 		diffStruct(path, v1, v2, changes)
 	case reflect.Slice, reflect.Array:
 		if v1.Len() != v2.Len() {
-			add(path, v1, v2, changes)
+			*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 		} else {
 			for i := range v1.Len() {
 				node := pathNode{Prev: path, Index: i}
@@ -119,12 +119,12 @@ func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 			diffMap(path, v1, v2, changes)
 		} else {
 			if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
-				add(path, v1, v2, changes)
+				*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 			}
 		}
 	default: // primitives, interfaces, etc.
 		if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
-			add(path, v1, v2, changes)
+			*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 		}
 	}
 }
@@ -176,10 +176,12 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 func diffMap(path *pathNode, m1, m2 reflect.Value, changes *[]Change) {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
-		keySet[keyToString(k)] = k
+		ks := fmt.Sprint(k.Interface())
+		keySet[ks] = k
 	}
 	for _, k := range m2.MapKeys() {
-		keySet[keyToString(k)] = k
+		ks := fmt.Sprint(k.Interface())
+		keySet[ks] = k
 	}
 
 	var keys []string
@@ -214,10 +216,4 @@ func getForceSendFields(v reflect.Value) []string {
 		return result
 	}
 	return nil
-}
-
-func keyToString(k reflect.Value) string { return fmt.Sprint(k.Interface()) }
-
-func add(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
-	*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 }
