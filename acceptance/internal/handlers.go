@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -188,30 +187,9 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.JobsReset(request)
 	})
 
-	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
-		var request pipelines.PipelineSpec
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return testserver.Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 400,
-			}
-		}
-
-		return req.Workspace.PipelinesCreate(request)
-	})
-
-	server.Handle("DELETE", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
-		return testserver.MapDelete(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
-	})
-
 	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
 		jobId := req.URL.Query().Get("job_id")
 		return req.Workspace.JobsGet(jobId)
-	})
-
-	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
-		pipelineId := req.Vars["pipeline_id"]
-		return req.Workspace.PipelinesGet(pipelineId)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
@@ -272,6 +250,24 @@ func addDefaultHandlers(server *testserver.Server) {
 			Errors:          []telemetry.LogError{},
 			NumProtoSuccess: 1,
 		}
+	})
+
+	// Pipelines:
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
+		return req.Workspace.PipelineCreate(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		return req.Workspace.PipelineUpdate(req, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
 	})
 
 	// Quality monitors:

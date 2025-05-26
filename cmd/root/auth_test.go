@@ -110,6 +110,9 @@ func TestAccountClientOrPrompt(t *testing.T) {
 	})
 
 	t.Run("Prompt if no credential provider can be configured", func(t *testing.T) {
+		// The SDK probes all auth types when not specified and this fails for the u2m probe on Windows.
+		t.Skip("Skipping as of #2920")
+
 		expectPrompts(t, accountPromptFn, &config.Config{
 			Host:      "https://accounts.azuredatabricks.net/",
 			AccountID: "1234",
@@ -169,6 +172,9 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 	})
 
 	t.Run("Prompt if no credential provider can be configured", func(t *testing.T) {
+		// The SDK probes all auth types when not specified and this fails for the u2m probe on Windows.
+		t.Skip("Skipping as of #2920")
+
 		expectPrompts(t, workspacePromptFn, &config.Config{
 			Host: "https://adb-1111.11.azuredatabricks.net/",
 

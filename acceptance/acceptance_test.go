@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
@@ -439,8 +440,14 @@ func runTest(t *testing.T,
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 
-	// User replacements come last:
+	// User replacements:
 	repls.Repls = append(repls.Repls, config.Repls...)
+
+	// Apply these after user replacements in case user replacement capture something like "Job \d+"
+	for offset := range 5 {
+		repls.Set(strconv.Itoa(testserver.TestJobID+offset), fmt.Sprintf("[TEST_JOB_ID+%d]", offset))
+		repls.Set(strconv.Itoa(testserver.TestRunID+offset), fmt.Sprintf("[TEST_RUN_ID+%d]", offset))
+	}
 
 	// Save replacements to temp test directory so that it can be read by diff.py
 	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")

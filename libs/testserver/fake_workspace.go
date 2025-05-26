@@ -15,7 +15,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/google/uuid"
+)
+
+// 4611686018427387911 == 2 ** 62 + 7
+// 2305843009213693969 == 2 ** 61 + 17
+// This values cannot be represented by float64, so they can test incorrect use of json parsing
+// (encoding/json without options parses numbers into float64)
+// These are also easier to spot / replace in test output compared to numbers with one or few digits.
+const (
+	TestJobID = 4611686018427387911
+	TestRunID = 2305843009213693969
 )
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
@@ -31,7 +40,7 @@ type FakeWorkspace struct {
 	Jobs         map[int64]jobs.Job
 	JobRuns      map[int64]jobs.Run
 
-	Pipelines map[string]pipelines.PipelineSpec
+	Pipelines map[string]pipelines.GetPipelineResponse
 	Monitors  map[string]catalog.MonitorInfo
 	Apps      map[string]apps.App
 	Schemas   map[string]catalog.SchemaInfo
@@ -101,9 +110,9 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		files:        map[string][]byte{},
 		Jobs:         map[int64]jobs.Job{},
 		JobRuns:      map[int64]jobs.Run{},
-		nextJobId:    1,
-		nextJobRunId: 1,
-		Pipelines:    map[string]pipelines.PipelineSpec{},
+		nextJobId:    TestJobID,
+		nextJobRunId: TestRunID,
+		Pipelines:    map[string]pipelines.GetPipelineResponse{},
 		Monitors:     map[string]catalog.MonitorInfo{},
 		Apps:         map[string]apps.App{},
 		Schemas:      map[string]catalog.SchemaInfo{},
@@ -232,28 +241,6 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 	}
 }
 
-func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
-	defer s.LockUnlock()()
-
-	pipelineId := uuid.New().String()
-
-	r.Id = pipelineId
-
-	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
-	// and if the storage location is not specified, API automatically generates a storage location
-	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
-	if r.Storage == "" && r.Catalog == "" {
-		r.Storage = "dbfs:/pipelines/" + pipelineId
-	}
-	s.Pipelines[pipelineId] = r
-
-	return Response{
-		Body: pipelines.CreatePipelineResponse{
-			PipelineId: pipelineId,
-		},
-	}
-}
-
 func (s *FakeWorkspace) JobsGet(jobId string) Response {
 	id := jobId
 
@@ -322,24 +309,6 @@ func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
 	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
 	return Response{
 		Body: run,
-	}
-}
-
-func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
-	defer s.LockUnlock()()
-
-	spec, ok := s.Pipelines[pipelineId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	return Response{
-		Body: pipelines.GetPipelineResponse{
-			PipelineId: pipelineId,
-			Spec:       &spec,
-		},
 	}
 }
 

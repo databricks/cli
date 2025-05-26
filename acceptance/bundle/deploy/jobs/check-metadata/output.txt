@@ -1,0 +1,62 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert job 1 is created
+{
+  "name": "test-job-metadata-1-[UNIQUE_NAME]"
+}
+
+=== Assert job 2 is created
+{
+  "name": "test-job-metadata-2-[UNIQUE_NAME]"
+}
+
+=== Read metadata object from the workspace
+>>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json
+
+>>> cat metadata.json
+{
+  "version": 1,
+  "config": {
+    "bundle": {
+      "git": {
+        "bundle_root_path": "."
+      }
+    },
+    "workspace": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files"
+    },
+    "resources": {
+      "jobs": {
+        "bar": {
+          "id": "[NUMID]",
+          "relative_path": "a/b/resources.yml"
+        },
+        "foo": {
+          "id": "[NUMID]",
+          "relative_path": "databricks.yml"
+        }
+      }
+    }
+  }
+}
+=== Check that metadata contains created job ids
+>>> cat metadata.json
+          "id": "[NUMID]",
+
+>>> cat metadata.json
+          "id": "[NUMID]",
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job bar
+  delete job foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
