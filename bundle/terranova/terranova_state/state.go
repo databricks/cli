@@ -142,7 +142,7 @@ func (db *TerranovaState) Open(path string) error {
 				Lineage:   uuid.New().String(),
 				Resources: make(map[string]map[string]ResourceEntry),
 			}
-			return db.unlockedSave()
+			return nil
 		}
 		return err
 	}
