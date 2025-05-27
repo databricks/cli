@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "one_libraries": [
+    {
+      "glob": {
+        "include": "/Workspace/Users/[USERNAME]/.bundle/pipelines_relative_path_translation/default/files/src/pipeline_one/a/b/c/**"
+      }
+    }
+  ],
+  "two_libraries": [
+    {
+      "glob": {
+        "include": "/Workspace/Users/me@company.com/a/b/c/**"
+      }
+    }
+  ],
+  "one_root_path": "/Workspace/Users/[USERNAME]/.bundle/pipelines_relative_path_translation/default/files/src/pipeline_one",
+  "two_root_path": "/Workspace/Users/me@company.com/src"
+}

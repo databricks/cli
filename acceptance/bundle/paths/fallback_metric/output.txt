@@ -15,6 +15,10 @@ Deployment complete!
 >>> cat out.requests.txt
 [
   {
+    "key": "presets_name_prefix_is_set",
+    "value": false
+  },
+  {
     "key": "python_wheel_wrapper_is_set",
     "value": false
   },
@@ -32,6 +36,10 @@ Deployment complete!
   }
 ]
 [
+  {
+    "key": "presets_name_prefix_is_set",
+    "value": false
+  },
   {
     "key": "is_job_path_fallback",
     "value": true

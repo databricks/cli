@@ -8,14 +8,15 @@ Ignore = [
     '.venv',
 ]
 
-[EnvMatrix]
-UV_PYTHON = [
+EnvMatrix.UV_PYTHON = [
     "3.9",
     "3.10",
     "3.11",
     "3.12",
     "3.13",
 ]
+
+EnvRepl.UV_PYTHON = true
 
 [[Repls]]
 # for some reason leading number is lost converting "%H%M%S" 061234 to 61234
