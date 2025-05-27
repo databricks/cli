@@ -2,11 +2,11 @@
 >>> [CLI] bundle validate
 Error: stat foo/bar/doesnotexist: no such file or directory
 
-Name: pipeline_root_path_does_not_exist
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/pipeline_root_path_does_not_exist/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Found 1 error
 
