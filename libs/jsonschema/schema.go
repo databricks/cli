@@ -122,6 +122,9 @@ func (s *Schema) GetDefinition(p string) (*Schema, error) {
 		}
 	}
 
+	// Leaf nodes in definitions are of type map[string]any when loaded
+	// via [json.Unmarshal]. This function call is necessary to convert
+	// the map to a [Schema] object.
 	return anyToSchema(curr)
 }
 
