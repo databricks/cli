@@ -54,31 +54,31 @@ func IsIndexOutOfBoundsError(err error) bool {
 	return errors.As(err, &target)
 }
 
-type expectedMapAtIndexError struct {
+type expectedMapToIndexError struct {
 	p Path
 	v Value
 }
 
-func (e expectedMapAtIndexError) Error() string {
+func (e expectedMapToIndexError) Error() string {
 	return fmt.Sprintf("expected a map to index %q, found %s", e.p, e.v.Kind())
 }
 
-func IsExpectedMapAtIndexError(err error) bool {
-	var target expectedMapAtIndexError
+func IsExpectedMapToIndexError(err error) bool {
+	var target expectedMapToIndexError
 	return errors.As(err, &target)
 }
 
-type expectedSequenceAtIndexError struct {
+type expectedSequenceToIndexError struct {
 	p Path
 	v Value
 }
 
-func (e expectedSequenceAtIndexError) Error() string {
+func (e expectedSequenceToIndexError) Error() string {
 	return fmt.Sprintf("expected a sequence to index %q, found %s", e.p, e.v.Kind())
 }
 
-func IsExpectedSequenceAtIndexError(err error) bool {
-	var target expectedSequenceAtIndexError
+func IsExpectedSequenceToIndexError(err error) bool {
+	var target expectedSequenceToIndexError
 	return errors.As(err, &target)
 }
 
@@ -126,7 +126,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		case KindNil:
 			return InvalidValue, cannotTraverseNilError{path}
 		default:
-			return InvalidValue, expectedMapAtIndexError{p: path, v: v}
+			return InvalidValue, expectedMapToIndexError{p: path, v: v}
 		}
 
 		m := v.MustMap()
@@ -165,7 +165,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		case KindNil:
 			return InvalidValue, cannotTraverseNilError{path}
 		default:
-			return InvalidValue, expectedSequenceAtIndexError{p: path, v: v}
+			return InvalidValue, expectedSequenceToIndexError{p: path, v: v}
 		}
 
 		s := v.MustSequence()
