@@ -48,6 +48,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	if prefix != "" {
 		b.Metrics.AddBoolValue(metrics.PresetsNamePrefixIsSet, true)
+	} else {
+		b.Metrics.AddBoolValue(metrics.PresetsNamePrefixIsSet, false)
 	}
 
 	tags := toTagArray(t.Tags)

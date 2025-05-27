@@ -37,6 +37,10 @@
           "target_count": 1,
           "bool_values": [
             {
+              "key": "presets_name_prefix_is_set",
+              "value": false
+            },
+            {
               "key": "python_wheel_wrapper_is_set",
               "value": false
             },
