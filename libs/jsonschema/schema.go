@@ -91,38 +91,49 @@ type Schema struct {
 func anyToSchema(a any) (*Schema, error) {
 	b, err := json.Marshal(a)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to marshal any to schema: %w", err)
+=======
+		return nil, fmt.Errorf("failed to marshal any to bytes: %w", err)
+>>>>>>> origin
 	}
 
 	res := &Schema{}
 	err = json.Unmarshal(b, res)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to unmarshal any to schema: %w", err)
+=======
+		return nil, fmt.Errorf("failed to unmarshal bytes to JSON schema: %w", err)
+>>>>>>> origin
 	}
 
 	return res, nil
 }
 
-func (s *Schema) GetReference(p string) (*Schema, error) {
+func (s *Schema) GetDefinition(p string) (*Schema, error) {
 	parts := strings.Split(p, "/")
 	if parts[0] != "#" || parts[1] != "$defs" {
 		return nil, fmt.Errorf("invalid reference %q. References must start with #/$defs/", p)
 	}
 
-	curr := s.Definitions
-	ok := true
-	for i, part := range parts[2:] {
-		if i == len(parts)-3 {
-			return anyToSchema(curr[part])
-		}
+	if len(parts) <= 2 {
+		return nil, fmt.Errorf("invalid reference %q. Expected more than 2 tokens", p)
+	}
 
+	curr := s.Definitions
+	var ok bool
+	for _, part := range parts[2:] {
 		curr, ok = curr[part].(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("invalid reference %q. Failed to resolve reference at token %q", p, part)
+			return nil, fmt.Errorf("invalid reference %q. Failed to resolve reference at %q", p, part)
 		}
 	}
 
-	return nil, fmt.Errorf("invalid reference %q. Expected more than %d tokens", p, len(parts)-2)
+	// Leaf nodes in definitions are of type map[string]any when loaded
+	// via [json.Unmarshal]. This function call is necessary to convert
+	// the map to a [Schema] object.
+	return anyToSchema(curr)
 }
 
 // Default value defined in a JSON Schema, represented as a string.

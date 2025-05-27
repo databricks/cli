@@ -2,15 +2,13 @@ package generator
 
 import (
 	"bytes"
-	"context" // For remarshalling $defs if ever needed, though GetReference should handle it
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-
-	// "strings" // No longer needed for getDefNameFromRef
 	"text/template"
 
 	"github.com/databricks/cli/libs/jsonschema"
@@ -129,7 +127,7 @@ func (w *walker) walk(p string, curr *jsonschema.Schema) error {
 
 		w.refsPath[refString] = true
 
-		refSchema, err := w.originalSchema.GetReference(refString)
+		refSchema, err := w.originalSchema.GetDefinition(refString)
 		if err != nil {
 			return fmt.Errorf("failed to resolve $ref %q at path %s: %w", refString, p, err)
 		}
