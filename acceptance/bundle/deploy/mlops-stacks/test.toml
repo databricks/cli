@@ -2,7 +2,6 @@ Cloud=true
 Local=false
 
 Badness = "the newly initialized bundle from the 'mlops-stacks' template contains two validation warnings in the configuration"
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct"]
 
 Ignore = [
     "config.json"
