@@ -82,14 +82,14 @@ jobs:
         # populates the cache and cache may include test results.
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'schedule' }}
         env:
-          DATABRICKS_CLI_DEPLOYMENT: ${{ matrix.deployment }}
+          ENVFILTER: DATABRICKS_CLI_DEPLOYMENT=${{ matrix.deployment }}
         run: make test
 
       - name: Run tests with coverage
         # Still run 'make cover' on push to main and merge checks to make sure it does not get broken.
         if: ${{ github.event_name != 'pull_request' && github.event_name != 'schedule' }}
         env:
-          DATABRICKS_CLI_DEPLOYMENT: ${{ matrix.deployment }}
+          ENVFILTER: DATABRICKS_CLI_DEPLOYMENT=${{ matrix.deployment }}
         run: make cover
 
       - name: Analyze slow tests
