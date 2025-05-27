@@ -57,7 +57,7 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	r.client.Jobs.DeleteByJobId(ctx, idInt)
+	err = r.client.Jobs.DeleteByJobId(ctx, idInt)
 	if err != nil {
 		return SDKError{Method: "Jobs.DeleteByJobId", Err: err}
 	}
