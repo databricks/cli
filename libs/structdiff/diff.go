@@ -3,6 +3,7 @@ package structdiff
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -151,14 +152,12 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 
 		if hasOmitEmpty {
 			if v1Field.IsZero() {
-				_, ok := forced1[sf.Name]
-				if !ok {
+				if !slices.Contains(forced1, sf.Name) {
 					v1Field = reflect.ValueOf(nil)
 				}
 			}
 			if v2Field.IsZero() {
-				_, ok := forced2[sf.Name]
-				if !ok {
+				if !slices.Contains(forced2, sf.Name) {
 					v2Field = reflect.ValueOf(nil)
 				}
 			}
@@ -199,7 +198,7 @@ func diffMapStringKey(path *pathNode, m1, m2 reflect.Value, changes *[]Change) {
 	}
 }
 
-func getForceSendFields(v reflect.Value) map[string]struct{} {
+func getForceSendFields(v reflect.Value) []string {
 	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return nil
 	}
@@ -208,12 +207,8 @@ func getForceSendFields(v reflect.Value) map[string]struct{} {
 		return nil
 	}
 	result, ok := fsField.Interface().([]string)
-	if !ok {
-		return nil
+	if ok {
+		return result
 	}
-	mapresult := make(map[string]struct{}, len(result))
-	for _, item := range result {
-		mapresult[item] = struct{}{}
-	}
-	return mapresult
+	return nil
 }
