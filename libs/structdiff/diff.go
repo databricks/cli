@@ -66,15 +66,17 @@ func GetStructDiff(a, b any) ([]Change, error) {
 // diffValues appends changes between v1 and v2 to the slice.  path is the current
 // JSON-style path (dot + brackets).  At the root path is "".
 func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
-	if !v1.IsValid() && !v2.IsValid() {
-		return
-	}
-
 	if !v1.IsValid() {
-		v1 = reflect.ValueOf(nil)
-	}
-	if !v2.IsValid() {
-		v2 = reflect.ValueOf(nil)
+		if !v2.IsValid() {
+			return
+		}
+
+		*changes = append(*changes, Change{Field: path.String(), Old: nil, New: v2.Interface()})
+		return
+	} else if !v2.IsValid() {
+		// v1 is valid
+		*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: nil})
+		return
 	}
 
 	v1Type := v1.Type()
@@ -136,8 +138,6 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 	forced1 := getForceSendFields(s1)
 	forced2 := getForceSendFields(s2)
 
-	isForceEqual := slices.Equal(forced1, forced2)
-
 	for i := range t.NumField() {
 		sf := t.Field(i)
 		if !sf.IsExported() || sf.Name == "ForceSendFields" {
@@ -148,30 +148,22 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
-		if isForceEqual {
-			diffValues(&node, v1Field, v2Field, changes)
-			continue
-		}
-
 		hasOmitEmpty := strings.Contains(sf.Tag.Get("json"), "omitempty")
 
-		// Special handling when both values are zero but ForceSendFields differ.
-		if hasOmitEmpty && v1Field.IsZero() && v2Field.IsZero() {
-			f1 := slices.Contains(forced1, sf.Name)
-			f2 := slices.Contains(forced2, sf.Name)
-			if f1 != f2 {
-				oldI := any(nil)
-				newI := any(nil)
-				if f1 { // first struct forces send – explicit empty value
-					oldI = v1Field.Interface()
+		if hasOmitEmpty {
+			if v1Field.IsZero() {
+				if !slices.Contains(forced1, sf.Name) {
+					v1Field = reflect.ValueOf(nil)
 				}
-				if f2 {
-					newI = v2Field.Interface()
+			}
+			if v2Field.IsZero() {
+				if !slices.Contains(forced2, sf.Name) {
+					v2Field = reflect.ValueOf(nil)
 				}
-				*changes = append(*changes, Change{Field: node.String(), Old: oldI, New: newI})
-				continue
 			}
 		}
+
+		diffValues(&node, v1Field, v2Field, changes)
 	}
 }
 

@@ -10,11 +10,12 @@ import (
 type B struct{ S string }
 
 type A struct {
-	X int            `json:"x,omitempty"`
-	B B              `json:"b,omitempty"`
-	P *B             `json:"p,omitempty"`
-	M map[string]int `json:"m,omitempty"`
-	L []string       `json:"l,omitempty"`
+	XX int            `json:"xx"`
+	X  int            `json:"x,omitempty"`
+	B  B              `json:"b,omitempty"`
+	P  *B             `json:"p,omitempty"`
+	M  map[string]int `json:"m,omitempty"`
+	L  []string       `json:"l,omitempty"`
 }
 
 type C struct {
@@ -75,10 +76,16 @@ func TestGetStructDiff(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "simple field change",
+			name: "simple field change - omitempty",
 			a:    A{X: 5},
 			b:    A{},
-			want: []Change{{Field: ".X", Old: 5, New: 0}},
+			want: []Change{{Field: ".X", Old: 5, New: nil}},
+		},
+		{
+			name: "simple field change - required",
+			a:    A{XX: 5},
+			b:    A{},
+			want: []Change{{Field: ".XX", Old: 5, New: 0}},
 		},
 		{
 			name: "nested struct field",
@@ -90,7 +97,7 @@ func TestGetStructDiff(t *testing.T) {
 			name: "pointer nil vs value",
 			a:    A{P: b1},
 			b:    A{},
-			want: []Change{{Field: ".P", Old: b1, New: (*B)(nil)}},
+			want: []Change{{Field: ".P", Old: b1, New: nil}},
 		},
 		{
 			name: "pointer nested value diff",
@@ -111,7 +118,47 @@ func TestGetStructDiff(t *testing.T) {
 			want: []Change{{Field: ".L", Old: []string{"a"}, New: []string{"a", "b"}}},
 		},
 
-		// ForceSendFields related cases
+		// ForceSendFields with non-empty fields (omitempty)
+		{
+			name: "forcesend nonempty 1",
+			a:    C{Name: "Hello", ForceSendFields: []string{"Name"}},
+			b:    C{Name: "World"},
+			want: []Change{{Field: ".Name", Old: "Hello", New: "World"}},
+		},
+		{
+			name: "forcesend noneempty 2",
+			a:    C{Name: "Hello", ForceSendFields: []string{"Name"}},
+			b:    C{Name: "World", ForceSendFields: []string{"Name"}},
+			want: []Change{{Field: ".Name", Old: "Hello", New: "World"}},
+		},
+		{
+			name: "forcesend noneempty 3",
+			a:    C{Name: "Hello"},
+			b:    C{Name: "World", ForceSendFields: []string{"Name"}},
+			want: []Change{{Field: ".Name", Old: "Hello", New: "World"}},
+		},
+
+		// ForceSendFields with non-empty fields (required)
+		{
+			name: "forcesend nonempty required 1",
+			a:    C{Title: "Hello", ForceSendFields: []string{"Title"}},
+			b:    C{Title: "World"},
+			want: []Change{{Field: ".Title", Old: "Hello", New: "World"}},
+		},
+		{
+			name: "forcesend noneempty required 2",
+			a:    C{Title: "Hello", ForceSendFields: []string{"Title"}},
+			b:    C{Title: "World", ForceSendFields: []string{"Title"}},
+			want: []Change{{Field: ".Title", Old: "Hello", New: "World"}},
+		},
+		{
+			name: "forcesend noneempty required 3",
+			a:    C{Title: "Hello"},
+			b:    C{Title: "World", ForceSendFields: []string{"Title"}},
+			want: []Change{{Field: ".Title", Old: "Hello", New: "World"}},
+		},
+
+		// ForceSendFields with empty fields
 		{
 			name: "forcesend empty string diff",
 			a:    C{ForceSendFields: []string{"Name"}}, // Name == "" zero, but forced
