@@ -28,13 +28,12 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 			mode:    TranslateModeFile,
 		},
 		{
-			pattern: base.Append(dyn.Key("root_path")),
-			mode:    TranslateModeDirectory,
-		},
-
-		{
 			pattern: base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
 			mode:    TranslateModeGlob,
+		},
+		{
+			pattern: base.Append(dyn.Key("root_path")),
+			mode:    TranslateModeDirectory,
 		},
 	}
 }
