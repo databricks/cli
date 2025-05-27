@@ -171,7 +171,7 @@ func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
 
 	var wg sync.WaitGroup
 	wg.Add(pool)
-	for i := 0; i < pool; i++ {
+	for range pool {
 		go func() {
 			defer wg.Done()
 			for n := range ready {

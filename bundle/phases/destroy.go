@@ -65,6 +65,9 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]terraformlib.Act
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	deleteActions, err := getDeleteActions(ctx, b)
+	if err != nil {
+		return false, err
+	}
 
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
