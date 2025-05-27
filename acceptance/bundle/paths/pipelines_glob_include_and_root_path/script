@@ -1,0 +1,1 @@
+trace $CLI bundle validate -o json | jq '{one_libraries: .resources.pipelines.one.libraries, two_libraries: .resources.pipelines.two.libraries, one_root_path: .resources.pipelines.one.root_path, two_root_path: .resources.pipelines.two.root_path}'

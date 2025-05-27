@@ -1,0 +1,4 @@
+resources:
+  pipelines:
+    abc:
+      root_path: "foo/bar/doesnotexist"
