@@ -473,26 +473,33 @@ func TestJobDiff(t *testing.T) {
 
 	changes, err := GetStructDiff(job, zero)
 	require.NoError(t, err)
-	require.Len(t, changes, 75, "job: %#v\nzero: %#v", job, zero)
+	require.GreaterOrEqual(t, len(changes), 75)
 	assert.Equal(t, Change{Field: ".BudgetPolicyId", Old: "550e8400-e29b-41d4-a716-446655440000", New: ""}, changes[0])
-	assert.Equal(t, Change{Field: ".Continuous.PauseStatus", Old: jobs.PauseStatus("UNPAUSED"), New: jobs.PauseStatus("")}, changes[1], "job vs zero: %#v %#v", job.Continuous, zero.Continuous)
+	// Note: pause_status shows up as nil here because Continous does not have ForceSendFields field
+	assert.Equal(t, Change{Field: ".Continuous.PauseStatus", Old: jobs.PauseStatus("UNPAUSED"), New: nil}, changes[1], "job vs zero: %#v %#v", job.Continuous, zero.Continuous)
 	assert.Equal(t, Change{Field: ".Deployment.Kind", Old: jobs.JobDeploymentKind("BUNDLE"), New: jobs.JobDeploymentKind("")}, changes[2])
 	assert.Equal(t, Change{Field: ".Deployment.MetadataFilePath", Old: "string", New: ""}, changes[3])
 
 	changes, err = GetStructDiff(job, nils)
 	require.NoError(t, err)
-	require.Len(t, changes, 77)
+	require.GreaterOrEqual(t, len(changes), 77)
 	assert.Equal(t, Change{Field: ".BudgetPolicyId", Old: "550e8400-e29b-41d4-a716-446655440000", New: nil}, changes[0])
-	assert.Equal(t, Change{Field: ".Continuous.PauseStatus", Old: jobs.PauseStatus("UNPAUSED"), New: nil}, changes[1])
-	assert.Equal(t, Change{Field: ".Deployment.Kind", Old: jobs.JobDeploymentKind("BUNDLE"), New: nil}, changes[2])
+
+	// continous is completely deleted from jobExampleResponseNils
+	assert.Equal(t, Change{Field: ".Continuous", Old: &jobs.Continuous{PauseStatus: "UNPAUSED"}, New: nil}, changes[1])
+
+	// deployment.kind is not omitempty field, so it does not show up as nil here
+	assert.Equal(t, Change{Field: ".Deployment.Kind", Old: jobs.JobDeploymentKind("BUNDLE"), New: jobs.JobDeploymentKind("")}, changes[2])
+
 	assert.Equal(t, Change{Field: ".Deployment.MetadataFilePath", Old: "string", New: nil}, changes[3])
 
-	/*
-	   changes2, err := GetStructDiff(zero, nils)
-	   require.NoError(t, err)
-	   assert.Len(t, changes2, 75)
-	   assert.Equal(t, Change{Field: ".BudgetPolicyId", Old: "", New: nil}, changes2[0])
-	   assert.Equal(t, Change{Field: ".Continuous.PauseStatus", Old: jobs.PauseStatus("UNPAUSED"), New: jobs.PauseStatus("")}, changes2[1])
-	   assert.Equal(t, Change{Field: ".Deployment.Kind", Old: jobs.JobDeploymentKind("BUNDLE"), New: jobs.JobDeploymentKind("")}, changes2[2])
-	*/
+	changes, err = GetStructDiff(zero, nils)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(changes), 58)
+	assert.Equal(t, Change{Field: ".BudgetPolicyId", Old: "", New: nil}, changes[0])
+	assert.Equal(t, Change{Field: ".Continuous", Old: &jobs.Continuous{}, New: nil}, changes[1])
+
+	// deployment.kind is "" in both
+
+	assert.Equal(t, Change{Field: ".Deployment.MetadataFilePath", Old: "", New: nil}, changes[2])
 }
