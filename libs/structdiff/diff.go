@@ -17,9 +17,9 @@ type Change struct {
 }
 
 type pathNode struct {
-	prev        *pathNode
-	structField *reflect.StructField // For lazy JSON tag parsing
-	key         string               // Computed key (JSON key for structs, string key for maps)
+	prev    *pathNode
+	jsonTag jsontag.JSONTag // For lazy JSON key resolution
+	key     string          // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index == -1, the node specifies a struct attribute
 	// If index == -2, the node specifies a map key in key
@@ -38,12 +38,11 @@ func (p *pathNode) String() string {
 
 	if p.index == -3 {
 		// Lazy resolve JSON key for struct fields
-		if p.structField != nil {
-			p.key = jsontag.JSONTag(p.structField.Tag.Get("json")).Name()
-			if p.key == "" {
-				p.key = p.structField.Name
-			}
+		jsonName := p.jsonTag.Name()
+		if jsonName != "" {
+			p.key = jsonName
 		}
+		// If jsonName is empty, key already contains the Go field name as fallback
 		p.index = -1
 	}
 
@@ -161,8 +160,8 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 			continue
 		}
 
-		// Store StructField pointer for lazy JSON key resolution
-		node := pathNode{prev: path, structField: &sf, index: -3}
+		// Store JSONTag and Go field name for lazy JSON key resolution
+		node := pathNode{prev: path, jsonTag: jsontag.JSONTag(sf.Tag.Get("json")), key: sf.Name, index: -3}
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
@@ -170,7 +169,7 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 		zero2 := v2Field.IsZero()
 
 		if zero1 || zero2 {
-			hasOmitEmpty := jsontag.JSONTag(sf.Tag.Get("json")).OmitEmpty()
+			hasOmitEmpty := node.jsonTag.OmitEmpty()
 
 			if hasOmitEmpty {
 				if zero1 {
