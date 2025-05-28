@@ -52,60 +52,24 @@ func TestJSONTagMethods(t *testing.T) {
 	}
 }
 
-func BenchmarkJSONTagName(b *testing.B) {
-	tags := []JSONTag{
-		"", "-", "id", ",omitempty", "foo,omitzero",
-		"baz,omitzero,omitempty", `"q,omitempty"`,
-		"name,string", "weird,whatever,omitzero,foo",
-	}
+var benchTags = []JSONTag{
+	"", "-", "id", ",omitempty", "foo,omitzero",
+	"baz,omitzero,omitempty", `"q,omitempty"`,
+	"name,string", "weird,whatever,omitzero,foo",
+}
 
+func BenchmarkJSONTagName(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		for _, tag := range tags {
+		for _, tag := range benchTags {
 			tag.Name()
 		}
 	}
 }
 
 func BenchmarkJSONTagOmitEmpty(b *testing.B) {
-	tags := []JSONTag{
-		"", "-", "id", ",omitempty", "foo,omitzero",
-		"baz,omitzero,omitempty", `"q,omitempty"`,
-		"name,string", "weird,whatever,omitzero,foo",
-	}
-
 	for i := 0; i < b.N; i++ {
-		for _, tag := range tags {
+		for _, tag := range benchTags {
 			tag.OmitEmpty()
-		}
-	}
-}
-
-func BenchmarkJSONTagOmitZero(b *testing.B) {
-	tags := []JSONTag{
-		"", "-", "id", ",omitempty", "foo,omitzero",
-		"baz,omitzero,omitempty", `"q,omitempty"`,
-		"name,string", "weird,whatever,omitzero,foo",
-	}
-
-	for i := 0; i < b.N; i++ {
-		for _, tag := range tags {
-			tag.OmitZero()
-		}
-	}
-}
-
-func BenchmarkJSONTagAllMethods(b *testing.B) {
-	tags := []JSONTag{
-		"", "-", "id", ",omitempty", "foo,omitzero",
-		"baz,omitzero,omitempty", `"q,omitempty"`,
-		"name,string", "weird,whatever,omitzero,foo",
-	}
-
-	for i := 0; i < b.N; i++ {
-		for _, tag := range tags {
-			tag.Name()
-			tag.OmitEmpty()
-			tag.OmitZero()
 		}
 	}
 }
