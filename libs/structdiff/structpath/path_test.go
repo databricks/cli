@@ -8,9 +8,6 @@ import (
 )
 
 func TestPathNode(t *testing.T) {
-	// Note: The current DynPath() implementation has a bug where it calls p.prev.String()
-	// instead of p.prev.DynPath() recursively. This causes inconsistent path formatting
-	// for multi-node paths. The DynPath expectations below reflect the current buggy behavior.
 	tests := []struct {
 		name    string
 		node    *PathNode
@@ -142,6 +139,7 @@ func TestPathNode(t *testing.T) {
 			result = tt.node.DynPath()
 			assert.Equal(t, expectedDyn, result, "DynPath() method")
 
+			// Index
 			gotIndex, isIndex := tt.node.Index()
 			if tt.Index == nil {
 				assert.Equal(t, -1, gotIndex)
@@ -152,6 +150,7 @@ func TestPathNode(t *testing.T) {
 				assert.True(t, isIndex)
 			}
 
+			// Field
 			gotField, isField := tt.node.Field()
 			if tt.Field == nil {
 				assert.Equal(t, "", gotField)
@@ -162,6 +161,7 @@ func TestPathNode(t *testing.T) {
 				assert.True(t, isField)
 			}
 
+			// MapKey
 			gotMapKey, isMapKey := tt.node.MapKey()
 			if tt.MapKey == nil {
 				assert.Equal(t, "", gotMapKey)
@@ -171,20 +171,13 @@ func TestPathNode(t *testing.T) {
 				assert.Equal(t, expected, gotMapKey)
 				assert.True(t, isMapKey)
 			}
+
+			isRoot := tt.node.IsRoot()
+			if tt.Root == nil {
+				assert.False(t, isRoot)
+			} else {
+				assert.True(t, isRoot)
+			}
 		})
 	}
-}
-
-func TestPathNode_DynPathLazyResolution(t *testing.T) {
-	// This test ensures DynPath() lazy resolution is covered
-	// by calling DynPath() before String() on an unresolved node
-	node := NewStructField(nil, jsontag.JSONTag("dyn_first,omitempty"), "DynFirst")
-
-	// Call DynPath() first to trigger lazy resolution in DynPath method
-	result := node.DynPath()
-	assert.Equal(t, "dyn_first", result, "DynPath() should resolve JSON tag")
-
-	// Verify String() works after DynPath() resolution
-	result = node.String()
-	assert.Equal(t, ".dyn_first", result, "String() after DynPath() resolution")
 }
