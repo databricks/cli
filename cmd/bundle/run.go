@@ -280,10 +280,7 @@ func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
 }
 
 func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
-	return exec.ShellExecv(content, exec.ExecvOptions{
-		Env: scriptEnv(cmd, b),
-		Dir: b.BundleRootPath,
-	})
+	return exec.ShellExecv(content, b.BundleRootPath, scriptEnv(cmd, b))
 }
 
 func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
