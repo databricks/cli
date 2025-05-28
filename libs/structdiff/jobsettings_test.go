@@ -480,7 +480,7 @@ func TestJobDiff(t *testing.T) {
 	// Note: pause_status shows up as nil here because Continous does not have ForceSendFields field
 	assert.Equal(t, ".continuous.pause_status", changes[1].Path.String())
 	assert.Equal(t, jobs.PauseStatus("UNPAUSED"), changes[1].Old)
-	assert.Equal(t, nil, changes[1].New)
+	assert.Nil(t, changes[1].New)
 	assert.Equal(t, ".deployment.kind", changes[2].Path.String())
 	assert.Equal(t, jobs.JobDeploymentKind("BUNDLE"), changes[2].Old)
 	assert.Equal(t, jobs.JobDeploymentKind(""), changes[2].New)
@@ -493,12 +493,12 @@ func TestJobDiff(t *testing.T) {
 	require.GreaterOrEqual(t, len(changes), 77)
 	assert.Equal(t, ".budget_policy_id", changes[0].Path.String())
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", changes[0].Old)
-	assert.Equal(t, nil, changes[0].New)
+	assert.Nil(t, changes[0].New)
 
 	// continous is completely deleted from jobExampleResponseNils
 	assert.Equal(t, ".continuous", changes[1].Path.String())
 	assert.Equal(t, &jobs.Continuous{PauseStatus: "UNPAUSED"}, changes[1].Old)
-	assert.Equal(t, nil, changes[1].New)
+	assert.Nil(t, changes[1].New)
 
 	// deployment.kind is not omitempty field, so it does not show up as nil here
 	assert.Equal(t, ".deployment.kind", changes[2].Path.String())
@@ -507,21 +507,21 @@ func TestJobDiff(t *testing.T) {
 
 	assert.Equal(t, ".deployment.metadata_file_path", changes[3].Path.String())
 	assert.Equal(t, "string", changes[3].Old)
-	assert.Equal(t, nil, changes[3].New)
+	assert.Nil(t, changes[3].New)
 
 	changes, err = GetStructDiff(zero, nils)
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(changes), 58)
 	assert.Equal(t, ".budget_policy_id", changes[0].Path.String())
 	assert.Equal(t, "", changes[0].Old)
-	assert.Equal(t, nil, changes[0].New)
+	assert.Nil(t, changes[0].New)
 	assert.Equal(t, ".continuous", changes[1].Path.String())
 	assert.Equal(t, &jobs.Continuous{}, changes[1].Old)
-	assert.Equal(t, nil, changes[1].New)
+	assert.Nil(t, changes[1].New)
 
 	// deployment.kind is "" in both
 
 	assert.Equal(t, ".deployment.metadata_file_path", changes[2].Path.String())
 	assert.Equal(t, "", changes[2].Old)
-	assert.Equal(t, nil, changes[2].New)
+	assert.Nil(t, changes[2].New)
 }
