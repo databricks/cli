@@ -52,6 +52,9 @@ snapshot:
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
+validation-codegen:
+	go run ./bundle/internal/validation/.
+
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
