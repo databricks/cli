@@ -3,6 +3,7 @@ package structpath
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 )
@@ -73,4 +74,29 @@ func (p *PathNode) String() string {
 	}
 
 	return fmt.Sprintf("%s[%q]", p.prev.String(), p.key)
+}
+
+// Path in libs/dyn format
+func (p *PathNode) DynPath() string {
+	if p == nil {
+		return ""
+	}
+
+	if p.index >= 0 {
+		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
+	}
+
+	if p.index == -3 {
+		// Lazy resolve JSON key for struct fields
+		jsonName := p.jsonTag.Name()
+		if jsonName != "" {
+			p.key = jsonName
+		}
+		// If jsonName is empty, key already contains the Go field name as fallback
+		p.index = -1
+	}
+
+	result := p.prev.String() + "." + p.key
+	result, _ = strings.CutPrefix(result, ".")
+	return result
 }
