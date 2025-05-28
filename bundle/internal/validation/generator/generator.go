@@ -255,6 +255,9 @@ func gatherRequiredFields(currentRootSchema *jsonschema.Schema) ([][]PatternInfo
 	}
 	sort.Strings(sortedKeys)
 	for _, k := range sortedKeys {
+		sort.Slice(patternMap[k], func(i, j int) bool {
+			return patternMap[k][i].Pattern < patternMap[k][j].Pattern
+		})
 		sortedNodeMap = append(sortedNodeMap, patternMap[k])
 	}
 
