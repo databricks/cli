@@ -3,7 +3,6 @@ package structpath
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 )
@@ -19,6 +18,57 @@ type PathNode struct {
 	// If index == -2, the node specifies a map key in key
 	// If index == -3, the node specifies an unresolved struct attribute
 	index int
+}
+
+func (p *PathNode) JSONTag() jsontag.JSONTag {
+	return p.jsonTag
+}
+
+func (p *PathNode) IsRoot() bool {
+	return p == nil
+}
+
+func (p *PathNode) Index() (int, bool) {
+	if p == nil {
+		return -1, false
+	}
+	if p.index >= 0 {
+		return p.index, true
+	}
+	return -1, false
+}
+
+func (p *PathNode) MapKey() (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	if p.index == -2 {
+		return p.key, true
+	}
+	return "", false
+}
+
+func (p *PathNode) resolveField() {
+	if p.index == -3 {
+		// Lazy resolve JSON key for struct fields
+		jsonName := p.jsonTag.Name()
+		if jsonName != "" {
+			p.key = jsonName
+		}
+		// If jsonName is empty, key already contains the Go field name as fallback
+		p.index = -1
+	}
+}
+
+func (p *PathNode) Field() (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	p.resolveField()
+	if p.index == -1 {
+		return p.key, true
+	}
+	return "", false
 }
 
 // NewIndex creates a new PathNode for an array/slice index.
@@ -59,15 +109,7 @@ func (p *PathNode) String() string {
 		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
 
-	if p.index == -3 {
-		// Lazy resolve JSON key for struct fields
-		jsonName := p.jsonTag.Name()
-		if jsonName != "" {
-			p.key = jsonName
-		}
-		// If jsonName is empty, key already contains the Go field name as fallback
-		p.index = -1
-	}
+	p.resolveField()
 
 	if p.index == -1 {
 		return p.prev.String() + "." + p.key
@@ -83,20 +125,15 @@ func (p *PathNode) DynPath() string {
 	}
 
 	if p.index >= 0 {
-		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
+		return p.prev.DynPath() + "[" + strconv.Itoa(p.index) + "]"
 	}
 
-	if p.index == -3 {
-		// Lazy resolve JSON key for struct fields
-		jsonName := p.jsonTag.Name()
-		if jsonName != "" {
-			p.key = jsonName
-		}
-		// If jsonName is empty, key already contains the Go field name as fallback
-		p.index = -1
-	}
+	p.resolveField()
 
-	result := p.prev.String() + "." + p.key
-	result, _ = strings.CutPrefix(result, ".")
-	return result
+	prev := p.prev.DynPath()
+	if prev == "" {
+		return p.key
+	} else {
+		return prev + "." + p.key
+	}
 }
