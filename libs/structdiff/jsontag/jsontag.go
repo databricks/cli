@@ -23,17 +23,14 @@ func (tag JSONTag) Name() string {
 	}
 }
 
-// OmitEmpty returns true if the tag contains "omitempty" option.
 func (tag JSONTag) OmitEmpty() bool {
 	return tag.hasOption("omitempty")
 }
 
-// OmitZero returns true if the tag contains "omitzero" option.
 func (tag JSONTag) OmitZero() bool {
 	return tag.hasOption("omitzero")
 }
 
-// hasOption checks if the tag contains the specified option.
 func (tag JSONTag) hasOption(option string) bool {
 	s := string(tag)
 	if s == "" {
