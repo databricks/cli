@@ -6,7 +6,8 @@ import (
 	"slices"
 	"sort"
 	"strconv"
-	"strings"
+
+	"github.com/databricks/cli/libs/structdiff/jsontag"
 )
 
 type Change struct {
@@ -16,25 +17,40 @@ type Change struct {
 }
 
 type pathNode struct {
-	Prev *pathNode
-	Key  string
-	// If Index >= 0, the node specifies a slice/array index in Index.
-	// If Index == -1, the node specifies a struct attribute in Key
-	// If Index == -2, the node specifies a map key in Key
-	Index int
+	prev    *pathNode
+	jsonTag jsontag.JSONTag // For lazy JSON key resolution
+	key     string          // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
+	// If index >= 0, the node specifies a slice/array index in index.
+	// If index == -1, the node specifies a struct attribute
+	// If index == -2, the node specifies a map key in key
+	// If index == -3, the node specifies an unresolved struct attribute
+	index int
 }
 
 func (p *pathNode) String() string {
 	if p == nil {
 		return ""
 	}
-	if p.Index >= 0 {
-		return p.Prev.String() + "[" + strconv.Itoa(p.Index) + "]"
+
+	if p.index >= 0 {
+		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
-	if p.Index == -1 {
-		return p.Prev.String() + "." + p.Key
+
+	if p.index == -3 {
+		// Lazy resolve JSON key for struct fields
+		jsonName := p.jsonTag.Name()
+		if jsonName != "" {
+			p.key = jsonName
+		}
+		// If jsonName is empty, key already contains the Go field name as fallback
+		p.index = -1
 	}
-	return fmt.Sprintf("%s[%q]", p.Prev.String(), p.Key)
+
+	if p.index == -1 {
+		return p.prev.String() + "." + p.key
+	}
+
+	return fmt.Sprintf("%s[%q]", p.prev.String(), p.key)
 }
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
@@ -112,7 +128,7 @@ func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 			*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 		} else {
 			for i := range v1.Len() {
-				node := pathNode{Prev: path, Index: i}
+				node := pathNode{prev: path, index: i}
 				diffValues(&node, v1.Index(i), v2.Index(i), changes)
 			}
 		}
@@ -144,21 +160,27 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 			continue
 		}
 
-		node := pathNode{Prev: path, Key: sf.Name, Index: -1}
+		// Store JSONTag and Go field name for lazy JSON key resolution
+		node := pathNode{prev: path, jsonTag: jsontag.JSONTag(sf.Tag.Get("json")), key: sf.Name, index: -3}
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
-		hasOmitEmpty := strings.Contains(sf.Tag.Get("json"), "omitempty")
+		zero1 := v1Field.IsZero()
+		zero2 := v2Field.IsZero()
 
-		if hasOmitEmpty {
-			if v1Field.IsZero() {
-				if !slices.Contains(forced1, sf.Name) {
-					v1Field = reflect.ValueOf(nil)
+		if zero1 || zero2 {
+			hasOmitEmpty := node.jsonTag.OmitEmpty()
+
+			if hasOmitEmpty {
+				if zero1 {
+					if !slices.Contains(forced1, sf.Name) {
+						v1Field = reflect.ValueOf(nil)
+					}
 				}
-			}
-			if v2Field.IsZero() {
-				if !slices.Contains(forced2, sf.Name) {
-					v2Field = reflect.ValueOf(nil)
+				if zero2 {
+					if !slices.Contains(forced2, sf.Name) {
+						v2Field = reflect.ValueOf(nil)
+					}
 				}
 			}
 		}
@@ -190,9 +212,9 @@ func diffMapStringKey(path *pathNode, m1, m2 reflect.Value, changes *[]Change) {
 		v1 := m1.MapIndex(k)
 		v2 := m2.MapIndex(k)
 		node := pathNode{
-			Prev:  path,
-			Key:   ks,
-			Index: -2,
+			prev:  path,
+			key:   ks,
+			index: -2,
 		}
 		diffValues(&node, v1, v2, changes)
 	}
