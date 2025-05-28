@@ -6,7 +6,6 @@ import (
 	"slices"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 )
@@ -40,7 +39,7 @@ func (p *pathNode) String() string {
 	if p.index == -3 {
 		// Lazy resolve JSON key for struct fields
 		if p.structField != nil {
-			p.key = jsontag.ParseJSONTag(p.structField.Tag.Get("json")).Name
+			p.key = jsontag.JSONTag(p.structField.Tag.Get("json")).Name()
 			if p.key == "" {
 				p.key = p.structField.Name
 			}
@@ -171,7 +170,7 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 		zero2 := v2Field.IsZero()
 
 		if zero1 || zero2 {
-			hasOmitEmpty := strings.Contains(sf.Tag.Get("json"), "omitempty")
+			hasOmitEmpty := jsontag.JSONTag(sf.Tag.Get("json")).OmitEmpty()
 
 			if hasOmitEmpty {
 				if zero1 {
