@@ -79,43 +79,43 @@ func TestGetStructDiff(t *testing.T) {
 			name: "simple field change - omitempty",
 			a:    A{X: 5},
 			b:    A{},
-			want: []Change{{Field: ".X", Old: 5, New: nil}},
+			want: []Change{{Field: ".x", Old: 5, New: nil}},
 		},
 		{
 			name: "simple field change - required",
 			a:    A{XX: 5},
 			b:    A{},
-			want: []Change{{Field: ".XX", Old: 5, New: 0}},
+			want: []Change{{Field: ".xx", Old: 5, New: 0}},
 		},
 		{
 			name: "nested struct field",
 			a:    A{B: B{S: "one"}},
 			b:    A{B: B{S: "two"}},
-			want: []Change{{Field: ".B.S", Old: "one", New: "two"}},
+			want: []Change{{Field: ".b.S", Old: "one", New: "two"}},
 		},
 		{
 			name: "pointer nil vs value",
 			a:    A{P: b1},
 			b:    A{},
-			want: []Change{{Field: ".P", Old: b1, New: nil}},
+			want: []Change{{Field: ".p", Old: b1, New: nil}},
 		},
 		{
 			name: "pointer nested value diff",
 			a:    A{P: b1},
 			b:    A{P: b2},
-			want: []Change{{Field: ".P.S", Old: "one", New: "two"}},
+			want: []Change{{Field: ".p.S", Old: "one", New: "two"}},
 		},
 		{
 			name: "map diff",
 			a:    A{M: map[string]int{"a": 1}},
 			b:    A{M: map[string]int{"a": 2}},
-			want: []Change{{Field: ".M[\"a\"]", Old: 1, New: 2}},
+			want: []Change{{Field: ".m[\"a\"]", Old: 1, New: 2}},
 		},
 		{
 			name: "slice diff",
 			a:    A{L: []string{"a"}},
 			b:    A{L: []string{"a", "b"}},
-			want: []Change{{Field: ".L", Old: []string{"a"}, New: []string{"a", "b"}}},
+			want: []Change{{Field: ".l", Old: []string{"a"}, New: []string{"a", "b"}}},
 		},
 
 		// ForceSendFields with non-empty fields (omitempty)
@@ -123,19 +123,19 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend nonempty 1",
 			a:    C{Name: "Hello", ForceSendFields: []string{"Name"}},
 			b:    C{Name: "World"},
-			want: []Change{{Field: ".Name", Old: "Hello", New: "World"}},
+			want: []Change{{Field: ".name", Old: "Hello", New: "World"}},
 		},
 		{
 			name: "forcesend noneempty 2",
 			a:    C{Name: "Hello", ForceSendFields: []string{"Name"}},
 			b:    C{Name: "World", ForceSendFields: []string{"Name"}},
-			want: []Change{{Field: ".Name", Old: "Hello", New: "World"}},
+			want: []Change{{Field: ".name", Old: "Hello", New: "World"}},
 		},
 		{
 			name: "forcesend noneempty 3",
 			a:    C{Name: "Hello"},
 			b:    C{Name: "World", ForceSendFields: []string{"Name"}},
-			want: []Change{{Field: ".Name", Old: "Hello", New: "World"}},
+			want: []Change{{Field: ".name", Old: "Hello", New: "World"}},
 		},
 
 		// ForceSendFields with non-empty fields (required)
@@ -143,19 +143,19 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend nonempty required 1",
 			a:    C{Title: "Hello", ForceSendFields: []string{"Title"}},
 			b:    C{Title: "World"},
-			want: []Change{{Field: ".Title", Old: "Hello", New: "World"}},
+			want: []Change{{Field: ".title", Old: "Hello", New: "World"}},
 		},
 		{
 			name: "forcesend noneempty required 2",
 			a:    C{Title: "Hello", ForceSendFields: []string{"Title"}},
 			b:    C{Title: "World", ForceSendFields: []string{"Title"}},
-			want: []Change{{Field: ".Title", Old: "Hello", New: "World"}},
+			want: []Change{{Field: ".title", Old: "Hello", New: "World"}},
 		},
 		{
 			name: "forcesend noneempty required 3",
 			a:    C{Title: "Hello"},
 			b:    C{Title: "World", ForceSendFields: []string{"Title"}},
-			want: []Change{{Field: ".Title", Old: "Hello", New: "World"}},
+			want: []Change{{Field: ".title", Old: "Hello", New: "World"}},
 		},
 
 		// ForceSendFields with empty fields
@@ -163,28 +163,28 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend empty string diff",
 			a:    C{ForceSendFields: []string{"Name"}}, // Name == "" zero, but forced
 			b:    C{},
-			want: []Change{{Field: ".Name", Old: "", New: nil}},
+			want: []Change{{Field: ".name", Old: "", New: nil}},
 		},
 		{
 			name: "forcesend empty int diff",
 			a:    C{ForceSendFields: []string{"Age"}},
 			b:    C{},
-			want: []Change{{Field: ".Age", Old: 0, New: nil}},
+			want: []Change{{Field: ".age", Old: 0, New: nil}},
 		},
 		{
 			name: "forcesend empty bool diff",
 			a:    C{ForceSendFields: []string{"IsEnabled"}},
 			b:    C{},
-			want: []Change{{Field: ".IsEnabled", Old: false, New: nil}},
+			want: []Change{{Field: ".is_enabled", Old: false, New: nil}},
 		},
 		{
 			name: "forcesend empty all",
 			a:    C{ForceSendFields: []string{"Name", "IsEnabled"}},
 			b:    C{ForceSendFields: []string{"Age"}},
 			want: []Change{
-				{Field: ".Name", Old: "", New: nil},
-				{Field: ".Age", Old: nil, New: 0},
-				{Field: ".IsEnabled", Old: false, New: nil},
+				{Field: ".name", Old: "", New: nil},
+				{Field: ".age", Old: nil, New: 0},
+				{Field: ".is_enabled", Old: false, New: nil},
 			},
 		},
 		{
@@ -211,7 +211,7 @@ func TestGetStructDiff(t *testing.T) {
 			name: "slice of struct with empty string and ForceSendFields diff",
 			a:    []C{{Name: "", ForceSendFields: []string{"Name"}}},
 			b:    []C{{Name: ""}},
-			want: []Change{{Field: "[0].Name", Old: "", New: nil}},
+			want: []Change{{Field: "[0].name", Old: "", New: nil}},
 		},
 
 		// ForceSendFields inside map value
@@ -220,9 +220,9 @@ func TestGetStructDiff(t *testing.T) {
 			a:    map[string]C{"key1": {Title: "title", ForceSendFields: []string{"Name", "IsEnabled", "Title"}}},
 			b:    map[string]C{"key1": {Title: "title", ForceSendFields: []string{"Age"}}},
 			want: []Change{
-				{Field: "[\"key1\"].Name", Old: "", New: nil},
-				{Field: "[\"key1\"].Age", Old: nil, New: 0},
-				{Field: "[\"key1\"].IsEnabled", Old: false, New: nil},
+				{Field: "[\"key1\"].name", Old: "", New: nil},
+				{Field: "[\"key1\"].age", Old: nil, New: 0},
+				{Field: "[\"key1\"].is_enabled", Old: false, New: nil},
 			},
 		},
 
@@ -232,9 +232,9 @@ func TestGetStructDiff(t *testing.T) {
 			a:    map[string]*C{"key1": {Title: "title", ForceSendFields: []string{"Name", "IsEnabled", "Title"}}},
 			b:    map[string]*C{"key1": {Title: "title", ForceSendFields: []string{"Age"}}},
 			want: []Change{
-				{Field: "[\"key1\"].Name", Old: "", New: nil},
-				{Field: "[\"key1\"].Age", Old: nil, New: 0},
-				{Field: "[\"key1\"].IsEnabled", Old: false, New: nil},
+				{Field: "[\"key1\"].name", Old: "", New: nil},
+				{Field: "[\"key1\"].age", Old: nil, New: 0},
+				{Field: "[\"key1\"].is_enabled", Old: false, New: nil},
 			},
 		},
 	}

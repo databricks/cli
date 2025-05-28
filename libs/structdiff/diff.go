@@ -15,26 +15,26 @@ type Change struct {
 	New   any
 }
 
-type pathNode struct {
-	Prev *pathNode
-	Key  string
-	// If Index >= 0, the node specifies a slice/array index in Index.
-	// If Index == -1, the node specifies a struct attribute in Key
-	// If Index == -2, the node specifies a map key in Key
-	Index int
+type PathNode struct {
+	prev *PathNode
+	key  string
+	// If index >= 0, the node specifies a slice/array index in index.
+	// If index == -1, the node specifies a struct attribute in key
+	// If index == -2, the node specifies a map key in key
+	index int
 }
 
-func (p *pathNode) String() string {
+func (p *PathNode) String() string {
 	if p == nil {
 		return ""
 	}
-	if p.Index >= 0 {
-		return p.Prev.String() + "[" + strconv.Itoa(p.Index) + "]"
+	if p.index >= 0 {
+		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
-	if p.Index == -1 {
-		return p.Prev.String() + "." + p.Key
+	if p.index == -1 {
+		return p.prev.String() + "." + p.key
 	}
-	return fmt.Sprintf("%s[%q]", p.Prev.String(), p.Key)
+	return fmt.Sprintf("%s[%q]", p.prev.String(), p.key)
 }
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
@@ -65,7 +65,7 @@ func GetStructDiff(a, b any) ([]Change, error) {
 
 // diffValues appends changes between v1 and v2 to the slice.  path is the current
 // JSON-style path (dot + brackets).  At the root path is "".
-func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
+func diffValues(path *PathNode, v1, v2 reflect.Value, changes *[]Change) {
 	if !v1.IsValid() {
 		if !v2.IsValid() {
 			return
@@ -112,7 +112,7 @@ func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 			*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 		} else {
 			for i := range v1.Len() {
-				node := pathNode{Prev: path, Index: i}
+				node := PathNode{prev: path, index: i}
 				diffValues(&node, v1.Index(i), v2.Index(i), changes)
 			}
 		}
@@ -127,13 +127,13 @@ func diffValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
 	}
 }
 
-func deepEqualValues(path *pathNode, v1, v2 reflect.Value, changes *[]Change) {
+func deepEqualValues(path *PathNode, v1, v2 reflect.Value, changes *[]Change) {
 	if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
 		*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
 	}
 }
 
-func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
+func diffStruct(path *PathNode, s1, s2 reflect.Value, changes *[]Change) {
 	t := s1.Type()
 	forced1 := getForceSendFields(s1)
 	forced2 := getForceSendFields(s2)
@@ -144,7 +144,17 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 			continue
 		}
 
-		node := pathNode{Prev: path, Key: sf.Name, Index: -1}
+		// Extract JSON key from struct tag
+		jsonKey := sf.Name // default to field name
+		if jsonTag := sf.Tag.Get("json"); jsonTag != "" {
+			// Parse the JSON tag to get the key name
+			parts := strings.Split(jsonTag, ",")
+			if parts[0] != "" && parts[0] != "-" {
+				jsonKey = parts[0]
+			}
+		}
+
+		node := PathNode{prev: path, key: jsonKey, index: -1}
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
@@ -167,7 +177,7 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 	}
 }
 
-func diffMapStringKey(path *pathNode, m1, m2 reflect.Value, changes *[]Change) {
+func diffMapStringKey(path *PathNode, m1, m2 reflect.Value, changes *[]Change) {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
 		// Key is always string at this point
@@ -189,10 +199,10 @@ func diffMapStringKey(path *pathNode, m1, m2 reflect.Value, changes *[]Change) {
 		k := keySet[ks]
 		v1 := m1.MapIndex(k)
 		v2 := m2.MapIndex(k)
-		node := pathNode{
-			Prev:  path,
-			Key:   ks,
-			Index: -2,
+		node := PathNode{
+			prev:  path,
+			key:   ks,
+			index: -2,
 		}
 		diffValues(&node, v1, v2, changes)
 	}
