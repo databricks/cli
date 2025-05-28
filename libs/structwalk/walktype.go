@@ -108,6 +108,15 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 			continue // unexported
 		}
 		tag := sf.Tag.Get("json")
+
+		// Handle embedded structs (anonymous fields without json tags)
+		if sf.Anonymous && tag == "" {
+			// For embedded structs, walk the embedded type at the current path level
+			// This flattens the embedded struct's fields into the parent struct
+			walkTypeValue(path, sf.Type, visit, visitedCount)
+			continue
+		}
+
 		if tag == "" || tag == "-" {
 			continue // skip fields without json name
 		}
