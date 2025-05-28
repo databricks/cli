@@ -20,7 +20,6 @@ import (
 //       traversed so that paths stay JSON-like.
 //
 // The walk is depth-first and deterministic (map keys are sorted lexicographically).
-// A non-nil error stops the traversal immediately.
 //
 // Example:
 //   err := structwalk.WalkType(reflect.TypeOf(cfg), func(path *structpath.PathNode, t reflect.Type) {
