@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/structdiff/jsontag"
 )
 
 type Change struct {
@@ -35,22 +37,18 @@ func (p *pathNode) String() string {
 		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
 
-	if p.index == -1 || p.index == -3 {
+	if p.index == -3 {
 		// Lazy resolve JSON key for struct fields
-		if p.index == -3 && p.structField != nil {
-			p.key = p.structField.Name // default to field name
-			if jsonTag := p.structField.Tag.Get("json"); jsonTag != "" {
-				// Parse the JSON tag to get the key name
-				if commaIdx := strings.IndexByte(jsonTag, ','); commaIdx >= 0 {
-					if jsonTag[:commaIdx] != "" && jsonTag[:commaIdx] != "-" {
-						p.key = jsonTag[:commaIdx]
-					}
-				} else if jsonTag != "" && jsonTag != "-" {
-					p.key = jsonTag
-				}
+		if p.structField != nil {
+			p.key = jsontag.ParseJSONTag(p.structField.Tag.Get("json")).Name
+			if p.key == "" {
+				p.key = p.structField.Name
 			}
-			p.index = -1 // Mark as resolved
 		}
+		p.index = -1
+	}
+
+	if p.index == -1 {
 		return p.prev.String() + "." + p.key
 	}
 
@@ -169,17 +167,22 @@ func diffStruct(path *pathNode, s1, s2 reflect.Value, changes *[]Change) {
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
-		hasOmitEmpty := strings.Contains(sf.Tag.Get("json"), "omitempty")
+		zero1 := v1Field.IsZero()
+		zero2 := v2Field.IsZero()
 
-		if hasOmitEmpty {
-			if v1Field.IsZero() {
-				if !slices.Contains(forced1, sf.Name) {
-					v1Field = reflect.ValueOf(nil)
+		if zero1 || zero2 {
+			hasOmitEmpty := strings.Contains(sf.Tag.Get("json"), "omitempty")
+
+			if hasOmitEmpty {
+				if zero1 {
+					if !slices.Contains(forced1, sf.Name) {
+						v1Field = reflect.ValueOf(nil)
+					}
 				}
-			}
-			if v2Field.IsZero() {
-				if !slices.Contains(forced2, sf.Name) {
-					v2Field = reflect.ValueOf(nil)
+				if zero2 {
+					if !slices.Contains(forced2, sf.Name) {
+						v2Field = reflect.ValueOf(nil)
+					}
 				}
 			}
 		}
