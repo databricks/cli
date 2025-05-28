@@ -240,11 +240,7 @@ func gatherRequiredFields(currentRootSchema *jsonschema.Schema) ([][]PatternInfo
 			k = parts[0]
 		}
 
-		if _, ok := patternMap[k]; ok {
-			patternMap[k] = append(patternMap[k], node)
-		} else {
-			patternMap[k] = []PatternInfo{node}
-		}
+		patternMap[k] = append(patternMap[k], node)
 	}
 
 	// Convert map to an array to make it easier to render.
