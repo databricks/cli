@@ -30,9 +30,11 @@ func (p *pathNode) String() string {
 	if p == nil {
 		return ""
 	}
+
 	if p.index >= 0 {
 		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
+
 	if p.index == -1 || p.index == -3 {
 		// Lazy resolve JSON key for struct fields
 		if p.index == -3 && p.structField != nil {
@@ -51,6 +53,7 @@ func (p *pathNode) String() string {
 		}
 		return p.prev.String() + "." + p.key
 	}
+
 	return fmt.Sprintf("%s[%q]", p.prev.String(), p.key)
 }
 
