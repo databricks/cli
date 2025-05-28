@@ -219,21 +219,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	totalDirs := 0
 	selectedDirs := 0
 
-	envFilter := os.Getenv(EnvFilterVar)
-	envFilters := strings.Split(os.Getenv(EnvFilterVar), ",")
-	if len(envFilters) == 1 && len(envFilters[0]) == 0 {
-		envFilters = nil
-	}
-
-	for _, filter := range envFilters {
-		items := strings.Split(filter, "=")
-		if len(items) != 2 || len(items[0]) == 0 {
-			t.Fatalf("Invalid filter %q in %s=%q", filter, EnvFilterVar, envFilter)
-		}
-		key := items[0]
-		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
-		os.Unsetenv(key)
-	}
+	envFilters := getEnvFilters(t)
 
 	for _, dir := range testDirs {
 		totalDirs += 1
@@ -284,6 +270,26 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return len(testDirs)
+}
+
+func getEnvFilters(t *testing.T) []string {
+	envFilterValue := os.Getenv(EnvFilterVar)
+	filters := strings.Split(envFilterValue, ",")
+	if len(filters) == 1 && len(filters[0]) == 0 {
+		filters = nil
+	}
+
+	for _, filter := range filters {
+		items := strings.Split(filter, "=")
+		if len(items) != 2 || len(items[0]) == 0 {
+			t.Fatalf("Invalid filter %q in %s=%q", filter, EnvFilterVar, envFilterValue)
+		}
+		key := items[0]
+		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
+		os.Unsetenv(key)
+	}
+
+	return filters
 }
 
 func getTests(t *testing.T) []string {
