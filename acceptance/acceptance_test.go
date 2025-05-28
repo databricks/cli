@@ -274,10 +274,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 func getEnvFilters(t *testing.T) []string {
 	envFilterValue := os.Getenv(EnvFilterVar)
-	filters := strings.Split(envFilterValue, ",")
-	if len(filters) == 1 && len(filters[0]) == 0 {
-		filters = nil
+	if envFilterValue == "" {
+		return nil
 	}
+
+	filters := strings.Split(envFilterValue, ",")
 
 	for _, filter := range filters {
 		items := strings.Split(filter, "=")
