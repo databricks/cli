@@ -136,7 +136,7 @@ func TestWalkTypeIgnoredFields(t *testing.T) {
 		DashField       string        `json:"-,omitempty"`
 		NoTagField      string        // no json tag
 		EmptyTagField   string        `json:""`
-		unexportedField string        `json:"unexported"`
+		unexportedField string        `json:"unexported"` //nolint
 		FuncField       func() string `json:"func_field"`
 		ChanField       chan string   `json:"chan_field"`
 		InterfaceField  any           `json:"interface_field"`
@@ -217,8 +217,8 @@ func TestWalkTypeEmptyStruct(t *testing.T) {
 
 func TestWalkTypeUnexportedFieldsOnly(t *testing.T) {
 	type UnexportedStruct struct {
-		unexported1 string
-		unexported2 int
+		unexported1 string //nolint
+		unexported2 int    //nolint
 	}
 
 	results := make(map[string]reflect.Type)

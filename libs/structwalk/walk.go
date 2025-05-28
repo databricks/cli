@@ -98,7 +98,7 @@ func walkValue(path *structpath.PathNode, val reflect.Value, visit VisitFunc) {
 		walkStruct(path, val, visit)
 
 	case reflect.Slice, reflect.Array:
-		for i := 0; i < val.Len(); i++ {
+		for i := range val.Len() {
 			node := structpath.NewIndex(path, i)
 			walkValue(node, val.Index(i), visit)
 		}
@@ -125,7 +125,7 @@ func walkValue(path *structpath.PathNode, val reflect.Value, visit VisitFunc) {
 
 func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 	st := s.Type()
-	for i := 0; i < st.NumField(); i++ {
+	for i := range st.NumField() {
 		sf := st.Field(i)
 		if sf.PkgPath != "" {
 			continue // unexported
