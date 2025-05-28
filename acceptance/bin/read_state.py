@@ -32,7 +32,7 @@ def print_resource_terraform(section, name, *attrs):
                 print(section, name, " ".join(values))
                 found += 1
     if not found:
-        print(f"Resource {(resource_type, name)} not found. Available: {available}")
+        print(f"State not found for {section}.{name}")
 
 
 print_resource_terraform(*sys.argv[1:])

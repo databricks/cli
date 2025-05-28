@@ -9,6 +9,21 @@ import (
 	"github.com/google/uuid"
 )
 
+func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
+	defer s.LockUnlock()()
+
+	value, ok := s.Pipelines[pipelineId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+	return Response{
+		Body: value,
+	}
+}
+
 func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	defer s.LockUnlock()()
 
