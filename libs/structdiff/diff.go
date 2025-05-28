@@ -22,8 +22,8 @@ type PathNode struct {
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index == -1, the node specifies a struct attribute
 	// If index == -2, the node specifies a map key in key
-	index    int
-	resolved bool // Whether the key has been computed from structField
+	// If index == -3, the node specifies an unresolved struct attribute
+	index int
 }
 
 func (p *PathNode) String() string {
@@ -33,9 +33,9 @@ func (p *PathNode) String() string {
 	if p.index >= 0 {
 		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
-	if p.index == -1 {
+	if p.index == -1 || p.index == -3 {
 		// Lazy resolve JSON key for struct fields
-		if !p.resolved && p.structField != nil {
+		if p.index == -3 && p.structField != nil {
 			p.key = p.structField.Name // default to field name
 			if jsonTag := p.structField.Tag.Get("json"); jsonTag != "" {
 				// Parse the JSON tag to get the key name
@@ -47,7 +47,7 @@ func (p *PathNode) String() string {
 					p.key = jsonTag
 				}
 			}
-			p.resolved = true
+			p.index = -1 // Mark as resolved
 		}
 		return p.prev.String() + "." + p.key
 	}
@@ -162,7 +162,7 @@ func diffStruct(path *PathNode, s1, s2 reflect.Value, changes *[]Change) {
 		}
 
 		// Store StructField pointer for lazy JSON key resolution
-		node := PathNode{prev: path, structField: &sf, index: -1}
+		node := PathNode{prev: path, structField: &sf, index: -3}
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
