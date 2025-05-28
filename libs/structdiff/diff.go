@@ -11,9 +11,9 @@ import (
 )
 
 type Change struct {
-	Field string
-	Old   any
-	New   any
+	Path *structpath.PathNode
+	Old  any
+	New  any
 }
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
@@ -30,7 +30,7 @@ func GetStructDiff(a, b any) ([]Change, error) {
 	var changes []Change
 
 	if !v1.IsValid() || !v2.IsValid() {
-		changes = append(changes, Change{Field: "", Old: v1.Interface(), New: v2.Interface()})
+		changes = append(changes, Change{Path: nil, Old: v1.Interface(), New: v2.Interface()})
 		return changes, nil
 	}
 
@@ -50,11 +50,11 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 			return
 		}
 
-		*changes = append(*changes, Change{Field: path.String(), Old: nil, New: v2.Interface()})
+		*changes = append(*changes, Change{Path: path, Old: nil, New: v2.Interface()})
 		return
 	} else if !v2.IsValid() {
 		// v1 is valid
-		*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: nil})
+		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: nil})
 		return
 	}
 
@@ -62,7 +62,7 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 
 	// This should not happen; if it does, record this a full change
 	if v1Type != v2.Type() {
-		*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
+		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 		return
 	}
 
@@ -76,7 +76,7 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 			return
 		}
 		if v1Nil || v2Nil {
-			*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
+			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 			return
 		}
 	}
@@ -88,7 +88,7 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 		diffStruct(path, v1, v2, changes)
 	case reflect.Slice, reflect.Array:
 		if v1.Len() != v2.Len() {
-			*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
+			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 		} else {
 			for i := range v1.Len() {
 				node := structpath.NewIndex(path, i)
@@ -108,7 +108,7 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 
 func deepEqualValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) {
 	if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
-		*changes = append(*changes, Change{Field: path.String(), Old: v1.Interface(), New: v2.Interface()})
+		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 	}
 }
 

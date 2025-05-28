@@ -26,6 +26,29 @@ type C struct {
 	ForceSendFields []string `json:"-"`
 }
 
+// ResolvedChange represents a change with the field path as a string (like the old Change struct)
+type ResolvedChange struct {
+	Field string
+	Old   any
+	New   any
+}
+
+// Helper function to convert []Change to []ResolvedChange for test comparison
+func resolveChanges(changes []Change) []ResolvedChange {
+	if len(changes) == 0 {
+		return nil
+	}
+	resolved := make([]ResolvedChange, len(changes))
+	for i, ch := range changes {
+		resolved[i] = ResolvedChange{
+			Field: ch.Path.String(),
+			Old:   ch.Old,
+			New:   ch.New,
+		}
+	}
+	return resolved
+}
+
 func TestGetStructDiff(t *testing.T) {
 	b1 := &B{S: "one"}
 	b2 := &B{S: "two"}
@@ -36,7 +59,7 @@ func TestGetStructDiff(t *testing.T) {
 	tests := []struct {
 		name    string
 		a, b    any
-		want    []Change
+		want    []ResolvedChange
 		wantErr bool
 	}{
 		{
@@ -61,7 +84,7 @@ func TestGetStructDiff(t *testing.T) {
 			name: "typed nil vs non-nil pointer",
 			a:    (*A)(nil),
 			b:    &A{X: 1},
-			want: []Change{{Field: "", Old: (*A)(nil), New: &A{X: 1}}},
+			want: []ResolvedChange{{Field: "", Old: (*A)(nil), New: &A{X: 1}}},
 		},
 		{
 			name:    "different top-level types",
@@ -79,43 +102,43 @@ func TestGetStructDiff(t *testing.T) {
 			name: "simple field change - omitempty",
 			a:    A{X: 5},
 			b:    A{},
-			want: []Change{{Field: ".x", Old: 5, New: nil}},
+			want: []ResolvedChange{{Field: ".x", Old: 5, New: nil}},
 		},
 		{
 			name: "simple field change - required",
 			a:    A{XX: 5},
 			b:    A{},
-			want: []Change{{Field: ".xx", Old: 5, New: 0}},
+			want: []ResolvedChange{{Field: ".xx", Old: 5, New: 0}},
 		},
 		{
 			name: "nested struct field",
 			a:    A{B: B{S: "one"}},
 			b:    A{B: B{S: "two"}},
-			want: []Change{{Field: ".b.S", Old: "one", New: "two"}},
+			want: []ResolvedChange{{Field: ".b.S", Old: "one", New: "two"}},
 		},
 		{
 			name: "pointer nil vs value",
 			a:    A{P: b1},
 			b:    A{},
-			want: []Change{{Field: ".p", Old: b1, New: nil}},
+			want: []ResolvedChange{{Field: ".p", Old: b1, New: nil}},
 		},
 		{
 			name: "pointer nested value diff",
 			a:    A{P: b1},
 			b:    A{P: b2},
-			want: []Change{{Field: ".p.S", Old: "one", New: "two"}},
+			want: []ResolvedChange{{Field: ".p.S", Old: "one", New: "two"}},
 		},
 		{
 			name: "map diff",
 			a:    A{M: map[string]int{"a": 1}},
 			b:    A{M: map[string]int{"a": 2}},
-			want: []Change{{Field: ".m[\"a\"]", Old: 1, New: 2}},
+			want: []ResolvedChange{{Field: ".m[\"a\"]", Old: 1, New: 2}},
 		},
 		{
 			name: "slice diff",
 			a:    A{L: []string{"a"}},
 			b:    A{L: []string{"a", "b"}},
-			want: []Change{{Field: ".l", Old: []string{"a"}, New: []string{"a", "b"}}},
+			want: []ResolvedChange{{Field: ".l", Old: []string{"a"}, New: []string{"a", "b"}}},
 		},
 
 		// ForceSendFields with non-empty fields (omitempty)
@@ -123,19 +146,19 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend nonempty 1",
 			a:    C{Name: "Hello", ForceSendFields: []string{"Name"}},
 			b:    C{Name: "World"},
-			want: []Change{{Field: ".name", Old: "Hello", New: "World"}},
+			want: []ResolvedChange{{Field: ".name", Old: "Hello", New: "World"}},
 		},
 		{
 			name: "forcesend noneempty 2",
 			a:    C{Name: "Hello", ForceSendFields: []string{"Name"}},
 			b:    C{Name: "World", ForceSendFields: []string{"Name"}},
-			want: []Change{{Field: ".name", Old: "Hello", New: "World"}},
+			want: []ResolvedChange{{Field: ".name", Old: "Hello", New: "World"}},
 		},
 		{
 			name: "forcesend noneempty 3",
 			a:    C{Name: "Hello"},
 			b:    C{Name: "World", ForceSendFields: []string{"Name"}},
-			want: []Change{{Field: ".name", Old: "Hello", New: "World"}},
+			want: []ResolvedChange{{Field: ".name", Old: "Hello", New: "World"}},
 		},
 
 		// ForceSendFields with non-empty fields (required)
@@ -143,19 +166,19 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend nonempty required 1",
 			a:    C{Title: "Hello", ForceSendFields: []string{"Title"}},
 			b:    C{Title: "World"},
-			want: []Change{{Field: ".title", Old: "Hello", New: "World"}},
+			want: []ResolvedChange{{Field: ".title", Old: "Hello", New: "World"}},
 		},
 		{
 			name: "forcesend noneempty required 2",
 			a:    C{Title: "Hello", ForceSendFields: []string{"Title"}},
 			b:    C{Title: "World", ForceSendFields: []string{"Title"}},
-			want: []Change{{Field: ".title", Old: "Hello", New: "World"}},
+			want: []ResolvedChange{{Field: ".title", Old: "Hello", New: "World"}},
 		},
 		{
 			name: "forcesend noneempty required 3",
 			a:    C{Title: "Hello"},
 			b:    C{Title: "World", ForceSendFields: []string{"Title"}},
-			want: []Change{{Field: ".title", Old: "Hello", New: "World"}},
+			want: []ResolvedChange{{Field: ".title", Old: "Hello", New: "World"}},
 		},
 
 		// ForceSendFields with empty fields
@@ -163,25 +186,25 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend empty string diff",
 			a:    C{ForceSendFields: []string{"Name"}}, // Name == "" zero, but forced
 			b:    C{},
-			want: []Change{{Field: ".name", Old: "", New: nil}},
+			want: []ResolvedChange{{Field: ".name", Old: "", New: nil}},
 		},
 		{
 			name: "forcesend empty int diff",
 			a:    C{ForceSendFields: []string{"Age"}},
 			b:    C{},
-			want: []Change{{Field: ".age", Old: 0, New: nil}},
+			want: []ResolvedChange{{Field: ".age", Old: 0, New: nil}},
 		},
 		{
 			name: "forcesend empty bool diff",
 			a:    C{ForceSendFields: []string{"IsEnabled"}},
 			b:    C{},
-			want: []Change{{Field: ".is_enabled", Old: false, New: nil}},
+			want: []ResolvedChange{{Field: ".is_enabled", Old: false, New: nil}},
 		},
 		{
 			name: "forcesend empty all",
 			a:    C{ForceSendFields: []string{"Name", "IsEnabled"}},
 			b:    C{ForceSendFields: []string{"Age"}},
-			want: []Change{
+			want: []ResolvedChange{
 				{Field: ".name", Old: "", New: nil},
 				{Field: ".age", Old: nil, New: 0},
 				{Field: ".is_enabled", Old: false, New: nil},
@@ -211,7 +234,7 @@ func TestGetStructDiff(t *testing.T) {
 			name: "slice of struct with empty string and ForceSendFields diff",
 			a:    []C{{Name: "", ForceSendFields: []string{"Name"}}},
 			b:    []C{{Name: ""}},
-			want: []Change{{Field: "[0].name", Old: "", New: nil}},
+			want: []ResolvedChange{{Field: "[0].name", Old: "", New: nil}},
 		},
 
 		// ForceSendFields inside map value
@@ -219,7 +242,7 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend inside map",
 			a:    map[string]C{"key1": {Title: "title", ForceSendFields: []string{"Name", "IsEnabled", "Title"}}},
 			b:    map[string]C{"key1": {Title: "title", ForceSendFields: []string{"Age"}}},
-			want: []Change{
+			want: []ResolvedChange{
 				{Field: "[\"key1\"].name", Old: "", New: nil},
 				{Field: "[\"key1\"].age", Old: nil, New: 0},
 				{Field: "[\"key1\"].is_enabled", Old: false, New: nil},
@@ -231,7 +254,7 @@ func TestGetStructDiff(t *testing.T) {
 			name: "forcesend inside map",
 			a:    map[string]*C{"key1": {Title: "title", ForceSendFields: []string{"Name", "IsEnabled", "Title"}}},
 			b:    map[string]*C{"key1": {Title: "title", ForceSendFields: []string{"Age"}}},
-			want: []Change{
+			want: []ResolvedChange{
 				{Field: "[\"key1\"].name", Old: "", New: nil},
 				{Field: "[\"key1\"].age", Old: nil, New: 0},
 				{Field: "[\"key1\"].is_enabled", Old: false, New: nil},
@@ -242,7 +265,11 @@ func TestGetStructDiff(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetStructDiff(tt.a, tt.b)
-			assert.Equal(t, tt.want, got)
+
+			// Convert actual results to ResolvedChange for comparison
+			gotResolved := resolveChanges(got)
+
+			assert.Equal(t, tt.want, gotResolved)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -254,15 +281,19 @@ func TestGetStructDiff(t *testing.T) {
 		t.Run(tt.name+" mirror", func(t *testing.T) {
 			got, err := GetStructDiff(tt.b, tt.a)
 
-			var mirrorWant []Change
+			var mirrorWant []ResolvedChange
 			for _, ch := range tt.want {
-				mirrorWant = append(mirrorWant, Change{
+				mirrorWant = append(mirrorWant, ResolvedChange{
 					Field: ch.Field,
 					Old:   ch.New,
 					New:   ch.Old,
 				})
 			}
-			assert.Equal(t, mirrorWant, got)
+
+			// Convert actual results to ResolvedChange for comparison
+			gotResolved := resolveChanges(got)
+
+			assert.Equal(t, mirrorWant, gotResolved)
 
 			if tt.wantErr {
 				assert.Error(t, err)
