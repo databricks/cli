@@ -16,12 +16,14 @@ type Change struct {
 }
 
 type PathNode struct {
-	prev *PathNode
-	key  string
+	prev        *PathNode
+	structField *reflect.StructField // For lazy JSON tag parsing
+	key         string               // Computed key (JSON key for structs, string key for maps)
 	// If index >= 0, the node specifies a slice/array index in index.
-	// If index == -1, the node specifies a struct attribute in key
+	// If index == -1, the node specifies a struct attribute
 	// If index == -2, the node specifies a map key in key
-	index int
+	index    int
+	resolved bool // Whether the key has been computed from structField
 }
 
 func (p *PathNode) String() string {
@@ -32,6 +34,21 @@ func (p *PathNode) String() string {
 		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
 	if p.index == -1 {
+		// Lazy resolve JSON key for struct fields
+		if !p.resolved && p.structField != nil {
+			p.key = p.structField.Name // default to field name
+			if jsonTag := p.structField.Tag.Get("json"); jsonTag != "" {
+				// Parse the JSON tag to get the key name
+				if commaIdx := strings.IndexByte(jsonTag, ','); commaIdx >= 0 {
+					if jsonTag[:commaIdx] != "" && jsonTag[:commaIdx] != "-" {
+						p.key = jsonTag[:commaIdx]
+					}
+				} else if jsonTag != "" && jsonTag != "-" {
+					p.key = jsonTag
+				}
+			}
+			p.resolved = true
+		}
 		return p.prev.String() + "." + p.key
 	}
 	return fmt.Sprintf("%s[%q]", p.prev.String(), p.key)
@@ -144,17 +161,8 @@ func diffStruct(path *PathNode, s1, s2 reflect.Value, changes *[]Change) {
 			continue
 		}
 
-		// Extract JSON key from struct tag
-		jsonKey := sf.Name // default to field name
-		if jsonTag := sf.Tag.Get("json"); jsonTag != "" {
-			// Parse the JSON tag to get the key name
-			parts := strings.Split(jsonTag, ",")
-			if parts[0] != "" && parts[0] != "-" {
-				jsonKey = parts[0]
-			}
-		}
-
-		node := PathNode{prev: path, key: jsonKey, index: -1}
+		// Store StructField pointer for lazy JSON key resolution
+		node := PathNode{prev: path, structField: &sf, index: -1}
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
