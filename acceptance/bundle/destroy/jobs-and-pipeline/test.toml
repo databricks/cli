@@ -1,0 +1,16 @@
+Local = false
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+    "resources.yml",
+    ".databricks/"
+]
+
+[[Repls]]
+Old = "[0-9]{10,}"
+New = "[NUMID]"
+
+[[Repls]]
+Old = "[0-9a-z]{12,}"
+New = "[ALPHANUMID]"

@@ -27,6 +27,7 @@ import (
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
+	database_instances "github.com/databricks/cli/cmd/workspace/database-instances"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
@@ -70,6 +71,7 @@ import (
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
 	query_visualizations_legacy "github.com/databricks/cli/cmd/workspace/query-visualizations-legacy"
 	recipient_activation "github.com/databricks/cli/cmd/workspace/recipient-activation"
+	recipient_federation_policies "github.com/databricks/cli/cmd/workspace/recipient-federation-policies"
 	recipients "github.com/databricks/cli/cmd/workspace/recipients"
 	redash_config "github.com/databricks/cli/cmd/workspace/redash-config"
 	registered_models "github.com/databricks/cli/cmd/workspace/registered-models"
@@ -126,6 +128,7 @@ func All() []*cobra.Command {
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
 	out = append(out, data_sources.New())
+	out = append(out, database_instances.New())
 	out = append(out, experiments.New())
 	out = append(out, external_locations.New())
 	out = append(out, functions.New())
@@ -168,6 +171,7 @@ func All() []*cobra.Command {
 	out = append(out, query_visualizations.New())
 	out = append(out, query_visualizations_legacy.New())
 	out = append(out, recipient_activation.New())
+	out = append(out, recipient_federation_policies.New())
 	out = append(out, recipients.New())
 	out = append(out, redash_config.New())
 	out = append(out, registered_models.New())

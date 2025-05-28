@@ -1,7 +1,7 @@
 ## docs-autogen
 
 1. Install [Golang](https://go.dev/doc/install)
-2. Run `make vendor docs` from the repo
+2. Run `make docs` from the repo
 3. See generated documents in `./bundle/docsgen/output` directory
 4. To change descriptions update content in `./bundle/internal/schema/annotations.yml` or `./bundle/internal/schema/annotations_openapi_overrides.yml` and re-run `make docs`
 

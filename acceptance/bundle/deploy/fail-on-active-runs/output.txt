@@ -1,12 +1,12 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/fail-on-active-runs/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 >>> errcode [CLI] bundle deploy --fail-on-active-runs
-Error: job 1 is running
+Error: job [TEST_JOB_ID+0] is running
 
 
 Exit code: 1
@@ -17,7 +17,7 @@ Exit code: 1
   "method": "POST",
   "path": "/api/2.0/workspace/delete",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/fail-on-active-runs/default/artifacts/.internal",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",
     "recursive": true
   }
 }

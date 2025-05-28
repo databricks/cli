@@ -15,7 +15,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/google/uuid"
+)
+
+// 4611686018427387911 == 2 ** 62 + 7
+// 2305843009213693969 == 2 ** 61 + 17
+// This values cannot be represented by float64, so they can test incorrect use of json parsing
+// (encoding/json without options parses numbers into float64)
+// These are also easier to spot / replace in test output compared to numbers with one or few digits.
+const (
+	TestJobID = 4611686018427387911
+	TestRunID = 2305843009213693969
 )
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
@@ -28,10 +37,10 @@ type FakeWorkspace struct {
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
 	nextJobId    int64
 	nextJobRunId int64
-	jobs         map[int64]jobs.Job
-	jobRuns      map[int64]jobs.Run
+	Jobs         map[int64]jobs.Job
+	JobRuns      map[int64]jobs.Run
 
-	Pipelines map[string]pipelines.PipelineSpec
+	Pipelines map[string]pipelines.GetPipelineResponse
 	Monitors  map[string]catalog.MonitorInfo
 	Apps      map[string]apps.App
 	Schemas   map[string]catalog.SchemaInfo
@@ -60,7 +69,26 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	}
 }
 
-func MapDelete[T any](w *FakeWorkspace, collection map[string]T, key string) Response {
+func MapList[K comparable, T any](w *FakeWorkspace, collection map[K]T, responseFieldName string) Response {
+	defer w.LockUnlock()()
+
+	items := make([]T, 0, len(collection))
+
+	for _, value := range collection {
+		items = append(items, value)
+	}
+
+	// Create a map with the provided field name containing the items
+	wrapper := map[string]any{
+		responseFieldName: items,
+	}
+
+	return Response{
+		Body: wrapper,
+	}
+}
+
+func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K) Response {
 	defer w.LockUnlock()()
 
 	_, ok := collection[key]
@@ -80,11 +108,11 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 			"/Workspace": true,
 		},
 		files:        map[string][]byte{},
-		jobs:         map[int64]jobs.Job{},
-		jobRuns:      map[int64]jobs.Run{},
-		nextJobId:    1,
-		nextJobRunId: 1,
-		Pipelines:    map[string]pipelines.PipelineSpec{},
+		Jobs:         map[int64]jobs.Job{},
+		JobRuns:      map[int64]jobs.Run{},
+		nextJobId:    TestJobID,
+		nextJobRunId: TestRunID,
+		Pipelines:    map[string]pipelines.GetPipelineResponse{},
 		Monitors:     map[string]catalog.MonitorInfo{},
 		Apps:         map[string]apps.App{},
 		Schemas:      map[string]catalog.SchemaInfo{},
@@ -180,7 +208,7 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 		}
 	}
 
-	s.jobs[jobId] = jobs.Job{
+	s.Jobs[jobId] = jobs.Job{
 		JobId:    jobId,
 		Settings: &jobSettings,
 	}
@@ -195,7 +223,7 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 
 	jobId := request.JobId
 
-	_, ok := s.jobs[request.JobId]
+	_, ok := s.Jobs[request.JobId]
 	if !ok {
 		return Response{
 			StatusCode: 403,
@@ -203,27 +231,13 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 		}
 	}
 
-	s.jobs[jobId] = jobs.Job{
+	s.Jobs[jobId] = jobs.Job{
 		JobId:    jobId,
 		Settings: &request.NewSettings,
 	}
 
 	return Response{
 		Body: "",
-	}
-}
-
-func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
-	defer s.LockUnlock()()
-
-	pipelineId := uuid.New().String()
-
-	s.Pipelines[pipelineId] = r
-
-	return Response{
-		Body: pipelines.CreatePipelineResponse{
-			PipelineId: pipelineId,
-		},
 	}
 }
 
@@ -240,7 +254,7 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 
 	defer s.LockUnlock()()
 
-	job, ok := s.jobs[jobIdInt]
+	job, ok := s.Jobs[jobIdInt]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -255,7 +269,7 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 	defer s.LockUnlock()()
 
-	_, ok := s.jobs[jobId]
+	_, ok := s.Jobs[jobId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -264,7 +278,7 @@ func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 
 	runId := s.nextJobRunId
 	s.nextJobRunId++
-	s.jobRuns[runId] = jobs.Run{
+	s.JobRuns[runId] = jobs.Run{
 		RunId: runId,
 		State: &jobs.RunState{
 			LifeCycleState: jobs.RunLifeCycleStateRunning,
@@ -284,7 +298,7 @@ func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
 	defer s.LockUnlock()()
 
-	run, ok := s.jobRuns[runId]
+	run, ok := s.JobRuns[runId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -298,29 +312,11 @@ func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
 	}
 }
 
-func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
-	defer s.LockUnlock()()
-
-	spec, ok := s.Pipelines[pipelineId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	return Response{
-		Body: pipelines.GetPipelineResponse{
-			PipelineId: pipelineId,
-			Spec:       &spec,
-		},
-	}
-}
-
 func (s *FakeWorkspace) JobsList() Response {
 	defer s.LockUnlock()()
 
-	list := make([]jobs.BaseJob, 0, len(s.jobs))
-	for _, job := range s.jobs {
+	list := make([]jobs.BaseJob, 0, len(s.Jobs))
+	for _, job := range s.Jobs {
 		baseJob := jobs.BaseJob{}
 		err := jsonConvert(job, &baseJob)
 		if err != nil {

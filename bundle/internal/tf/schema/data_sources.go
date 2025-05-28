@@ -3,6 +3,10 @@
 package schema
 
 type DataSources struct {
+	AccountNetworkPolicies          map[string]any `json:"databricks_account_network_policies,omitempty"`
+	AccountNetworkPolicy            map[string]any `json:"databricks_account_network_policy,omitempty"`
+	AlertV2                         map[string]any `json:"databricks_alert_v2,omitempty"`
+	AlertsV2                        map[string]any `json:"databricks_alerts_v2,omitempty"`
 	App                             map[string]any `json:"databricks_app,omitempty"`
 	Apps                            map[string]any `json:"databricks_apps,omitempty"`
 	AwsAssumeRolePolicy             map[string]any `json:"databricks_aws_assume_role_policy,omitempty"`
@@ -21,6 +25,8 @@ type DataSources struct {
 	CurrentMetastore                map[string]any `json:"databricks_current_metastore,omitempty"`
 	CurrentUser                     map[string]any `json:"databricks_current_user,omitempty"`
 	Dashboards                      map[string]any `json:"databricks_dashboards,omitempty"`
+	DatabaseInstance                map[string]any `json:"databricks_database_instance,omitempty"`
+	DatabaseInstances               map[string]any `json:"databricks_database_instances,omitempty"`
 	DbfsFile                        map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                   map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                       map[string]any `json:"databricks_directory,omitempty"`
@@ -46,6 +52,8 @@ type DataSources struct {
 	NotebookPaths                   map[string]any `json:"databricks_notebook_paths,omitempty"`
 	NotificationDestinations        map[string]any `json:"databricks_notification_destinations,omitempty"`
 	Pipelines                       map[string]any `json:"databricks_pipelines,omitempty"`
+	RecipientFederationPolicies     map[string]any `json:"databricks_recipient_federation_policies,omitempty"`
+	RecipientFederationPolicy       map[string]any `json:"databricks_recipient_federation_policy,omitempty"`
 	RegisteredModel                 map[string]any `json:"databricks_registered_model,omitempty"`
 	RegisteredModelVersions         map[string]any `json:"databricks_registered_model_versions,omitempty"`
 	Schema                          map[string]any `json:"databricks_schema,omitempty"`
@@ -66,11 +74,16 @@ type DataSources struct {
 	Views                           map[string]any `json:"databricks_views,omitempty"`
 	Volume                          map[string]any `json:"databricks_volume,omitempty"`
 	Volumes                         map[string]any `json:"databricks_volumes,omitempty"`
+	WorkspaceNetworkOption          map[string]any `json:"databricks_workspace_network_option,omitempty"`
 	Zones                           map[string]any `json:"databricks_zones,omitempty"`
 }
 
 func NewDataSources() *DataSources {
 	return &DataSources{
+		AccountNetworkPolicies:          make(map[string]any),
+		AccountNetworkPolicy:            make(map[string]any),
+		AlertV2:                         make(map[string]any),
+		AlertsV2:                        make(map[string]any),
 		App:                             make(map[string]any),
 		Apps:                            make(map[string]any),
 		AwsAssumeRolePolicy:             make(map[string]any),
@@ -89,6 +102,8 @@ func NewDataSources() *DataSources {
 		CurrentMetastore:                make(map[string]any),
 		CurrentUser:                     make(map[string]any),
 		Dashboards:                      make(map[string]any),
+		DatabaseInstance:                make(map[string]any),
+		DatabaseInstances:               make(map[string]any),
 		DbfsFile:                        make(map[string]any),
 		DbfsFilePaths:                   make(map[string]any),
 		Directory:                       make(map[string]any),
@@ -114,6 +129,8 @@ func NewDataSources() *DataSources {
 		NotebookPaths:                   make(map[string]any),
 		NotificationDestinations:        make(map[string]any),
 		Pipelines:                       make(map[string]any),
+		RecipientFederationPolicies:     make(map[string]any),
+		RecipientFederationPolicy:       make(map[string]any),
 		RegisteredModel:                 make(map[string]any),
 		RegisteredModelVersions:         make(map[string]any),
 		Schema:                          make(map[string]any),
@@ -134,6 +151,7 @@ func NewDataSources() *DataSources {
 		Views:                           make(map[string]any),
 		Volume:                          make(map[string]any),
 		Volumes:                         make(map[string]any),
+		WorkspaceNetworkOption:          make(map[string]any),
 		Zones:                           make(map[string]any),
 	}
 }

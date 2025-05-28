@@ -104,54 +104,6 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	}
 }
 
-func TestBuiltinPythonTemplateValid(t *testing.T) {
-	// Test option combinations
-	options := []string{"yes", "no"}
-	isServicePrincipal := false
-	catalog := "hive_metastore"
-	cachedCatalog = &catalog
-	build := false
-	for _, includeNotebook := range options {
-		for _, includeDlt := range options {
-			for _, includePython := range options {
-				for _, isServicePrincipal := range []bool{true, false} {
-					for _, serverless := range options {
-						config := map[string]any{
-							"project_name":     "my_project",
-							"include_notebook": includeNotebook,
-							"include_dlt":      includeDlt,
-							"include_python":   includePython,
-							"serverless":       serverless,
-						}
-						tempDir := t.TempDir()
-						assertBuiltinTemplateValid(t, "default-python", config, "dev", isServicePrincipal, build, tempDir)
-					}
-				}
-			}
-		}
-	}
-
-	// Test prod mode + build
-	config := map[string]any{
-		"project_name":     "my_project",
-		"include_notebook": "yes",
-		"include_dlt":      "yes",
-		"include_python":   "yes",
-		"serverless":       "yes",
-	}
-	isServicePrincipal = false
-	build = true
-
-	// On Windows, we can't always remove the resulting temp dir since background
-	// processes might have it open, so we use 'defer' for a best-effort cleanup
-	tempDir, err := os.MkdirTemp("", "templates")
-	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
-
-	assertBuiltinTemplateValid(t, "default-python", config, "prod", isServicePrincipal, build, tempDir)
-	defer os.RemoveAll(tempDir)
-}
-
 func TestBuiltinSQLTemplateValid(t *testing.T) {
 	for _, personal_schemas := range []string{"yes", "no"} {
 		for _, target := range []string{"dev", "prod"} {
@@ -171,6 +123,8 @@ func TestBuiltinSQLTemplateValid(t *testing.T) {
 }
 
 func TestBuiltinDbtTemplateValid(t *testing.T) {
+	catalog := "hive_metastore"
+	cachedCatalog = &catalog
 	for _, personal_schemas := range []string{"yes", "no"} {
 		for _, target := range []string{"dev", "prod"} {
 			for _, isServicePrincipal := range []bool{true, false} {

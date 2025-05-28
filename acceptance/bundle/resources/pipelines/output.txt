@@ -1,0 +1,112 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+pipelines my id='[UUID]' name='test-pipeline-[UNIQUE_NAME]'
+
+>>> update_file.py databricks.yml foo.py bar.py
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/bar.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "storage": "dbfs:/pipelines/[UUID]"
+  },
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+pipelines my id='[UUID]' name='test-pipeline-[UNIQUE_NAME]'
+
+>>> [CLI] pipelines get [UUID]
+{
+  "creator_user_name":"[USERNAME]",
+  "last_modified":[TIMESTAMP_MS],
+  "name":"test-pipeline-[UNIQUE_NAME]",
+  "pipeline_id":"[UUID]",
+  "run_as_user_name":"[USERNAME]",
+  "spec": {
+    "channel":"CURRENT",
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition":"ADVANCED",
+    "id":"[UUID]",
+    "libraries": [
+      {
+        "file": {
+          "path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/bar.py"
+        }
+      }
+    ],
+    "name":"test-pipeline-[UNIQUE_NAME]",
+    "storage":"dbfs:/pipelines/[UUID]"
+  },
+  "state":"IDLE"
+}
+
+=== Destroy the pipeline and verify that it's removed from the state and from remote
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline my
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+State not found for pipelines.my
+
+>>> musterr [CLI] pipelines get [UUID]
+Error: The specified pipeline [UUID] was not found.
+
+Exit code (musterr): 1

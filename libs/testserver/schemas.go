@@ -10,6 +10,8 @@ import (
 )
 
 func (s *FakeWorkspace) SchemasCreate(req Request) Response {
+	defer s.LockUnlock()()
+
 	var schema catalog.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schema); err != nil {
@@ -27,6 +29,8 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 }
 
 func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
+	defer s.LockUnlock()()
+
 	existing, ok := s.Schemas[name]
 	if !ok {
 		return Response{

@@ -67,6 +67,18 @@ func TestNormalizePath_url(t *testing.T) {
 	assert.Equal(t, "s3:///path/to/notebook.py", value)
 }
 
+func TestNormalizePath_requirementsFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	location := dyn.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
+	value, err := normalizePath("-r ../requirements.txt", location, tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "-r requirements.txt", value)
+
+	value, err = normalizePath("-r      ../requirements.txt", location, tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "-r requirements.txt", value)
+}
+
 func TestLocationDirectory(t *testing.T) {
 	loc := dyn.Location{File: "file", Line: 1, Column: 2}
 	dir, err := locationDirectory(loc)

@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -119,6 +118,18 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.WorkspaceFilesExportFile(path)
 	})
 
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req testserver.Request) any {
+		return testserver.Response{
+			Body: "dir path: " + req.Vars["dir_path"],
+		}
+	})
+
+	server.Handle("PUT", "/api/2.0/fs/files/{path:.*}", func(req testserver.Request) any {
+		path := req.Vars["path"]
+		req.Workspace.WorkspaceFilesImportFile(path, req.Body)
+		return ""
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
 		return TestMetastore
 	})
@@ -153,6 +164,17 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.JobsCreate(request)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/delete", func(req testserver.Request) any {
+		var request jobs.DeleteJob
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+		return testserver.MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
+	})
+
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req testserver.Request) any {
 		var request jobs.ResetJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -165,26 +187,9 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.JobsReset(request)
 	})
 
-	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
-		var request pipelines.PipelineSpec
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return testserver.Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 400,
-			}
-		}
-
-		return req.Workspace.PipelinesCreate(request)
-	})
-
 	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
 		jobId := req.URL.Query().Get("job_id")
 		return req.Workspace.JobsGet(jobId)
-	})
-
-	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
-		pipelineId := req.Vars["pipeline_id"]
-		return req.Workspace.PipelinesGet(pipelineId)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/list", func(req testserver.Request) any {
@@ -220,6 +225,10 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.JobsGetRun(runIdInt)
 	})
 
+	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req testserver.Request) any {
+		return testserver.MapList(req.Workspace, req.Workspace.JobRuns, "runs")
+	})
+
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ testserver.Request) any {
 		return map[string]string{
 			"authorization_endpoint": server.URL + "oidc/v1/authorize",
@@ -241,6 +250,24 @@ func addDefaultHandlers(server *testserver.Server) {
 			Errors:          []telemetry.LogError{},
 			NumProtoSuccess: 1,
 		}
+	})
+
+	// Pipelines:
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		return req.Workspace.PipelineGet(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines", func(req testserver.Request) any {
+		return req.Workspace.PipelineCreate(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		return req.Workspace.PipelineUpdate(req, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
 	})
 
 	// Quality monitors:
@@ -295,5 +322,9 @@ func addDefaultHandlers(server *testserver.Server) {
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req testserver.Request) any {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req testserver.Request) any {
+		return req.Workspace.VolumesCreate(req)
 	})
 }

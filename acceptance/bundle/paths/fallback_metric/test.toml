@@ -1,0 +1,10 @@
+Cloud = false
+RecordRequests = true
+
+Ignore = [
+    ".databricks"
+]
+
+[[Repls]]
+Old = '\\'
+New = '/'

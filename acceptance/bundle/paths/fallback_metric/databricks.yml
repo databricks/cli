@@ -1,0 +1,18 @@
+bundle:
+  name: fallback_metric
+
+include:
+  - "resources/*.yml"
+
+targets:
+  fallback:
+    resources:
+      jobs:
+        my_job:
+          tasks:
+            - task_key: notebook_example
+              notebook_task:
+                notebook_path: ../src/notebook.py
+
+  default:
+    default: true

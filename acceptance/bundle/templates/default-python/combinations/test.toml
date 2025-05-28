@@ -1,0 +1,11 @@
+Cloud = true
+
+Ignore = ["input.json"]
+EnvMatrix.INCLUDE_NOTEBOOK = ["yes", "no"]
+EnvMatrix.INCLUDE_DLT = ["yes", "no"]
+EnvMatrix.INCLUDE_PYTHON = ["yes", "no"]
+EnvMatrix.SERVERLESS = ["yes", "no"]
+
+[[Repls]]
+Old = '202\d{5}.\d{5,}'
+New = '[VERSION_TIMESTAMP]'

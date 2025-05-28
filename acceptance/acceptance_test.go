@@ -13,21 +13,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
@@ -71,6 +75,11 @@ const (
 	MaxFileSize      = 100_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
+
+	// ENVFILTER allows filtering subtests matching certain env var.
+	// e.g. ENVFILTER=SERVERLESS=yes will run all tests that run SERVERLESS to "yes"
+	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
+	EnvFilterVar = "ENVFILTER"
 )
 
 var Scripts = map[string]bool{
@@ -210,6 +219,8 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	totalDirs := 0
 	selectedDirs := 0
 
+	envFilters := getEnvFilters(t)
+
 	for _, dir := range testDirs {
 		totalDirs += 1
 
@@ -241,24 +252,45 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
-				runTest(t, dir, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode, envFilters)
 			} else {
-				for _, envset := range expanded {
+				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, coverDir, repls.Clone(), config, configPath, envset, inprocessMode)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, configPath, envset, inprocessMode, envFilters)
 					})
 				}
 			}
 		})
 	}
 
-	t.Logf("Summary: %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
+	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return len(testDirs)
+}
+
+func getEnvFilters(t *testing.T) []string {
+	envFilterValue := os.Getenv(EnvFilterVar)
+	if envFilterValue == "" {
+		return nil
+	}
+
+	filters := strings.Split(envFilterValue, ",")
+
+	for _, filter := range filters {
+		items := strings.Split(filter, "=")
+		if len(items) != 2 || len(items[0]) == 0 {
+			t.Fatalf("Invalid filter %q in %s=%q", filter, EnvFilterVar, envFilterValue)
+		}
+		key := items[0]
+		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
+		os.Unsetenv(key)
+	}
+
+	return filters
 }
 
 func getTests(t *testing.T) []string {
@@ -342,12 +374,15 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 }
 
 func runTest(t *testing.T,
-	dir, coverDir string,
+	dir string,
+	variant int,
+	coverDir string,
 	repls testdiff.ReplacementsContext,
 	config internal.TestConfig,
 	configPath string,
 	customEnv []string,
 	inprocessMode bool,
+	envFilters []string,
 ) {
 	if LogConfig {
 		configBytes, err := json.MarshalIndent(config, "", "  ")
@@ -390,6 +425,18 @@ func runTest(t *testing.T,
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
+	bundleConfigTarget := "databricks.yml"
+	if config.BundleConfigTarget != nil {
+		bundleConfigTarget = *config.BundleConfigTarget
+	}
+
+	if bundleConfigTarget != "" {
+		configCreated := applyBundleConfig(t, tmpDir, config.BundleConfig, bundleConfigTarget)
+		if configCreated {
+			inputs[bundleConfigTarget] = true
+		}
+	}
+
 	timeout := config.Timeout
 
 	if runtime.GOOS == "windows" {
@@ -414,11 +461,22 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
+	// populate CLOUD_ENV_BASE
+	envBase := getCloudEnvBase(cloudEnv)
+	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
+	repls.Set(envBase, "[CLOUD_ENV_BASE]")
+
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 
-	// User replacements come last:
+	// User replacements:
 	repls.Repls = append(repls.Repls, config.Repls...)
+
+	// Apply these after user replacements in case user replacement capture something like "Job \d+"
+	for offset := range 5 {
+		repls.Set(strconv.Itoa(testserver.TestJobID+offset), fmt.Sprintf("[TEST_JOB_ID+%d]", offset))
+		repls.Set(strconv.Itoa(testserver.TestRunID+offset), fmt.Sprintf("[TEST_RUN_ID+%d]", offset))
+	}
 
 	// Save replacements to temp test directory so that it can be read by diff.py
 	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
@@ -429,7 +487,11 @@ func runTest(t *testing.T,
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
 		// +error: coverage meta-data emit failed: writing ... rename .../tmp.covmeta.b3f... .../covmeta.b3f2c...: no such file or directory
+		// Note: should not use dir, because single dir can generate multiple tests via EnvMatrix
 		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
+		if variant != 0 {
+			coverDir += strconv.Itoa(variant)
+		}
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
@@ -441,13 +503,32 @@ func runTest(t *testing.T,
 			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
 			continue
 		}
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl)
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl, false)
 	}
 
 	for _, keyvalue := range customEnv {
 		items := strings.SplitN(keyvalue, "=", 2)
 		require.Len(t, items, 2)
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, items[0], items[1], config.EnvRepl)
+		key := items[0]
+		value := items[1]
+		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
+		// (to avoid matching "yes" and "no" values from template input parameters)
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1 && len(value) >= 4)
+	}
+
+	for filterInd, filterEnv := range envFilters {
+		filterEnvKey := strings.Split(filterEnv, "=")[0]
+		for ind := range cmd.Env {
+			// Search backwards, because the latest settings is what is actually applicable.
+			envPair := cmd.Env[len(cmd.Env)-1-ind]
+			if strings.Split(envPair, "=")[0] == filterEnvKey {
+				if envPair == filterEnv {
+					break
+				} else {
+					t.Skipf("Skipping because test environment %s does not match ENVFILTER#%d: %s", envPair, filterInd, filterEnv)
+				}
+			}
+		}
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -462,7 +543,11 @@ func runTest(t *testing.T,
 	require.NoError(t, err)
 	defer out.Close()
 
-	err = runWithLog(t, cmd, out, tailOutput)
+	skipReason, err := runWithLog(t, cmd, out, tailOutput)
+
+	if skipReason != "" {
+		t.Skip("Skipping based on output: " + skipReason)
+	}
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
@@ -514,7 +599,7 @@ func hasKey(env []string, key string) bool {
 	return false
 }
 
-func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string, envRepl map[string]bool) []string {
+func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string, envRepl map[string]bool, defaultRepl bool) []string {
 	newValue, newValueWithPlaceholders := internal.SubstituteEnv(value, env)
 	if value != newValue {
 		t.Logf("Substituted %s %#v -> %#v (%#v)", key, value, newValue, newValueWithPlaceholders)
@@ -522,7 +607,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 
 	shouldRepl, ok := envRepl[key]
 	if !ok {
-		shouldRepl = true
+		shouldRepl = defaultRepl
 	}
 
 	if shouldRepl {
@@ -651,9 +736,7 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 	}
 
 	args := []string{
-		"go", "build",
-		"-mod", "vendor",
-		"-o", execPath,
+		"go", "build", "-o", execPath,
 	}
 
 	if coverDir != "" {
@@ -840,7 +923,7 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
@@ -856,13 +939,15 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 	start := time.Now()
 	err := cmd.Start()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	go func() {
 		processErrCh <- cmd.Wait()
 		_ = w.Close()
 	}()
+
+	mostRecentLine := ""
 
 	reader := bufio.NewReader(r)
 	for {
@@ -875,6 +960,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 			}
 		}
 		if len(line) > 0 {
+			mostRecentLine = line
 			_, err = out.WriteString(line)
 			require.NoError(t, err)
 		}
@@ -884,7 +970,13 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) error {
 		require.NoError(t, err)
 	}
 
-	return <-processErrCh
+	mostRecentLine = strings.TrimRight(mostRecentLine, "\n")
+	skipReason := ""
+	if strings.HasPrefix(mostRecentLine, "SKIP_TEST") {
+		skipReason = mostRecentLine
+	}
+
+	return skipReason, <-processErrCh
 }
 
 func getCloudEnvBase(cloudEnv string) string {
@@ -980,4 +1072,75 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	}
 
 	return latestWheel
+}
+
+// Applies BundleConfig setting to file named bundleConfigTarget and updates it in place if there were any changes.
+// Returns true if new file was created.
+func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any, bundleConfigTarget string) bool {
+	validConfig := make(map[string]map[string]any, len(bundleConfig))
+
+	for _, configName := range utils.SortedKeys(bundleConfig) {
+		configValue := bundleConfig[configName]
+		// Setting BundleConfig.<name> to empty string disables it.
+		// This is useful when parent directory defines some config that child test wants to cancel.
+		if configValue == "" {
+			continue
+		}
+		cfg, ok := configValue.(map[string]any)
+		if !ok {
+			t.Fatalf("Unexpected type for BundleConfig.%s: %#v", configName, configValue)
+		}
+		validConfig[configName] = cfg
+	}
+
+	if len(validConfig) == 0 {
+		return false
+	}
+
+	configPath := filepath.Join(tmpDir, bundleConfigTarget)
+	configData, configExists := tryReading(t, configPath)
+
+	newConfigData := configData
+	var applied []string
+
+	for _, configName := range utils.SortedKeys(validConfig) {
+		configValue := validConfig[configName]
+		updated, err := internal.MergeBundleConfig(newConfigData, configValue)
+		if err != nil {
+			t.Fatalf("Failed to merge BundleConfig.%s: %s\nvvalue: %#v\ntext:\n%s", configName, err, configValue, newConfigData)
+		}
+		if isSameYAMLContent(newConfigData, updated) {
+			t.Logf("No effective updates from BundleConfig.%s", configName)
+		} else {
+			newConfigData = updated
+			applied = append(applied, configName)
+		}
+	}
+
+	if newConfigData != configData {
+		t.Logf("Writing updated bundle config to %s. BundleConfig sections: %s", bundleConfigTarget, strings.Join(applied, ", "))
+		testutil.WriteFile(t, configPath, newConfigData)
+		return !configExists
+	}
+
+	return false
+}
+
+// Returns true if both strings are deep-equal after unmarshalling
+func isSameYAMLContent(str1, str2 string) bool {
+	var obj1, obj2 any
+
+	if str1 == str2 {
+		return true
+	}
+
+	if err := yaml.Unmarshal([]byte(str1), &obj1); err != nil {
+		return false
+	}
+
+	if err := yaml.Unmarshal([]byte(str2), &obj2); err != nil {
+		return false
+	}
+
+	return reflect.DeepEqual(obj1, obj2)
 }

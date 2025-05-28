@@ -131,7 +131,7 @@ type ResourcePipelineCluster struct {
 }
 
 type ResourcePipelineDeployment struct {
-	Kind             string `json:"kind,omitempty"`
+	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
 }
 
@@ -148,13 +148,15 @@ type ResourcePipelineFilters struct {
 
 type ResourcePipelineGatewayDefinition struct {
 	ConnectionId          string `json:"connection_id,omitempty"`
-	ConnectionName        string `json:"connection_name,omitempty"`
-	GatewayStorageCatalog string `json:"gateway_storage_catalog,omitempty"`
+	ConnectionName        string `json:"connection_name"`
+	GatewayStorageCatalog string `json:"gateway_storage_catalog"`
 	GatewayStorageName    string `json:"gateway_storage_name,omitempty"`
-	GatewayStorageSchema  string `json:"gateway_storage_schema,omitempty"`
+	GatewayStorageSchema  string `json:"gateway_storage_schema"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
+	ExcludeColumns                 []string `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
@@ -162,14 +164,16 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReport struct {
-	DestinationCatalog string                                                              `json:"destination_catalog,omitempty"`
-	DestinationSchema  string                                                              `json:"destination_schema,omitempty"`
+	DestinationCatalog string                                                              `json:"destination_catalog"`
+	DestinationSchema  string                                                              `json:"destination_schema"`
 	DestinationTable   string                                                              `json:"destination_table,omitempty"`
-	SourceUrl          string                                                              `json:"source_url,omitempty"`
+	SourceUrl          string                                                              `json:"source_url"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration `json:"table_configuration,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
+	ExcludeColumns                 []string `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
@@ -177,14 +181,16 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchema struct {
-	DestinationCatalog string                                                              `json:"destination_catalog,omitempty"`
-	DestinationSchema  string                                                              `json:"destination_schema,omitempty"`
+	DestinationCatalog string                                                              `json:"destination_catalog"`
+	DestinationSchema  string                                                              `json:"destination_schema"`
 	SourceCatalog      string                                                              `json:"source_catalog,omitempty"`
-	SourceSchema       string                                                              `json:"source_schema,omitempty"`
+	SourceSchema       string                                                              `json:"source_schema"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
+	ExcludeColumns                 []string `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
@@ -192,12 +198,12 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTable struct {
-	DestinationCatalog string                                                             `json:"destination_catalog,omitempty"`
-	DestinationSchema  string                                                             `json:"destination_schema,omitempty"`
+	DestinationCatalog string                                                             `json:"destination_catalog"`
+	DestinationSchema  string                                                             `json:"destination_schema"`
 	DestinationTable   string                                                             `json:"destination_table,omitempty"`
 	SourceCatalog      string                                                             `json:"source_catalog,omitempty"`
 	SourceSchema       string                                                             `json:"source_schema,omitempty"`
-	SourceTable        string                                                             `json:"source_table,omitempty"`
+	SourceTable        string                                                             `json:"source_table"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration `json:"table_configuration,omitempty"`
 }
 
@@ -208,6 +214,8 @@ type ResourcePipelineIngestionDefinitionObjects struct {
 }
 
 type ResourcePipelineIngestionDefinitionTableConfiguration struct {
+	ExcludeColumns                 []string `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
@@ -217,6 +225,7 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 type ResourcePipelineIngestionDefinition struct {
 	ConnectionName     string                                                 `json:"connection_name,omitempty"`
 	IngestionGatewayId string                                                 `json:"ingestion_gateway_id,omitempty"`
+	SourceType         string                                                 `json:"source_type,omitempty"`
 	Objects            []ResourcePipelineIngestionDefinitionObjects           `json:"objects,omitempty"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionTableConfiguration `json:"table_configuration,omitempty"`
 }
@@ -229,6 +238,10 @@ type ResourcePipelineLatestUpdates struct {
 
 type ResourcePipelineLibraryFile struct {
 	Path string `json:"path,omitempty"`
+}
+
+type ResourcePipelineLibraryGlob struct {
+	Include string `json:"include,omitempty"`
 }
 
 type ResourcePipelineLibraryMaven struct {
@@ -245,6 +258,7 @@ type ResourcePipelineLibrary struct {
 	Jar      string                           `json:"jar,omitempty"`
 	Whl      string                           `json:"whl,omitempty"`
 	File     *ResourcePipelineLibraryFile     `json:"file,omitempty"`
+	Glob     *ResourcePipelineLibraryGlob     `json:"glob,omitempty"`
 	Maven    *ResourcePipelineLibraryMaven    `json:"maven,omitempty"`
 	Notebook *ResourcePipelineLibraryNotebook `json:"notebook,omitempty"`
 }
@@ -296,6 +310,7 @@ type ResourcePipeline struct {
 	LastModified         int                                  `json:"last_modified,omitempty"`
 	Name                 string                               `json:"name,omitempty"`
 	Photon               bool                                 `json:"photon,omitempty"`
+	RootPath             string                               `json:"root_path,omitempty"`
 	RunAsUserName        string                               `json:"run_as_user_name,omitempty"`
 	Schema               string                               `json:"schema,omitempty"`
 	Serverless           bool                                 `json:"serverless,omitempty"`

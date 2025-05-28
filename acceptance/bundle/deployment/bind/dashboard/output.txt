@@ -4,7 +4,7 @@ Updating deployment state...
 Successfully bound dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -15,14 +15,14 @@ Deployment complete!
   "lifecycle_state": "ACTIVE",
   "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
   "parent_path": "/Users/[USERNAME]",
-  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
+  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
 }
 
 >>> [CLI] bundle deployment unbind dashboard1
 Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-dashboard-test-[UNIQUE_NAME]/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
@@ -33,5 +33,5 @@ Destroy complete!
   "lifecycle_state": "ACTIVE",
   "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
   "parent_path": "/Users/[USERNAME]",
-  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
+  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
 }

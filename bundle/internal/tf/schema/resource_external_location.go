@@ -11,14 +11,57 @@ type ResourceExternalLocationEncryptionDetails struct {
 	SseEncryptionDetails *ResourceExternalLocationEncryptionDetailsSseEncryptionDetails `json:"sse_encryption_details,omitempty"`
 }
 
+type ResourceExternalLocationFileEventQueueManagedAqs struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	QueueUrl          string `json:"queue_url,omitempty"`
+	ResourceGroup     string `json:"resource_group,omitempty"`
+	SubscriptionId    string `json:"subscription_id,omitempty"`
+}
+
+type ResourceExternalLocationFileEventQueueManagedPubsub struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	SubscriptionName  string `json:"subscription_name,omitempty"`
+}
+
+type ResourceExternalLocationFileEventQueueManagedSqs struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	QueueUrl          string `json:"queue_url,omitempty"`
+}
+
+type ResourceExternalLocationFileEventQueueProvidedAqs struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	QueueUrl          string `json:"queue_url,omitempty"`
+	ResourceGroup     string `json:"resource_group,omitempty"`
+	SubscriptionId    string `json:"subscription_id,omitempty"`
+}
+
+type ResourceExternalLocationFileEventQueueProvidedPubsub struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	SubscriptionName  string `json:"subscription_name,omitempty"`
+}
+
+type ResourceExternalLocationFileEventQueueProvidedSqs struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	QueueUrl          string `json:"queue_url,omitempty"`
+}
+
+type ResourceExternalLocationFileEventQueue struct {
+	ManagedAqs     *ResourceExternalLocationFileEventQueueManagedAqs     `json:"managed_aqs,omitempty"`
+	ManagedPubsub  *ResourceExternalLocationFileEventQueueManagedPubsub  `json:"managed_pubsub,omitempty"`
+	ManagedSqs     *ResourceExternalLocationFileEventQueueManagedSqs     `json:"managed_sqs,omitempty"`
+	ProvidedAqs    *ResourceExternalLocationFileEventQueueProvidedAqs    `json:"provided_aqs,omitempty"`
+	ProvidedPubsub *ResourceExternalLocationFileEventQueueProvidedPubsub `json:"provided_pubsub,omitempty"`
+	ProvidedSqs    *ResourceExternalLocationFileEventQueueProvidedSqs    `json:"provided_sqs,omitempty"`
+}
+
 type ResourceExternalLocation struct {
-	AccessPoint       string                                     `json:"access_point,omitempty"`
 	BrowseOnly        bool                                       `json:"browse_only,omitempty"`
 	Comment           string                                     `json:"comment,omitempty"`
 	CreatedAt         int                                        `json:"created_at,omitempty"`
 	CreatedBy         string                                     `json:"created_by,omitempty"`
 	CredentialId      string                                     `json:"credential_id,omitempty"`
 	CredentialName    string                                     `json:"credential_name"`
+	EnableFileEvents  bool                                       `json:"enable_file_events,omitempty"`
 	Fallback          bool                                       `json:"fallback,omitempty"`
 	ForceDestroy      bool                                       `json:"force_destroy,omitempty"`
 	ForceUpdate       bool                                       `json:"force_update,omitempty"`
@@ -33,4 +76,5 @@ type ResourceExternalLocation struct {
 	UpdatedBy         string                                     `json:"updated_by,omitempty"`
 	Url               string                                     `json:"url"`
 	EncryptionDetails *ResourceExternalLocationEncryptionDetails `json:"encryption_details,omitempty"`
+	FileEventQueue    *ResourceExternalLocationFileEventQueue    `json:"file_event_queue,omitempty"`
 }

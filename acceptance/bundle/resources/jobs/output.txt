@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/JOBS/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -10,7 +10,7 @@ Deployment complete!
   "body": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/JOBS/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -39,13 +39,13 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/create"
 }
-jobs foo id='1' name='foo'
+jobs foo id='[TEST_JOB_ID+0]' name='foo'
 
 === Update trigger.periodic.unit and re-deploy
 >>> update_file.py databricks.yml DAYS HOURS
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/JOBS/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -53,11 +53,11 @@ Deployment complete!
 >>> print_requests
 {
   "body": {
-    "job_id": 1,
+    "job_id": [TEST_JOB_ID+0],
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/JOBS/default/state/metadata.json"
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
       },
       "edit_mode": "UI_LOCKED",
       "format": "MULTI_TASK",
@@ -87,4 +87,4 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/reset"
 }
-jobs foo id='1' name='foo'
+jobs foo id='[TEST_JOB_ID+0]' name='foo'

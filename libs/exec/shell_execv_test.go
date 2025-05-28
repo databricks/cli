@@ -10,12 +10,7 @@ import (
 )
 
 func TestShellExecvOpts(t *testing.T) {
-	opts := ExecvOptions{
-		Env: []string{"key1=value1", "key2=value2"},
-		Dir: "/a/b/c",
-	}
-
-	newOpts, err := shellExecvOpts("echo hello", opts)
+	newOpts, err := shellExecvOpts("echo hello", "/a/b/c", []string{"key1=value1", "key2=value2"})
 	require.NoError(t, err)
 
 	assert.Equal(t, []string{"key1=value1", "key2=value2"}, newOpts.Env)

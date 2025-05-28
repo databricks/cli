@@ -27,9 +27,9 @@
         "resource_dashboard_count": 0,
         "resource_app_count": 0,
         "resource_job_ids": [
-          "1",
-          "2",
-          "3"
+          "[TEST_JOB_ID+0]",
+          "[TEST_JOB_ID+1]",
+          "[TEST_JOB_ID+2]"
         ],
         "resource_pipeline_ids": [
           "[UUID]",
@@ -43,7 +43,23 @@
           "target_count": 1,
           "bool_values": [
             {
+              "key": "presets_name_prefix_is_set",
+              "value": false
+            },
+            {
               "key": "python_wheel_wrapper_is_set",
+              "value": false
+            },
+            {
+              "key": "has_serverless_compute",
+              "value": false
+            },
+            {
+              "key": "has_classic_job_compute",
+              "value": false
+            },
+            {
+              "key": "has_classic_interactive_compute",
               "value": false
             }
           ],

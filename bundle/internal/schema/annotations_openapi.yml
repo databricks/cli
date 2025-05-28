@@ -89,6 +89,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
     "description": |-
       Cluster name requested by the user. This doesn't have to be unique.
       If not specified at creation, the cluster name will be an empty string.
+      For job clusters, the cluster name is automatically set based on the job and job run IDs.
   "custom_tags":
     "description": |-
       Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
@@ -408,28 +409,15 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
     "description": |-
       Tags: Additional metadata key-value pairs.
 github.com/databricks/cli/bundle/config/resources.MlflowModel:
-  "creation_timestamp":
-    "description": |-
-      Timestamp recorded when this `registered_model` was created.
   "description":
     "description": |-
-      Description of this `registered_model`.
-  "last_updated_timestamp":
-    "description": |-
-      Timestamp recorded when metadata for this `registered_model` was last updated.
-  "latest_versions":
-    "description": |-
-      Collection of latest model versions for each stage.
-      Only contains models with current `READY` status.
+      Optional description for registered model.
   "name":
     "description": |-
-      Unique name for the model.
+      Register models under this name
   "tags":
     "description": |-
-      Tags: Additional metadata key-value pairs for this `registered_model`.
-  "user_id":
-    "description": |-
-      User that created this `registered_model`
+      Additional metadata for registered model.
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "ai_gateway":
     "description": |-
@@ -521,6 +509,13 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "restart_window":
     "description": |-
       Restart window of this pipeline.
+    "x-databricks-preview": |-
+      PRIVATE
+  "root_path":
+    "description": |-
+      Root path for this pipeline.
+      This is used as the root directory when editing the pipeline in the Databricks user interface and it is
+      added to sys.path when executing Python sources during pipeline execution.
     "x-databricks-preview": |-
       PRIVATE
   "run_as":
@@ -717,6 +712,7 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "secret": {}
   "serving_endpoint": {}
   "sql_warehouse": {}
+  "uc_securable": {}
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
     "description": |-
@@ -788,6 +784,22 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlW
         CAN_USE
       - |-
         IS_OWNER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurable:
+  "permission": {}
+  "securable_full_name": {}
+  "securable_type": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurablePermission:
+  "_":
+    "enum":
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurableType:
+  "_":
+    "enum":
+      - |-
+        VOLUME
 github.com/databricks/databricks-sdk-go/service/apps.ApplicationState:
   "_":
     "enum":
@@ -1180,6 +1192,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
     "description": |-
       Cluster name requested by the user. This doesn't have to be unique.
       If not specified at creation, the cluster name will be an empty string.
+      For job clusters, the cluster name is automatically set based on the job and job run IDs.
   "custom_tags":
     "description": |-
       Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
@@ -1409,7 +1422,6 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
   "_":
     "description": |-
       The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-      (Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)
       In this minimal environment spec, only pip dependencies are supported.
   "client":
     "description": |-
@@ -1423,6 +1435,14 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
       Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
       E.g. dependencies: ["foo==0.0.1", "-r /Workspace/test/requirements.txt"]
+  "environment_version":
+    "description": |-
+      We renamed `client` to `environment_version` in notebook exports. This field is meant solely so that imported notebooks with `environment_version` can be deserialized
+      correctly, in a backwards-compatible way (i.e. if `client` is specified instead of `environment_version`, it will be deserialized correctly). Do NOT use this field
+      for any other purpose, e.g. notebook storage.
+      This field is not yet exposed to customers (e.g. in the jobs API).
+    "x-databricks-preview": |-
+      PRIVATE
   "jar_dependencies":
     "description": |-
       List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
@@ -1981,7 +2001,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
   "spec":
     "description": |-
       The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-      (Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)
       In this minimal environment spec, only pip dependencies are supported.
 github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
   "no_alert_for_canceled_runs":
@@ -2828,9 +2847,41 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "objects":
     "description": |-
       Required. Settings specifying tables to replicate and the destination for the replicated tables.
+  "source_type":
+    "description": |-
+      The type of the foreign source.
+      The source type will be inferred from the source connection or ingestion gateway.
+      This field is output only and will be ignored if provided.
   "table_configuration":
     "description": |-
       Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
+  "_":
+    "enum":
+      - |-
+        MYSQL
+      - |-
+        POSTGRESQL
+      - |-
+        SQLSERVER
+      - |-
+        SALESFORCE
+      - |-
+        NETSUITE
+      - |-
+        WORKDAY_RAAS
+      - |-
+        GA4_RAW_DATA
+      - |-
+        SERVICENOW
+      - |-
+        MANAGED_POSTGRESQL
+      - |-
+        ORACLE
+      - |-
+        SHAREPOINT
+      - |-
+        DYNAMICS365
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":
@@ -2849,6 +2900,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.Notifications:
   "email_recipients":
     "description": |-
       A list of email addresses notified when a configured alert is triggered.
+github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern:
+  "include":
+    "description": |-
+      The source code to include for pipelines
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster:
   "apply_policy_default_values":
     "description": |-
@@ -2986,6 +3041,13 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
   "file":
     "description": |-
       The path to a file that defines a pipeline and is stored in the Databricks Repos.
+  "glob":
+    "description": |-
+      The unified field to include source codes.
+      Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
+      This field cannot be used together with `notebook` or `file`.
+    "x-databricks-preview": |-
+      PRIVATE
   "jar":
     "description": |-
       URI of the jar to be installed. Currently only DBFS is supported.
@@ -3639,6 +3701,9 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
   "name":
     "description": |-
       The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.
+  "provisioned_model_units":
+    "description": |-
+      The number of model units provisioned.
   "scale_to_zero_enabled":
     "description": |-
       Whether the compute resources for the served entity should scale down to zero.
@@ -3666,6 +3731,9 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
   "name":
     "description": |-
       The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores. If not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other entities, it defaults to entity_name-entity_version.
+  "provisioned_model_units":
+    "description": |-
+      The number of model units provisioned.
   "scale_to_zero_enabled":
     "description": |-
       Whether the compute resources for the served entity should scale down to zero.
@@ -3709,3 +3777,17 @@ github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
   "routes":
     "description": |-
       The list of routes that define traffic to each served entity.
+github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
+  "dns_name":
+    "description": |-
+      The DNS of the KeyVault
+  "resource_id":
+    "description": |-
+      The resource id of the azure KeyVault that user wants to associate the scope with.
+github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType:
+  "_":
+    "enum":
+      - |-
+        DATABRICKS
+      - |-
+        AZURE_KEYVAULT

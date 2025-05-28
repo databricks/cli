@@ -1,6 +1,3 @@
-bundle:
-  name: fail-on-active-runs
-
 resources:
   jobs:
     my_job:

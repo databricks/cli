@@ -420,6 +420,15 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "properties":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        READ
+      - |-
+        WRITE
+      - |-
+        MANAGE
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -496,6 +505,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "sql_warehouse":
     "description": |-
       PLACEHOLDER
+  "uc_securable":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
     "description": |-
@@ -525,6 +537,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse:
     "description": |-
       PLACEHOLDER
   "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurable:
+  "permission":
+    "description": |-
+      PLACEHOLDER
+  "securable_full_name":
+    "description": |-
+      PLACEHOLDER
+  "securable_type":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:

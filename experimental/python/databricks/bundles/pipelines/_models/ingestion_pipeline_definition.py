@@ -8,6 +8,10 @@ from databricks.bundles.pipelines._models.ingestion_config import (
     IngestionConfig,
     IngestionConfigParam,
 )
+from databricks.bundles.pipelines._models.ingestion_source_type import (
+    IngestionSourceType,
+    IngestionSourceTypeParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigParam,
@@ -34,6 +38,13 @@ class IngestionPipelineDefinition:
     objects: VariableOrList[IngestionConfig] = field(default_factory=list)
     """
     Required. Settings specifying tables to replicate and the destination for the replicated tables.
+    """
+
+    source_type: VariableOrOptional[IngestionSourceType] = None
+    """
+    The type of the foreign source.
+    The source type will be inferred from the source connection or ingestion gateway.
+    This field is output only and will be ignored if provided.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
@@ -65,6 +76,13 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     objects: VariableOrList[IngestionConfigParam]
     """
     Required. Settings specifying tables to replicate and the destination for the replicated tables.
+    """
+
+    source_type: VariableOrOptional[IngestionSourceTypeParam]
+    """
+    The type of the foreign source.
+    The source type will be inferred from the source connection or ingestion gateway.
+    This field is output only and will be ignored if provided.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]

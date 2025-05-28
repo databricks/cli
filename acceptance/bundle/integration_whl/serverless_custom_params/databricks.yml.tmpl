@@ -1,0 +1,25 @@
+bundle:
+  name: wheel-task-with-environments
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  jobs:
+    some_other_job:
+      name: "[${bundle.target}] Test Wheel Job With Environments $UNIQUE_NAME"
+      tasks:
+        - task_key: TestTask
+          python_wheel_task:
+            package_name: my_test_code
+            entry_point: run
+            parameters:
+              - "one"
+              - "two"
+          environment_key: "test"
+      environments:
+        - environment_key: "test"
+          spec:
+            client: "1"
+            dependencies:
+              - ./dist/*.whl
