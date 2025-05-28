@@ -249,7 +249,7 @@ func gatherRequiredFields(currentRootSchema *jsonschema.Schema) ([][]PatternInfo
 
 	// Convert map to an array to make it easier to render.
 	sortedNodeMap := make([][]PatternInfo, 0, len(patternMap))
-	sortedKeys := []string{}
+	var sortedKeys []string
 	for k := range patternMap {
 		sortedKeys = append(sortedKeys, k)
 	}
