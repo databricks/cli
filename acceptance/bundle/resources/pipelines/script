@@ -25,7 +25,6 @@ title "Fetch pipeline ID and verify remote state"
 
 ppid=`read_id.py pipelines my`
 
->>>>>>> 06684a8e5 (WIP: destroy mutator + test (pipelines only); Graph is now generic)
 trace $CLI pipelines get $ppid
 rm out.requests.txt
 
