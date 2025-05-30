@@ -34,46 +34,6 @@ func TestTypeScalar(t *testing.T) {
 	assert.Equal(t, map[string]any{"": 0}, getFields(t, reflect.TypeOf(5)))
 }
 
-type Simple struct {
-	X int
-}
-
-type Types struct {
-	ValidField           string `json:"valid_field"`
-	ValidFieldNoTag      string
-	IgnoredField         string `json:"-"`
-	IgnoredFieldOdd      string `json:"-,omitempty"`
-	EmptyTagField        string `json:""`
-	unexportedField      string `json:"unexported"` //nolint
-	unexportedFieldNoTag string //nolint
-
-	IntField  int
-	BoolField bool `json:bool_field` // nolint (bad syntax)
-	AnyField  any
-
-	ValidFieldPtr           *string `json:"valid_field_ptr"`
-	ValidFieldPtrNoTag      *string
-	IgnoredFieldPtr         *string `json:"-"`
-	IgnoredFieldOddPtr      *string `json:"-,omitempty"` //nolint
-	EmptyTagFieldPtr        *string `json:""`
-	unexportedFieldPtr      *string `json:"unexported"` //nolint
-	unexportedFieldNoTagPtr *string //nolint
-
-	SliceString []string
-	ArrayString [2]string
-
-	Nested    Simple
-	NestedPtr *Simple
-	Slice     []Simple
-	Array     [2]Simple
-	Map       map[string]Simple
-	MapPtr    map[string]*Simple
-	MapIntKey map[int]*Simple
-
-	FuncField func() string `json:"-"`
-	ChanField chan string   `json:"-"`
-}
-
 func TestTypes(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		".ArrayString[0]":     "",
@@ -93,27 +53,6 @@ func TestTypes(t *testing.T) {
 		".valid_field":        "",
 		".valid_field_ptr":    "",
 	}, getFields(t, reflect.TypeOf(Types{})))
-}
-
-type SelfIndirect struct {
-	X *Self
-}
-
-type Self struct {
-	ValidField string `json:"valid_field"`
-
-	SelfReference *Self
-
-	SelfSlice    []Self
-	SelfSlicePtr []*Self
-
-	SelfArrayPtr [5]*Self
-
-	SelfMap    map[string]Self
-	SelfMapPtr map[string]*Self
-
-	SelfIndirect    SelfIndirect
-	SelfIndirectPtr *SelfIndirect
 }
 
 func TestTypeSelf(t *testing.T) {

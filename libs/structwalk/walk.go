@@ -59,28 +59,16 @@ func isScalar(k reflect.Kind) bool {
 }
 
 func walkValue(path *structpath.PathNode, val reflect.Value, visit VisitFunc) {
-	if !val.IsValid() {
-		return
-	}
 	kind := val.Kind()
 
 	if isScalar(kind) {
-		// Primitive scalar at the leaf – invoke.
 		visit(path, val.Interface())
 		return
 	}
 
 	switch kind {
 	case reflect.Pointer:
-		// Pointer – treat pointer itself as scalar? We choose to surface pointer *value* (nil / underlying scalar).
-		// If element is scalar we still want to report it; if element is composite we drill down.
-		elemKind := val.Type().Elem().Kind()
-		elem := val.Elem()
-		if isScalar(elemKind) {
-			visit(path, elem.Interface())
-			return
-		}
-		walkValue(path, elem, visit)
+		walkValue(path, val.Elem(), visit)
 
 	case reflect.Struct:
 		walkStruct(path, val, visit)
