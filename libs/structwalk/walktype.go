@@ -38,8 +38,6 @@ func WalkType(t reflect.Type, visit VisitTypeFunc) error {
 	if t == nil {
 		return nil
 	}
-	// Use a visited counter to allow one level of circular reference
-	// Stop only when we see a type for the second time
 	visitedCount := make(map[reflect.Type]int)
 	walkTypeValue(nil, t, visit, visitedCount)
 	return nil
@@ -58,6 +56,7 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 		return
 	}
 
+	// We're tracking visited and allowing single repeat to support JobSettings.Tasks.ForEachTask.Task
 	if visitedCount[typ] >= 2 {
 		return
 	}
