@@ -23,7 +23,7 @@ func shellExecvOpts(content, dir string, env []string) (ExecvOptions, error) {
 
 // Variant of [Execv] that runs the given script through a shell
 func ShellExecv(content, dir string, env []string) error {
-	newOpts, err := shellExecvOpts(content, dir, env)
+	opts, err := shellExecvOpts(content, dir, env)
 	if err != nil {
 		return err
 	}
@@ -38,5 +38,5 @@ func ShellExecv(content, dir string, env []string) error {
 	//
 	// For windows the temp files are not automatically cleaned up. Automatic cleanup
 	// is a opt-in behavior.
-	return Execv(newOpts)
+	return Execv(opts)
 }

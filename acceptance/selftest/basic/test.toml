@@ -8,7 +8,7 @@ Ignore = ['ignore*']
 #windows = false
 
 # Disable on Mac
-#mac = false
+#darwin = false
 
 # Disable on Linux
 #linux = false
