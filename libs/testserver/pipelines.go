@@ -66,8 +66,8 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response {
 	defer s.LockUnlock()()
 
-	var request pipelines.PipelineSpec
-	err := json.Unmarshal(req.Body, &request)
+	var spec pipelines.PipelineSpec
+	err := json.Unmarshal(req.Body, &spec)
 	if err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -82,7 +82,12 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
-	item.Spec = &request
+	spec.Id = pipelineId
+	if spec.Storage == "" && spec.Catalog == "" {
+		spec.Storage = "dbfs:/pipelines/" + pipelineId
+	}
+
+	item.Spec = &spec
 	s.Pipelines[pipelineId] = item
 
 	return Response{
