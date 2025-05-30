@@ -305,35 +305,3 @@ func isNil(i any) bool {
 		return false
 	}
 }
-
-func CallHandler[T any](handler func(req Request, parsed T) Response, req Request) Response {
-	var parsed T
-
-	err := json.Unmarshal(req.Body, &parsed)
-	if err != nil {
-		return Response{
-			Body:       fmt.Sprintf("cannot parse request: %s", err),
-			StatusCode: 400,
-		}
-	}
-
-	defer req.Workspace.LockUnlock()()
-
-	return handler(req, parsed)
-}
-
-func CallHandler1[T any](handler func(req Request, parsed T, param1 string) Response, req Request, param1 string) Response {
-	var parsed T
-
-	err := json.Unmarshal(req.Body, &parsed)
-	if err != nil {
-		return Response{
-			Body:       fmt.Sprintf("cannot parse request: %s", err),
-			StatusCode: 400,
-		}
-	}
-
-	defer req.Workspace.LockUnlock()()
-
-	return handler(req, parsed, param1)
-}
