@@ -1,6 +1,7 @@
 package dyn
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 )
@@ -66,11 +67,39 @@ func AnyKey() patternComponent {
 	return anyKeyComponent{}
 }
 
+type expectedMapError struct {
+	p Path
+	v Value
+}
+
+func (e expectedMapError) Error() string {
+	return fmt.Sprintf("expected a map at %q, found %s", e.p, e.v.Kind())
+}
+
+func IsExpectedMapError(err error) bool {
+	var target expectedMapError
+	return errors.As(err, &target)
+}
+
+type expectedSequenceError struct {
+	p Path
+	v Value
+}
+
+func (e expectedSequenceError) Error() string {
+	return fmt.Sprintf("expected a sequence at %q, found %s", e.p, e.v.Kind())
+}
+
+func IsExpectedSequenceError(err error) bool {
+	var target expectedSequenceError
+	return errors.As(err, &target)
+}
+
 // This function implements the patternComponent interface.
 func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
 	m, ok := v.AsMap()
 	if !ok {
-		return InvalidValue, fmt.Errorf("expected a map at %q, found %s", prefix, v.Kind())
+		return InvalidValue, expectedMapError{p: prefix, v: v}
 	}
 
 	m = m.Clone()
@@ -105,7 +134,7 @@ func AnyIndex() patternComponent {
 func (c anyIndexComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
 	s, ok := v.AsSequence()
 	if !ok {
-		return InvalidValue, fmt.Errorf("expected a sequence at %q, found %s", prefix, v.Kind())
+		return InvalidValue, expectedSequenceError{p: prefix, v: v}
 	}
 
 	s = slices.Clone(s)

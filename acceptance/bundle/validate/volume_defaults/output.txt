@@ -1,3 +1,15 @@
+Warning: required field "catalog_name" is not set
+  at resources.volumes.v2
+  in databricks.yml:8:7
+
+Warning: required field "catalog_name" is not set
+  at resources.volumes.v3
+  in databricks.yml:10:7
+
+Warning: required field "catalog_name" is not set
+  at resources.volumes.v1
+  in databricks.yml:6:7
+
 {
   "v1": {
     "volume_type": ""

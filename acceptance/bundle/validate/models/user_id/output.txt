@@ -2,10 +2,14 @@ Warning: unknown field: user_id
   at resources.models.mymodel
   in databricks.yml:7:7
 
+Warning: required field "name" is not set
+  at resources.models.mymodel
+  in databricks.yml:7:7
+
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 warning
+Found 2 warnings

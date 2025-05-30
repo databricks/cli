@@ -1,3 +1,7 @@
+Warning: required field "job_cluster_key" is not set
+  at resources.jobs.job1.job_clusters[0]
+  in databricks.yml:15:11
+
 {
   "node_type_id": "Standard_DS3_v2",
   "num_workers": 0
