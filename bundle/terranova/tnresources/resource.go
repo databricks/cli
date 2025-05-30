@@ -2,6 +2,7 @@ package tnresources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -54,7 +55,7 @@ func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, c
 
 	// Sanity check – every registered function must have two inputs and two outputs.
 	if ft.NumIn() != 2 || ft.NumOut() != 2 {
-		return nil, fmt.Errorf("invalid constructor signature: want func(*WorkspaceClient, T) (IResource, error)")
+		return nil, errors.New("invalid constructor signature: want func(*WorkspaceClient, T) (IResource, error)")
 	}
 
 	expectedCfgType := ft.In(1) // T
@@ -81,7 +82,7 @@ func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, c
 
 	res, ok := results[0].Interface().(IResource)
 	if !ok {
-		return nil, fmt.Errorf("constructor did not return IResource")
+		return nil, errors.New("constructor did not return IResource")
 	}
 	return res, nil
 }
