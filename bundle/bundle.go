@@ -13,10 +13,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
@@ -278,54 +278,35 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 	return auth.Env(cfg), nil
 }
 
-func GetResourceConfigT[T any](b *Bundle, section, name string) (*T, bool) {
-	v, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key(section), dyn.Key(name)))
+// GetResourceConfig returns the configuration object for a given resource section/name pair.
+// The returned value is a pointer to the concrete struct that represents that resource type.
+// When the section or name is not found the second return value is false.
+func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
+	// Resolve the Go type that represents a single resource in this section.
+	typ, ok := config.ResourcesTypes[section]
+	if !ok {
+		return nil, false
+	}
+
+	// Fetch the raw value from the dynamic representation of the bundle config.
+	v, err := dyn.GetByPath(
+		b.Config.Value(),
+		dyn.NewPath(dyn.Key("resources"), dyn.Key(section), dyn.Key(name)),
+	)
 	if err != nil {
 		return nil, false
 	}
 
-	// Note, we cannot read b.Config.Resources.Jobs[name] because we don't populate ForceSendFields properly on those
+	// json-round-trip into a value of the concrete resource type to ensure proper handling of ForceSendFields
 	bytes, err := json.Marshal(v.AsAny())
 	if err != nil {
 		return nil, false
 	}
 
-	var result T
-	err = json.Unmarshal(bytes, &result)
-	if err != nil {
+	ptr := reflect.New(typ) // *T
+	if err := json.Unmarshal(bytes, ptr.Interface()); err != nil {
 		return nil, false
 	}
 
-	return &result, true
-}
-
-func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
-	// TODO: validate that the config is fully resolved
-	switch section {
-	case "jobs":
-		return GetResourceConfigT[resources.Job](b, section, name)
-	case "pipelines":
-		return GetResourceConfigT[resources.Pipeline](b, section, name)
-	case "models":
-		return GetResourceConfigT[resources.MlflowModel](b, section, name)
-	case "experiments":
-		return GetResourceConfigT[resources.MlflowExperiment](b, section, name)
-	case "model_serving_endpoints":
-		return GetResourceConfigT[resources.ModelServingEndpoint](b, section, name)
-	case "registered_models":
-		return GetResourceConfigT[resources.RegisteredModel](b, section, name)
-	case "quality_monitors":
-		return GetResourceConfigT[resources.QualityMonitor](b, section, name)
-	case "schemas":
-		return GetResourceConfigT[resources.Schema](b, section, name)
-	case "volumes":
-		return GetResourceConfigT[resources.Volume](b, section, name)
-	case "clusters":
-		return GetResourceConfigT[resources.Cluster](b, section, name)
-	case "dashboards":
-		return GetResourceConfigT[resources.Dashboard](b, section, name)
-	case "apps":
-		return GetResourceConfigT[resources.App](b, section, name)
-	}
-	return nil, false
+	return ptr.Interface(), true
 }
