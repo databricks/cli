@@ -1,5 +1,5 @@
 {{- define `table_suffix` -}}
-    {{ (regexp `^_+|_+$`).ReplaceAllString ((regexp `_+`).ReplaceAllString .project_name `_`) `` }}
+    {{ .project_name }}
 {{- end }}
 
 {{- define `pipeline_name` -}}

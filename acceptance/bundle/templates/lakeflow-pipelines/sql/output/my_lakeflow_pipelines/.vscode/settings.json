@@ -8,7 +8,7 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python.analysis.extraPaths": ["assets/etl_pipeline"],
+    "python.analysis.extraPaths": ["resources/my_lakeflow_pipelines_pipeline"],
     "files.exclude": {
         "**/*.egg-info": true,
         "**/__pycache__": true,

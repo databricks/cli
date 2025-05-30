@@ -3,7 +3,7 @@
     "properties": {
         "project_name": {
             "type": "string",
-            "default": "my_project",
+            "default": "my_lakeflow_project",
             "description": "Please provide the following details to tailor the template to your preferences.\n\nUnique name for this project\nproject_name",
             "order": 1,
             "pattern": "^[a-z0-9_]+$",
@@ -45,7 +45,7 @@
         "language": {
             "type": "string",
             "default": "python",
-            "description": "\nLanguage for this project:\nlanguage",
+            "description": "\nInitial language for this project:\nlanguage",
             "enum": [
                 "python",
                 "sql"
