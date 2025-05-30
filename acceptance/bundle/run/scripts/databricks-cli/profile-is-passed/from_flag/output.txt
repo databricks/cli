@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle run me --profile myprofile
+{
+  "id":"[USERID]",
+  "userName":"[USERNAME]"
+}
