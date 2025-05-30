@@ -41,8 +41,6 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) (string, error
 		return "", err
 	}
 
-	// TODO: properly populate these instead
-	updateRequest.ForceSendFields = nil
 	updateRequest.FullName = id
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
