@@ -10,6 +10,13 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
+var supportedResources = map[string]reflect.Value{
+	"jobs":      reflect.ValueOf(NewResourceJob),
+	"pipelines": reflect.ValueOf(NewResourcePipeline),
+	"schemas":   reflect.ValueOf(NewResourceSchema),
+	"apps":      reflect.ValueOf(NewResourceApp),
+}
+
 type IResource interface {
 	Config() any
 
@@ -40,13 +47,6 @@ const (
 	ChangeTypeUpdate   ChangeType = 1
 	ChangeTypeRecreate ChangeType = -1
 )
-
-var resourceConstructors = map[string]reflect.Value{
-	"jobs":      reflect.ValueOf(NewResourceJob),
-	"pipelines": reflect.ValueOf(NewResourcePipeline),
-	"schemas":   reflect.ValueOf(NewResourceSchema),
-	"apps":      reflect.ValueOf(NewResourceApp),
-}
 
 // invokeConstructor converts cfg to the parameter type expected by ctor and
 // executes the call, returning the IResource instance or error.
@@ -88,7 +88,7 @@ func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, c
 }
 
 func New(client *databricks.WorkspaceClient, section, name string, config any) (IResource, error) {
-	ctor, ok := resourceConstructors[section]
+	ctor, ok := supportedResources[section]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", section)
 	}
@@ -113,7 +113,7 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 }
 
 func DestroyResource(ctx context.Context, client *databricks.WorkspaceClient, section, id string) error {
-	ctor, ok := resourceConstructors[section]
+	ctor, ok := supportedResources[section]
 	if !ok {
 		return fmt.Errorf("unsupported resource type: %s", section)
 	}
