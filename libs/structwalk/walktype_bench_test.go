@@ -2,19 +2,11 @@ package structwalk
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structdiff/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-)
-
-var (
-	rootFieldCount     int
-	jobFieldCount      int
-	rootFieldCountOnce sync.Once
-	jobFieldCountOnce  sync.Once
 )
 
 func countFields(typ reflect.Type) (int, error) {
@@ -29,7 +21,7 @@ func benchmarkWalkType(b *testing.B, tt reflect.Type) {
 	total := 0
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		count, err := countFields(tt)
 		if err != nil {
 			b.Fatalf("WalkType failed: %v", err)

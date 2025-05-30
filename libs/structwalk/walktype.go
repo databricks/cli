@@ -49,6 +49,7 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 	if typ == nil {
 		return
 	}
+
 	kind := typ.Kind()
 
 	if isScalar(kind) {
@@ -57,33 +58,20 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 		return
 	}
 
+	if visitedCount[typ] >= 2 {
+		return
+	}
+
+	visitedCount[typ]++
+
 	switch kind {
 	case reflect.Pointer:
-		// Pointer – treat pointer itself as scalar? We choose to surface pointer *type* (including pointer types to scalars).
-		// If element is scalar we still want to report it; if element is composite we drill down.
-		elemKind := typ.Elem().Kind()
-		if isScalar(elemKind) {
-			visit(path, typ)
-			return
-		}
-		// For pointers to structs, check circular reference here
-		if elemKind == reflect.Struct {
-			elemType := typ.Elem()
-			if visitedCount[elemType] >= 1 {
-				return // Skip types we've already seen once to prevent infinite recursion
-			}
-			visitedCount[elemType]++
-			walkTypeStruct(path, elemType, visit, visitedCount)
-			visitedCount[elemType]-- // Decrement after processing to allow same type in different branches
-		} else {
-			walkTypeValue(path, typ.Elem(), visit, visitedCount)
-		}
+		walkTypeValue(path, typ.Elem(), visit, visitedCount)
 
 	case reflect.Struct:
 		walkTypeStruct(path, typ, visit, visitedCount)
 
 	case reflect.Slice, reflect.Array:
-		// For slices and arrays, we walk the element type
 		walkTypeValue(structpath.NewIndex(path, 0), typ.Elem(), visit, visitedCount)
 
 	case reflect.Map:
@@ -91,11 +79,13 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 			return // unsupported map key type
 		}
 		// For maps, we walk the value type directly at the current path
-		walkTypeValue(path, typ.Elem(), visit, visitedCount)
+		walkTypeValue(structpath.NewMapKey(path, ""), typ.Elem(), visit, visitedCount)
 
 	default:
 		// func, chan, interface, invalid, etc. -> ignore
 	}
+
+	visitedCount[typ]--
 }
 
 func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
@@ -114,7 +104,7 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 			continue
 		}
 
-		if tag == "" || tag == "-" {
+		if tag == "-" {
 			continue // skip fields without json name
 		}
 		jsonTag := jsontag.JSONTag(tag)
