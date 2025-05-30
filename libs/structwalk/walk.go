@@ -3,6 +3,7 @@ package structwalk
 import (
 	"errors"
 	"reflect"
+	"slices"
 	"sort"
 
 	"github.com/databricks/cli/libs/structdiff/jsontag"
@@ -100,11 +101,17 @@ func walkValue(path *structpath.PathNode, val reflect.Value, visit VisitFunc) {
 }
 
 func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
+	forced := getForceSendFields(s)
+
 	st := s.Type()
 	for i := range st.NumField() {
 		sf := st.Field(i)
 		if sf.PkgPath != "" {
 			continue // unexported
+		}
+		// Skip the ForceSendFields slice itself from traversal.
+		if sf.Name == "ForceSendFields" {
+			continue
 		}
 		tag := sf.Tag.Get("json")
 		if tag == "-" {
@@ -113,6 +120,27 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		jsonTag := jsontag.JSONTag(tag)
 		fieldVal := s.Field(i)
 		node := structpath.NewStructField(path, jsonTag, sf.Name)
+
+		// Skip zero values with omitempty unless field is explicitly forced.
+		if jsonTag.OmitEmpty() && fieldVal.IsZero() && !slices.Contains(forced, sf.Name) {
+			continue
+		}
+
 		walkValue(node, fieldVal, visit)
 	}
+}
+
+func getForceSendFields(v reflect.Value) []string {
+	if !v.IsValid() || v.Kind() != reflect.Struct {
+		return nil
+	}
+	fsField := v.FieldByName("ForceSendFields")
+	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
+		return nil
+	}
+	result, ok := fsField.Interface().([]string)
+	if ok {
+		return result
+	}
+	return nil
 }

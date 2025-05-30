@@ -50,6 +50,9 @@ func TestTypes(t *testing.T) {
 		".Slice[0].X":         0,
 		".ValidFieldNoTag":    "",
 		".ValidFieldPtrNoTag": "",
+		".omit_bool":          false,
+		".omit_int":           0,
+		".omit_str":           "",
 		".valid_field":        "",
 		".valid_field_ptr":    "",
 	}, getFields(t, reflect.TypeOf(Types{})))

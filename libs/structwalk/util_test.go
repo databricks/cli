@@ -36,8 +36,16 @@ type Types struct {
 	MapPtr    map[string]*Simple
 	MapIntKey map[int]*Simple
 
+	// Fields with omitempty to test ForceSendFields behaviour
+	OmitStr  string `json:"omit_str,omitempty"`
+	OmitInt  int    `json:"omit_int,omitempty"`
+	OmitBool bool   `json:"omit_bool,omitempty"`
+
 	FuncField func() string `json:"-"`
 	ChanField chan string   `json:"-"`
+
+	// List of field names to be force-sent even if they hold zero values.
+	ForceSendFields []string `json:"-"`
 }
 
 type SelfIndirect struct {
@@ -59,4 +67,7 @@ type Self struct {
 
 	SelfIndirect    SelfIndirect
 	SelfIndirectPtr *SelfIndirect
+
+	// List of field names to be force-sent even if they hold zero values.
+	ForceSendFields []string `json:"-"`
 }
