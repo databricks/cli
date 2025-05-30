@@ -1,0 +1,19 @@
+# The job that triggers my_lakeflow_pipelines_pipeline.
+resources:
+  jobs:
+    my_lakeflow_pipelines_job:
+      name: my_lakeflow_pipelines_job
+
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      email_notifications:
+        on_failure: ${var.notifications}
+
+      tasks:
+        - task_key: refresh_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.my_lakeflow_pipelines_pipeline.id}
