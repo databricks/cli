@@ -8,16 +8,20 @@ package bundle
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -112,6 +116,11 @@ type Bundle struct {
 	Tagging tags.Cloud
 
 	Metrics Metrics
+
+	// If true, don't use terraform. Set by DATABRICKS_CLI_DEPLOYMENT=direct
+	DirectDeployment bool
+
+	ResourceDatabase tnstate.TerranovaState
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -267,4 +276,37 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 
 	cfg := b.client.Config
 	return auth.Env(cfg), nil
+}
+
+// GetResourceConfig returns the configuration object for a given resource section/name pair.
+// The returned value is a pointer to the concrete struct that represents that resource type.
+// When the section or name is not found the second return value is false.
+func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
+	// Resolve the Go type that represents a single resource in this section.
+	typ, ok := config.ResourcesTypes[section]
+	if !ok {
+		return nil, false
+	}
+
+	// Fetch the raw value from the dynamic representation of the bundle config.
+	v, err := dyn.GetByPath(
+		b.Config.Value(),
+		dyn.NewPath(dyn.Key("resources"), dyn.Key(section), dyn.Key(name)),
+	)
+	if err != nil {
+		return nil, false
+	}
+
+	// json-round-trip into a value of the concrete resource type to ensure proper handling of ForceSendFields
+	bytes, err := json.Marshal(v.AsAny())
+	if err != nil {
+		return nil, false
+	}
+
+	ptr := reflect.New(typ) // *T
+	if err := json.Unmarshal(bytes, ptr.Interface()); err != nil {
+		return nil, false
+	}
+
+	return ptr.Interface(), true
 }

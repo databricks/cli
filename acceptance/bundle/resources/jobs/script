@@ -13,3 +13,17 @@ title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle deploy
 trace print_requests
+
+title "Fetch job ID and verify remote state"
+
+ppid=`read_id.py jobs foo`
+
+trace $CLI jobs get $ppid
+rm out.requests.txt
+
+title "Destroy the job and verify that it's removed from the state and from remote"
+trace $CLI bundle destroy --auto-approve
+trace print_requests
+
+trace musterr $CLI jobs get $ppid
+rm out.requests.txt
