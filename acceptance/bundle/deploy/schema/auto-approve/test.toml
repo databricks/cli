@@ -2,7 +2,7 @@ Local = true
 Cloud = true
 RequiresUnityCatalog = true
 
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # requires "bundle summary"
 
 Ignore = [
     "databricks.yml",
