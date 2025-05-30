@@ -266,10 +266,7 @@ func TestGetStructDiff(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetStructDiff(tt.a, tt.b)
 
-			// Convert actual results to ResolvedChange for comparison
-			gotResolved := resolveChanges(got)
-
-			assert.Equal(t, tt.want, gotResolved)
+			assert.Equal(t, tt.want, resolveChanges(got))
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -290,10 +287,7 @@ func TestGetStructDiff(t *testing.T) {
 				})
 			}
 
-			// Convert actual results to ResolvedChange for comparison
-			gotResolved := resolveChanges(got)
-
-			assert.Equal(t, mirrorWant, gotResolved)
+			assert.Equal(t, mirrorWant, resolveChanges(got))
 
 			if tt.wantErr {
 				assert.Error(t, err)
