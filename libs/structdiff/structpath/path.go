@@ -7,6 +7,14 @@ import (
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 )
 
+const (
+	tagStruct           = -1
+	tagMapKey           = -2
+	tagUnresolvedStruct = -3
+	tagAnyKey           = -4
+	tagAnyIndex         = -5
+)
+
 // PathNode represents a node in a path for struct diffing.
 // It can represent struct fields, map keys, or array/slice indices.
 type PathNode struct {
@@ -14,9 +22,7 @@ type PathNode struct {
 	jsonTag jsontag.JSONTag // For lazy JSON key resolution
 	key     string          // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
-	// If index == -1, the node specifies a struct attribute
-	// If index == -2, the node specifies a map key in key
-	// If index == -3, the node specifies an unresolved struct attribute
+	// If index < 0, this describes the type of node (see tagStruct and other consts above)
 	index int
 }
 
@@ -42,21 +48,35 @@ func (p *PathNode) MapKey() (string, bool) {
 	if p == nil {
 		return "", false
 	}
-	if p.index == -2 {
+	if p.index == tagMapKey {
 		return p.key, true
 	}
 	return "", false
 }
 
+func (p *PathNode) AnyKey() bool {
+	if p == nil {
+		return false
+	}
+	return p.index == tagAnyKey
+}
+
+func (p *PathNode) AnyIndex() bool {
+	if p == nil {
+		return false
+	}
+	return p.index == tagAnyIndex
+}
+
 func (p *PathNode) resolveField() {
-	if p.index == -3 {
+	if p.index == tagUnresolvedStruct {
 		// Lazy resolve JSON key for struct fields
 		jsonName := p.jsonTag.Name()
 		if jsonName != "" {
 			p.key = jsonName
 		}
 		// If jsonName is empty, key already contains the Go field name as fallback
-		p.index = -1
+		p.index = tagStruct
 	}
 }
 
@@ -65,7 +85,7 @@ func (p *PathNode) Field() (string, bool) {
 		return "", false
 	}
 	p.resolveField()
-	if p.index == -1 {
+	if p.index == tagStruct {
 		return p.key, true
 	}
 	return "", false
@@ -73,6 +93,9 @@ func (p *PathNode) Field() (string, bool) {
 
 // NewIndex creates a new PathNode for an array/slice index.
 func NewIndex(prev *PathNode, index int) *PathNode {
+	if index < 0 {
+		panic("index msut be non-negative")
+	}
 	return &PathNode{
 		prev:  prev,
 		index: index,
@@ -84,7 +107,7 @@ func NewMapKey(prev *PathNode, key string) *PathNode {
 	return &PathNode{
 		prev:  prev,
 		key:   key,
-		index: -2,
+		index: tagMapKey,
 	}
 }
 
@@ -95,7 +118,21 @@ func NewStructField(prev *PathNode, jsonTag jsontag.JSONTag, fieldName string) *
 		prev:    prev,
 		jsonTag: jsonTag,
 		key:     fieldName,
-		index:   -3, // Unresolved struct attribute
+		index:   tagUnresolvedStruct,
+	}
+}
+
+func NewAnyKey(prev *PathNode) *PathNode {
+	return &PathNode{
+		prev:  prev,
+		index: tagAnyKey,
+	}
+}
+
+func NewAnyIndex(prev *PathNode) *PathNode {
+	return &PathNode{
+		prev:  prev,
+		index: tagAnyIndex,
 	}
 }
 
@@ -109,9 +146,13 @@ func (p *PathNode) String() string {
 		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
 
+	if p.index == tagAnyKey || p.index == tagAnyIndex {
+		return p.prev.String() + "[*]"
+	}
+
 	p.resolveField()
 
-	if p.index == -1 {
+	if p.index == tagStruct {
 		return p.prev.String() + "." + p.key
 	}
 
@@ -126,6 +167,19 @@ func (p *PathNode) DynPath() string {
 
 	if p.index >= 0 {
 		return p.prev.DynPath() + "[" + strconv.Itoa(p.index) + "]"
+	}
+
+	if p.index == tagAnyKey {
+		prev := p.prev.DynPath()
+		if prev == "" {
+			return "*"
+		} else {
+			return prev + ".*"
+		}
+	}
+
+	if p.index == tagAnyIndex {
+		return p.prev.DynPath() + "[*]"
 	}
 
 	p.resolveField()
