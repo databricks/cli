@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/terranova/terranova_resources"
-	"github.com/databricks/cli/bundle/terranova/terranova_state"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
+	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dag"
 	"github.com/databricks/cli/libs/diag"
@@ -33,7 +33,7 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	client := b.WorkspaceClient()
 
-	g := dag.NewGraph[terranova_state.ResourceNode]()
+	g := dag.NewGraph[tnstate.ResourceNode]()
 
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
@@ -42,7 +42,7 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 			section := p[1].Key()
 			name := p[2].Key()
 			// log.Warnf(ctx, "Adding node=%s", node)
-			g.AddNode(terranova_state.ResourceNode{
+			g.AddNode(tnstate.ResourceNode{
 				Section: section,
 				Name:    name,
 			})
@@ -54,7 +54,7 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	countDeployed := 0
 
-	err = g.Run(maxPoolSize, func(node terranova_state.ResourceNode) {
+	err = g.Run(maxPoolSize, func(node tnstate.ResourceNode) {
 		// TODO func(node string) bool
 		// If function returns false, downstream callers are not called
 		// g.Run() should return list of not executed nodes
@@ -102,7 +102,7 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 
 type Deployer struct {
 	client       *databricks.WorkspaceClient
-	db           *terranova_state.TerranovaState
+	db           *tnstate.TerranovaState
 	section      string
 	resourceName string
 }
@@ -121,7 +121,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 		return err
 	}
 
-	resource, err := terranova_resources.New(d.client, d.section, d.resourceName, inputConfig)
+	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 	}
 	// log.Warnf(ctx, "localDiff: %#v", localDiff)
 
-	localDiffType := terranova_resources.ChangeTypeNone
+	localDiffType := tnresources.ChangeTypeNone
 	if len(localDiff) > 0 {
 		localDiffType = resource.ClassifyChanges(localDiff)
 	}
@@ -180,7 +180,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 	return nil
 }
 
-func (d *Deployer) Recreate(ctx context.Context, oldResource terranova_resources.IResource, oldID string, config any) error {
+func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResource, oldID string, config any) error {
 	err := oldResource.DoDelete(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
@@ -191,7 +191,7 @@ func (d *Deployer) Recreate(ctx context.Context, oldResource terranova_resources
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
-	newResource, err := terranova_resources.New(d.client, d.section, d.resourceName, config)
+	newResource, err := tnresources.New(d.client, d.section, d.resourceName, config)
 	if err != nil {
 		return fmt.Errorf("initializing: %w", err)
 	}
@@ -210,7 +210,7 @@ func (d *Deployer) Recreate(ctx context.Context, oldResource terranova_resources
 	return newResource.WaitAfterCreate(ctx)
 }
 
-func (d *Deployer) Update(ctx context.Context, resource terranova_resources.IResource, oldID string, config any) error {
+func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, oldID string, config any) error {
 	newID, err := resource.DoUpdate(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)

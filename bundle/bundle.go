@@ -20,7 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/bundle/terranova/terranova_state"
+	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
@@ -120,7 +120,7 @@ type Bundle struct {
 	// If true, don't use terraform. Set by DATABRICKS_CLI_DEPLOYMENT=direct
 	DirectDeployment bool
 
-	ResourceDatabase terranova_state.TerranovaState
+	ResourceDatabase tnstate.TerranovaState
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {

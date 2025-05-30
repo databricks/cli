@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/terranova/terranova_resources"
-	"github.com/databricks/cli/bundle/terranova/terranova_state"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
+	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dag"
 	"github.com/databricks/cli/libs/diag"
 )
@@ -25,7 +25,7 @@ func (m *terranovaDestroyMutator) Apply(ctx context.Context, b *bundle.Bundle) d
 	client := b.WorkspaceClient()
 
 	allResources := b.ResourceDatabase.GetAllResources()
-	g := dag.NewGraph[terranova_state.ResourceNode]()
+	g := dag.NewGraph[tnstate.ResourceNode]()
 
 	for _, node := range allResources {
 		g.AddNode(node)
@@ -33,8 +33,8 @@ func (m *terranovaDestroyMutator) Apply(ctx context.Context, b *bundle.Bundle) d
 
 	// TODO: respect dependencies; dependencies need to be part of state, not config.
 
-	err := g.Run(maxPoolSize, func(node terranova_state.ResourceNode) {
-		err := terranova_resources.DestroyResource(ctx, client, node.Section, node.ID)
+	err := g.Run(maxPoolSize, func(node tnstate.ResourceNode) {
+		err := tnresources.DestroyResource(ctx, client, node.Section, node.ID)
 		if err != nil {
 			diags.AppendErrorf("destroying %s: %s", node, err)
 			return
