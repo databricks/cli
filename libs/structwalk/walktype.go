@@ -38,9 +38,6 @@ func WalkType(t reflect.Type, visit VisitTypeFunc) error {
 	if t == nil {
 		return nil
 	}
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
 	// Use a visited counter to allow one level of circular reference
 	// Stop only when we see a type for the second time
 	visitedCount := make(map[reflect.Type]int)
@@ -76,7 +73,7 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 				return // Skip types we've already seen once to prevent infinite recursion
 			}
 			visitedCount[elemType]++
-			walkTypeValue(path, elemType, visit, visitedCount)
+			walkTypeStruct(path, elemType, visit, visitedCount)
 			visitedCount[elemType]-- // Decrement after processing to allow same type in different branches
 		} else {
 			walkTypeValue(path, typ.Elem(), visit, visitedCount)
