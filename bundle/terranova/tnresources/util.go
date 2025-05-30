@@ -1,4 +1,4 @@
-package terranova_resources
+package tnresources
 
 import (
 	"encoding/json"

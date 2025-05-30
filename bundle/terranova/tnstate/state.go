@@ -1,4 +1,4 @@
-package terranova_state
+package tnstate
 
 import (
 	"bytes"
