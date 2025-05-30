@@ -51,16 +51,6 @@
                 "sql"
             ],
             "order": 6
-        },
-        "include_job": {
-            "type": "string",
-            "description": "\nInclude a job that automatically triggers this pipeline?\nThis trigger will only be enabled for production deployments.\ninclude_job",
-            "order": 7,
-            "enum": [
-                "yes",
-                "no"
-            ],
-            "default": "no"
         }
     },
     "success_message": "\n\nYour new project has been created in the '{{.project_name}}' directory!\n\nRefer to the README.md file for \"getting started\" instructions!"

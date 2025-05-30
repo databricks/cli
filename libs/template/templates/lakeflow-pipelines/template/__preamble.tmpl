@@ -5,7 +5,6 @@ This file only contains template directives; it is skipped for the actual output
 {{skip "__preamble"}}
 
 {{$isSQL := eq .language "sql"}}
-{{$skipJob := eq .include_job "no"}}
 
 {{if $isSQL}}
   {{skip "{{.project_name}}/resources/{{template `pipeline_name` .}}/utilities/utils.py"}}
@@ -14,8 +13,4 @@ This file only contains template directives; it is skipped for the actual output
 {{else}}
   {{skip "{{.project_name}}/resources/{{template `pipeline_name` .}}/transformations/sample_zones_{{template `table_suffix` .}}.sql"}}
   {{skip "{{.project_name}}/resources/{{template `pipeline_name` .}}/transformations/sample_trips_{{template `table_suffix` .}}.sql"}}
-{{end}}
-
-{{if $skipJob}}
-  {{skip "{{.project_name}}/resources/{{template `pipeline_name` .}}/{{template `pipeline_name` .}}.job.yml.tmpl"}}
 {{end}}
