@@ -40,12 +40,6 @@ func Walk(v any, visit VisitFunc) error {
 	if !rv.IsValid() {
 		return nil
 	}
-	for rv.Kind() == reflect.Pointer {
-		if rv.IsNil() {
-			return nil
-		}
-		rv = rv.Elem()
-	}
 	walkValue(nil, rv, visit)
 	return nil
 }
@@ -80,19 +74,13 @@ func walkValue(path *structpath.PathNode, val reflect.Value, visit VisitFunc) {
 	case reflect.Pointer:
 		// Pointer – treat pointer itself as scalar? We choose to surface pointer *value* (nil / underlying scalar).
 		// If element is scalar we still want to report it; if element is composite we drill down.
-		if val.IsNil() {
-			elemKind := val.Type().Elem().Kind()
-			if isScalar(elemKind) {
-				visit(path, nil)
-			}
-			return
-		}
 		elemKind := val.Type().Elem().Kind()
+		elem := val.Elem()
 		if isScalar(elemKind) {
-			visit(path, val.Elem().Interface())
+			visit(path, elem.Interface())
 			return
 		}
-		walkValue(path, val.Elem(), visit)
+		walkValue(path, elem, visit)
 
 	case reflect.Struct:
 		walkStruct(path, val, visit)
@@ -131,13 +119,10 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 			continue // unexported
 		}
 		tag := sf.Tag.Get("json")
-		if tag == "" || tag == "-" {
+		if tag == "-" {
 			continue // skip fields without json name
 		}
 		jsonTag := jsontag.JSONTag(tag)
-		if jsonTag.Name() == "-" {
-			continue
-		}
 		fieldVal := s.Field(i)
 		node := structpath.NewStructField(path, jsonTag, sf.Name)
 		walkValue(node, fieldVal, visit)
