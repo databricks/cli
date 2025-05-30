@@ -36,13 +36,11 @@ targets:
     mode: production
     workspace:
       host: {{workspace_host}}
-      # We explicitly specify /Workspace/Users/{{user_name}} to make sure we only have a single copy.
+      # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
       root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
     permissions:
       - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
         level: CAN_MANAGE
-    run_as:
-      {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
     variables:
       catalog: {{.default_catalog}}
       schema: {{template `prod_schema` .}}
