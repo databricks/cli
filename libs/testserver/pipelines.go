@@ -40,7 +40,6 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.Spec = &spec
 
 	pipelineId := uuid.New().String()
-	spec.Id = pipelineId
 	r.PipelineId = pipelineId
 	r.CreatorUserName = "tester@databricks.com"
 	r.LastModified = time.Now().UnixMilli()
@@ -48,18 +47,23 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.RunAsUserName = "tester@databricks.com"
 	r.State = "IDLE"
 
-	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
-	// and if the storage location is not specified, API automatically generates a storage location
-	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
-	if spec.Storage == "" && spec.Catalog == "" {
-		spec.Storage = "dbfs:/pipelines/" + pipelineId
-	}
+	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
 			PipelineId: pipelineId,
 		},
+	}
+}
+
+func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
+	spec.Id = pipelineId
+	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
+	// and if the storage location is not specified, API automatically generates a storage location
+	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
+	if spec.Storage == "" && spec.Catalog == "" {
+		spec.Storage = "dbfs:/pipelines/" + pipelineId
 	}
 }
 
@@ -82,12 +86,8 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
-	spec.Id = pipelineId
-	if spec.Storage == "" && spec.Catalog == "" {
-		spec.Storage = "dbfs:/pipelines/" + pipelineId
-	}
-
 	item.Spec = &spec
+	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
 
 	return Response{
