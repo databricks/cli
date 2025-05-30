@@ -66,6 +66,17 @@ func TestPathNode(t *testing.T) {
 			DynPath: "lazy_field",
 			Field:   "lazy_field",
 		},
+		{
+			name:    "any key",
+			node:    NewAnyKey(nil),
+			String:  "[*]",
+			DynPath: "*",
+		},
+		{
+			name:   "any index",
+			node:   NewAnyIndex(nil),
+			String: "[*]",
+		},
 
 		// Two node tests
 		{
@@ -122,6 +133,18 @@ func TestPathNode(t *testing.T) {
 			String:  ".Parent.child_name",
 			DynPath: "Parent.child_name",
 			Field:   "child_name",
+		},
+		{
+			name:    "any key",
+			node:    NewAnyKey(NewStructField(nil, jsontag.JSONTag(""), "Parent")),
+			String:  ".Parent[*]",
+			DynPath: "Parent.*",
+		},
+		{
+			name:    "any index",
+			node:    NewAnyIndex(NewStructField(nil, jsontag.JSONTag(""), "Parent")),
+			String:  ".Parent[*]",
+			DynPath: "Parent[*]",
 		},
 	}
 

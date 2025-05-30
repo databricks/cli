@@ -72,14 +72,14 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 		walkTypeStruct(path, typ, visit, visitedCount)
 
 	case reflect.Slice, reflect.Array:
-		walkTypeValue(structpath.NewIndex(path, 0), typ.Elem(), visit, visitedCount)
+		walkTypeValue(structpath.NewAnyIndex(path), typ.Elem(), visit, visitedCount)
 
 	case reflect.Map:
 		if typ.Key().Kind() != reflect.String {
 			return // unsupported map key type
 		}
 		// For maps, we walk the value type directly at the current path
-		walkTypeValue(structpath.NewMapKey(path, ""), typ.Elem(), visit, visitedCount)
+		walkTypeValue(structpath.NewAnyKey(path), typ.Elem(), visit, visitedCount)
 
 	default:
 		// func, chan, interface, invalid, etc. -> ignore

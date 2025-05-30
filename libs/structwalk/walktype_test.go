@@ -36,18 +36,18 @@ func TestTypeScalar(t *testing.T) {
 
 func TestTypes(t *testing.T) {
 	assert.Equal(t, map[string]any{
-		".ArrayString[0]":     "",
-		".Array[0].X":         0,
+		".ArrayString[*]":     "",
+		".Array[*].X":         0,
 		".BoolField":          false,
 		".EmptyTagField":      "",
 		".EmptyTagFieldPtr":   "",
 		".IntField":           0,
-		".Map[\"\"].X":        0, /// XXX bad
-		".MapPtr[\"\"].X":     0,
+		`.Map[*].X`:           0,
+		`.MapPtr[*].X`:        0,
 		".Nested.X":           0,
 		".NestedPtr.X":        0,
-		".SliceString[0]":     "",
-		".Slice[0].X":         0,
+		".SliceString[*]":     "",
+		".Slice[*].X":         0,
 		".ValidFieldNoTag":    "",
 		".ValidFieldPtrNoTag": "",
 		".omit_bool":          false,
@@ -61,14 +61,14 @@ func TestTypes(t *testing.T) {
 func TestTypeSelf(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		".valid_field":                   "",
-		".SelfArrayPtr[0].valid_field":   "",
+		".SelfArrayPtr[*].valid_field":   "",
 		".SelfIndirect.X.valid_field":    "",
 		".SelfIndirectPtr.X.valid_field": "",
-		".SelfMapPtr[\"\"].valid_field":  "",
-		".SelfMap[\"\"].valid_field":     "",
+		`.SelfMapPtr[*].valid_field`:     "",
+		`.SelfMap[*].valid_field`:        "",
 		".SelfReference.valid_field":     "",
-		".SelfSlicePtr[0].valid_field":   "",
-		".SelfSlice[0].valid_field":      "",
+		".SelfSlicePtr[*].valid_field":   "",
+		".SelfSlice[*].valid_field":      "",
 	}, getFields(t, reflect.TypeOf(Self{})))
 }
 
@@ -101,15 +101,15 @@ func TestTypeJobSettings(t *testing.T) {
 			".max_concurrent_runs": 0,
 
 			// Verify circular reference behavior - we should see one level of nesting
-			".tasks[0].for_each_task.task.task_key":        "",
-			".tasks[0].for_each_task.task.description":     "",
-			".tasks[0].for_each_task.task.timeout_seconds": 0,
+			".tasks[*].for_each_task.task.task_key":        "",
+			".tasks[*].for_each_task.task.description":     "",
+			".tasks[*].for_each_task.task.timeout_seconds": 0,
 		},
 
 		// Verify we DON'T see second level circular references
 		[]string{
-			".tasks[0].for_each_task.task.for_each_task.task.task_key",
-			".tasks[0].for_each_task.task.for_each_task.task.description",
+			".tasks[*].for_each_task.task.for_each_task.task.task_key",
+			".tasks[*].for_each_task.task.for_each_task.task.description",
 		},
 	)
 }
@@ -119,28 +119,28 @@ func TestTypeRoot(t *testing.T) {
 		reflect.TypeOf(config.Root{}),
 		3400, 3500, // 3487 at this time
 		map[string]any{
-			".bundle.target":                  "",
-			`.variables[""].lookup.dashboard`: "",
+			".bundle.target":                 "",
+			`.variables[*].lookup.dashboard`: "",
 
-			`.resources.jobs[""].name`:                "",
-			`.resources.jobs[""].timeout_seconds`:     0,
-			`.resources.jobs[""].max_concurrent_runs`: 0,
-			`.resources.jobs[""].format`:              jobs.Format(""),
-			`.resources.jobs[""].description`:         "",
+			`.resources.jobs[*].name`:                "",
+			`.resources.jobs[*].timeout_seconds`:     0,
+			`.resources.jobs[*].max_concurrent_runs`: 0,
+			`.resources.jobs[*].format`:              jobs.Format(""),
+			`.resources.jobs[*].description`:         "",
 
 			// Verify nested task fields are accessible
-			`.resources.jobs[""].tasks[0].task_key`:                                       "",
-			`.resources.jobs[""].tasks[0].notebook_task.notebook_path`:                    "",
-			`.resources.jobs[""].tasks[0].spark_jar_task.main_class_name`:                 "",
-			`.resources.jobs[""].tasks[0].for_each_task.inputs`:                           "",
-			`.resources.jobs[""].tasks[0].for_each_task.task.task_key`:                    "",
-			`.resources.jobs[""].tasks[0].for_each_task.task.notebook_task.notebook_path`: "",
-			`.resources.jobs[""].tasks[0].new_cluster.node_type_id`:                       "",
-			`.resources.jobs[""].tasks[0].new_cluster.num_workers`:                        0,
+			`.resources.jobs[*].tasks[*].task_key`:                                       "",
+			`.resources.jobs[*].tasks[*].notebook_task.notebook_path`:                    "",
+			`.resources.jobs[*].tasks[*].spark_jar_task.main_class_name`:                 "",
+			`.resources.jobs[*].tasks[*].for_each_task.inputs`:                           "",
+			`.resources.jobs[*].tasks[*].for_each_task.task.task_key`:                    "",
+			`.resources.jobs[*].tasks[*].for_each_task.task.notebook_task.notebook_path`: "",
+			`.resources.jobs[*].tasks[*].new_cluster.node_type_id`:                       "",
+			`.resources.jobs[*].tasks[*].new_cluster.num_workers`:                        0,
 
 			// Verify job cluster fields are accessible
-			`.resources.jobs[""].job_clusters[0].job_cluster_key`:         "",
-			`.resources.jobs[""].job_clusters[0].new_cluster.num_workers`: 0,
+			`.resources.jobs[*].job_clusters[*].job_cluster_key`:         "",
+			`.resources.jobs[*].job_clusters[*].new_cluster.num_workers`: 0,
 		},
 		nil,
 	)
