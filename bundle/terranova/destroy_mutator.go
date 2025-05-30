@@ -31,7 +31,8 @@ func (m *terranovaDestroyMutator) Apply(ctx context.Context, b *bundle.Bundle) d
 		g.AddNode(node)
 	}
 
-	// TODO: respect dependencies; dependencies need to be part of state, not config.
+	// TODO: do we need to respect dependencies here? Should we store them in state in that case?
+	// Alternatively, do a few rounds of delete to make we capture cases where A needs to be deleted before B.
 
 	err := g.Run(maxPoolSize, func(node tnstate.ResourceNode) {
 		err := tnresources.DestroyResource(ctx, client, node.Section, node.ID)
@@ -39,7 +40,7 @@ func (m *terranovaDestroyMutator) Apply(ctx context.Context, b *bundle.Bundle) d
 			diags.AppendErrorf("destroying %s: %s", node, err)
 			return
 		}
-		// TODO: did DestroyResource fail because it did not exist? we can clean it up from the state as well
+		// TODO: handle situation where resources is already gone for whatever reason.
 
 		err = b.ResourceDatabase.DeleteState(node.Section, node.Name)
 		if err != nil {
