@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to the Lakeflow template for Databricks Asset Bundles!",
+    "welcome_message": "\nWelcome to the template for Lakeflow Declarative Pipelines!",
     "properties": {
         "project_name": {
             "type": "string",
