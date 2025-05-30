@@ -1,0 +1,37 @@
+{{- define `table_suffix` -}}
+    {{ (regexp `^_+|_+$`).ReplaceAllString ((regexp `_+`).ReplaceAllString .project_name `_`) `` }}
+{{- end }}
+
+{{- define `pipeline_name` -}}
+    {{template `table_suffix` .}}_pipeline
+{{- end }}
+
+{{- define `job_name` -}}
+    {{template `table_suffix` .}}_job
+{{- end }}
+
+{{- define `static_dev_schema` -}}
+    {{- if (regexp "^yes").MatchString .personal_schemas -}}
+        {{ short_name }}
+    {{- else -}}
+        {{ .shared_schema }}
+    {{- end}}
+{{- end }}
+
+
+{{- define `dev_schema` -}}
+    {{- if (regexp "^yes").MatchString .personal_schemas -}}
+        ${workspace.current_user.short_name}
+    {{- else -}}
+        {{ .shared_schema }}
+    {{- end}}
+{{- end }}
+
+
+{{- define `prod_schema` -}}
+    {{- if (regexp "^yes").MatchString .personal_schemas -}}
+        default
+    {{- else -}}
+        {{ .shared_schema }}
+    {{- end}}
+{{- end }}

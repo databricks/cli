@@ -26,6 +26,7 @@ type TemplateName string
 const (
 	DefaultPython          TemplateName = "default-python"
 	DefaultSql             TemplateName = "default-sql"
+	Lakeflow               TemplateName = "lakeflow"
 	DbtSql                 TemplateName = "dbt-sql"
 	MlopsStacks            TemplateName = "mlops-stacks"
 	DefaultPydabs          TemplateName = "default-pydabs"
@@ -45,6 +46,13 @@ var databricksTemplates = []Template{
 		description: "The default SQL template for .sql files that run with Databricks SQL",
 		Reader:      &builtinReader{name: string(DefaultSql)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultSql}},
+	},
+	{
+		name:        Lakeflow,
+		hidden:      true,
+		description: "The Lakeflow template for Databricks Asset Bundles",
+		Reader:      &builtinReader{name: string(Lakeflow)},
+		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Lakeflow}},
 	},
 	{
 		name:        DbtSql,
