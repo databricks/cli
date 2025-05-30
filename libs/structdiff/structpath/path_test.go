@@ -9,14 +9,16 @@ import (
 
 func TestPathNode(t *testing.T) {
 	tests := []struct {
-		name    string
-		node    *PathNode
-		String  string
-		DynPath string
-		Index   any
-		MapKey  any
-		Field   any
-		Root    any
+		name     string
+		node     *PathNode
+		String   string
+		DynPath  string
+		Index    any
+		MapKey   any
+		Field    any
+		Root     any
+		AnyKey   bool
+		AnyIndex bool
 	}{
 		// Single node tests
 		{
@@ -71,11 +73,13 @@ func TestPathNode(t *testing.T) {
 			node:    NewAnyKey(nil),
 			String:  "[*]",
 			DynPath: "*",
+			AnyKey:  true,
 		},
 		{
-			name:   "any index",
-			node:   NewAnyIndex(nil),
-			String: "[*]",
+			name:     "any index",
+			node:     NewAnyIndex(nil),
+			String:   "[*]",
+			AnyIndex: true,
 		},
 
 		// Two node tests
@@ -139,12 +143,14 @@ func TestPathNode(t *testing.T) {
 			node:    NewAnyKey(NewStructField(nil, jsontag.JSONTag(""), "Parent")),
 			String:  ".Parent[*]",
 			DynPath: "Parent.*",
+			AnyKey:  true,
 		},
 		{
-			name:    "any index",
-			node:    NewAnyIndex(NewStructField(nil, jsontag.JSONTag(""), "Parent")),
-			String:  ".Parent[*]",
-			DynPath: "Parent[*]",
+			name:     "any index",
+			node:     NewAnyIndex(NewStructField(nil, jsontag.JSONTag(""), "Parent")),
+			String:   ".Parent[*]",
+			DynPath:  "Parent[*]",
+			AnyIndex: true,
 		},
 	}
 
@@ -195,12 +201,17 @@ func TestPathNode(t *testing.T) {
 				assert.True(t, isMapKey)
 			}
 
+			// IsRoot
 			isRoot := tt.node.IsRoot()
 			if tt.Root == nil {
 				assert.False(t, isRoot)
 			} else {
 				assert.True(t, isRoot)
 			}
+
+			// AnyKey, AnyIndex
+			assert.Equal(t, tt.AnyKey, tt.node.AnyKey())
+			assert.Equal(t, tt.AnyIndex, tt.node.AnyIndex())
 		})
 	}
 }
