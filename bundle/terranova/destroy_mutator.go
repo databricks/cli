@@ -52,7 +52,10 @@ func (m *terranovaDestroyMutator) Apply(ctx context.Context, b *bundle.Bundle) d
 		diags.AppendError(err)
 	}
 
-	_ = b.ResourceDatabase.Finalize()
+	err = b.ResourceDatabase.Finalize()
+	if err != nil {
+		diags.AppendError(err)
+	}
 
 	return diags.Diags
 }
