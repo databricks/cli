@@ -18,10 +18,6 @@ EnvMatrix.UV_PYTHON = [
 
 EnvRepl.UV_PYTHON = true
 
-#[[Repls]]
-#Old = '\d+\?o=\d+'
-#New = '[NUMBER]'
-
 [[Repls]]
 # for some reason leading number is lost converting "%H%M%S" 061234 to 61234
 Old = '\d{5,}'
