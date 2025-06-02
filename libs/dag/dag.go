@@ -46,21 +46,19 @@ func (e *CycleError[N]) Error() string {
 	if len(e.Nodes) == 0 {
 		return "cycle detected"
 	}
-	var b strings.Builder
-	b.WriteString("cycle detected: ")
-	fmt.Fprint(&b, e.Nodes[0])
+
+	// Build "A refers to B via E1" pieces for every edge except the closing one.
+	var parts []string
 	for i := 1; i < len(e.Nodes); i++ {
-		b.WriteString(" refers to ")
-		fmt.Fprint(&b, e.Nodes[i])
-		b.WriteString(" via ")
-		b.WriteString(e.Edges[i-1])
+		parts = append(parts, fmt.Sprintf("%v refers to %v via %s", e.Nodes[i-1], e.Nodes[i], e.Edges[i-1]))
 	}
-	b.WriteString(" which refers to ")
-	fmt.Fprint(&b, e.Nodes[0])
-	b.WriteString(" via ")
-	b.WriteString(e.Edges[len(e.Edges)-1])
-	b.WriteString(".")
-	return b.String()
+
+	return fmt.Sprintf(
+		"cycle detected: %s which refers to %v via %s.",
+		strings.Join(parts, " "),
+		e.Nodes[0],
+		e.Edges[len(e.Edges)-1],
+	)
 }
 
 func (g *Graph[N]) indegrees() map[N]int {
