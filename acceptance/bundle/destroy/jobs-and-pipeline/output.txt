@@ -10,7 +10,7 @@ Deployment complete!
 
 === Assert the snapshot file exists
 >>> ls .databricks/bundle/default/sync-snapshots
-[ALPHANUMID].json
+       1
 
 === Assert bundle deployment path is created
 >>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
