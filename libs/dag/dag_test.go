@@ -16,10 +16,6 @@ type stringWrapper struct {
 	Value string
 }
 
-func (s stringWrapper) Less(other stringWrapper) bool {
-	return s.Value < other.Value
-}
-
 func (s stringWrapper) String() string {
 	return s.Value
 }
