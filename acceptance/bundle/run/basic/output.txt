@@ -13,9 +13,9 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/job/run/[TEST_RUN_ID+0]
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
 
-[DATE] HH:MM:SS "run-name" TERMINATED
+[TIMESTAMP] "run-name" TERMINATED
 
 === no resource key with --
 >>> [CLI] bundle run --
@@ -25,9 +25,9 @@ Exit code: 1
 
 === resource key with parameters
 >>> [CLI] bundle run foo -- arg1 arg2
-Run URL: [DATABRICKS_URL]/job/run/[TEST_RUN_ID+1]
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
 
-[DATE] HH:MM:SS "run-name" TERMINATED
+[TIMESTAMP] "run-name" TERMINATED
 
 === inline script
 >>> [CLI] bundle run -- echo hello

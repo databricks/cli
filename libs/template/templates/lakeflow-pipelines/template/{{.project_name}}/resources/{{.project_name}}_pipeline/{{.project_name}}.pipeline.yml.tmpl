@@ -1,0 +1,12 @@
+resources:
+  pipelines:
+    {{template `pipeline_name` .}}:
+      name: {{template `pipeline_name` .}}
+      serverless: true
+      channel: "PREVIEW"
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      root_path: "."
+      libraries:
+        - glob:
+            include: transformations/**

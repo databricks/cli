@@ -1,0 +1,9 @@
+trace $CLI bundle init lakeflow-pipelines --config-file ./input.json --output-dir output
+
+cd output/my_lakeflow_pipelines
+trace $CLI bundle validate -t dev
+trace $CLI bundle validate -t prod
+
+# Do not affect this repository's git behaviour #2318
+mv .gitignore out.gitignore
+rm .databricks/.gitignore
