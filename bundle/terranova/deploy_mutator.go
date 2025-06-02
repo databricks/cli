@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dag"
+	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
@@ -33,7 +33,7 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	client := b.WorkspaceClient()
 
-	g := dag.NewGraph[tnstate.ResourceNode]()
+	g := dagrun.NewGraph[tnstate.ResourceNode]()
 
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
