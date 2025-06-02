@@ -3,9 +3,7 @@ resources:
     my_lakeflow_pipelines_pipeline:
       name: my_lakeflow_pipelines_pipeline
       serverless: true
-      continuous: false
       channel: "PREVIEW"
-      photon: true
       catalog: ${var.catalog}
       schema: ${var.schema}
       root_path: "."

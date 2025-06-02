@@ -3,9 +3,7 @@ resources:
     {{template `pipeline_name` .}}:
       name: {{template `pipeline_name` .}}
       serverless: true
-      continuous: false
       channel: "PREVIEW"
-      photon: true
       catalog: ${var.catalog}
       schema: ${var.schema}
       root_path: "."
