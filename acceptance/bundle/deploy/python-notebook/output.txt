@@ -8,7 +8,7 @@ Deployment complete!
 >>> [CLI] jobs list --output json
 [
   {
-    "job_id": [TEST_JOB_ID+0],
+    "job_id": [NUMID],
     "settings": {
       "deployment": {
         "kind": "BUNDLE",
