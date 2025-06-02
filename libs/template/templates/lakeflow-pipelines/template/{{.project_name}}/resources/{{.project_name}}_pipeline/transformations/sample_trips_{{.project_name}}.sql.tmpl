@@ -2,7 +2,7 @@
 -- Edit the sample below or add new transformations
 -- using "+ Add" in the file browser.
 
-CREATE MATERIALIZED VIEW sample_trips_{{template `table_suffix` .}} AS
+CREATE MATERIALIZED VIEW sample_trips_{{ .project_name }} AS
 SELECT
     pickup_zip,
     fare_amount

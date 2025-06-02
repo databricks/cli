@@ -38,7 +38,7 @@
    "source": [
     "# !!! Before performing any data analysis, make sure to run the pipeline to materialize the sample datasets. The tables referenced in this notebook depend on that step.\n",
     "\n",
-    "display(spark.sql(\"SELECT * FROM {{ .default_catalog}}.{{template `static_dev_schema` .}}.{{template `table_suffix` .}}\"))"
+    "display(spark.sql(\"SELECT * FROM {{ .default_catalog}}.{{template `static_dev_schema` .}}.{{ .project_name }}\"))"
    ]
   }
  ],
@@ -105,7 +105,7 @@
     "USE CATALOG `{{.default_catalog}}`;\n",
     "USE SCHEMA `{{template `static_dev_schema` .}}`;\n",
     "\n",
-    "SELECT * from {{template `table_suffix` .}};"
+    "SELECT * from {{ .project_name }};"
    ]
   }
  ],

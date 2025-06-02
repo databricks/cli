@@ -9,7 +9,7 @@ from utilities import utils
 
 
 @dlt.table
-def sample_trips_{{template `table_suffix` .}}():
+def sample_trips_{{ .project_name }}():
     return (
         spark.read.table("samples.nyctaxi.trips")
         .withColumn("trip_distance_km", utils.distance_km(col("trip_distance")))

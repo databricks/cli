@@ -1,13 +1,9 @@
-{{- define `table_suffix` -}}
-    {{ .project_name }}
-{{- end }}
-
 {{- define `pipeline_name` -}}
-    {{template `table_suffix` .}}_pipeline
+    {{ .project_name }}_pipeline
 {{- end }}
 
 {{- define `job_name` -}}
-    {{template `table_suffix` .}}_job
+    {{ .project_name }}_job
 {{- end }}
 
 {{- define `static_dev_schema` -}}
