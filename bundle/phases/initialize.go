@@ -28,15 +28,12 @@ import (
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var err error
+
 	log.Info(ctx, "Phase: initialize")
 
-	deployment := os.Getenv("DATABRICKS_CLI_DEPLOYMENT")
-	if deployment == "direct" {
-		b.DirectDeployment = true
-	} else if deployment == "terraform" || deployment == "" {
-		b.DirectDeployment = false
-	} else {
-		err := fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", deployment)
+	b.DirectDeployment, err = IsDirectDeployment()
+	if err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -234,4 +231,15 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Executes the post_init script hook defined in the bundle configuration
 	diags = diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostInit)))
 	return diags
+}
+
+func IsDirectDeployment() (bool, error) {
+	deployment := os.Getenv("DATABRICKS_CLI_DEPLOYMENT")
+	if deployment == "direct" {
+		return true, nil
+	} else if deployment == "terraform" || deployment == "" {
+		return false, nil
+	} else {
+		return false, fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", deployment)
+	}
 }
