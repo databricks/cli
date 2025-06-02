@@ -215,7 +215,7 @@ func newCpCommand() *cobra.Command {
 		}
 
 		// Check if target path ends with a slash, indicating it should be treated as a directory
-		if strings.HasSuffix(fullTargetPath, "/") || strings.HasSuffix(targetPath, "/") {
+		if strings.HasSuffix(fullTargetPath, "/")  {
 			return c.cpFileToDir(sourcePath, targetPath)
 		}
 
