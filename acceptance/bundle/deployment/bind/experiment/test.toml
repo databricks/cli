@@ -2,10 +2,6 @@ Local = true
 Cloud = true
 BundleConfigTarget = "databricks.yml"
 
-[[Repls]]
-Old = "[0-9]{3,}"
-New = "[NUMID]"
-
 [[Server]]
 Pattern = "POST /api/2.0/mlflow/experiments/create"
 Response.Body = '''

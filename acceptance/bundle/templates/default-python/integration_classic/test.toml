@@ -24,10 +24,6 @@ Old = '\d{5,}'
 New = '[NUMBER]'
 
 [[Repls]]
-Old = '20\d{6}.'
-New = '[DATE]'
-
-[[Repls]]
 Old = 'Standard_D3_v2'
 New = '[NODE_TYPE_ID]'
 
@@ -41,5 +37,7 @@ Old = "python setup.py bdist_wheel"
 New = "python3 setup.py bdist_wheel"
 
 [[Repls]]
-Old = '\?o=\[NUMBER\]'
+# clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[(NUMBER|NUMID)\]'
 New = ''
+Order = 1000

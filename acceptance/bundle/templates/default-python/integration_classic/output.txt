@@ -57,7 +57,7 @@ Resources:
 @@ -45,4 +45,5 @@
          "edit_mode": "UI_LOCKED",
          "format": "MULTI_TASK",
-+        "id": "[NUMBER]",
++        "id": "[NUMID]",
          "job_clusters": [
            {
 @@ -55,5 +56,4 @@
@@ -77,7 +77,7 @@ Resources:
            }
 -        }
 +        },
-+        "url": "[DATABRICKS_URL]/jobs/[NUMBER]"
++        "url": "[DATABRICKS_URL]/jobs/[NUMID]"
        }
      },
 @@ -128,4 +128,5 @@

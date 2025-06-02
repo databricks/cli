@@ -64,7 +64,7 @@ pipelines my id='[UUID]' name='test-pipeline-[UNIQUE_NAME]'
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
-  "last_modified":[TIMESTAMP_MS],
+  "last_modified":[UNIX_TIME_MILLIS],
   "name":"test-pipeline-[UNIQUE_NAME]",
   "pipeline_id":"[UUID]",
   "run_as_user_name":"[USERNAME]",
