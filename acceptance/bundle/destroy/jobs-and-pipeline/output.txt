@@ -9,8 +9,7 @@ Updating deployment state...
 Deployment complete!
 
 === Assert the snapshot file exists
->>> ls .databricks/bundle/default/sync-snapshots
-       1
+>>> find.py --expect 1 ^.databricks/bundle/default/sync-snapshots/[a-z0-9]+\.json
 
 === Assert bundle deployment path is created
 >>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
