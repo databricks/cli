@@ -55,13 +55,8 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 	countDeployed := 0
 
 	err = g.Run(maxPoolSize, func(node tnstate.ResourceNode) {
-		// TODO func(node string) bool
-		// If function returns false, downstream callers are not called
-		// g.Run() should return list of not executed nodes
-		// log.Warnf(ctx, "Processing node=%s", node)
-
-		// TODO: resolve all resource references inside this resource. It should be possible, if graph was constructed correctly.
-		// If it is not possible, return error (and fail this and dependent resources)
+		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
+		// TODO: ensure that config for this node is fully resolved at this point.
 
 		config, ok := b.GetResourceConfig(node.Section, node.Name)
 		if !ok {
@@ -81,7 +76,6 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 			diags.AppendError(err)
 			return
 		}
-		// TODO handle error; count stats
 
 		countDeployed = countDeployed + 1
 	})
@@ -94,8 +88,10 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 		cmdio.LogString(ctx, "Updating deployment state...")
 	}
 
-	_ = b.ResourceDatabase.Finalize()
-	// TODO: handle errors
+	err = b.ResourceDatabase.Finalize()
+	if err != nil {
+		diags.AppendError(err)
+	}
 
 	return diags.Diags
 }
@@ -128,7 +124,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 
 	config := resource.Config()
 
-	// presence of id in the state file implies that the resource was created by us
+	// Presence of id in the state file implies that the resource was created by us
 
 	if oldID == "" {
 		newID, err := resource.DoCreate(ctx)
@@ -150,11 +146,11 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 	if err != nil {
 		return fmt.Errorf("reading state: %w", err)
 	}
+
 	localDiff, err := structdiff.GetStructDiff(savedState, config)
 	if err != nil {
 		return fmt.Errorf("state error: %w", err)
 	}
-	// log.Warnf(ctx, "localDiff: %#v", localDiff)
 
 	localDiffType := tnresources.ChangeTypeNone
 	if len(localDiff) > 0 {
@@ -169,12 +165,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 		return d.Update(ctx, resource, oldID, config)
 	}
 
-	// localDiffType is either None or Partial: we should proceed to remote diff
-
-	// remoteState := DoRead()
-	// compare config and remoteState
-	// OR compare config and state + config and remoteState separately
-	// decide what to do for this: config=X state=Y remoteState=X; should this trigger deploy? probably not.
+	// localDiffType is either None or Partial: we should proceed to fetching remote state and calculate local+remote diff
 
 	log.Warnf(ctx, "Unchanged %s.%s id=%#v", d.section, d.resourceName, oldID)
 	return nil
