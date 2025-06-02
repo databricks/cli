@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/dag"
+	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -25,7 +25,7 @@ func (m *terranovaDestroyMutator) Apply(ctx context.Context, b *bundle.Bundle) d
 	client := b.WorkspaceClient()
 
 	allResources := b.ResourceDatabase.GetAllResources()
-	g := dag.NewGraph[tnstate.ResourceNode]()
+	g := dagrun.NewGraph[tnstate.ResourceNode]()
 
 	for _, node := range allResources {
 		g.AddNode(node)
