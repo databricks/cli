@@ -36,13 +36,11 @@ targets:
     mode: production
     workspace:
       host: [DATABRICKS_URL]
-      # We explicitly specify /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+      # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     permissions:
       - user_name: [USERNAME]
         level: CAN_MANAGE
-    run_as:
-      user_name: [USERNAME]
     variables:
       catalog: main
       schema: default
