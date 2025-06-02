@@ -166,16 +166,6 @@ func (db *TerranovaState) unlockedSave() error {
 	return os.WriteFile(db.Path, data, 0o600)
 }
 
-func (r ResourceNode) Less(other ResourceNode) bool {
-	if r.Section < other.Section {
-		return true
-	}
-	if r.Section > other.Section {
-		return false
-	}
-	return r.Name < other.Name
-}
-
 func (r ResourceNode) String() string {
 	return r.Section + "." + r.Name + "#" + r.ID
 }

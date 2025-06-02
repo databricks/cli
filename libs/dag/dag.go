@@ -2,32 +2,28 @@ package dag
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 )
 
-type Lessable[T comparable] interface {
-	comparable
-	Less(T) bool
-}
-
-type adjEdge[N Lessable[N]] struct {
+type adjEdge[N comparable] struct {
 	to    N
 	label string
 }
 
-type Graph[N Lessable[N]] struct {
-	adj map[N][]adjEdge[N]
+type Graph[N comparable] struct {
+	adj   map[N][]adjEdge[N]
+	nodes []N // maintains insertion order of added nodes
 }
 
-func NewGraph[N Lessable[N]]() *Graph[N] {
+func NewGraph[N comparable]() *Graph[N] {
 	return &Graph[N]{adj: make(map[N][]adjEdge[N])}
 }
 
 func (g *Graph[N]) AddNode(n N) {
 	if _, ok := g.adj[n]; !ok {
 		g.adj[n] = nil
+		g.nodes = append(g.nodes, n)
 	}
 }
 
@@ -41,7 +37,7 @@ func (g *Graph[N]) AddDirectedEdge(from, to N, label string) error {
 	return nil
 }
 
-type CycleError[N Lessable[N]] struct {
+type CycleError[N comparable] struct {
 	Nodes []N
 	Edges []string
 }
@@ -81,18 +77,8 @@ func (g *Graph[N]) indegrees() map[N]int {
 }
 
 func (g *Graph[N]) DetectCycle() error {
-	// 1. sort every adjacency list once
-	for k, outs := range g.adj {
-		sort.Slice(outs, func(i, j int) bool { return outs[i].to.Less(outs[j].to) })
-		g.adj[k] = outs
-	}
-
-	// 2. sorted list of roots
-	roots := make([]N, 0, len(g.adj))
-	for v := range g.adj {
-		roots = append(roots, v)
-	}
-	sort.Slice(roots, func(i, j int) bool { return roots[i].Less(roots[j]) })
+	// Build list of roots in insertion order
+	roots := g.nodes
 
 	const (
 		white = 0
@@ -181,13 +167,8 @@ func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
 		}()
 	}
 
-	// stable initial-ready order
-	keys := make([]N, 0, len(in))
-	for k := range in {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool { return keys[i].Less(keys[j]) })
-	for _, n := range keys {
+	// stable initial-ready order based on insertion order
+	for _, n := range g.nodes {
 		if in[n] == 0 {
 			ready <- n
 		}
