@@ -1,4 +1,4 @@
-package dag
+package dagrun
 
 type stack[T any] struct{ data []T }
 

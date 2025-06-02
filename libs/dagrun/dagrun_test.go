@@ -1,4 +1,4 @@
-package dag
+package dagrun
 
 import (
 	"fmt"
