@@ -38,5 +38,3 @@ my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl
 >>> jq .path
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code_2-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code_2-0.0.1-py3-none-any.whl"

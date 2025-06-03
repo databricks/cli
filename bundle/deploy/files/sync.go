@@ -27,12 +27,16 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
 	}
 
+	// We used to delete __pycache__ and build and most of the dist, so now we're excluding it manually
+	// TODO: if users include those manually, then we should not exclude it?
+	excludes := append(b.Config.Sync.Exclude, "__pycache__", "build", "dist")
+
 	opts := &sync.SyncOptions{
 		WorktreeRoot: b.WorktreeRoot,
 		LocalRoot:    b.SyncRoot,
 		Paths:        b.Config.Sync.Paths,
 		Include:      includes,
-		Exclude:      b.Config.Sync.Exclude,
+		Exclude:      excludes,
 
 		RemotePath: b.Config.Workspace.FilePath,
 		Host:       b.WorkspaceClient().Config.Host,
