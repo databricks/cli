@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/databricks/cli/libs/structdiff/bundletag"
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 )
 
@@ -20,7 +21,10 @@ const (
 type PathNode struct {
 	prev    *PathNode
 	jsonTag jsontag.JSONTag // For lazy JSON key resolution
-	key     string          // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
+
+	bundleTag bundletag.BundleTag
+
+	key string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index < 0, this describes the type of node (see tagStruct and other consts above)
 	index int
@@ -28,6 +32,10 @@ type PathNode struct {
 
 func (p *PathNode) JSONTag() jsontag.JSONTag {
 	return p.jsonTag
+}
+
+func (p *PathNode) BundleTag() bundletag.BundleTag {
+	return p.bundleTag
 }
 
 func (p *PathNode) IsRoot() bool {
@@ -91,6 +99,10 @@ func (p *PathNode) Field() (string, bool) {
 	return "", false
 }
 
+func (p *PathNode) Parent() *PathNode {
+	return p.prev
+}
+
 // NewIndex creates a new PathNode for an array/slice index.
 func NewIndex(prev *PathNode, index int) *PathNode {
 	if index < 0 {
@@ -113,12 +125,13 @@ func NewMapKey(prev *PathNode, key string) *PathNode {
 
 // NewStructField creates a new PathNode for a struct field.
 // The jsonTag is used for lazy JSON key resolution, and fieldName is used as fallback.
-func NewStructField(prev *PathNode, jsonTag jsontag.JSONTag, fieldName string) *PathNode {
+func NewStructField(prev *PathNode, jsonTag jsontag.JSONTag, bundleTag bundletag.BundleTag, fieldName string) *PathNode {
 	return &PathNode{
-		prev:    prev,
-		jsonTag: jsonTag,
-		key:     fieldName,
-		index:   tagUnresolvedStruct,
+		prev:      prev,
+		jsonTag:   jsonTag,
+		bundleTag: bundleTag,
+		key:       fieldName,
+		index:     tagUnresolvedStruct,
 	}
 }
 

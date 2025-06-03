@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/databricks/cli/libs/structdiff/bundletag"
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 	"github.com/databricks/cli/libs/structdiff/structpath"
 )
@@ -28,7 +29,9 @@ import (
 //
 // ******************************************************************************************************
 
-type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type)
+type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type) error
+
+var ErrSkipWalk = errors.New("skip walk")
 
 // WalkType validates that t is a struct or pointer to one and starts the recursive traversal.
 func WalkType(t reflect.Type, visit VisitTypeFunc) error {
@@ -50,11 +53,17 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 
 	kind := typ.Kind()
 
-	if isScalar(kind) {
-		// Primitive scalar at the leaf – invoke.
-		visit(path, typ)
-		return
+	// if isScalar(kind) {
+	// Primitive scalar at the leaf – invoke.
+	if path != nil {
+		err := visit(path, typ)
+		if err == ErrSkipWalk {
+			return
+		}
 	}
+	// return
+	// }
+	// }
 
 	// We're tracking visited and allowing single repeat to support JobSettings.Tasks.ForEachTask.Task
 	if visitedCount[typ] >= 2 {
@@ -111,7 +120,9 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 			continue
 		}
 		fieldType := sf.Type
-		node := structpath.NewStructField(path, jsonTag, sf.Name)
+
+		bundleTag := bundletag.BundleTag(sf.Tag.Get("bundle"))
+		node := structpath.NewStructField(path, jsonTag, bundleTag, sf.Name)
 		walkTypeValue(node, fieldType, visit, visitedCount)
 	}
 }
