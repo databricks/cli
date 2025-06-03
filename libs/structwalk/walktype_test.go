@@ -145,3 +145,61 @@ func TestTypeRoot(t *testing.T) {
 		nil,
 	)
 }
+
+func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
+	results := []string{}
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) {
+		if path.BundleTag().ReadOnly() {
+			results = append(results, path.DynPath())
+		}
+	})
+	require.NoError(t, err)
+	return results
+}
+
+func TestTypeReadonlyFields(t *testing.T) {
+	readonlyFields := getReadonlyFields(t, reflect.TypeOf(config.Root{}))
+
+	expected := []string{
+		"bundle.mode",
+		"bundle.target",
+		"resources.jobs.*.id",
+		"resources.pipelines.*.id",
+		"workspace.current_user.short_name",
+	}
+
+	for _, v := range expected {
+		assert.Contains(t, readonlyFields, v)
+	}
+}
+
+func TestTypeBundleTag(t *testing.T) {
+	type Foo struct {
+		A string `bundle:"readonly"`
+		B string `bundle:"internal"`
+		C string `bundle:"deprecated"`
+		D string
+		E string `bundle:"internal,readonly"`
+	}
+
+	readonly := []string{}
+	internal := []string{}
+	deprecated := []string{}
+
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) {
+		if path.BundleTag().ReadOnly() {
+			readonly = append(readonly, path.String())
+		}
+		if path.BundleTag().Internal() {
+			internal = append(internal, path.String())
+		}
+		if path.BundleTag().Deprecated() {
+			deprecated = append(deprecated, path.String())
+		}
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{".A", ".E"}, readonly)
+	assert.Equal(t, []string{".B", ".E"}, internal)
+	assert.Equal(t, []string{".C"}, deprecated)
+}

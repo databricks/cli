@@ -83,3 +83,39 @@ func TestValueJobSettings(t *testing.T) {
 		".timeout_seconds":     3600,
 	}, flatten(t, jobSettings))
 }
+
+func TestValueBundleTag(t *testing.T) {
+	type Foo struct {
+		A string `bundle:"readonly"`
+		B string `bundle:"internal"`
+		C string `bundle:"deprecated"`
+		D string
+		E string `bundle:"internal,readonly"`
+	}
+
+	readonly := []string{}
+	internal := []string{}
+	deprecated := []string{}
+
+	err := Walk(Foo{
+		A: "a",
+		B: "b",
+		C: "c",
+		D: "d",
+	}, func(path *structpath.PathNode, value any) {
+		if path.BundleTag().ReadOnly() {
+			readonly = append(readonly, path.String())
+		}
+		if path.BundleTag().Internal() {
+			internal = append(internal, path.String())
+		}
+		if path.BundleTag().Deprecated() {
+			deprecated = append(deprecated, path.String())
+		}
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{".A", ".E"}, readonly)
+	assert.Equal(t, []string{".B", ".E"}, internal)
+	assert.Equal(t, []string{".C"}, deprecated)
+}
