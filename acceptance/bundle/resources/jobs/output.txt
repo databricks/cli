@@ -1,3 +1,4 @@
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -86,12 +87,12 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/reset"
 }
-jobs foo id='[TEST_JOB_ID+0]' name='foo'
+jobs foo id='[NUMID]' name='foo'
 
 === Fetch job ID and verify remote state
->>> [CLI] jobs get [TEST_JOB_ID+0]
+>>> [CLI] jobs get [NUMID]
 {
-  "job_id":[TEST_JOB_ID+0],
+  "job_id":[NUMID],
   "settings": {
     "deployment": {
       "kind":"BUNDLE",
@@ -136,14 +137,14 @@ Destroy complete!
 >>> print_requests
 {
   "body": {
-    "job_id": [TEST_JOB_ID+0]
+    "job_id": [NUMID]
   },
   "method": "POST",
   "path": "/api/2.2/jobs/delete"
 }
 State not found for jobs.foo
 
->>> musterr [CLI] jobs get [TEST_JOB_ID+0]
+>>> musterr [CLI] jobs get [NUMID]
 Error: Not Found
 
 Exit code (musterr): 1
