@@ -93,10 +93,7 @@ func TestValueBundleTag(t *testing.T) {
 		E string `bundle:"internal,readonly"`
 	}
 
-	readonly := []string{}
-	internal := []string{}
-	deprecated := []string{}
-
+	var readonly, internal, deprecated []string
 	err := Walk(Foo{
 		A: "a",
 		B: "b",

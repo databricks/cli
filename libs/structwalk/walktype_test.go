@@ -182,10 +182,7 @@ func TestTypeBundleTag(t *testing.T) {
 		E string `bundle:"internal,readonly"`
 	}
 
-	readonly := []string{}
-	internal := []string{}
-	deprecated := []string{}
-
+	var readonly, internal, deprecated []string
 	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) {
 		if path.BundleTag().ReadOnly() {
 			readonly = append(readonly, path.String())
