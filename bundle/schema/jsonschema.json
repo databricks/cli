@@ -1716,6 +1716,10 @@
                       "description": "The commands to run.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Command"
                     },
+                    "skip_artifact_cleanup": {
+                      "description": "Determines whether to skip cleaning up the .internal folder",
+                      "$ref": "#/$defs/bool"
+                    },
                     "use_legacy_run_as": {
                       "description": "Whether to use the legacy run_as behavior.",
                       "$ref": "#/$defs/bool"
