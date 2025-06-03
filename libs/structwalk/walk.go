@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/databricks/cli/libs/structdiff/jsontag"
+	"github.com/databricks/cli/libs/structdiff/structtag"
 	"github.com/databricks/cli/libs/structdiff/structpath"
 )
 
@@ -117,7 +117,7 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		if tag == "-" {
 			continue // skip fields without json name
 		}
-		jsonTag := jsontag.JSONTag(tag)
+		jsonTag := structtag.JSONTag(tag)
 		fieldVal := s.Field(i)
 		node := structpath.NewStructField(path, jsonTag, sf.Name)
 

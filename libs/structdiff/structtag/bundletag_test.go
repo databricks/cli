@@ -1,4 +1,4 @@
-package bundletag
+package structtag
 
 import (
 	"testing"
