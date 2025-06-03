@@ -21,8 +21,7 @@ func TestCompareVersion(t *testing.T) {
 		{"1.2.3", "1.2.3.0", -1},
 	}
 
-	for _, c := range cases {
-		tc := c // capture
+	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%s_vs_%s", tc.a, tc.b), func(t *testing.T) {
 			got := compareVersion(tc.a, tc.b)
 			require.Equal(t, tc.expect, got)
