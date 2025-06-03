@@ -19,6 +19,10 @@ Deployment complete!
     "value": false
   },
   {
+    "key": "skip_artifacts_cleanup",
+    "value": false
+  },
+  {
     "key": "python_wheel_wrapper_is_set",
     "value": false
   },
@@ -43,6 +47,10 @@ Deployment complete!
   {
     "key": "is_job_path_fallback",
     "value": true
+  },
+  {
+    "key": "skip_artifacts_cleanup",
+    "value": false
   },
   {
     "key": "python_wheel_wrapper_is_set",
