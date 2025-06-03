@@ -32,7 +32,7 @@ Deployment complete!
   "resource_app_count": 0,
   "experimental": {
     "configuration_file_count": 1,
-    "variable_count": 1,
+    "variable_count": 2,
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
     "target_count": 2,
@@ -43,6 +43,10 @@ Deployment complete!
       },
       {
         "key": "artifact_files_is_set",
+        "value": false
+      },
+      {
+        "key": "skip_artifacts_cleanup",
         "value": false
       },
       {
@@ -84,7 +88,7 @@ Deployment complete!
   "resource_app_count": 0,
   "experimental": {
     "configuration_file_count": 1,
-    "variable_count": 1,
+    "variable_count": 2,
     "complex_variable_count": 0,
     "lookup_variable_count": 0,
     "target_count": 2,
@@ -99,6 +103,10 @@ Deployment complete!
       },
       {
         "key": "artifact_dynamic_version_is_set",
+        "value": true
+      },
+      {
+        "key": "skip_artifacts_cleanup",
         "value": true
       },
       {

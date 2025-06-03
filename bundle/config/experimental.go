@@ -32,6 +32,11 @@ type Experimental struct {
 
 	// Python configures loading of Python code defined with 'databricks-bundles' package.
 	Python Python `json:"python,omitempty"`
+
+	// SkipArtifactsCleanup determines whether to skip cleaning up the .internal folder
+	// containing build artifacts such as wheels. When set to true, the .internal folder
+	// and its contents will be preserved after bundle operations complete.
+	SkipArtifactsCleanup bool `json:"skip_artifacts_cleanup,omitempty"`
 }
 
 type Python struct {

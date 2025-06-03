@@ -21,6 +21,13 @@ func (m *cleanUp) Name() string {
 }
 
 func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	skipArtifactsCleanup := b.Config.Experimental != nil && b.Config.Experimental.SkipArtifactsCleanup
+	b.Metrics.AddBoolValue("skip_artifacts_cleanup", skipArtifactsCleanup)
+	if skipArtifactsCleanup {
+		log.Info(ctx, "Skip cleaning up artifacts folder")
+		return nil
+	}
+
 	client, uploadPath, diags := libraries.GetFilerForLibrariesCleanup(ctx, b)
 	if diags.HasError() {
 		return diags
