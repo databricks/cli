@@ -31,7 +31,7 @@ func (p *PathNode) JSONTag() structtag.JSONTag {
 	return p.jsonTag
 }
 
-func (p *PathNode) BundleTag() bundletag.BundleTag {
+func (p *PathNode) BundleTag() structtag.BundleTag {
 	return p.bundleTag
 }
 
@@ -118,7 +118,7 @@ func NewMapKey(prev *PathNode, key string) *PathNode {
 
 // NewStructField creates a new PathNode for a struct field.
 // The jsonTag is used for lazy JSON key resolution, and fieldName is used as fallback.
-func NewStructField(prev *PathNode, jsonTag jsontag.JSONTag, bundleTag structtag.BundleTag, fieldName string) *PathNode {
+func NewStructField(prev *PathNode, jsonTag structtag.JSONTag, bundleTag structtag.BundleTag, fieldName string) *PathNode {
 	return &PathNode{
 		prev:      prev,
 		jsonTag:   jsonTag,

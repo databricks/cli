@@ -123,9 +123,9 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 			continue
 		}
 
-		tag := structtag.JSONTag(sf.Tag.Get("json"))
+		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 		bundleTag := structtag.BundleTag(sf.Tag.Get("bundle"))
-		node := structpath.NewStructField(path, tag, bundleTag, sf.Name)
+		node := structpath.NewStructField(path, jsonTag, bundleTag, sf.Name)
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
@@ -133,7 +133,7 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 		zero2 := v2Field.IsZero()
 
 		if zero1 || zero2 {
-			if tag.OmitEmpty() {
+			if jsonTag.OmitEmpty() {
 				if zero1 {
 					if !slices.Contains(forced1, sf.Name) {
 						v1Field = reflect.ValueOf(nil)
