@@ -6,8 +6,8 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/databricks/cli/libs/structdiff/structtag"
 	"github.com/databricks/cli/libs/structdiff/structpath"
+	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 // VisitFunc is invoked for every scalar (int, uint, float, string, bool) field encountered while walking v.
