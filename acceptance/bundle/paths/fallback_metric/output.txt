@@ -19,7 +19,7 @@ Deployment complete!
     "value": false
   },
   {
-    "key": "skip_artifacts_cleanup",
+    "key": "skip_artifact_cleanup",
     "value": false
   },
   {
@@ -49,7 +49,7 @@ Deployment complete!
     "value": true
   },
   {
-    "key": "skip_artifacts_cleanup",
+    "key": "skip_artifact_cleanup",
     "value": false
   },
   {

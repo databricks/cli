@@ -40,7 +40,7 @@ A common practice is to use a username or principal name in this path, i.e. use
     "target_count": 2,
     "bool_values": [
       {
-        "key": "skip_artifacts_cleanup",
+        "key": "skip_artifact_cleanup",
         "value": false
       },
       {
@@ -88,7 +88,7 @@ A common practice is to use a username or principal name in this path, i.e. use
     "target_count": 2,
     "bool_values": [
       {
-        "key": "skip_artifacts_cleanup",
+        "key": "skip_artifact_cleanup",
         "value": false
       },
       {

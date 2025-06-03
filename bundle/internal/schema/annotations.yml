@@ -75,7 +75,7 @@ github.com/databricks/cli/bundle/config.Experimental:
   "scripts":
     "description": |-
       The commands to run.
-  "skip_artifacts_cleanup":
+  "skip_artifact_cleanup":
     "description": |-
       Determines whether to skip cleaning up the .internal folder
   "use_legacy_run_as":

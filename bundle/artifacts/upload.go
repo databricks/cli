@@ -26,8 +26,8 @@ func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diags
 	}
 
-	skipArtifactsCleanup := b.Config.Experimental != nil && b.Config.Experimental.SkipArtifactsCleanup
-	b.Metrics.AddBoolValue("skip_artifacts_cleanup", skipArtifactsCleanup)
+	skipArtifactsCleanup := b.Config.Experimental != nil && b.Config.Experimental.SkipArtifactCleanup
+	b.Metrics.AddBoolValue("skip_artifact_cleanup", skipArtifactsCleanup)
 	if skipArtifactsCleanup {
 		log.Info(ctx, "Skip cleaning up artifacts folder")
 	} else {

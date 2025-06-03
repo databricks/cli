@@ -34,7 +34,7 @@ Deployment complete!
     "target_count": 2,
     "bool_values": [
       {
-        "key": "skip_artifacts_cleanup",
+        "key": "skip_artifact_cleanup",
         "value": false
       },
       {
@@ -82,7 +82,7 @@ Deployment complete!
     "target_count": 2,
     "bool_values": [
       {
-        "key": "skip_artifacts_cleanup",
+        "key": "skip_artifact_cleanup",
         "value": false
       },
       {

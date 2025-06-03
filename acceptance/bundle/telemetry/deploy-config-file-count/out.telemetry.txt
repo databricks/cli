@@ -34,7 +34,7 @@
           "target_count": 1,
           "bool_values": [
             {
-              "key": "skip_artifacts_cleanup",
+              "key": "skip_artifact_cleanup",
               "value": false
             },
             {

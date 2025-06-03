@@ -1,5 +1,5 @@
 experimental:
-  skip_artifacts_cleanup: true
+  skip_artifact_cleanup: true
 
 resources:
   jobs:

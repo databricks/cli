@@ -9,6 +9,6 @@
 ### CLI
 
 ### Bundles
-* Added `experimental.skip_artifacts_cleanup` flag ([#2980](https://github.com/databricks/cli/pull/2980))
+* Added `experimental.skip_artifact_cleanup` flag ([#2980](https://github.com/databricks/cli/pull/2980))
 
 ### API Changes
