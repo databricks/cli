@@ -25,3 +25,20 @@ Deployment complete!
 
 === No calls to delete internal folder expected
 >>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+
+=== Expected 2 calls to create artifacts folder (because 2 deploys were done)
+>>> jq -s .[] | select(.path=="/api/2.0/workspace/mkdirs") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}

@@ -21,25 +21,24 @@ func (m *cleanUp) Name() string {
 }
 
 func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	skipArtifactsCleanup := b.Config.Experimental != nil && b.Config.Experimental.SkipArtifactsCleanup
-	b.Metrics.AddBoolValue("skip_artifacts_cleanup", skipArtifactsCleanup)
-	if skipArtifactsCleanup {
-		log.Info(ctx, "Skip cleaning up artifacts folder")
-		return nil
-	}
-
 	client, uploadPath, diags := libraries.GetFilerForLibrariesCleanup(ctx, b)
 	if diags.HasError() {
 		return diags
 	}
 
-	// We intentionally ignore the error because it is not critical to the deployment
-	err := client.Delete(ctx, libraries.InternalDirName, filer.DeleteRecursively)
-	if err != nil {
-		log.Debugf(ctx, "failed to delete %s: %v", uploadPath, err)
+	skipArtifactsCleanup := b.Config.Experimental != nil && b.Config.Experimental.SkipArtifactsCleanup
+	b.Metrics.AddBoolValue("skip_artifacts_cleanup", skipArtifactsCleanup)
+	if skipArtifactsCleanup {
+		log.Info(ctx, "Skip cleaning up artifacts folder")
+	} else {
+		// We intentionally ignore the error because it is not critical to the deployment
+		err := client.Delete(ctx, libraries.InternalDirName, filer.DeleteRecursively)
+		if err != nil {
+			log.Debugf(ctx, "failed to delete %s: %v", uploadPath, err)
+		}
 	}
 
-	err = client.Mkdir(ctx, libraries.InternalDirName)
+	err := client.Mkdir(ctx, libraries.InternalDirName)
 	if err != nil {
 		return diag.Errorf("unable to create directory for %s: %v", uploadPath, err)
 	}

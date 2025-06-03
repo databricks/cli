@@ -9,4 +9,7 @@ trace $CLI bundle deploy
 title "No calls to delete internal folder expected"
 trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' out.requests.txt
 
+title "Expected 2 calls to create artifacts folder (because 2 deploys were done)"
+trace jq -s '.[] | select(.path=="/api/2.0/workspace/mkdirs") | select(.body.path | test(".*/artifacts/.internal"))' out.requests.txt
+
 rm out.requests.txt
