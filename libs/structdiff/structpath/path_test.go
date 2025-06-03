@@ -3,12 +3,7 @@ package structpath
 import (
 	"testing"
 
-<<<<<<< HEAD
 	"github.com/databricks/cli/libs/structdiff/structtag"
-=======
-	"github.com/databricks/cli/libs/structdiff/structtag"
-	"github.com/databricks/cli/libs/structdiff/structtag"
->>>>>>> a2c9980a (Track structtag during Walk and WalkType)
 	"github.com/stretchr/testify/assert"
 )
 
