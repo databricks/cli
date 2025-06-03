@@ -154,8 +154,8 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	type Outer struct {
-		Inner Inner
-		MapInner map[string]*Inner
+		Inner      Inner
+		MapInner   map[string]*Inner
 		SliceInner []Inner
 
 		C string
@@ -163,9 +163,10 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) {
 		visited = append(visited, path.String())
 	})
+	require.NoError(t, err)
 
 	assert.Equal(t, []string{
 		".Inner",
