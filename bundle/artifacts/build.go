@@ -38,8 +38,6 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		})
 	}
 
-	cleanupPythonDistBuild(ctx, b)
-
 	for _, artifactName := range utils.SortedKeys(b.Config.Artifacts) {
 		a := b.Config.Artifacts[artifactName]
 

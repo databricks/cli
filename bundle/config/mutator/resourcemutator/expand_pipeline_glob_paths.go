@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/patchwheel"
 )
 
 type expandPipelineGlobPaths struct{}
@@ -46,6 +47,8 @@ func (m *expandPipelineGlobPaths) expandLibrary(dir string, v dyn.Value) ([]dyn.
 		if len(matches) == 0 {
 			return []dyn.Value{v}, nil
 		}
+
+		matches = patchwheel.FilterLatestWheels(context.Background(), matches)
 
 		// Emit a new value for each match.
 		var ev []dyn.Value

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/patchwheel"
 )
 
 func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
@@ -71,6 +72,12 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 				// Drop this value from the list; this does not matter since we've raised an error anyway
 				return v, nil
 			}
+
+			// Note, we're applying this for all artifact types, not just "whl".
+			// Rationale:
+			//  1. type is optional
+			//  2. if you have wheels in other artifact type, maybe you still want the filter logic? impossible to say.
+			matches = patchwheel.FilterLatestWheels(ctx, matches)
 
 			if len(matches) == 1 && matches[0] == source {
 				// No glob expansion was performed.
