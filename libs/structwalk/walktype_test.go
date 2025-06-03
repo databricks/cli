@@ -14,6 +14,9 @@ import (
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
 	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) {
+		for typ.Kind() == reflect.Pointer {
+			typ = typ.Elem()
+		}
 		if isScalar(typ.Kind()) {
 			results[path.String()] = reflect.Zero(typ).Interface()
 		}

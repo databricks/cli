@@ -8,16 +8,16 @@ import (
 	"github.com/databricks/cli/libs/structdiff/structpath"
 )
 
-// VisitTypeFunc is invoked for every scalar (int, uint, float, string, bool) field type encountered while walking t.
+// VisitTypeFunc is invoked for fields encountered while walking t. This includes both leaf nodes as well as any
+// intermediate nodes encountered while walking the struct tree.
 //
 //   path         PathNode representing the JSON-style path to the field.
 //   typ          the field's type – if the field is a pointer to a scalar the pointer type is preserved;
 //                the callback receives the actual type (e.g., *string, *int, etc.).
 //
 // NOTE: Fields lacking a json tag or tagged as "-" are ignored entirely.
-//       Composite kinds (struct, slice/array, map, interface, function, chan, etc.) are *not* visited, but the walk
-//       traverses them to reach nested scalar field types (except interface & func). Only maps with string keys are
-//       traversed so that paths stay JSON-like.
+//       Dynamic types like func, chan, interface, etc. are *not* visited.
+//       Only maps with string keys are traversed so that paths stay JSON-like.
 //
 // The walk is depth-first and deterministic (map keys are sorted lexicographically).
 //
@@ -48,14 +48,16 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 		return
 	}
 
+	// Call visit on all nodes except the root node. We call visit before
+	// dereferencing pointers to ensure that the visit callback receives
+	// the actual type of the field.
+	if !path.IsRoot() {
+		visit(path, typ)
+	}
+
 	// Dereference pointers.
 	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
-	}
-
-	// Call visit on all nodes except the root node.
-	if !path.IsRoot() {
-		visit(path, typ)
 	}
 
 	// Return early if we're at a leaf scalar.
