@@ -48,7 +48,7 @@ func (tag JSONTag) hasOption(option string) bool {
 	return hasOption(s, option)
 }
 
-func hasOption(tag string, option string) bool {
+func hasOption(tag, option string) bool {
 	// Walk the comma-separated options
 	for len(tag) > 0 {
 		opt := tag
