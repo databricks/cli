@@ -9,6 +9,6 @@
 ### CLI
 
 ### Bundles
-* Add an experimental ptoject template for Lakeflow Declarative Pipelines ([#2959](https://github.com/databricks/cli/pull/2959))
+* Add an experimental project template for Lakeflow Declarative Pipelines ([#2959](https://github.com/databricks/cli/pull/2959))
 
 ### API Changes
