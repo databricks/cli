@@ -48,11 +48,19 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 		return
 	}
 
-	kind := typ.Kind()
+	// Dereference pointers.
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
 
-	if isScalar(kind) {
-		// Primitive scalar at the leaf – invoke.
+	// Call visit on all nodes except the root node.
+	if !path.IsRoot() {
 		visit(path, typ)
+	}
+
+	// Return early if we're at a leaf scalar.
+	kind := typ.Kind()
+	if isScalar(kind) {
 		return
 	}
 
@@ -64,9 +72,6 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 	visitedCount[typ]++
 
 	switch kind {
-	case reflect.Pointer:
-		walkTypeValue(path, typ.Elem(), visit, visitedCount)
-
 	case reflect.Struct:
 		walkTypeStruct(path, typ, visit, visitedCount)
 

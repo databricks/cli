@@ -44,7 +44,7 @@ type Types struct {
 	FuncField func() string `json:"-"`
 	ChanField chan string   `json:"-"`
 
-	// List of field names to be force-sent even if they hold zero values.
+	// // List of field names to be force-sent even if they hold zero values.
 	ForceSendFields []string `json:"-"`
 }
 
