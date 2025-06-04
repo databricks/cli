@@ -118,6 +118,10 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 				}
 			}
 
+			// Need to convert relative path to absolute so that paths collected above match paths collected here
+			// artifacts.*.files[*].source are relative to bundle root, not sync root AFAIK
+			source = filepath.Join(b.BundleRootPath, source)
+
 			libs[source] = append(libs[source], configLocation{
 				configPath: p.Append(dyn.Key("remote_path")),
 				location:   v.Location(),
