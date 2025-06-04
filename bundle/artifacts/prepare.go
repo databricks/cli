@@ -52,6 +52,11 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		if artifact.Type == "whl" {
 			if artifact.BuildCommand == "" && len(artifact.Files) == 0 {
 				artifact.BuildCommand = python.GetExecutable() + " setup.py bdist_wheel"
+				artifact.Files = []config.ArtifactFile{
+					{
+						Source: "dist/*.whl",
+					},
+				}
 			}
 
 			// Wheel builds write to `./dist`. Pick up all wheel files by default if nothing is specified.
