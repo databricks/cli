@@ -19,6 +19,7 @@ func TestCompareVersion(t *testing.T) {
 		{"1.2.3a", "1.2.3", 1},  // non-numeric suffix greater lexicographically
 		{"1.2.3.1", "1.2.3", 1}, // leftover tokens make version greater
 		{"1.2.3", "1.2.3.0", -1},
+		{"0.0.1+20250604.74804", "0.0.1+20250604.74809", -1},
 	}
 
 	for _, tc := range cases {
