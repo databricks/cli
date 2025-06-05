@@ -178,9 +178,10 @@ func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
 	}
 
 	for _, resource := range r.AllResources() {
-		_, ok := levelsMap[resource.Description.PluralName]
-		if !slices.Contains(unsupportedResources, resource.Description.PluralName) && !ok {
-			assert.Fail(t, fmt.Sprintf("Resource %s is not explicitly defined in levelsMap or unsupportedResources", resource.Description.PluralName))
+		pluralName := resource.Description.PluralName()
+		_, ok := levelsMap[pluralName]
+		if !slices.Contains(unsupportedResources, pluralName) && !ok {
+			assert.Fail(t, fmt.Sprintf("Resource %s is not explicitly defined in levelsMap or unsupportedResources", pluralName))
 		}
 	}
 }

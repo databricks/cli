@@ -25,7 +25,7 @@ func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
 	for k, ref := range resources.Completions(b) {
-		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
+		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle(), ref.Resource.GetName())
 		inv[title] = k
 	}
 

@@ -87,7 +87,7 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 	// Collect set of includes resource types
 	var types []string
 	for _, group := range r.AllResources() {
-		types = append(types, group.Description.PluralName)
+		types = append(types, group.Description.PluralName())
 	}
 
 	for i := range rt.NumField() {
@@ -111,7 +111,7 @@ func TestSupportedResources(t *testing.T) {
 		field := typ.Field(i)
 		jsonTags := strings.Split(field.Tag.Get("json"), ",")
 		pluralName := jsonTags[0]
-		assert.Equal(t, actual[pluralName].PluralName, pluralName)
+		assert.Equal(t, actual[pluralName].PluralName(), pluralName)
 	}
 }
 

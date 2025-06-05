@@ -45,13 +45,7 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 }
 
 func (*Schema) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:          "schema",
-		PluralName:            "schemas",
-		SingularTitle:         "Schema",
-		PluralTitle:           "Schemas",
-		TerraformResourceName: "databricks_schema",
-	}
+	return ResourceDescription{SingularName: "schema"}
 }
 
 func (s *Schema) TerraformResourceName() string {

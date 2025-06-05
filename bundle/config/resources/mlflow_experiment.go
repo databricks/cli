@@ -51,13 +51,7 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 }
 
 func (j *MlflowExperiment) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:          "experiment",
-		PluralName:            "experiments",
-		SingularTitle:         "Experiment",
-		PluralTitle:           "Experiments",
-		TerraformResourceName: "databricks_mlflow_experiment",
-	}
+	return ResourceDescription{SingularName: "experiment"}
 }
 
 func (s *MlflowExperiment) TerraformResourceName() string {
