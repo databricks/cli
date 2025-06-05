@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/libs/structdiff/structpath"
 )
 
-// VisitTypeFunc is invoked for fields encountered while walking t. This includes both leaf nodes as well as any
+// VisitTypeFunc is invoked for fields encountered while walking typ. This includes both leaf nodes as well as any
 // intermediate nodes encountered while walking the struct tree.
 //
 //   path         PathNode representing the JSON-style path to the field.
@@ -22,8 +22,8 @@ import (
 // The walk is depth-first and deterministic (map keys are sorted lexicographically).
 //
 // Example:
-//   err := structwalk.WalkType(reflect.TypeOf(cfg), func(path *structpath.PathNode, t reflect.Type) {
-//       fmt.Printf("%s = %v\n", path.String(), t)
+//   err := structwalk.WalkType(reflect.TypeOf(cfg), func(path *structpath.PathNode, typ reflect.Type) {
+//       fmt.Printf("%s = %v\n", path.String(), typ)
 //   })
 //
 // ******************************************************************************************************
@@ -48,12 +48,10 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 		return
 	}
 
-	// Call visit on all nodes except the root node. We call visit before
+	// Call visit on all nodes including the root node. We call visit before
 	// dereferencing pointers to ensure that the visit callback receives
 	// the actual type of the field.
-	if !path.IsRoot() {
-		visit(path, typ)
-	}
+	visit(path, typ)
 
 	// Dereference pointers.
 	for typ.Kind() == reflect.Pointer {

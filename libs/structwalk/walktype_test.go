@@ -35,6 +35,10 @@ func TestTypeNil(t *testing.T) {
 	assert.Equal(t, map[string]any{}, getScalarFields(t, reflect.TypeOf(nil)))
 }
 
+func TestTypeScalar(t *testing.T) {
+	assert.Equal(t, map[string]any{"": 0}, getScalarFields(t, reflect.TypeOf(5)))
+}
+
 func TestTypes(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		".ArrayString[*]":     "",
@@ -164,6 +168,9 @@ func TestWalkTypeVisited(t *testing.T) {
 
 	var visited []string
 	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) {
+		if path == nil {
+			return
+		}
 		visited = append(visited, path.String())
 	})
 	require.NoError(t, err)
