@@ -148,8 +148,30 @@ func (p *PythonApp) runCommand(args []string) error {
 	if err != nil {
 		return err
 	}
-	go io.Copy(os.Stdout, cmd.Stdout())
-	go io.Copy(os.Stderr, cmd.Stderr())
 
-	return cmd.Wait()
+	// Create error channels to capture io.Copy errors
+	stdoutErr := make(chan error, 1)
+	stderrErr := make(chan error, 1)
+
+	go func() {
+		_, err := io.Copy(os.Stdout, cmd.Stdout())
+		stdoutErr <- err
+	}()
+	go func() {
+		_, err := io.Copy(os.Stderr, cmd.Stderr())
+		stderrErr <- err
+	}()
+
+	// Wait for command completion
+	cmdErr := cmd.Wait()
+
+	// Check for io.Copy errors
+	if err := <-stdoutErr; err != nil {
+		return fmt.Errorf("error copying stdout: %w", err)
+	}
+	if err := <-stderrErr; err != nil {
+		return fmt.Errorf("error copying stderr: %w", err)
+	}
+
+	return cmdErr
 }
