@@ -68,10 +68,6 @@ func (j *ModelServingEndpoint) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s *ModelServingEndpoint) TerraformResourceName() string {
-	return "databricks_model_serving"
-}
-
 func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

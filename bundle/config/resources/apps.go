@@ -67,10 +67,6 @@ func (*App) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (a *App) TerraformResourceName() string {
-	return "databricks_app"
-}
-
 func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return

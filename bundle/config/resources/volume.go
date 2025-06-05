@@ -62,10 +62,6 @@ func (*Volume) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (v *Volume) TerraformResourceName() string {
-	return "databricks_volume"
-}
-
 func (v *Volume) InitializeURL(baseURL url.URL) {
 	if v.ID == "" {
 		return

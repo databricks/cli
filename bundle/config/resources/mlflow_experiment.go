@@ -60,10 +60,6 @@ func (j *MlflowExperiment) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s *MlflowExperiment) TerraformResourceName() string {
-	return "databricks_mlflow_experiment"
-}
-
 func (s *MlflowExperiment) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
