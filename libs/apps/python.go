@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -49,7 +50,7 @@ func NewPythonApp(ctx context.Context, config *Config, spec *AppSpec) *PythonApp
 	if config.DebugPort == "" {
 		config.DebugPort = DEBUG_PORT
 	}
-	return &PythonApp{config: config, spec: spec}
+	return &PythonApp{ctx: ctx, config: config, spec: spec}
 }
 
 // PrepareEnvironment creates a Python virtual environment using uv and installs required dependencies.
@@ -142,6 +143,13 @@ func (p *PythonApp) runCommand(args []string) error {
 	if err != nil {
 		return err
 	}
-	_, err = e.Exec(p.ctx, strings.Join(args, " "))
-	return err
+
+	cmd, err := e.StartCommand(p.ctx, strings.Join(args, " "))
+	if err != nil {
+		return err
+	}
+	go io.Copy(os.Stdout, cmd.Stdout())
+	go io.Copy(os.Stderr, cmd.Stderr())
+
+	return cmd.Wait()
 }
