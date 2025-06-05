@@ -235,7 +235,17 @@ func getProfileName(authArguments *auth.AuthArguments) string {
 
 func getClusterID(ctx context.Context, profileName string, cfg *config.Config, configureCluster bool, configPath string) (string, error) {
 	if !configureCluster {
-		return readClusterIDFromConfig(configPath, profileName)
+		configFile, err := config.LoadFile(configPath)
+		if err != nil {
+			return "", err
+		}
+
+		section, err := configFile.GetSection(profileName)
+		if err != nil {
+			return "", err
+		}
+
+		return section.Key("cluster_id").String(), nil
 	}
 
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
@@ -248,19 +258,4 @@ func getClusterID(ctx context.Context, profileName string, cfg *config.Config, c
 		return "", err
 	}
 	return configuredClusterID, nil
-}
-
-func readClusterIDFromConfig(configPath string, profileName string) (string, error) {
-	// Load cluster ID from the config file on disk.
-	configFile, err := config.LoadFile(configPath)
-	if err != nil {
-		return "", err
-	}
-
-	section, err := configFile.GetSection(profileName)
-	if err != nil {
-		return "", err
-	}
-
-	return section.Key("cluster_id").String(), nil
 }
