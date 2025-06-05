@@ -205,7 +205,7 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 
 		if len(resources) > 0 {
 			resourceGroups = append(resourceGroups, ResourceGroup{
-				GroupName: group.Description.PluralTitle,
+				GroupName: group.Description.PluralTitle(),
 				Resources: resources,
 			})
 		}

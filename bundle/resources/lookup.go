@@ -58,7 +58,7 @@ func References(b *bundle.Bundle, filters ...Filter) (Map, Map) {
 		for k, v := range group.Resources {
 			ref := Reference{
 				Key:         k,
-				KeyWithType: fmt.Sprintf("%s.%s", group.Description.PluralName, k),
+				KeyWithType: fmt.Sprintf("%s.%s", group.Description.PluralName(), k),
 				Description: group.Description,
 				Resource:    v,
 			}

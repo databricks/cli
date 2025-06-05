@@ -72,13 +72,7 @@ func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 }
 
 func (*Dashboard) ResourceDescription() ResourceDescription {
-	return ResourceDescription{
-		SingularName:          "dashboard",
-		PluralName:            "dashboards",
-		SingularTitle:         "Dashboard",
-		PluralTitle:           "Dashboards",
-		TerraformResourceName: "databricks_dashboard",
-	}
+	return ResourceDescription{SingularName: "dashboard"}
 }
 
 func (*Dashboard) TerraformResourceName() string {

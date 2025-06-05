@@ -22,7 +22,7 @@ func (i *interpolateVariables) Apply(ctx context.Context, b *bundle.Bundle) diag
 
 	tfToConfigMap := map[string]string{}
 	for k, r := range config.SupportedResources() {
-		tfToConfigMap[r.TerraformResourceName] = k
+		tfToConfigMap[r.TerraformResourceName()] = k
 	}
 
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
