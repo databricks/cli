@@ -87,21 +87,22 @@ func TestSetAccountId(t *testing.T) {
 }
 
 func TestLoginPreservesClusterID(t *testing.T) {
-	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background())
-
-	err := setHostAndAccountId(ctx, profile.DefaultProfiler, "cluster-profile", &authArguments, []string{})
-	require.NoError(t, err)
-	assert.Equal(t, "https://www.host2.com", authArguments.Host)
-
-	cfg := config.Config{
-		Host:      authArguments.Host,
-		AccountID: authArguments.AccountID,
-		AuthType:  "databricks-cli",
-	}
-
-	clusterID, err := getClusterID(ctx, "cluster-profile", &cfg, false, "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "cluster-profile", &config.Config{}, false, "./testdata/.databrickscfg")
 	require.NoError(t, err)
 	assert.Equal(t, "cluster-from-config", clusterID)
+}
+
+func TestLoginPreservesClusterIDWithEmptyHostAndAccountID(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "no-profile", &config.Config{}, false, "./testdata/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, "", clusterID)
+}
+
+func TestLoginNoClusterIDWithAccountProfile(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "account-profile", &config.Config{}, false, "./testdata/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, "", clusterID)
 }

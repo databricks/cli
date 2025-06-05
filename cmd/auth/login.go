@@ -137,6 +137,10 @@ depends on the existing profiles you have set in your configuration file
 		}
 
 		cfg.ClusterID, err = getClusterID(ctx, profileName, &cfg, configureCluster, defaultConfigPath)
+		if err != nil {
+			return err
+		}
+
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:   profileName,
@@ -238,6 +242,10 @@ func getClusterID(ctx context.Context, profileName string, cfg *config.Config, c
 		configFile, err := config.LoadFile(configPath)
 		if err != nil {
 			return "", err
+		}
+
+		if !configFile.HasSection(profileName) {
+			return "", nil
 		}
 
 		section, err := configFile.GetSection(profileName)
