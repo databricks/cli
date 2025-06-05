@@ -14,21 +14,21 @@ func TestBundleTagMethods(t *testing.T) {
 		isDeprecated bool
 	}{
 		// only one annotation.
-		{"readonly", true, false, false},
-		{"internal", false, true, false},
-		{"deprecated", false, false, true},
+		{tag: "readonly", isReadOnly: true},
+		{tag: "internal", isInternal: true},
+		{tag: "deprecated", isDeprecated: true},
 
 		// multiple annotations.
-		{"readonly,internal", true, true, false},
-		{"readonly,deprecated", true, false, true},
-		{"internal,deprecated", false, true, true},
-		{"readonly,internal,deprecated", true, true, true},
+		{tag: "readonly,internal", isReadOnly: true, isInternal: true},
+		{tag: "readonly,deprecated", isReadOnly: true, isDeprecated: true},
+		{tag: "internal,deprecated", isInternal: true, isDeprecated: true},
+		{tag: "readonly,internal,deprecated", isReadOnly: true, isInternal: true, isDeprecated: true},
 
 		// unknown annotations are ignored.
-		{"something", false, false, false},
-		{"-", false, false, false},
-		{"name,string", false, false, false},
-		{"weird,whatever,readonly,foo", true, false, false},
+		{tag: "something"},
+		{tag: "-"},
+		{tag: "name,string"},
+		{tag: "weird,whatever,readonly,foo", isReadOnly: true},
 	}
 
 	for _, test := range tests {
