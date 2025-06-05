@@ -167,7 +167,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 
 	// localDiffType is either None or Partial: we should proceed to fetching remote state and calculate local+remote diff
 
-	log.Warnf(ctx, "Unchanged %s.%s id=%#v", d.section, d.resourceName, oldID)
+	log.Debugf(ctx, "Unchanged %s.%s id=%#v", d.section, d.resourceName, oldID)
 	return nil
 }
 
