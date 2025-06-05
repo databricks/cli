@@ -14,9 +14,9 @@ type ArtifactFile struct {
 	Source string `json:"source"`
 
 	// Patched is populated if DynamicVersion is set and patching was successful
-	Patched string `json:"patched" bundle:"readonly"`
+	Patched string `json:"patched,omitempty" bundle:"readonly"`
 
-	RemotePath string `json:"remote_path" bundle:"readonly"`
+	RemotePath string `json:"remote_path,omitempty" bundle:"readonly"`
 }
 
 // Artifact defines a single local code artifact that can be
