@@ -11,7 +11,7 @@ type ResourceDescription struct {
 // PluralName returns the plural snake-case identifier of the resource type.
 // Currently all resource names pluralise by suffixing an "s".
 func (r ResourceDescription) PluralName() string {
-	return pluralize(r.SingularName)
+	return r.SingularName + "s"
 }
 
 // SingularTitle returns a human-readable singular title (e.g. "Model Serving Endpoint").
@@ -32,14 +32,6 @@ func (r ResourceDescription) TerraformResourceName() string {
 	default:
 		return "databricks_" + r.SingularName
 	}
-}
-
-// pluralize performs the naïve pluralisation by appending "s" unless already present.
-func pluralize(s string) string {
-	if strings.HasSuffix(s, "s") {
-		return s
-	}
-	return s + "s"
 }
 
 // humanize converts snake_case to Title Case with spaces.
