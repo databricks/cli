@@ -1,4 +1,4 @@
-default: tidy fmt lint ws
+default: tidy ws links fmt lint
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -22,6 +22,9 @@ fmt:
 
 ws:
 	./tools/validate_whitespace.py
+
+links:
+	./tools/update_github_links.py
 
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
@@ -72,4 +75,4 @@ generate:
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws
+.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links
