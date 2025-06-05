@@ -1,4 +1,4 @@
-default: tidy ws links fmt lint
+default: checks fmt lint
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -25,6 +25,9 @@ ws:
 
 links:
 	./tools/update_github_links.py
+
+# Checks other than 'fmt' and 'lint'; these are fast, so can be run first
+checks: tidy ws links
 
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
@@ -75,4 +78,4 @@ generate:
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links
+.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks
