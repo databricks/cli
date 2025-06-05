@@ -60,19 +60,7 @@ Resources:
 +        "id": "[NUMID]",
          "job_clusters": [
            {
-@@ -60,5 +61,4 @@
-               "data_security_mode": "SINGLE_USER",
-               "node_type_id": "[NODE_TYPE_ID]",
--              "num_workers": 0,
-               "spark_version": "15.4.x-scala2.12"
-             }
-@@ -67,5 +67,4 @@
-         "max_concurrent_runs": 4,
-         "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
--        "permissions": [],
-         "queue": {
-           "enabled": true
-@@ -118,5 +117,6 @@
+@@ -118,5 +119,6 @@
              "unit": "DAYS"
            }
 -        }
@@ -80,27 +68,20 @@ Resources:
 +        "url": "[DATABRICKS_URL]/jobs/[NUMID]"
        }
      },
-@@ -133,4 +133,5 @@
+@@ -133,4 +135,5 @@
          "development": true,
          "edition": "ADVANCED",
 +        "id": "[UUID]",
          "libraries": [
            {
-@@ -141,6 +142,6 @@
-         ],
+@@ -142,5 +145,6 @@
          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
--        "permissions": [],
+         "permissions": [],
 -        "schema": "project_name_[UNIQUE_NAME]_dev"
 +        "schema": "project_name_[UNIQUE_NAME]_dev",
 +        "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
      }
-@@ -151,5 +152,4 @@
-     ]
-   },
--  "targets": null,
-   "workspace": {
-     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
 
 >>> [CLI] bundle destroy -t dev --auto-approve
 The following resources will be deleted:
@@ -278,14 +259,14 @@ Resources:
 >>> diff.py ../out.summary.dev.json ../out.summary.prod.json
 --- ../out.summary.dev.json
 +++ ../out.summary.prod.json
-@@ -14,15 +14,13 @@
+@@ -13,16 +13,11 @@
+   },
    "bundle": {
-     "deployment": {
+-    "deployment": {
 -      "lock": {
 -        "enabled": false
 -      }
-+      "lock": {}
-     },
+-    },
 -    "environment": "dev",
 +    "environment": "prod",
      "git": {
@@ -298,7 +279,7 @@ Resources:
 +    "target": "prod",
      "terraform": {},
      "uuid": "[UUID]"
-@@ -32,13 +30,11 @@
+@@ -32,13 +27,10 @@
      "resources/project_name_[UNIQUE_NAME].pipeline.yml"
    ],
 -  "presets": {
@@ -316,23 +297,23 @@ Resources:
 +      "service_principal_name": "[USERNAME]"
 +    }
 +  ],
-+  "presets": {},
    "resources": {
      "jobs": {
-@@ -46,5 +42,5 @@
+@@ -46,5 +38,5 @@
          "deployment": {
            "kind": "BUNDLE",
 -          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
 +          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
          },
          "edit_mode": "UI_LOCKED",
-@@ -65,11 +61,8 @@
+@@ -66,12 +58,9 @@
            }
          ],
 -        "max_concurrent_runs": 4,
 -        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
 +        "max_concurrent_runs": 1,
 +        "name": "project_name_[UNIQUE_NAME]_job",
+         "permissions": [],
          "queue": {
            "enabled": true
 -        },
@@ -340,21 +321,21 @@ Resources:
 -          "dev": "[USERNAME]"
          },
          "tasks": [
-@@ -77,5 +70,5 @@
+@@ -79,5 +68,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
 -              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
 +              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
              },
              "task_key": "notebook_task"
-@@ -112,5 +105,5 @@
+@@ -114,5 +103,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -125,11 +118,10 @@
+@@ -127,11 +116,10 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -368,7 +349,7 @@ Resources:
 -        "development": true,
          "edition": "ADVANCED",
          "id": "[UUID]",
-@@ -137,10 +129,10 @@
+@@ -139,11 +127,11 @@
            {
              "notebook": {
 -              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
@@ -377,13 +358,14 @@ Resources:
            }
          ],
 -        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
--        "schema": "project_name_[UNIQUE_NAME]_dev",
 +        "name": "project_name_[UNIQUE_NAME]_pipeline",
+         "permissions": [],
+-        "schema": "project_name_[UNIQUE_NAME]_dev",
 +        "schema": "project_name_[UNIQUE_NAME]_prod",
          "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
-@@ -153,10 +145,10 @@
-   },
+@@ -157,10 +145,10 @@
+   "targets": null,
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
 -    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",

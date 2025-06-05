@@ -80,7 +80,7 @@ func newSummaryCommand() *cobra.Command {
 		case flags.OutputText:
 			return render.RenderSummary(ctx, cmd.OutOrStdout(), b)
 		case flags.OutputJSON:
-			buf, err := json.MarshalIndent(b.Config, "", "  ")
+			buf, err := json.MarshalIndent(b.Config.Value().AsAny(), "", "  ")
 			if err != nil {
 				return err
 			}
