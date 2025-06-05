@@ -78,6 +78,10 @@ github.com/databricks/cli/bundle/config.Experimental:
   "skip_artifact_cleanup":
     "description": |-
       Determines whether to skip cleaning up the .internal folder
+  "skip_name_prefix_for_schema":
+    "description": |-
+      Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`
+      is set, to the names of UC schemas defined in the bundle.
   "use_legacy_run_as":
     "description": |-
       Whether to use the legacy run_as behavior.
