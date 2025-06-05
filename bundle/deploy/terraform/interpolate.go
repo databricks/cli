@@ -45,15 +45,14 @@ func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			//   ${databricks_pipeline.my_pipeline.id}
 			//
 			resourceType := path[1].Key()
-			resourceDesc, exists := supportedResources[resourceType]
-			if !exists {
+			resourceDescription, ok := supportedResources[resourceType]
+			if !ok {
 				// Trigger "key not found" for unknown resource types.
 				return dyn.GetByPath(root, path)
 			}
 
-			// Replace the resource type with the terraform resource name
-			path = dyn.NewPath(dyn.Key(resourceDesc.TerraformResourceName)).Append(path[2:]...)
-
+			// Replace the resource type with the Terraform resource name.
+			path = dyn.NewPath(dyn.Key(resourceDescription.TerraformResourceName)).Append(path[2:]...)
 			return dyn.V(fmt.Sprintf("${%s}", path.String())), nil
 		})
 	})

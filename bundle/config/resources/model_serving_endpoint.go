@@ -64,7 +64,7 @@ func (j *ModelServingEndpoint) ResourceDescription() ResourceDescription {
 		PluralName:            "model_serving_endpoints",
 		SingularTitle:         "Model Serving Endpoint",
 		PluralTitle:           "Model Serving Endpoints",
-		TerraformResourceName: "databricks_model_serving_endpoint",
+		TerraformResourceName: "databricks_model_serving",
 	}
 }
 
