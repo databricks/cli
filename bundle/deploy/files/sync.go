@@ -3,6 +3,7 @@ package files
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/sync"
@@ -14,6 +15,12 @@ func GetSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 	return sync.New(ctx, *opts)
+}
+
+var defaultExcludes = []string{
+	"__pycache__/",
+	"^build/",
+	"^dist/",
 }
 
 func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, error) {
@@ -28,8 +35,22 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 	}
 
 	// We used to delete __pycache__ and build and most of the dist, so now we're excluding it manually
+
+	var excludes []string
+
+	for _, defaultExclude := range defaultExcludes {
+		if slices.Contains(includes, defaultExclude) {
+			continue
+		}
+		if slices.Contains(b.Config.Sync.Exclude, defaultExclude) {
+			continue
+		}
+		excludes = append(excludes, defaultExclude)
+	}
+
+	excludes = append(b.Config.Sync.Exclude, excludes...)
+
 	// TODO: if users include those manually, then we should not exclude it?
-	excludes := append(b.Config.Sync.Exclude, "__pycache__", "build", "dist")
 
 	opts := &sync.SyncOptions{
 		WorktreeRoot: b.WorktreeRoot,

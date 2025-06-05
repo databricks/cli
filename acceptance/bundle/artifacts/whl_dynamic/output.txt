@@ -99,6 +99,7 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/RECORD
 >>> jq .path
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/prebuilt/other_test_code-0.0.1-py3-none-any.whl"
 
 === Updating the local wheel and deploying again
@@ -171,3 +172,4 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/RECORD
 >>> jq .path
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"

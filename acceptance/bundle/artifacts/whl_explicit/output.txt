@@ -31,6 +31,7 @@ my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 === Expecting 1 wheel to be uploaded
 >>> jq .path
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
 
 === Expecting delete request to artifact_path/.internal folder
 >>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
