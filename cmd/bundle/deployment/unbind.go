@@ -40,7 +40,7 @@ func newUnbindCommand() *cobra.Command {
 
 		diags = phases.Initialize(ctx, b)
 		if !diags.HasError() {
-			diags = diags.Extend(phases.Unbind(ctx, b, resource.TerraformResourceName(), args[0]))
+			diags = diags.Extend(phases.Unbind(ctx, b, resource.ResourceDescription().TerraformResourceName, args[0]))
 		}
 		if err := diags.Error(); err != nil {
 			return err

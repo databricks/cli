@@ -82,10 +82,6 @@ func (s SecretScope) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s SecretScope) TerraformResourceName() string {
-	return "databricks_secret_scope"
-}
-
 func (s SecretScope) GetName() string {
 	return s.Name
 }

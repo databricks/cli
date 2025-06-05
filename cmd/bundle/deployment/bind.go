@@ -57,7 +57,7 @@ func newBindCommand() *cobra.Command {
 		if !diags.HasError() {
 			diags = diags.Extend(phases.Bind(ctx, b, &terraform.BindOptions{
 				AutoApprove:  autoApprove,
-				ResourceType: resource.TerraformResourceName(),
+				ResourceType: resource.ResourceDescription().TerraformResourceName,
 				ResourceKey:  args[0],
 				ResourceId:   args[1],
 			}))

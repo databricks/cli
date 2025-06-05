@@ -58,10 +58,6 @@ func (*Cluster) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s *Cluster) TerraformResourceName() string {
-	return "databricks_cluster"
-}
-
 func (s *Cluster) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
