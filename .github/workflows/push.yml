@@ -112,7 +112,7 @@ jobs:
         with:
           version: "0.9.1"
           args: "format --check"
-      - name: "make fmt: Python and go formatting"
+      - name: "make fmt: Python and Go formatting"
         # This is already done by actions, but good to check that make command is working
         run: |
           make fmt
