@@ -79,25 +79,14 @@ def process_file(path):
     return False
 
 
-def iter_files(cli_args):
-    if cli_args:
-        for arg in cli_args:
-            yield pathlib.Path(arg)
-    else:
-        for fname in DEFAULT_FILES:
-            yield pathlib.Path(fname)
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Convert #PR references in changelogs to links.")
     parser.add_argument("files", nargs="*", help=f"Markdown files to process (default: {DEFAULT_FILES})")
     args = parser.parse_args(argv)
 
     modified_any = False
-    for file_path in iter_files(args.files):
-        if not file_path.exists():
-            print(f"File {file_path} does not exist", file=sys.stderr)
-            sys.exit(1)
+    for file_path in args.files or DEFAULT_FILES:
+        file_path = pathlib.Path(file_path)
         modified_any |= process_file(file_path)
 
 
