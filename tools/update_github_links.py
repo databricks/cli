@@ -3,13 +3,8 @@
 
 1. Convert occurrences of `#1234` to the canonical markdown link
    `([#1234](https://github.com/databricks/cli/pull/1234))`.
-2. Skip already-converted references.
-3. Validate that for existing converted references the PR number in the text
-   and in the URL match.  If a mismatch is found, the script prints a warning
-   and exits with a non-zero status.
-
-Usage:
-    tools/update_changelog_links.py [file ...]
+2. Validate that for existing converted references the PR number in the text
+   and in the URL match.
 """
 
 import argparse
