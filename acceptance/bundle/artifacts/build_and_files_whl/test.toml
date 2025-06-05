@@ -1,2 +1,1 @@
-Badness = "artifacts of type 'whl' hard-code dist directory even if explicit files section is present"
 RecordRequests = false
