@@ -1,0 +1,7 @@
+bundle:
+  name: pipelines_root_path_outside_sync_root
+
+resources:
+  pipelines:
+    abc:
+      root_path: ../../../src

@@ -38,7 +38,7 @@ fi
 trace $CLI bundle deploy
 
 title "Assert the snapshot file exists"
-trace ls .databricks/bundle/default/sync-snapshots
+trace find.py --expect 1 '^.databricks/bundle/default/sync-snapshots/[a-z0-9]+\.json' > /dev/null
 
 title "Assert bundle deployment path is created"
 trace $CLI workspace get-status "${DEPLOYMENT_PATH}" | jq '{path, object_type}'

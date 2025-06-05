@@ -27,9 +27,9 @@
         "resource_dashboard_count": 0,
         "resource_app_count": 0,
         "resource_job_ids": [
-          "1",
-          "2",
-          "3"
+          "[NUMID]",
+          "[NUMID]",
+          "[NUMID]"
         ],
         "resource_pipeline_ids": [
           "[UUID]",
@@ -42,6 +42,14 @@
           "lookup_variable_count": 0,
           "target_count": 1,
           "bool_values": [
+            {
+              "key": "presets_name_prefix_is_set",
+              "value": false
+            },
+            {
+              "key": "skip_artifact_cleanup",
+              "value": false
+            },
             {
               "key": "python_wheel_wrapper_is_set",
               "value": false

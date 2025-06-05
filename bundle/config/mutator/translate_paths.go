@@ -141,6 +141,8 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeDirectory:
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
+	case paths.TranslateModeGlob:
+		interp, err = t.translateGlobPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalAbsoluteDirectory:
 		interp, err = t.translateLocalAbsoluteDirectoryPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalRelative:
@@ -227,6 +229,10 @@ func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, 
 	if !info.IsDir() {
 		return "", fmt.Errorf("%s is not a directory", filepath.FromSlash(localFullPath))
 	}
+	return path.Join(t.remoteRoot, localRelPath), nil
+}
+
+func (t *translateContext) translateGlobPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	return path.Join(t.remoteRoot, localRelPath), nil
 }
 

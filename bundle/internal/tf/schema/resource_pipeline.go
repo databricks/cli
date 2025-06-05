@@ -310,6 +310,7 @@ type ResourcePipeline struct {
 	LastModified         int                                  `json:"last_modified,omitempty"`
 	Name                 string                               `json:"name,omitempty"`
 	Photon               bool                                 `json:"photon,omitempty"`
+	RootPath             string                               `json:"root_path,omitempty"`
 	RunAsUserName        string                               `json:"run_as_user_name,omitempty"`
 	Schema               string                               `json:"schema,omitempty"`
 	Serverless           bool                                 `json:"serverless,omitempty"`

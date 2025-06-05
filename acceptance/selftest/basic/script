@@ -20,7 +20,7 @@ trace withdir subdir/a/b/c python3 -c 'import os; print(os.getcwd())'
 printf "\n=== Custom output files - everything starting with out is captured and compared"
 trace echo HELLO > out.hello.txt
 
-printf "\n=== Custom regex can be specified in [[Repl]] section\n"
+printf "\n=== Custom regex can be specified in [[Repls]] section\n"
 echo 1234
 echo 12345
 echo 123456

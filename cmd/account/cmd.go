@@ -19,6 +19,7 @@ import (
 	account_metastore_assignments "github.com/databricks/cli/cmd/account/metastore-assignments"
 	account_metastores "github.com/databricks/cli/cmd/account/metastores"
 	network_connectivity "github.com/databricks/cli/cmd/account/network-connectivity"
+	network_policies "github.com/databricks/cli/cmd/account/network-policies"
 	networks "github.com/databricks/cli/cmd/account/networks"
 	o_auth_published_apps "github.com/databricks/cli/cmd/account/o-auth-published-apps"
 	private_access "github.com/databricks/cli/cmd/account/private-access"
@@ -33,6 +34,7 @@ import (
 	account_users "github.com/databricks/cli/cmd/account/users"
 	vpc_endpoints "github.com/databricks/cli/cmd/account/vpc-endpoints"
 	workspace_assignment "github.com/databricks/cli/cmd/account/workspace-assignment"
+	workspace_network_configuration "github.com/databricks/cli/cmd/account/workspace-network-configuration"
 	workspaces "github.com/databricks/cli/cmd/account/workspaces"
 )
 
@@ -55,6 +57,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(account_metastore_assignments.New())
 	cmd.AddCommand(account_metastores.New())
 	cmd.AddCommand(network_connectivity.New())
+	cmd.AddCommand(network_policies.New())
 	cmd.AddCommand(networks.New())
 	cmd.AddCommand(o_auth_published_apps.New())
 	cmd.AddCommand(private_access.New())
@@ -69,6 +72,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(account_users.New())
 	cmd.AddCommand(vpc_endpoints.New())
 	cmd.AddCommand(workspace_assignment.New())
+	cmd.AddCommand(workspace_network_configuration.New())
 	cmd.AddCommand(workspaces.New())
 	cmd.AddCommand(budgets.New())
 

@@ -13,3 +13,58 @@ TimeoutCloud = '25m'
 
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
+
+# >>> datetime.datetime.fromtimestamp(18000000000)
+# datetime.datetime(2027, 1, 15, 9, 0)
+# >>> datetime.datetime.fromtimestamp(1900000000)
+# datetime.datetime(2030, 3, 17, 18, 46, 40)
+
+[[Repls]]
+Old = '\d{20,}'
+New = "[NUMID]"
+Order = 10
+
+[[Repls]]
+Old = '1[78]\d{17}'
+New = '[UNIX_TIME_NANOS]'
+Order = 10
+
+[[Repls]]
+Old = '\d{17,}'
+New = "[NUMID]"
+Order = 10
+
+[[Repls]]
+Old = '1[78]\d{14}'
+New = '[UNIX_TIME_MICROS]'
+Order = 10
+
+[[Repls]]
+Old = '\d{14,}'
+New = "[NUMID]"
+Order = 10
+
+[[Repls]]
+Old = '1[78]\d{11}'
+New = '[UNIX_TIME_MILLIS]'
+Order = 10
+
+[[Repls]]
+Old = '\d{11,}'
+New = "[NUMID]"
+Order = 10
+
+[[Repls]]
+Old = '1[78]\d{8}'
+New = '[UNIX_TIME_S]'
+Order = 10
+
+[[Repls]]
+Old = '\d{8,}'
+New = "[NUMID]"
+Order = 10
+
+[[Repls]]
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d'
+New = "[TIMESTAMP]"
+Order = 10

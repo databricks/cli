@@ -1,0 +1,6 @@
+{
+    "project_name": "my_lakeflow_pipelines",
+    "default_catalog": "main",
+    "personal_schemas": "yes",
+    "language": "python"
+}
