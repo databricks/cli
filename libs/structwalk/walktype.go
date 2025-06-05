@@ -111,7 +111,8 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 			continue
 		}
 		fieldType := sf.Type
-		node := structpath.NewStructField(path, jsonTag, sf.Name)
+		bundleTag := structtag.BundleTag(sf.Tag.Get("bundle"))
+		node := structpath.NewStructField(path, jsonTag, bundleTag, sf.Name)
 		walkTypeValue(node, fieldType, visit, visitedCount)
 	}
 }
