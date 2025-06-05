@@ -22,7 +22,6 @@ func (m *interpolateMutator) Name() string {
 }
 
 func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Get the supported resources map to lookup terraform resource names
 	supportedResources := config.SupportedResources()
 
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
