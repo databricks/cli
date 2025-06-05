@@ -185,7 +185,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Schemas: Prefix
 	for _, s := range r.Schemas {
-		if b.Config.Experimental.SkipNamePrefixForSchema {
+		if b.Config.Experimental != nil && b.Config.Experimental.SkipNamePrefixForSchema {
 			break
 		}
 
