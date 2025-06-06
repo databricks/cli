@@ -1,6 +1,12 @@
 
+>>> cp [TESTROOT]/bundle/deploy/dashboard/simple_outside_bundle_root/../simple/sample-dashboard.lvdash.json ../.
+
+>>> ls ..
+001
+sample-dashboard.lvdash.json
+
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-test-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-outside-bundle-root-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -17,7 +23,7 @@ Deployment complete!
 The following resources will be deleted:
   delete dashboard dashboard1
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-test-[UNIQUE_NAME]/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-outside-bundle-root-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
