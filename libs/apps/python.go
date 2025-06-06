@@ -72,7 +72,9 @@ func (p *PythonApp) PrepareEnvironment() error {
 
 	// Install requirements if they exist
 	if _, err := os.Stat(filepath.Join(p.config.AppPath, "requirements.txt")); err == nil {
-		reqArgs := []string{"uv", "pip", "install", "-r", filepath.Join(p.config.AppPath, "requirements.txt")}
+		// We also execute command with CWD set at p.config.AppPath
+		// so we can just path local path to requirements.txt here
+		reqArgs := []string{"uv", "pip", "install", "-r", "requirements.txt"}
 		if err := p.runCommand(reqArgs); err != nil {
 			return err
 		}
