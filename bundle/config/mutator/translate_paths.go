@@ -301,7 +301,6 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			t.applyJobTranslations,
 			t.applyPipelineTranslations,
 			t.applyArtifactTranslations,
-			t.applyDashboardTranslations,
 			t.applyAppsTranslations,
 		} {
 			v, err = fn(ctx, v)
