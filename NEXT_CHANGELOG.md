@@ -4,6 +4,8 @@
 
 ### Notable Changes
 
+* Fix `databricks auth login` to tolerate URLs copied from the browser ([#3001](https://github.com/databricks/cli/pull/3001)).
+
 ### Dependency updates
 
 ### CLI
