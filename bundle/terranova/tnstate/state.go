@@ -1,10 +1,8 @@
 package tnstate
 
 import (
-	"bytes"
 	"encoding/json"
 	"os"
-	"reflect"
 	"sync"
 
 	"github.com/databricks/cli/libs/utils"
@@ -66,49 +64,14 @@ func (db *TerranovaState) DeleteState(section, resourceName string) error {
 	return nil
 }
 
-func jsonRoundTrip(src, dest any) error {
-	raw, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	dec.UseNumber()
-
-	return dec.Decode(dest)
-}
-
-func (db *TerranovaState) GetSavedState(section, resourceName string, stateType reflect.Type) (any, error) {
+func (db *TerranovaState) GetResourceEntry(section, resourceName string) (ResourceEntry, bool) {
 	sectionData, ok := db.data.Resources[section]
 	if !ok {
-		return nil, nil
+		return ResourceEntry{}, false
 	}
 
-	entry, ok := sectionData[resourceName]
-	if !ok {
-		return nil, nil
-	}
-
-	destPtr := reflect.New(stateType).Interface()
-	err := jsonRoundTrip(entry.State, destPtr)
-	if err != nil {
-		return nil, err
-	}
-
-	return reflect.ValueOf(destPtr).Elem().Interface(), nil
-}
-
-// Return resource id if the resource is present in the state or "" if it's not
-func (db *TerranovaState) GetResourceID(section, resourceName string) (string, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	sectionData, ok := db.data.Resources[section]
-	if !ok {
-		return "", nil
-	}
-
-	return sectionData[resourceName].ID, nil
+	result, ok := sectionData[resourceName]
+	return result, ok
 }
 
 func (db *TerranovaState) GetAllResources() []ResourceNode {
