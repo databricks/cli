@@ -4,6 +4,7 @@ RequiresWarehouse = true
 
 Ignore = [
     "databricks.yml",
+    "sample-dashboard.lvdash.json",
 ]
 
 [[Repls]]

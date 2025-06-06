@@ -3,12 +3,14 @@ if [ -z "$CLOUD_ENV" ]; then
     DASHBOARD_DISPLAY_NAME="test bundle/deploy/ 6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
     export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
 fi
+cp $TESTDIR/../simple/sample-dashboard.lvdash.json .
 
 export DASHBOARD_DISPLAY_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    rm sample-dashboard.lvdash.json
 }
 trap cleanup EXIT
 
