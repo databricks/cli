@@ -1,0 +1,17 @@
+[build-system]
+requires      = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name    = "{{.project_name}}"
+version = "0.1.0"
+authors = [{ name = "{{user_name}}" }]
+
+[project.scripts]
+main = "{{.project_name}}.main:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -4,6 +4,10 @@ bundle:
   name: my_default_python
   uuid: [UUID]
 
+artifacts:
+  python_artifact:
+    build: uv build
+
 include:
   - resources/*.yml
 
@@ -17,6 +21,10 @@ targets:
     default: true
     workspace:
       host: [DATABRICKS_URL]
+    artifacts:
+      python_artifact:
+        dynamic_version: true
+
 
   prod:
     mode: production
