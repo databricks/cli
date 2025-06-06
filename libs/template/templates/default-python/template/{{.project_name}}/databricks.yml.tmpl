@@ -1,9 +1,16 @@
+{{$with_classic := (ne .serverless "yes") -}}
+{{$with_python := (eq .include_python "yes") -}}
 # This is a Databricks asset bundle definition for {{.project_name}}.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
-
+{{ if $with_python }}
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+{{ end }}
 include:
   - resources/*.yml
   - resources/*/*.yml
@@ -18,7 +25,11 @@ targets:
     default: true
     workspace:
       host: {{workspace_host}}
-
+{{ if (and $with_python $with_classic) }}
+    artifacts:
+      python_artifact:
+        dynamic_version: true
+{{ end }}
   prod:
     mode: production
     workspace:
