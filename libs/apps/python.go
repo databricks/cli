@@ -145,6 +145,9 @@ func (p *PythonApp) runCommand(args []string) error {
 		return err
 	}
 	e.WithInheritOutput()
+
+	// Safe to join args with spaces here since args are passed directly inside PrepareEnvironment() and GetCommand()
+	// and don't contain user input.
 	cmd, err := e.StartCommand(p.ctx, strings.Join(args, " "))
 	if err != nil {
 		return err
