@@ -1,0 +1,10 @@
+[project]
+name    = "my_default_python"
+version = "0.0.1"
+authors = [{ name = "[USERNAME]" }]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/my_default_python"]
+
+[project.scripts]
+main = "my_default_python.main:main"

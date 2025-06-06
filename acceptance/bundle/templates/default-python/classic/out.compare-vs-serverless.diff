@@ -1,3 +1,14 @@
+--- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/databricks.yml
++++ output/my_default_python/databricks.yml
+@@ -25,4 +25,8 @@
+       host: [DATABRICKS_URL]
+
++    artifacts:
++      python_artifact:
++        dynamic_version: true
++
+   prod:
+     mode: production
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/my_default_python.job.yml
 +++ output/my_default_python/resources/my_default_python.job.yml
 @@ -17,4 +17,5 @@
