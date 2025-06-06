@@ -37,6 +37,9 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]terraformlib.Act
 		allResources := b.ResourceDatabase.GetAllResources()
 		var deleteActions []terraformlib.Action
 		for _, node := range allResources {
+			// TODO:
+			// Note, rType is only used for stringification so it's not important to get it right (although cutting "s" is always correct)
+			// Also, terraformlib.Action will create terraformish resources names. We should instead switch to method-neutral format.
 			rType, _ := strings.CutSuffix(node.Section, "s")
 			deleteActions = append(deleteActions, terraformlib.Action{
 				Action:       terraformlib.ActionTypeDelete,

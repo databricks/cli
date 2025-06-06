@@ -120,6 +120,7 @@ type Bundle struct {
 	// If true, don't use terraform. Set by DATABRICKS_CLI_DEPLOYMENT=direct
 	DirectDeployment bool
 
+	// State file access for direct deployment (only initialized if DirectDeployment = true)
 	ResourceDatabase tnstate.TerranovaState
 }
 

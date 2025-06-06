@@ -30,6 +30,7 @@ import (
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if b.DirectDeployment {
+		// TODO: implement this for DirectDeployment
 		return true, nil
 	}
 
