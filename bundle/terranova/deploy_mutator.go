@@ -1,8 +1,12 @@
 package terranova
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"reflect"
 	"sync/atomic"
 
 	"github.com/databricks/cli/bundle"
@@ -113,11 +117,7 @@ func (d *Deployer) Deploy(ctx context.Context, inputConfig any) error {
 }
 
 func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
-	// Note, oldID might be empty if resource is new
-	oldID, err := d.db.GetResourceID(d.section, d.resourceName)
-	if err != nil {
-		return err
-	}
+	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
 
 	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
 	if err != nil {
@@ -126,20 +126,23 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 
 	config := resource.Config()
 
-	// Presence of id in the state file implies that the resource was created by us
-
-	if oldID == "" {
+	if !hasEntry {
 		return d.Create(ctx, resource, config)
 	}
 
-	savedState, err := d.db.GetSavedState(d.section, d.resourceName, resource.GetType())
+	oldID := entry.ID
+	if oldID == "" {
+		return errors.New("invalid state: empty id")
+	}
+
+	savedState, err := typeConvert(resource.GetType(), entry.State)
 	if err != nil {
-		return fmt.Errorf("reading state: %w", err)
+		return fmt.Errorf("interpreting state: %w", err)
 	}
 
 	localDiff, err := structdiff.GetStructDiff(savedState, config)
 	if err != nil {
-		return fmt.Errorf("state error: %w", err)
+		return fmt.Errorf("comparing state and config: %w", err)
 	}
 
 	localDiffType := tnresources.ChangeTypeNone
@@ -239,4 +242,20 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
 	return nil
+}
+
+func typeConvert(destType reflect.Type, src any) (any, error) {
+	raw, err := json.Marshal(src)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling: %w", err)
+	}
+
+	destPtr := reflect.New(destType).Interface()
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	err = dec.Decode(destPtr)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling into %s: %w", destType, err)
+	}
+
+	return reflect.ValueOf(destPtr).Elem().Interface(), nil
 }
