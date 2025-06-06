@@ -4,7 +4,7 @@ trace errcode $CLI apps run-local --entry-point value-from.yml 2>&1
 
 # We first run the command with different entry point which starts unblocking script
 # so we don't need to start it in background. It will install the dependencies as part of the command
-trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
+trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1
 
 # Get 3 unique ports sequentially to avoid conflicts
 PORTS=$(allocate_ports.py 3 | tr -d '\r')
