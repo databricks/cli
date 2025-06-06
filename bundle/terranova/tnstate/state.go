@@ -74,7 +74,6 @@ func jsonRoundTrip(src, dest any) error {
 
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.UseNumber()
-	dec.DisallowUnknownFields()
 
 	return dec.Decode(dest)
 }
