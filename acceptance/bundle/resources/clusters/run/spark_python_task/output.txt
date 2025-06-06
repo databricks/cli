@@ -1,4 +1,8 @@
 
+>>> cp [TESTROOT]/bundle/resources/clusters/run/spark_python_task/../../deploy/simple/hello_world.py .
+
+>>> cp [TESTROOT]/bundle/resources/clusters/run/spark_python_task/../../deploy/simple/databricks.yml.tmpl .
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
