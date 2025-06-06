@@ -54,10 +54,6 @@ func (*Schema) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s *Schema) TerraformResourceName() string {
-	return "databricks_schema"
-}
-
 func (s *Schema) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

@@ -112,15 +112,15 @@ jobs:
         with:
           version: "0.9.1"
           args: "format --check"
-      - name: Run formatting (does not include linting checks)
+      - name: "make fmt: Python and Go formatting"
+        # This is already done by actions, but good to check that make command is working
         run: |
           make fmt
-      - name: Fail on formatting differences
-        run: |
-          # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
-      - name: Run whitespace check
-        run: make ws
+      - name: "make checks: custom checks outside of fmt and lint"
+        run: |
+          make checks
+          git diff --exit-code
 
   validate-bundle-schema:
     needs: cleanups
