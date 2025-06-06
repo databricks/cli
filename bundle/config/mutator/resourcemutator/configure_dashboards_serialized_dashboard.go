@@ -44,6 +44,8 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 				return v, nil
 			}
 
+			// Read file using BundleRoot to ensure path matches the dashboard translation
+			// logic in applyDashboardTranslations (translate_paths_dashboards.go)
 			contents, err := b.BundleRoot.ReadFile(path)
 			if err != nil {
 				return dyn.InvalidValue, fmt.Errorf("failed to read serialized dashboard from file_path %s: %w", path, err)
