@@ -52,10 +52,6 @@ func (*QualityMonitor) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s *QualityMonitor) TerraformResourceName() string {
-	return "databricks_quality_monitor"
-}
-
 func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 	if s.TableName == "" {
 		return

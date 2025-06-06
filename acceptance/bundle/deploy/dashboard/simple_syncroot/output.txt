@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle deploy
+Error: failed to read serialized dashboard from file_path sample-dashboard.lvdash.json: open sample-dashboard.lvdash.json: no such file or directory
+
+
+>>> [CLI] bundle destroy --auto-approve
+Error: failed to read serialized dashboard from file_path sample-dashboard.lvdash.json: open sample-dashboard.lvdash.json: no such file or directory
+
+Exit code: 1
