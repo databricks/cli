@@ -1,6 +1,2 @@
 Cloud = true
 Ignore = ["bar.py", "foo.py"]
-
-[[Repls]]
-Old = '174\d{10}'
-New = '[TIMESTAMP_MS]'

@@ -27,7 +27,7 @@
         "resource_dashboard_count": 0,
         "resource_app_count": 0,
         "resource_job_ids": [
-          "[TEST_JOB_ID+0]"
+          "[NUMID]"
         ],
         "experimental": {
           "configuration_file_count": 1,
@@ -38,6 +38,10 @@
           "bool_values": [
             {
               "key": "presets_name_prefix_is_set",
+              "value": false
+            },
+            {
+              "key": "skip_artifact_cleanup",
               "value": false
             },
             {

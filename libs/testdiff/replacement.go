@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -29,8 +30,9 @@ var (
 )
 
 type Replacement struct {
-	Old *regexp.Regexp
-	New string
+	Old   *regexp.Regexp
+	New   string
+	Order int
 }
 
 type ReplacementsContext struct {
@@ -43,7 +45,13 @@ func (r *ReplacementsContext) Clone() ReplacementsContext {
 
 func (r *ReplacementsContext) Replace(s string) string {
 	// QQQ Should probably only replace whole words
-	for _, repl := range r.Repls {
+	// Sort replacements stably by Order to guarantee deterministic application sequence.
+	// A cloned slice is used to avoid mutating the original order held in the context.
+	repls := slices.Clone(r.Repls)
+	sort.SliceStable(repls, func(i, j int) bool {
+		return repls[i].Order < repls[j].Order
+	})
+	for _, repl := range repls {
 		s = repl.Old.ReplaceAllString(s, repl.New)
 	}
 	return s
