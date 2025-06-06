@@ -1,7 +1,8 @@
 {
   "artifacts": {
     "python_artifact": {
-      "build": "python3 setup.py bdist_wheel",
+      "build": "uv build --wheel",
+      "dynamic_version": true,
       "files": [
         {
           "source": "[TEST_TMP_DIR]/project_name_[UNIQUE_NAME]/dist/*.whl"

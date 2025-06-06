@@ -1,0 +1,15 @@
+[build-system]
+requires = ["uv_build>=0.7.11,<0.8.0"]
+build-backend = "uv_build"
+
+[project]
+name    = "my_default_python"
+version = "0.0.1"
+authors = [{ name = "[USERNAME]" }]
+
+[project.scripts]
+main = "my_default_python.main:main"
+
+[tool.uv.build-backend]
+module-name = "my_default_python"
+module-root = "src"

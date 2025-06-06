@@ -1,0 +1,15 @@
+[build-system]
+requires = ["uv_build>=0.7.11,<0.8.0"]
+build-backend = "uv_build"
+
+[project]
+name    = "{{.project_name}}"
+version = "0.0.1"
+authors = [{ name = "{{user_name}}" }]
+
+[project.scripts]
+main = "{{.project_name}}.main:main"
+
+[tool.uv.build-backend]
+module-name = "{{.project_name}}"
+module-root = "src"
