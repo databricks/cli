@@ -3,7 +3,6 @@ package phases
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -21,6 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -32,7 +32,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	log.Info(ctx, "Phase: initialize")
 
-	b.DirectDeployment, err = IsDirectDeployment()
+	b.DirectDeployment, err = IsDirectDeployment(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -210,13 +210,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		cacheDir, err := b.CacheDir(ctx)
 		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
+			return diags.Extend(diag.FromErr(err))
 		}
 
 		databasePath := filepath.Join(cacheDir, "resources.json")
 		err = b.ResourceDatabase.Open(databasePath)
 		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
+			return diags.Extend(diag.FromErr(err))
 		}
 	} else {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
@@ -227,14 +227,17 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Extend(bundle.Apply(ctx, b, terraform.Initialize()))
 	}
 
+	if diags.HasError() {
+		return diags
+	}
+
 	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
 	// Executes the post_init script hook defined in the bundle configuration
-	diags = diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostInit)))
-	return diags
+	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostInit)))
 }
 
-func IsDirectDeployment() (bool, error) {
-	deployment := os.Getenv("DATABRICKS_CLI_DEPLOYMENT")
+func IsDirectDeployment(ctx context.Context) (bool, error) {
+	deployment := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
 	if deployment == "direct" {
 		return true, nil
 	} else if deployment == "terraform" || deployment == "" {

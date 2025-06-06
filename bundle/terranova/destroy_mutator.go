@@ -34,7 +34,7 @@ func (m *terranovaDestroyMutator) Apply(ctx context.Context, b *bundle.Bundle) d
 	// TODO: do we need to respect dependencies here? Should we store them in state in that case?
 	// Alternatively, do a few rounds of delete to make we capture cases where A needs to be deleted before B.
 
-	err := g.Run(maxPoolSize, func(node tnstate.ResourceNode) {
+	err := g.Run(defaultParallelism, func(node tnstate.ResourceNode) {
 		err := tnresources.DestroyResource(ctx, client, node.Section, node.ID)
 		if err != nil {
 			diags.AppendErrorf("destroying %s: %s", node, err)

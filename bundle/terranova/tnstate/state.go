@@ -99,6 +99,7 @@ func (db *TerranovaState) GetSavedState(section, resourceName string, stateType 
 	return reflect.ValueOf(destPtr).Elem().Interface(), nil
 }
 
+// Return resource id if the resource is present in the state or "" if it's not
 func (db *TerranovaState) GetResourceID(section, resourceName string) (string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()

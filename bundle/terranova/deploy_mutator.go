@@ -3,6 +3,7 @@ package terranova
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/terranova/tnresources"
@@ -16,7 +17,8 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-const maxPoolSize = 10
+// How many parallel operations (API calls) are allowed
+const defaultParallelism = 10
 
 type terranovaDeployMutator struct{}
 
@@ -41,7 +43,6 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			section := p[1].Key()
 			name := p[2].Key()
-			// log.Warnf(ctx, "Adding node=%s", node)
 			g.AddNode(tnstate.ResourceNode{
 				Section: section,
 				Name:    name,
@@ -52,9 +53,9 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 		},
 	)
 
-	countDeployed := 0
+	var countDeployed atomic.Uint64
 
-	err = g.Run(maxPoolSize, func(node tnstate.ResourceNode) {
+	err = g.Run(defaultParallelism, func(node tnstate.ResourceNode) {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
@@ -77,14 +78,14 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 			return
 		}
 
-		countDeployed = countDeployed + 1
+		countDeployed.Add(1)
 	})
 	if err != nil {
 		diags.AppendError(err)
 	}
 
 	// Not uploading at the moment, just logging to match the output.
-	if countDeployed > 0 {
+	if countDeployed.Load() > 0 {
 		cmdio.LogString(ctx, "Updating deployment state...")
 	}
 
@@ -112,6 +113,7 @@ func (d *Deployer) Deploy(ctx context.Context, inputConfig any) error {
 }
 
 func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
+	// Note, oldID might be empty if resource is new
 	oldID, err := d.db.GetResourceID(d.section, d.resourceName)
 	if err != nil {
 		return err
@@ -127,19 +129,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 	// Presence of id in the state file implies that the resource was created by us
 
 	if oldID == "" {
-		newID, err := resource.DoCreate(ctx)
-		if err != nil {
-			return err
-		}
-
-		log.Infof(ctx, "Created %s.%s id=%#v", d.section, d.resourceName, newID)
-
-		err = d.db.SaveState(d.section, d.resourceName, newID, config)
-		if err != nil {
-			return err
-		}
-
-		return resource.WaitAfterCreate(ctx)
+		return d.Create(ctx, resource, config)
 	}
 
 	savedState, err := d.db.GetSavedState(d.section, d.resourceName, resource.GetType())
@@ -171,6 +161,27 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 	return nil
 }
 
+func (d *Deployer) Create(ctx context.Context, resource tnresources.IResource, config any) error {
+	newID, err := resource.DoCreate(ctx)
+	if err != nil {
+		return fmt.Errorf("creating: %w", err)
+	}
+
+	log.Infof(ctx, "Created %s.%s id=%#v", d.section, d.resourceName, newID)
+
+	err = d.db.SaveState(d.section, d.resourceName, newID, config)
+	if err != nil {
+		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
+	}
+
+	err = resource.WaitAfterCreate(ctx)
+	if err != nil {
+		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
+	}
+
+	return nil
+}
+
 func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResource, oldID string, config any) error {
 	err := oldResource.DoDelete(ctx, oldID)
 	if err != nil {
@@ -195,10 +206,15 @@ func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResour
 	log.Warnf(ctx, "Re-created %s.%s id=%#v (previously %#v)", d.section, d.resourceName, newID, oldID)
 	err = d.db.SaveState(d.section, d.resourceName, newID, config)
 	if err != nil {
-		return fmt.Errorf("saving state: %w", err)
+		return fmt.Errorf("saving state for id=%s: %w", newID, err)
 	}
 
-	return newResource.WaitAfterCreate(ctx)
+	err = newResource.WaitAfterCreate(ctx)
+	if err != nil {
+		return fmt.Errorf("waiting after re-creating id=%s: %w", newID, err)
+	}
+
+	return nil
 }
 
 func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, oldID string, config any) error {
@@ -218,5 +234,9 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	return resource.WaitAfterUpdate(ctx)
+	err = resource.WaitAfterUpdate(ctx)
+	if err != nil {
+		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
+	}
+	return nil
 }
