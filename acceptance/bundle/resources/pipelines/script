@@ -5,8 +5,8 @@ trace $CLI bundle deploy
 
 print_requests() {
     jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
-    errcode rm out.requests.txt
-    errcode read_state.py pipelines my id name
+    rm out.requests.txt
+    read_state.py pipelines my id name
 }
 
 trace print_requests
