@@ -82,49 +82,57 @@ jobs:
       - name: Analyze slow tests
         run: make slowest
 
-      - name: Publish fail / skip counts
-        if: always()                     # run even when the tests stumble
+      - name: Create test counter script
+        if: always()
+        run: |
+          cat > count.py << 'EOF'
+          import json
+          fails = skips = 0
+          with open("test-output.json", "r") as f:
+              for line in f:
+                  try:
+                      e = json.loads(line)
+                      if e.get("Action") == "fail": fails += 1
+                      if e.get("Action") == "skip": skips += 1
+                  except json.JSONDecodeError:
+                      continue
+          print(f"{fails} {skips}")
+          EOF
+
+      - name: Count test results
+        if: always()
         shell: bash
+        id: counts
+        run: |
+          read fails skips <<< "$(python3 count.py)"
+          echo "fails=$fails" >> "$GITHUB_OUTPUT"
+          echo "skips=$skips" >> "$GITHUB_OUTPUT"
+
+      - name: Update GitHub status
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OS_LABEL: ${{ matrix.os }}     # so each OS uses its own status context
+          OS_LABEL: ${{ matrix.os }}
         run: |
-          # Count “fail” and “skip” events in test-output.json
-          read fails skips < <(
-            python - <<'PY'
-import json,sys
-fails=skips=0
-with open("test-output.json","r") as f:
-    for line in f:
-        try:
-            e=json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if e.get("Action")=="fail": fails+=1
-        if e.get("Action")=="skip": skips+=1
-print(fails,skips)
-PY
-          )
+          state="success"
+          [[ ${{ steps.counts.outputs.fails }} -gt 0 ]] && state="failure"
 
-          # Success if no failures in this leg
-          state=success
-          [[ $fails -gt 0 ]] && state=failure
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state="$state" \
+            -f context="tests-summary/${OS_LABEL}" \
+            -f description="${{ steps.counts.outputs.fails }} failed, ${{ steps.counts.outputs.skips }} skipped"
 
-          # “tests/ubuntu-latest”, “tests/macos-latest”, ...
-          context="tests-summary/${OS_LABEL}"
+      - name: Update job summary
+        if: always()
+        env:
+          OS_LABEL: ${{ matrix.os }}
+        run: |
+          echo "### ${OS_LABEL}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**${{ steps.counts.outputs.fails }} failed, ${{ steps.counts.outputs.skips }} skipped**" >> "$GITHUB_STEP_SUMMARY"
 
-          # Push / overwrite a status on the same commit
-          gh api repos/${{ github.repository }}/statuses/${{ github.sha }} \
-               -f state="$state" \
-               -f context="$context" \
-               -f description="${fails} failed, ${skips} skipped"
-
-          # Also show it in the job log / summary pane
-          {
-            echo "### ${OS_LABEL}"
-            echo "**${fails} failed, ${skips} skipped**"
-          } >> "$GITHUB_STEP_SUMMARY"
-
+      - name: Cleanup
+        if: always()
+        run: rm count.py
 
   linters:
     needs: cleanups
