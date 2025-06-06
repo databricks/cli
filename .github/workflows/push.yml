@@ -108,20 +108,6 @@ jobs:
           echo "fails=$fails" >> "$GITHUB_OUTPUT"
           echo "skips=$skips" >> "$GITHUB_OUTPUT"
 
-      - name: Update GitHub status
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OS_LABEL: ${{ matrix.os }}
-        run: |
-          state="success"
-          [[ ${{ steps.counts.outputs.fails }} -gt 0 ]] && state="failure"
-
-          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-            -f state="$state" \
-            -f context="tests-summary/${OS_LABEL}" \
-            -f description="${{ steps.counts.outputs.fails }} failed, ${{ steps.counts.outputs.skips }} skipped"
-
       - name: Update job summary
         if: always()
         env:
@@ -129,10 +115,6 @@ jobs:
         run: |
           echo "### ${OS_LABEL}" >> "$GITHUB_STEP_SUMMARY"
           echo "**${{ steps.counts.outputs.fails }} failed, ${{ steps.counts.outputs.skips }} skipped**" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Cleanup
-        if: always()
-        run: rm count.py
 
   linters:
     needs: cleanups
