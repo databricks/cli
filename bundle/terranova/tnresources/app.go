@@ -67,6 +67,7 @@ func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
 }
 
 func (r *ResourceApp) ClassifyChanges(changes []structdiff.Change) ChangeType {
+	// TODO: changing name is recreation
 	return ChangeTypeUpdate
 }
 

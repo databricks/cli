@@ -6,6 +6,8 @@ import (
 	"fmt"
 )
 
+// Utility to copy from one type to another based on intermediate JSON transformation
+// (e.g. to copy from JobSettings to CreateJob)
 func copyViaJSON[T1, T2 any](dest *T1, src T2) error {
 	if dest == nil {
 		return errors.New("internal error: unexpected nil")

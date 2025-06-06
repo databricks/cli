@@ -23,7 +23,8 @@ type IResource interface {
 	// Create the resource. Returns id of the resource.
 	DoCreate(ctx context.Context) (string, error)
 
-	// Update the resource. Returns id of the resource (might be updated).
+	// Update the resource. Returns id of the resource.
+	// Usually returns the same id as oldId but can also return a different one (e.g. schemas and volumes when certain fields are changed)
 	DoUpdate(ctx context.Context, oldId string) (string, error)
 
 	DoDelete(ctx context.Context, oldId string) error
