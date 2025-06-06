@@ -44,7 +44,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 				return v, nil
 			}
 
-			contents, err := b.SyncRoot.ReadFile(path)
+			contents, err := b.BundleRoot.ReadFile(path)
 			if err != nil {
 				return dyn.InvalidValue, fmt.Errorf("failed to read serialized dashboard from file_path %s: %w", path, err)
 			}
