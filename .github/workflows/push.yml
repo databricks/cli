@@ -82,6 +82,50 @@ jobs:
       - name: Analyze slow tests
         run: make slowest
 
+      - name: Publish fail / skip counts
+        if: always()                     # run even when the tests stumble
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OS_LABEL: ${{ matrix.os }}     # so each OS uses its own status context
+        run: |
+          # Count “fail” and “skip” events in test-output.json
+          read fails skips < <(
+            python - <<'PY'
+import json,sys
+fails=skips=0
+with open("test-output.json","r") as f:
+    for line in f:
+        try:
+            e=json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if e.get("Action")=="fail": fails+=1
+        if e.get("Action")=="skip": skips+=1
+print(fails,skips)
+PY
+          )
+
+          # Success if no failures in this leg
+          state=success
+          [[ $fails -gt 0 ]] && state=failure
+
+          # “tests/ubuntu-latest”, “tests/macos-latest”, ...
+          context="tests-summary/${OS_LABEL}"
+
+          # Push / overwrite a status on the same commit
+          gh api repos/${{ github.repository }}/statuses/${{ github.sha }} \
+               -f state="$state" \
+               -f context="$context" \
+               -f description="${fails} failed, ${skips} skipped"
+
+          # Also show it in the job log / summary pane
+          {
+            echo "### ${OS_LABEL}"
+            echo "**${fails} failed, ${skips} skipped**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+
   linters:
     needs: cleanups
     name: lint
