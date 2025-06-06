@@ -51,6 +51,13 @@ func TestToOAuthArgument(t *testing.T) {
 			},
 			wantHost: "https://my-workspace.cloud.databricks.com",
 		},
+		{
+			name: "workspace with query parameter and path",
+			args: AuthArguments{
+				Host: "https://my-workspace.cloud.databricks.com/path?o=123456789",
+			},
+			wantHost: "https://my-workspace.cloud.databricks.com",
+		},
 	}
 
 	for _, tt := range tests {
