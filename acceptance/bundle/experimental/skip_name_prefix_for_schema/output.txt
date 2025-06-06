@@ -4,7 +4,7 @@
 "dev_[USERNAME]_my_schema"
 
 >>> [CLI] bundle validate -o json -t two
-"custom_prefixmy_schema"
+"custom_prefix_my_schema"
 
 >>> [CLI] bundle validate -o json -t three
 "my_schema"
