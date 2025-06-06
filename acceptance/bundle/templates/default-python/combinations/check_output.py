@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import re
 import subprocess
 
 CLOUD_ENV = os.environ.get("CLOUD_ENV")
@@ -8,7 +9,7 @@ if CLOUD_ENV and os.environ["SERVERLESS"] == "yes" and not os.environ.get("TEST_
     sys.exit(f"SKIP_TEST SERVERLESS=yes but TEST_METASTORE_ID is empty in this env {CLOUD_ENV=}")
 
 BUILDING = "Building python_artifact"
-UPLOADING = "Uploading dist/"
+UPLOADING_WHL = re.compile("Uploading .*whl")
 STATE = "Updating deployment state"
 
 
@@ -18,7 +19,7 @@ def is_printable_line(line):
         return False
 
     # only shown when include_python=yes
-    if line.startswith(UPLOADING):
+    if UPLOADING_WHL.match(line):
         return False
 
     # not shown when all settings are equal to "no"
@@ -30,18 +31,18 @@ def is_printable_line(line):
 
 p = subprocess.run(sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
 try:
-    assert p.returncode == 0
+    assert p.returncode == 0, p.returncode
     assert p.stdout == ""
+    if os.environ["INCLUDE_PYTHON"] == "yes":
+        assert BUILDING in p.stderr, BUILDING
+        assert UPLOADING_WHL.search(p.stderr), UPLOADING_WHL
+    else:
+        assert BUILDING not in p.stderr, BUILDING
+        assert not UPLOADING_WHL.search(p.stderr), UPLOADING_WHL
+
     for line in p.stderr.strip().split("\n"):
         if is_printable_line(line):
             print(line.strip())
-
-    if os.environ["INCLUDE_PYTHON"] == "yes":
-        assert BUILDING in p.stderr
-        assert UPLOADING in p.stderr
-    else:
-        assert BUILDING not in p.stderr
-        assert UPLOADING not in p.stderr
 
 except:
     print(f"STDOUT: {len(p.stdout)} chars")

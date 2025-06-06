@@ -1,0 +1,10 @@
+[project]
+name    = "{{.project_name}}"
+version = "0.0.1"
+authors = [{ name = "{{user_name}}" }]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/{{.project_name}}"]
+
+[project.scripts]
+main = "{{.project_name}}.main:main"
