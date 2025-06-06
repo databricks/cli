@@ -1,0 +1,3 @@
+\n\n\n should not see new lines
+multiline scripts should work
+[TEST_TMP_DIR]
