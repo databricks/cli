@@ -54,6 +54,7 @@ build: tidy
 
 snapshot:
 	go build -o .databricks/databricks
+	go build -o .databricks/dlt
 
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
