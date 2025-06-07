@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/databricks/cli/libs/structdiff/jsontag"
+	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 const (
@@ -19,14 +19,14 @@ const (
 // It can represent struct fields, map keys, or array/slice indices.
 type PathNode struct {
 	prev    *PathNode
-	jsonTag jsontag.JSONTag // For lazy JSON key resolution
-	key     string          // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
+	jsonTag structtag.JSONTag // For lazy JSON key resolution
+	key     string            // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index < 0, this describes the type of node (see tagStruct and other consts above)
 	index int
 }
 
-func (p *PathNode) JSONTag() jsontag.JSONTag {
+func (p *PathNode) JSONTag() structtag.JSONTag {
 	return p.jsonTag
 }
 
@@ -113,7 +113,7 @@ func NewMapKey(prev *PathNode, key string) *PathNode {
 
 // NewStructField creates a new PathNode for a struct field.
 // The jsonTag is used for lazy JSON key resolution, and fieldName is used as fallback.
-func NewStructField(prev *PathNode, jsonTag jsontag.JSONTag, fieldName string) *PathNode {
+func NewStructField(prev *PathNode, jsonTag structtag.JSONTag, fieldName string) *PathNode {
 	return &PathNode{
 		prev:    prev,
 		jsonTag: jsonTag,

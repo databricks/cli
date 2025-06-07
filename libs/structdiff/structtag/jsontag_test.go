@@ -1,4 +1,4 @@
-package jsontag
+package structtag
 
 import "testing"
 
