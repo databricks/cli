@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,4 +84,25 @@ func TestSetAccountId(t *testing.T) {
 	authArguments.Host = "https://accounts.cloud.databricks.com"
 	err = setHostAndAccountId(ctx, profile.DefaultProfiler, "", &authArguments, []string{})
 	assert.EqualError(t, err, "the command is being run in a non-interactive environment, please specify an account ID using --account-id")
+}
+
+func TestLoginPreservesClusterID(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "cluster-profile", &config.Config{}, false, "./testdata/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, "cluster-from-config", clusterID)
+}
+
+func TestLoginPreservesClusterIDWithEmptyHostAndAccountID(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "no-profile", &config.Config{}, false, "./testdata/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, "", clusterID)
+}
+
+func TestLoginNoClusterIDWithAccountProfile(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "account-profile", &config.Config{}, false, "./testdata/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, "", clusterID)
 }

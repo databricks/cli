@@ -136,18 +136,9 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
-		if configureCluster {
-			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
-			if err != nil {
-				return err
-			}
-			ctx := cmd.Context()
-			clusterID, err := cfgpickers.AskForCluster(ctx, w,
-				cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
-			if err != nil {
-				return err
-			}
-			cfg.ClusterID = clusterID
+		cfg.ClusterID, err = getClusterID(ctx, profileName, &cfg, configureCluster, defaultConfigPath)
+		if err != nil {
+			return err
 		}
 
 		if profileName != "" {
@@ -244,4 +235,35 @@ func getProfileName(authArguments *auth.AuthArguments) string {
 	host := strings.TrimPrefix(authArguments.Host, "https://")
 	split := strings.Split(host, ".")
 	return split[0]
+}
+
+func getClusterID(ctx context.Context, profileName string, cfg *config.Config, configureCluster bool, configPath string) (string, error) {
+	if !configureCluster {
+		configFile, err := config.LoadFile(configPath)
+		if err != nil {
+			return "", err
+		}
+
+		if !configFile.HasSection(profileName) {
+			return "", nil
+		}
+
+		section, err := configFile.GetSection(profileName)
+		if err != nil {
+			return "", err
+		}
+
+		return section.Key("cluster_id").String(), nil
+	}
+
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err != nil {
+		return "", err
+	}
+	configuredClusterID, err := cfgpickers.AskForCluster(ctx, w,
+		cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
+	if err != nil {
+		return "", err
+	}
+	return configuredClusterID, nil
 }
