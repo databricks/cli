@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/cmd/account"
@@ -9,6 +12,7 @@ import (
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/configure"
+	"github.com/databricks/cli/cmd/dlt"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/root"
@@ -25,6 +29,13 @@ const (
 )
 
 func New(ctx context.Context) *cobra.Command {
+	fmt.Println(os.Args)
+	fmt.Println(os.Args[0])
+	invokedAs := filepath.Base(os.Args[0])
+	if invokedAs == "dlt" {
+		return dlt.NewRoot()
+	}
+
 	cli := root.New(ctx)
 
 	// Add account subcommand.
@@ -76,6 +87,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
+	cli.AddCommand(dlt.New())
 
 	return cli
 }
