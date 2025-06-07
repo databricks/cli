@@ -1,0 +1,18 @@
+bundle:
+  name: local-state-staleness-test
+
+workspace:
+  root_path: "~/.bundle/local-state-staleness-test-$UNIQUE_NAME"
+
+resources:
+  jobs:
+    test_job:
+      name: test-job-basic-$UNIQUE_NAME
+      tasks:
+        - task_key: my_notebook_task
+          new_cluster:
+            num_workers: 1
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+          spark_python_task:
+            python_file: ./hello_world.py
