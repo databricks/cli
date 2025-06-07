@@ -1,0 +1,18 @@
+Local = false
+Cloud = true
+#CloudSlow = true
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    "databricks.yml.tmpl",
+    "hello_world.py",
+]
+
+[[Repls]]
+Old = '2\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d'
+New = "[TIMESTAMP]"
+
+[[Repls]]
+Old = '\d{5,}'
+New = "[NUMID]"
