@@ -116,6 +116,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Check for invalid use of /Volumes in workspace paths
 		validate.ValidateVolumePath(),
 
+		// Validate that all required fields are set.
+		validate.RequiredFields(),
+
 		// ApplyTargetMode sets default values for 'presets' section.
 		//
 		// It must run before ProcessStaticResources and PythonMutator using

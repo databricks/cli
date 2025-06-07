@@ -1,0 +1,15 @@
+bundle:
+  name: "validate:required_fields"
+
+permissions:
+  - group_name: "users"
+
+resources:
+  jobs:
+    foo:
+      tasks:
+        - description: "task 1"
+
+  apps:
+    bar:
+      name: "bar"

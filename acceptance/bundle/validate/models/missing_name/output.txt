@@ -1,7 +1,11 @@
+Warning: required field "name" is not set
+  at resources.models.mymodel
+  in databricks.yml:5:14
+
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Validation OK!
+Found 1 warning
