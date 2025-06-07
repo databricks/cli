@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/terranova"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -31,16 +33,34 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]terraformlib.Action, error) {
+	if b.DirectDeployment {
+		allResources := b.ResourceDatabase.GetAllResources()
+		var deleteActions []terraformlib.Action
+		for _, node := range allResources {
+			// TODO:
+			// Note, rType is only used for stringification so it's not important to get it right (although cutting "s" is always correct)
+			// Also, terraformlib.Action will create terraformish resources names. We should instead switch to method-neutral format.
+			rType, _ := strings.CutSuffix(node.Section, "s")
+			deleteActions = append(deleteActions, terraformlib.Action{
+				Action:       terraformlib.ActionTypeDelete,
+				ResourceType: rType,
+				ResourceName: node.Name,
+			})
+		}
+		return deleteActions, nil
+	}
+
 	tf := b.Terraform
+
 	if tf == nil {
-		return false, errors.New("terraform not initialized")
+		return nil, errors.New("terraform not initialized")
 	}
 
 	// read plan file
 	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	var deleteActions []terraformlib.Action
@@ -52,6 +72,15 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 				ResourceName: rc.Name,
 			})
 		}
+	}
+
+	return deleteActions, nil
+}
+
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+	deleteActions, err := getDeleteActions(ctx, b)
+	if err != nil {
+		return false, err
 	}
 
 	if len(deleteActions) > 0 {
@@ -79,11 +108,20 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 }
 
 func destroyCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Core destructive mutators for destroy. These require informed user consent.
-	diags := bundle.ApplySeq(ctx, b,
-		terraform.Apply(),
-		files.Delete(),
-	)
+	var diags diag.Diagnostics
+
+	if b.DirectDeployment {
+		diags = bundle.Apply(ctx, b, terranova.TerranovaDestroy())
+	} else {
+		// Core destructive mutators for destroy. These require informed user consent.
+		diags = bundle.Apply(ctx, b, terraform.Apply())
+	}
+
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = diags.Extend(bundle.Apply(ctx, b, files.Delete()))
 
 	if !diags.HasError() {
 		cmdio.LogString(ctx, "Destroy complete!")
@@ -115,12 +153,14 @@ func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDestroy)))
 	}()
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Plan(terraform.PlanGoal("destroy")),
-	))
+	if !b.DirectDeployment {
+		diags = diags.Extend(bundle.ApplySeq(ctx, b,
+			terraform.StatePull(),
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Plan(terraform.PlanGoal("destroy")),
+		))
+	}
 
 	if diags.HasError() {
 		return diags

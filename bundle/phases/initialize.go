@@ -2,6 +2,8 @@ package phases
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -18,6 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -25,9 +28,16 @@ import (
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var err error
+
 	log.Info(ctx, "Phase: initialize")
 
-	return bundle.ApplySeq(ctx, b,
+	b.DirectDeployment, err = IsDirectDeployment(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	diags := bundle.ApplySeq(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -182,15 +192,54 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+	)
 
+	if diags.HasError() {
+		return diags
+	}
+
+	if b.DirectDeployment {
+		// For acceptance tests, initialize terraform map
+		bundle.ApplyFunc(ctx, b, func(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+			b.Config.Bundle.Terraform = &config.Terraform{ExecPath: " "}
+			return nil
+		})
+
+		cacheDir, err := b.CacheDir(ctx)
+		if err != nil {
+			return diags.Extend(diag.FromErr(err))
+		}
+
+		databasePath := filepath.Join(cacheDir, "resources.json")
+		err = b.ResourceDatabase.Open(databasePath)
+		if err != nil {
+			return diags.Extend(diag.FromErr(err))
+		}
+	} else {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-		terraform.Initialize(),
 
-		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-		// Executes the post_init script hook defined in the bundle configuration
-		scripts.Execute(config.ScriptPostInit),
-	)
+		diags = diags.Extend(bundle.Apply(ctx, b, terraform.Initialize()))
+	}
+
+	if diags.HasError() {
+		return diags
+	}
+
+	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+	// Executes the post_init script hook defined in the bundle configuration
+	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostInit)))
+}
+
+func IsDirectDeployment(ctx context.Context) (bool, error) {
+	deployment := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
+	if deployment == "direct" {
+		return true, nil
+	} else if deployment == "terraform" || deployment == "" {
+		return false, nil
+	} else {
+		return false, fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", deployment)
+	}
 }

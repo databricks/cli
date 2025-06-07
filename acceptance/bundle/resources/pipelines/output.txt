@@ -36,31 +36,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "id": "[UUID]",
-    "libraries": [
-      {
-        "file": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/bar.py"
-        }
-      }
-    ],
-    "name": "test-pipeline-[UNIQUE_NAME]",
-    "storage": "dbfs:/pipelines/[UUID]"
-  },
-  "method": "PUT",
-  "path": "/api/2.0/pipelines/[UUID]"
-}
-pipelines my id='[UUID]' name='test-pipeline-[UNIQUE_NAME]'
-
+=== Fetch pipeline ID and verify remote state
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
