@@ -6,6 +6,7 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/databricks/cli/libs/structdiff/bundletag"
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 	"github.com/databricks/cli/libs/structdiff/structpath"
 )
@@ -123,8 +124,9 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 			continue
 		}
 
-		tag := jsontag.JSONTag(sf.Tag.Get("json"))
-		node := structpath.NewStructField(path, tag, sf.Name)
+		jsonTag := jsontag.JSONTag(sf.Tag.Get("json"))
+		bundleTag := bundletag.BundleTag(sf.Tag.Get("bundle"))
+		node := structpath.NewStructField(path, jsonTag, bundleTag, sf.Name)
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 
@@ -132,7 +134,7 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 		zero2 := v2Field.IsZero()
 
 		if zero1 || zero2 {
-			if tag.OmitEmpty() {
+			if jsonTag.OmitEmpty() {
 				if zero1 {
 					if !slices.Contains(forced1, sf.Name) {
 						v1Field = reflect.ValueOf(nil)

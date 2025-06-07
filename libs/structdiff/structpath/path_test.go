@@ -3,6 +3,7 @@ package structpath
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/structdiff/bundletag"
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,28 +43,28 @@ func TestPathNode(t *testing.T) {
 		},
 		{
 			name:    "struct field with JSON tag",
-			node:    NewStructField(nil, jsontag.JSONTag("json_name"), "GoFieldName"),
+			node:    NewStructField(nil, jsontag.JSONTag("json_name"), bundletag.BundleTag(""), "GoFieldName"),
 			String:  ".json_name",
 			DynPath: "json_name",
 			Field:   "json_name",
 		},
 		{
 			name:    "struct field without JSON tag (fallback to Go name)",
-			node:    NewStructField(nil, jsontag.JSONTag(""), "GoFieldName"),
+			node:    NewStructField(nil, jsontag.JSONTag(""), bundletag.BundleTag(""), "GoFieldName"),
 			String:  ".GoFieldName",
 			DynPath: "GoFieldName",
 			Field:   "GoFieldName",
 		},
 		{
 			name:    "struct field with dash JSON tag",
-			node:    NewStructField(nil, jsontag.JSONTag("-"), "GoFieldName"),
+			node:    NewStructField(nil, jsontag.JSONTag("-"), bundletag.BundleTag(""), "GoFieldName"),
 			String:  ".-",
 			DynPath: "-",
 			Field:   "-",
 		},
 		{
 			name:    "struct field with JSON tag options",
-			node:    NewStructField(nil, jsontag.JSONTag("lazy_field,omitempty"), "LazyField"),
+			node:    NewStructField(nil, jsontag.JSONTag("lazy_field,omitempty"), bundletag.BundleTag(""), "LazyField"),
 			String:  ".lazy_field",
 			DynPath: "lazy_field",
 			Field:   "lazy_field",
@@ -85,21 +86,21 @@ func TestPathNode(t *testing.T) {
 		// Two node tests
 		{
 			name:    "struct field -> array index",
-			node:    NewIndex(NewStructField(nil, jsontag.JSONTag("items"), "Items"), 3),
+			node:    NewIndex(NewStructField(nil, jsontag.JSONTag("items"), bundletag.BundleTag(""), "Items"), 3),
 			String:  ".items[3]",
 			DynPath: "items[3]",
 			Index:   3,
 		},
 		{
 			name:    "struct field -> map key",
-			node:    NewMapKey(NewStructField(nil, jsontag.JSONTag("config"), "Config"), "database"),
+			node:    NewMapKey(NewStructField(nil, jsontag.JSONTag("config"), bundletag.BundleTag(""), "Config"), "database"),
 			String:  `.config["database"]`,
 			DynPath: "config.database",
 			MapKey:  "database",
 		},
 		{
 			name:    "struct field -> struct field",
-			node:    NewStructField(NewStructField(nil, jsontag.JSONTag("user"), "User"), jsontag.JSONTag("name"), "Name"),
+			node:    NewStructField(NewStructField(nil, jsontag.JSONTag("user"), bundletag.BundleTag(""), "User"), jsontag.JSONTag("name"), bundletag.BundleTag(""), "Name"),
 			String:  ".user.name",
 			DynPath: "user.name",
 			Field:   "name",
@@ -113,14 +114,14 @@ func TestPathNode(t *testing.T) {
 		},
 		{
 			name:    "map key -> struct field",
-			node:    NewStructField(NewMapKey(nil, "primary"), jsontag.JSONTag("host"), "Host"),
+			node:    NewStructField(NewMapKey(nil, "primary"), jsontag.JSONTag("host"), bundletag.BundleTag(""), "Host"),
 			String:  `["primary"].host`,
 			DynPath: `primary.host`,
 			Field:   "host",
 		},
 		{
 			name:   "array index -> struct field",
-			node:   NewStructField(NewIndex(nil, 2), jsontag.JSONTag("id"), "ID"),
+			node:   NewStructField(NewIndex(nil, 2), jsontag.JSONTag("id"), bundletag.BundleTag(""), "ID"),
 			String: "[2].id",
 			Field:  "id",
 		},
@@ -133,21 +134,21 @@ func TestPathNode(t *testing.T) {
 		},
 		{
 			name:    "struct field without JSON tag -> struct field with JSON tag",
-			node:    NewStructField(NewStructField(nil, jsontag.JSONTag(""), "Parent"), jsontag.JSONTag("child_name"), "ChildName"),
+			node:    NewStructField(NewStructField(nil, jsontag.JSONTag(""), bundletag.BundleTag(""), "Parent"), jsontag.JSONTag("child_name"), bundletag.BundleTag(""), "ChildName"),
 			String:  ".Parent.child_name",
 			DynPath: "Parent.child_name",
 			Field:   "child_name",
 		},
 		{
 			name:    "any key",
-			node:    NewAnyKey(NewStructField(nil, jsontag.JSONTag(""), "Parent")),
+			node:    NewAnyKey(NewStructField(nil, jsontag.JSONTag(""), bundletag.BundleTag(""), "Parent")),
 			String:  ".Parent[*]",
 			DynPath: "Parent.*",
 			AnyKey:  true,
 		},
 		{
 			name:     "any index",
-			node:     NewAnyIndex(NewStructField(nil, jsontag.JSONTag(""), "Parent")),
+			node:     NewAnyIndex(NewStructField(nil, jsontag.JSONTag(""), bundletag.BundleTag(""), "Parent")),
 			String:   ".Parent[*]",
 			DynPath:  "Parent[*]",
 			AnyIndex: true,

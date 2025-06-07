@@ -6,6 +6,7 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/databricks/cli/libs/structdiff/bundletag"
 	"github.com/databricks/cli/libs/structdiff/jsontag"
 	"github.com/databricks/cli/libs/structdiff/structpath"
 )
@@ -119,7 +120,8 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		}
 		jsonTag := jsontag.JSONTag(tag)
 		fieldVal := s.Field(i)
-		node := structpath.NewStructField(path, jsonTag, sf.Name)
+		bundleTag := bundletag.BundleTag(sf.Tag.Get("bundle"))
+		node := structpath.NewStructField(path, jsonTag, bundleTag, sf.Name)
 
 		// Skip zero values with omitempty unless field is explicitly forced.
 		if jsonTag.OmitEmpty() && fieldVal.IsZero() && !slices.Contains(forced, sf.Name) {
