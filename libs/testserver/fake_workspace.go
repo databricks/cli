@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -40,10 +41,11 @@ type FakeWorkspace struct {
 	Jobs         map[int64]jobs.Job
 	JobRuns      map[int64]jobs.Run
 
-	Pipelines map[string]pipelines.GetPipelineResponse
-	Monitors  map[string]catalog.MonitorInfo
-	Apps      map[string]apps.App
-	Schemas   map[string]catalog.SchemaInfo
+	Pipelines  map[string]pipelines.GetPipelineResponse
+	Monitors   map[string]catalog.MonitorInfo
+	Apps       map[string]apps.App
+	Schemas    map[string]catalog.SchemaInfo
+	Dashboards map[string]dashboards.Dashboard
 }
 
 func (w *FakeWorkspace) LockUnlock() func() {
@@ -116,6 +118,7 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		Monitors:     map[string]catalog.MonitorInfo{},
 		Apps:         map[string]apps.App{},
 		Schemas:      map[string]catalog.SchemaInfo{},
+		Dashboards:   map[string]dashboards.Dashboard{},
 	}
 }
 

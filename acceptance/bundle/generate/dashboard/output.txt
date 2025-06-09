@@ -1,0 +1,2 @@
+
+>>> [CLI] bundle generate dashboard --existing-id [UUID] --dashboard-dir out/dashboard --resource-dir out/resource
