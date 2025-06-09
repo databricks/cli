@@ -141,7 +141,11 @@
         ],
         "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
         "permissions": [],
-        "schema": "project_name_[UNIQUE_NAME]_dev"
+        "schema": "project_name_[UNIQUE_NAME]_dev",
+        "tags": {
+          "dev": "[USERNAME]"
+        },
+        "url": "[DATABRICKS_URL]/pipelines/[UUID]"
       }
     }
   },
