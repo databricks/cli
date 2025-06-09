@@ -104,7 +104,23 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if t.TriggerPauseStatus == config.Paused {
 			p.Continuous = false
 		}
-		// As of 2024-06, pipelines don't yet support tags
+		if len(tags) > 0 {
+			for _, tag := range tags {
+				exists := false
+				for _, existingTag := range p.Tags {
+					if existingTag.Key == tag.Key {
+						exists = true
+						break
+					}
+				}
+				if !exists {
+					p.Tags = append(p.Tags, &deltapipelines.PipelineTag{
+						Key:   tag.Key,
+						Value: tag.Value,
+					})
+				}
+			}
+		}
 	}
 
 	// Models presets: Prefix, Tags
