@@ -4,8 +4,8 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/databricks/cli/libs/structdiff/jsontag"
 	"github.com/databricks/cli/libs/structdiff/structpath"
+	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 // VisitTypeFunc is invoked for fields encountered while walking typ. This includes both leaf nodes as well as any
@@ -111,7 +111,7 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 		if tag == "-" {
 			continue // skip fields without json name
 		}
-		jsonTag := jsontag.JSONTag(tag)
+		jsonTag := structtag.JSONTag(tag)
 		if jsonTag.Name() == "-" {
 			continue
 		}
