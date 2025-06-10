@@ -154,6 +154,9 @@ func TestTypeRoot(t *testing.T) {
 func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
 	var results []string
 	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) {
+		if path == nil {
+			return
+		}
 		if path.BundleTag().ReadOnly() {
 			results = append(results, path.DynPath())
 		}
