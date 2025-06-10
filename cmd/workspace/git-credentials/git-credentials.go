@@ -188,6 +188,7 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the id for the corresponding credential to access")
 		}
+
 		_, err = fmt.Sscan(args[0], &deleteReq.CredentialId)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
@@ -261,6 +262,7 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the id for the corresponding credential to access")
 		}
+
 		_, err = fmt.Sscan(args[0], &getReq.CredentialId)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
@@ -390,6 +392,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
+
 		_, err = fmt.Sscan(args[0], &updateReq.CredentialId)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])

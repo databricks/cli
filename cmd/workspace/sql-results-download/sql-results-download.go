@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package artifact_allowlists
+package sql_results_download
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -19,19 +19,16 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "artifact-allowlists",
-		Short: `In Databricks Runtime 13.3 and above, you can add libraries and init scripts to the allowlist in UC so that users can leverage these artifacts on compute configured with shared access mode.`,
-		Long: `In Databricks Runtime 13.3 and above, you can add libraries and init scripts
-  to the allowlist in UC so that users can leverage these artifacts on compute
-  configured with shared access mode.`,
-		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
+		Use:   "sql-results-download",
+		Short: `Controls whether users within the workspace are allowed to download results from the SQL Editor and AI/BI Dashboards UIs.`,
+		Long: `Controls whether users within the workspace are allowed to download results
+  from the SQL Editor and AI/BI Dashboards UIs. By default, this setting is
+  enabled (set to true)`,
 		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
+	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newUpdate())
 
@@ -43,37 +40,34 @@ func New() *cobra.Command {
 	return cmd
 }
 
-// start get command
+// start delete command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var getOverrides []func(
+var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.GetArtifactAllowlistRequest,
+	*settings.DeleteSqlResultsDownloadRequest,
 )
 
-func newGet() *cobra.Command {
+func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq catalog.GetArtifactAllowlistRequest
+	var deleteReq settings.DeleteSqlResultsDownloadRequest
 
 	// TODO: short flags
 
-	cmd.Use = "get ARTIFACT_TYPE"
-	cmd.Short = `Get an artifact allowlist.`
-	cmd.Long = `Get an artifact allowlist.
-  
-  Get the artifact allowlist of a certain artifact type. The caller must be a
-  metastore admin or have the **MANAGE ALLOWLIST** privilege on the metastore.
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
-  Arguments:
-    ARTIFACT_TYPE: The artifact type of the allowlist. 
-      Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
+	cmd.Use = "delete"
+	cmd.Short = `Delete the SQL Results Download setting.`
+	cmd.Long = `Delete the SQL Results Download setting.
+  
+  Reverts the SQL Results Download setting to its default value.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -82,12 +76,62 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getReq.ArtifactType)
+		response, err := w.Settings.SqlResultsDownload().Delete(ctx, deleteReq)
 		if err != nil {
-			return fmt.Errorf("invalid ARTIFACT_TYPE: %s", args[0])
+			return err
 		}
+		return cmdio.Render(ctx, response)
+	}
 
-		response, err := w.ArtifactAllowlists.Get(ctx, getReq)
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+// start get command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*settings.GetSqlResultsDownloadRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq settings.GetSqlResultsDownloadRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+
+	cmd.Use = "get"
+	cmd.Short = `Get the SQL Results Download setting.`
+	cmd.Long = `Get the SQL Results Download setting.
+  
+  Gets the SQL Results Download setting.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response, err := w.Settings.SqlResultsDownload().Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -112,36 +156,25 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.SetArtifactAllowlist,
+	*settings.UpdateSqlResultsDownloadRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq catalog.SetArtifactAllowlist
+	var updateReq settings.UpdateSqlResultsDownloadRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update ARTIFACT_TYPE"
-	cmd.Short = `Set an artifact allowlist.`
-	cmd.Long = `Set an artifact allowlist.
+	cmd.Use = "update"
+	cmd.Short = `Update the SQL Results Download setting.`
+	cmd.Long = `Update the SQL Results Download setting.
   
-  Set the artifact allowlist of a certain artifact type. The whole artifact
-  allowlist is replaced with the new allowlist. The caller must be a metastore
-  admin or have the **MANAGE ALLOWLIST** privilege on the metastore.
-
-  Arguments:
-    ARTIFACT_TYPE: The artifact type of the allowlist. 
-      Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
+  Updates the SQL Results Download setting.`
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -163,12 +196,7 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		_, err = fmt.Sscan(args[0], &updateReq.ArtifactType)
-		if err != nil {
-			return fmt.Errorf("invalid ARTIFACT_TYPE: %s", args[0])
-		}
-
-		response, err := w.ArtifactAllowlists.Update(ctx, updateReq)
+		response, err := w.Settings.SqlResultsDownload().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -187,4 +215,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service ArtifactAllowlists
+// end service SqlResultsDownload

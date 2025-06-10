@@ -162,12 +162,14 @@ func newApproveTransitionRequest() *cobra.Command {
 			approveTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[2], &approveTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
 			}
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[3], &approveTransitionRequestReq.ArchiveExistingVersions)
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
@@ -539,6 +541,7 @@ func newCreateTransitionRequest() *cobra.Command {
 			createTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[2], &createTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
@@ -585,7 +588,7 @@ func newCreateWebhook() *cobra.Command {
 	cmd.Flags().StringVar(&createWebhookReq.Description, "description", createWebhookReq.Description, `User-specified description for the webhook.`)
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
+	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `If model name is not specified, a registry-wide webhook is created that listens for the specified events across all versions of all registered models.`)
 	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "create-webhook"
@@ -657,7 +660,10 @@ func newDeleteComment() *cobra.Command {
 	cmd.Short = `Delete a comment.`
 	cmd.Long = `Delete a comment.
   
-  Deletes a comment on a model version.`
+  Deletes a comment on a model version.
+
+  Arguments:
+    ID: Unique identifier of an activity`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -989,6 +995,7 @@ func newDeleteTransitionRequest() *cobra.Command {
 
 		deleteTransitionRequestReq.Name = args[0]
 		deleteTransitionRequestReq.Version = args[1]
+
 		_, err = fmt.Sscan(args[2], &deleteTransitionRequestReq.Stage)
 		if err != nil {
 			return fmt.Errorf("invalid STAGE: %s", args[2])
@@ -1695,6 +1702,7 @@ func newRejectTransitionRequest() *cobra.Command {
 			rejectTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[2], &rejectTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
@@ -2363,12 +2371,14 @@ func newTransitionStage() *cobra.Command {
 			transitionStageReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[2], &transitionStageReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
 			}
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[3], &transitionStageReq.ArchiveExistingVersions)
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])

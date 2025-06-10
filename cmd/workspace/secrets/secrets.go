@@ -804,6 +804,7 @@ func newPutAcl() *cobra.Command {
 			putAclReq.Principal = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[2], &putAclReq.Permission)
 			if err != nil {
 				return fmt.Errorf("invalid PERMISSION: %s", args[2])

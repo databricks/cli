@@ -229,6 +229,7 @@ func newCancelRun() *cobra.Command {
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have this field is required")
 			}
+
 			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -412,6 +413,7 @@ func newDelete() *cobra.Command {
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have the canonical identifier of the job to delete")
 			}
+
 			_, err = fmt.Sscan(args[0], &deleteReq.JobId)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
@@ -511,6 +513,7 @@ func newDeleteRun() *cobra.Command {
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have id of the run to delete")
 			}
+
 			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -587,6 +590,7 @@ func newExportRun() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the canonical identifier for the run")
 		}
+
 		_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -672,6 +676,7 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
 		}
+
 		_, err = fmt.Sscan(args[0], &getReq.JobId)
 		if err != nil {
 			return fmt.Errorf("invalid JOB_ID: %s", args[0])
@@ -900,6 +905,7 @@ func newGetRun() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
 		}
+
 		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -982,6 +988,7 @@ func newGetRunOutput() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the canonical identifier for the run")
 		}
+
 		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -1219,6 +1226,7 @@ func newRepairRun() *cobra.Command {
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have the job run id of the run to repair")
 			}
+
 			_, err = fmt.Sscan(args[0], &repairRunReq.RunId)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -1422,6 +1430,7 @@ func newRunNow() *cobra.Command {
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have the id of the job to be executed")
 			}
+
 			_, err = fmt.Sscan(args[0], &runNowReq.JobId)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
@@ -1742,6 +1751,7 @@ func newUpdate() *cobra.Command {
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have the canonical identifier of the job to update")
 			}
+
 			_, err = fmt.Sscan(args[0], &updateReq.JobId)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])

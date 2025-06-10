@@ -148,6 +148,7 @@ func newCreate() *cobra.Command {
 			createReq.Name = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[3], &createReq.VolumeType)
 			if err != nil {
 				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])

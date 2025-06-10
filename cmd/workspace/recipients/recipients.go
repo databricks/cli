@@ -99,7 +99,7 @@ func newCreate() *cobra.Command {
   Arguments:
     NAME: Name of Recipient.
     AUTHENTICATION_TYPE: The delta sharing authentication type. 
-      Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, TOKEN]`
+      Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, OIDC_FEDERATION, TOKEN]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -136,6 +136,7 @@ func newCreate() *cobra.Command {
 			createReq.Name = args[0]
 		}
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
@@ -402,6 +403,7 @@ func newRotateToken() *cobra.Command {
 		}
 		rotateTokenReq.Name = args[0]
 		if !cmd.Flags().Changed("json") {
+
 			_, err = fmt.Sscan(args[1], &rotateTokenReq.ExistingTokenExpireInSeconds)
 			if err != nil {
 				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[1])

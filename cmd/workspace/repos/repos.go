@@ -199,6 +199,7 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the id for the corresponding repo to delete")
 		}
+
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
@@ -272,6 +273,7 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
 		}
+
 		_, err = fmt.Sscan(args[0], &getReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
@@ -647,6 +649,7 @@ func newUpdate() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
 		}
+
 		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])

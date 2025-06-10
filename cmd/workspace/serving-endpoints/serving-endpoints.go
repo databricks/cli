@@ -723,6 +723,7 @@ func newHttpRequest() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		httpRequestReq.ConnectionName = args[0]
+
 		_, err = fmt.Sscan(args[1], &httpRequestReq.Method)
 		if err != nil {
 			return fmt.Errorf("invalid METHOD: %s", args[1])
