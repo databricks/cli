@@ -80,5 +80,9 @@ func Groups() []cobra.Group {
 			ID:    "aibuilder",
 			Title: "AI Builder",
 		},
+		{
+			ID:    "database",
+			Title: "Database",
+		},
 	}
 }
