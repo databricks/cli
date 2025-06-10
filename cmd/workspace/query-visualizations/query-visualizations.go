@@ -4,6 +4,8 @@ package query_visualizations
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -70,7 +72,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Add a visualization to a query.`
 	cmd.Long = `Add a visualization to a query.
-
+  
   Adds a visualization to a query.`
 
 	cmd.Annotations = make(map[string]string)
@@ -136,7 +138,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove a visualization.`
 	cmd.Long = `Remove a visualization.
-
+  
   Removes a visualization.`
 
 	cmd.Annotations = make(map[string]string)
@@ -190,27 +192,33 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	var durationParam string
+	cmd.Flags().StringVar(&durationParam, "duration", durationParam, ``)
+	var startDateParam string
+	cmd.Flags().StringVar(&startDateParam, "start-date", startDateParam, ``)
 	// TODO: complex arg: visualization
 
-	cmd.Use = "update ID UPDATE_MASK"
+	cmd.Use = "update ID UPDATE_MASK REQUIRED_START_DATE REQUIRED_DURATION"
 	cmd.Short = `Update a visualization.`
 	cmd.Long = `Update a visualization.
-
+  
   Updates a visualization.
 
   Arguments:
-    ID:
+    ID: 
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-
+      
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the
-      future.`
+      future.
+    REQUIRED_START_DATE: 
+    REQUIRED_DURATION: `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -222,7 +230,7 @@ func newUpdate() *cobra.Command {
 			}
 			return nil
 		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -245,7 +253,38 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.Id = args[0]
 		if !cmd.Flags().Changed("json") {
-			updateReq.UpdateMask = args[1]
+			updateReq.UpdateMask = strings.Split(args[1], ",")
+
+		}
+		if args[2] != "" {
+			requiredStartDate, err := time.Parse(time.RFC3339, args[2])
+			if err != nil {
+				return fmt.Errorf("invalid REQUIRED_START_DATE: %s", args[2])
+			}
+			updateReq.RequiredStartDate = requiredStartDate
+		}
+
+		if args[3] != "" {
+			requiredDuration, err := time.ParseDuration(args[3])
+			if err != nil {
+				return fmt.Errorf("invalid REQUIRED_DURATION: %s", args[3])
+			}
+			updateReq.RequiredDuration = requiredDuration
+		}
+
+		if durationParam != "" {
+			durationField, err := time.ParseDuration(durationParam)
+			if err != nil {
+				return fmt.Errorf("invalid DURATION: %s", durationParam)
+			}
+			updateReq.Duration = &durationField
+		}
+		if startDateParam != "" {
+			startDateField, err := time.Parse(time.RFC3339, startDateParam)
+			if err != nil {
+				return fmt.Errorf("invalid START_DATE: %s", startDateParam)
+			}
+			updateReq.StartDate = &startDateField
 		}
 
 		response, err := w.QueryVisualizations.Update(ctx, updateReq)
