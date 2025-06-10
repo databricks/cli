@@ -2,7 +2,7 @@
 """
 Drop in replacement for golangci-lint that runs it only on changed packages.
 
-Changes are calculated as diff against HEAD with a fallback to diff against main.
+Changes are calculated as diff against main by default, use --ref or -H/--head to change this.
 """
 
 import os
@@ -19,34 +19,29 @@ def parse_lines(cmd):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--main", action="store_true", help="Detect changes by running diff against main")
-    parser.add_argument("--head", action="store_true", help="Detect changes by running diff against HEAD")
+    parser.add_argument("--ref", default="main", help="Reference to calculate diff against.")
+    parser.add_argument("-H", "--head", action="store_true", help="Shortcut for '--ref HEAD' - test uncommitted changes only")
     parser.add_argument("args", nargs=argparse.REMAINDER, help="golangci-lint command and options")
     args = parser.parse_args()
 
-    if not args.main and not args.head:
-        args.main = True
-        args.head = True
+    if not args.args:
+        args.args = ["run"]
+
+    if args.head:
+        args.ref = "HEAD"
 
     gitroot = parse_lines(["git", "rev-parse", "--show-toplevel"])[0]
     os.chdir(gitroot)
 
-    changed = []
+    changed = parse_lines(["git", "diff", "--name-only", args.ref, "--", "."])
 
-    if args.head:
-        changed = parse_lines(["git", "diff", "--name-only", "HEAD", "--", "."])
-
-    if not changed and args.main:
-        changed = parse_lines(["git", "diff", "--name-only", "main", "--", "."])
-
+    # We need to pass packages to golangci-lint, not individual files.
     dirs = set()
     for filename in changed:
-        # We need to pass packages to golangci-lint, not individual files
+        if "/testdata/" in filename:
+            continue
         if filename.endswith(".go"):
             d = os.path.dirname(filename)
-            dirs.add(d)
-        elif "/testdata/" in filename:
-            d = filename.split("/testdata/")[0]
             dirs.add(d)
 
     if not dirs:
