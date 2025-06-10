@@ -91,13 +91,21 @@ type Schema struct {
 func anyToSchema(a any) (*Schema, error) {
 	b, err := json.Marshal(a)
 	if err != nil {
+<<<<<<< HEAD
+		return nil, fmt.Errorf("failed to marshal any to schema: %w", err)
+=======
 		return nil, fmt.Errorf("failed to marshal any to bytes: %w", err)
+>>>>>>> origin
 	}
 
 	res := &Schema{}
 	err = json.Unmarshal(b, res)
 	if err != nil {
+<<<<<<< HEAD
+		return nil, fmt.Errorf("failed to unmarshal any to schema: %w", err)
+=======
 		return nil, fmt.Errorf("failed to unmarshal bytes to JSON schema: %w", err)
+>>>>>>> origin
 	}
 
 	return res, nil
