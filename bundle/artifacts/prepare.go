@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/cli/libs/utils"
@@ -35,6 +36,16 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	for _, artifactName := range utils.SortedKeys(b.Config.Artifacts) {
 		artifact := b.Config.Artifacts[artifactName]
+		if artifact == nil {
+			l := b.Config.GetLocation("artifacts." + artifactName)
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Artifact not properly configured",
+				Detail:    "please specify artifact properties",
+				Locations: []dyn.Location{l},
+			})
+			continue
+		}
 		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
 		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
 
