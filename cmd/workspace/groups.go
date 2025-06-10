@@ -84,5 +84,9 @@ func Groups() []cobra.Group {
 			ID:    "database",
 			Title: "Database",
 		},
+		{
+			ID:    "qualitymonitorv2",
+			Title: "Quality Monitor v2",
+		},
 	}
 }
