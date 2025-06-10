@@ -7,20 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *FakeWorkspace) DashboardGet(dashboardId string) Response {
-	defer s.LockUnlock()()
-
-	value, ok := s.Dashboards[dashboardId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-	return Response{
-		Body: value,
-	}
-}
-
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	defer s.LockUnlock()()
 
