@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"github.com/databricks/cli/libs/structdiff/structpath"
-	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 type Change struct {
@@ -123,9 +122,7 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 			continue
 		}
 
-		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-		bundleTag := structtag.BundleTag(sf.Tag.Get("bundle"))
-		node := structpath.NewStructField(path, jsonTag, bundleTag, sf.Name)
+		node := structpath.NewStructField(path, sf.Tag, sf.Name)
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 

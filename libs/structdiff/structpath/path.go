@@ -2,6 +2,7 @@ package structpath
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/databricks/cli/libs/structdiff/structtag"
@@ -118,7 +119,10 @@ func NewMapKey(prev *PathNode, key string) *PathNode {
 
 // NewStructField creates a new PathNode for a struct field.
 // The jsonTag is used for lazy JSON key resolution, and fieldName is used as fallback.
-func NewStructField(prev *PathNode, jsonTag structtag.JSONTag, bundleTag structtag.BundleTag, fieldName string) *PathNode {
+func NewStructField(prev *PathNode, tag reflect.StructTag, fieldName string) *PathNode {
+	jsonTag := structtag.JSONTag(tag.Get("json"))
+	bundleTag := structtag.BundleTag(tag.Get("bundle"))
+
 	return &PathNode{
 		prev:      prev,
 		jsonTag:   jsonTag,
