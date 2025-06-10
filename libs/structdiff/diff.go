@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"github.com/databricks/cli/libs/structdiff/structpath"
-	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 type Change struct {
@@ -131,7 +130,7 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 		zero2 := v2Field.IsZero()
 
 		if zero1 || zero2 {
-			if jsonTag.OmitEmpty() {
+			if node.JSONTag().OmitEmpty() {
 				if zero1 {
 					if !slices.Contains(forced1, sf.Name) {
 						v1Field = reflect.ValueOf(nil)

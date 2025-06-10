@@ -182,28 +182,26 @@ func TestTypeBundleTag(t *testing.T) {
 	type Foo struct {
 		A string `bundle:"readonly"`
 		B string `bundle:"internal"`
-		C string `bundle:"deprecated"`
-		D string
-		E string `bundle:"internal,readonly"`
+		C string
+		D string `bundle:"internal,readonly"`
 	}
 
-	var readonly, internal, deprecated []string
+	var readonly, internal []string
 	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) {
+		if path == nil {
+			return
+		}
 		if path.BundleTag().ReadOnly() {
 			readonly = append(readonly, path.String())
 		}
 		if path.BundleTag().Internal() {
 			internal = append(internal, path.String())
 		}
-		if path.BundleTag().Deprecated() {
-			deprecated = append(deprecated, path.String())
-		}
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{".A", ".E"}, readonly)
-	assert.Equal(t, []string{".B", ".E"}, internal)
-	assert.Equal(t, []string{".C"}, deprecated)
+	assert.Equal(t, []string{".A", ".D"}, readonly)
+	assert.Equal(t, []string{".B", ".D"}, internal)
 }
 
 func TestWalkTypeVisited(t *testing.T) {
