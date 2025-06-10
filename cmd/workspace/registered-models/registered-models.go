@@ -531,7 +531,6 @@ func newSetAlias() *cobra.Command {
 		setAliasReq.FullName = args[0]
 		setAliasReq.Alias = args[1]
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[2], &setAliasReq.VersionNum)
 			if err != nil {
 				return fmt.Errorf("invalid VERSION_NUM: %s", args[2])

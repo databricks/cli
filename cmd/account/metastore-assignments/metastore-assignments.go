@@ -98,7 +98,6 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-
 		_, err = fmt.Sscan(args[0], &createReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -363,7 +362,6 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-
 		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])

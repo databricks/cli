@@ -162,7 +162,6 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-
 		_, err = fmt.Sscan(args[0], &updateReq.ArtifactType)
 		if err != nil {
 			return fmt.Errorf("invalid ARTIFACT_TYPE: %s", args[0])

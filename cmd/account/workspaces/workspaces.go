@@ -238,7 +238,6 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have workspace id")
 		}
-
 		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -325,7 +324,6 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have workspace id")
 		}
-
 		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -591,7 +589,6 @@ func newUpdate() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have workspace id")
 		}
-
 		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])

@@ -158,7 +158,6 @@ func newUpdate() *cobra.Command {
 		updateReq.ListingId = args[0]
 		updateReq.RequestId = args[1]
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[2], &updateReq.Status)
 			if err != nil {
 				return fmt.Errorf("invalid STATUS: %s", args[2])

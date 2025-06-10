@@ -162,14 +162,12 @@ func newApproveTransitionRequest() *cobra.Command {
 			approveTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[2], &approveTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[3], &approveTransitionRequestReq.ArchiveExistingVersions)
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
@@ -541,7 +539,6 @@ func newCreateTransitionRequest() *cobra.Command {
 			createTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[2], &createTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
@@ -995,7 +992,6 @@ func newDeleteTransitionRequest() *cobra.Command {
 
 		deleteTransitionRequestReq.Name = args[0]
 		deleteTransitionRequestReq.Version = args[1]
-
 		_, err = fmt.Sscan(args[2], &deleteTransitionRequestReq.Stage)
 		if err != nil {
 			return fmt.Errorf("invalid STAGE: %s", args[2])
@@ -1702,7 +1698,6 @@ func newRejectTransitionRequest() *cobra.Command {
 			rejectTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[2], &rejectTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
@@ -2371,14 +2366,12 @@ func newTransitionStage() *cobra.Command {
 			transitionStageReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[2], &transitionStageReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[3], &transitionStageReq.ArchiveExistingVersions)
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])

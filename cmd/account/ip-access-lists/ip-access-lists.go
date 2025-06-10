@@ -150,7 +150,6 @@ func newCreate() *cobra.Command {
 			createReq.Label = args[0]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[1], &createReq.ListType)
 			if err != nil {
 				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
@@ -438,14 +437,12 @@ func newReplace() *cobra.Command {
 			replaceReq.Label = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[2], &replaceReq.ListType)
 			if err != nil {
 				return fmt.Errorf("invalid LIST_TYPE: %s", args[2])
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
 			if err != nil {
 				return fmt.Errorf("invalid ENABLED: %s", args[3])

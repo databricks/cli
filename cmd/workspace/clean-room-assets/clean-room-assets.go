@@ -175,7 +175,6 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		deleteReq.CleanRoomName = args[0]
-
 		_, err = fmt.Sscan(args[1], &deleteReq.AssetType)
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
@@ -243,7 +242,6 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		getReq.CleanRoomName = args[0]
-
 		_, err = fmt.Sscan(args[1], &getReq.AssetType)
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
@@ -398,7 +396,6 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.CleanRoomName = args[0]
-
 		_, err = fmt.Sscan(args[1], &updateReq.AssetType)
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])

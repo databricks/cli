@@ -118,7 +118,6 @@ func newEnforceCompliance() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[0], &enforceComplianceReq.JobId)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])

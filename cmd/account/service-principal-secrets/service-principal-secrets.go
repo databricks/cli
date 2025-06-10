@@ -107,7 +107,6 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-
 		_, err = fmt.Sscan(args[0], &createReq.ServicePrincipalId)
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])

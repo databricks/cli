@@ -125,7 +125,6 @@ func newAssign() *cobra.Command {
 				}
 			}
 		}
-
 		_, err = fmt.Sscan(args[0], &assignReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -705,7 +704,6 @@ func newUpdateAssignment() *cobra.Command {
 				}
 			}
 		}
-
 		_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])

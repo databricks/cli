@@ -178,7 +178,6 @@ func newDelete() *cobra.Command {
 
 		deleteReq.FullName = args[0]
 		deleteReq.ConstraintName = args[1]
-
 		_, err = fmt.Sscan(args[2], &deleteReq.Cascade)
 		if err != nil {
 			return fmt.Errorf("invalid CASCADE: %s", args[2])

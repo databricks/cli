@@ -331,7 +331,6 @@ func newPatchStatus() *cobra.Command {
 		}
 		patchStatusReq.LogDeliveryConfigurationId = args[0]
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[1], &patchStatusReq.Status)
 			if err != nil {
 				return fmt.Errorf("invalid STATUS: %s", args[1])

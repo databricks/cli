@@ -149,7 +149,6 @@ func newCreateExperiment() *cobra.Command {
 			createExperimentReq.ForecastGranularity = args[3]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[4], &createExperimentReq.ForecastHorizon)
 			if err != nil {
 				return fmt.Errorf("invalid FORECAST_HORIZON: %s", args[4])

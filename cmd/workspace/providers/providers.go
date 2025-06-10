@@ -116,7 +116,6 @@ func newCreate() *cobra.Command {
 			createReq.Name = args[0]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])

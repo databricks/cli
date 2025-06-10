@@ -106,7 +106,6 @@ func newMigratePermissions() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[0], &migratePermissionsReq.WorkspaceId)
 			if err != nil {
 				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])

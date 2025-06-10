@@ -87,7 +87,6 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-
 		_, err = fmt.Sscan(args[1], &deleteReq.PrincipalId)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
@@ -287,12 +286,10 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-
 		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-
 		_, err = fmt.Sscan(args[1], &updateReq.PrincipalId)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])

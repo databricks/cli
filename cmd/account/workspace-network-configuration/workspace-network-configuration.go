@@ -167,7 +167,6 @@ func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 				}
 			}
 		}
-
 		_, err = fmt.Sscan(args[0], &updateWorkspaceNetworkOptionRpcReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])

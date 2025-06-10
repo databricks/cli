@@ -137,7 +137,6 @@ func newCreateIndex() *cobra.Command {
 			createIndexReq.PrimaryKey = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
-
 			_, err = fmt.Sscan(args[3], &createIndexReq.IndexType)
 			if err != nil {
 				return fmt.Errorf("invalid INDEX_TYPE: %s", args[3])

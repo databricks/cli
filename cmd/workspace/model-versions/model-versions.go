@@ -95,7 +95,6 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		deleteReq.FullName = args[0]
-
 		_, err = fmt.Sscan(args[1], &deleteReq.Version)
 		if err != nil {
 			return fmt.Errorf("invalid VERSION: %s", args[1])
@@ -167,7 +166,6 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		getReq.FullName = args[0]
-
 		_, err = fmt.Sscan(args[1], &getReq.Version)
 		if err != nil {
 			return fmt.Errorf("invalid VERSION: %s", args[1])
@@ -393,7 +391,6 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.FullName = args[0]
-
 		_, err = fmt.Sscan(args[1], &updateReq.Version)
 		if err != nil {
 			return fmt.Errorf("invalid VERSION: %s", args[1])
