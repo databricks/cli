@@ -1,10 +1,4 @@
 
->>> cp [TESTROOT]/bundle/deploy/dashboard/simple_outside_bundle_root/../simple/sample-dashboard.lvdash.json ../.
-
->>> ls ..
-001
-sample-dashboard.lvdash.json
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-outside-bundle-root-[UNIQUE_NAME]/default/files...
 Deploying resources...
