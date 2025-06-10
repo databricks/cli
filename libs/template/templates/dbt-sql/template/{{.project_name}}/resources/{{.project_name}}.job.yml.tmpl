@@ -15,7 +15,6 @@ resources:
 
       tasks:
         - task_key: dbt
-
           dbt_task:
             project_directory: ../
             # The default schema, catalog, etc. are defined in ../dbt_profiles/profiles.yml
@@ -34,8 +33,8 @@ resources:
 {{- end}}
 
           libraries:
-          - pypi:
-              package: dbt-databricks>=1.8.0,<2.0.0
+            - pypi:
+                package: dbt-databricks>=1.8.0,<2.0.0
 
           new_cluster:
             spark_version: {{template "latest_lts_dbr_version"}}
