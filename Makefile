@@ -37,7 +37,7 @@ links:
 	./tools/update_github_links.py
 
 # Checks other than 'fmt' and 'lint'; these are fast, so can be run first
-checks: tidy ws links
+checks: tidy ws links yamlfmt
 
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
