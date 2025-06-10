@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,8 +28,6 @@ const (
 )
 
 func New(ctx context.Context) *cobra.Command {
-	fmt.Println(os.Args)
-	fmt.Println(os.Args[0])
 	invokedAs := filepath.Base(os.Args[0])
 	if invokedAs == "dlt" {
 		return dlt.NewRoot()

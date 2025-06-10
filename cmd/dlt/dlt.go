@@ -1,12 +1,14 @@
 package dlt
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -22,16 +24,6 @@ func InstallDLTSymlink() error {
 	}
 
 	dir := filepath.Dir(path)
-
-	// Check write permission by trying to create and remove a temp file
-	testFile := filepath.Join(dir, ".permtest")
-	f, err := os.Create(testFile)
-	if err != nil {
-		return fmt.Errorf("no write permission in %s: %w", dir, err)
-	}
-	f.Close()
-	_ = os.Remove(testFile)
-
 	dltPath := filepath.Join(dir, "dlt")
 
 	// Check if 'dlt' already exists
@@ -39,7 +31,8 @@ func InstallDLTSymlink() error {
 		if fi.Mode()&os.ModeSymlink != 0 {
 			target, err := os.Readlink(dltPath)
 			if err == nil && target == realPath {
-				return errors.New("dlt already installed")
+				cmdio.LogString(context.Background(), "dlt already installed")
+				return nil
 			}
 		}
 		return fmt.Errorf("cannot create symlink: %q already exists", dltPath)
@@ -60,15 +53,7 @@ func New() *cobra.Command {
 		Short:  "Install DLT",
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := InstallDLTSymlink()
-			if err != nil {
-				if err.Error() == "dlt already installed" {
-					fmt.Println(err.Error())
-					return nil
-				}
-				return err
-			}
-			return nil
+			return InstallDLTSymlink()
 		},
 	}
 }
