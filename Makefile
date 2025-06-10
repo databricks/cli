@@ -20,11 +20,11 @@ lintcheck:
 	golangci-lint run ./...
 
 fmtfull:
-	ruff format -qn
+	ruff format -n
 	golangci-lint fmt
 
 fmt:
-	ruff format -qn
+	ruff format -n
 	./tools/lintdiff.py fmt
 
 ws:
