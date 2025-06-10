@@ -190,9 +190,11 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateReq.Duration, "duration", updateReq.Duration, ``)
+	cmd.Flags().StringVar(&updateReq.StartDate, "start-date", updateReq.StartDate, ``)
 	// TODO: complex arg: visualization
 
-	cmd.Use = "update ID UPDATE_MASK"
+	cmd.Use = "update ID UPDATE_MASK REQUIRED_START_DATE REQUIRED_DURATION"
 	cmd.Short = `Update a visualization.`
 	cmd.Long = `Update a visualization.
   
@@ -210,7 +212,9 @@ func newUpdate() *cobra.Command {
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the
-      future.`
+      future.
+    REQUIRED_START_DATE: 
+    REQUIRED_DURATION: `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -222,7 +226,7 @@ func newUpdate() *cobra.Command {
 			}
 			return nil
 		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -247,6 +251,8 @@ func newUpdate() *cobra.Command {
 		if !cmd.Flags().Changed("json") {
 			updateReq.UpdateMask = args[1]
 		}
+		updateReq.RequiredStartDate = args[2]
+		updateReq.RequiredDuration = args[3]
 
 		response, err := w.QueryVisualizations.Update(ctx, updateReq)
 		if err != nil {

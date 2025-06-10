@@ -162,6 +162,9 @@ func new{{.PascalName}}() *cobra.Command {
 			{{else if .IsComputed -}}
 			{{else if .IsOutputOnly -}}
 			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}. Supported values: {{template "printArray" .Entity.Enum}}`)
+			{{else if .IsLegacyWellKnownType}} cmd.Flags().{{template "arg-type" .Entity}}(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", {{- template "request-body-obj" (dict "Method" $method "Field" .)}}, `{{.Summary | without "`"}}`)
+			{{else if or .Entity.IsDuration .Entity.IsTimestamp .Entity.IsFieldMask}} var {{.CamelName}}Param string
+			cmd.Flags().StringVar(&{{.CamelName}}Param, "{{.KebabName}}", {{.CamelName}}Param, `{{.Summary | without "`"}}`)
 			{{else}}cmd.Flags().{{template "arg-type" .Entity}}(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", {{- template "request-body-obj" (dict "Method" $method "Field" .)}}, `{{.Summary | without "`"}}`)
 			{{end}}
 		{{- end -}}
@@ -293,6 +296,27 @@ func new{{.PascalName}}() *cobra.Command {
 			{{- range $arg, $field := .RequiredPositionalArguments}}
 				{{- template "args-scan" (dict "Arg" $arg "Field" $field "Method" $method "HasIdPrompt" $hasIdPrompt "ExcludeFromJson" $excludeFromJson)}}
 			{{- end -}}
+			{{range .AllFields -}}
+				{{- if not (or .IsLegacyWellKnownType .Required)}}
+					{{if or .Entity.IsTimestamp -}}
+					if {{.CamelName}}Param != "" {
+						{{.CamelName}}Field, err := time.Parse(time.RFC3339, {{.CamelName}}Param)
+						if err != nil {
+							return fmt.Errorf("invalid {{.ConstantName}}: %s", {{.CamelName}}Param)
+						}
+						{{template "request-body-obj" (dict "Method" $method "Field" .)}} = &{{.CamelName}}Field
+					}
+					{{else if .Entity.IsDuration -}}
+						if {{.CamelName}}Param != "" {
+							{{.CamelName}}Field, err := time.ParseDuration({{.CamelName}}Param)
+							if err != nil {
+								return fmt.Errorf("invalid {{.ConstantName}}: %s", {{.CamelName}}Param)
+							}
+							{{template "request-body-obj" (dict "Method" $method "Field" .)}} = &{{.CamelName}}Field
+						}
+					{{- end}}
+				{{- end}}
+			{{- end -}}
 			{{- if and $canUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }}
 			}
 			{{- end}}
@@ -390,9 +414,10 @@ func new{{.PascalName}}() *cobra.Command {
 
 {{- define "arg-type" -}}
 	{{- if .IsString}}StringVar
-	{{- else if .IsTimestamp}}StringVar{{/* TODO: add support for well known types */}}
-	{{- else if .IsDuration}}StringVar{{/* TODO: add support for well known types */}}
-	{{- else if .IsFieldMask}}StringVar{{/* TODO: add support for well known types */}}
+	{{- /* The following Well Known Types are expressed as strings in JSON */}}
+	{{- else if .IsTimestamp}}StringVar
+	{{- else if .IsDuration}}StringVar
+	{{- else if .IsFieldMask}}StringVar
 	{{- else if .IsBool}}BoolVar
 	{{- else if .IsInt64}}Int64Var
 	{{- else if .IsFloat64}}Float64Var
@@ -416,7 +441,25 @@ func new{{.PascalName}}() *cobra.Command {
 	_, err = fmt.Sscan(args[{{$arg}}], &{{- template "request-body-obj" (dict "Method" $method "Field" $field)}})
 	if err != nil {
 		return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
-	}{{else -}}
+	}{{else if and (not $field.IsLegacyWellKnownType) $field.Entity.IsTimestamp -}}
+	if args[{{$arg}}] != "" {
+		{{$field.CamelName}}, err := time.Parse(time.RFC3339, args[{{$arg}}])
+		if err != nil {
+			return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+		}
+		{{template "request-body-obj" (dict "Method" $method "Field" $field)}} = {{$field.CamelName}}
+	}
+	{{else if and (not $field.IsLegacyWellKnownType) $field.Entity.IsDuration -}}
+	if args[{{$arg}}] != "" {
+		{{$field.CamelName}}, err := time.ParseDuration(args[{{$arg}}])
+		if err != nil {
+			return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+		}
+		{{template "request-body-obj" (dict "Method" $method "Field" $field)}} = {{$field.CamelName}}
+	}
+	{{else if and (not $field.IsLegacyWellKnownType) $field.Entity.IsFieldMask -}}
+	{{template "request-body-obj" (dict "Method" $method "Field" $field)}} = strings.Split(args[{{$arg}}], ",")
+	{{else -}}
 	{{- template "request-body-obj" (dict "Method" $method "Field" $field)}} = args[{{$arg}}]
 	{{- end -}}
 	{{- if $optionalIfJsonIsUsed  }}
