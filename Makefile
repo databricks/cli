@@ -6,8 +6,11 @@ GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
 
 
-lint:
+lintfull:
 	golangci-lint run --fix
+
+lint:
+	./tools/lintdiff.py run --fix
 
 tidy:
 	@# not part of golangci-lint, apparently
@@ -16,9 +19,13 @@ tidy:
 lintcheck:
 	golangci-lint run ./...
 
-fmt:
+fmtfull:
 	ruff format -qn
 	golangci-lint fmt
+
+fmt:
+	ruff format -qn
+	./tools/lintdiff.py fmt
 
 ws:
 	./tools/validate_whitespace.py
@@ -78,4 +85,4 @@ generate:
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks
