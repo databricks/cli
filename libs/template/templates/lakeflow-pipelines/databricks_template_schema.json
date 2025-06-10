@@ -14,7 +14,7 @@
             "default": "{{default_catalog}}",
             "pattern": "^\\w*$",
             "pattern_match_failure_message": "Invalid catalog name.",
-            "description": "\nInitial catalog.\ndefault_catalog",
+            "description": "\nInitial catalog:\ndefault_catalog",
             "order": 3
         },
         "personal_schemas": {
