@@ -41,6 +41,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=validate:volume-path
 10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
 10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
+10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=ResolveVariableReferences(resources)
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=NormalizePaths
