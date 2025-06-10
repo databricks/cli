@@ -13,5 +13,6 @@
 
 ### Bundles
 * Fix "bundle summary -o json" to render null values properly ([#2990](https://github.com/databricks/cli/pull/2990))
+* Fixed null pointer de-reference if artifacts missing fields ([#3022](https://github.com/databricks/cli/pull/3022))
 
 ### API Changes
