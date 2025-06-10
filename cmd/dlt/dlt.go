@@ -26,12 +26,13 @@ func InstallDLTSymlink() error {
 	dir := filepath.Dir(path)
 	dltPath := filepath.Join(dir, "dlt")
 
-	// Check if 'dlt' already exists
+	// Check if DLT already exists
 	if fi, err := os.Lstat(dltPath); err == nil {
 		if fi.Mode()&os.ModeSymlink != 0 {
 			target, err := os.Readlink(dltPath)
 			if err == nil && target == realPath {
-				cmdio.LogString(context.Background(), "dlt already installed")
+				// DLT is already installed, so we can return success
+				cmdio.LogString(context.Background(), "dlt successfully installed")
 				return nil
 			}
 		}
@@ -44,6 +45,7 @@ func InstallDLTSymlink() error {
 	if err := os.Symlink(realPath, dltPath); err != nil {
 		return fmt.Errorf("failed to create symlink: %w", err)
 	}
+	cmdio.LogString(context.Background(), "dlt successfully installed")
 	return nil
 }
 

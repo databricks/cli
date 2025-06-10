@@ -1,0 +1,3 @@
+
+>>> errcode [CLI] install-dlt
+dlt successfully installed
