@@ -11,10 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getFields(t *testing.T, typ reflect.Type) map[string]any {
+func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
 	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) {
-		results[path.String()] = reflect.Zero(typ).Interface()
+		for typ.Kind() == reflect.Pointer {
+			typ = typ.Elem()
+		}
+		if isScalar(typ.Kind()) {
+			results[path.String()] = reflect.Zero(typ).Interface()
+		}
 	})
 	require.NoError(t, err)
 	return results
@@ -27,11 +32,11 @@ func TestTypeNilCallback(t *testing.T) {
 }
 
 func TestTypeNil(t *testing.T) {
-	assert.Equal(t, map[string]any{}, getFields(t, reflect.TypeOf(nil)))
+	assert.Equal(t, map[string]any{}, getScalarFields(t, reflect.TypeOf(nil)))
 }
 
 func TestTypeScalar(t *testing.T) {
-	assert.Equal(t, map[string]any{"": 0}, getFields(t, reflect.TypeOf(5)))
+	assert.Equal(t, map[string]any{"": 0}, getScalarFields(t, reflect.TypeOf(5)))
 }
 
 func TestTypes(t *testing.T) {
@@ -55,7 +60,7 @@ func TestTypes(t *testing.T) {
 		".omit_str":           "",
 		".valid_field":        "",
 		".valid_field_ptr":    "",
-	}, getFields(t, reflect.TypeOf(Types{})))
+	}, getScalarFields(t, reflect.TypeOf(Types{})))
 }
 
 func TestTypeSelf(t *testing.T) {
@@ -69,11 +74,11 @@ func TestTypeSelf(t *testing.T) {
 		".SelfReference.valid_field":     "",
 		".SelfSlicePtr[*].valid_field":   "",
 		".SelfSlice[*].valid_field":      "",
-	}, getFields(t, reflect.TypeOf(Self{})))
+	}, getScalarFields(t, reflect.TypeOf(Self{})))
 }
 
 func testStruct(t *testing.T, typ reflect.Type, minLen, maxLen int, present map[string]any, notPresent []string) {
-	results := getFields(t, typ)
+	results := getScalarFields(t, typ)
 
 	assert.Greater(t, len(results), minLen, "Expected to find many fields in %s", typ)
 	assert.Less(t, len(results), maxLen, "Expected to find not so many fields in %s", typ)
@@ -199,4 +204,45 @@ func TestTypeBundleTag(t *testing.T) {
 	assert.Equal(t, []string{".A", ".E"}, readonly)
 	assert.Equal(t, []string{".B", ".E"}, internal)
 	assert.Equal(t, []string{".C"}, deprecated)
+}
+
+func TestWalkTypeVisited(t *testing.T) {
+	type Inner struct {
+		A int
+		B ***int
+	}
+
+	type Outer struct {
+		Inner      Inner
+		MapInner   map[string]*Inner
+		SliceInner []Inner
+
+		C string
+		D bool
+	}
+
+	var visited []string
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) {
+		if path == nil {
+			return
+		}
+		visited = append(visited, path.String())
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{
+		".Inner",
+		".Inner.A",
+		".Inner.B",
+		".MapInner",
+		".MapInner[*]",
+		".MapInner[*].A",
+		".MapInner[*].B",
+		".SliceInner",
+		".SliceInner[*]",
+		".SliceInner[*].A",
+		".SliceInner[*].B",
+		".C",
+		".D",
+	}, visited)
 }

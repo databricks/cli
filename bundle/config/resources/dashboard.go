@@ -81,10 +81,6 @@ func (*Dashboard) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (*Dashboard) TerraformResourceName() string {
-	return "databricks_dashboard"
-}
-
 func (r *Dashboard) InitializeURL(baseURL url.URL) {
 	if r.ID == "" {
 		return

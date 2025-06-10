@@ -11,7 +11,3 @@ func (tag BundleTag) ReadOnly() bool {
 func (tag BundleTag) Internal() bool {
 	return hasOption(string(tag), "internal")
 }
-
-func (tag BundleTag) Deprecated() bool {
-	return hasOption(string(tag), "deprecated")
-}

@@ -8,27 +8,22 @@ import (
 
 func TestBundleTagMethods(t *testing.T) {
 	tests := []struct {
-		tag          string
-		isReadOnly   bool
-		isInternal   bool
-		isDeprecated bool
+		tag        string
+		isReadOnly bool
+		isInternal bool
 	}{
 		// only one annotation.
-		{"readonly", true, false, false},
-		{"internal", false, true, false},
-		{"deprecated", false, false, true},
+		{tag: "readonly", isReadOnly: true},
+		{tag: "internal", isInternal: true},
 
 		// multiple annotations.
-		{"readonly,internal", true, true, false},
-		{"readonly,deprecated", true, false, true},
-		{"internal,deprecated", false, true, true},
-		{"readonly,internal,deprecated", true, true, true},
+		{tag: "readonly,internal", isReadOnly: true, isInternal: true},
 
 		// unknown annotations are ignored.
-		{"something", false, false, false},
-		{"-", false, false, false},
-		{"name,string", false, false, false},
-		{"weird,whatever,readonly,foo", true, false, false},
+		{tag: "something"},
+		{tag: "-"},
+		{tag: "name,string"},
+		{tag: "weird,whatever,readonly,foo", isReadOnly: true},
 	}
 
 	for _, test := range tests {
@@ -37,7 +32,6 @@ func TestBundleTagMethods(t *testing.T) {
 
 			assert.Equal(t, test.isReadOnly, tag.ReadOnly())
 			assert.Equal(t, test.isInternal, tag.Internal())
-			assert.Equal(t, test.isDeprecated, tag.Deprecated())
 		})
 	}
 }

@@ -1,8 +1,5 @@
 Cloud = true
-Local = false
-
-# Temporarily disabling due to IsServicePrincipal/email_notifications differences.
-CloudEnvs.gcp = false
+Timeout = '1m'
 
 Ignore = [
     '.venv',
@@ -17,6 +14,10 @@ EnvMatrix.UV_PYTHON = [
 ]
 
 EnvRepl.UV_PYTHON = true
+
+[[Server]]
+Pattern = "PUT /api/2.0/permissions/directories/0"
+Response.Body = '{}'
 
 [[Repls]]
 # for some reason leading number is lost converting "%H%M%S" 061234 to 61234
@@ -41,3 +42,8 @@ New = "python3 setup.py bdist_wheel"
 Old = '\?o=\[(NUMBER|NUMID)\]'
 New = ''
 Order = 1000
+
+[[Repls]]
+# Fix up for local and GCP
+Old = '"user_name": "\[USERNAME\]"'
+New = '"service_principal_name": "[USERNAME]"'

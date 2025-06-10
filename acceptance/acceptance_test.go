@@ -1001,7 +1001,7 @@ func getNodeTypeID(cloudEnv string) string {
 	case "gcp":
 		return "n1-standard-4"
 	case "":
-		return "local-fake-node"
+		return "i3.xlarge"
 	default:
 		return "nodetype-" + cloudEnv
 	}

@@ -60,10 +60,6 @@ func (j *Pipeline) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (p *Pipeline) TerraformResourceName() string {
-	return "databricks_pipeline"
-}
-
 func (p *Pipeline) InitializeURL(baseURL url.URL) {
 	if p.ID == "" {
 		return

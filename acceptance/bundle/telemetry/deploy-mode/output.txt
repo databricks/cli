@@ -40,6 +40,10 @@ A common practice is to use a username or principal name in this path, i.e. use
     "target_count": 2,
     "bool_values": [
       {
+        "key": "skip_artifact_cleanup",
+        "value": false
+      },
+      {
         "key": "python_wheel_wrapper_is_set",
         "value": false
       },
@@ -83,6 +87,10 @@ A common practice is to use a username or principal name in this path, i.e. use
     "lookup_variable_count": 0,
     "target_count": 2,
     "bool_values": [
+      {
+        "key": "skip_artifact_cleanup",
+        "value": false
+      },
       {
         "key": "python_wheel_wrapper_is_set",
         "value": false
