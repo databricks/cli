@@ -37,7 +37,7 @@ def main():
         changed = parse_lines(["git", "diff", "--name-only", "HEAD", "--", "."])
 
     if not changed and args.main:
-        changed = parse_lines(["git", "diff", "--name-only", "main", "--", "."])
+        changed = parse_lines(["git", "diff", "--name-only", "refs/remotes/origin/main", "--", "."])
 
     dirs = set()
     for filename in changed:
