@@ -27,6 +27,9 @@ fmt:
 	ruff format -n
 	./tools/lintdiff.py fmt
 
+yamlfmt:
+	go tool yamlfmt .
+
 ws:
 	./tools/validate_whitespace.py
 

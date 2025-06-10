@@ -12,4 +12,4 @@ resources:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: ./dist/*.whl
+            - whl: ./dist/*.whl
