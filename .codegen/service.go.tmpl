@@ -128,7 +128,7 @@ func new{{.PascalName}}() *cobra.Command {
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
 	{{- if .RequestBodyField }}
-	{{.CamelName}}Req.{{.RequestBodyField.PascalName}} = {{ if .RequestBodyField.IsOptionalObject }}&{{end}}{{.Service.Package.Name}}.{{.RequestBodyField.Entity.PascalName}}{}
+	{{.CamelName}}Req.{{.RequestBodyField.PascalName}} = {{ if .RequestBodyField.IsOptionalObjectPb }}&{{end}}{{.Service.Package.Name}}.{{.RequestBodyField.Entity.PascalName}}{}
 	{{- end }}
 	{{- if $canUseJson}}
 	var {{.CamelName}}Json flags.JsonFlag
@@ -390,6 +390,9 @@ func new{{.PascalName}}() *cobra.Command {
 
 {{- define "arg-type" -}}
 	{{- if .IsString}}StringVar
+	{{- else if .IsTimestamp}}StringVar{{/* TODO: add support for well known types */}}
+	{{- else if .IsDuration}}StringVar{{/* TODO: add support for well known types */}}
+	{{- else if .IsFieldMask}}StringVar{{/* TODO: add support for well known types */}}
 	{{- else if .IsBool}}BoolVar
 	{{- else if .IsInt64}}Int64Var
 	{{- else if .IsFloat64}}Float64Var
@@ -409,7 +412,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- if $optionalIfJsonIsUsed  }}
 	if !cmd.Flags().Changed("json") {
 	{{- end }}
-	{{if not $field.Entity.IsString -}}
+	{{if and (not $field.Entity.IsString) (not $field.Entity.IsFieldMask) (not $field.Entity.IsTimestamp) (not $field.Entity.IsDuration) -}} {{/* TODO: add support for well known types */}}
 	_, err = fmt.Sscan(args[{{$arg}}], &{{- template "request-body-obj" (dict "Method" $method "Field" $field)}})
 	if err != nil {
 		return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])

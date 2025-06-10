@@ -14,6 +14,11 @@
   "my_test_code": {
     "build": "python setup.py bdist_wheel",
     "dynamic_version": true,
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/my_test_code/dist/*.whl"
+      }
+    ],
     "path": "[TEST_TMP_DIR]/my_test_code",
     "type": "whl"
   }
@@ -21,8 +26,8 @@
 
 >>> [CLI] bundle deploy
 Building my_test_code...
-Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
-Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
@@ -30,8 +35,8 @@ Deployment complete!
 
 === There are 2 original wheels and 2 patched ones
 >>> find.py --expect 4 whl
-.databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl
-.databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl
+.databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl
+.databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl
 my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 prebuilt/other_test_code-0.0.1-py3-none-any.whl
 
@@ -39,11 +44,11 @@ prebuilt/other_test_code-0.0.1-py3-none-any.whl
 >>> find.py --expect 1 .databricks/.*my_test_code.*whl
 src/__init__.py
 src/__main__.py
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/METADATA
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/WHEEL
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/entry_points.txt
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/top_level.txt
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/METADATA
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/WHEEL
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/entry_points.txt
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/top_level.txt
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/RECORD
 
 === Expecting 2 patched wheels in libraries section in /jobs/create
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
@@ -64,7 +69,7 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
         "existing_cluster_id": "0717-132531-5opeqon1",
         "libraries": [
           {
-            "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+            "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
           }
         ],
         "python_wheel_task": {
@@ -76,10 +81,10 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
     },
     "libraries": [
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
       },
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
       }
     ],
     "python_wheel_task": {
@@ -92,16 +97,16 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
 
 === Expecting 2 patched wheels to be uploaded
 >>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/prebuilt/other_test_code-0.0.1-py3-none-any.whl"
 
 === Updating the local wheel and deploying again
 >>> [CLI] bundle deploy
 Building my_test_code...
-Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
-Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
@@ -112,11 +117,11 @@ Deployment complete!
 src/__init__.py
 src/__main__.py
 src/new_module.py
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/METADATA
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/WHEEL
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/entry_points.txt
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/top_level.txt
-my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/METADATA
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/WHEEL
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/entry_points.txt
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/top_level.txt
+my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/RECORD
 
 === Expecting 2 patched wheels in libraries section in /jobs/reset
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
@@ -137,7 +142,7 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
         "existing_cluster_id": "0717-132531-5opeqon1",
         "libraries": [
           {
-            "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+            "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
           }
         ],
         "python_wheel_task": {
@@ -149,10 +154,10 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
     },
     "libraries": [
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
       },
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
       }
     ],
     "python_wheel_task": {
@@ -165,6 +170,6 @@ my_test_code-0.0.1+[TIMESTAMP_NS].dist-info/RECORD
 
 === Expecting 2 pached wheels to be uploaded (Bad: it is currently uploaded twice)
 >>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[TIMESTAMP_NS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"

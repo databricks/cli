@@ -64,7 +64,7 @@ pipelines my id='[UUID]' name='test-pipeline-[UNIQUE_NAME]'
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
-  "last_modified":[TIMESTAMP_MS],
+  "last_modified":[UNIX_TIME_MILLIS],
   "name":"test-pipeline-[UNIQUE_NAME]",
   "pipeline_id":"[UUID]",
   "run_as_user_name":"[USERNAME]",
@@ -88,3 +88,25 @@ pipelines my id='[UUID]' name='test-pipeline-[UNIQUE_NAME]'
   },
   "state":"IDLE"
 }
+
+=== Destroy the pipeline and verify that it's removed from the state and from remote
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline my
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+State not found for pipelines.my
+
+>>> musterr [CLI] pipelines get [UUID]
+Error: The specified pipeline [UUID] was not found.
+
+Exit code (musterr): 1

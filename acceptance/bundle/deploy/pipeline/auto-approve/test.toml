@@ -4,7 +4,3 @@ Cloud = true
 Ignore = [
     "databricks.yml"
 ]
-
-[[Repls]]
-Old = "[0-9]{3,}"
-New = "[NUMID]"

@@ -65,10 +65,6 @@ func (j *Job) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (j *Job) TerraformResourceName() string {
-	return "databricks_job"
-}
-
 func (j *Job) InitializeURL(baseURL url.URL) {
 	if j.ID == "" {
 		return

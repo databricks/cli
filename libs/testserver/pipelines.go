@@ -9,6 +9,21 @@ import (
 	"github.com/google/uuid"
 )
 
+func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
+	defer s.LockUnlock()()
+
+	value, ok := s.Pipelines[pipelineId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+	return Response{
+		Body: value,
+	}
+}
+
 func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -25,7 +40,6 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.Spec = &spec
 
 	pipelineId := uuid.New().String()
-	spec.Id = pipelineId
 	r.PipelineId = pipelineId
 	r.CreatorUserName = "tester@databricks.com"
 	r.LastModified = time.Now().UnixMilli()
@@ -33,12 +47,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.RunAsUserName = "tester@databricks.com"
 	r.State = "IDLE"
 
-	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
-	// and if the storage location is not specified, API automatically generates a storage location
-	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
-	if spec.Storage == "" && spec.Catalog == "" {
-		spec.Storage = "dbfs:/pipelines/" + pipelineId
-	}
+	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
 
 	return Response{
@@ -48,11 +57,21 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	}
 }
 
+func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
+	spec.Id = pipelineId
+	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
+	// and if the storage location is not specified, API automatically generates a storage location
+	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
+	if spec.Storage == "" && spec.Catalog == "" {
+		spec.Storage = "dbfs:/pipelines/" + pipelineId
+	}
+}
+
 func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response {
 	defer s.LockUnlock()()
 
-	var request pipelines.PipelineSpec
-	err := json.Unmarshal(req.Body, &request)
+	var spec pipelines.PipelineSpec
+	err := json.Unmarshal(req.Body, &spec)
 	if err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -67,7 +86,8 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
-	item.Spec = &request
+	item.Spec = &spec
+	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
 
 	return Response{

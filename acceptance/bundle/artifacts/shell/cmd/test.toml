@@ -1,0 +1,4 @@
+# cmd.exe is only available on Windows.
+[GOOS]
+darwin = false
+linux = false

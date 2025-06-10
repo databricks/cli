@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/patchwheel"
-	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/cli/libs/utils"
 )
 
@@ -49,23 +48,6 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			if err != nil {
 				diags = diags.Extend(diag.FromErr(err))
 				break
-			}
-
-			if a.Type == "whl" {
-				dir := a.Path
-				distPath := filepath.Join(a.Path, "dist")
-				wheels := python.FindFilesWithSuffixInPath(distPath, ".whl")
-				if len(wheels) == 0 {
-					diags = diags.Extend(diag.Errorf("cannot find built wheel in %s for package %s", dir, artifactName))
-					break
-				}
-				for _, wheel := range wheels {
-					a.Files = append(a.Files, config.ArtifactFile{
-						Source: wheel,
-					})
-				}
-			} else {
-				log.Warnf(ctx, "%s: Build succeeded", artifactName)
 			}
 
 			// We need to expand glob reference after build mutator is applied because

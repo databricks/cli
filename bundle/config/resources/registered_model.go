@@ -58,10 +58,6 @@ func (*RegisteredModel) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s *RegisteredModel) TerraformResourceName() string {
-	return "databricks_registered_model"
-}
-
 func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

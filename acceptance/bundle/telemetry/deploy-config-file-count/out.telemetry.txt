@@ -34,6 +34,10 @@
           "target_count": 1,
           "bool_values": [
             {
+              "key": "skip_artifact_cleanup",
+              "value": false
+            },
+            {
               "key": "python_wheel_wrapper_is_set",
               "value": false
             },
