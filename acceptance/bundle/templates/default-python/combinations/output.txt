@@ -9,7 +9,8 @@ Workspace to use (auto-detected, edit in 'X[UNIQUE_NAME]/databricks.yml'): [DATA
 Please refer to the README.md file for "getting started" instructions.
 See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
->>> yamlfmt -conf=[TESTROOT]/../yamlfmt.yml .
+>>> yamlfmt -conf=[TESTROOT]/../yamlfmt.yml -dry -verbose .
+No files will be changed.
 
 >>> [CLI] bundle validate -t dev
 Name: X[UNIQUE_NAME]
