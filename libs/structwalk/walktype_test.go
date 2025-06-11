@@ -252,7 +252,7 @@ func TestWalkTypeVisited(t *testing.T) {
 	}, visited)
 }
 
-func TestWalkErrSkipWalk(t *testing.T) {
+func TestWalkSkip(t *testing.T) {
 	type Outer struct {
 		A int
 		B int
