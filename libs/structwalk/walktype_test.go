@@ -13,7 +13,7 @@ import (
 
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
-	WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
 		for typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
@@ -22,6 +22,7 @@ func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 		}
 		return false
 	})
+	require.NoError(t, err)
 	return results
 }
 
