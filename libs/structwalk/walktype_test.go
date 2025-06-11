@@ -270,10 +270,7 @@ func TestWalkSkip(t *testing.T) {
 			return true
 		}
 		seen = append(seen, path.String())
-		if path.String() == ".Inner" {
-			return false
-		}
-		return true
+		return path.String() != ".Inner"
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{".A", ".B", ".Inner", ".D"}, seen)
