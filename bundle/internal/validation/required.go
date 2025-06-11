@@ -18,16 +18,17 @@ import (
 // PatternInfo represents validation requirements for a specific configuration pattern
 type PatternInfo struct {
 	// The pattern for which the fields in Required are applicable.
-	// This is a string representation of [dyn.Parent].
+	// This is a string representation of [dyn.Pattern].
 	Parent string
 
 	// List of required fields that should be set for every path in the
-	// config tree that matches the pattern. This field be a string of the
+	// config tree that matches the pattern. This field will be a string of the
 	// form `{field1, field2, ...}`.
 	RequiredFields string
 }
 
-// formatRequiredFields formats a list of field names into a Go slice literal string
+// formatRequiredFields formats a list of field names into string of the form `{field1, field2, ...}`
+// representing a Go slice literal.
 func formatRequiredFields(fields []string) string {
 	if len(fields) == 0 {
 		return "{}"
@@ -50,7 +51,7 @@ func extractRequiredFields(typ reflect.Type) []PatternInfo {
 			return true
 		}
 
-		// Do not perform required validation on fields that are deprecated, internal, or readonly.
+		// Do not generate required validation code for fields that are internal or readonly.
 		bundleTag := path.BundleTag()
 		if bundleTag.Internal() || bundleTag.ReadOnly() {
 			return false
