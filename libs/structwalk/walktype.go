@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/libs/structdiff/structpath"
-	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 // VisitTypeFunc is invoked for fields encountered while walking typ. This includes both leaf nodes as well as any
@@ -98,25 +97,20 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 		if sf.PkgPath != "" {
 			continue // unexported
 		}
-		tag := sf.Tag.Get("json")
+		node := structpath.NewStructField(path, sf.Tag, sf.Name)
 
 		// Handle embedded structs (anonymous fields without json tags)
-		if sf.Anonymous && tag == "" {
+		if sf.Anonymous && node.JSONTag() == "" {
 			// For embedded structs, walk the embedded type at the current path level
 			// This flattens the embedded struct's fields into the parent struct
 			walkTypeValue(path, sf.Type, visit, visitedCount)
 			continue
 		}
 
-		if tag == "-" {
-			continue // skip fields without json name
-		}
-		jsonTag := structtag.JSONTag(tag)
-		if jsonTag.Name() == "-" {
+		if node.JSONTag().Name() == "-" {
 			continue
 		}
-		fieldType := sf.Type
-		node := structpath.NewStructField(path, jsonTag, sf.Name)
-		walkTypeValue(node, fieldType, visit, visitedCount)
+
+		walkTypeValue(node, sf.Type, visit, visitedCount)
 	}
 }
