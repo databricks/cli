@@ -15,5 +15,6 @@
 * Fix "bundle summary -o json" to render null values properly ([#2990](https://github.com/databricks/cli/pull/2990))
 * Fixed null pointer de-reference if artifacts missing fields ([#3022](https://github.com/databricks/cli/pull/3022))
 * Update bundle templates to also include `resources/*/*.yml` ([#3024](https://github.com/databricks/cli/pull/3024))
+* Apply YAML formatter on default-python and dbt-sql templates ([#3026](https://github.com/databricks/cli/pull/3026))
 
 ### API Changes

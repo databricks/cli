@@ -9,9 +9,9 @@ resources:
       output_schema_name: "main.dev"
       inference_log:
         granularities: ["1 day"]
-        timestamp_col:  "timestamp"
+        timestamp_col: "timestamp"
         prediction_col: "prediction"
-        model_id_col:  "model_id"
+        model_id_col: "model_id"
         problem_type: "PROBLEM_TYPE_REGRESSION"
       schedule:
         quartz_cron_expression: "0 0 12 * * ?" # every day at noon
@@ -41,7 +41,7 @@ targets:
           output_schema_name: "main.prod"
           inference_log:
             granularities: ["1 hour"]
-            timestamp_col:  "timestamp_prod"
+            timestamp_col: "timestamp_prod"
             prediction_col: "prediction_prod"
-            model_id_col:  "model_id_prod"
+            model_id_col: "model_id_prod"
             problem_type: "PROBLEM_TYPE_REGRESSION"

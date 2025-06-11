@@ -19,13 +19,19 @@ tidy:
 lintcheck:
 	golangci-lint run ./...
 
-fmtfull:
+fmtfull: tools/yamlfmt
 	ruff format -n
 	golangci-lint fmt
+	./tools/yamlfmt .
 
-fmt:
+fmt: tools/yamlfmt
 	ruff format -n
 	./tools/lintdiff.py fmt
+	./tools/yamlfmt .
+
+# pre-building yamlfmt because I also want to call it from tests
+tools/yamlfmt: go.mod
+	go build -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
 
 ws:
 	./tools/validate_whitespace.py

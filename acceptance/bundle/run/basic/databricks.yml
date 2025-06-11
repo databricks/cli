@@ -1,7 +1,6 @@
 bundle:
   name: caterpillar
 
-
 resources:
   jobs:
     foo:

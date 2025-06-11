@@ -14,7 +14,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 0,12 * * *'  # Runs at 00:00 and 12:00 UTC daily
+    - cron: '0 0,12 * * *' # Runs at 00:00 and 12:00 UTC daily
 
 env:
   GOTESTSUM_FORMAT: github-actions
@@ -192,7 +192,7 @@ jobs:
 
       - name: Verify that python/codegen is up to date
         working-directory: experimental/python
-        run: |
+        run: |-
           make codegen
 
           if ! ( git diff --exit-code ); then
