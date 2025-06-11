@@ -2,7 +2,7 @@ envsubst < input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json
 
 cd ./X*
-trace yamlfmt -conf=$TESTROOT/../yamlfmt.yml -dry -verbose .
+trace yamlcheck.py
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
