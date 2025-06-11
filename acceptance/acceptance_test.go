@@ -149,8 +149,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
-	// Make helper scripts available
-	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
+	paths := []string{
+		// Make helper scripts available
+		filepath.Join(cwd, "bin"),
+
+		// Make tools scripts available (e.g. yamlfmt)
+		filepath.Join(cwd, "..", "tools"),
+
+		os.Getenv("PATH"),
+	}
+	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
 
 	tempHomeDir := t.TempDir()
 	repls.SetPath(tempHomeDir, "[TMPHOME]")
