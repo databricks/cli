@@ -265,7 +265,7 @@ func TestWalkSkip(t *testing.T) {
 	}
 
 	var seen []string
-	WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
 		if path == nil {
 			return false
 		}
@@ -275,5 +275,6 @@ func TestWalkSkip(t *testing.T) {
 		seen = append(seen, path.String())
 		return false
 	})
+	require.NoError(t, err)
 	assert.Equal(t, []string{".A", ".B", ".D"}, seen)
 }
