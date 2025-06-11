@@ -153,7 +153,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
 
-		// Make tools scripts available (e.g. yamlfmt)
+		// Make ./tools/ available (e.g. yamlfmt)
 		filepath.Join(cwd, "..", "tools"),
 
 		os.Getenv("PATH"),
