@@ -37,7 +37,6 @@ variables:
 include:
   - ./variables/*.yml
 
-
 targets:
   default:
   dev:

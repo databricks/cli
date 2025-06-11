@@ -3,6 +3,6 @@ bundle:
 
 artifacts:
   my_artifact:
-    build: |
+    build: |-
       echo "Hello, World!" > out.shell.txt
       echo "Bye, World!" >> out.shell.txt
