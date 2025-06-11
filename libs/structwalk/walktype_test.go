@@ -1,7 +1,7 @@
 package structwalk
 
 import (
-	"fmt"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -258,15 +258,16 @@ func TestWalkTypeVisitedError(t *testing.T) {
 		A int
 		B int
 		C string
+		D int
 	}
 
-	seen := []string{}
+	var seen []string
 	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) error {
 		if path == nil {
 			return nil
 		}
 		if typ.Kind() == reflect.String {
-			return fmt.Errorf("I don't like strings")
+			return errors.New("I don't like strings")
 		}
 		seen = append(seen, path.String())
 		return nil
@@ -283,9 +284,11 @@ func TestWalkErrSkipWalk(t *testing.T) {
 		Inner struct {
 			C int
 		}
+
+		D int
 	}
 
-	seen := []string{}
+	var seen []string
 	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) error {
 		if path == nil {
 			return nil
@@ -297,5 +300,5 @@ func TestWalkErrSkipWalk(t *testing.T) {
 		return nil
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, []string{".A", ".B"}, seen)
+	assert.Equal(t, []string{".A", ".B", ".D"}, seen)
 }
