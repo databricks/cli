@@ -50,7 +50,9 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 		),
 		mutator.NormalizePaths(),
 
-		// Translate dashboards paths before NormalizeAndInitializeResources and after NormalizePaths
+		// Translate dashboard paths into paths in the workspace file system
+		// This must occur after NormalizePaths but before NormalizeAndInitializeResources,
+		// since the latter reads dashboard files and requires fully resolved paths.
 		mutator.TranslatePathsDashboards(),
 	)
 	if diags.HasError() {
