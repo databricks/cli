@@ -142,7 +142,7 @@ func writeFakeDashboardState(t *testing.T, ctx context.Context, b *bundle.Bundle
 	testutil.WriteFile(t, filepath.Join(tfDir, TerraformStateFileName), `
     {
       "version": 4,
-      "terraform_version": "1.5.5",
+      "terraform_version": "1.12.2",
       "resources": [
         {
           "mode": "managed",
