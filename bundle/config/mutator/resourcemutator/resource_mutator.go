@@ -55,6 +55,9 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		{"resources.dashboards.*.embed_credentials", false},
 		{"resources.volumes.*.volume_type", "MANAGED"},
 
+		// TODO: Add acceptance test for this.
+		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},
+
 		// Jobs:
 
 		// The defaults are the same as for terraform provider latest version (v1.75.0)

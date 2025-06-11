@@ -10,8 +10,13 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestIsPackage(t *testing.T) {
+	assert.True(t, isPackage("simple.yaml"))
+}
 
 func TestValidateEnvironments(t *testing.T) {
 	tmpDir := t.TempDir()

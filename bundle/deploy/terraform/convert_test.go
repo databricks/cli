@@ -711,6 +711,12 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{Name: "secret_scope1"}},
 				},
 			},
+			{
+				Type: "databricks_alert_v2",
+				Mode: "managed",
+				Name: "test_alert",
+				Instances: []stateResourceInstance{
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)

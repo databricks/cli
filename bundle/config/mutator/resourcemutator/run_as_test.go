@@ -32,6 +32,7 @@ func allResourceTypes(t *testing.T) []string {
 	// the dyn library gives us the correct list of all resources supported. Please
 	// also update this check when adding a new resource
 	require.Equal(t, []string{
+		"alerts",
 		"apps",
 		"clusters",
 		"dashboards",
