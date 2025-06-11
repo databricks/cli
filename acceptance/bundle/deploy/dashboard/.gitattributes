@@ -1,0 +1,2 @@
+# treat new lines in json files in windows as \n
+*.json text eol=lf
