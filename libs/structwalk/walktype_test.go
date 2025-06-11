@@ -162,7 +162,7 @@ func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
 		}
 		return false
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return results
 }
 
@@ -204,6 +204,7 @@ func TestTypeBundleTag(t *testing.T) {
 		return false
 	})
 	require.NoError(t, err)
+
 	assert.Equal(t, []string{".A", ".D"}, readonly)
 	assert.Equal(t, []string{".B", ".D"}, internal)
 }
