@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/structdiff/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
@@ -152,7 +153,7 @@ func TestTypeRoot(t *testing.T) {
 
 func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
 	var results []string
-	WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
 		if path == nil {
 			return false
 		}
@@ -161,6 +162,7 @@ func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
 		}
 		return false
 	})
+	assert.NoError(t, err)
 	return results
 }
 
@@ -189,7 +191,7 @@ func TestTypeBundleTag(t *testing.T) {
 	}
 
 	var readonly, internal []string
-	WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
 		if path == nil {
 			return false
 		}
@@ -201,7 +203,7 @@ func TestTypeBundleTag(t *testing.T) {
 		}
 		return false
 	})
-
+	require.NoError(t, err)
 	assert.Equal(t, []string{".A", ".D"}, readonly)
 	assert.Equal(t, []string{".B", ".D"}, internal)
 }
@@ -222,13 +224,14 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
 		if path == nil {
 			return false
 		}
 		visited = append(visited, path.String())
 		return false
 	})
+	require.NoError(t, err)
 
 	assert.Equal(t, []string{
 		".Inner",

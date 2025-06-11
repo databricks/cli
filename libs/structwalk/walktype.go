@@ -32,8 +32,6 @@ import (
 
 type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type) (skip bool)
 
-var ErrSkipWalk = errors.New("skip walk")
-
 // WalkType validates that t is a struct or pointer to one and starts the recursive traversal.
 func WalkType(t reflect.Type, visit VisitTypeFunc) error {
 	if visit == nil {
