@@ -150,8 +150,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls.SetPath(execPath, "[CLI]")
 
 	// Make helper scripts available
-	pathDirs := []string{filepath.Join(cwd, "bin"), buildDir}
-	t.Setenv("PATH", fmt.Sprintf("%s%c%s", strings.Join(pathDirs, string(os.PathListSeparator)), os.PathListSeparator, os.Getenv("PATH")))
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 
 	tempHomeDir := t.TempDir()
 	repls.SetPath(tempHomeDir, "[TMPHOME]")

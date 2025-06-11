@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/cmd/account"
@@ -28,11 +26,6 @@ const (
 )
 
 func New(ctx context.Context) *cobra.Command {
-	invokedAs := filepath.Base(os.Args[0])
-	if invokedAs == "dlt" {
-		return dlt.NewRoot()
-	}
-
 	cli := root.New(ctx)
 
 	// Add account subcommand.
@@ -84,7 +77,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
-	cli.AddCommand(dlt.New())
+	cli.AddCommand(dlt.DltInstall())
 
 	return cli
 }
