@@ -1,0 +1,204 @@
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"sort"
+	"strings"
+	"text/template"
+
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structdiff/structpath"
+	"github.com/databricks/cli/libs/structwalk"
+)
+
+// PatternInfo represents validation requirements for a specific configuration pattern
+type PatternInfo struct {
+	// The pattern for which the fields in Required are applicable.
+	// This is a string representation of [dyn.Parent].
+	Parent string
+
+	// List of required fields that should be set for every path in the
+	// config tree that matches the pattern. This field be a string of the
+	// form `{field1, field2, ...}`.
+	RequiredFields string
+}
+
+// formatRequiredFields formats a list of field names into a Go slice literal string
+func formatRequiredFields(fields []string) string {
+	if len(fields) == 0 {
+		return "{}"
+	}
+
+	var quoted []string
+	for _, field := range fields {
+		quoted = append(quoted, fmt.Sprintf("%q", field))
+	}
+
+	return "{" + strings.Join(quoted, ", ") + "}"
+}
+
+// extractRequiredFields walks through a struct type and extracts required field patterns
+func extractRequiredFields(typ reflect.Type) []PatternInfo {
+	fieldsByPattern := make(map[string][]string)
+
+	structwalk.WalkType(typ, func(path *structpath.PathNode, _ reflect.Type) bool {
+		if path == nil {
+			return true
+		}
+
+		// Do not perform required validation on fields that are deprecated, internal, or readonly.
+		bundleTag := path.BundleTag()
+		if bundleTag.Internal() || bundleTag.ReadOnly() {
+			return false
+		}
+
+		// The "omitempty" tag indicates the field is optional in bundle config.
+		if path.JSONTag().OmitEmpty() {
+			return true
+		}
+
+		// Only perform required validation for struct fields.
+		field, ok := path.Field()
+		if !ok {
+			return true
+		}
+
+		parentPath := path.Parent().DynPath()
+		fieldsByPattern[parentPath] = append(fieldsByPattern[parentPath], field)
+		return true
+	})
+
+	return buildPatternInfos(fieldsByPattern)
+}
+
+// buildPatternInfos converts the field map to PatternInfo slice
+func buildPatternInfos(fieldsByPattern map[string][]string) []PatternInfo {
+	patterns := make([]PatternInfo, 0, len(fieldsByPattern))
+
+	for parentPath, fields := range fieldsByPattern {
+		patterns = append(patterns, PatternInfo{
+			Parent:         parentPath,
+			RequiredFields: formatRequiredFields(fields),
+		})
+	}
+
+	return patterns
+}
+
+// getGroupingKey determines the grouping key for organizing patterns
+func getGroupingKey(parentPath string) string {
+	parts := strings.Split(parentPath, ".")
+
+	switch parts[0] {
+	case "resources":
+		// Group resources by their type (e.g., "resources.jobs")
+		if len(parts) > 1 {
+			return parts[0] + "." + parts[1]
+		}
+	case "targets":
+		// Group target overrides by their first 3 keys
+		if len(parts) > 2 {
+			return strings.Join(parts[:3], ".")
+		}
+	}
+
+	// Use the top level key for other fields
+	return parts[0]
+}
+
+// groupPatternsByKey groups patterns by their logical grouping key
+func groupPatternsByKey(patterns []PatternInfo) map[string][]PatternInfo {
+	groupedPatterns := make(map[string][]PatternInfo)
+
+	for _, pattern := range patterns {
+		key := getGroupingKey(pattern.Parent)
+		groupedPatterns[key] = append(groupedPatterns[key], pattern)
+	}
+
+	return groupedPatterns
+}
+
+// sortGroupedPatterns sorts patterns within each group and returns them as a sorted slice
+func sortGroupedPatterns(groupedPatterns map[string][]PatternInfo) [][]PatternInfo {
+	// Get sorted group keys
+	groupKeys := make([]string, 0, len(groupedPatterns))
+	for key := range groupedPatterns {
+		groupKeys = append(groupKeys, key)
+	}
+	sort.Strings(groupKeys)
+
+	// Build sorted result
+	result := make([][]PatternInfo, 0, len(groupKeys))
+	for _, key := range groupKeys {
+		patterns := groupedPatterns[key]
+
+		// Sort patterns within each group by parent path
+		sort.Slice(patterns, func(i, j int) bool {
+			return patterns[i].Parent < patterns[j].Parent
+		})
+
+		result = append(result, patterns)
+	}
+
+	return result
+}
+
+// RequiredFields returns grouped required field patterns for validation
+func requiredFields() [][]PatternInfo {
+	patterns := extractRequiredFields(reflect.TypeOf(config.Root{}))
+	groupedPatterns := groupPatternsByKey(patterns)
+	return sortGroupedPatterns(groupedPatterns)
+}
+
+// Generate creates a Go source file with required field validation rules
+func generateRequiredFields(outPath string) error {
+	requiredFields := requiredFields()
+
+	// Ensure output directory exists
+	if err := os.MkdirAll(outPath, 0o755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Parse and execute template
+	tmpl, err := template.New("validation").Parse(validationTemplate)
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	var generatedCode bytes.Buffer
+	if err := tmpl.Execute(&generatedCode, requiredFields); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	// Write generated code to file
+	filePath := filepath.Join(outPath, "required_fields.go")
+	if err := os.WriteFile(filePath, generatedCode.Bytes(), 0o644); err != nil {
+		return fmt.Errorf("failed to write generated code: %w", err)
+	}
+
+	return nil
+}
+
+// validationTemplate is the Go text template for generating the validation map
+const validationTemplate = `package generated
+
+// THIS FILE IS AUTOGENERATED.
+// DO NOT EDIT THIS FILE DIRECTLY.
+
+import (
+	_ "github.com/databricks/cli/libs/dyn"
+)
+
+// RequiredFields maps [dyn.Pattern] to required fields they should have.
+var RequiredFields = map[string][]string{
+{{- range . }}
+{{ range . }}
+	"{{ .Parent }}": {{ .RequiredFields }},
+{{- end }}
+{{- end }}
+}
+`
