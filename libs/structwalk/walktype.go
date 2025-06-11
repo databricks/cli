@@ -15,7 +15,8 @@ import (
 //                the callback receives the actual type (e.g., *string, *int, etc.).
 //
 // The function returns a boolean:
-//   skip: if true, the WalkType function will skip walking the current field and all its children.
+//   continueWalk: if true, the WalkType function will continue recursively walking the current field.
+//                 if false, the WalkType function will skip walking the current field and all its children.
 //
 // NOTE: Fields lacking a json tag or tagged as "-" are ignored entirely.
 //       Dynamic types like func, chan, interface, etc. are *not* visited.
@@ -30,7 +31,7 @@ import (
 //
 // ******************************************************************************************************
 
-type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type) (skip bool)
+type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool)
 
 // WalkType validates that t is a struct or pointer to one and starts the recursive traversal.
 func WalkType(t reflect.Type, visit VisitTypeFunc) error {
@@ -53,8 +54,8 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 	// Call visit on all nodes including the root node. We call visit before
 	// dereferencing pointers to ensure that the visit callback receives
 	// the actual type of the field.
-	skip := visit(path, typ)
-	if skip {
+	continueWalk := visit(path, typ)
+	if !continueWalk {
 		return
 	}
 

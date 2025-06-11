@@ -13,14 +13,14 @@ import (
 
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
 		for typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
 		if isScalar(typ.Kind()) {
 			results[path.String()] = reflect.Zero(typ).Interface()
 		}
-		return false
+		return true
 	})
 	require.NoError(t, err)
 	return results
@@ -154,14 +154,14 @@ func TestTypeRoot(t *testing.T) {
 
 func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
 	var results []string
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
 		if path == nil {
-			return false
+			return true
 		}
 		if path.BundleTag().ReadOnly() {
 			results = append(results, path.DynPath())
 		}
-		return false
+		return true
 	})
 	require.NoError(t, err)
 	return results
@@ -192,9 +192,9 @@ func TestTypeBundleTag(t *testing.T) {
 	}
 
 	var readonly, internal []string
-	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
 		if path == nil {
-			return false
+			return true
 		}
 		if path.BundleTag().ReadOnly() {
 			readonly = append(readonly, path.String())
@@ -202,7 +202,7 @@ func TestTypeBundleTag(t *testing.T) {
 		if path.BundleTag().Internal() {
 			internal = append(internal, path.String())
 		}
-		return false
+		return true
 	})
 	require.NoError(t, err)
 
@@ -226,12 +226,12 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
 		if path == nil {
-			return false
+			return true
 		}
 		visited = append(visited, path.String())
-		return false
+		return true
 	})
 	require.NoError(t, err)
 
@@ -265,15 +265,15 @@ func TestWalkSkip(t *testing.T) {
 	}
 
 	var seen []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
 		if path == nil {
-			return false
-		}
-		if path.String() == ".Inner" {
 			return true
 		}
+		if path.String() == ".Inner" {
+			return false
+		}
 		seen = append(seen, path.String())
-		return false
+		return true
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{".A", ".B", ".D"}, seen)

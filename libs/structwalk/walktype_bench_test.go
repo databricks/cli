@@ -11,9 +11,9 @@ import (
 
 func countFields(typ reflect.Type) (int, error) {
 	fieldCount := 0
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (skip bool) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
 		fieldCount++
-		return false
+		return true
 	})
 	return fieldCount, err
 }
