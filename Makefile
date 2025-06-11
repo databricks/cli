@@ -19,20 +19,19 @@ tidy:
 lintcheck:
 	golangci-lint run ./...
 
-fmtfull:
+fmtfull: tools/yamlfmt
 	ruff format -n
 	golangci-lint fmt
+	./tools/yamlfmt .
 
-fmt:
+fmt: tools/yamlfmt
 	ruff format -n
 	./tools/lintdiff.py fmt
+	./tools/yamlfmt .
 
 # pre-building yamlfmt because I also want to call it from tests
 tools/yamlfmt: go.mod
 	go build -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
-
-yamlfmt: tools/yamlfmt
-	./tools/yamlfmt .
 
 ws:
 	./tools/validate_whitespace.py
@@ -41,7 +40,7 @@ links:
 	./tools/update_github_links.py
 
 # Checks other than 'fmt' and 'lint'; these are fast, so can be run first
-checks: tidy ws links yamlfmt
+checks: tidy ws links
 
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
