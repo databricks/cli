@@ -1,6 +1,7 @@
 package structwalk
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -13,13 +14,14 @@ import (
 
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) error {
 		for typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
 		if isScalar(typ.Kind()) {
 			results[path.String()] = reflect.Zero(typ).Interface()
 		}
+		return nil
 	})
 	require.NoError(t, err)
 	return results
@@ -153,13 +155,14 @@ func TestTypeRoot(t *testing.T) {
 
 func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
 	var results []string
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) error {
 		if path == nil {
-			return
+			return nil
 		}
 		if path.BundleTag().ReadOnly() {
 			results = append(results, path.DynPath())
 		}
+		return nil
 	})
 	require.NoError(t, err)
 	return results
@@ -190,9 +193,9 @@ func TestTypeBundleTag(t *testing.T) {
 	}
 
 	var readonly, internal []string
-	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) {
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) error {
 		if path == nil {
-			return
+			return nil
 		}
 		if path.BundleTag().ReadOnly() {
 			readonly = append(readonly, path.String())
@@ -200,6 +203,7 @@ func TestTypeBundleTag(t *testing.T) {
 		if path.BundleTag().Internal() {
 			internal = append(internal, path.String())
 		}
+		return nil
 	})
 	require.NoError(t, err)
 
@@ -223,11 +227,12 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) error {
 		if path == nil {
-			return
+			return nil
 		}
 		visited = append(visited, path.String())
+		return nil
 	})
 	require.NoError(t, err)
 
@@ -246,4 +251,51 @@ func TestWalkTypeVisited(t *testing.T) {
 		".C",
 		".D",
 	}, visited)
+}
+
+func TestWalkTypeVisitedError(t *testing.T) {
+	type Foo struct {
+		A int
+		B int
+		C string
+	}
+
+	seen := []string{}
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) error {
+		if path == nil {
+			return nil
+		}
+		if typ.Kind() == reflect.String {
+			return fmt.Errorf("I don't like strings")
+		}
+		seen = append(seen, path.String())
+		return nil
+	})
+	assert.EqualError(t, err, "I don't like strings")
+	assert.Equal(t, []string{".A", ".B"}, seen)
+}
+
+func TestWalkErrSkipWalk(t *testing.T) {
+	type Outer struct {
+		A int
+		B int
+
+		Inner struct {
+			C int
+		}
+	}
+
+	seen := []string{}
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) error {
+		if path == nil {
+			return nil
+		}
+		if path.String() == ".Inner" {
+			return ErrSkipWalk
+		}
+		seen = append(seen, path.String())
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{".A", ".B"}, seen)
 }

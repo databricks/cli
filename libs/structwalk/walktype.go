@@ -27,7 +27,9 @@ import (
 //
 // ******************************************************************************************************
 
-type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type)
+type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type) error
+
+var ErrSkipWalk = errors.New("skip walk")
 
 // WalkType validates that t is a struct or pointer to one and starts the recursive traversal.
 func WalkType(t reflect.Type, visit VisitTypeFunc) error {
@@ -38,19 +40,24 @@ func WalkType(t reflect.Type, visit VisitTypeFunc) error {
 		return nil
 	}
 	visitedCount := make(map[reflect.Type]int)
-	walkTypeValue(nil, t, visit, visitedCount)
-	return nil
+	return walkTypeValue(nil, t, visit, visitedCount)
 }
 
-func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
+func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) error {
 	if typ == nil {
-		return
+		return nil
 	}
 
 	// Call visit on all nodes including the root node. We call visit before
 	// dereferencing pointers to ensure that the visit callback receives
 	// the actual type of the field.
-	visit(path, typ)
+	err := visit(path, typ)
+	if err == ErrSkipWalk {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
 
 	// Dereference pointers.
 	for typ.Kind() == reflect.Pointer {
@@ -60,38 +67,40 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 	// Return early if we're at a leaf scalar.
 	kind := typ.Kind()
 	if isScalar(kind) {
-		return
+		return nil
 	}
 
 	// We're tracking visited and allowing single repeat to support JobSettings.Tasks.ForEachTask.Task
 	if visitedCount[typ] >= 2 {
-		return
+		return nil
 	}
 
 	visitedCount[typ]++
 
+	var walkErr error
 	switch kind {
 	case reflect.Struct:
-		walkTypeStruct(path, typ, visit, visitedCount)
+		walkErr = walkTypeStruct(path, typ, visit, visitedCount)
 
 	case reflect.Slice, reflect.Array:
-		walkTypeValue(structpath.NewAnyIndex(path), typ.Elem(), visit, visitedCount)
+		walkErr = walkTypeValue(structpath.NewAnyIndex(path), typ.Elem(), visit, visitedCount)
 
 	case reflect.Map:
 		if typ.Key().Kind() != reflect.String {
-			return // unsupported map key type
+			return nil // unsupported map key type
 		}
 		// For maps, we walk the value type directly at the current path
-		walkTypeValue(structpath.NewAnyKey(path), typ.Elem(), visit, visitedCount)
+		walkErr = walkTypeValue(structpath.NewAnyKey(path), typ.Elem(), visit, visitedCount)
 
 	default:
 		// func, chan, interface, invalid, etc. -> ignore
 	}
 
 	visitedCount[typ]--
+	return walkErr
 }
 
-func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
+func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) error {
 	for i := range st.NumField() {
 		sf := st.Field(i)
 		if sf.PkgPath != "" {
@@ -103,7 +112,10 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 		if sf.Anonymous && node.JSONTag() == "" {
 			// For embedded structs, walk the embedded type at the current path level
 			// This flattens the embedded struct's fields into the parent struct
-			walkTypeValue(path, sf.Type, visit, visitedCount)
+			err := walkTypeValue(path, sf.Type, visit, visitedCount)
+			if err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -111,6 +123,10 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 			continue
 		}
 
-		walkTypeValue(node, sf.Type, visit, visitedCount)
+		err := walkTypeValue(node, sf.Type, visit, visitedCount)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
