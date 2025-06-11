@@ -146,6 +146,8 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		execPath = BuildCLI(t, buildDir, coverDir)
 	}
 
+	BuildYamlfmt(t)
+
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
@@ -1145,4 +1147,11 @@ func isSameYAMLContent(str1, str2 string) bool {
 	}
 
 	return reflect.DeepEqual(obj1, obj2)
+}
+
+func BuildYamlfmt(t *testing.T) {
+	args := []string{
+		"make", "-s", "tools/yamlfmt",
+	}
+	RunCommand(t, args, "..")
 }
