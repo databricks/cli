@@ -14,6 +14,9 @@ import (
 //   typ          the field's type – if the field is a pointer to a scalar the pointer type is preserved;
 //                the callback receives the actual type (e.g., *string, *int, etc.).
 //
+// The function returns a boolean:
+//   skip: if true, the WalkType function will skip walking the current field and all its children.
+//
 // NOTE: Fields lacking a json tag or tagged as "-" are ignored entirely.
 //       Dynamic types like func, chan, interface, etc. are *not* visited.
 //       Only maps with string keys are traversed so that paths stay JSON-like.
@@ -27,7 +30,7 @@ import (
 //
 // ******************************************************************************************************
 
-type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type) error
+type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type) (skip bool)
 
 var ErrSkipWalk = errors.New("skip walk")
 
@@ -40,23 +43,21 @@ func WalkType(t reflect.Type, visit VisitTypeFunc) error {
 		return nil
 	}
 	visitedCount := make(map[reflect.Type]int)
-	return walkTypeValue(nil, t, visit, visitedCount)
+	walkTypeValue(nil, t, visit, visitedCount)
+	return nil
 }
 
-func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) error {
+func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
 	if typ == nil {
-		return nil
+		return
 	}
 
 	// Call visit on all nodes including the root node. We call visit before
 	// dereferencing pointers to ensure that the visit callback receives
 	// the actual type of the field.
-	err := visit(path, typ)
-	if err == ErrSkipWalk {
-		return nil
-	}
-	if err != nil {
-		return err
+	skip := visit(path, typ)
+	if skip {
+		return
 	}
 
 	// Dereference pointers.
@@ -67,40 +68,38 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 	// Return early if we're at a leaf scalar.
 	kind := typ.Kind()
 	if isScalar(kind) {
-		return nil
+		return
 	}
 
 	// We're tracking visited and allowing single repeat to support JobSettings.Tasks.ForEachTask.Task
 	if visitedCount[typ] >= 2 {
-		return nil
+		return
 	}
 
 	visitedCount[typ]++
 
-	var walkErr error
 	switch kind {
 	case reflect.Struct:
-		walkErr = walkTypeStruct(path, typ, visit, visitedCount)
+		walkTypeStruct(path, typ, visit, visitedCount)
 
 	case reflect.Slice, reflect.Array:
-		walkErr = walkTypeValue(structpath.NewAnyIndex(path), typ.Elem(), visit, visitedCount)
+		walkTypeValue(structpath.NewAnyIndex(path), typ.Elem(), visit, visitedCount)
 
 	case reflect.Map:
 		if typ.Key().Kind() != reflect.String {
-			return nil // unsupported map key type
+			return // unsupported map key type
 		}
 		// For maps, we walk the value type directly at the current path
-		walkErr = walkTypeValue(structpath.NewAnyKey(path), typ.Elem(), visit, visitedCount)
+		walkTypeValue(structpath.NewAnyKey(path), typ.Elem(), visit, visitedCount)
 
 	default:
 		// func, chan, interface, invalid, etc. -> ignore
 	}
 
 	visitedCount[typ]--
-	return walkErr
 }
 
-func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) error {
+func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
 	for i := range st.NumField() {
 		sf := st.Field(i)
 		if sf.PkgPath != "" {
@@ -112,10 +111,7 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 		if sf.Anonymous && node.JSONTag() == "" {
 			// For embedded structs, walk the embedded type at the current path level
 			// This flattens the embedded struct's fields into the parent struct
-			err := walkTypeValue(path, sf.Type, visit, visitedCount)
-			if err != nil {
-				return err
-			}
+			walkTypeValue(path, sf.Type, visit, visitedCount)
 			continue
 		}
 
@@ -123,10 +119,6 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 			continue
 		}
 
-		err := walkTypeValue(node, sf.Type, visit, visitedCount)
-		if err != nil {
-			return err
-		}
+		walkTypeValue(node, sf.Type, visit, visitedCount)
 	}
-	return nil
 }
