@@ -5,12 +5,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] lakeview get [DASHBOARD_ID]
+>>> [CLI] lakeview get [UUID]
 {
-  "lifecycle_state": "ACTIVE",
+  "lifecycle_state": null,
   "parent_path": "/Users/[USERNAME]",
-  "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
-  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
+  "path": null,
+  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n"
 }
 
 >>> [CLI] bundle destroy --auto-approve
