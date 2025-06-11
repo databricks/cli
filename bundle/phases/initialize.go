@@ -127,9 +127,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Configure use of WSFS for reads if the CLI is running on Databricks.
 		mutator.ConfigureWSFS(),
 
-		// Translate dashboards paths before ProcessStaticResources because the latter is reading from these paths
-		mutator.TranslatePathsDashboards(),
-
 		// Static resources (e.g. YAML) are already loaded, we initialize and normalize them before Python
 		resourcemutator.ProcessStaticResources(),
 

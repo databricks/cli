@@ -49,6 +49,9 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 			"variables",
 		),
 		mutator.NormalizePaths(),
+
+		// Translate dashboards paths before NormalizeAndInitializeResources and after NormalizePaths
+		mutator.TranslatePathsDashboards(),
 	)
 	if diags.HasError() {
 		return diags
