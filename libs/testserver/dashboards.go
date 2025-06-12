@@ -65,18 +65,3 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 		},
 	}
 }
-
-func (s *FakeWorkspace) DashboardDelete(req Request) Response {
-	defer s.LockUnlock()()
-
-	dashboardId := req.Vars["dashboard_id"]
-	_, ok := s.Dashboards[dashboardId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	delete(s.Dashboards, dashboardId)
-	return Response{}
-}

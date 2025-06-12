@@ -266,7 +266,7 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.DashboardUpdate(req)
 	})
 	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req testserver.Request) any {
-		return req.Workspace.DashboardDelete(req)
+		return testserver.MapDelete(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
 	})
 
 	// Pipelines:
