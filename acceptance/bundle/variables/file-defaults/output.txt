@@ -41,7 +41,7 @@
 
 === file cannot be parsed
 >>> errcode [CLI] bundle validate -o json --target invalid_json
-Error: failed to parse variables file [TEST_TMP_DIR]/.databricks/bundle/invalid_json/variable-overrides.json: error decoding JSON at :0:0: invalid character 'o' in literal false (expecting 'a')
+Error: failed to parse variables file .databricks/bundle/invalid_json/variable-overrides.json: error decoding JSON at :0:0: invalid character 'o' in literal false (expecting 'a')
 
 
 Exit code: 1
@@ -55,7 +55,7 @@ Exit code: 1
 
 === file has wrong structure
 >>> errcode [CLI] bundle validate -o json --target wrong_file_structure
-Error: failed to parse variables file [TEST_TMP_DIR]/.databricks/bundle/wrong_file_structure/variable-overrides.json: invalid format
+Error: failed to parse variables file .databricks/bundle/wrong_file_structure/variable-overrides.json: invalid format
 
 Variables file must be a JSON object with the following format:
 {"var1": "value1", "var2": "value2"}
