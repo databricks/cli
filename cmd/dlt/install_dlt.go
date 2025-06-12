@@ -12,7 +12,8 @@ import (
 )
 
 // InstallDLTSymlink creates a symlink named 'dlt' pointing to the real databricks binary.
-func InstallDLTSymlink() error {
+// If directory is specified, the symlink will be created in that directory instead of the executable's directory.
+func InstallDLTSymlink(directory string) error {
 	path, err := os.Executable()
 	if err != nil {
 		return errors.New("databricks CLI executable not found")
@@ -22,7 +23,10 @@ func InstallDLTSymlink() error {
 		return fmt.Errorf("failed to resolve symlink: %w", err)
 	}
 
-	dir := filepath.Dir(path)
+	dir := directory
+	if dir == "" {
+		dir = filepath.Dir(path)
+	}
 	dltPath := filepath.Join(dir, "dlt")
 
 	// Check if DLT already exists
@@ -31,7 +35,7 @@ func InstallDLTSymlink() error {
 			target, err := os.Readlink(dltPath)
 			if err == nil && target != realPath {
 				// if symlink exists and does not point to DLT symlink
-				return fmt.Errorf("cannot create symlink: %q already exists", dltPath)
+				return fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
 			}
 			if err != nil {
 				return err
@@ -40,23 +44,28 @@ func InstallDLTSymlink() error {
 	} else if os.IsNotExist(err) {
 		// File does not exist, safe to create symlink
 		if err := os.Symlink(realPath, dltPath); err != nil {
-			return fmt.Errorf("failed to create symlink: %w", err)
+			return fmt.Errorf("failed to install dlt CLI: %w", err)
 		}
 	} else {
 		// Some other error occurred while checking
 		return fmt.Errorf("failed to check if %q exists: %w", dltPath, err)
 	}
-	cmdio.LogString(context.Background(), "dlt successfully installed")
+	// directory will need to be added to PATH to be used as a CLI
+	cmdio.LogString(context.Background(), fmt.Sprintf("dlt successfully installed to the directory %q", dir))
 	return nil
 }
 
-func DltInstall() *cobra.Command {
-	return &cobra.Command{
+func InstallDLT() *cobra.Command {
+	var directory string
+	cmd := &cobra.Command{
 		Use:    "install-dlt",
 		Short:  "Install DLT",
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return InstallDLTSymlink()
+			return InstallDLTSymlink(directory)
 		},
 	}
+	// -d/--directory flag: if set, symlink will be created in this directory instead of the executable's directory
+	cmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory in which to install dlt CLI (defaults to databricks CLI's directory)")
+	return cmd
 }

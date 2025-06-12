@@ -1,1 +1,1 @@
-trace errcode $CLI install-dlt
+exec python3 "$TESTDIR/script.py"

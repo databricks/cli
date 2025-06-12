@@ -77,7 +77,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
-	cli.AddCommand(dlt.DltInstall())
+	cli.AddCommand(dlt.InstallDLT())
 
 	return cli
 }

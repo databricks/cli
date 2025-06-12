@@ -1,3 +1,14 @@
 
->>> errcode [CLI] install-dlt
-dlt successfully installed
+>>> [CLI] install-dlt
+dlt successfully installed to the directory "[BUILD_DIR]"
+
+>>> [CLI] install-dlt -d tmpdir
+dlt successfully installed to the directory "tmpdir"
+
+>>> [CLI] install-dlt -d nopermdir
+Error: failed to install dlt CLI: symlink [CLI] nopermdir/dlt: permission denied
+
+Exit code: 1
+
+>>> [TEST_TMP_DIR]/notdatabricks install-dlt
+dlt successfully installed to the directory "[TEST_TMP_DIR]"
