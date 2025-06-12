@@ -3,7 +3,7 @@ package config
 import (
 	"reflect"
 
-	"github.com/databricks/cli/libs/structdiff/jsontag"
+	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 // ResourcesTypes maps the configuration key of each Databricks resource section (for example
@@ -15,7 +15,7 @@ var ResourcesTypes = func() map[string]reflect.Type {
 	res := make(map[string]reflect.Type, rt.NumField())
 
 	for _, field := range reflect.VisibleFields(rt) {
-		tag := jsontag.JSONTag(field.Tag.Get("json"))
+		tag := structtag.JSONTag(field.Tag.Get("json"))
 		name := tag.Name()
 		if name == "" || name == "-" {
 			continue
