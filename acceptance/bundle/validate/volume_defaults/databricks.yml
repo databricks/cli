@@ -2,12 +2,9 @@ resources:
   volumes:
     v1:
       volume_type: ""
-      catalog_name: "main"
 
-    # v2:
-    #   volume_type: "already-set"
-    #   catalog_name: "main"
+    v2:
+      volume_type: "already-set"
 
-    # v3:
-    #   comment: hello
-    #   catalog_name: "main"
+    v3:
+      comment: hello
