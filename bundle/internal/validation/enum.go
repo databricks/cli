@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
-	"strings"
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
@@ -127,26 +126,12 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 	return patterns, nil
 }
 
-// getEnumGroupingKey determines the grouping key for organizing patterns
-// TODO: Combine with the required function.
-func getEnumGroupingKey(pattern string) string {
-	parts := strings.Split(pattern, ".")
-
-	// Group resources by their resource type (e.g., "resources.jobs")
-	if parts[0] == "resources" && len(parts) > 1 {
-		return parts[0] + "." + parts[1]
-	}
-
-	// Use the top level key for other fields
-	return parts[0]
-}
-
 // groupEnumPatternsByKey groups patterns by their logical grouping key
 func groupEnumPatternsByKey(patterns []EnumPatternInfo) map[string][]EnumPatternInfo {
 	groupedPatterns := make(map[string][]EnumPatternInfo)
 
 	for _, pattern := range patterns {
-		key := getEnumGroupingKey(pattern.Pattern)
+		key := getPatternGroupingKey(pattern.Pattern)
 		groupedPatterns[key] = append(groupedPatterns[key], pattern)
 	}
 

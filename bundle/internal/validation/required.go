@@ -87,9 +87,9 @@ func buildPatternInfos(fieldsByPattern map[string][]string) []RequiredPatternInf
 	return patterns
 }
 
-// getGroupingKey determines the grouping key for organizing patterns
-func getGroupingKey(parentPath string) string {
-	parts := strings.Split(parentPath, ".")
+// getPatternGroupingKey determines the grouping key for organizing patterns
+func getPatternGroupingKey(patternPath string) string {
+	parts := strings.Split(patternPath, ".")
 
 	// Group resources by their resource type (e.g., "resources.jobs")
 	if parts[0] == "resources" && len(parts) > 1 {
@@ -105,7 +105,7 @@ func groupPatternsByKey(patterns []RequiredPatternInfo) map[string][]RequiredPat
 	groupedPatterns := make(map[string][]RequiredPatternInfo)
 
 	for _, pattern := range patterns {
-		key := getGroupingKey(pattern.Parent)
+		key := getPatternGroupingKey(pattern.Parent)
 		groupedPatterns[key] = append(groupedPatterns[key], pattern)
 	}
 
