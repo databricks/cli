@@ -7,6 +7,11 @@ from pathlib import Path
 from difflib import unified_diff
 
 
+NAME = "yamlfmt"
+if sys.platform.startswith("win"):
+    NAME += ".exe"
+
+
 def main():
     current_dir = Path.cwd()
     yaml_files = sorted(current_dir.glob("**/*.yml")) + sorted(current_dir.glob("**/*.yaml"))
@@ -14,13 +19,14 @@ def main():
         sys.exit("No YAML files found")
 
     yamlfmt_conf = Path(os.environ["TESTROOT"]) / ".." / "yamlfmt.yml"
+    yamlfmt = Path(os.environ["TESTROOT"]) / ".." / "tools" / NAME
 
     has_changes = []
 
     for yaml_file in yaml_files:
         original_content = yaml_file.read_text().splitlines(keepends=True)
 
-        subprocess.run(["yamlfmt", f"-conf={yamlfmt_conf}", str(yaml_file)], check=True, capture_output=True)
+        subprocess.run([yamlfmt, f"-conf={yamlfmt_conf}", str(yaml_file)], check=True, capture_output=True)
 
         formatted_content = yaml_file.read_text().splitlines(keepends=True)
 

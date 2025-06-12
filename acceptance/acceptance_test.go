@@ -81,6 +81,13 @@ const (
 	EnvFilterVar = "ENVFILTER"
 )
 
+var exeSuffix = func() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+	return ""
+}()
+
 var Scripts = map[string]bool{
 	EntryPointScript: true,
 	CleanupScript:    true,
@@ -186,10 +193,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
 	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
-	terraformExecPath := filepath.Join(buildDir, "terraform")
-	if runtime.GOOS == "windows" {
-		terraformExecPath += ".exe"
-	}
+	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
@@ -1151,7 +1155,7 @@ func isSameYAMLContent(str1, str2 string) bool {
 
 func BuildYamlfmt(t *testing.T) {
 	args := []string{
-		"make", "-s", "tools/yamlfmt",
+		"make", "-s", "tools/yamlfmt" + exeSuffix,
 	}
 	RunCommand(t, args, "..")
 }
