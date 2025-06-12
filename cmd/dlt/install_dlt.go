@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -26,6 +27,9 @@ func InstallDLTSymlink(directory string) error {
 		dir = filepath.Dir(path)
 	}
 	dltPath := filepath.Join(dir, "dlt")
+	if runtime.GOOS == "windows" {
+		dltPath += ".exe"
+	}
 
 	if fi, err := os.Lstat(dltPath); err == nil {
 		if fi.Mode()&os.ModeSymlink != 0 {

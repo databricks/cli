@@ -144,7 +144,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 
 	execPath := ""
-	var dltPath string
+	dltPath := ""
 
 	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
@@ -176,8 +176,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("DLT", dltPath)
 	repls.SetPath(dltPath, "[DLT]")
 
-	// Make helper scripts available
-	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -757,8 +755,6 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-// BuildCLI builds the databricks binary and creates a dlt executable.
-// Returns the paths to the databricks and dlt executables.
 func BuildCLI(t *testing.T, buildDir, coverDir string) (string, string) {
 	execPath := filepath.Join(buildDir, "databricks")
 	dltPath := filepath.Join(buildDir, "dlt")

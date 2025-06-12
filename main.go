@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/databricks/cli/cmd"
 	"github.com/databricks/cli/cmd/dlt"
@@ -18,7 +19,7 @@ func main() {
 	// while 'databricks' runs the main CLI commands
 	invokedAs := filepath.Base(os.Args[0])
 	var command *cobra.Command
-	if invokedAs == "dlt" {
+	if invokedAs == "dlt" || (runtime.GOOS == "windows" && invokedAs == "dlt.exe") {
 		command = dlt.New()
 	} else {
 		command = cmd.New(ctx)
