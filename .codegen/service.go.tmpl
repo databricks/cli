@@ -205,7 +205,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .RequiredPositionalArguments}} {{.ConstantName}}{{end}}{{end}}"
 	{{- if .Description }}
 	cmd.Short = `{{.Summary | without "`"}}`
-	cmd.Long = `{{.Comment  "  " 80 | without "`"}}
+	cmd.Long = `{{.CliComment  "  " 80 | without "`"}}
 	{{- if $atleastOneArgumentWithDescription }}
 
   Arguments:
