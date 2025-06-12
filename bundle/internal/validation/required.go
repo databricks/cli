@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/structwalk"
 )
 
-// PatternInfo represents validation requirements for a specific configuration pattern
 type PatternInfo struct {
 	// The pattern for which the fields in Required are applicable.
 	// This is a string representation of [dyn.Pattern].
@@ -43,10 +42,10 @@ func formatRequiredFields(fields []string) string {
 }
 
 // extractRequiredFields walks through a struct type and extracts required field patterns
-func extractRequiredFields(typ reflect.Type) []PatternInfo {
+func extractRequiredFields(typ reflect.Type) ([]PatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
 
-	structwalk.WalkType(typ, func(path *structpath.PathNode, _ reflect.Type) bool {
+	err := structwalk.WalkType(typ, func(path *structpath.PathNode, _ reflect.Type) bool {
 		if path == nil {
 			return true
 		}
@@ -62,7 +61,6 @@ func extractRequiredFields(typ reflect.Type) []PatternInfo {
 			return true
 		}
 
-		// Only perform required validation for struct fields.
 		field, ok := path.Field()
 		if !ok {
 			return true
@@ -73,7 +71,7 @@ func extractRequiredFields(typ reflect.Type) []PatternInfo {
 		return true
 	})
 
-	return buildPatternInfos(fieldsByPattern)
+	return buildPatternInfos(fieldsByPattern), err
 }
 
 // buildPatternInfos converts the field map to PatternInfo slice
@@ -94,17 +92,9 @@ func buildPatternInfos(fieldsByPattern map[string][]string) []PatternInfo {
 func getGroupingKey(parentPath string) string {
 	parts := strings.Split(parentPath, ".")
 
-	switch parts[0] {
-	case "resources":
-		// Group resources by their type (e.g., "resources.jobs")
-		if len(parts) > 1 {
-			return parts[0] + "." + parts[1]
-		}
-	case "targets":
-		// Group target overrides by their first 3 keys
-		if len(parts) > 2 {
-			return strings.Join(parts[:3], ".")
-		}
+	// Group resources by their resource type (e.g., "resources.jobs")
+	if parts[0] == "resources" && len(parts) > 1 {
+		return parts[0] + "." + parts[1]
 	}
 
 	// Use the top level key for other fields
@@ -121,6 +111,17 @@ func groupPatternsByKey(patterns []PatternInfo) map[string][]PatternInfo {
 	}
 
 	return groupedPatterns
+}
+
+func filterTargetsAndEnvironments(patterns map[string][]PatternInfo) map[string][]PatternInfo {
+	filtered := make(map[string][]PatternInfo)
+	for key, patterns := range patterns {
+		if key == "targets" || key == "environments" {
+			continue
+		}
+		filtered[key] = patterns
+	}
+	return filtered
 }
 
 // sortGroupedPatterns sorts patterns within each group and returns them as a sorted slice
@@ -149,15 +150,22 @@ func sortGroupedPatterns(groupedPatterns map[string][]PatternInfo) [][]PatternIn
 }
 
 // RequiredFields returns grouped required field patterns for validation
-func requiredFields() [][]PatternInfo {
-	patterns := extractRequiredFields(reflect.TypeOf(config.Root{}))
+func requiredFields() ([][]PatternInfo, error) {
+	patterns, err := extractRequiredFields(reflect.TypeOf(config.Root{}))
+	if err != nil {
+		return nil, err
+	}
 	groupedPatterns := groupPatternsByKey(patterns)
-	return sortGroupedPatterns(groupedPatterns)
+	filteredPatterns := filterTargetsAndEnvironments(groupedPatterns)
+	return sortGroupedPatterns(filteredPatterns), nil
 }
 
 // Generate creates a Go source file with required field validation rules
 func generateRequiredFields(outPath string) error {
-	requiredFields := requiredFields()
+	requiredFields, err := requiredFields()
+	if err != nil {
+		return fmt.Errorf("failed to generate required fields: %w", err)
+	}
 
 	// Ensure output directory exists
 	if err := os.MkdirAll(outPath, 0o755); err != nil {
@@ -197,9 +205,9 @@ import (
 // RequiredFields maps [dyn.Pattern] to required fields they should have.
 var RequiredFields = map[string][]string{
 {{- range . }}
-{{ range . }}
+{{- range . }}
 	"{{ .Parent }}": {{ .RequiredFields }},
 {{- end }}
-{{- end }}
+{{ end -}}
 }
 `
