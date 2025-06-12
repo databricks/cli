@@ -1,13 +1,10 @@
 
 >>> [TERRAFORM] init -no-color -get=false
-
 Initializing the backend...
-
 Initializing provider plugins...
 - Finding databricks/databricks versions matching "1.81.0"...
 - Installing databricks/databricks v1.81.0...
 - Installed databricks/databricks v1.81.0 (unauthenticated)
-
 Terraform has created a lock file .terraform.lock.hcl to record the provider
 selections it made above. Include this file in your version control repository
 so that Terraform can guarantee to make the same selections by default when
@@ -24,7 +21,6 @@ calculate lock file checksums locally for the following providers:
 To calculate additional checksums for another platform, run:
   terraform providers lock -platform=linux_amd64
 (where linux_amd64 is the platform to generate)
-
 Terraform has been successfully initialized!
 
 You may now begin working with Terraform. Try running "terraform plan" to see
