@@ -10,4 +10,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error generating code: %v", err)
 	}
+
+	err = generateEnumFields("bundle/internal/validation/generated")
+	if err != nil {
+		log.Fatalf("Error generating code: %v", err)
+	}
 }
