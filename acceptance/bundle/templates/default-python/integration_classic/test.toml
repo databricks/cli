@@ -21,7 +21,7 @@ Response.Body = '{}'
 
 [[Repls]]
 # for some reason leading number is lost converting "%H%M%S" 061234 to 61234
-Old = '\d{5,}'
+Old = '\d{4,}'
 New = '[NUMBER]'
 
 [[Repls]]
