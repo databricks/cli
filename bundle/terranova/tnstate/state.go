@@ -1,0 +1,134 @@
+package tnstate
+
+import (
+	"encoding/json"
+	"os"
+	"sync"
+
+	"github.com/databricks/cli/libs/utils"
+	"github.com/google/uuid"
+)
+
+type TerranovaState struct {
+	Path string
+	data Database
+	mu   sync.Mutex
+}
+
+type Database struct {
+	Lineage   string                              `json:"lineage"`
+	Serial    int                                 `json:"serial"`
+	Resources map[string]map[string]ResourceEntry `json:"resources"`
+}
+
+type ResourceEntry struct {
+	ID    string `json:"__id__"`
+	State any    `json:"state"`
+}
+
+type ResourceNode struct {
+	Section string
+	Name    string
+	ID      string
+}
+
+func (db *TerranovaState) SaveState(section, resourceName, newID string, state any) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	sectionData, ok := db.data.Resources[section]
+	if !ok {
+		sectionData = make(map[string]ResourceEntry)
+		db.data.Resources[section] = sectionData
+	}
+
+	sectionData[resourceName] = ResourceEntry{
+		ID:    newID,
+		State: state,
+	}
+
+	return nil
+}
+
+func (db *TerranovaState) DeleteState(section, resourceName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	sectionData, ok := db.data.Resources[section]
+	if !ok {
+		return nil
+	}
+
+	delete(sectionData, resourceName)
+
+	return nil
+}
+
+func (db *TerranovaState) GetResourceEntry(section, resourceName string) (ResourceEntry, bool) {
+	sectionData, ok := db.data.Resources[section]
+	if !ok {
+		return ResourceEntry{}, false
+	}
+
+	result, ok := sectionData[resourceName]
+	return result, ok
+}
+
+func (db *TerranovaState) GetAllResources() []ResourceNode {
+	nodes := make([]ResourceNode, 0, len(db.data.Resources)*4)
+
+	for _, section := range utils.SortedKeys(db.data.Resources) {
+		sectionData := db.data.Resources[section]
+		for _, name := range utils.SortedKeys(sectionData) {
+			nodes = append(nodes, ResourceNode{
+				Section: section,
+				Name:    name,
+				ID:      sectionData[name].ID,
+			})
+		}
+	}
+
+	return nodes
+}
+
+func (db *TerranovaState) Open(path string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	db.Path = path
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			db.data = Database{
+				Serial:    0,
+				Lineage:   uuid.New().String(),
+				Resources: make(map[string]map[string]ResourceEntry),
+			}
+			return nil
+		}
+		return err
+	}
+
+	return json.Unmarshal(data, &db.data)
+}
+
+func (db *TerranovaState) Finalize() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.unlockedSave()
+}
+
+func (db *TerranovaState) unlockedSave() error {
+	data, err := json.MarshalIndent(db.data, "", " ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(db.Path, data, 0o600)
+}
+
+func (r ResourceNode) String() string {
+	return r.Section + "." + r.Name + "#" + r.ID
+}
