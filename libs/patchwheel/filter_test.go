@@ -17,7 +17,6 @@ func TestFilterLatestWheels(t *testing.T) {
 		"other-0.9.0-py3-none-any.whl",
 		"project_name_bvs7tide6bhhpjy4dmcsb2qg44-0.0.1+20250604.74804-py3-none-any.whl",
 		"not-a-wheel.whl",
-
 		"hello-1.2.3-py3-none-any.whl",
 		"hello-1.2.3+1741091696780123321-py3-none-any.whl",
 	}
