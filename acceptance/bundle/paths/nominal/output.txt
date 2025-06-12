@@ -1,5 +1,30 @@
 
 >>> [CLI] bundle validate -t development -o json
+Warning: required field "task_key" is not set
+  at resources.jobs.my_job.tasks[6].for_each_task.task
+  in resources/my_job.yml:48:15
+     override_job.yml:46:19
+
+Warning: required field "task_key" is not set
+  at resources.jobs.my_job.tasks[7].for_each_task.task
+  in resources/my_job.yml:54:15
+     override_job.yml:52:19
+
+Warning: required field "entry_point" is not set
+  at resources.jobs.my_job.tasks[4].python_wheel_task
+  in resources/my_job.yml:33:13
+     override_job.yml:29:17
+
+Warning: required field "inputs" is not set
+  at resources.jobs.my_job.tasks[6].for_each_task
+  in resources/my_job.yml:47:13
+     override_job.yml:45:17
+
+Warning: required field "inputs" is not set
+  at resources.jobs.my_job.tasks[7].for_each_task
+  in resources/my_job.yml:53:13
+     override_job.yml:51:17
+
 
 >>> [CLI] bundle validate -t error
 Error: notebook "resources/this value is overridden" not found. Local notebook references are expected
