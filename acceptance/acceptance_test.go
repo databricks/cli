@@ -1154,6 +1154,7 @@ func isSameYAMLContent(str1, str2 string) bool {
 }
 
 func BuildYamlfmt(t *testing.T) {
+	// Using make here instead of "go build" directly cause it's faster when it's already built
 	args := []string{
 		"make", "-s", "tools/yamlfmt" + exeSuffix,
 	}
