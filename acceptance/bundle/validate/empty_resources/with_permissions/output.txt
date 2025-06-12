@@ -85,15 +85,15 @@ Warning: unknown field: permissions
   at resources.quality_monitors.rname
   in databricks.yml:7:7
 
-Warning: required field "table_name" is not set
-  at resources.quality_monitors.rname
-  in databricks.yml:7:7
-
 Warning: required field "assets_dir" is not set
   at resources.quality_monitors.rname
   in databricks.yml:7:7
 
 Warning: required field "output_schema_name" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+Warning: required field "table_name" is not set
   at resources.quality_monitors.rname
   in databricks.yml:7:7
 
@@ -168,6 +168,14 @@ Warning: required field "schema_name" is not set
 }
 
 === resources.apps.rname ===
+Warning: required field "name" is not set
+  at resources.apps.rname
+  in databricks.yml:7:7
+
+Warning: required field "source_code_path" is not set
+  at resources.apps.rname
+  in databricks.yml:7:7
+
 Error: Missing app source code path
   in databricks.yml:7:7
 
