@@ -35,6 +35,10 @@
 }
 
 === resources.models.rname ===
+Warning: required field "name" is not set
+  at resources.models.rname
+  in databricks.yml:6:12
+
 {
   "models": {
     "rname": {
@@ -54,6 +58,10 @@
 }
 
 === resources.registered_models.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.registered_models.rname
+  in databricks.yml:6:12
+
 {
   "registered_models": {
     "rname": {}
@@ -61,6 +69,10 @@
 }
 
 === resources.quality_monitors.rname ===
+Warning: required field "table_name" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:6:12
+
 {
   "quality_monitors": {
     "rname": {}
@@ -68,6 +80,10 @@
 }
 
 === resources.schemas.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.schemas.rname
+  in databricks.yml:6:12
+
 {
   "schemas": {
     "rname": {}
@@ -75,6 +91,10 @@
 }
 
 === resources.volumes.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.volumes.rname
+  in databricks.yml:6:12
+
 {
   "volumes": {
     "rname": {

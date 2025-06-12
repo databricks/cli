@@ -181,6 +181,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validates that when using a shared workspace path, appropriate permissions are configured
 		permissions.ValidateSharedRootPermissions(),
 
+		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
+		// since they can also set and modify resources.
+		validate.Required(),
+
 		// Annotate resources with "deployment" metadata.
 		//
 		// We don't include this step into initializeResources because these mutators set fields that are

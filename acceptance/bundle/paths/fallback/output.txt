@@ -8,6 +8,11 @@ Warn: path ../dist/wheel2.whl is defined relative to the [TEST_TMP_DIR]/resource
 Warn: path ../target/jar2.jar is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_job.yml:41:24). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.
 Warn: path ../src/notebook2.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_pipeline.yml:13:23). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.
 Warn: path ../src/file2.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_pipeline.yml:10:23). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.
+Warning: required field "entry_point" is not set
+  at resources.jobs.my_job.tasks[4].python_wheel_task
+  in resources/my_job.yml:33:13
+     override_job.yml:29:17
+
 
 >>> [CLI] bundle validate -t error
 Error: notebook "resources/this value is overridden" not found. Local notebook references are expected

@@ -47,6 +47,10 @@ Warning: unknown field: grants
   at resources.models.rname
   in databricks.yml:7:7
 
+Warning: required field "name" is not set
+  at resources.models.rname
+  in databricks.yml:7:7
+
 {
   "models": {
     "rname": {
@@ -70,6 +74,10 @@ Warning: unknown field: grants
 }
 
 === resources.registered_models.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.registered_models.rname
+  in databricks.yml:7:7
+
 {
   "registered_models": {
     "rname": {
@@ -83,6 +91,10 @@ Warning: unknown field: grants
   at resources.quality_monitors.rname
   in databricks.yml:7:7
 
+Warning: required field "table_name" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
 {
   "quality_monitors": {
     "rname": {}
@@ -90,6 +102,10 @@ Warning: unknown field: grants
 }
 
 === resources.schemas.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.schemas.rname
+  in databricks.yml:7:7
+
 {
   "schemas": {
     "rname": {
@@ -99,6 +115,10 @@ Warning: unknown field: grants
 }
 
 === resources.volumes.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.volumes.rname
+  in databricks.yml:7:7
+
 {
   "volumes": {
     "rname": {
