@@ -105,7 +105,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, true, "bundle/validate/required")
 }
 
 func TestInprocessMode(t *testing.T) {

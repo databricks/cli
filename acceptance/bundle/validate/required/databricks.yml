@@ -1,0 +1,13 @@
+artifacts:
+  zab:
+    files:
+      - {}
+
+resources:
+  models:
+    foo:
+      description: "hello"
+
+  volumes:
+    baz:
+      name: "baz"
