@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/libs/structwalk"
 )
 
-type PatternInfo struct {
+type RequiredPatternInfo struct {
 	// The pattern for which the fields in Required are applicable.
 	// This is a string representation of [dyn.Pattern].
 	Parent string
@@ -42,7 +42,7 @@ func formatRequiredFields(fields []string) string {
 }
 
 // extractRequiredFields walks through a struct type and extracts required field patterns
-func extractRequiredFields(typ reflect.Type) ([]PatternInfo, error) {
+func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
 
 	err := structwalk.WalkType(typ, func(path *structpath.PathNode, _ reflect.Type) bool {
@@ -75,11 +75,11 @@ func extractRequiredFields(typ reflect.Type) ([]PatternInfo, error) {
 }
 
 // buildPatternInfos converts the field map to PatternInfo slice
-func buildPatternInfos(fieldsByPattern map[string][]string) []PatternInfo {
-	patterns := make([]PatternInfo, 0, len(fieldsByPattern))
+func buildPatternInfos(fieldsByPattern map[string][]string) []RequiredPatternInfo {
+	patterns := make([]RequiredPatternInfo, 0, len(fieldsByPattern))
 
 	for parentPath, fields := range fieldsByPattern {
-		patterns = append(patterns, PatternInfo{
+		patterns = append(patterns, RequiredPatternInfo{
 			Parent:         parentPath,
 			RequiredFields: formatRequiredFields(fields),
 		})
@@ -102,8 +102,8 @@ func getGroupingKey(parentPath string) string {
 }
 
 // groupPatternsByKey groups patterns by their logical grouping key
-func groupPatternsByKey(patterns []PatternInfo) map[string][]PatternInfo {
-	groupedPatterns := make(map[string][]PatternInfo)
+func groupPatternsByKey(patterns []RequiredPatternInfo) map[string][]RequiredPatternInfo {
+	groupedPatterns := make(map[string][]RequiredPatternInfo)
 
 	for _, pattern := range patterns {
 		key := getGroupingKey(pattern.Parent)
@@ -113,8 +113,8 @@ func groupPatternsByKey(patterns []PatternInfo) map[string][]PatternInfo {
 	return groupedPatterns
 }
 
-func filterTargetsAndEnvironments(patterns map[string][]PatternInfo) map[string][]PatternInfo {
-	filtered := make(map[string][]PatternInfo)
+func filterTargetsAndEnvironments(patterns map[string][]RequiredPatternInfo) map[string][]RequiredPatternInfo {
+	filtered := make(map[string][]RequiredPatternInfo)
 	for key, patterns := range patterns {
 		if key == "targets" || key == "environments" {
 			continue
@@ -125,7 +125,7 @@ func filterTargetsAndEnvironments(patterns map[string][]PatternInfo) map[string]
 }
 
 // sortGroupedPatterns sorts patterns within each group and returns them as a sorted slice
-func sortGroupedPatterns(groupedPatterns map[string][]PatternInfo) [][]PatternInfo {
+func sortGroupedPatterns(groupedPatterns map[string][]RequiredPatternInfo) [][]RequiredPatternInfo {
 	// Get sorted group keys
 	groupKeys := make([]string, 0, len(groupedPatterns))
 	for key := range groupedPatterns {
@@ -134,7 +134,7 @@ func sortGroupedPatterns(groupedPatterns map[string][]PatternInfo) [][]PatternIn
 	sort.Strings(groupKeys)
 
 	// Build sorted result
-	result := make([][]PatternInfo, 0, len(groupKeys))
+	result := make([][]RequiredPatternInfo, 0, len(groupKeys))
 	for _, key := range groupKeys {
 		patterns := groupedPatterns[key]
 
@@ -150,7 +150,7 @@ func sortGroupedPatterns(groupedPatterns map[string][]PatternInfo) [][]PatternIn
 }
 
 // RequiredFields returns grouped required field patterns for validation
-func requiredFields() ([][]PatternInfo, error) {
+func requiredFields() ([][]RequiredPatternInfo, error) {
 	patterns, err := extractRequiredFields(reflect.TypeOf(config.Root{}))
 	if err != nil {
 		return nil, err
