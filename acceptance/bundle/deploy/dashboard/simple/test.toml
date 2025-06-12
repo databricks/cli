@@ -33,6 +33,3 @@ Response.Body = '''
     "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
 }
 '''
-
-[[Server]]
-Pattern = "DELETE /api/2.0/lakeview/dashboards/{dashboard_id}"
