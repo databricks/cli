@@ -44,7 +44,7 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			return v, nil
 		})
 		if dyn.IsExpectedMapError(err) || dyn.IsExpectedSequenceError(err) || dyn.IsExpectedMapToIndexError(err) || dyn.IsExpectedSequenceToIndexError(err) {
-			// No map or sequence defined for this pattern, so we ignore it.
+			// No map or sequence value is set at this pattern, so we ignore it.
 			continue
 		}
 		if err != nil {
