@@ -9,7 +9,7 @@ if CLOUD_ENV and os.environ["SERVERLESS"] == "yes" and not os.environ.get("TEST_
     sys.exit(f"SKIP_TEST SERVERLESS=yes but TEST_METASTORE_ID is empty in this env {CLOUD_ENV=}")
 
 BUILDING = "Building python_artifact"
-UPLOADING_WHL = re.compile("Uploading .*whl")
+UPLOADING_WHL = re.compile(r"Uploading .*\.whl\.\.\.$", re.M)
 STATE = "Updating deployment state"
 
 
