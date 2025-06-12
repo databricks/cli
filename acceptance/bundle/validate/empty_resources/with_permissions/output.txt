@@ -66,6 +66,14 @@ Warning: required field "catalog_name" is not set
   at resources.registered_models.rname
   in databricks.yml:7:7
 
+Warning: required field "name" is not set
+  at resources.registered_models.rname
+  in databricks.yml:7:7
+
+Warning: required field "schema_name" is not set
+  at resources.registered_models.rname
+  in databricks.yml:7:7
+
 {
   "registered_models": {
     "rname": {}
@@ -78,6 +86,14 @@ Warning: unknown field: permissions
   in databricks.yml:7:7
 
 Warning: required field "table_name" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+Warning: required field "assets_dir" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+Warning: required field "output_schema_name" is not set
   at resources.quality_monitors.rname
   in databricks.yml:7:7
 
@@ -96,6 +112,10 @@ Warning: required field "catalog_name" is not set
   at resources.schemas.rname
   in databricks.yml:7:7
 
+Warning: required field "name" is not set
+  at resources.schemas.rname
+  in databricks.yml:7:7
+
 {
   "schemas": {
     "rname": {}
@@ -108,6 +128,14 @@ Warning: unknown field: permissions
   in databricks.yml:7:7
 
 Warning: required field "catalog_name" is not set
+  at resources.volumes.rname
+  in databricks.yml:7:7
+
+Warning: required field "name" is not set
+  at resources.volumes.rname
+  in databricks.yml:7:7
+
+Warning: required field "schema_name" is not set
   at resources.volumes.rname
   in databricks.yml:7:7
 

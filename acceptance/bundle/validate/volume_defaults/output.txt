@@ -1,24 +1,14 @@
-Warning: required field "catalog_name" is not set
-  at resources.volumes.v2
-  in databricks.yml:8:7
+Warning: required field "name" is not set
+  at resources.volumes.v1
+  in databricks.yml:6:7
 
-Warning: required field "catalog_name" is not set
-  at resources.volumes.v3
-  in databricks.yml:10:7
-
-Warning: required field "catalog_name" is not set
+Warning: required field "schema_name" is not set
   at resources.volumes.v1
   in databricks.yml:6:7
 
 {
   "v1": {
+    "catalog_name": "main",
     "volume_type": ""
-  },
-  "v2": {
-    "volume_type": "already-set"
-  },
-  "v3": {
-    "comment": "hello",
-    "volume_type": "MANAGED"
   }
 }
