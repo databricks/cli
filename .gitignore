@@ -29,3 +29,6 @@ __pycache__
 
 # Test results from 'make test'
 test-output.json
+
+# Binary downloaded when acceptance tests are run.
+tools/yamlfmt
