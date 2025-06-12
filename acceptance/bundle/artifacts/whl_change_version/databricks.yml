@@ -1,0 +1,12 @@
+resources:
+  jobs:
+    test_job:
+      name: "[${bundle.target}] My Wheel Job"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "0717-aaaaa-bbbbbb"
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
+          libraries:
+            - whl: ./dist/*.whl

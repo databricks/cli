@@ -1,0 +1,39 @@
+trace $CLI bundle deploy
+
+trace find.py --expect 1 whl
+
+title "Expecting 1 wheel in libraries section in /jobs/create"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
+
+title "Expecting 1 wheel to be uploaded"
+trace jq .path out.requests.txt | grep import | sort
+
+rm out.requests.txt
+
+
+trace update_file.py my_test_code/__init__.py 0.1.0 0.2.0
+trace $CLI bundle deploy
+
+trace find.py --expect 2 whl  # there are now 2 wheels on disk
+
+title "Expecting 1 wheel in libraries section in /jobs/reset"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt
+
+title "Expecting 1 wheel to be uploaded"
+trace jq .path out.requests.txt | grep import | sort
+
+rm out.requests.txt
+
+
+title 'Restore config to target old wheel'
+trace update_file.py databricks.yml './dist/*.whl' './dist/my*0.1.0*.whl'
+trace $CLI bundle deploy
+trace find.py --expect 2 whl
+
+title "Expecting 1 wheel in libraries section in /jobs/reset"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt
+
+title "Expecting 1 wheel to be uploaded"
+trace jq .path out.requests.txt | grep import | sort
+
+rm out.requests.txt

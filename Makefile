@@ -33,6 +33,9 @@ fmt: tools/yamlfmt
 tools/yamlfmt: go.mod
 	go build -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
 
+tools/yamlfmt.exe: go.mod
+	go build -o tools/yamlfmt.exe github.com/google/yamlfmt/cmd/yamlfmt
+
 ws:
 	./tools/validate_whitespace.py
 
