@@ -1,8 +1,7 @@
-CLI path: [CLI]
-DLT path: [DLT]
 
 >>> errcode [CLI] install-dlt
 dlt successfully installed to the directory "[BUILD_DIR]"
+dlt init is not yet implemented. This will initialize a new DLT project in the future.
 
 >>> errcode [CLI] install-dlt -d tmpdir
 dlt successfully installed to the directory "tmpdir"

@@ -14,6 +14,8 @@ import (
 func main() {
 	ctx := context.Background()
 
+	// Branch command based on program name: 'dlt' runs DLT-specific commands,
+	// while 'databricks' runs the main CLI commands
 	invokedAs := filepath.Base(os.Args[0])
 	var command *cobra.Command
 	if invokedAs == "dlt" {

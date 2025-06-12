@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/libs/structdiff/structpath"
-	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 // VisitTypeFunc is invoked for fields encountered while walking typ. This includes both leaf nodes as well as any
@@ -14,6 +13,10 @@ import (
 //   path         PathNode representing the JSON-style path to the field.
 //   typ          the field's type – if the field is a pointer to a scalar the pointer type is preserved;
 //                the callback receives the actual type (e.g., *string, *int, etc.).
+//
+// The function returns a boolean:
+//   continueWalk: if true, the WalkType function will continue recursively walking the current field.
+//                 if false, the WalkType function will skip walking the current field and all its children.
 //
 // NOTE: Fields lacking a json tag or tagged as "-" are ignored entirely.
 //       Dynamic types like func, chan, interface, etc. are *not* visited.
@@ -28,7 +31,7 @@ import (
 //
 // ******************************************************************************************************
 
-type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type)
+type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool)
 
 // WalkType validates that t is a struct or pointer to one and starts the recursive traversal.
 func WalkType(t reflect.Type, visit VisitTypeFunc) error {
@@ -51,7 +54,10 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, visit VisitTypeF
 	// Call visit on all nodes including the root node. We call visit before
 	// dereferencing pointers to ensure that the visit callback receives
 	// the actual type of the field.
-	visit(path, typ)
+	continueWalk := visit(path, typ)
+	if !continueWalk {
+		return
+	}
 
 	// Dereference pointers.
 	for typ.Kind() == reflect.Pointer {
@@ -98,25 +104,20 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 		if sf.PkgPath != "" {
 			continue // unexported
 		}
-		tag := sf.Tag.Get("json")
+		node := structpath.NewStructField(path, sf.Tag, sf.Name)
 
 		// Handle embedded structs (anonymous fields without json tags)
-		if sf.Anonymous && tag == "" {
+		if sf.Anonymous && node.JSONTag() == "" {
 			// For embedded structs, walk the embedded type at the current path level
 			// This flattens the embedded struct's fields into the parent struct
 			walkTypeValue(path, sf.Type, visit, visitedCount)
 			continue
 		}
 
-		if tag == "-" {
-			continue // skip fields without json name
-		}
-		jsonTag := structtag.JSONTag(tag)
-		if jsonTag.Name() == "-" {
+		if node.JSONTag().Name() == "-" {
 			continue
 		}
-		fieldType := sf.Type
-		node := structpath.NewStructField(path, jsonTag, sf.Name)
-		walkTypeValue(node, fieldType, visit, visitedCount)
+
+		walkTypeValue(node, sf.Type, visit, visitedCount)
 	}
 }

@@ -1,19 +1,5 @@
-# Print and check $CLI and $DLT
-set -euo pipefail
-
-echo "CLI path: $CLI"
-if [[ ! -x "$CLI" ]]; then
-  echo "CLI is not executable!"
-  exit 1
-fi
-
-echo "DLT path: $DLT"
-if [[ ! -x "$DLT" ]]; then
-  echo "DLT is not executable!"
-  exit 1
-fi
-
 trace errcode $CLI install-dlt
+"$DLT" init
 
 # 1. dlt file exists, should not overwrite
 mkdir -p tmpdir

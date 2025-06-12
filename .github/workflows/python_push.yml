@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyVersion: [ '3.10', '3.11', '3.12', '3.13' ]
+        pyVersion: ['3.10', '3.11', '3.12', '3.13']
 
     steps:
       - name: Checkout repository and submodules

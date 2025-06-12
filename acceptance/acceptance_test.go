@@ -81,6 +81,13 @@ const (
 	EnvFilterVar = "ENVFILTER"
 )
 
+var exeSuffix = func() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+	return ""
+}()
+
 var Scripts = map[string]bool{
 	EntryPointScript: true,
 	CleanupScript:    true,
@@ -143,8 +150,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
-		// The `dlt` command for in-process mode needs to be a separate file
-		// that can be invoked, so that `os.Args[0]` is `dlt`.
 		dltPath = filepath.Join(buildDir, "dlt")
 	} else {
 		execPath, dltPath = BuildCLI(t, buildDir, coverDir)
@@ -153,7 +158,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	fi, err := os.Lstat(dltPath)
 	if err == nil {
 		if fi.Mode()&os.ModeSymlink == 0 {
-			// remove file if symlink exists
 			_ = os.Remove(dltPath)
 		}
 	} else if !os.IsNotExist(err) {
@@ -164,6 +168,8 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		require.NoError(t, err)
 	}
 
+	BuildYamlfmt(t)
+
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
@@ -172,6 +178,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	// Make helper scripts available
 	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
+	paths := []string{
+		// Make helper scripts available
+		filepath.Join(cwd, "bin"),
+
+		// Make <ROOT>/tools/ available (e.g. yamlfmt)
+		filepath.Join(cwd, "..", "tools"),
+
+		os.Getenv("PATH"),
+	}
+	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
 
 	tempHomeDir := t.TempDir()
 	repls.SetPath(tempHomeDir, "[TMPHOME]")
@@ -197,10 +213,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
 	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
-	terraformExecPath := filepath.Join(buildDir, "terraform")
-	if runtime.GOOS == "windows" {
-		terraformExecPath += ".exe"
-	}
+	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
@@ -214,6 +227,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
+	t.Setenv("TESTROOT", cwd)
 	repls.SetPath(cwd, "[TESTROOT]")
 
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
@@ -1162,4 +1176,12 @@ func isSameYAMLContent(str1, str2 string) bool {
 	}
 
 	return reflect.DeepEqual(obj1, obj2)
+}
+
+func BuildYamlfmt(t *testing.T) {
+	// Using make here instead of "go build" directly cause it's faster when it's already built
+	args := []string{
+		"make", "-s", "tools/yamlfmt" + exeSuffix,
+	}
+	RunCommand(t, args, "..")
 }
