@@ -30,6 +30,9 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			return diag.FromErr(fmt.Errorf("invalid pattern %q for required field validation: %w", k, err))
 		}
 
+		// Note we only emit diagnostics for fields that are not set. If a field is set to a zero
+		// value we don't emit a diagnostic. This is so that we defer the interpretation of zero values
+		// to the server.
 		_, err = dyn.MapByPattern(b.Config.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			for _, requiredField := range requiredFields {
 				vv := v.Get(requiredField)
