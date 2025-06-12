@@ -49,13 +49,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 				return dyn.InvalidValue, fmt.Errorf("failed to read serialized dashboard from file_path %s: %w", path, err)
 			}
 
-			v, err = dyn.Set(v, serializedDashboardFieldName, dyn.V(string(contents)))
-			if err != nil {
-				return dyn.InvalidValue, fmt.Errorf("failed to set serialized_dashboard: %w", err)
-			}
-
-			// Drop the "file_path" field. It is mutually exclusive with "serialized_dashboard".
-			return dyn.DropKeys(v, []string{filePathFieldName})
+			return dyn.Set(v, serializedDashboardFieldName, dyn.V(string(contents)))
 		})
 	})
 

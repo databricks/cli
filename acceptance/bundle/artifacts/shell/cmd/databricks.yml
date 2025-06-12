@@ -4,7 +4,7 @@ bundle:
 artifacts:
   my_artifact:
     executable: cmd
-    build: |
+    build: |-
       if defined CMDCMDLINE (
         echo shell is cmd.exe> out.shell.txt
       )

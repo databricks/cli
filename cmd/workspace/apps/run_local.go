@@ -53,7 +53,7 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int)
 func setupApp(cmd *cobra.Command, config *apps.Config, spec *apps.AppSpec, customEnv []string, prepareEnvironment bool) (apps.App, []string, error) {
 	ctx := cmd.Context()
 	cfg := cmdctx.ConfigUsed(ctx)
-	app := apps.NewApp(config, spec)
+	app := apps.NewApp(ctx, config, spec)
 	env := auth.ProcessEnv(cfg)
 	if cfg.Profile != "" {
 		env = append(env, "DATABRICKS_CONFIG_PROFILE="+cfg.Profile)

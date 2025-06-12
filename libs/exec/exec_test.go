@@ -127,7 +127,7 @@ func TestExecutorCleanupsTempFiles(t *testing.T) {
 	cmd, ec, err := executor.prepareCommand(context.Background(), "echo 'Hello'")
 	assert.NoError(t, err)
 
-	command, err := executor.start(context.Background(), cmd, ec)
+	command, err := executor.start(cmd, ec)
 	assert.NoError(t, err)
 
 	fileName := ec.scriptFile

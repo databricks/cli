@@ -39,7 +39,7 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/create"
 }
-jobs foo id='1' name='foo'
+jobs foo id='[NUMID]' name='foo'
 
 === Update trigger.periodic.unit and re-deploy
 >>> update_file.py databricks.yml DAYS HOURS
@@ -53,7 +53,7 @@ Deployment complete!
 >>> print_requests
 {
   "body": {
-    "job_id": 1,
+    "job_id": [NUMID],
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",
@@ -87,4 +87,4 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/reset"
 }
-jobs foo id='1' name='foo'
+jobs foo id='[NUMID]' name='foo'

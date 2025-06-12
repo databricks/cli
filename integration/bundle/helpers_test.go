@@ -3,7 +3,6 @@ package bundle_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -103,12 +101,4 @@ func destroyBundle(t testutil.TestingT, ctx context.Context, path string) {
 	c := testcli.NewRunner(t, ctx, "bundle", "destroy", "--auto-approve")
 	_, _, err := c.Run()
 	require.NoError(t, err)
-}
-
-func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t testutil.TestingT, uniqueId string) string {
-	// Compute root path for the bundle deployment
-	me, err := w.CurrentUser.Me(context.Background())
-	require.NoError(t, err)
-	root := fmt.Sprintf("/Workspace/Users/%s/.bundle/%s", me.UserName, uniqueId)
-	return root
 }

@@ -1,0 +1,11 @@
+bundle:
+  name: "custom-prefix"
+
+presets:
+  name_prefix: one
+
+resources:
+  schemas:
+    foo:
+      catalog_name: "foo"
+      name: "bar"

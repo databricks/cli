@@ -10,8 +10,8 @@ resources:
             data_security_mode: SINGLE_USER
             num_workers: 0
             spark_conf:
-                spark.master: "local[*, 4]"
-                spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*, 4]"
+              spark.databricks.cluster.profile: singleNode
             custom_tags:
               ResourceClass: SingleNode
           notebook_task:

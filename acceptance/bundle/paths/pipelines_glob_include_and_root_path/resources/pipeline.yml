@@ -1,0 +1,15 @@
+resources:
+  pipelines:
+    # relative paths should get translated to remote paths
+    one:
+      root_path: "../src/pipeline_one"
+      libraries:
+        - glob:
+            include: "../src/pipeline_one/a/b/c/**"
+
+    # absolute paths should remain as-is
+    two:
+      root_path: "/Workspace/Users/me@company.com/src"
+      libraries:
+        - glob:
+            include: "/Workspace/Users/me@company.com/a/b/c/**"

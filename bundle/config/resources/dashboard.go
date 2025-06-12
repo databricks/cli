@@ -49,6 +49,8 @@ type Dashboard struct {
 	EmbedCredentials bool `json:"embed_credentials,omitempty"`
 
 	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
+	// This is inlined into serialized_dashboard during deployment. The file_path is kept around
+	// as metadata which is needed for `databricks bundle generate dashboard --resource <dashboard_key>` to work.
 	FilePath string `json:"file_path,omitempty"`
 }
 
@@ -79,10 +81,6 @@ func (*Dashboard) ResourceDescription() ResourceDescription {
 		PluralTitle:           "Dashboards",
 		TerraformResourceName: "databricks_dashboard",
 	}
-}
-
-func (*Dashboard) TerraformResourceName() string {
-	return "databricks_dashboard"
 }
 
 func (r *Dashboard) InitializeURL(baseURL url.URL) {

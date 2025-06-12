@@ -1,7 +1,7 @@
 bundle:
   name: my_project
 
-sync: { paths: [] } # don't need to copy files
+sync: {paths: []} # don't need to copy files
 
 experimental:
   python:

@@ -243,7 +243,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf"
                       },
                       "cluster_name": {
-                        "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.",
+                        "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\nFor job clusters, the cluster name is automatically set based on the job and job run IDs.",
                         "$ref": "#/$defs/string"
                       },
                       "custom_tags": {
@@ -1060,6 +1060,12 @@
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true
                       },
+                      "root_path": {
+                        "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
+                      },
                       "run_as": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs",
                         "x-databricks-preview": "PRIVATE",
@@ -1710,6 +1716,14 @@
                       "description": "The commands to run.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Command"
                     },
+                    "skip_artifact_cleanup": {
+                      "description": "Determines whether to skip cleaning up the .internal folder",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "skip_name_prefix_for_schema": {
+                      "description": "Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`\nis set, to the names of UC schemas defined in the bundle.",
+                      "$ref": "#/$defs/bool"
+                    },
                     "use_legacy_run_as": {
                       "description": "Whether to use the legacy run_as behavior.",
                       "$ref": "#/$defs/bool"
@@ -2257,6 +2271,9 @@
                     },
                     "sql_warehouse": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse"
+                    },
+                    "uc_securable": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurable"
                     }
                   },
                   "additionalProperties": false,
@@ -2428,6 +2445,63 @@
                     "CAN_MANAGE",
                     "CAN_USE",
                     "IS_OWNER"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceUcSecurable": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurablePermission"
+                    },
+                    "securable_full_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "securable_type": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurableType"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "permission",
+                    "securable_full_name",
+                    "securable_type"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceUcSecurableUcSecurablePermission": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "READ_VOLUME",
+                    "WRITE_VOLUME"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceUcSecurableUcSecurableType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "VOLUME"
                   ]
                 },
                 {
@@ -3040,7 +3114,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf"
                     },
                     "cluster_name": {
-                      "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.",
+                      "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\nFor job clusters, the cluster name is automatically set based on the job and job run IDs.",
                       "$ref": "#/$defs/string"
                     },
                     "custom_tags": {
@@ -3248,7 +3322,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\n(Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)\nIn this minimal environment spec, only pip dependencies are supported.",
+                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
                   "properties": {
                     "client": {
                       "description": "Client version used by the environment\nThe client is the user-facing environment of the runtime.\nEach client comes with a specific set of pre-installed libraries.\nThe version is a string, consisting of the major client version.",
@@ -7498,9 +7572,11 @@
                   "type": "object",
                   "properties": {
                     "dns_name": {
+                      "description": "The DNS of the KeyVault",
                       "$ref": "#/$defs/string"
                     },
                     "resource_id": {
+                      "description": "The resource id of the azure KeyVault that user wants to associate the scope with.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -7517,7 +7593,19 @@
               ]
             },
             "workspace.ScopeBackendType": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "DATABRICKS",
+                    "AZURE_KEYVAULT"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             }
           }
         }

@@ -47,11 +47,20 @@ func (err ErrIsNotNotebook) Error() string {
 	return fmt.Sprintf("file at %s is not a notebook", err.path)
 }
 
-type translatePaths struct{}
+type translatePaths struct {
+	dashboardsOnly bool
+}
 
 // TranslatePaths converts paths to local notebook files into paths in the workspace file system.
 func TranslatePaths() bundle.Mutator {
 	return &translatePaths{}
+}
+
+// TranslatePathsDashboards converts paths to local dashboard files into paths in the workspace file system.
+func TranslatePathsDashboards() bundle.Mutator {
+	return &translatePaths{
+		dashboardsOnly: true,
+	}
 }
 
 func (m *translatePaths) Name() string {
@@ -141,6 +150,8 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeDirectory:
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
+	case paths.TranslateModeGlob:
+		interp, err = t.translateGlobPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalAbsoluteDirectory:
 		interp, err = t.translateLocalAbsoluteDirectoryPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalRelative:
@@ -230,6 +241,10 @@ func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, 
 	return path.Join(t.remoteRoot, localRelPath), nil
 }
 
+func (t *translateContext) translateGlobPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	return path.Join(t.remoteRoot, localRelPath), nil
+}
+
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
 	info, err := os.Stat(filepath.FromSlash(localFullPath))
 	if errors.Is(err, fs.ErrNotExist) {
@@ -291,13 +306,21 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
-		for _, fn := range []func(context.Context, dyn.Value) (dyn.Value, error){
+
+		translations := []func(context.Context, dyn.Value) (dyn.Value, error){
 			t.applyJobTranslations,
 			t.applyPipelineTranslations,
 			t.applyArtifactTranslations,
-			t.applyDashboardTranslations,
 			t.applyAppsTranslations,
-		} {
+		}
+
+		if m.dashboardsOnly {
+			translations = []func(context.Context, dyn.Value) (dyn.Value, error){
+				t.applyDashboardTranslations,
+			}
+		}
+
+		for _, fn := range translations {
 			v, err = fn(ctx, v)
 			if err != nil {
 				return dyn.InvalidValue, err

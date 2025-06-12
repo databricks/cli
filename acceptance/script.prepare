@@ -11,6 +11,21 @@ errcode() {
     fi
 }
 
+musterr() {
+    # Temporarily disable 'set -e' to prevent the script from exiting on error
+    set +e
+    # Execute the provided command with all arguments
+    "$@"
+    local exit_code=$?
+    # Re-enable 'set -e'
+    set -e
+    if [ $exit_code -eq 0 ]; then
+        >&2 printf "\nUnexpected success\n"
+        exit 1
+    fi
+    >&2 printf "\nExit code (musterr): $exit_code\n"
+}
+
 trace() {
     >&2 printf "\n>>> %s\n" "$*"
 

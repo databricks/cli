@@ -6,7 +6,7 @@
     "min_workers": 2
   },
   "cluster_name": "foo",
-  "node_type_id": "i3.xlarge",
+  "node_type_id": "[NODE_TYPE_ID]",
   "num_workers": 2,
   "spark_conf": {
     "spark.executor.memory": "2g"

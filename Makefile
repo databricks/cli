@@ -1,4 +1,4 @@
-default: tidy fmt lint ws
+default: checks fmt lint
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
@@ -6,8 +6,11 @@ GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
 
 
-lint:
+lintfull:
 	golangci-lint run --fix
+
+lint:
+	./tools/lintdiff.py run --fix
 
 tidy:
 	@# not part of golangci-lint, apparently
@@ -16,12 +19,31 @@ tidy:
 lintcheck:
 	golangci-lint run ./...
 
-fmt:
-	ruff format -qn
+fmtfull: tools/yamlfmt
+	ruff format -n
 	golangci-lint fmt
+	./tools/yamlfmt .
+
+fmt: tools/yamlfmt
+	ruff format -n
+	./tools/lintdiff.py fmt
+	./tools/yamlfmt .
+
+# pre-building yamlfmt because I also want to call it from tests
+tools/yamlfmt: go.mod
+	go build -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
+
+tools/yamlfmt.exe: go.mod
+	go build -o tools/yamlfmt.exe github.com/google/yamlfmt/cmd/yamlfmt
 
 ws:
 	./tools/validate_whitespace.py
+
+links:
+	./tools/update_github_links.py
+
+# Checks other than 'fmt' and 'lint'; these are fast, so can be run first
+checks: tidy ws links
 
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
@@ -72,4 +94,4 @@ generate:
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks
