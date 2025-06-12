@@ -1,1 +1,32 @@
-exec python3 "$TESTDIR/script.py"
+# Print and check $CLI and $DLT
+set -euo pipefail
+
+echo "CLI path: $CLI"
+ls -l "$CLI"
+if [[ ! -x "$CLI" ]]; then
+  echo "CLI is not executable!"
+  exit 1
+fi
+"$CLI" --help || "$CLI" -h
+
+echo "DLT path: $DLT"
+ls -l "$DLT"
+if [[ ! -x "$DLT" ]]; then
+  echo "DLT is not executable!"
+  exit 1
+fi
+"$DLT" --help || "$DLT" -h
+
+trace errcode $CLI install-dlt
+
+# 1. dlt file exists, should not overwrite
+mkdir -p tmpdir
+touch tmpdir/dlt
+trace errcode $CLI install-dlt -d tmpdir
+rm -rf tmpdir
+
+# 2. program not called as databricks (simulate by copying binary)
+cp $(command -v $CLI) notdatabricks
+./notdatabricks install-dlt || true
+rm -f notdatabricks
+rm -f dlt
