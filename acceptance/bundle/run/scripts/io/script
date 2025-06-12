@@ -1,0 +1,14 @@
+# stdin should be passed through
+echo "abc" > abc.txt
+trace $CLI bundle run stdin < abc.txt
+rm abc.txt
+
+# stdout should be passed through
+trace $CLI bundle run stdout 1> stdout.txt
+cat stdout.txt
+rm stdout.txt
+
+# stderr should be passed through
+trace $CLI bundle run stderr 2> stderr.txt
+cat stderr.txt
+rm stderr.txt
