@@ -29,3 +29,6 @@ __pycache__
 
 # Test results from 'make test'
 test-output.json
+
+tools/yamlfmt
+tools/yamlfmt.exe
