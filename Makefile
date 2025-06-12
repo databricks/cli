@@ -83,7 +83,7 @@ integration-short:
 	VERBOSE_TEST=1 $(INTEGRATION) -short
 
 generate-validation:
-	go run ./bundle/internal/validation/main.go
+	go run ./bundle/internal/validation/.
 
 generate:
 	genkit update-sdk
