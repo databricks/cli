@@ -39,8 +39,6 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 						Locations: v.Locations(),
 						Paths:     []dyn.Path{p},
 					})
-
-					return dyn.NilValue, nil
 				}
 			}
 			return v, nil
