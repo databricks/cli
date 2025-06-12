@@ -2,20 +2,16 @@
 set -euo pipefail
 
 echo "CLI path: $CLI"
-ls -l "$CLI"
 if [[ ! -x "$CLI" ]]; then
   echo "CLI is not executable!"
   exit 1
 fi
-"$CLI" --help || "$CLI" -h
 
 echo "DLT path: $DLT"
-ls -l "$DLT"
 if [[ ! -x "$DLT" ]]; then
   echo "DLT is not executable!"
   exit 1
 fi
-"$DLT" --help || "$DLT" -h
 
 trace errcode $CLI install-dlt
 

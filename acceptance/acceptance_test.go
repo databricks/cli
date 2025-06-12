@@ -150,9 +150,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		execPath, dltPath = BuildCLI(t, buildDir, coverDir)
 	}
 
-	if fi, err := os.Lstat(dltPath); err == nil {
+	fi, err := os.Lstat(dltPath)
+	if err == nil {
 		if fi.Mode()&os.ModeSymlink == 0 {
-			// removes the symlink if it already exists
+			// remove file if symlink exists
 			_ = os.Remove(dltPath)
 		}
 	} else if !os.IsNotExist(err) {
