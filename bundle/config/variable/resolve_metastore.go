@@ -11,11 +11,8 @@ type resolveMetastore struct {
 }
 
 func (l resolveMetastore) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	entity, err := w.Metastores.GetByName(ctx, l.name)
-	if err != nil {
-		return "", err
-	}
-	return entity.MetastoreId, nil
+	// PLACEHOLDER, this will be fixed in the SDK bump.
+	return "", nil
 }
 
 func (l resolveMetastore) String() string {
