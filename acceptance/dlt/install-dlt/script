@@ -6,6 +6,7 @@ mkdir -p tmpdir
 touch tmpdir/dlt
 trace errcode $CLI install-dlt -d tmpdir
 "$DLT" init
+echo "$DLT -> $(realpath "$DLT")"
 rm -rf tmpdir
 
 title "Executable not called as databricks"
