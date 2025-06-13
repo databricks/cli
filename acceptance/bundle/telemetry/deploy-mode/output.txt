@@ -64,7 +64,7 @@ A common practice is to use a username or principal name in this path, i.e. use
     "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
     "upload_file_count": 5,
     "upload_file_sizes": [
-      4167,
+      4163,
       2476,
       2287,
       197,
@@ -120,8 +120,8 @@ A common practice is to use a username or principal name in this path, i.e. use
     "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
     "upload_file_count": 5,
     "upload_file_sizes": [
-      21418,
-      4167,
+      21414,
+      4163,
       2287,
       440,
       95

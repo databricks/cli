@@ -66,7 +66,7 @@
           "upload_file_count": 5,
           "upload_file_sizes": [
             4179,
-            3561,
+            3562,
             2412,
             194,
             80

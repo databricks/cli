@@ -58,7 +58,7 @@ Deployment complete!
     "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
     "upload_file_count": 6,
     "upload_file_sizes": [
-      4223,
+      4219,
       3430,
       2286,
       612,
@@ -115,8 +115,8 @@ Deployment complete!
     "workspace_artifact_path_type": "UC_VOLUME",
     "upload_file_count": 6,
     "upload_file_sizes": [
-      26231,
-      4223,
+      26227,
+      4219,
       2286,
       612,
       438,
