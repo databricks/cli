@@ -62,13 +62,6 @@ func writeConfigFile(t testutil.TestingT, config map[string]any) string {
 	return filepath
 }
 
-func validateBundle(t testutil.TestingT, ctx context.Context, path string) ([]byte, error) {
-	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	c := testcli.NewRunner(t, ctx, "bundle", "validate", "--output", "json")
-	stdout, _, err := c.Run()
-	return stdout.Bytes(), err
-}
-
 func deployBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
