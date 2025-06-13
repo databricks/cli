@@ -36,13 +36,15 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	opts.OutputHandler = m.outputHandler
-	sync, err := sync.New(ctx, *opts)
+	syncer, err := sync.New(ctx, *opts)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	defer sync.Close()
+	defer syncer.Close()
 
-	b.Files, err = sync.RunOnce(ctx)
+	// TODO: Check this works for incremental updates deletes mkdirs etc.
+	var metrics sync.Metrics
+	b.Files, metrics, err = syncer.RunOnce(ctx)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
 			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.FilePath)
@@ -50,6 +52,8 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
+	b.Metrics.UploadFileCount = metrics.UploadFileCount
+	b.Metrics.UploadFileSizes = metrics.UploadFileSizes
 	log.Infof(ctx, "Uploaded bundle files")
 	return nil
 }

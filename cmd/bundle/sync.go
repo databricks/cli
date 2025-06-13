@@ -100,7 +100,7 @@ func newSyncCommand() *cobra.Command {
 			return s.RunContinuous(ctx)
 		}
 
-		_, err = s.RunOnce(ctx)
+		_, _, err = s.RunOnce(ctx)
 		return err
 	}
 

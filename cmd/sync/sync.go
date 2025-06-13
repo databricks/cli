@@ -229,7 +229,7 @@ func New() *cobra.Command {
 		if f.watch {
 			err = s.RunContinuous(ctx)
 		} else {
-			_, err = s.RunOnce(ctx)
+			_, _, err = s.RunOnce(ctx)
 		}
 
 		return err
