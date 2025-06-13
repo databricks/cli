@@ -10,15 +10,9 @@ type shShell struct {
 }
 
 func (s shShell) prepare(command string) (*execContext, error) {
-	filename, err := createTempScript(command, ".sh")
-	if err != nil {
-		return nil, err
-	}
-
 	return &execContext{
 		executable: s.executable,
-		args:       []string{"-e", filename},
-		scriptFile: filename,
+		args:       []string{"-c", command},
 	}, nil
 }
 
