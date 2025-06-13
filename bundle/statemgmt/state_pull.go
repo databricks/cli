@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"context"
@@ -25,7 +25,7 @@ type statePull struct {
 }
 
 func (l *statePull) Name() string {
-	return "terraform:state-pull"
+	return "state:pull"
 }
 
 func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState, []byte, error) {
@@ -34,7 +34,12 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 		return nil, nil, err
 	}
 
-	r, err := f.Read(ctx, TerraformStateFileName)
+	r, err := f.Read(ctx, b.StateFileName())
+	if errors.Is(err, fs.ErrNotExist) {
+		// Fallback to legacy file name for backwards compatibility.
+		const legacyStateFile = "terraform.tfstate"
+		r, err = f.Read(ctx, legacyStateFile)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
@@ -46,8 +51,7 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 	}
 
 	state := &tfState{}
-	err = json.Unmarshal(content, state)
-	if err != nil {
+	if err := json.Unmarshal(content, state); err != nil {
 		return nil, nil, err
 	}
 
@@ -55,19 +59,18 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 }
 
 func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState, error) {
-	dir, err := Dir(ctx, b)
+	dir, err := b.CacheDir(ctx, "terraform")
 	if err != nil {
 		return nil, err
 	}
 
-	content, err := os.ReadFile(filepath.Join(dir, TerraformStateFileName))
+	content, err := os.ReadFile(filepath.Join(dir, b.StateFileName()))
 	if err != nil {
 		return nil, err
 	}
 
 	state := &tfState{}
-	err = json.Unmarshal(content, state)
-	if err != nil {
+	if err := json.Unmarshal(content, state); err != nil {
 		return nil, err
 	}
 
@@ -75,61 +78,59 @@ func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState,
 }
 
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	dir, err := Dir(ctx, b)
+	dir, err := b.CacheDir(ctx, "terraform")
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	localStatePath := filepath.Join(dir, b.StateFileName())
 
-	localStatePath := filepath.Join(dir, TerraformStateFileName)
-
-	// Case: Remote state file does not exist. In this case we fallback to using the
-	// local Terraform state. This allows users to change the "root_path" their bundle is
-	// configured with.
 	remoteState, remoteContent, err := l.remoteState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Infof(ctx, "Remote state file does not exist. Using local Terraform state.")
+		log.Infof(ctx, "Remote state file does not exist. Using local state.")
 		return nil
 	}
 	if err != nil {
 		return diag.Errorf("failed to read remote state file: %v", err)
 	}
 
-	// Expected invariant: remote state file should have a lineage UUID. Error
-	// if that's not the case.
 	if remoteState.Lineage == "" {
 		return diag.Errorf("remote state file does not have a lineage")
 	}
 
-	// Case: Local state file does not exist. In this case we should rely on the remote state file.
 	localState, err := l.localState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Infof(ctx, "Local state file does not exist. Using remote Terraform state.")
-		err := os.WriteFile(localStatePath, remoteContent, 0o600)
-		return diag.FromErr(err)
+		log.Infof(ctx, "Local state file does not exist. Using remote state.")
+		if err := os.WriteFile(localStatePath, remoteContent, 0o600); err != nil {
+			return diag.FromErr(err)
+		}
+		return nil
 	}
 	if err != nil {
 		return diag.Errorf("failed to read local state file: %v", err)
 	}
 
-	// If the lineage does not match, the Terraform state files do not correspond to the same deployment.
 	if localState.Lineage != remoteState.Lineage {
-		log.Infof(ctx, "Remote and local state lineages do not match. Using remote Terraform state. Invalidating local Terraform state.")
-		err := os.WriteFile(localStatePath, remoteContent, 0o600)
-		return diag.FromErr(err)
+		log.Infof(ctx, "Remote and local state lineages do not match. Using remote state. Invalidating local state.")
+		if err := os.WriteFile(localStatePath, remoteContent, 0o600); err != nil {
+			return diag.FromErr(err)
+		}
+		return nil
 	}
 
-	// If the remote state is newer than the local state, we should use the remote state.
 	if remoteState.Serial > localState.Serial {
-		log.Infof(ctx, "Remote state is newer than local state. Using remote Terraform state.")
-		err := os.WriteFile(localStatePath, remoteContent, 0o600)
-		return diag.FromErr(err)
+		log.Infof(ctx, "Remote state is newer than local state. Using remote state.")
+		if err := os.WriteFile(localStatePath, remoteContent, 0o600); err != nil {
+			return diag.FromErr(err)
+		}
+		return nil
 	}
 
-	// default: local state is newer or equal to remote state in terms of serial sequence.
-	// It is also of the same lineage. Keep using the local state.
+	// Local state is newer or equal; nothing to do.
 	return nil
 }
 
+// StatePull returns a mutator that ensures the local bundle state is up-to-date
+// with the state stored in the workspace.
 func StatePull() bundle.Mutator {
 	return &statePull{deploy.StateFiler}
 }

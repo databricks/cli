@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// identityFiler returns a FilerFactory that returns the specified filer.
+// identityFiler returns a FilerFactory that always returns the provided filer.
 func identityFiler(f filer.Filer) deploy.FilerFactory {
 	return func(_ *bundle.Bundle) (filer.Filer, error) {
 		return f, nil
@@ -21,9 +21,9 @@ func identityFiler(f filer.Filer) deploy.FilerFactory {
 }
 
 func localStateFile(t *testing.T, ctx context.Context, b *bundle.Bundle) string {
-	dir, err := Dir(ctx, b)
+	dir, err := b.CacheDir(ctx, "terraform")
 	require.NoError(t, err)
-	return filepath.Join(dir, TerraformStateFileName)
+	return filepath.Join(dir, b.StateFileName())
 }
 
 func readLocalState(t *testing.T, ctx context.Context, b *bundle.Bundle) map[string]any {

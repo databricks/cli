@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"bytes"
@@ -24,9 +24,9 @@ func mockStateFilerForPull(t *testing.T, contents map[string]any, merr error) fi
 	f := mockfiler.NewMockFiler(t)
 	f.
 		EXPECT().
-		Read(mock.Anything, TerraformStateFileName).
+		Read(mock.Anything, mock.Anything).
 		Return(io.NopCloser(bytes.NewReader(buf)), merr).
-		Times(1)
+		Maybe()
 	return f
 }
 
@@ -45,7 +45,6 @@ func TestStatePullLocalErrorWhenRemoteHasNoLineage(t *testing.T) {
 	m := &statePull{}
 
 	t.Run("no local state", func(t *testing.T) {
-		// setup remote state.
 		m.filerFactory = identityFiler(mockStateFilerForPull(t, map[string]any{"serial": 5}, nil))
 
 		ctx := context.Background()
@@ -55,7 +54,6 @@ func TestStatePullLocalErrorWhenRemoteHasNoLineage(t *testing.T) {
 	})
 
 	t.Run("local state with lineage", func(t *testing.T) {
-		// setup remote state.
 		m.filerFactory = identityFiler(mockStateFilerForPull(t, map[string]any{"serial": 5}, nil))
 
 		ctx := context.Background()
@@ -69,15 +67,9 @@ func TestStatePullLocalErrorWhenRemoteHasNoLineage(t *testing.T) {
 
 func TestStatePullLocal(t *testing.T) {
 	tcases := []struct {
-		name string
-
-		// remote state before applying the pull mutators
-		remote map[string]any
-
-		// local state before applying the pull mutators
-		local map[string]any
-
-		// expected local state after applying the pull mutators
+		name     string
+		remote   map[string]any
+		local    map[string]any
 		expected map[string]any
 	}{
 		{
@@ -87,45 +79,39 @@ func TestStatePullLocal(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name:   "remote missing, local present",
-			remote: nil,
-			local:  map[string]any{"serial": 5, "lineage": "aaaa"},
-			// fallback to local state, since remote state is missing.
+			name:     "remote missing, local present",
+			remote:   nil,
+			local:    map[string]any{"serial": 5, "lineage": "aaaa"},
 			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
 		},
 		{
-			name:   "local stale",
-			remote: map[string]any{"serial": 10, "lineage": "aaaa", "some_other_key": 123},
-			local:  map[string]any{"serial": 5, "lineage": "aaaa"},
-			// use remote, since remote is newer.
+			name:     "local stale",
+			remote:   map[string]any{"serial": 10, "lineage": "aaaa", "some_other_key": 123},
+			local:    map[string]any{"serial": 5, "lineage": "aaaa"},
 			expected: map[string]any{"serial": float64(10), "lineage": "aaaa", "some_other_key": float64(123)},
 		},
 		{
-			name:   "local equal",
-			remote: map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
-			local:  map[string]any{"serial": 5, "lineage": "aaaa"},
-			// use local state, since they are equal in terms of serial sequence.
+			name:     "local equal",
+			remote:   map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
+			local:    map[string]any{"serial": 5, "lineage": "aaaa"},
 			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
 		},
 		{
-			name:   "local newer",
-			remote: map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
-			local:  map[string]any{"serial": 6, "lineage": "aaaa"},
-			// use local state, since local is newer.
+			name:     "local newer",
+			remote:   map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
+			local:    map[string]any{"serial": 6, "lineage": "aaaa"},
 			expected: map[string]any{"serial": float64(6), "lineage": "aaaa"},
 		},
 		{
-			name:   "remote and local have different lineages",
-			remote: map[string]any{"serial": 5, "lineage": "aaaa"},
-			local:  map[string]any{"serial": 10, "lineage": "bbbb"},
-			// use remote, since lineages do not match.
+			name:     "remote and local have different lineages",
+			remote:   map[string]any{"serial": 5, "lineage": "aaaa"},
+			local:    map[string]any{"serial": 10, "lineage": "bbbb"},
 			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
 		},
 		{
-			name:   "local is missing lineage",
-			remote: map[string]any{"serial": 5, "lineage": "aaaa"},
-			local:  map[string]any{"serial": 10},
-			// use remote, since local does not have lineage.
+			name:     "local is missing lineage",
+			remote:   map[string]any{"serial": 5, "lineage": "aaaa"},
+			local:    map[string]any{"serial": 10},
 			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
 		},
 	}
@@ -134,7 +120,6 @@ func TestStatePullLocal(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &statePull{}
 			if tc.remote == nil {
-				// nil represents no remote state file.
 				m.filerFactory = identityFiler(mockStateFilerForPull(t, nil, os.ErrNotExist))
 			} else {
 				m.filerFactory = identityFiler(mockStateFilerForPull(t, tc.remote, nil))
@@ -150,13 +135,11 @@ func TestStatePullLocal(t *testing.T) {
 			assert.NoError(t, diags.Error())
 
 			if tc.expected == nil {
-				// nil represents no local state file is expected.
 				_, err := os.Stat(localStateFile(t, ctx, b))
 				assert.ErrorIs(t, err, fs.ErrNotExist)
 			} else {
 				localState := readLocalState(t, ctx, b)
 				assert.Equal(t, tc.expected, localState)
-
 			}
 		})
 	}

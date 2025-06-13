@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func mockStateFilerForPush(t *testing.T, fn func(body io.Reader)) filer.Filer {
 	f.
 		EXPECT().
 		Write(mock.Anything, mock.Anything, mock.Anything, filer.CreateParentDirectories, filer.OverwriteIfExists).
-		Run(func(ctx context.Context, path string, reader io.Reader, mode ...filer.WriteMode) {
+		Run(func(_ context.Context, _ string, reader io.Reader, _ ...filer.WriteMode) {
 			fn(reader)
 		}).
 		Return(nil).
@@ -48,13 +48,12 @@ func TestStatePush(t *testing.T) {
 	})
 
 	m := &statePush{
-		identityFiler(mock),
+		filerFactory: identityFiler(mock),
 	}
 
 	ctx := context.Background()
 	b := statePushTestBundle(t)
 
-	// Write a stale local state file.
 	writeLocalState(t, ctx, b, map[string]any{"serial": 4})
 	diags := bundle.Apply(ctx, b, m)
 	assert.NoError(t, diags.Error())

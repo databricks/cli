@@ -268,3 +268,9 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 	cfg := b.client.Config
 	return auth.Env(cfg), nil
 }
+
+// StateFileName returns the filename used to store the deployment state for this bundle.
+// Currently this is a fixed value but it may become configurable in the future.
+func (b *Bundle) StateFileName() string {
+	return "tfstate.json"
+}
