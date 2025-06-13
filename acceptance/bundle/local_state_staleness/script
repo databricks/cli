@@ -21,8 +21,6 @@ cleanup() {
     title "Cleanup - destroy bundle A (bundle B does not have an active deployment)\n"
     cd "$BUNDLE_A_DIR" || exit
     trace "$CLI" bundle destroy --auto-approve
-    cd "$BUNDLE_B_DIR" || exit
-    trace errcode "$CLI" bundle destroy --auto-approve
 
     trace rm -rf "$BUNDLE_A_DIR"
     trace rm -rf "$BUNDLE_B_DIR"
@@ -30,17 +28,17 @@ cleanup() {
 trap cleanup EXIT
 
 title "Step 1: Deploy bundle A"
-cd "$BUNDLE_A_DIR" || exit
+cd "$BUNDLE_A_DIR"
 trace "$CLI" bundle deploy --force-lock --auto-approve
 
 title "Step 2: Deploy bundle B"
-cd "$BUNDLE_B_DIR" || exit
+cd "$BUNDLE_B_DIR"
 trace "$CLI" bundle deploy --force-lock --auto-approve
 
 title "Step 3: Deploy bundle A again (should use remote state)"
-cd "$BUNDLE_A_DIR" || exit
+cd "$BUNDLE_A_DIR"
 trace "$CLI" bundle deploy --force-lock --auto-approve
 
 title "Step 4: Verify only one job exists\n"
-cd "$BUNDLE_A_DIR" || exit
-"$CLI" api get /api/2.1/jobs/list | jq -r --arg name "test-job-basic-${UNIQUE_NAME}" '.jobs[] | select(.settings.name == $name) | {name: .settings.name, id: .job_id}'
+cd "$BUNDLE_A_DIR"
+"$CLI" jobs list -o json | jq -r --arg name "test-job-basic-${UNIQUE_NAME}" '.[] | select(.settings.name == $name) | {name: .settings.name, id: .job_id}'

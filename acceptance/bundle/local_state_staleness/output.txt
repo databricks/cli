@@ -37,9 +37,6 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> errcode [CLI] bundle destroy --auto-approve
-No active deployment found to destroy!
-
 >>> rm -rf [TEST_TMP_DIR]/bundle_a
 
 >>> rm -rf [TEST_TMP_DIR]/bundle_b
