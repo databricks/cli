@@ -176,6 +176,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("DLT", dltPath)
 	repls.SetPath(dltPath, "[DLT]")
 
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
