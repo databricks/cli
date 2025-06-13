@@ -85,6 +85,9 @@ integration:
 integration-short:
 	VERBOSE_TEST=1 $(INTEGRATION) -short
 
+generate-validation:
+	go run ./bundle/internal/validation/.
+
 generate:
 	genkit update-sdk
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
@@ -94,4 +97,4 @@ generate:
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks generate-validation
