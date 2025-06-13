@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,21 +87,21 @@ func TestSetAccountId(t *testing.T) {
 
 func TestLoginPreservesClusterID(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	clusterID, err := getClusterID(context.Background(), "cluster-profile", &config.Config{}, false, "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "cluster-profile", "./testdata/.databrickscfg")
 	require.NoError(t, err)
 	assert.Equal(t, "cluster-from-config", clusterID)
 }
 
 func TestLoginPreservesClusterIDWithEmptyHostAndAccountID(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	clusterID, err := getClusterID(context.Background(), "no-profile", &config.Config{}, false, "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "no-profile", "./testdata/.databrickscfg")
 	require.NoError(t, err)
 	assert.Equal(t, "", clusterID)
 }
 
 func TestLoginNoClusterIDWithAccountProfile(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	clusterID, err := getClusterID(context.Background(), "account-profile", &config.Config{}, false, "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "account-profile", "./testdata/.databrickscfg")
 	require.NoError(t, err)
 	assert.Equal(t, "", clusterID)
 }
