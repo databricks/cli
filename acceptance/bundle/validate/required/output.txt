@@ -1,0 +1,25 @@
+
+>>> [CLI] bundle validate
+Warning: required field "catalog_name" is not set
+  at resources.volumes.baz
+  in databricks.yml:13:7
+
+Warning: required field "name" is not set
+  at resources.models.foo
+  in databricks.yml:10:7
+
+Warning: required field "schema_name" is not set
+  at resources.volumes.baz
+  in databricks.yml:13:7
+
+Warning: required field "source" is not set
+  at artifacts.zab.files[0]
+  in databricks.yml:4:9
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 4 warnings
