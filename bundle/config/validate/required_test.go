@@ -210,11 +210,9 @@ const jobExample = `
     }
 }`
 
-// This benchmark took 3.6 seconds to run on on 13th June 2025.
-func BenchmarkValidateRequired(b *testing.B) {
+func benchmarkRequired(b *testing.B, numJobs int) {
 	allJobs := map[string]*resources.Job{}
-	for i := 0; i < 10000; i++ {
-		// we repeated unmarshal the job to ensure each job occupies distinct memory.
+	for i := 0; i < numJobs; i++ {
 		job := jobs.JobSettings{}
 		err := json.Unmarshal([]byte(jobExample), &job)
 		require.NoError(b, err)
@@ -234,6 +232,26 @@ func BenchmarkValidateRequired(b *testing.B) {
 
 	for b.Loop() {
 		diags := bundle.Apply(context.Background(), &myBundle, Required())
-		assert.Len(b, diags, 20000)
+		assert.Len(b, diags, 2*numJobs)
 	}
+}
+
+// This benchmark took 3.5 seconds to run on 13th June 2025.
+func BenchmarkValidateRequired10000(b *testing.B) {
+	benchmarkRequired(b, 10000)
+}
+
+// This benchmark took 0.28 seconds to run on 13th June 2025.
+func BenchmarkValidateRequired1000(b *testing.B) {
+	benchmarkRequired(b, 1000)
+}
+
+// This benchmark took 26 ms to run on 13th June 2025.
+func BenchmarkValidateRequired100(b *testing.B) {
+	benchmarkRequired(b, 100)
+}
+
+// This benchmark took 3 ms to run on 13th June 2025.
+func BenchmarkValidateRequired10(b *testing.B) {
+	benchmarkRequired(b, 10)
 }
