@@ -253,7 +253,7 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 	isACC := cfg.IsAccountClient()
 	if e.IsAccountLevel && cfg.Profile == "" {
 		if !cmdio.IsPromptSupported(ctx) {
-			return nil, root.ErrCannotConfigureAuth
+			return nil, config.ErrCannotConfigureDefault
 		}
 		replaceCfg, err := e.envAwareConfig(ctx)
 		if err != nil {

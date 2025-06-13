@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -33,20 +32,6 @@ func (e ErrNoAccountProfiles) Error() string {
 	return e.path + " does not contain account profiles"
 }
 
-func isCannotConfigureAuth(err error) bool {
-	// As of SDK v0.70.0, this constant was removed.
-	//
-	//   return errors.Is(err, config.ErrCannotConfigureAuth)
-	//
-	// The prefix check is based on this:
-	//
-	// https://github.com/databricks/databricks-sdk-go/commit/ef3a65c6ee8f0de253ce6f554e6d905d6a5fdc85#diff-83d1fd7f94efd3481cd11ebab8065cc81e18ef0d8776097c29b8a183a20df52fR86
-	return strings.Contains(err.Error(), "cannot configure default credentials, ")
-}
-
-// Referenced by cmd/labs/project/entrypoint.go.
-var ErrCannotConfigureAuth = errors.New("cannot configure default credentials, please check https://docs.databricks.com/en/dev-tools/auth.html#databricks-client-unified-authentication to configure credentials for your preferred authentication method.")
-
 func initProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
@@ -73,7 +58,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 		// Prompt to select a profile if the current configuration is not an account client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || isCannotConfigureAuth(err)
+		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
 	}
 
 	if !prompt {
@@ -173,7 +158,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		// Prompt to select a profile if the current configuration is not a workspace client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || isCannotConfigureAuth(err)
+		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
 	}
 
 	if !prompt {
