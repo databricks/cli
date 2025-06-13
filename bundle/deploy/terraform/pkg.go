@@ -22,17 +22,17 @@ const (
 // Terraform CLI version to use and the corresponding checksums for it. The
 // checksums are used to verify the integrity of the downloaded binary. Please
 // update the checksums when the Terraform version is updated. The checksums
-// were obtained from https://releases.hashicorp.com/terraform/1.5.5.
+// were obtained from https://releases.hashicorp.com/terraform/1.12.2.
 //
 // These hashes are not used inside the CLI. They are only co-located here to be
 // output in the "databricks bundle debug terraform" output. Downstream applications
 // like the CLI docker image use these checksums to verify the integrity of the
 // downloaded Terraform archive.
-var TerraformVersion = version.Must(version.NewVersion("1.5.5"))
+var TerraformVersion = version.Must(version.NewVersion("1.12.2"))
 
 const (
-	checksumLinuxArm64 = "b055aefe343d0b710d8a7afd31aeb702b37bbf4493bb9385a709991e48dfbcd2"
-	checksumLinuxAmd64 = "ad0c696c870c8525357b5127680cd79c0bdf58179af9acd091d43b1d6482da4a"
+	checksumLinuxArm64 = "f8a0347dc5e68e6d60a9fa2db361762e7943ed084a773f28a981d988ceb6fdc9"
+	checksumLinuxAmd64 = "1eaed12ca41fcfe094da3d76a7e9aa0639ad3409c43be0103ee9f5a1ff4b7437"
 )
 
 type Checksum struct {

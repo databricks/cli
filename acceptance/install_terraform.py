@@ -24,7 +24,7 @@ if os_name == "windows" and arch not in ("386", "amd64"):
     # terraform 1.5.5 only has builds for these two.
     arch = "amd64"
 
-terraform_version = "1.5.5"
+terraform_version = "1.12.2"
 terraform_file = f"terraform_{terraform_version}_{os_name}_{arch}.zip"
 terraform_url = f"https://releases.hashicorp.com/terraform/{terraform_version}/{terraform_file}"
 terraform_binary = "terraform.exe" if os_name == "windows" else "terraform"

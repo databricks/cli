@@ -43,7 +43,7 @@ func (s *Schema) installTerraform(ctx context.Context) (path string, err error) 
 
 	installer := &releases.ExactVersion{
 		Product:    product.Terraform,
-		Version:    version.Must(version.NewVersion("1.5.5")),
+		Version:    version.Must(version.NewVersion("1.12.2")),
 		InstallDir: installDir,
 	}
 
