@@ -9,5 +9,5 @@ resources:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: ./dist/*.whl
-          - whl: ./dist/lib/other_test_code-0.0.1-py3-none-any.whl
+            - whl: ./dist/*.whl
+            - whl: ./dist/lib/other_test_code-0.0.1-py3-none-any.whl

@@ -1,8 +1,8 @@
 artifacts:
-    my_test_code:
-      type: whl
-      path: "./my_test_code"
-      build: python setup.py bdist_wheel
+  my_test_code:
+    type: whl
+    path: "./my_test_code"
+    build: python setup.py bdist_wheel
 
 resources:
   jobs:
@@ -14,9 +14,9 @@ resources:
           python_wheel_task:
             package_name: "my_test_code"
             entry_point: "run"
-          environment_key:  "test_env"
+          environment_key: "test_env"
       environments:
-        - environment_key:  "test_env"
+        - environment_key: "test_env"
           spec:
             client: "1"
             dependencies:

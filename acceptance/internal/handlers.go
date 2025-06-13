@@ -252,6 +252,23 @@ func addDefaultHandlers(server *testserver.Server) {
 		}
 	})
 
+	// Dashboards:
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+	})
+	server.Handle("POST", "/api/2.0/lakeview/dashboards", func(req testserver.Request) any {
+		return req.Workspace.DashboardCreate(req)
+	})
+	server.Handle("POST", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req testserver.Request) any {
+		return req.Workspace.DashboardPublish(req)
+	})
+	server.Handle("PATCH", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req testserver.Request) any {
+		return req.Workspace.DashboardUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+	})
+
 	// Pipelines:
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {

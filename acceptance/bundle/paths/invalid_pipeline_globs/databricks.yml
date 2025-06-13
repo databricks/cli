@@ -5,7 +5,7 @@ resources:
   pipelines:
     nyc_taxi_pipeline:
       libraries:
-        - notebook: { path: "${var.notebook_dir}/*.ipynb" }
+        - notebook: {path: "${var.notebook_dir}/*.ipynb"}
 
 variables:
   notebook_dir:

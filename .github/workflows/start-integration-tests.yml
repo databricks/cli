@@ -37,5 +37,5 @@ jobs:
       - name: Run start_integration_tests.py
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |
+        run: |-
           python3 ./start_integration_tests.py -R ${{ secrets.ORG_NAME }}/${{secrets.REPO_NAME}} --yes

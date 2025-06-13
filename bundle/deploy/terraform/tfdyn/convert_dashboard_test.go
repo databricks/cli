@@ -88,6 +88,7 @@ func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
 				},
 			},
 		},
+		FilePath: "some/path/to/dashboard.lvdash.json",
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)
@@ -102,4 +103,7 @@ func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
 	assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
 		"serialized_dashboard": `{"pages":[{"displayName":"New Page","layout":[]}]}`,
 	})
+
+	// Assert that the "file_path" is dropped.
+	assert.NotContains(t, out.Dashboard["my_dashboard"], "file_path")
 }

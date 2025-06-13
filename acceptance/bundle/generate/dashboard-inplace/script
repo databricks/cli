@@ -1,0 +1,13 @@
+trace cat dash.lvdash.json
+
+title "deploy initial dashboard"
+trace $CLI bundle deploy
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.test_dashboard.id')
+
+title "update the dashboard"
+trace $CLI lakeview update $dashboard_id --serialized-dashboard '{"a":"b"}'
+
+title "update the dashboard file using bundle generate"
+trace $CLI bundle generate dashboard --resource test_dashboard --force
+
+trace cat dash.lvdash.json

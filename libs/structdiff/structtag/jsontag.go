@@ -1,4 +1,4 @@
-package jsontag
+package structtag
 
 import "strings"
 
@@ -45,13 +45,17 @@ func (tag JSONTag) hasOption(option string) bool {
 		s = s[idx+1:]
 	}
 
+	return hasOption(s, option)
+}
+
+func hasOption(tag, option string) bool {
 	// Walk the comma-separated options
-	for len(s) > 0 {
-		opt := s
-		if i := strings.IndexByte(s, ','); i != -1 {
-			opt, s = s[:i], s[i+1:]
+	for len(tag) > 0 {
+		opt := tag
+		if i := strings.IndexByte(tag, ','); i != -1 {
+			opt, tag = tag[:i], tag[i+1:]
 		} else {
-			s = ""
+			tag = ""
 		}
 
 		if opt == option {

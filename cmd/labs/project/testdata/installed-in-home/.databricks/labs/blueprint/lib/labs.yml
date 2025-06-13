@@ -1,4 +1,3 @@
----
 version: 1
 name: blueprint
 description: Blueprint Project
@@ -28,7 +27,7 @@ commands:
         description: second flag description
   - name: table
     description: something that renders a table
-    table_template: |
+    table_template: |-
       Key	Value
       {{range .records}}{{.key}}	{{.value}}
       {{end}}
