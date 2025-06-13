@@ -9,6 +9,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -234,6 +236,46 @@ func benchmarkRequired(b *testing.B, numJobs int) {
 		diags := bundle.Apply(context.Background(), &myBundle, Required())
 		assert.Len(b, diags, 2*numJobs)
 	}
+}
+
+func benchmarkBaseline(b *testing.B, numJobs int) {
+	allJobs := map[string]*resources.Job{}
+	for i := range numJobs {
+		job := jobs.JobSettings{}
+		err := json.Unmarshal([]byte(jobExample), &job)
+		require.NoError(b, err)
+
+		allJobs[fmt.Sprintf("s%d", i)] = &resources.Job{
+			JobSettings: job,
+		}
+	}
+
+	myBundle := bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: allJobs,
+			},
+		},
+	}
+
+	for b.Loop() {
+		paths := []dyn.Path{}
+		bundle.ApplyFunc(context.Background(), &myBundle, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+			dyn.Walk(b.Config.Value(), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				paths = append(paths, p)
+				return v, nil
+			})
+			return nil
+		})
+	}
+}
+
+// This benchmark took 1.43 seconds to run on 13th June 2025.
+// This benchmark compared the additional cost of using the dyn.MapByPattern
+// function compared to using dyn.Walk which walks the entire configuration tree
+// once.
+func BenchmarkBaseline(b *testing.B) {
+	benchmarkBaseline(b, 10000)
 }
 
 // This benchmark took 3.5 seconds to run on 13th June 2025.
