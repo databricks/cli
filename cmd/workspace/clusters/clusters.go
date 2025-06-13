@@ -1710,6 +1710,24 @@ func newStart() *cobra.Command {
 			startReq.ClusterId = args[0]
 		}
 
+		// Fetch cluster details to check its current state.
+		clusterInfo, err := w.Clusters.Get(ctx, compute.GetClusterRequest{ClusterId: startReq.ClusterId})
+		if err != nil {
+			// If the error is that the cluster is not found, let the Start call handle it.
+			// Otherwise, return the error.
+			// Note: This error handling might need adjustment based on how `w.Clusters.Get`
+			// specifically returns "not found" errors. Assuming a generic error for now.
+			// A more robust check would involve checking the error type or message.
+			if err.Error() != "databricks: cluster not found" { // This error message check is an assumption
+				return fmt.Errorf("failed to get cluster info: %w", err)
+			}
+		}
+
+		if clusterInfo != nil && clusterInfo.State == compute.StateRunning {
+			cmdio.Println(ctx, fmt.Sprintf("Cluster %s is already running.", startReq.ClusterId))
+			return nil
+		}
+
 		wait, err := w.Clusters.Start(ctx, startReq)
 		if err != nil {
 			return err
