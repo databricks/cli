@@ -212,7 +212,7 @@ const jobExample = `
 
 func benchmarkRequired(b *testing.B, numJobs int) {
 	allJobs := map[string]*resources.Job{}
-	for i := 0; i < numJobs; i++ {
+	for i := range numJobs {
 		job := jobs.JobSettings{}
 		err := json.Unmarshal([]byte(jobExample), &job)
 		require.NoError(b, err)
