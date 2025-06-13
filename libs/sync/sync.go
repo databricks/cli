@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	stdsync "sync"
 	"time"
 
@@ -62,6 +63,14 @@ type Sync struct {
 	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
 	// Close call is required to ensure the output handler goroutine handles all events in time.
 	outputWaitGroup *stdsync.WaitGroup
+}
+
+type Metrics struct {
+	// Number of files uploaded to the remote path.
+	UploadFileCount int64
+
+	// Size of each file uploaded to the remote path.
+	UploadFileSizes []int64
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -174,43 +183,77 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 	s.seq++
 }
 
+func computeMetrics(ctx context.Context, files []fileset.File, change diff) Metrics {
+	uploadFileCount := int64(len(change.put))
+	uploadFileSizes := make([]int64, 0)
+
+	nameToFile := make(map[string]fileset.File)
+	for _, f := range files {
+		nameToFile[f.Relative] = f
+	}
+
+	for _, name := range change.put {
+		f, ok := nameToFile[name]
+		if !ok {
+			log.Warnf(ctx, "upload file %s not found in file list", name)
+			continue
+		}
+		size, err := f.Size()
+		if err != nil {
+			log.Warnf(ctx, "cannot get size of file %s: %s", name, err)
+		}
+		uploadFileSizes = append(uploadFileSizes, size)
+	}
+
+	// sort uploadFileSizes by descending order
+	sort.Slice(uploadFileSizes, func(i, j int) bool {
+		return uploadFileSizes[i] > uploadFileSizes[j]
+	})
+
+	return Metrics{
+		UploadFileCount: uploadFileCount,
+		UploadFileSizes: uploadFileSizes,
+	}
+}
+
 // Upload all files in the file tree rooted at the local path configured in the
 // SyncOptions to the remote path configured in the SyncOptions.
 //
 // Returns the list of files tracked (and synchronized) by the syncer during the run,
 // and an error if any occurred.
-func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
+func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, Metrics, error) {
 	files, err := s.GetFileList(ctx)
 	if err != nil {
-		return files, err
+		return files, Metrics{}, err
 	}
 
 	change, err := s.snapshot.diff(ctx, files)
 	if err != nil {
-		return files, err
+		return files, Metrics{}, err
 	}
 
+	metrics := computeMetrics(ctx, files, change)
 	s.notifyStart(ctx, change)
 	if change.IsEmpty() {
 		s.notifyComplete(ctx, change)
-		return files, nil
+		return files, metrics, nil
 	}
 
 	err = s.applyDiff(ctx, change)
 	if err != nil {
-		return files, err
+		return files, metrics, err
 	}
 
 	if !s.DryRun {
 		err = s.snapshot.Save(ctx)
 		if err != nil {
 			log.Errorf(ctx, "cannot store snapshot: %s", err)
-			return files, err
+			return files, metrics, err
 		}
 	}
 
 	s.notifyComplete(ctx, change)
-	return files, nil
+	return files, metrics, nil
 }
 
 func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
@@ -256,7 +299,7 @@ func (s *Sync) RunContinuous(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			_, err := s.RunOnce(ctx)
+			_, _, err := s.RunOnce(ctx)
 			if err != nil {
 				return err
 			}

@@ -13,10 +13,11 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
+	libsync "github.com/databricks/cli/libs/sync"
 )
 
 type upload struct {
-	outputHandler sync.OutputHandler
+	outputHandler libsync.OutputHandler
 }
 
 func (m *upload) Name() string {
@@ -42,7 +43,8 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 	defer sync.Close()
 
-	b.Files, err = sync.RunOnce(ctx)
+	var metrics libsync.Metrics
+	b.Files, metrics, err = sync.RunOnce(ctx)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
 			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.FilePath)
@@ -50,6 +52,8 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
+	b.Metrics.UploadFileCount = metrics.UploadFileCount
+	b.Metrics.UploadFileSizes = metrics.UploadFileSizes
 	log.Infof(ctx, "Uploaded bundle files")
 	return nil
 }

@@ -80,6 +80,12 @@ type BundleDeployExperimental struct {
 
 	// Number of resource mutators declared at 'python/mutators' in databricks.yml
 	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
+
+	// Number of files in the bundle (including configuration YAML files) that were uploaded to the workspace.
+	UploadFileCount int64 `json:"upload_file_count,omitempty"`
+
+	// Size of each file in the bundle (including configuration YAML files) that was uploaded to the workspace.
+	UploadFileSizes []int64 `json:"upload_file_sizes,omitempty"`
 }
 
 type BoolMapEntry struct {

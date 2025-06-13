@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/abc/default/files...
+Deploying resources...
+Deployment complete!
+
+>>> cat out.requests.txt
+{
+  "upload_file_count": 3,
+  "upload_file_sizes": [
+    200,
+    100,
+    20
+  ]
+}

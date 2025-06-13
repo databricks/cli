@@ -1,0 +1,9 @@
+cd project
+
+trace $CLI bundle deploy
+
+cd ..
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental | {upload_file_count, upload_file_sizes}'
+
+rm out.requests.txt

@@ -42,6 +42,8 @@ type Metrics struct {
 	BoolValues                  []protos.BoolMapEntry
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
+	UploadFileCount             int64
+	UploadFileSizes             []int64
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {

@@ -124,6 +124,12 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 		experimentalConfig = &config.Experimental{}
 	}
 
+	// Limit file sizes to the top 1000 files.
+	uploadFileSizes := b.Metrics.UploadFileSizes
+	if len(uploadFileSizes) > 1000 {
+		uploadFileSizes = uploadFileSizes[:1000]
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
@@ -161,6 +167,8 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 				VariableCount:               int64(variableCount),
 				ComplexVariableCount:        complexVariableCount,
 				LookupVariableCount:         lookupVariableCount,
+				UploadFileCount:             b.Metrics.UploadFileCount,
+				UploadFileSizes:             uploadFileSizes,
 			},
 		},
 	})
