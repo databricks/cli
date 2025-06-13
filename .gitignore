@@ -29,3 +29,7 @@ __pycache__
 
 # Test results from 'make test'
 test-output.json
+
+# Built by make for 'make fmt' and yamlcheck.py in acceptance tests
+tools/yamlfmt
+tools/yamlfmt.exe
