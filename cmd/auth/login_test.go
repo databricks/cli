@@ -84,3 +84,24 @@ func TestSetAccountId(t *testing.T) {
 	err = setHostAndAccountId(ctx, profile.DefaultProfiler, "", &authArguments, []string{})
 	assert.EqualError(t, err, "the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 }
+
+func TestLoginPreservesClusterID(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "cluster-profile", "./testdata/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, "cluster-from-config", clusterID)
+}
+
+func TestLoginPreservesClusterIDWithEmptyHostAndAccountID(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "no-profile", "./testdata/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, "", clusterID)
+}
+
+func TestLoginNoClusterIDWithAccountProfile(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	clusterID, err := getClusterID(context.Background(), "account-profile", "./testdata/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, "", clusterID)
+}

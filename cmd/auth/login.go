@@ -148,6 +148,12 @@ depends on the existing profiles you have set in your configuration file
 				return err
 			}
 			cfg.ClusterID = clusterID
+		} else {
+			cfg.ClusterID, err = getClusterID(ctx, profileName, defaultConfigPath)
+			if err != nil {
+				return err
+			}
+
 		}
 
 		if profileName != "" {
@@ -244,4 +250,22 @@ func getProfileName(authArguments *auth.AuthArguments) string {
 	host := strings.TrimPrefix(authArguments.Host, "https://")
 	split := strings.Split(host, ".")
 	return split[0]
+}
+
+func getClusterID(ctx context.Context, profileName, configPath string) (string, error) {
+	configFile, err := config.LoadFile(configPath)
+	if err != nil {
+		return "", err
+	}
+
+	if !configFile.HasSection(profileName) {
+		return "", nil
+	}
+
+	section, err := configFile.GetSection(profileName)
+	if err != nil {
+		return "", err
+	}
+
+	return section.Key("cluster_id").String(), nil
 }
