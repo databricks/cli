@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package database_instances
+package database
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/spf13/cobra"
 )
 
@@ -19,12 +19,12 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "database-instances",
+		Use:     "database",
 		Short:   `Database Instances provide access to a database via REST API or direct SQL.`,
 		Long:    `Database Instances provide access to a database via REST API or direct SQL.`,
-		GroupID: "catalog",
+		GroupID: "database",
 		Annotations: map[string]string{
-			"package": "catalog",
+			"package": "database",
 		},
 
 		// This service is being previewed; hide from help output.
@@ -35,13 +35,17 @@ func New() *cobra.Command {
 	// Add methods
 	cmd.AddCommand(newCreateDatabaseCatalog())
 	cmd.AddCommand(newCreateDatabaseInstance())
+	cmd.AddCommand(newCreateDatabaseTable())
 	cmd.AddCommand(newCreateSyncedDatabaseTable())
 	cmd.AddCommand(newDeleteDatabaseCatalog())
 	cmd.AddCommand(newDeleteDatabaseInstance())
+	cmd.AddCommand(newDeleteDatabaseTable())
 	cmd.AddCommand(newDeleteSyncedDatabaseTable())
 	cmd.AddCommand(newFindDatabaseInstanceByUid())
+	cmd.AddCommand(newGenerateDatabaseCredential())
 	cmd.AddCommand(newGetDatabaseCatalog())
 	cmd.AddCommand(newGetDatabaseInstance())
+	cmd.AddCommand(newGetDatabaseTable())
 	cmd.AddCommand(newGetSyncedDatabaseTable())
 	cmd.AddCommand(newListDatabaseInstances())
 	cmd.AddCommand(newUpdateDatabaseInstance())
@@ -60,14 +64,14 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createDatabaseCatalogOverrides []func(
 	*cobra.Command,
-	*catalog.CreateDatabaseCatalogRequest,
+	*database.CreateDatabaseCatalogRequest,
 )
 
 func newCreateDatabaseCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createDatabaseCatalogReq catalog.CreateDatabaseCatalogRequest
-	createDatabaseCatalogReq.Catalog = catalog.DatabaseCatalog{}
+	var createDatabaseCatalogReq database.CreateDatabaseCatalogRequest
+	createDatabaseCatalogReq.Catalog = database.DatabaseCatalog{}
 	var createDatabaseCatalogJson flags.JsonFlag
 
 	// TODO: short flags
@@ -125,7 +129,7 @@ func newCreateDatabaseCatalog() *cobra.Command {
 			createDatabaseCatalogReq.Catalog.DatabaseName = args[2]
 		}
 
-		response, err := w.DatabaseInstances.CreateDatabaseCatalog(ctx, createDatabaseCatalogReq)
+		response, err := w.Database.CreateDatabaseCatalog(ctx, createDatabaseCatalogReq)
 		if err != nil {
 			return err
 		}
@@ -150,21 +154,19 @@ func newCreateDatabaseCatalog() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createDatabaseInstanceOverrides []func(
 	*cobra.Command,
-	*catalog.CreateDatabaseInstanceRequest,
+	*database.CreateDatabaseInstanceRequest,
 )
 
 func newCreateDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createDatabaseInstanceReq catalog.CreateDatabaseInstanceRequest
-	createDatabaseInstanceReq.DatabaseInstance = catalog.DatabaseInstance{}
+	var createDatabaseInstanceReq database.CreateDatabaseInstanceRequest
+	createDatabaseInstanceReq.DatabaseInstance = database.DatabaseInstance{}
 	var createDatabaseInstanceJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.AdminPassword, "admin-password", createDatabaseInstanceReq.DatabaseInstance.AdminPassword, `Password for admin user to create.`)
-	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.AdminRolename, "admin-rolename", createDatabaseInstanceReq.DatabaseInstance.AdminRolename, `Name of the admin role for the instance.`)
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
 	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", createDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether the instance is stopped.`)
 
@@ -210,7 +212,7 @@ func newCreateDatabaseInstance() *cobra.Command {
 			createDatabaseInstanceReq.DatabaseInstance.Name = args[0]
 		}
 
-		response, err := w.DatabaseInstances.CreateDatabaseInstance(ctx, createDatabaseInstanceReq)
+		response, err := w.Database.CreateDatabaseInstance(ctx, createDatabaseInstanceReq)
 		if err != nil {
 			return err
 		}
@@ -229,20 +231,103 @@ func newCreateDatabaseInstance() *cobra.Command {
 	return cmd
 }
 
+// start create-database-table command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createDatabaseTableOverrides []func(
+	*cobra.Command,
+	*database.CreateDatabaseTableRequest,
+)
+
+func newCreateDatabaseTable() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createDatabaseTableReq database.CreateDatabaseTableRequest
+	createDatabaseTableReq.Table = database.DatabaseTable{}
+	var createDatabaseTableJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&createDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createDatabaseTableReq.Table.DatabaseInstanceName, "database-instance-name", createDatabaseTableReq.Table.DatabaseInstanceName, `Name of the target database instance.`)
+	cmd.Flags().StringVar(&createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", createDatabaseTableReq.Table.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+
+	cmd.Use = "create-database-table NAME"
+	cmd.Short = `Create a Database Table.`
+	cmd.Long = `Create a Database Table.
+
+  Arguments:
+    NAME: Full three-part (catalog, schema, table) name of the table.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createDatabaseTableJson.Unmarshal(&createDatabaseTableReq.Table)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createDatabaseTableReq.Table.Name = args[0]
+		}
+
+		response, err := w.Database.CreateDatabaseTable(ctx, createDatabaseTableReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createDatabaseTableOverrides {
+		fn(cmd, &createDatabaseTableReq)
+	}
+
+	return cmd
+}
+
 // start create-synced-database-table command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createSyncedDatabaseTableOverrides []func(
 	*cobra.Command,
-	*catalog.CreateSyncedDatabaseTableRequest,
+	*database.CreateSyncedDatabaseTableRequest,
 )
 
 func newCreateSyncedDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createSyncedDatabaseTableReq catalog.CreateSyncedDatabaseTableRequest
-	createSyncedDatabaseTableReq.SyncedTable = catalog.SyncedDatabaseTable{}
+	var createSyncedDatabaseTableReq database.CreateSyncedDatabaseTableRequest
+	createSyncedDatabaseTableReq.SyncedTable = database.SyncedDatabaseTable{}
 	var createSyncedDatabaseTableJson flags.JsonFlag
 
 	// TODO: short flags
@@ -295,7 +380,7 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 			createSyncedDatabaseTableReq.SyncedTable.Name = args[0]
 		}
 
-		response, err := w.DatabaseInstances.CreateSyncedDatabaseTable(ctx, createSyncedDatabaseTableReq)
+		response, err := w.Database.CreateSyncedDatabaseTable(ctx, createSyncedDatabaseTableReq)
 		if err != nil {
 			return err
 		}
@@ -320,13 +405,13 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteDatabaseCatalogOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteDatabaseCatalogRequest,
+	*database.DeleteDatabaseCatalogRequest,
 )
 
 func newDeleteDatabaseCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteDatabaseCatalogReq catalog.DeleteDatabaseCatalogRequest
+	var deleteDatabaseCatalogReq database.DeleteDatabaseCatalogRequest
 
 	// TODO: short flags
 
@@ -348,7 +433,7 @@ func newDeleteDatabaseCatalog() *cobra.Command {
 
 		deleteDatabaseCatalogReq.Name = args[0]
 
-		err = w.DatabaseInstances.DeleteDatabaseCatalog(ctx, deleteDatabaseCatalogReq)
+		err = w.Database.DeleteDatabaseCatalog(ctx, deleteDatabaseCatalogReq)
 		if err != nil {
 			return err
 		}
@@ -373,13 +458,13 @@ func newDeleteDatabaseCatalog() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteDatabaseInstanceOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteDatabaseInstanceRequest,
+	*database.DeleteDatabaseInstanceRequest,
 )
 
 func newDeleteDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteDatabaseInstanceReq catalog.DeleteDatabaseInstanceRequest
+	var deleteDatabaseInstanceReq database.DeleteDatabaseInstanceRequest
 
 	// TODO: short flags
 
@@ -407,7 +492,7 @@ func newDeleteDatabaseInstance() *cobra.Command {
 
 		deleteDatabaseInstanceReq.Name = args[0]
 
-		err = w.DatabaseInstances.DeleteDatabaseInstance(ctx, deleteDatabaseInstanceReq)
+		err = w.Database.DeleteDatabaseInstance(ctx, deleteDatabaseInstanceReq)
 		if err != nil {
 			return err
 		}
@@ -426,19 +511,72 @@ func newDeleteDatabaseInstance() *cobra.Command {
 	return cmd
 }
 
+// start delete-database-table command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteDatabaseTableOverrides []func(
+	*cobra.Command,
+	*database.DeleteDatabaseTableRequest,
+)
+
+func newDeleteDatabaseTable() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteDatabaseTableReq database.DeleteDatabaseTableRequest
+
+	// TODO: short flags
+
+	cmd.Use = "delete-database-table NAME"
+	cmd.Short = `Delete a Database Table.`
+	cmd.Long = `Delete a Database Table.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteDatabaseTableReq.Name = args[0]
+
+		err = w.Database.DeleteDatabaseTable(ctx, deleteDatabaseTableReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteDatabaseTableOverrides {
+		fn(cmd, &deleteDatabaseTableReq)
+	}
+
+	return cmd
+}
+
 // start delete-synced-database-table command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSyncedDatabaseTableOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteSyncedDatabaseTableRequest,
+	*database.DeleteSyncedDatabaseTableRequest,
 )
 
 func newDeleteSyncedDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteSyncedDatabaseTableReq catalog.DeleteSyncedDatabaseTableRequest
+	var deleteSyncedDatabaseTableReq database.DeleteSyncedDatabaseTableRequest
 
 	// TODO: short flags
 
@@ -460,7 +598,7 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 
 		deleteSyncedDatabaseTableReq.Name = args[0]
 
-		err = w.DatabaseInstances.DeleteSyncedDatabaseTable(ctx, deleteSyncedDatabaseTableReq)
+		err = w.Database.DeleteSyncedDatabaseTable(ctx, deleteSyncedDatabaseTableReq)
 		if err != nil {
 			return err
 		}
@@ -485,13 +623,13 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var findDatabaseInstanceByUidOverrides []func(
 	*cobra.Command,
-	*catalog.FindDatabaseInstanceByUidRequest,
+	*database.FindDatabaseInstanceByUidRequest,
 )
 
 func newFindDatabaseInstanceByUid() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var findDatabaseInstanceByUidReq catalog.FindDatabaseInstanceByUidRequest
+	var findDatabaseInstanceByUidReq database.FindDatabaseInstanceByUidRequest
 
 	// TODO: short flags
 
@@ -513,7 +651,7 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		response, err := w.DatabaseInstances.FindDatabaseInstanceByUid(ctx, findDatabaseInstanceByUidReq)
+		response, err := w.Database.FindDatabaseInstanceByUid(ctx, findDatabaseInstanceByUidReq)
 		if err != nil {
 			return err
 		}
@@ -532,19 +670,88 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 	return cmd
 }
 
+// start generate-database-credential command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var generateDatabaseCredentialOverrides []func(
+	*cobra.Command,
+	*database.GenerateDatabaseCredentialRequest,
+)
+
+func newGenerateDatabaseCredential() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var generateDatabaseCredentialReq database.GenerateDatabaseCredentialRequest
+	var generateDatabaseCredentialJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&generateDatabaseCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: instance_names
+	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, ``)
+
+	cmd.Use = "generate-database-credential"
+	cmd.Short = `Generates a credential that can be used to access database instances.`
+	cmd.Long = `Generates a credential that can be used to access database instances.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := generateDatabaseCredentialJson.Unmarshal(&generateDatabaseCredentialReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		response, err := w.Database.GenerateDatabaseCredential(ctx, generateDatabaseCredentialReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range generateDatabaseCredentialOverrides {
+		fn(cmd, &generateDatabaseCredentialReq)
+	}
+
+	return cmd
+}
+
 // start get-database-catalog command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDatabaseCatalogOverrides []func(
 	*cobra.Command,
-	*catalog.GetDatabaseCatalogRequest,
+	*database.GetDatabaseCatalogRequest,
 )
 
 func newGetDatabaseCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getDatabaseCatalogReq catalog.GetDatabaseCatalogRequest
+	var getDatabaseCatalogReq database.GetDatabaseCatalogRequest
 
 	// TODO: short flags
 
@@ -566,7 +773,7 @@ func newGetDatabaseCatalog() *cobra.Command {
 
 		getDatabaseCatalogReq.Name = args[0]
 
-		response, err := w.DatabaseInstances.GetDatabaseCatalog(ctx, getDatabaseCatalogReq)
+		response, err := w.Database.GetDatabaseCatalog(ctx, getDatabaseCatalogReq)
 		if err != nil {
 			return err
 		}
@@ -591,13 +798,13 @@ func newGetDatabaseCatalog() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDatabaseInstanceOverrides []func(
 	*cobra.Command,
-	*catalog.GetDatabaseInstanceRequest,
+	*database.GetDatabaseInstanceRequest,
 )
 
 func newGetDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getDatabaseInstanceReq catalog.GetDatabaseInstanceRequest
+	var getDatabaseInstanceReq database.GetDatabaseInstanceRequest
 
 	// TODO: short flags
 
@@ -622,7 +829,7 @@ func newGetDatabaseInstance() *cobra.Command {
 
 		getDatabaseInstanceReq.Name = args[0]
 
-		response, err := w.DatabaseInstances.GetDatabaseInstance(ctx, getDatabaseInstanceReq)
+		response, err := w.Database.GetDatabaseInstance(ctx, getDatabaseInstanceReq)
 		if err != nil {
 			return err
 		}
@@ -641,19 +848,72 @@ func newGetDatabaseInstance() *cobra.Command {
 	return cmd
 }
 
+// start get-database-table command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getDatabaseTableOverrides []func(
+	*cobra.Command,
+	*database.GetDatabaseTableRequest,
+)
+
+func newGetDatabaseTable() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getDatabaseTableReq database.GetDatabaseTableRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-database-table NAME"
+	cmd.Short = `Get a Database Table.`
+	cmd.Long = `Get a Database Table.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getDatabaseTableReq.Name = args[0]
+
+		response, err := w.Database.GetDatabaseTable(ctx, getDatabaseTableReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getDatabaseTableOverrides {
+		fn(cmd, &getDatabaseTableReq)
+	}
+
+	return cmd
+}
+
 // start get-synced-database-table command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSyncedDatabaseTableOverrides []func(
 	*cobra.Command,
-	*catalog.GetSyncedDatabaseTableRequest,
+	*database.GetSyncedDatabaseTableRequest,
 )
 
 func newGetSyncedDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getSyncedDatabaseTableReq catalog.GetSyncedDatabaseTableRequest
+	var getSyncedDatabaseTableReq database.GetSyncedDatabaseTableRequest
 
 	// TODO: short flags
 
@@ -675,7 +935,7 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 
 		getSyncedDatabaseTableReq.Name = args[0]
 
-		response, err := w.DatabaseInstances.GetSyncedDatabaseTable(ctx, getSyncedDatabaseTableReq)
+		response, err := w.Database.GetSyncedDatabaseTable(ctx, getSyncedDatabaseTableReq)
 		if err != nil {
 			return err
 		}
@@ -700,13 +960,13 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listDatabaseInstancesOverrides []func(
 	*cobra.Command,
-	*catalog.ListDatabaseInstancesRequest,
+	*database.ListDatabaseInstancesRequest,
 )
 
 func newListDatabaseInstances() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listDatabaseInstancesReq catalog.ListDatabaseInstancesRequest
+	var listDatabaseInstancesReq database.ListDatabaseInstancesRequest
 
 	// TODO: short flags
 
@@ -729,7 +989,7 @@ func newListDatabaseInstances() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		response := w.DatabaseInstances.ListDatabaseInstances(ctx, listDatabaseInstancesReq)
+		response := w.Database.ListDatabaseInstances(ctx, listDatabaseInstancesReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -751,21 +1011,19 @@ func newListDatabaseInstances() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateDatabaseInstanceOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateDatabaseInstanceRequest,
+	*database.UpdateDatabaseInstanceRequest,
 )
 
 func newUpdateDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateDatabaseInstanceReq catalog.UpdateDatabaseInstanceRequest
-	updateDatabaseInstanceReq.DatabaseInstance = catalog.DatabaseInstance{}
+	var updateDatabaseInstanceReq database.UpdateDatabaseInstanceRequest
+	updateDatabaseInstanceReq.DatabaseInstance = database.DatabaseInstance{}
 	var updateDatabaseInstanceJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.AdminPassword, "admin-password", updateDatabaseInstanceReq.DatabaseInstance.AdminPassword, `Password for admin user to create.`)
-	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.AdminRolename, "admin-rolename", updateDatabaseInstanceReq.DatabaseInstance.AdminRolename, `Name of the admin role for the instance.`)
 	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", updateDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", updateDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether the instance is stopped.`)
 
@@ -802,7 +1060,7 @@ func newUpdateDatabaseInstance() *cobra.Command {
 		}
 		updateDatabaseInstanceReq.Name = args[0]
 
-		response, err := w.DatabaseInstances.UpdateDatabaseInstance(ctx, updateDatabaseInstanceReq)
+		response, err := w.Database.UpdateDatabaseInstance(ctx, updateDatabaseInstanceReq)
 		if err != nil {
 			return err
 		}
@@ -821,4 +1079,4 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	return cmd
 }
 
-// end service DatabaseInstances
+// end service Database

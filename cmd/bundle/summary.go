@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
@@ -53,7 +54,7 @@ func newSummaryCommand() *cobra.Command {
 
 		if forcePull || noCache {
 			diags = bundle.ApplySeq(ctx, b,
-				terraform.StatePull(),
+				statemgmt.StatePull(),
 				terraform.Interpolate(),
 				terraform.Write(),
 			)

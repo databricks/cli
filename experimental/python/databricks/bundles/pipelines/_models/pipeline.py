@@ -182,6 +182,13 @@ class Pipeline(Resource):
     DBFS root directory for storing checkpoints and tables.
     """
 
+    tags: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of tags associated with the pipeline.
+    These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+    A maximum of 25 tags can be added to the pipeline.
+    """
+
     target: VariableOrOptional[str] = None
     """
     Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
@@ -323,6 +330,13 @@ class PipelineDict(TypedDict, total=False):
     storage: VariableOrOptional[str]
     """
     DBFS root directory for storing checkpoints and tables.
+    """
+
+    tags: VariableOrDict[str]
+    """
+    A map of tags associated with the pipeline.
+    These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+    A maximum of 25 tags can be added to the pipeline.
     """
 
     target: VariableOrOptional[str]

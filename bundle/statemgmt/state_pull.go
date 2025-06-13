@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
+	tf "github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
@@ -34,7 +35,7 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 		return nil, nil, err
 	}
 
-	r, err := f.Read(ctx, TerraformStateFileName)
+	r, err := f.Read(ctx, tf.TerraformStateFileName)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -55,12 +56,12 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 }
 
 func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState, error) {
-	dir, err := Dir(ctx, b)
+	dir, err := tf.Dir(ctx, b)
 	if err != nil {
 		return nil, err
 	}
 
-	content, err := os.ReadFile(filepath.Join(dir, TerraformStateFileName))
+	content, err := os.ReadFile(filepath.Join(dir, tf.TerraformStateFileName))
 	if err != nil {
 		return nil, err
 	}
@@ -75,12 +76,12 @@ func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState,
 }
 
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	dir, err := Dir(ctx, b)
+	dir, err := tf.Dir(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	localStatePath := filepath.Join(dir, TerraformStateFileName)
+	localStatePath := filepath.Join(dir, tf.TerraformStateFileName)
 
 	// Case: Remote state file does not exist. In this case we fallback to using the
 	// local Terraform state. This allows users to change the "root_path" their bundle is
