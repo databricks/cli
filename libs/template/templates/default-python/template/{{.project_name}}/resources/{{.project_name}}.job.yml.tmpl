@@ -49,7 +49,7 @@ resources:
           {{- else if (eq .include_notebook "yes" )}}
           depends_on:
             - task_key: notebook_task
-          {{end}}
+{{end}}
           {{- if $with_serverless }}
           environment_key: default
           {{- else }}
@@ -85,6 +85,6 @@ resources:
             node_type_id: {{smallest_node_type}}
             data_security_mode: SINGLE_USER
             autoscale:
-                min_workers: 1
-                max_workers: 4
+              min_workers: 1
+              max_workers: 4
 {{end -}}

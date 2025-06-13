@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/patchwheel"
 )
 
 type expand struct{}
@@ -37,7 +38,7 @@ func getLibDetails(v dyn.Value) (string, string, bool) {
 	return "", "", false
 }
 
-func findMatches(b *bundle.Bundle, path string) ([]string, error) {
+func findMatches(ctx context.Context, b *bundle.Bundle, path string) ([]string, error) {
 	matches, err := filepath.Glob(filepath.Join(b.SyncRootPath, path))
 	if err != nil {
 		return nil, err
@@ -50,6 +51,8 @@ func findMatches(b *bundle.Bundle, path string) ([]string, error) {
 			return nil, fmt.Errorf("file doesn't exist %s", path)
 		}
 	}
+
+	matches = patchwheel.FilterLatestWheels(ctx, matches)
 
 	// We make the matched path relative to the sync root path before storing it
 	// to allow upload mutator to distinguish between local and remote paths
@@ -69,7 +72,7 @@ func isGlobPattern(path string) bool {
 	return strings.ContainsAny(path, "*?[")
 }
 
-func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
+func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
 	var output []dyn.Value
 	var diags diag.Diagnostics
 
@@ -84,7 +87,7 @@ func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostic
 
 		lp = lp.Append(dyn.Key(libType))
 
-		matches, err := findMatches(b, path)
+		matches, err := findMatches(ctx, b, path)
 		if err != nil {
 			diags = diags.Append(matchError(lp, lib.Locations(), err.Error()))
 			continue
@@ -100,7 +103,7 @@ func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostic
 	return diags, output
 }
 
-func expandEnvironmentDeps(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
+func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
 	var output []dyn.Value
 	var diags diag.Diagnostics
 
@@ -113,7 +116,7 @@ func expandEnvironmentDeps(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diag
 			continue
 		}
 
-		matches, err := findMatches(b, path)
+		matches, err := findMatches(ctx, b, path)
 		if err != nil {
 			diags = diags.Append(matchError(lp, dep.Locations(), err.Error()))
 			continue
@@ -129,7 +132,7 @@ func expandEnvironmentDeps(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diag
 
 type expandPattern struct {
 	pattern dyn.Pattern
-	fn      func(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value)
+	fn      func(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value)
 }
 
 var taskLibrariesPattern = dyn.NewPattern(
@@ -184,7 +187,7 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		var err error
 		for _, expander := range expanders {
 			v, err = dyn.MapByPattern(v, expander.pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
-				d, output := expander.fn(b, p, lv)
+				d, output := expander.fn(ctx, b, p, lv)
 				diags = diags.Extend(d)
 				return dyn.V(output), nil
 			})

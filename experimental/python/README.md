@@ -13,7 +13,7 @@ Reference documentation is available at https://databricks.github.io/cli/experim
 
 To use `databricks-bundles`, you must first:
 
-1. Install the [Databricks CLI](https://github.com/databricks/cli), version 0.254.0 or above
+1. Install the [Databricks CLI](https://github.com/databricks/cli), version 0.255.0 or above
 2. Authenticate to your Databricks workspace if you have not done so already:
 
    ```bash

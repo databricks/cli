@@ -1,9 +1,9 @@
 artifacts:
-    my_test_code:
-      type: whl
-      path: "./my_test_code"
-      # using 'python' there because 'python3' does not exist in virtualenv on windows
-      build: python setup.py bdist_wheel
+  my_test_code:
+    type: whl
+    path: "./my_test_code"
+    # using 'python' there because 'python3' does not exist in virtualenv on windows
+    build: python setup.py bdist_wheel
 
 resources:
   jobs:
@@ -16,4 +16,4 @@ resources:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: ./my_test_code/dist/*.whl
+            - whl: ./my_test_code/dist/*.whl

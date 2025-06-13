@@ -13,13 +13,14 @@ import (
 
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
 		for typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
 		if isScalar(typ.Kind()) {
 			results[path.String()] = reflect.Zero(typ).Interface()
 		}
+		return true
 	})
 	require.NoError(t, err)
 	return results
@@ -151,6 +152,64 @@ func TestTypeRoot(t *testing.T) {
 	)
 }
 
+func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
+	var results []string
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+		if path == nil {
+			return true
+		}
+		if path.BundleTag().ReadOnly() {
+			results = append(results, path.DynPath())
+		}
+		return true
+	})
+	require.NoError(t, err)
+	return results
+}
+
+func TestTypeReadonlyFields(t *testing.T) {
+	readonlyFields := getReadonlyFields(t, reflect.TypeOf(config.Root{}))
+
+	expected := []string{
+		"bundle.mode",
+		"bundle.target",
+		"resources.jobs.*.id",
+		"resources.pipelines.*.id",
+		"workspace.current_user.short_name",
+	}
+
+	for _, v := range expected {
+		assert.Contains(t, readonlyFields, v)
+	}
+}
+
+func TestTypeBundleTag(t *testing.T) {
+	type Foo struct {
+		A string `bundle:"readonly"`
+		B string `bundle:"internal"`
+		C string
+		D string `bundle:"internal,readonly"`
+	}
+
+	var readonly, internal []string
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+		if path == nil {
+			return true
+		}
+		if path.BundleTag().ReadOnly() {
+			readonly = append(readonly, path.String())
+		}
+		if path.BundleTag().Internal() {
+			internal = append(internal, path.String())
+		}
+		return true
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{".A", ".D"}, readonly)
+	assert.Equal(t, []string{".B", ".D"}, internal)
+}
+
 func TestWalkTypeVisited(t *testing.T) {
 	type Inner struct {
 		A int
@@ -167,11 +226,12 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
 		if path == nil {
-			return
+			return true
 		}
 		visited = append(visited, path.String())
+		return true
 	})
 	require.NoError(t, err)
 
@@ -190,4 +250,28 @@ func TestWalkTypeVisited(t *testing.T) {
 		".C",
 		".D",
 	}, visited)
+}
+
+func TestWalkSkip(t *testing.T) {
+	type Outer struct {
+		A int
+		B int
+
+		Inner struct {
+			C int
+		}
+
+		D int
+	}
+
+	var seen []string
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+		if path == nil {
+			return true
+		}
+		seen = append(seen, path.String())
+		return path.String() != ".Inner"
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []string{".A", ".B", ".Inner", ".D"}, seen)
 }
