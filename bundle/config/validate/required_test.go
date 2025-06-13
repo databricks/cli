@@ -212,25 +212,29 @@ const jobExample = `
     }
 }`
 
-func benchmarkRequired(b *testing.B, numJobs int) {
+func setupBundle(b *testing.B, numJobs int) bundle.Bundle {
 	allJobs := map[string]*resources.Job{}
 	for i := range numJobs {
 		job := jobs.JobSettings{}
 		err := json.Unmarshal([]byte(jobExample), &job)
 		require.NoError(b, err)
 
-		allJobs[fmt.Sprintf("s%d", i)] = &resources.Job{
+		allJobs[fmt.Sprintf("%d", i)] = &resources.Job{
 			JobSettings: job,
 		}
 	}
 
-	myBundle := bundle.Bundle{
+	return bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: allJobs,
 			},
 		},
 	}
+}
+
+func benchmarkRequired(b *testing.B, numJobs int) {
+	myBundle := setupBundle(b, numJobs)
 
 	for b.Loop() {
 		diags := bundle.Apply(context.Background(), &myBundle, Required())
@@ -239,24 +243,7 @@ func benchmarkRequired(b *testing.B, numJobs int) {
 }
 
 func benchmarkBaseline(b *testing.B, numJobs int) {
-	allJobs := map[string]*resources.Job{}
-	for i := range numJobs {
-		job := jobs.JobSettings{}
-		err := json.Unmarshal([]byte(jobExample), &job)
-		require.NoError(b, err)
-
-		allJobs[fmt.Sprintf("s%d", i)] = &resources.Job{
-			JobSettings: job,
-		}
-	}
-
-	myBundle := bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: allJobs,
-			},
-		},
-	}
+	myBundle := setupBundle(b, numJobs)
 
 	for b.Loop() {
 		paths := []dyn.Path{}
