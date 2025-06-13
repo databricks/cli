@@ -68,7 +68,15 @@
             }
           ],
           "bundle_mode": "TYPE_UNSPECIFIED",
-          "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+          "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
+          "upload_file_count": 5,
+          "upload_file_sizes": [
+            4147,
+            3562,
+            2557,
+            294,
+            194
+          ]
         }
       }
     }

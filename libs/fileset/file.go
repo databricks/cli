@@ -32,7 +32,7 @@ type File struct {
 	Relative string
 
 	// Cache stat calls to avoid repeated calls to the filesystem.
-	// This is a pointer so that copies of hte
+	// This is a pointer so that copies of the File struct share the same cache.
 	cache *fileCache
 }
 

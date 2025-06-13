@@ -67,7 +67,21 @@ Deployment complete!
       }
     ],
     "bundle_mode": "TYPE_UNSPECIFIED",
-    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
+    "upload_file_count": 11,
+    "upload_file_sizes": [
+      10294,
+      4203,
+      2347,
+      1864,
+      595,
+      395,
+      281,
+      242,
+      106,
+      48,
+      30
+    ]
   }
 }
 {
@@ -127,6 +141,20 @@ Deployment complete!
       }
     ],
     "bundle_mode": "TYPE_UNSPECIFIED",
-    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
+    "upload_file_count": 11,
+    "upload_file_sizes": [
+      60074,
+      4203,
+      2347,
+      1864,
+      664,
+      595,
+      395,
+      242,
+      106,
+      48,
+      30
+    ]
   }
 }

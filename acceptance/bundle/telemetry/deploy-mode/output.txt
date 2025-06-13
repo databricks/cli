@@ -61,7 +61,15 @@ A common practice is to use a username or principal name in this path, i.e. use
       }
     ],
     "bundle_mode": "DEVELOPMENT",
-    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
+    "upload_file_count": 5,
+    "upload_file_sizes": [
+      4167,
+      2476,
+      2287,
+      197,
+      95
+    ]
   }
 }
 {
@@ -109,6 +117,14 @@ A common practice is to use a username or principal name in this path, i.e. use
       }
     ],
     "bundle_mode": "PRODUCTION",
-    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
+    "upload_file_count": 5,
+    "upload_file_sizes": [
+      21418,
+      4167,
+      2287,
+      440,
+      95
+    ]
   }
 }

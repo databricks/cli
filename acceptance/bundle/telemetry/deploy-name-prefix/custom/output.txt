@@ -55,6 +55,14 @@ Deployment complete!
       }
     ],
     "bundle_mode": "TYPE_UNSPECIFIED",
-    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+    "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
+    "upload_file_count": 5,
+    "upload_file_sizes": [
+      4219,
+      3570,
+      2246,
+      196,
+      137
+    ]
   }
 }
