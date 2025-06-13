@@ -106,16 +106,15 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
+
+	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
+	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+
 	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
-	// Load debug environment when debugging a single test run from an IDE.
-	if singleTest != "" && inprocessMode {
-		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
-	}
-
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -283,7 +282,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
-	return len(testDirs)
+	return selectedDirs - skippedDirs
 }
 
 func getEnvFilters(t *testing.T) []string {
