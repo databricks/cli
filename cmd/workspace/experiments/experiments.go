@@ -49,8 +49,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeleteTag())
 	cmd.AddCommand(newFinalizeLoggedModel())
 	cmd.AddCommand(newGetByName())
-	cmd.AddCommand(newGetCredentialsForTraceDataDownload())
-	cmd.AddCommand(newGetCredentialsForTraceDataUpload())
 	cmd.AddCommand(newGetExperiment())
 	cmd.AddCommand(newGetHistory())
 	cmd.AddCommand(newGetLoggedModel())
@@ -59,7 +57,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetRun())
 	cmd.AddCommand(newListArtifacts())
 	cmd.AddCommand(newListExperiments())
-	cmd.AddCommand(newListLoggedModelArtifacts())
 	cmd.AddCommand(newLogBatch())
 	cmd.AddCommand(newLogInputs())
 	cmd.AddCommand(newLogLoggedModelParams())
@@ -208,9 +205,6 @@ func newCreateLoggedModel() *cobra.Command {
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment that owns the model.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -449,9 +443,6 @@ func newDeleteLoggedModel() *cobra.Command {
   Arguments:
     MODEL_ID: The ID of the logged model to delete.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -508,9 +499,6 @@ func newDeleteLoggedModelTag() *cobra.Command {
   Arguments:
     MODEL_ID: The ID of the logged model to delete the tag from.
     TAG_KEY: The tag key.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -833,11 +821,8 @@ func newFinalizeLoggedModel() *cobra.Command {
     MODEL_ID: The ID of the logged model to finalize.
     STATUS: Whether or not the model is ready for use.
       "LOGGED_MODEL_UPLOAD_FAILED" indicates that something went wrong when
-      logging the model weights / agent code). 
+      logging the model weights / agent code. 
       Supported values: [LOGGED_MODEL_PENDING, LOGGED_MODEL_READY, LOGGED_MODEL_UPLOAD_FAILED]`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -958,124 +943,6 @@ func newGetByName() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getByNameOverrides {
 		fn(cmd, &getByNameReq)
-	}
-
-	return cmd
-}
-
-// start get-credentials-for-trace-data-download command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var getCredentialsForTraceDataDownloadOverrides []func(
-	*cobra.Command,
-	*ml.GetCredentialsForTraceDataDownloadRequest,
-)
-
-func newGetCredentialsForTraceDataDownload() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var getCredentialsForTraceDataDownloadReq ml.GetCredentialsForTraceDataDownloadRequest
-
-	// TODO: short flags
-
-	cmd.Use = "get-credentials-for-trace-data-download REQUEST_ID"
-	cmd.Short = `Get credentials to download trace data.`
-	cmd.Long = `Get credentials to download trace data.
-
-  Arguments:
-    REQUEST_ID: The ID of the trace to fetch artifact download credentials for.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		getCredentialsForTraceDataDownloadReq.RequestId = args[0]
-
-		response, err := w.Experiments.GetCredentialsForTraceDataDownload(ctx, getCredentialsForTraceDataDownloadReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range getCredentialsForTraceDataDownloadOverrides {
-		fn(cmd, &getCredentialsForTraceDataDownloadReq)
-	}
-
-	return cmd
-}
-
-// start get-credentials-for-trace-data-upload command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var getCredentialsForTraceDataUploadOverrides []func(
-	*cobra.Command,
-	*ml.GetCredentialsForTraceDataUploadRequest,
-)
-
-func newGetCredentialsForTraceDataUpload() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var getCredentialsForTraceDataUploadReq ml.GetCredentialsForTraceDataUploadRequest
-
-	// TODO: short flags
-
-	cmd.Use = "get-credentials-for-trace-data-upload REQUEST_ID"
-	cmd.Short = `Get credentials to upload trace data.`
-	cmd.Long = `Get credentials to upload trace data.
-
-  Arguments:
-    REQUEST_ID: The ID of the trace to fetch artifact upload credentials for.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		getCredentialsForTraceDataUploadReq.RequestId = args[0]
-
-		response, err := w.Experiments.GetCredentialsForTraceDataUpload(ctx, getCredentialsForTraceDataUploadReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range getCredentialsForTraceDataUploadOverrides {
-		fn(cmd, &getCredentialsForTraceDataUploadReq)
 	}
 
 	return cmd
@@ -1221,9 +1088,6 @@ func newGetLoggedModel() *cobra.Command {
 
   Arguments:
     MODEL_ID: The ID of the logged model to retrieve.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1554,72 +1418,6 @@ func newListExperiments() *cobra.Command {
 	return cmd
 }
 
-// start list-logged-model-artifacts command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var listLoggedModelArtifactsOverrides []func(
-	*cobra.Command,
-	*ml.ListLoggedModelArtifactsRequest,
-)
-
-func newListLoggedModelArtifacts() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var listLoggedModelArtifactsReq ml.ListLoggedModelArtifactsRequest
-
-	// TODO: short flags
-
-	cmd.Flags().StringVar(&listLoggedModelArtifactsReq.ArtifactDirectoryPath, "artifact-directory-path", listLoggedModelArtifactsReq.ArtifactDirectoryPath, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
-	cmd.Flags().StringVar(&listLoggedModelArtifactsReq.PageToken, "page-token", listLoggedModelArtifactsReq.PageToken, `Token indicating the page of artifact results to fetch.`)
-
-	cmd.Use = "list-logged-model-artifacts MODEL_ID"
-	cmd.Short = `List artifacts for a logged model.`
-	cmd.Long = `List artifacts for a logged model.
-  
-  List artifacts for a logged model. Takes an optional
-  artifact_directory_path prefix which if specified, the response contains
-  only artifacts with the specified prefix.
-
-  Arguments:
-    MODEL_ID: The ID of the logged model for which to list the artifacts.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		listLoggedModelArtifactsReq.ModelId = args[0]
-
-		response, err := w.Experiments.ListLoggedModelArtifacts(ctx, listLoggedModelArtifactsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range listLoggedModelArtifactsOverrides {
-		fn(cmd, &listLoggedModelArtifactsReq)
-	}
-
-	return cmd
-}
-
 // start log-batch command
 
 // Slice with functions to override default command behavior.
@@ -1853,9 +1651,6 @@ func newLogLoggedModelParams() *cobra.Command {
 
   Arguments:
     MODEL_ID: The ID of the logged model to log params for.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2109,9 +1904,6 @@ func newLogOutputs() *cobra.Command {
 
   Arguments:
     RUN_ID: The ID of the Run from which to log outputs.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2625,9 +2417,6 @@ func newSearchLoggedModels() *cobra.Command {
   
   Search for Logged Models that satisfy specified search criteria.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -2862,9 +2651,6 @@ func newSetLoggedModelTags() *cobra.Command {
 
   Arguments:
     MODEL_ID: The ID of the logged model to set the tags on.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

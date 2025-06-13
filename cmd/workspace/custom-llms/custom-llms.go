@@ -1,13 +1,15 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package grants
+package custom_llms
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/aibuilder"
 	"github.com/spf13/cobra"
 )
 
@@ -17,34 +19,138 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "grants",
-		Short: `In Unity Catalog, data is secure by default.`,
-		Long: `In Unity Catalog, data is secure by default. Initially, users have no access
-  to data in a metastore. Access can be granted by either a metastore admin, the
-  owner of an object, or the owner of the catalog or schema that contains the
-  object. Securable objects in Unity Catalog are hierarchical and privileges are
-  inherited downward.
-  
-  Securable objects in Unity Catalog are hierarchical and privileges are
-  inherited downward. This means that granting a privilege on the catalog
-  automatically grants the privilege to all current and future objects within
-  the catalog. Similarly, privileges granted on a schema are inherited by all
-  current and future objects within that schema.`,
-		GroupID: "catalog",
+		Use:   "custom-llms",
+		Short: `The Custom LLMs service manages state and powers the UI for the Custom LLM product.`,
+		Long: `The Custom LLMs service manages state and powers the UI for the Custom LLM
+  product.`,
+		GroupID: "aibuilder",
 		Annotations: map[string]string{
-			"package": "catalog",
+			"package": "aibuilder",
 		},
-		RunE: root.ReportUnknownSubcommand,
+
+		// This service is being previewed; hide from help output.
+		Hidden: true,
+		RunE:   root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
+	cmd.AddCommand(newCancel())
+	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newGet())
-	cmd.AddCommand(newGetEffective())
 	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start cancel command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cancelOverrides []func(
+	*cobra.Command,
+	*aibuilder.CancelCustomLlmOptimizationRunRequest,
+)
+
+func newCancel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var cancelReq aibuilder.CancelCustomLlmOptimizationRunRequest
+
+	// TODO: short flags
+
+	cmd.Use = "cancel ID"
+	cmd.Short = `Cancel a Custom LLM Optimization Run.`
+	cmd.Long = `Cancel a Custom LLM Optimization Run.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		cancelReq.Id = args[0]
+
+		err = w.CustomLlms.Cancel(ctx, cancelReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range cancelOverrides {
+		fn(cmd, &cancelReq)
+	}
+
+	return cmd
+}
+
+// start create command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*aibuilder.StartCustomLlmOptimizationRunRequest,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq aibuilder.StartCustomLlmOptimizationRunRequest
+
+	// TODO: short flags
+
+	cmd.Use = "create ID"
+	cmd.Short = `Start a Custom LLM Optimization Run.`
+	cmd.Long = `Start a Custom LLM Optimization Run.
+
+  Arguments:
+    ID: The Id of the tile.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		createReq.Id = args[0]
+
+		response, err := w.CustomLlms.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
 	}
 
 	return cmd
@@ -56,34 +162,27 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetGrantRequest,
+	*aibuilder.GetCustomLlmRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq catalog.GetGrantRequest
+	var getReq aibuilder.GetCustomLlmRequest
 
 	// TODO: short flags
 
-	cmd.Flags().IntVar(&getReq.MaxResults, "max-results", getReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
-	cmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
-
-	cmd.Use = "get SECURABLE_TYPE FULL_NAME"
-	cmd.Short = `Get permissions.`
-	cmd.Long = `Get permissions.
-  
-  Gets the permissions for a securable. Does not include inherited permissions.
+	cmd.Use = "get ID"
+	cmd.Short = `Get a Custom LLM.`
+	cmd.Long = `Get a Custom LLM.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
-    FULL_NAME: Full name of securable.`
+    ID: The id of the custom llm`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -92,10 +191,9 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		getReq.SecurableType = args[0]
-		getReq.FullName = args[1]
+		getReq.Id = args[0]
 
-		response, err := w.Grants.Get(ctx, getReq)
+		response, err := w.CustomLlms.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -114,105 +212,35 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-// start get-effective command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var getEffectiveOverrides []func(
-	*cobra.Command,
-	*catalog.GetEffectiveRequest,
-)
-
-func newGetEffective() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var getEffectiveReq catalog.GetEffectiveRequest
-
-	// TODO: short flags
-
-	cmd.Flags().IntVar(&getEffectiveReq.MaxResults, "max-results", getEffectiveReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
-	cmd.Flags().StringVar(&getEffectiveReq.PageToken, "page-token", getEffectiveReq.PageToken, `Opaque token for the next page of results (pagination).`)
-	cmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
-
-	cmd.Use = "get-effective SECURABLE_TYPE FULL_NAME"
-	cmd.Short = `Get effective permissions.`
-	cmd.Long = `Get effective permissions.
-  
-  Gets the effective permissions for a securable. Includes inherited permissions
-  from any parent securables.
-
-  Arguments:
-    SECURABLE_TYPE: Type of securable.
-    FULL_NAME: Full name of securable.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		getEffectiveReq.SecurableType = args[0]
-		getEffectiveReq.FullName = args[1]
-
-		response, err := w.Grants.GetEffective(ctx, getEffectiveReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range getEffectiveOverrides {
-		fn(cmd, &getEffectiveReq)
-	}
-
-	return cmd
-}
-
 // start update command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdatePermissions,
+	*aibuilder.UpdateCustomLlmRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq catalog.UpdatePermissions
+	var updateReq aibuilder.UpdateCustomLlmRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: changes
-
-	cmd.Use = "update SECURABLE_TYPE FULL_NAME"
-	cmd.Short = `Update permissions.`
-	cmd.Long = `Update permissions.
-  
-  Updates the permissions for a securable.
+	cmd.Use = "update ID"
+	cmd.Short = `Update a Custom LLM.`
+	cmd.Long = `Update a Custom LLM.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
-    FULL_NAME: Full name of securable.`
+    ID: The id of the custom llm`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -232,11 +260,12 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.SecurableType = args[0]
-		updateReq.FullName = args[1]
+		updateReq.Id = args[0]
 
-		response, err := w.Grants.Update(ctx, updateReq)
+		response, err := w.CustomLlms.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -255,4 +284,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service Grants
+// end service CustomLlms
