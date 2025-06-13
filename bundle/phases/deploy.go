@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -148,7 +149,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// following original logic, continuing with sequence below even if terraform had errors
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePush(),
+		statemgmt.StatePush(),
 		terraform.Load(),
 		apps.InterpolateVariables(),
 		apps.UploadConfig(),
@@ -185,7 +186,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}()
 
 	diags = bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
+		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),

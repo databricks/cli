@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
+	tf "github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/require"
 )
@@ -21,9 +22,9 @@ func identityFiler(f filer.Filer) deploy.FilerFactory {
 }
 
 func localStateFile(t *testing.T, ctx context.Context, b *bundle.Bundle) string {
-	dir, err := Dir(ctx, b)
+	dir, err := tf.Dir(ctx, b)
 	require.NoError(t, err)
-	return filepath.Join(dir, TerraformStateFileName)
+	return filepath.Join(dir, tf.TerraformStateFileName)
 }
 
 func readLocalState(t *testing.T, ctx context.Context, b *bundle.Bundle) map[string]any {

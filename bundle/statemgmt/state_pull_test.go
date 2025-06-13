@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	tf "github.com/databricks/cli/bundle/deploy/terraform"
 	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func mockStateFilerForPull(t *testing.T, contents map[string]any, merr error) fi
 	f := mockfiler.NewMockFiler(t)
 	f.
 		EXPECT().
-		Read(mock.Anything, TerraformStateFileName).
+		Read(mock.Anything, tf.TerraformStateFileName).
 		Return(io.NopCloser(bytes.NewReader(buf)), merr).
 		Times(1)
 	return f
