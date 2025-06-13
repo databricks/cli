@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/configure"
+	"github.com/databricks/cli/cmd/dlt"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/root"
@@ -106,6 +107,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
+	cli.AddCommand(dlt.InstallDLT())
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
 	allGroups := workspace.Groups()

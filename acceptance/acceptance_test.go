@@ -144,13 +144,28 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 
 	execPath := ""
+	dltPath := ""
 
 	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
+		dltPath = filepath.Join(buildDir, "dlt")
 	} else {
-		execPath = BuildCLI(t, buildDir, coverDir)
+		execPath, dltPath = BuildCLI(t, buildDir, coverDir)
+	}
+
+	fi, err := os.Lstat(dltPath)
+	if err == nil {
+		if fi.Mode()&os.ModeSymlink == 0 {
+			_ = os.Remove(dltPath)
+		}
+	} else if !os.IsNotExist(err) {
+		require.NoError(t, err)
+	}
+	err = os.Symlink(execPath, dltPath)
+	if err != nil && !os.IsExist(err) {
+		require.NoError(t, err)
 	}
 
 	BuildYamlfmt(t)
@@ -158,6 +173,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	t.Setenv("DLT", dltPath)
+	repls.SetPath(dltPath, "[DLT]")
+
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -737,10 +756,13 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-func BuildCLI(t *testing.T, buildDir, coverDir string) string {
+func BuildCLI(t *testing.T, buildDir, coverDir string) (string, string) {
 	execPath := filepath.Join(buildDir, "databricks")
+	dltPath := filepath.Join(buildDir, "dlt")
+
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
+		dltPath += ".exe"
 	}
 
 	args := []string{
@@ -759,7 +781,7 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 	}
 
 	RunCommand(t, args, "..")
-	return execPath
+	return execPath, dltPath
 }
 
 func copyFile(src, dst string) error {

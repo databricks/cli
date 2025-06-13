@@ -1,0 +1,16 @@
+trace errcode $CLI install-dlt
+"$DLT" init
+
+title "dlt file exists, should not overwrite"
+mkdir -p tmpdir
+touch tmpdir/dlt
+trace errcode $CLI install-dlt -d tmpdir
+"$DLT" init
+echo "$DLT -> $(realpath "$DLT")"
+rm -rf tmpdir
+
+title "Executable not called as databricks"
+cp $(command -v $CLI) notdatabricks
+trace errcode ./notdatabricks install-dlt || true
+rm -f notdatabricks
+rm -f dlt

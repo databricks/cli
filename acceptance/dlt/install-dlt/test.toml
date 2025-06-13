@@ -1,0 +1,4 @@
+[[Repls]]
+# Fix path with reverse slashes in the output for Windows.
+Old = 'TEST_TMP_DIR]\\notdatabricks'
+New = 'TEST_TMP_DIR]/notdatabricks'
