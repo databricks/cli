@@ -1,21 +1,11 @@
 trace errcode $CLI install-dlt
 "$DLT" init
 
-# Add debug line to show CLI value
-for ((i=0; i<${#CLI}; i++)); do
-    echo -n "${CLI:$i:1} "
-done
-echo
-
 title "dlt file exists, should not overwrite"
 mkdir -p tmpdir
 touch tmpdir/dlt
 trace errcode $CLI install-dlt -d tmpdir
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
-    echo "$DLT -> ${$(realpath "$DLT")%.exe}"
-else
-    echo "$DLT -> $(realpath "$DLT")"
-fi
+"$DLT" init
 rm -rf tmpdir
 
 title "Executable not called as databricks"

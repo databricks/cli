@@ -2,12 +2,11 @@
 >>> errcode [CLI] install-dlt
 dlt successfully installed to the directory "[BUILD_DIR]"
 dlt init is not yet implemented. This will initialize a new DLT project in the future.
-/ U s e r s / a l y s s a . g o r b a n e v a / r e p o s / c l i / a c c e p t a n c e / b u i l d / d a r w i n _ a r m 6 4 / d a t a b r i c k s 
 
 === dlt file exists, should not overwrite
 >>> errcode [CLI] install-dlt -d tmpdir
 dlt successfully installed to the directory "tmpdir"
-[DLT] -> [CLI]
+dlt init is not yet implemented. This will initialize a new DLT project in the future.
 
 === Executable not called as databricks
 >>> errcode ./notdatabricks install-dlt
