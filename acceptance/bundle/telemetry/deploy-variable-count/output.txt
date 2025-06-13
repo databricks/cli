@@ -53,7 +53,7 @@ Deployment complete!
     "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
     "upload_file_count": 6,
     "upload_file_sizes": [
-      4207,
+      4203,
       4128,
       2247,
       409,

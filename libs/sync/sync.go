@@ -185,7 +185,7 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 
 func computeMetrics(ctx context.Context, files []fileset.File, change diff) Metrics {
 	uploadFileCount := int64(len(change.put))
-	uploadFileSizes := make([]int64, 0)
+	var uploadFileSizes []int64
 
 	nameToFile := make(map[string]fileset.File)
 	for _, f := range files {

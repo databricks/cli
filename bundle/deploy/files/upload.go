@@ -13,11 +13,10 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
-	libsync "github.com/databricks/cli/libs/sync"
 )
 
 type upload struct {
-	outputHandler libsync.OutputHandler
+	outputHandler sync.OutputHandler
 }
 
 func (m *upload) Name() string {
@@ -37,14 +36,15 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	opts.OutputHandler = m.outputHandler
-	sync, err := sync.New(ctx, *opts)
+	syncer, err := sync.New(ctx, *opts)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	defer sync.Close()
+	defer syncer.Close()
 
-	var metrics libsync.Metrics
-	b.Files, metrics, err = sync.RunOnce(ctx)
+	// TODO: Check this works for incremental updates deletes mkdirs etc.
+	var metrics sync.Metrics
+	b.Files, metrics, err = syncer.RunOnce(ctx)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
 			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.FilePath)

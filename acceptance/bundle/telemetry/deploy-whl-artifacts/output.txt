@@ -70,7 +70,7 @@ Deployment complete!
     "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
     "upload_file_count": 11,
     "upload_file_sizes": [
-      10294,
+      10364,
       4203,
       2347,
       1864,
@@ -144,7 +144,7 @@ Deployment complete!
     "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
     "upload_file_count": 11,
     "upload_file_sizes": [
-      60074,
+      59934,
       4203,
       2347,
       1864,

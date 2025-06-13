@@ -1,0 +1,3 @@
+# Make sure all new lines are line feeds (\n) in this project.
+# This ensures that the file sizes are the same in windows and linux.
+project/* text eol=lf
