@@ -534,6 +534,11 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "storage":
     "description": |-
       DBFS root directory for storing checkpoints and tables.
+  "tags":
+    "description": |-
+      A map of tags associated with the pipeline.
+      These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+      A maximum of 25 tags can be added to the pipeline.
   "target":
     "description": |-
       Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
@@ -1425,24 +1430,19 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       In this minimal environment spec, only pip dependencies are supported.
   "client":
     "description": |-
-      Client version used by the environment
-      The client is the user-facing environment of the runtime.
-      Each client comes with a specific set of pre-installed libraries.
-      The version is a string, consisting of the major client version.
+      Use `environment_version` instead.
+    "deprecation_message": |-
+      This field is deprecated
   "dependencies":
     "description": |-
       List of pip dependencies, as supported by the version of pip in this environment.
-      Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
-      Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
-      E.g. dependencies: ["foo==0.0.1", "-r /Workspace/test/requirements.txt"]
+      Each dependency is a valid pip requirements file line per https://pip.pypa.io/en/stable/reference/requirements-file-format/.
+      Allowed dependencies include a requirement specifier, an archive URL, a local project path (such as WSFS or UC Volumes in Databricks), or a VCS project URL.
   "environment_version":
     "description": |-
-      We renamed `client` to `environment_version` in notebook exports. This field is meant solely so that imported notebooks with `environment_version` can be deserialized
-      correctly, in a backwards-compatible way (i.e. if `client` is specified instead of `environment_version`, it will be deserialized correctly). Do NOT use this field
-      for any other purpose, e.g. notebook storage.
-      This field is not yet exposed to customers (e.g. in the jobs API).
-    "x-databricks-preview": |-
-      PRIVATE
+      Required. Environment version used by the environment.
+      Each version comes with a specific Python version and a set of Python packages.
+      The version is a string, consisting of an integer.
   "jar_dependencies":
     "description": |-
       List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
@@ -1787,6 +1787,13 @@ github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
     "description": |-
       Optional: The warehouse id to execute the dashboard with for the schedule.
       If not specified, the default warehouse of the dashboard will be used.
+github.com/databricks/databricks-sdk-go/service/jobs.DbtCloudTask:
+  "connection_resource_name":
+    "description": |-
+      The resource name of the UC connection that authenticates the dbt Cloud for this task
+  "dbt_cloud_job_id":
+    "description": |-
+      Id of the dbt Cloud job to be triggered
 github.com/databricks/databricks-sdk-go/service/jobs.DbtTask:
   "catalog":
     "description": |-
@@ -2540,6 +2547,11 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "dashboard_task":
     "description": |-
       The task refreshes a dashboard and sends a snapshot to subscribers.
+  "dbt_cloud_task":
+    "description": |-
+      Task type for dbt cloud
+    "x-databricks-preview": |-
+      PRIVATE
   "dbt_task":
     "description": |-
       The task runs one or more dbt commands when the `dbt_task` field is present. The dbt task requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.
@@ -2878,6 +2890,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         MANAGED_POSTGRESQL
       - |-
         ORACLE
+      - |-
+        TERADATA
       - |-
         SHAREPOINT
       - |-
@@ -3692,9 +3706,15 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
   "instance_profile_arn":
     "description": |-
       ARN of the instance profile that the served entity uses to access AWS resources.
+  "max_provisioned_concurrency":
+    "description": |-
+      The maximum provisioned concurrency that the endpoint can scale up to. Do not use if workload_size is specified.
   "max_provisioned_throughput":
     "description": |-
       The maximum tokens per second that the endpoint can scale up to.
+  "min_provisioned_concurrency":
+    "description": |-
+      The minimum provisioned concurrency that the endpoint can scale down to. Do not use if workload_size is specified.
   "min_provisioned_throughput":
     "description": |-
       The minimum tokens per second that the endpoint can scale down to.
@@ -3709,7 +3729,7 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
       Whether the compute resources for the served entity should scale down to zero.
   "workload_size":
     "description": |-
-      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
+      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.
   "workload_type":
     "description": |-
       The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
@@ -3720,9 +3740,15 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
   "instance_profile_arn":
     "description": |-
       ARN of the instance profile that the served entity uses to access AWS resources.
+  "max_provisioned_concurrency":
+    "description": |-
+      The maximum provisioned concurrency that the endpoint can scale up to. Do not use if workload_size is specified.
   "max_provisioned_throughput":
     "description": |-
       The maximum tokens per second that the endpoint can scale up to.
+  "min_provisioned_concurrency":
+    "description": |-
+      The minimum provisioned concurrency that the endpoint can scale down to. Do not use if workload_size is specified.
   "min_provisioned_throughput":
     "description": |-
       The minimum tokens per second that the endpoint can scale down to.
@@ -3739,7 +3765,7 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
       Whether the compute resources for the served entity should scale down to zero.
   "workload_size":
     "description": |-
-      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.
+      The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.
   "workload_type":
     "description": |-
       The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
