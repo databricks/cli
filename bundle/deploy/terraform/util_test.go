@@ -3,12 +3,12 @@ package terraform
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseResourcesStateWithNoFile(t *testing.T) {
@@ -41,8 +41,6 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 			},
 		},
 	}
-	cacheDir, err := Dir(ctx, b)
-	assert.NoError(t, err)
 	data := []byte(`{
 		"version": 4,
 		"unknown_field": "hello",
@@ -85,7 +83,9 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 		  }
 		]
 	}`)
-	err = os.WriteFile(filepath.Join(cacheDir, TerraformStateFileName), data, os.ModePerm)
+	path, err := b.StateLocalPath(ctx)
+	require.NoError(t, err)
+	err = os.WriteFile(path, data, os.ModePerm)
 	assert.NoError(t, err)
 	state, err := ParseResourcesState(ctx, b)
 	assert.NoError(t, err)

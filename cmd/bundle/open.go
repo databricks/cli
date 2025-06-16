@@ -82,7 +82,7 @@ func newOpenCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
+		_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
 		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 

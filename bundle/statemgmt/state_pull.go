@@ -7,11 +7,9 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
-	tf "github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
@@ -26,7 +24,7 @@ type statePull struct {
 }
 
 func (l *statePull) Name() string {
-	return "terraform:state-pull"
+	return "statemgmt:state-pull"
 }
 
 func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState, []byte, error) {
@@ -35,7 +33,7 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 		return nil, nil, err
 	}
 
-	r, err := f.Read(ctx, tf.TerraformStateFileName)
+	r, err := f.Read(ctx, b.StateFilename())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,12 +54,12 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 }
 
 func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState, error) {
-	dir, err := tf.Dir(ctx, b)
+	path, err := b.StateLocalPath(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	content, err := os.ReadFile(filepath.Join(dir, tf.TerraformStateFileName))
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -76,12 +74,10 @@ func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState,
 }
 
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	dir, err := tf.Dir(ctx, b)
+	localStatePath, err := b.StateLocalPath(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	localStatePath := filepath.Join(dir, tf.TerraformStateFileName)
 
 	// Case: Remote state file does not exist. In this case we fallback to using the
 	// local Terraform state. This allows users to change the "root_path" their bundle is
