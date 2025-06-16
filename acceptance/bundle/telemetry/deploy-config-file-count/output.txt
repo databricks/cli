@@ -5,3 +5,6 @@ Deploying resources...
 Deployment complete!
 
 >>> cat out.requests.txt
+{
+  "configuration_file_count": 4
+}

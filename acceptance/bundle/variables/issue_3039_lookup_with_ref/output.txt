@@ -1,0 +1,11 @@
+Error: failed to resolve service-principal: TIDALDBServAccount - usdev, err: ServicePrincipal named 'TIDALDBServAccount - usdev' does not exist
+
+Name: issue-3039
+Target: personal
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/issue-3039/personal
+
+Found 1 error
+
+Exit code: 1

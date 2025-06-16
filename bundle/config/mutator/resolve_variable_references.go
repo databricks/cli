@@ -66,11 +66,16 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 }
 
 func ResolveVariableReferencesInLookup() bundle.Mutator {
-	return &resolveVariableReferences{prefixes: []string{
-		"bundle",
-		"workspace",
-		"variables",
-	}, pattern: dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")), lookupFn: lookupForVariables}
+	return &resolveVariableReferences{
+		prefixes: []string{
+			"bundle",
+			"workspace",
+			"variables",
+		},
+		pattern:     dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
+		lookupFn:    lookupForVariables,
+		extraRounds: maxResolutionRounds - 1,
+	}
 }
 
 func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
@@ -149,7 +154,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		if round >= maxRounds-1 {
 			diags = diags.Append(diag.Diagnostic{
 				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("Detected unresolved variables after %d resolution rounds", round+1),
+				Summary:  fmt.Sprintf("Variables references are too deep, stopping resolution after %d rounds. Unresolved variables may remain.", round+1),
 				// Would be nice to include names of the variables there, but that would complicate things more
 			})
 			break
