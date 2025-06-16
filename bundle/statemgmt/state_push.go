@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
+	tf "github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -29,13 +30,13 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
-	dir, err := Dir(ctx, b)
+	dir, err := tf.Dir(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Expect the state file to live under dir.
-	local, err := os.Open(filepath.Join(dir, TerraformStateFileName))
+	local, err := os.Open(filepath.Join(dir, tf.TerraformStateFileName))
 	if errors.Is(err, fs.ErrNotExist) {
 		// The state file can be absent if terraform apply is skipped because
 		// there are no changes to apply in the plan.
@@ -50,7 +51,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	// Upload state file from local cache directory to filer.
 	cmdio.LogString(ctx, "Updating deployment state...")
 	log.Infof(ctx, "Writing local state file to remote state directory")
-	err = f.Write(ctx, TerraformStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
+	err = f.Write(ctx, tf.TerraformStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -1083,6 +1083,10 @@
                         "description": "DBFS root directory for storing checkpoints and tables.",
                         "$ref": "#/$defs/string"
                       },
+                      "tags": {
+                        "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
+                        "$ref": "#/$defs/map/string"
+                      },
                       "target": {
                         "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
                         "$ref": "#/$defs/string"
@@ -3325,18 +3329,18 @@
                   "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
                   "properties": {
                     "client": {
-                      "description": "Client version used by the environment\nThe client is the user-facing environment of the runtime.\nEach client comes with a specific set of pre-installed libraries.\nThe version is a string, consisting of the major client version.",
-                      "$ref": "#/$defs/string"
+                      "description": "Use `environment_version` instead.",
+                      "$ref": "#/$defs/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "dependencies": {
                       "description": "List of pip dependencies, as supported by the version of pip in this environment.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "environment_version": {
-                      "description": "We renamed `client` to `environment_version` in notebook exports. This field is meant solely so that imported notebooks with `environment_version` can be deserialized\ncorrectly, in a backwards-compatible way (i.e. if `client` is specified instead of `environment_version`, it will be deserialized correctly). Do NOT use this field\nfor any other purpose, e.g. notebook storage.\nThis field is not yet exposed to customers (e.g. in the jobs API).",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "description": "Required. Environment version used by the environment.\nEach version comes with a specific Python version and a set of Python packages.\nThe version is a string, consisting of an integer.",
+                      "$ref": "#/$defs/string"
                     },
                     "jar_dependencies": {
                       "description": "List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.",
@@ -3345,10 +3349,7 @@
                       "doNotSuggest": true
                     }
                   },
-                  "additionalProperties": false,
-                  "required": [
-                    "client"
-                  ]
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -3999,6 +4000,28 @@
                     "warehouse_id": {
                       "description": "Optional: The warehouse id to execute the dashboard with for the schedule.\nIf not specified, the default warehouse of the dashboard will be used.",
                       "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.DbtCloudTask": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "connection_resource_name": {
+                      "description": "The resource name of the UC connection that authenticates the dbt Cloud for this task",
+                      "$ref": "#/$defs/string"
+                    },
+                    "dbt_cloud_job_id": {
+                      "description": "Id of the dbt Cloud job to be triggered",
+                      "$ref": "#/$defs/int64"
                     }
                   },
                   "additionalProperties": false
@@ -5382,6 +5405,12 @@
                       "description": "The task refreshes a dashboard and sends a snapshot to subscribers.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask"
                     },
+                    "dbt_cloud_task": {
+                      "description": "Task type for dbt cloud",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DbtCloudTask",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "dbt_task": {
                       "description": "The task runs one or more dbt commands when the `dbt_task` field is present. The dbt task requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DbtTask"
@@ -5982,6 +6011,7 @@
                     "SERVICENOW",
                     "MANAGED_POSTGRESQL",
                     "ORACLE",
+                    "TERADATA",
                     "SHAREPOINT",
                     "DYNAMICS365"
                   ]
@@ -7412,8 +7442,16 @@
                       "description": "ARN of the instance profile that the served entity uses to access AWS resources.",
                       "$ref": "#/$defs/string"
                     },
+                    "max_provisioned_concurrency": {
+                      "description": "The maximum provisioned concurrency that the endpoint can scale up to. Do not use if workload_size is specified.",
+                      "$ref": "#/$defs/int"
+                    },
                     "max_provisioned_throughput": {
                       "description": "The maximum tokens per second that the endpoint can scale up to.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "min_provisioned_concurrency": {
+                      "description": "The minimum provisioned concurrency that the endpoint can scale down to. Do not use if workload_size is specified.",
                       "$ref": "#/$defs/int"
                     },
                     "min_provisioned_throughput": {
@@ -7433,7 +7471,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "workload_size": {
-                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.",
+                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.",
                       "$ref": "#/$defs/string"
                     },
                     "workload_type": {
@@ -7462,8 +7500,16 @@
                       "description": "ARN of the instance profile that the served entity uses to access AWS resources.",
                       "$ref": "#/$defs/string"
                     },
+                    "max_provisioned_concurrency": {
+                      "description": "The maximum provisioned concurrency that the endpoint can scale up to. Do not use if workload_size is specified.",
+                      "$ref": "#/$defs/int"
+                    },
                     "max_provisioned_throughput": {
                       "description": "The maximum tokens per second that the endpoint can scale up to.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "min_provisioned_concurrency": {
+                      "description": "The minimum provisioned concurrency that the endpoint can scale down to. Do not use if workload_size is specified.",
                       "$ref": "#/$defs/int"
                     },
                     "min_provisioned_throughput": {
@@ -7489,7 +7535,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "workload_size": {
-                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.",
+                      "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.",
                       "$ref": "#/$defs/string"
                     },
                     "workload_type": {

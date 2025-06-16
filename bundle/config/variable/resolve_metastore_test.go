@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
@@ -17,9 +16,9 @@ func TestResolveMetastore_ResolveSuccess(t *testing.T) {
 
 	api := m.GetMockMetastoresAPI()
 	api.EXPECT().
-		GetByName(mock.Anything, "metastore").
-		Return(&catalog.MetastoreInfo{
-			MetastoreId: "abcd",
+		ListAll(mock.Anything, mock.Anything).
+		Return([]catalog.MetastoreInfo{
+			{MetastoreId: "abcd", Name: "metastore"},
 		}, nil)
 
 	ctx := context.Background()
@@ -34,13 +33,15 @@ func TestResolveMetastore_ResolveNotFound(t *testing.T) {
 
 	api := m.GetMockMetastoresAPI()
 	api.EXPECT().
-		GetByName(mock.Anything, "metastore").
-		Return(nil, &apierr.APIError{StatusCode: 404})
+		ListAll(mock.Anything, mock.Anything).
+		Return([]catalog.MetastoreInfo{
+			{MetastoreId: "abcd", Name: "different"},
+		}, nil)
 
 	ctx := context.Background()
 	l := resolveMetastore{name: "metastore"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
-	require.ErrorIs(t, err, apierr.ErrNotFound)
+	require.ErrorContains(t, err, "metastoren named \"metastore\" does not exist")
 }
 
 func TestResolveMetastore_String(t *testing.T) {
