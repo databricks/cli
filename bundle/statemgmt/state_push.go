@@ -47,7 +47,6 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	// Upload state file from local cache directory to filer.
 	cmdio.LogString(ctx, "Updating deployment state...")
-	log.Infof(ctx, "Writing local state file to remote state directory")
 	err = f.Write(ctx, b.StateFilename(), local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
 		return diag.FromErr(err)
