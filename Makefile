@@ -107,6 +107,7 @@ generate:
 	pushd experimental/python && make codegen
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 .PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all
 =======
 gentemplates:
@@ -114,3 +115,9 @@ gentemplates:
 
 .PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks
 >>>>>>> 9a2a22a9a (Add pre-rendered uv.lock)
+=======
+genuvlock:
+	cd libs/template && ./regenerate.sh
+
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks genuvlock
+>>>>>>> 8e8f07eab (rename gentemplates to genuvlock)
