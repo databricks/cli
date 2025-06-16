@@ -17,8 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
-
 func initTestTemplate(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any) string {
 	bundleRoot := t.TempDir()
 	return initTestTemplateWithBundleRoot(t, ctx, templateName, config, bundleRoot)
@@ -76,17 +74,6 @@ func runResource(t testutil.TestingT, ctx context.Context, path, key string) (st
 	c := testcli.NewRunner(t, ctx, "bundle", "run", key)
 	stdout, _, err := c.Run()
 	return stdout.String(), err
-}
-
-func runResourceWithStderr(t testutil.TestingT, ctx context.Context, path, key string) (string, string) {
-	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	ctx = cmdio.NewContext(ctx, cmdio.Default())
-
-	c := testcli.NewRunner(t, ctx, "bundle", "run", key)
-	stdout, stderr, err := c.Run()
-	require.NoError(t, err)
-
-	return stdout.String(), stderr.String()
 }
 
 func destroyBundle(t testutil.TestingT, ctx context.Context, path string) {
