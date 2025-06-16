@@ -206,16 +206,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			b.Config.Bundle.Terraform = &config.Terraform{ExecPath: " "}
 			return nil
 		})
-
-		databasePath, err := b.StateLocalPath(ctx)
-		if err != nil {
-			return diags.Extend(diag.FromErr(err))
-		}
-
-		err = b.ResourceDatabase.Open(databasePath)
-		if err != nil {
-			return diags.Extend(diag.FromErr(err))
-		}
 	} else {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)

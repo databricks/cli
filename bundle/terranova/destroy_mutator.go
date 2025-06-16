@@ -31,6 +31,11 @@ func (m *terranovaDestroyMutator) Apply(ctx context.Context, b *bundle.Bundle) d
 		g.AddNode(node)
 	}
 
+	if g.Size() == 0 {
+		// Avoid creating state file if nothing to deploy
+		return nil
+	}
+
 	// TODO: do we need to respect dependencies here? Should we store them in state in that case?
 	// Alternatively, do a few rounds of delete to make we capture cases where A needs to be deleted before B.
 

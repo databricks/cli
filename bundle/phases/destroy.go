@@ -142,9 +142,15 @@ func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDestroy)))
 	}()
 
-	if !b.DirectDeployment {
+	diags = diags.Extend(bundle.Apply(ctx, b, statemgmt.StatePull()))
+	if diags.HasError() {
+		return diags
+	}
+
+	if b.DirectDeployment {
+		b.OpenResourceDatabase(ctx)
+	} else {
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
-			statemgmt.StatePull(),
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),

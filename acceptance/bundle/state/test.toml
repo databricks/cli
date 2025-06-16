@@ -1,3 +1,7 @@
 # Test needs splitting or updating to handle terranova state file
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+#EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
 RecordRequests = true
+
+[[Repls]]
+Old = '(resources.json|terraform.tfstate)'
+New = 'STATE_FILENAME'
