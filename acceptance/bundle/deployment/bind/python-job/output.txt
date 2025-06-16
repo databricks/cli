@@ -1,11 +1,11 @@
 
 >>> [CLI] jobs create --json {"name": "My Job"}
 
->>> uv run --with [DATABRICKS_BUNDLES_WHEEL] [CLI] bundle deployment bind job_1 [NUMID] --auto-approve
+>>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deployment bind job_1 [NUMID] --auto-approve
 Updating deployment state...
 Successfully bound job with an id '[NUMID]'. Run 'bundle deploy' to deploy changes to your workspace
 
->>> uv run --with [DATABRICKS_BUNDLES_WHEEL] [CLI] bundle deploy
+>>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
 Deploying resources...
 Updating deployment state...
