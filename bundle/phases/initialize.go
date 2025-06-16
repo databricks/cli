@@ -3,7 +3,6 @@ package phases
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -208,12 +207,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			return nil
 		})
 
-		cacheDir, err := b.CacheDir(ctx)
+		databasePath, err := b.StateLocalPath(ctx)
 		if err != nil {
 			return diags.Extend(diag.FromErr(err))
 		}
 
-		databasePath := filepath.Join(cacheDir, "resources.json")
 		err = b.ResourceDatabase.Open(databasePath)
 		if err != nil {
 			return diags.Extend(diag.FromErr(err))

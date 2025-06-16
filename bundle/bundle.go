@@ -37,6 +37,12 @@ import (
 
 const internalFolder = ".internal"
 
+// Filename where resources are stored for DATABRICKS_CLI_DEPLOYMENT=direct
+const resourcesFilename = "resources.json"
+
+// Filename where resources are stored for DATABRICKS_CLI_DEPLOYMENT=terraform
+const terraformStateFilename = "terraform.tfstate"
+
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
@@ -310,4 +316,28 @@ func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
 	}
 
 	return ptr.Interface(), true
+}
+
+func (b *Bundle) StateFilename() string {
+	if b.DirectDeployment {
+		return resourcesFilename
+	} else {
+		return terraformStateFilename
+	}
+}
+
+func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
+	if b.DirectDeployment {
+		cacheDir, err := b.CacheDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(cacheDir, resourcesFilename), nil
+	} else {
+		cacheDir, err := b.CacheDir(ctx, "terraform")
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(cacheDir, terraformStateFilename), nil
+	}
 }
