@@ -1,4 +1,4 @@
-UV_RUN="uv run --with $DATABRICKS_BUNDLES_WHEEL"
+UV_RUN="uv run --with $DATABRICKS_BUNDLES_WHEEL -q"
 
 trace $UV_RUN $CLI bundle deploy --var "job_name=My Job"
 
