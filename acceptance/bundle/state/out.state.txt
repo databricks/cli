@@ -1,4 +1,8 @@
 {
   "method": "GET",
-  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/state/default/state/terraform.tfstate"
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/state/default/state/STATE_FILENAME"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/state/default/state/deployment.json"
 }

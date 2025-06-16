@@ -20,6 +20,10 @@ func NewGraph[N comparable]() *Graph[N] {
 	return &Graph[N]{adj: make(map[N][]adjEdge[N])}
 }
 
+func (g *Graph[N]) Size() int {
+	return len(g.nodes)
+}
+
 func (g *Graph[N]) AddNode(n N) {
 	if _, ok := g.adj[n]; !ok {
 		g.adj[n] = nil

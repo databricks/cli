@@ -7,12 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sync/atomic"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -35,8 +33,6 @@ func (m *terranovaDeployMutator) Name() string {
 }
 
 func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.SafeDiagnostics
-
 	client := b.WorkspaceClient()
 
 	g := dagrun.NewGraph[tnstate.ResourceNode]()
@@ -57,7 +53,12 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 		},
 	)
 
-	var countDeployed atomic.Uint64
+	if g.Size() == 0 {
+		// Avoid creating state file if nothing to deploy
+		return nil
+	}
+
+	var diags diag.SafeDiagnostics
 
 	err = g.Run(defaultParallelism, func(node tnstate.ResourceNode) {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
@@ -81,16 +82,9 @@ func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) di
 			diags.AppendError(err)
 			return
 		}
-
-		countDeployed.Add(1)
 	})
 	if err != nil {
 		diags.AppendError(err)
-	}
-
-	// Not uploading at the moment, just logging to match the output.
-	if countDeployed.Load() > 0 {
-		cmdio.LogString(ctx, "Updating deployment state...")
 	}
 
 	err = b.ResourceDatabase.Finalize()

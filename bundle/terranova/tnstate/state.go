@@ -2,6 +2,7 @@ package tnstate
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 
@@ -33,6 +34,7 @@ type ResourceNode struct {
 }
 
 func (db *TerranovaState) SaveState(section, resourceName, newID string, state any) error {
+	db.assertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -51,6 +53,7 @@ func (db *TerranovaState) SaveState(section, resourceName, newID string, state a
 }
 
 func (db *TerranovaState) DeleteState(section, resourceName string) error {
+	db.assertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -65,6 +68,10 @@ func (db *TerranovaState) DeleteState(section, resourceName string) error {
 }
 
 func (db *TerranovaState) GetResourceEntry(section, resourceName string) (ResourceEntry, bool) {
+	db.assertOpened()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	sectionData, ok := db.data.Resources[section]
 	if !ok {
 		return ResourceEntry{}, false
@@ -75,6 +82,8 @@ func (db *TerranovaState) GetResourceEntry(section, resourceName string) (Resour
 }
 
 func (db *TerranovaState) GetAllResources() []ResourceNode {
+	db.assertOpened()
+
 	nodes := make([]ResourceNode, 0, len(db.data.Resources)*4)
 
 	for _, section := range utils.SortedKeys(db.data.Resources) {
@@ -120,13 +129,25 @@ func (db *TerranovaState) Finalize() error {
 	return db.unlockedSave()
 }
 
+func (db *TerranovaState) assertOpened() {
+	if db.Path == "" {
+		panic("internal error: TerranovaState must be opened first")
+	}
+}
+
 func (db *TerranovaState) unlockedSave() error {
+	db.assertOpened()
 	data, err := json.MarshalIndent(db.data, "", " ")
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(db.Path, data, 0o600)
+	err = os.WriteFile(db.Path, data, 0o600)
+	if err != nil {
+		return fmt.Errorf("failed to save resources state to %#v: %w", db.Path, err)
+	}
+
+	return nil
 }
 
 func (r ResourceNode) String() string {

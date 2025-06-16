@@ -129,9 +129,21 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		diags = bundle.Apply(ctx, b, terranova.TerranovaDeploy())
 	} else {
 		diags = bundle.Apply(ctx, b, terraform.Apply())
-		// following original logic, continuing with sequence below even if terraform had errors
-		newDiags := bundle.ApplySeq(ctx, b,
-			statemgmt.StatePush(),
+	}
+
+	// Even if deployment failed, there might be updates in states that we need to upload
+	newDiags := bundle.Apply(ctx, b,
+		statemgmt.StatePush(),
+	)
+	diags = diags.Extend(newDiags)
+	if newDiags.HasError() {
+		return diags
+	}
+
+	if b.DirectDeployment {
+		// TODO: terraform.Load alternative
+	} else {
+		newDiags := bundle.Apply(ctx, b,
 			terraform.Load(),
 		)
 		diags = diags.Extend(newDiags)
@@ -175,18 +187,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
 	}()
 
-	if !b.DirectDeployment {
-		diags = diags.Extend(bundle.ApplySeq(ctx, b,
-			statemgmt.StatePull(),
-			terraform.CheckDashboardsModifiedRemotely(),
-		))
-
-		if diags.HasError() {
-			return diags
-		}
-	}
-
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+		statemgmt.StatePull(),
+		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		terraform.CheckRunningResource(),
@@ -212,7 +215,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return diags
 	}
 
-	if !b.DirectDeployment {
+	if b.DirectDeployment {
+		b.OpenResourceDatabase(ctx)
+	} else {
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
