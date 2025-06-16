@@ -8,8 +8,8 @@ requires-python = ">= 3.11"
 dev = [
     "pytest",
 
-    # Code completion support for DLT
-    # "databricks-dlt",
+    # Code completion support for DLT, also install databricks-connect
+    "databricks-dlt",
 
     # databricks-connect can be used to run parts of this project locally.
     # See https://docs.databricks.com/dev-tools/databricks-connect.html.
