@@ -15,7 +15,9 @@ title "Check app config"
 trace $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/app-with-job-${UNIQUE_NAME}/files/app/app.yml"
 
 title "Try to run the app\n"
-$CLI bundle run test_app &> /dev/null # sending to dev/null due to variable number of "App is starting" messages in the output
+$CLI bundle run test_app &> out.app-run # sending to dev/null due to variable number of "App is starting" messages in the output
+trace cat out.app-run
+trace cat out.app-run | uniq
 
 title "App should be in the running state"
 trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status}'
