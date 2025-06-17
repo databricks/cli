@@ -136,6 +136,14 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
+		// Bug fix: Preserve cluster_id from existing profile during login
+		// Prior to v0.233.0, the login command would overwrite the entire profile configuration,
+		// causing loss of cluster_id and other settings. Now we first retrieve the existing
+		// cluster_id before saving the new configuration to ensure it's preserved.
+		cfg.ClusterID, err = getClusterID(ctx, profileName, defaultConfigPath)
+		if err != nil {
+			return err
+		}
 		if configureCluster {
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
 			if err != nil {
@@ -148,12 +156,6 @@ depends on the existing profiles you have set in your configuration file
 				return err
 			}
 			cfg.ClusterID = clusterID
-		} else {
-			cfg.ClusterID, err = getClusterID(ctx, profileName, defaultConfigPath)
-			if err != nil {
-				return err
-			}
-
 		}
 
 		if profileName != "" {

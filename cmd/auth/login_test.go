@@ -85,23 +85,36 @@ func TestSetAccountId(t *testing.T) {
 	assert.EqualError(t, err, "the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 }
 
-func TestLoginPreservesClusterID(t *testing.T) {
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	clusterID, err := getClusterID(context.Background(), "cluster-profile", "./testdata/.databrickscfg")
-	require.NoError(t, err)
-	assert.Equal(t, "cluster-from-config", clusterID)
-}
+func TestLoginGetClusterID(t *testing.T) {
+	testCases := []struct {
+		name     string
+		profile  string
+		expected string
+	}{
+		{
+			name:     "existing cluster profile",
+			profile:  "cluster-profile",
+			expected: "cluster-from-config",
+		},
+		{
+			name:     "empty profile",
+			profile:  "no-profile",
+			expected: "",
+		},
+		{
+			name:     "account profile",
+			profile:  "account-profile",
+			expected: "",
+		},
+	}
 
-func TestLoginPreservesClusterIDWithEmptyHostAndAccountID(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	clusterID, err := getClusterID(context.Background(), "no-profile", "./testdata/.databrickscfg")
-	require.NoError(t, err)
-	assert.Equal(t, "", clusterID)
-}
 
-func TestLoginNoClusterIDWithAccountProfile(t *testing.T) {
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	clusterID, err := getClusterID(context.Background(), "account-profile", "./testdata/.databrickscfg")
-	require.NoError(t, err)
-	assert.Equal(t, "", clusterID)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			clusterID, err := getClusterID(context.Background(), tc.profile, "./testdata/.databrickscfg")
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, clusterID)
+		})
+	}
 }
