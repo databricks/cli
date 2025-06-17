@@ -44,8 +44,6 @@ const (
 	ActionTypeCreate   ActionType = "create"
 	ActionTypeDelete   ActionType = "delete"
 	ActionTypeUpdate   ActionType = "update"
-	ActionTypeNoOp     ActionType = "no-op"
-	ActionTypeRead     ActionType = "read"
 	ActionTypeRecreate ActionType = "recreate"
 )
 
