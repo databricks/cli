@@ -7,15 +7,12 @@ dlt successfully installed in directory "[BUILD_DIR]"
 DLT command verified
 
 === dlt already installed
->>> errcode [CLI] install-dlt -d tmpdir -o json
-dlt already installed in directory "tmpdir"
-
->>> tmpdir/dlt
-DLT command verified
+>>> errcode [CLI] install-dlt
+dlt already installed in directory "[BUILD_DIR]"
 
 === dlt file exists, should not overwrite
 >>> errcode [CLI] install-dlt -d tmpdir -o json
-Error: failed to install dlt CLI: symlink [CLI] tmpdir/dlt: file exists
+Error: cannot install dlt CLI: "tmpdir/dlt" already exists
 
 Exit code: 1
 

@@ -1,14 +1,10 @@
 title "install dlt"
 dlt=$(trace errcode $CLI install-dlt -o json | jq -r .symlink_path)
 trace $dlt | head -n1 | grep -q "DLT CLI" && echo "DLT command verified" || echo "DLT command failed"
-rm -f "$(dirname $CLI)/dlt"
 
 title "dlt already installed"
-mkdir -p tmpdir
-ln -s $CLI tmpdir/dlt
-dlt=$(trace errcode $CLI install-dlt -d tmpdir -o json | jq -r .symlink_path)
-trace $dlt | head -n1 | grep -q "DLT CLI" && echo "DLT command verified" || echo "DLT command failed"
-rm -rf tmpdir
+trace errcode $CLI install-dlt
+rm -f "$(dirname $CLI)/dlt"
 
 title "dlt file exists, should not overwrite"
 mkdir -p tmpdir

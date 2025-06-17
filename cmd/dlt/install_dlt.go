@@ -33,27 +33,30 @@ func installDLTSymlink(directory string) (string, error) {
 	}
 	dltPath := filepath.Join(dir, "dlt")
 
-	fi, err := os.Lstat(dltPath)
-	if err == nil && fi.Mode()&os.ModeSymlink != 0 {
-		target, err := os.Readlink(dltPath)
-		if err == nil && target == realPath {
-			cmdio.LogString(context.Background(), fmt.Sprintf("dlt already installed in directory %q", dir))
-			return dltPath, nil
-		}
-		if err == nil && target != realPath {
-			return "", fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
-		}
-	}
-	if err != nil && !os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to check if %q exists: %w", dltPath, err)
-	}
-	// Install the symlink.
-	err = os.Symlink(realPath, dltPath)
+	_, err = os.Lstat(dltPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to install dlt CLI: %w", err)
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("failed to check if %q exists: %w", dltPath, err)
+		}
+		err = os.Symlink(realPath, dltPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to install dlt CLI: %w", err)
+		}
+		cmdio.LogString(context.Background(), fmt.Sprintf("dlt successfully installed in directory %q", dir))
+		return dltPath, nil
 	}
-	cmdio.LogString(context.Background(), fmt.Sprintf("dlt successfully installed in directory %q", dir))
-	return dltPath, nil
+
+	target, readErr := filepath.EvalSymlinks(dltPath)
+	if readErr != nil {
+		return "", fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
+	}
+	normalizedTarget := filepath.ToSlash(filepath.Clean(target))
+	normalizedRealPath := filepath.ToSlash(filepath.Clean(realPath))
+	if normalizedTarget == normalizedRealPath {
+		cmdio.LogString(context.Background(), fmt.Sprintf("dlt already installed in directory %q", dir))
+		return dltPath, nil
+	}
+	return "", fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
 }
 
 func InstallDLT() *cobra.Command {
