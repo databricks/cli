@@ -187,6 +187,11 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.JobsReset(request)
 	})
 
+	server.Handle("GET", "/api/2.0/jobs/get", func(req testserver.Request) any {
+		jobId := req.URL.Query().Get("job_id")
+		return req.Workspace.JobsGet(jobId)
+	})
+
 	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
 		jobId := req.URL.Query().Get("job_id")
 		return req.Workspace.JobsGet(jobId)
