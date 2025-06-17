@@ -50,9 +50,9 @@ test:
 
 # Updates acceptance test output (local tests)
 test-update:
-	go test ./acceptance -run '^TestAccept$$' -update
+	-go test ./acceptance -run '^TestAccept$$' -update
 	@# at the moment second pass is required because some tests show diff against output of another test for easier review
-	go test ./acceptance -run '^TestAccept$$' -update
+	-go test ./acceptance -run '^TestAccept$$' -update
 
 # Updates acceptance test output (integration tests, requires access)
 test-update-aws:
