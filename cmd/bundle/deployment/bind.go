@@ -33,6 +33,11 @@ func newBindCommand() *cobra.Command {
 			return diags.Error()
 		}
 
+		diags = phases.Initialize(ctx, b)
+		if err := diags.Error(); err != nil {
+			return fmt.Errorf("failed to initialize bundle, err: %w", err)
+		}
+
 		resource, err := b.Config.Resources.FindResourceByConfigKey(args[0])
 		if err != nil {
 			return err
@@ -53,15 +58,12 @@ func newBindCommand() *cobra.Command {
 			return nil
 		})
 
-		diags = phases.Initialize(ctx, b)
-		if !diags.HasError() {
-			diags = diags.Extend(phases.Bind(ctx, b, &terraform.BindOptions{
-				AutoApprove:  autoApprove,
-				ResourceType: resource.ResourceDescription().TerraformResourceName,
-				ResourceKey:  args[0],
-				ResourceId:   args[1],
-			}))
-		}
+		diags = diags.Extend(phases.Bind(ctx, b, &terraform.BindOptions{
+			AutoApprove:  autoApprove,
+			ResourceType: resource.ResourceDescription().TerraformResourceName,
+			ResourceKey:  args[0],
+			ResourceId:   args[1],
+		}))
 		if err := diags.Error(); err != nil {
 			return fmt.Errorf("failed to bind the resource, err: %w", err)
 		}

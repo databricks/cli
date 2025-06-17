@@ -13,6 +13,7 @@ class IngestionSourceType(Enum):
     SERVICENOW = "SERVICENOW"
     MANAGED_POSTGRESQL = "MANAGED_POSTGRESQL"
     ORACLE = "ORACLE"
+    TERADATA = "TERADATA"
     SHAREPOINT = "SHAREPOINT"
     DYNAMICS365 = "DYNAMICS365"
 
@@ -29,6 +30,7 @@ IngestionSourceTypeParam = (
         "SERVICENOW",
         "MANAGED_POSTGRESQL",
         "ORACLE",
+        "TERADATA",
         "SHAREPOINT",
         "DYNAMICS365",
     ]

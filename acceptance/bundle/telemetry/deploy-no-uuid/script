@@ -1,10 +1,7 @@
 trace $CLI bundle deploy
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > out.telemetry.txt
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | {bundle_uuid}' > out.telemetry.txt
 
-cmd_exec_id=$(extract_command_exec_id.py)
-
-update_file.py out.telemetry.txt $cmd_exec_id  '[CMD-EXEC-ID]'
 update_file.py out.telemetry.txt "00000000-0000-0000-0000-000000000000"  '[ZERO_UUID]'
 
 rm out.requests.txt

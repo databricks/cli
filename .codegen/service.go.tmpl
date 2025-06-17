@@ -203,9 +203,9 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- end -}}
 
 	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .RequiredPositionalArguments}} {{.ConstantName}}{{end}}{{end}}"
-	{{- if .Description }}
+	{{- if .CliComment  "  " 80 }}
 	cmd.Short = `{{.Summary | without "`"}}`
-	cmd.Long = `{{.Comment  "  " 80 | without "`"}}
+	cmd.Long = `{{.CliComment  "  " 80 | without "`"}}
 	{{- if $atleastOneArgumentWithDescription }}
 
   Arguments:
@@ -412,7 +412,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- if $optionalIfJsonIsUsed  }}
 	if !cmd.Flags().Changed("json") {
 	{{- end }}
-	{{if and (not $field.Entity.IsString) (not $field.Entity.IsFieldMask) (not $field.Entity.IsTimestamp) (not $field.Entity.IsDuration) -}} {{/* TODO: add support for well known types */}}
+	{{if and (not $field.Entity.IsString) (not $field.Entity.IsFieldMask) (not $field.Entity.IsTimestamp) (not $field.Entity.IsDuration) -}} {{/* TODO: add support for well known types */ -}}
 	_, err = fmt.Sscan(args[{{$arg}}], &{{- template "request-body-obj" (dict "Method" $method "Field" $field)}})
 	if err != nil {
 		return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])

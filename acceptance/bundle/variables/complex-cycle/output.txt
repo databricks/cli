@@ -1,4 +1,4 @@
-Warning: Detected unresolved variables after 11 resolution rounds
+Warning: Variables references are too deep, stopping resolution after 11 rounds. Unresolved variables may remain.
 
 Name: cycle
 Target: default

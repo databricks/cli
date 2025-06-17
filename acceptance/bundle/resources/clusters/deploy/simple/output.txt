@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Cluster should exist after bundle deployment:
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 2
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete cluster test_cluster
+  delete job foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

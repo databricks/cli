@@ -20,16 +20,13 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "alerts-v2",
-		Short:   `TODO: Add description.`,
-		Long:    `TODO: Add description`,
+		Short:   `New version of SQL Alerts.`,
+		Long:    `New version of SQL Alerts`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
