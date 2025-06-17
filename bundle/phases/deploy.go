@@ -21,32 +21,32 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/deployplan"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
-	terraformlib "github.com/databricks/cli/libs/terraform"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []terraformlib.Action {
-	var res []terraformlib.Action
+func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []deployplan.Action {
+	var res []deployplan.Action
 	for _, rc := range changes {
 		if rc.Type != resourceType {
 			continue
 		}
 
-		var actionType terraformlib.ActionType
+		var actionType deployplan.ActionType
 		switch {
 		case rc.Change.Actions.Delete():
-			actionType = terraformlib.ActionTypeDelete
+			actionType = deployplan.ActionTypeDelete
 		case rc.Change.Actions.Replace():
-			actionType = terraformlib.ActionTypeRecreate
+			actionType = deployplan.ActionTypeRecreate
 		default:
 			// Filter other action types..
 			continue
 		}
 
-		res = append(res, terraformlib.Action{
+		res = append(res, deployplan.Action{
 			Action:       actionType,
 			ResourceType: rc.Type,
 			ResourceName: rc.Name,

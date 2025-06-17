@@ -14,8 +14,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 
+	"github.com/databricks/cli/libs/deployplan"
 	"github.com/databricks/cli/libs/log"
-	terraformlib "github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -44,11 +44,11 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	var deleteActions []terraformlib.Action
+	var deleteActions []deployplan.Action
 	for _, rc := range plan.ResourceChanges {
 		if rc.Change.Actions.Delete() {
-			deleteActions = append(deleteActions, terraformlib.Action{
-				Action:       terraformlib.ActionTypeDelete,
+			deleteActions = append(deleteActions, deployplan.Action{
+				Action:       deployplan.ActionTypeDelete,
 				ResourceType: rc.Type,
 				ResourceName: rc.Name,
 			})

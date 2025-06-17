@@ -18,13 +18,13 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/deployplan"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
@@ -101,7 +101,7 @@ type Bundle struct {
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
-	Plan *terraform.Plan
+	Plan *deployplan.Plan
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
