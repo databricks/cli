@@ -70,7 +70,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		}
 
 		tf.ExecPath = execPathValue
-		log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
+		log.Debugf(ctx, "Using Terraform from %s at %s", TerraformExecPathEnv, tf.ExecPath)
 		return tf.ExecPath, nil
 	}
 
