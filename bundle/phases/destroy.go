@@ -148,7 +148,11 @@ func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
 	}
 
 	if b.DirectDeployment {
-		b.OpenResourceDatabase(ctx)
+		err := b.OpenResourceDatabase(ctx)
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+			return diags
+		}
 	} else {
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),

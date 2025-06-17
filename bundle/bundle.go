@@ -22,7 +22,6 @@ import (
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
@@ -343,19 +342,19 @@ func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
 	}
 }
 
-func (b *Bundle) OpenResourceDatabase(ctx context.Context) diag.Diagnostics {
+func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
 	if !b.DirectDeployment {
 		panic("internal error: OpenResourceDatabase must be called with DirectDeployment")
 	}
 
 	statePath, err := b.StateLocalPath(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	err = b.ResourceDatabase.Open(statePath)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("Failed to open/create resoruce database in %s: %s", statePath, err))
+		return fmt.Errorf("Failed to open/create resoruce database in %s: %s", statePath, err)
 	}
 
 	return nil

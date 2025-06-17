@@ -187,6 +187,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
 	}()
 
+	// TODO: StatePull and OpenResourceDatabase both parse resources.json; we should do it only once
+
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
@@ -216,7 +218,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if b.DirectDeployment {
-		b.OpenResourceDatabase(ctx)
+		err := b.OpenResourceDatabase(ctx)
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+			return diags
+		}
 	} else {
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
