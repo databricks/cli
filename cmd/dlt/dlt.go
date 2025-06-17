@@ -1,9 +1,6 @@
 package dlt
 
 import (
-	"context"
-
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -16,17 +13,6 @@ func New() *cobra.Command {
 			_ = cmd.Help()
 		},
 	}
-
-	// Add 'init' stub command (same description as bundle init)
-	initCmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize a new DLT project in the current directory",
-		Long:  "Initialize a new DLT project in the current directory. This is a stub for future implementation.",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmdio.LogString(context.Background(), "dlt init is not yet implemented. This will initialize a new DLT project in the future.")
-		},
-	}
-	cmd.AddCommand(initCmd)
 
 	return cmd
 }

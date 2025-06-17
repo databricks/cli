@@ -1,14 +1,27 @@
 
->>> errcode [CLI] install-dlt
-dlt successfully installed to the directory "[BUILD_DIR]"
-dlt init is not yet implemented. This will initialize a new DLT project in the future.
+=== install dlt
+>>> errcode [CLI] install-dlt -o json
+dlt successfully installed in directory "[BUILD_DIR]"
+
+>>> [BUILD_DIR]/dlt
+DLT command verified
+
+=== dlt already installed
+>>> errcode [CLI] install-dlt -d tmpdir -o json
+dlt already installed in directory "tmpdir"
+
+>>> tmpdir/dlt
+DLT command verified
 
 === dlt file exists, should not overwrite
->>> errcode [CLI] install-dlt -d tmpdir
-dlt successfully installed to the directory "tmpdir"
-dlt init is not yet implemented. This will initialize a new DLT project in the future.
-[DLT] -> [CLI]
+>>> errcode [CLI] install-dlt -d tmpdir -o json
+Error: failed to install dlt CLI: symlink [CLI] tmpdir/dlt: file exists
+
+Exit code: 1
 
 === Executable not called as databricks
->>> errcode ./notdatabricks install-dlt
-dlt successfully installed to the directory "[TEST_TMP_DIR]"
+>>> errcode ./notdatabricks install-dlt -o json
+dlt successfully installed in directory "[TEST_TMP_DIR]"
+
+>>> [TEST_TMP_DIR]/dlt
+DLT command verified

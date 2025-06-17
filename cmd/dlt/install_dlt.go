@@ -7,18 +7,24 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
-func InstallDLTSymlink(directory string) error {
+type installDLTResponse struct {
+	SymlinkPath string `json:"symlink_path"`
+}
+
+func installDLTSymlink(directory string) (string, error) {
 	path, err := os.Executable()
 	if err != nil {
-		return errors.New("databricks CLI executable not found")
+		return "", errors.New("databricks CLI executable not found")
 	}
 	realPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return fmt.Errorf("failed to resolve symlink: %w", err)
+		return "", fmt.Errorf("failed to resolve symlink: %w", err)
 	}
 
 	dir := directory
@@ -27,25 +33,27 @@ func InstallDLTSymlink(directory string) error {
 	}
 	dltPath := filepath.Join(dir, "dlt")
 
-	if fi, err := os.Lstat(dltPath); err == nil {
-		if fi.Mode()&os.ModeSymlink != 0 {
-			target, err := os.Readlink(dltPath)
-			if err == nil && target != realPath {
-				return fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
-			}
-			if err != nil {
-				return err
-			}
+	fi, err := os.Lstat(dltPath)
+	if err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(dltPath)
+		if err == nil && target == realPath {
+			cmdio.LogString(context.Background(), fmt.Sprintf("dlt already installed in directory %q", dir))
+			return dltPath, nil
 		}
-	} else if os.IsNotExist(err) {
-		if err := os.Symlink(realPath, dltPath); err != nil {
-			return fmt.Errorf("failed to install dlt CLI: %w", err)
+		if err == nil && target != realPath {
+			return "", fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
 		}
-	} else {
-		return fmt.Errorf("failed to check if %q exists: %w", dltPath, err)
 	}
-	cmdio.LogString(context.Background(), fmt.Sprintf("dlt successfully installed to the directory %q", dir))
-	return nil
+	if err != nil && !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to check if %q exists: %w", dltPath, err)
+	}
+	// Install the symlink.
+	err = os.Symlink(realPath, dltPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to install dlt CLI: %w", err)
+	}
+	cmdio.LogString(context.Background(), fmt.Sprintf("dlt successfully installed in directory %q", dir))
+	return dltPath, nil
 }
 
 func InstallDLT() *cobra.Command {
@@ -55,7 +63,20 @@ func InstallDLT() *cobra.Command {
 		Short:  "Install DLT",
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return InstallDLTSymlink(directory)
+			dltPath, err := installDLTSymlink(directory)
+			if err != nil {
+				return err
+			}
+			response := installDLTResponse{
+				SymlinkPath: dltPath,
+			}
+			switch root.OutputType(cmd) {
+			case flags.OutputJSON:
+				return cmdio.Render(cmd.Context(), response)
+			default:
+				// In text mode, just return success (the message is already logged by installDLTSymlink)
+				return nil
+			}
 		},
 	}
 	cmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory in which to install dlt CLI (defaults to databricks CLI's directory)")
