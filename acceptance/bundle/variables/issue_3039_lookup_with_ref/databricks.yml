@@ -1,0 +1,28 @@
+bundle:
+  name: issue-3039
+
+variables:
+  tidal_service_account:
+    description: Gets tidal service account name/id.
+    lookup:
+      service_principal: "TIDALDBServAccount - ${var.uc_catalog}"
+  uc_catalog:
+    description: Unity Catalog prefix.
+    type: string
+    default: ""
+
+non_production_job_permissions: &non_prod_job_permissions
+  permissions:
+    - level: CAN_VIEW
+      service_principal_name: ${var.tidal_service_account}
+
+targets:
+  personal:
+    resources:
+      jobs:
+        xxx_job:
+          <<: *non_prod_job_permissions
+    variables:
+      uc_catalog:
+        description: Unity Catalog prefix.
+        default: "usdev"

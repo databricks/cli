@@ -1,9 +1,5 @@
 trace $CLI bundle deploy
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > out.telemetry.txt
-
-cmd_exec_id=$(extract_command_exec_id.py)
-
-update_file.py out.telemetry.txt $cmd_exec_id  '[CMD-EXEC-ID]'
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental | {configuration_file_count}'
 
 rm out.requests.txt

@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/bundle/resources"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -353,7 +354,7 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) diag.D
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		terraform.Interpolate(),
 		terraform.Write(),
-		terraform.StatePull(),
+		statemgmt.StatePull(),
 		terraform.Load(),
 	))
 	if diags.HasError() {

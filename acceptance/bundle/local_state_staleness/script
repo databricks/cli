@@ -1,0 +1,44 @@
+# The approach for this test is as follows:
+# 1) First deploy of bundle instance A
+# 2) First deploy of bundle instance B
+# 3) Second deploy of bundle instance A
+# Because of deploy (2), the locally cached state of bundle instance A should be stale.
+# Then for deploy (3), it must use the remote state over the stale local state.
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Create two separate bundle directories to simulate two bundle instances
+BUNDLE_A_DIR="$TEST_TMP_DIR/bundle_a"
+BUNDLE_B_DIR="$TEST_TMP_DIR/bundle_b"
+
+mkdir -p "$BUNDLE_A_DIR" "$BUNDLE_B_DIR"
+
+# Copy bundle files to both directories
+cp databricks.yml hello_world.py "$BUNDLE_A_DIR/"
+cp databricks.yml hello_world.py "$BUNDLE_B_DIR/"
+
+cleanup() {
+    title "Cleanup - destroy bundle A (bundle B does not have an active deployment)\n"
+    cd "$BUNDLE_A_DIR" || exit
+    trace "$CLI" bundle destroy --auto-approve
+
+    trace rm -rf "$BUNDLE_A_DIR"
+    trace rm -rf "$BUNDLE_B_DIR"
+}
+trap cleanup EXIT
+
+title "Step 1: Deploy bundle A"
+cd "$BUNDLE_A_DIR"
+trace "$CLI" bundle deploy --force-lock --auto-approve
+
+title "Step 2: Deploy bundle B"
+cd "$BUNDLE_B_DIR"
+trace "$CLI" bundle deploy --force-lock --auto-approve
+
+title "Step 3: Deploy bundle A again (should use remote state)"
+cd "$BUNDLE_A_DIR"
+trace "$CLI" bundle deploy --force-lock --auto-approve
+
+title "Step 4: Verify only one job exists\n"
+cd "$BUNDLE_A_DIR"
+"$CLI" jobs list -o json | jq -r --arg name "test-job-basic-${UNIQUE_NAME}" '.[] | select(.settings.name == $name) | {name: .settings.name, id: .job_id}'

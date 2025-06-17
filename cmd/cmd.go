@@ -24,6 +24,41 @@ const (
 	permissionsGroup = "permissions"
 )
 
+// filterGroups returns command groups that have at least one available (non-hidden) command.
+// Empty groups or groups with only hidden commands are filtered out from the help output.
+// Commands that belong to filtered groups will have their GroupID cleared.
+func filterGroups(groups []cobra.Group, allCommands []*cobra.Command) []cobra.Group {
+	var filteredGroups []cobra.Group
+
+	// Create a map to track which groups have available commands
+	groupHasAvailableCommands := make(map[string]bool)
+
+	// Check each command to see if it belongs to a group and is available
+	for _, cmd := range allCommands {
+		if cmd.GroupID != "" && cmd.IsAvailableCommand() {
+			groupHasAvailableCommands[cmd.GroupID] = true
+		}
+	}
+
+	// Collect groups that have available commands
+	validGroupIDs := make(map[string]bool)
+	for _, group := range groups {
+		if groupHasAvailableCommands[group.ID] {
+			filteredGroups = append(filteredGroups, group)
+			validGroupIDs[group.ID] = true
+		}
+	}
+
+	// Clear GroupID for commands that belong to filtered groups
+	for _, cmd := range allCommands {
+		if cmd.GroupID != "" && !validGroupIDs[cmd.GroupID] {
+			cmd.GroupID = ""
+		}
+	}
+
+	return filteredGroups
+}
+
 func New(ctx context.Context) *cobra.Command {
 	cli := root.New(ctx)
 
@@ -31,7 +66,8 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(account.New())
 
 	// Add workspace subcommands.
-	for _, cmd := range workspace.All() {
+	workspaceCommands := workspace.All()
+	for _, cmd := range workspaceCommands {
 		// Built-in groups for the workspace commands.
 		groups := []cobra.Group{
 			{
@@ -60,12 +96,6 @@ func New(ctx context.Context) *cobra.Command {
 		cli.AddCommand(cmd)
 	}
 
-	// Add workspace command groups.
-	groups := workspace.Groups()
-	for i := range groups {
-		cli.AddGroup(&groups[i])
-	}
-
 	// Add other subcommands.
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
@@ -76,6 +106,14 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
+
+	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
+	allGroups := workspace.Groups()
+	allCommands := cli.Commands()
+	filteredGroups := filterGroups(allGroups, allCommands)
+	for i := range filteredGroups {
+		cli.AddGroup(&filteredGroups[i])
+	}
 
 	return cli
 }

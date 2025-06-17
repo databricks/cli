@@ -17,10 +17,7 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import (
-    GitSource,
-    GitSourceParam,
-)
+from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,

@@ -10,7 +10,7 @@ Updating deployment state...
 Deployment complete!
 
 === update the dashboard
->>> [CLI] lakeview update [UUID] --serialized-dashboard {"a":"b"}
+>>> [CLI] lakeview update [DASHBOARD_ID] --serialized-dashboard {"a":"b"}
 {
   "etag":"[UUID]",
   "serialized_dashboard":"{\"a\":\"b\"}"

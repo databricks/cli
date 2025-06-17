@@ -76,5 +76,17 @@ func Groups() []cobra.Group {
 			ID:    "cleanrooms",
 			Title: "Clean Rooms",
 		},
+		{
+			ID:    "aibuilder",
+			Title: "AI Builder",
+		},
+		{
+			ID:    "database",
+			Title: "Database",
+		},
+		{
+			ID:    "qualitymonitorv2",
+			Title: "Quality Monitor v2",
+		},
 	}
 }
