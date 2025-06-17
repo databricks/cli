@@ -37,15 +37,6 @@ env:
 === Try to run the app
 
 >>> cat out.app-run
-✓ Getting the status of the app app-[UNIQUE_NAME]
-✓ App is in UNAVAILABLE state
-✓ App compute is in STOPPED state
-✓ Starting the app app-[UNIQUE_NAME]
-✓ App is starting...
-✓ App is started!
-✓ Preparing source code for new app deployment.
-✓ Starting app with command: flask --app app run
-✓ App started successfully
 You can access the app at https://app-[UNIQUE_NAME]-[NUMID].[CLOUD_ENV_BASE].databricksapps.com
 
 === App should be in the running state
@@ -81,15 +72,6 @@ You can access the app at https://app-[UNIQUE_NAME]-[NUMID].[CLOUD_ENV_BASE].dat
 === Try to run the app again
 
 >>> cat out.app-run
-✓ Getting the status of the app app-[UNIQUE_NAME]
-✓ App is in UNAVAILABLE state
-✓ App compute is in STOPPED state
-✓ Starting the app app-[UNIQUE_NAME]
-✓ App is starting...
-✓ App is started!
-✓ Preparing source code for new app deployment.
-✓ Starting app with command: flask --app app run
-✓ App started successfully
 You can access the app at https://app-[UNIQUE_NAME]-[NUMID].[CLOUD_ENV_BASE].databricksapps.com
 
 === App should be in the running state
