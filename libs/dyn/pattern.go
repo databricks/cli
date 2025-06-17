@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 )
 
 // Pattern represents a matcher for paths in a [Value] configuration tree.
@@ -11,6 +12,38 @@ import (
 // Every [Path] is a valid [Pattern] that matches a single unique path.
 // The reverse is not true; not every [Pattern] is a valid [Path], as patterns may contain wildcards.
 type Pattern []patternComponent
+
+func (p Pattern) String() string {
+	buf := strings.Builder{}
+	first := true
+
+	for _, c := range p {
+		switch c.(type) {
+		case anyKeyComponent:
+			if !first {
+				buf.WriteString(".")
+			}
+			buf.WriteString("*")
+		case anyIndexComponent:
+			buf.WriteString("[*]")
+		case pathComponent:
+			v := c.(pathComponent)
+			if v.isKey() {
+				if !first {
+					buf.WriteString(".")
+				}
+				buf.WriteString(v.Key())
+			} else {
+				buf.WriteString(fmt.Sprintf("[%d]", v.Index()))
+			}
+		default:
+			buf.WriteString("???")
+		}
+
+		first = false
+	}
+	return buf.String()
+}
 
 // A pattern component can visit a [Value] and recursively call into [visit] for matching elements.
 // Fixed components can match a single key or index, while wildcards can match any key or index.
