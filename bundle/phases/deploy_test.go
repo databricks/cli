@@ -3,7 +3,7 @@ package phases
 import (
 	"testing"
 
-	"github.com/databricks/cli/libs/deployplan"
+	"github.com/databricks/cli/bundle/deployplan"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
 )

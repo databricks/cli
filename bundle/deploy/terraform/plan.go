@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/deployplan"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
