@@ -25,7 +25,7 @@ type Presets struct {
 	SourceLinkedDeployment *bool `json:"source_linked_deployment,omitempty"`
 
 	// ArtifactsUseDynamicVersion enables dynamic_version on every artifact.
-	ArtifactsUseDynamicVersion bool `json:"artifacts_use_dynamic_version,omitempty"`
+	ArtifactsUseDynamicVersion bool `json:"artifacts_dynamic_version,omitempty"`
 
 	// Tags to add to all resources.
 	Tags map[string]string `json:"tags,omitempty"`
