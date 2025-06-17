@@ -11,13 +11,14 @@ trace $CLI bundle deploy --force-lock --auto-approve
 
 title "App should exist after bundle deployment"
 trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status}'
+APP_URL=$($CLI apps get "app-${UNIQUE_NAME}" | jq -r '.url')
 
 title "Check app config"
 trace $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/app-with-job-${UNIQUE_NAME}/files/app/app.yml"
 
 title "Try to run the app\n"
 $CLI bundle run test_app &> out.app-run
-trace cat out.app-run | grep "You can access the app at"
+trace cat out.app-run | grep -q "${APP_URL}"
 
 title "App should be in the running state"
 trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status}'
@@ -28,7 +29,7 @@ trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status,compute_status}'
 
 title "Try to run the app again\n"
 $CLI bundle run test_app &> out.app-run
-trace cat out.app-run | grep "You can access the app at"
+trace cat out.app-run | grep -q "${APP_URL}"
 
 title "App should be in the running state"
 trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status}'
