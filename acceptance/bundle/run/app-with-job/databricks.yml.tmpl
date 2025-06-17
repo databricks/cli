@@ -28,8 +28,8 @@ resources:
         - task_key: my_notebook_task
           new_cluster:
             num_workers: 1
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "i3.xlarge"
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
             data_security_mode: USER_ISOLATION
           spark_python_task:
             python_file: ./hello_world.py
