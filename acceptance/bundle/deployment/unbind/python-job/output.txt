@@ -1,0 +1,35 @@
+
+>>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deploy --var job_name=My Job
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle summary --var job_name=My Job --output json
+
+>>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deployment unbind job_1 --var job_name=My Job
+Updating deployment state...
+
+>>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deploy --var job_name=Updated Job
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] jobs get [NUMID] --output json
+{
+  "job_id":[NUMID],
+  "settings": {
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+    },
+    "edit_mode":"UI_LOCKED",
+    "format":"MULTI_TASK",
+    "max_concurrent_runs":1,
+    "name":"My Job",
+    "queue": {
+      "enabled":true
+    }
+  }
+}
