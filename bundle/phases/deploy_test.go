@@ -3,6 +3,7 @@ package phases
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
@@ -40,18 +41,19 @@ func TestParseTerraformActions(t *testing.T) {
 		},
 	}
 
-	res := filterDeleteOrRecreateActions(changes, "databricks_pipeline")
+	actions := terraform.GetActions(changes)
+	res := deployplan.FilterGroup(actions, "pipelines", deployplan.ActionTypeDelete, deployplan.ActionTypeRecreate)
 
 	assert.Equal(t, []deployplan.Action{
 		{
-			Action:       deployplan.ActionTypeDelete,
-			ResourceType: "databricks_pipeline",
-			ResourceName: "delete pipeline",
+			Action: deployplan.ActionTypeDelete,
+			Group:  "pipelines",
+			Name:   "delete pipeline",
 		},
 		{
-			Action:       deployplan.ActionTypeRecreate,
-			ResourceType: "databricks_pipeline",
-			ResourceName: "recreate pipeline",
+			Action: deployplan.ActionTypeRecreate,
+			Group:  "pipelines",
+			Name:   "recreate pipeline",
 		},
 	}, res)
 }
