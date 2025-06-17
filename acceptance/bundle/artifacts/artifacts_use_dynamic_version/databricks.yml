@@ -1,0 +1,12 @@
+bundle:
+  name: artifacts_use_dynamic_version_test
+
+presets:
+  artifacts_use_dynamic_version: true
+
+artifacts:
+  first_wheel:
+    type: whl
+  second_wheel:
+    type: jar
+    build: true

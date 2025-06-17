@@ -1,0 +1,29 @@
+
+>>> [CLI] bundle validate
+Name: artifacts_use_dynamic_version_test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/artifacts_use_dynamic_version_test/default
+
+Validation OK!
+
+>>> [CLI] bundle validate -o json
+{
+  "first_wheel": {
+    "build": "python3 setup.py bdist_wheel",
+    "dynamic_version": true,
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/dist/*.whl"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]",
+    "type": "whl"
+  },
+  "second_wheel": {
+    "build": "true",
+    "path": "[TEST_TMP_DIR]",
+    "type": "jar"
+  }
+}

@@ -151,6 +151,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Provides warnings when Python wheel tasks are used with DBR < 13.3 or when wheel wrapper is incompatible with source-linked deployment
 		trampoline.WrapperWarning(),
 
+		// Reads (typed): b.Config.Presets.ArtifactsUseDynamicVersion (checks if artifacts preset is enabled)
+		// Updates (typed): b.Config.Artifacts[].DynamicVersion (sets to true when preset is enabled)
+		// Applies the artifacts_use_dynamic_version preset to enable dynamic versioning on all artifacts
+		mutator.ApplyArtifactsUseDynamicVersion(),
+
 		// Reads (typed): b.Config.Artifacts, b.BundleRootPath (checks artifact configurations and bundle path)
 		// Updates (typed): b.Config.Artifacts (auto-creates Python wheel artifact if none defined but setup.py exists)
 		// Updates (dynamic): artifacts.*.{path,build_command,files.*.source} (sets default paths, build commands, and makes relative paths absolute)
