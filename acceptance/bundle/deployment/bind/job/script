@@ -1,0 +1,7 @@
+job_id=$(trace $CLI jobs create --json '{"name": "My Job"}' | jq -r '.job_id')
+
+trace $CLI bundle deployment bind job_1 $job_id --auto-approve
+
+trace $CLI bundle deploy
+
+trace $CLI jobs get $job_id --output json
