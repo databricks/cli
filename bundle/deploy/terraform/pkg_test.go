@@ -66,7 +66,7 @@ func TestGetTerraformVersionDefault(t *testing.T) {
 func TestGetTerraformVersionOverride(t *testing.T) {
 	// Set the override version
 	overrideVersion := "1.12.2"
-	ctx := env.Set(context.Background(), TerraformVersionOverrideEnv, overrideVersion)
+	ctx := env.Set(context.Background(), TerraformVersionEnv, overrideVersion)
 
 	// Verify that the override version is used
 	tv, err := GetTerraformVersion(ctx)

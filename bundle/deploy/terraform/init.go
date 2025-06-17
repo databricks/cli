@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -20,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/hc-install/product"
-	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"golang.org/x/exp/maps"
 )
@@ -31,7 +29,7 @@ func (m *initialize) Name() string {
 	return "terraform.Initialize"
 }
 
-func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform) (string, error) {
+func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform, installer Installer) (string, error) {
 	// If set, pass it through [exec.LookPath] to resolve its absolute path.
 	if tf.ExecPath != "" {
 		execPath, err := exec.LookPath(tf.ExecPath)
@@ -49,14 +47,30 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return "", err
 	}
 
-	// Load exec path from the environment if it matches the currently used version.
-	envExecPath, err := getEnvVarWithMatchingVersion(ctx, TerraformExecPathEnv, TerraformVersionEnv, tv.Version.String())
-	if err != nil {
-		return "", err
-	}
-	if envExecPath != "" {
-		tf.ExecPath = envExecPath
-		log.Debugf(ctx, "Using Terraform from %s at %s", TerraformExecPathEnv, tf.ExecPath)
+	// Allow the user to specify the path to the Terraform CLI.
+	// If this is set, verify that the version matches the version we expect.
+	if execPathValue, ok := env.Lookup(ctx, TerraformExecPathEnv); ok {
+		tfe, err := getTerraformExec(ctx, b, execPathValue)
+		if err != nil {
+			return "", err
+		}
+
+		expectedVersion := tv.Version
+		actualVersion, _, err := tfe.Version(ctx, false)
+		if err != nil {
+			return "", fmt.Errorf("unable to execute %s: %w", TerraformExecPathEnv, err)
+		}
+
+		if !actualVersion.Equal(expectedVersion) {
+			return "", fmt.Errorf(
+				"terraform version mismatch: %s (expected) != %s (actual)",
+				expectedVersion.String(),
+				actualVersion.String(),
+			)
+		}
+
+		tf.ExecPath = execPathValue
+		log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
 		return tf.ExecPath, nil
 	}
 
@@ -78,13 +92,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	}
 
 	// Download Terraform to private bin directory.
-	installer := &releases.ExactVersion{
-		Product:    product.Terraform,
-		Version:    tv.Version,
-		InstallDir: binDir,
-		Timeout:    1 * time.Minute,
-	}
-	execPath, err = installer.Install(ctx)
+	execPath, err = installer.Install(ctx, binDir, tv.Version)
 	if err != nil {
 		return "", fmt.Errorf("error downloading Terraform: %w", err)
 	}
@@ -257,6 +265,15 @@ func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error 
 	return nil
 }
 
+func getTerraformExec(ctx context.Context, b *bundle.Bundle, execPath string) (*tfexec.Terraform, error) {
+	workingDir, err := Dir(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+
+	return tfexec.NewTerraform(workingDir, execPath)
+}
+
 func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
@@ -264,17 +281,12 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		b.Config.Bundle.Terraform = tfConfig
 	}
 
-	execPath, err := m.findExecPath(ctx, b, tfConfig)
+	execPath, err := m.findExecPath(ctx, b, tfConfig, tfInstaller{})
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	workingDir, err := Dir(ctx, b)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	tf, err := tfexec.NewTerraform(workingDir, execPath)
+	tfe, err := getTerraformExec(ctx, b, execPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -308,12 +320,12 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	// Configure environment variables for auth for Terraform to use.
 	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(maps.Keys(environ), ", "))
-	err = tf.SetEnv(environ)
+	err = tfe.SetEnv(environ)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	b.Terraform = tf
+	b.Terraform = tfe
 	return nil
 }
 

@@ -20,10 +20,6 @@ const (
 	TerraformVersionEnv         = "DATABRICKS_TF_VERSION"
 	TerraformCliConfigPathEnv   = "DATABRICKS_TF_CLI_CONFIG_FILE"
 	TerraformProviderVersionEnv = "DATABRICKS_TF_PROVIDER_VERSION"
-
-	// TerraformVersionOverrideEnv is an environment variable that allows users to override the Terraform version to use.
-	// This is useful for testing and development purposes.
-	TerraformVersionOverrideEnv = "DATABRICKS_TF_VERSION_OVERRIDE"
 )
 
 // TerraformVersion represents the version of the Terraform CLI to use.
@@ -55,7 +51,7 @@ var defaultTerraformVersion = TerraformVersion{
 // DATABRICKS_TF_VERSION_OVERRIDE environment variable to the desired version.
 // It returns an error if the version is malformed.
 func GetTerraformVersion(ctx context.Context) (TerraformVersion, error) {
-	versionOverride, ok := env.Lookup(ctx, TerraformVersionOverrideEnv)
+	versionOverride, ok := env.Lookup(ctx, TerraformVersionEnv)
 	if !ok {
 		return defaultTerraformVersion, nil
 	}
