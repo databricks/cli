@@ -28,8 +28,7 @@ func (a Action) String() string {
 	return fmt.Sprintf("  %s %s %s", a.Action, typ, a.Name)
 }
 
-// IsInplaceSupported returns false since deployplan actions are simple log messages and
-// should always be appended rather than rendered in-place.
+// Implements cmdio.Event for cmdio.Log
 func (a Action) IsInplaceSupported() bool {
 	return false
 }
