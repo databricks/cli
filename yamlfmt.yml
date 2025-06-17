@@ -1,0 +1,11 @@
+exclude:
+  - libs/dyn/yamlloader/testdata
+  - acceptance/selftest/bundleconfig # https://github.com/google/yamlfmt/issues/254
+  - acceptance/bundle/artifacts/nil_artifacts/databricks.yml # https://github.com/google/yamlfmt/issues/253
+formatter:
+  type: basic
+  retain_line_breaks_single: true
+  trim_trailing_whitespace: true
+  disable_alias_key_correction: true
+  scan_folded_as_literal: true
+  drop_merge_tag: true

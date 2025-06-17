@@ -1,0 +1,42 @@
+
+=== Step 1: Deploy bundle A
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Step 2: Deploy bundle B
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Step 3: Deploy bundle A again (should use remote state)
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Step 4: Verify only one job exists
+{
+  "name": "test-job-basic-[UNIQUE_NAME]",
+  "id": [NUMID]
+}
+
+=== Cleanup - destroy bundle A (bundle B does not have an active deployment)
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+>>> rm -rf [TEST_TMP_DIR]/bundle_a
+
+>>> rm -rf [TEST_TMP_DIR]/bundle_b

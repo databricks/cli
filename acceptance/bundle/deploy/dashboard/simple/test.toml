@@ -9,30 +9,3 @@ Ignore = [
 [[Repls]]
 Old = "[0-9a-f]{32}"
 New = "[DASHBOARD_ID]"
-
-[[Server]]
-Pattern = "POST /api/2.0/lakeview/dashboards"
-Response.Body = '''
-{
-    "dashboard_id":"1234567890abcdef1234567890abcdef"
-}
-'''
-
-[[Server]]
-Pattern = "POST /api/2.0/lakeview/dashboards/{dashboard_id}/published"
-
-[[Server]]
-Pattern = "GET /api/2.0/lakeview/dashboards/{dashboard_id}"
-Response.Body = '''
-{
-    "dashboard_id":"1234567890abcdef1234567890abcdef",
-    "display_name": "test dashboard 6260d50f-e8ff-4905-8f28-812345678903",
-    "lifecycle_state": "ACTIVE",
-    "path": "/Users/[USERNAME]/test bundle-deploy-dashboard 6260d50f-e8ff-4905-8f28-812345678903.lvdash.json",
-    "parent_path": "/Users/tester@databricks.com",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
-}
-'''
-
-[[Server]]
-Pattern = "DELETE /api/2.0/lakeview/dashboards/{dashboard_id}"

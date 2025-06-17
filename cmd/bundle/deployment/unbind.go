@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
@@ -28,6 +29,11 @@ func newUnbindCommand() *cobra.Command {
 			return diags.Error()
 		}
 
+		diags = phases.Initialize(ctx, b)
+		if err := diags.Error(); err != nil {
+			return fmt.Errorf("failed to initialize bundle, err: %w", err)
+		}
+
 		resource, err := b.Config.Resources.FindResourceByConfigKey(args[0])
 		if err != nil {
 			return err
@@ -38,12 +44,9 @@ func newUnbindCommand() *cobra.Command {
 			return nil
 		})
 
-		diags = phases.Initialize(ctx, b)
-		if !diags.HasError() {
-			diags = diags.Extend(phases.Unbind(ctx, b, resource.ResourceDescription().TerraformResourceName, args[0]))
-		}
+		diags = diags.Extend(phases.Unbind(ctx, b, resource.ResourceDescription().TerraformResourceName, args[0]))
 		if err := diags.Error(); err != nil {
-			return err
+			return fmt.Errorf("failed to unbind the resource, err: %w", err)
 		}
 		return nil
 	}

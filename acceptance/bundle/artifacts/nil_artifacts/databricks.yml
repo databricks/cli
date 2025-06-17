@@ -1,0 +1,10 @@
+bundle:
+  name: nil_artifacts_test
+
+artifacts:
+  # This reproduces the issue from GitHub #3017
+  # where artifacts have empty definitions (only comments)
+  my_artifact:
+  # build: <first_option_command>
+  # path: <path>
+  # build: <second_option_command>

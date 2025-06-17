@@ -14,38 +14,39 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
-	terraformlib "github.com/databricks/cli/libs/terraform"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []terraformlib.Action {
-	var res []terraformlib.Action
+func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []deployplan.Action {
+	var res []deployplan.Action
 	for _, rc := range changes {
 		if rc.Type != resourceType {
 			continue
 		}
 
-		var actionType terraformlib.ActionType
+		var actionType deployplan.ActionType
 		switch {
 		case rc.Change.Actions.Delete():
-			actionType = terraformlib.ActionTypeDelete
+			actionType = deployplan.ActionTypeDelete
 		case rc.Change.Actions.Replace():
-			actionType = terraformlib.ActionTypeRecreate
+			actionType = deployplan.ActionTypeRecreate
 		default:
 			// Filter other action types..
 			continue
 		}
 
-		res = append(res, terraformlib.Action{
+		res = append(res, deployplan.Action{
 			Action:       actionType,
 			ResourceType: rc.Type,
 			ResourceName: rc.Name,
@@ -148,7 +149,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// following original logic, continuing with sequence below even if terraform had errors
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePush(),
+		statemgmt.StatePush(),
 		terraform.Load(),
 		apps.InterpolateVariables(),
 		apps.UploadConfig(),
@@ -185,7 +186,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}()
 
 	diags = bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
+		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),

@@ -44,6 +44,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=ResolveVariableReferences(resources)
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=NormalizePaths
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=TranslatePathsDashboards
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(init)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
