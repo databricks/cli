@@ -389,7 +389,7 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 	cacheDir, _ := b.CacheDir(ctx, "bin")
 	existingExecPath := createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
 
-	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", TerraformVersion.String())
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", GetTerraformVersion(ctx).Version.String())
 	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
 	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)
@@ -413,7 +413,7 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 	createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
 	// Create a new terraform binary and expose it through env vars
 	tmpBinPath := createTempFile(t, t.TempDir(), "terraform-bin", true)
-	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", TerraformVersion.String())
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", GetTerraformVersion(ctx).Version.String())
 	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", tmpBinPath)
 	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)

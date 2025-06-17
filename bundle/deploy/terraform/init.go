@@ -43,8 +43,11 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return tf.ExecPath, nil
 	}
 
+	// Resolve the version of the Terraform CLI to use.
+	tv := GetTerraformVersion(ctx)
+
 	// Load exec path from the environment if it matches the currently used version.
-	envExecPath, err := getEnvVarWithMatchingVersion(ctx, TerraformExecPathEnv, TerraformVersionEnv, TerraformVersion.String())
+	envExecPath, err := getEnvVarWithMatchingVersion(ctx, TerraformExecPathEnv, TerraformVersionEnv, tv.Version.String())
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +77,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	// Download Terraform to private bin directory.
 	installer := &releases.ExactVersion{
 		Product:    product.Terraform,
-		Version:    TerraformVersion,
+		Version:    tv.Version,
 		InstallDir: binDir,
 		Timeout:    1 * time.Minute,
 	}
