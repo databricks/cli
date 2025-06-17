@@ -1,8 +1,8 @@
 bundle:
-  name: artifacts_use_dynamic_version_test
+  name: artifacts_dynamic_version_test
 
 presets:
-  artifacts_use_dynamic_version: true
+  artifacts_dynamic_version: true
 
 artifacts:
   first_wheel:

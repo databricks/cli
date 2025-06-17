@@ -13,6 +13,6 @@
 * When glob for wheels is used, like "\*.whl", it will filter out different version of the same package and will only take the most recent version. ([#2982](https://github.com/databricks/cli/pull/2982))
 * When building Python artifacts as part of "bundle deploy" we no longer delete `dist`, `build`, `*egg-info` and `__pycache__` directories. ([#2982](https://github.com/databricks/cli/pull/2982))
 * Fix variable resolution for lookup variables with other references ([#3054](https://github.com/databricks/cli/pull/3054))
-* Added preset `presets.artifacts_use_dynamic_version` that automatically enables `dynamic_version: true` on all "whl" artifacts.
+* Added preset `presets.artifacts_dynamic_version` that automatically enables `dynamic_version: true` on all "whl" artifacts.
 
 ### API Changes

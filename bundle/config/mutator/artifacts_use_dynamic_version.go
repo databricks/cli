@@ -9,17 +9,17 @@ import (
 
 type artifactsUseDynamicVersion struct{}
 
-// ApplyArtifactsUseDynamicVersion configures all artifacts to use dynamic_version when the preset is enabled.
-func ApplyArtifactsUseDynamicVersion() bundle.Mutator {
+// ApplyArtifactsDynamicVersion configures all artifacts to use dynamic_version when the preset is enabled.
+func ApplyArtifactsDynamicVersion() bundle.Mutator {
 	return &artifactsUseDynamicVersion{}
 }
 
 func (m *artifactsUseDynamicVersion) Name() string {
-	return "ApplyArtifactsUseDynamicVersion"
+	return "ApplyArtifactsDynamicVersion"
 }
 
 func (m *artifactsUseDynamicVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if !b.Config.Presets.ArtifactsUseDynamicVersion {
+	if !b.Config.Presets.ArtifactsDynamicVersion {
 		return nil
 	}
 

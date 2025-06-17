@@ -1795,7 +1795,7 @@
                 {
                   "type": "object",
                   "properties": {
-                    "artifacts_use_dynamic_version": {
+                    "artifacts_dynamic_version": {
                       "description": "Whether to enable dynamic_version on all artifacts.",
                       "$ref": "#/$defs/bool"
                     },

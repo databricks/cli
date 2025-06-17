@@ -104,7 +104,7 @@ github.com/databricks/cli/bundle/config.Lock:
     "description": |-
       Whether to force this lock if it is enabled.
 github.com/databricks/cli/bundle/config.Presets:
-  "artifacts_use_dynamic_version":
+  "artifacts_dynamic_version":
     "description": |-
       Whether to enable dynamic_version on all artifacts.
   "jobs_max_concurrent_runs":
