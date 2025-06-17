@@ -3,7 +3,7 @@ package dyn
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/databricks/cli/libs/dyn/dynassert"
 )
 
 func TestPatternTrie_SearchPath(t *testing.T) {
@@ -94,25 +94,25 @@ func TestPatternTrie_SearchPath(t *testing.T) {
 			// None of the expected paths should match yet.
 			for _, path := range tt.expected {
 				_, ok := trie.SearchPath(MustPathFromString(path))
-				assert.False(t, ok)
+				dynassert.False(t, ok)
 			}
 			for _, path := range tt.notExpected {
 				_, ok := trie.SearchPath(MustPathFromString(path))
-				assert.False(t, ok)
+				dynassert.False(t, ok)
 			}
 
 			err := trie.Insert(pattern)
-			assert.NoError(t, err)
+			dynassert.NoError(t, err)
 
 			// Now all the expected paths should match.
 			for _, path := range tt.expected {
 				pattern, ok := trie.SearchPath(MustPathFromString(path))
-				assert.True(t, ok)
-				assert.Equal(t, MustPatternFromString(tt.pattern), pattern)
+				dynassert.True(t, ok)
+				dynassert.Equal(t, MustPatternFromString(tt.pattern), pattern)
 			}
 			for _, path := range tt.notExpected {
 				_, ok := trie.SearchPath(MustPathFromString(path))
-				assert.False(t, ok)
+				dynassert.False(t, ok)
 			}
 		})
 	}
@@ -147,18 +147,18 @@ func TestPatternTrie_MultiplePatterns(t *testing.T) {
 
 	for _, pattern := range patterns {
 		err := trie.Insert(MustPatternFromString(pattern))
-		assert.NoError(t, err)
+		dynassert.NoError(t, err)
 	}
 
 	for path, expectedPattern := range expected {
 		pattern, ok := trie.SearchPath(MustPathFromString(path))
-		assert.True(t, ok)
-		assert.Equal(t, MustPatternFromString(expectedPattern), pattern)
+		dynassert.True(t, ok)
+		dynassert.Equal(t, MustPatternFromString(expectedPattern), pattern)
 	}
 
 	for _, path := range notExpected {
 		_, ok := trie.SearchPath(MustPathFromString(path))
-		assert.False(t, ok)
+		dynassert.False(t, ok)
 	}
 }
 
@@ -175,7 +175,7 @@ func TestPatternTrie_OverlappingPatterns(t *testing.T) {
 
 	for _, pattern := range patterns {
 		err := trie.Insert(MustPatternFromString(pattern))
-		assert.NoError(t, err)
+		dynassert.NoError(t, err)
 	}
 
 	for _, path := range []string{
@@ -185,6 +185,6 @@ func TestPatternTrie_OverlappingPatterns(t *testing.T) {
 		"baz.qux",
 	} {
 		_, ok := trie.SearchPath(MustPathFromString(path))
-		assert.True(t, ok)
+		dynassert.True(t, ok)
 	}
 }

@@ -26,7 +26,8 @@ type trieNode struct {
 	pathIndex map[int]*trieNode
 
 	// Indicates if this node is the end of a pattern. Encountering a node
-	// with isEnd set to true in a trie means the input path matches the pattern.
+	// with isEnd set to true in a trie means the pattern from the root to this
+	// node is a complete pattern.
 	isEnd bool
 }
 
@@ -106,7 +107,6 @@ func (t *PatternTrie) SearchPath(path Path) (Pattern, bool) {
 	return pattern, ok
 }
 
-// searchPathRecursive is a helper function that recursively checks if a path matches any pattern.
 func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, index int, prefix Pattern) (Pattern, bool) {
 	if node == nil {
 		return nil, false
