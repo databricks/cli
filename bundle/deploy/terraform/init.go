@@ -44,7 +44,10 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	}
 
 	// Resolve the version of the Terraform CLI to use.
-	tv := GetTerraformVersion(ctx)
+	tv, err := GetTerraformVersion(ctx)
+	if err != nil {
+		return "", err
+	}
 
 	// Load exec path from the environment if it matches the currently used version.
 	envExecPath, err := getEnvVarWithMatchingVersion(ctx, TerraformExecPathEnv, TerraformVersionEnv, tv.Version.String())

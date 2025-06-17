@@ -364,10 +364,12 @@ func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
 	// Create a pre-existing terraform bin to avoid downloading it
 	cacheDir, _ := b.CacheDir(ctx, "bin")
 	existingExecPath := createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
+
 	// Create a new terraform binary and expose it through env vars
 	tmpBinPath := createTempFile(t, t.TempDir(), "terraform-bin", true)
 	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", "1.2.3")
 	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", tmpBinPath)
+
 	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)
 	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
@@ -389,9 +391,12 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 	cacheDir, _ := b.CacheDir(ctx, "bin")
 	existingExecPath := createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
 
-	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", GetTerraformVersion(ctx).Version.String())
+	tv, err := GetTerraformVersion(ctx)
+	require.NoError(t, err)
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", tv.Version.String())
 	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
-	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
+
+	_, err = m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)
 	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
 }
@@ -413,9 +418,13 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 	createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
 	// Create a new terraform binary and expose it through env vars
 	tmpBinPath := createTempFile(t, t.TempDir(), "terraform-bin", true)
-	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", GetTerraformVersion(ctx).Version.String())
+
+	tv, err := GetTerraformVersion(ctx)
+	require.NoError(t, err)
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", tv.Version.String())
 	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", tmpBinPath)
-	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
+
+	_, err = m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)
 	require.Equal(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
 }

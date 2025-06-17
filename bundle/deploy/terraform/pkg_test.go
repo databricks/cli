@@ -45,7 +45,8 @@ func downloadAndChecksum(t *testing.T, url, expectedChecksum string) {
 }
 
 func TestTerraformArchiveChecksums(t *testing.T) {
-	tv := GetTerraformVersion(context.Background())
+	tv, err := GetTerraformVersion(context.Background())
+	require.NoError(t, err)
 	armUrl := fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_linux_arm64.zip", tv.Version.String(), tv.Version.String())
 	amdUrl := fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_linux_amd64.zip", tv.Version.String(), tv.Version.String())
 
@@ -55,7 +56,8 @@ func TestTerraformArchiveChecksums(t *testing.T) {
 
 func TestGetTerraformVersionDefault(t *testing.T) {
 	// Verify that the default version is used
-	tv := GetTerraformVersion(context.Background())
+	tv, err := GetTerraformVersion(context.Background())
+	require.NoError(t, err)
 	assert.Equal(t, defaultTerraformVersion.Version.String(), tv.Version.String())
 	assert.Equal(t, defaultTerraformVersion.ChecksumLinuxArm64, tv.ChecksumLinuxArm64)
 	assert.Equal(t, defaultTerraformVersion.ChecksumLinuxAmd64, tv.ChecksumLinuxAmd64)
@@ -67,7 +69,8 @@ func TestGetTerraformVersionOverride(t *testing.T) {
 	ctx := env.Set(context.Background(), TerraformVersionOverrideEnv, overrideVersion)
 
 	// Verify that the override version is used
-	tv := GetTerraformVersion(ctx)
+	tv, err := GetTerraformVersion(ctx)
+	require.NoError(t, err)
 	assert.Equal(t, overrideVersion, tv.Version.String())
 	assert.Empty(t, tv.ChecksumLinuxArm64)
 	assert.Empty(t, tv.ChecksumLinuxAmd64)

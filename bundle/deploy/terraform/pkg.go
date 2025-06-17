@@ -53,15 +53,21 @@ var defaultTerraformVersion = TerraformVersion{
 // GetTerraformVersion returns the Terraform version to use.
 // The user can configure the Terraform version to use by setting the
 // DATABRICKS_TF_VERSION_OVERRIDE environment variable to the desired version.
-func GetTerraformVersion(ctx context.Context) TerraformVersion {
+// It returns an error if the version is malformed.
+func GetTerraformVersion(ctx context.Context) (TerraformVersion, error) {
 	versionOverride, ok := env.Lookup(ctx, TerraformVersionOverrideEnv)
 	if !ok {
-		return defaultTerraformVersion
+		return defaultTerraformVersion, nil
+	}
+
+	v, err := version.NewVersion(versionOverride)
+	if err != nil {
+		return TerraformVersion{}, err
 	}
 
 	return TerraformVersion{
-		Version: version.Must(version.NewVersion(versionOverride)),
-	}
+		Version: v,
+	}, nil
 }
 
 type Checksum struct {
@@ -77,8 +83,11 @@ type TerraformMetadata struct {
 	ProviderVersion string   `json:"providerVersion"`
 }
 
-func NewTerraformMetadata(ctx context.Context) *TerraformMetadata {
-	tv := GetTerraformVersion(ctx)
+func NewTerraformMetadata(ctx context.Context) (*TerraformMetadata, error) {
+	tv, err := GetTerraformVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return &TerraformMetadata{
 		Version: tv.Version.String(),
 		Checksum: Checksum{
@@ -88,5 +97,5 @@ func NewTerraformMetadata(ctx context.Context) *TerraformMetadata {
 		ProviderHost:    schema.ProviderHost,
 		ProviderSource:  schema.ProviderSource,
 		ProviderVersion: schema.ProviderVersion,
-	}
+	}, nil
 }
