@@ -1,0 +1,14 @@
+bundle:
+  name: "foobar"
+
+resources:
+  jobs:
+    outer_loop:
+      name: outer loop
+      tasks:
+        - task_key: my task
+          run_job_task:
+            job_id: ${resources.jobs.inner_loop.id}
+
+    inner_loop:
+      name: inner loop

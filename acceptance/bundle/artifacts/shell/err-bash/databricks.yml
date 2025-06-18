@@ -1,0 +1,8 @@
+artifacts:
+  my_artifact:
+    executable: bash
+    build: |-
+      echo "hello" > out.shell.txt
+      echo "world" >> out.shell.txt
+      false
+      echo "this should not be printed since bash is run with -e" >> out.shell.txt

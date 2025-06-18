@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -24,37 +25,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
-	terraformlib "github.com/databricks/cli/libs/terraform"
-	tfjson "github.com/hashicorp/terraform-json"
 )
-
-func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []terraformlib.Action {
-	var res []terraformlib.Action
-	for _, rc := range changes {
-		if rc.Type != resourceType {
-			continue
-		}
-
-		var actionType terraformlib.ActionType
-		switch {
-		case rc.Change.Actions.Delete():
-			actionType = terraformlib.ActionTypeDelete
-		case rc.Change.Actions.Replace():
-			actionType = terraformlib.ActionTypeRecreate
-		default:
-			// Filter other action types..
-			continue
-		}
-
-		res = append(res, terraformlib.Action{
-			Action:       actionType,
-			ResourceType: rc.Type,
-			ResourceName: rc.Name,
-		})
-	}
-
-	return res
-}
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	tf := b.Terraform
@@ -63,15 +34,16 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	}
 
 	// read plan file
-	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.Path)
 	if err != nil {
 		return false, err
 	}
 
-	schemaActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_schema")
-	dltActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_pipeline")
-	volumeActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_volume")
-	dashboardActions := filterDeleteOrRecreateActions(plan.ResourceChanges, "databricks_dashboard")
+	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
+	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)
+	dltActions := deployplan.FilterGroup(actions, "pipelines", types...)
+	volumeActions := deployplan.FilterGroup(actions, "volumes", types...)
+	dashboardActions := deployplan.FilterGroup(actions, "dashboards", types...)
 
 	// We don't need to display any prompts in this case.
 	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {

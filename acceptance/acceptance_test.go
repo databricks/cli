@@ -43,6 +43,7 @@ var (
 	Forcerun    bool
 	LogRequests bool
 	LogConfig   bool
+	SkipLocal   bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -65,6 +66,7 @@ func init() {
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
+	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
 }
 
 const (
@@ -168,10 +170,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Getenv("PATH"),
 	}
 	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
-
-	tempHomeDir := t.TempDir()
-	repls.SetPath(tempHomeDir, "[TMPHOME]")
-	t.Logf("$TMPHOME=%v", tempHomeDir)
 
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
 	uvCache := getUVDefaultCacheDir(t)
@@ -330,6 +328,10 @@ func getTests(t *testing.T) []string {
 
 // Return a reason to skip the test. Empty string means "don't skip".
 func getSkipReason(config *internal.TestConfig, configPath string) string {
+	if SkipLocal && isTruePtr(config.Local) {
+		return "Disabled via SkipLocal setting in " + configPath
+	}
+
 	if Forcerun {
 		return ""
 	}
