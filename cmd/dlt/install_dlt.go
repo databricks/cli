@@ -47,14 +47,14 @@ func installDLTSymlink(directory string) (string, error) {
 	}
 
 	target, err := filepath.EvalSymlinks(dltPath)
-	if err == nil && realPath == target {
+	if err != nil {
+		return "", err
+	}
+	if realPath == target {
 		cmdio.LogString(context.Background(), fmt.Sprintf("dlt already installed in directory %q", dir))
 		return dltPath, nil
 	}
 	cmdio.LogString(context.Background(), fmt.Sprintf("cannot install dlt CLI: %q already exists", dltPath))
-	if err != nil {
-		return "", err
-	}
 	return "", errors.New("installation failed")
 }
 
