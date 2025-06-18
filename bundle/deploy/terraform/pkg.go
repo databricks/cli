@@ -60,3 +60,27 @@ func NewTerraformMetadata() *TerraformMetadata {
 		ProviderVersion: schema.ProviderVersion,
 	}
 }
+
+var GroupToTerraformName = map[string]string{
+	"jobs":                    "databricks_job",
+	"pipelines":               "databricks_pipeline",
+	"models":                  "databricks_mlflow_model",
+	"experiments":             "databricks_mlflow_experiment",
+	"model_serving_endpoints": "databricks_model_serving",
+	"registered_models":       "databricks_registered_model",
+	"quality_monitors":        "databricks_quality_monitor",
+	"schemas":                 "databricks_schema",
+	"clusters":                "databricks_cluster",
+	"dashboards":              "databricks_dashboard",
+	"volumes":                 "databricks_volume",
+	"apps":                    "databricks_app",
+	"secret_scopes":           "databricks_secret_scope",
+}
+
+var TerraformToGroupName = func() map[string]string {
+	m := make(map[string]string, len(GroupToTerraformName))
+	for k, v := range GroupToTerraformName {
+		m[v] = k
+	}
+	return m
+}()
