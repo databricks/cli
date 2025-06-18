@@ -1,3 +1,5 @@
-# Differentiating between bash and sh the basis of newlines does not work on Windows.
+# Line feed (\n) characters are rendered differently by bash vs sh on Unix based systems.
+# However that does not hold true for Windows WSL. Since the goal of this test is to assert
+# the chosen shell is being used, we skip this test on Windows.
 [GOOS]
 windows = false

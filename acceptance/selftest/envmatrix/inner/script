@@ -1,4 +1,4 @@
-[ "$FIRST" = "one" ] || [ "$FIRST" = "two" ]
+[ "$FIRST" = "one111" ] || [ "$FIRST" = "two222" ]
 [ "$SECOND" = "variantA" ] || [ "$SECOND" = "variantB" ]
 
 echo "FIRST=$FIRST"

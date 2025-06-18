@@ -1,0 +1,56 @@
+title "Create a pre-defined job:\n"
+
+PYTHON_FILE="/Workspace/Users/${CURRENT_USER_NAME}/initial_hello_world.py"
+
+JOB_ID=$($CLI jobs create --json '
+{
+  "name": "test-job-bind-'${UNIQUE_NAME}'",
+  "tasks": [
+    {
+      "task_key": "my_notebook_task",
+      "new_cluster": {
+        "spark_version": "'${DEFAULT_SPARK_VERSION}'",
+        "node_type_id": "'${NODE_TYPE_ID}'",
+        "num_workers": 1
+      },
+      "spark_python_task": {
+        "python_file": "'${PYTHON_FILE}'"
+      }
+    }
+  ]
+}' | jq -r '.job_id')
+
+echo "Created job with ID: $JOB_ID"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Delete the pre-defined job $JOB_ID:"
+    $CLI jobs delete $JOB_ID
+    echo $?
+}
+trap cleanup EXIT
+
+title "Bind job:"
+trace $CLI bundle deployment bind foo $JOB_ID --auto-approve
+
+title "Remove .databricks directory to simulate fresh deployment:"
+trace rm -rf .databricks
+
+title "Deploy bundle:"
+trace $CLI bundle deploy --force-lock --auto-approve
+
+title "Read the pre-defined job:"
+trace $CLI jobs get $JOB_ID | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: .spark_python_task}]}}'
+
+title "Unbind the job:"
+trace $CLI bundle deployment unbind foo
+
+title "Remove .databricks directory to simulate fresh deployment:"
+trace rm -rf .databricks
+
+title "Destroy the bundle:"
+trace $CLI bundle destroy --auto-approve
+
+title "Read the pre-defined job again (expecting it still exists):"
+trace $CLI jobs get ${JOB_ID} | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: .spark_python_task}]}}'

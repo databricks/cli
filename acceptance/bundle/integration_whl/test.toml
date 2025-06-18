@@ -12,11 +12,3 @@ Ignore = [
     "python_wheel_wrapper.yml",
     "empty.yml",
 ]
-
-[[Repls]]
-Old = '2\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d'
-New = "[TIMESTAMP]"
-
-[[Repls]]
-Old = '\d{5,}'
-New = "[NUMID]"

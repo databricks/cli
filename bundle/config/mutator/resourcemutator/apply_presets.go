@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
@@ -44,6 +45,9 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	r := b.Config.Resources
 	t := b.Config.Presets
 	prefix := t.NamePrefix
+
+	b.Metrics.AddBoolValue(metrics.PresetsNamePrefixIsSet, prefix != "")
+
 	tags := toTagArray(t.Tags)
 
 	// Jobs presets: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
@@ -181,6 +185,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Schemas: Prefix
 	for _, s := range r.Schemas {
+		if b.Config.Experimental != nil && b.Config.Experimental.SkipNamePrefixForSchema {
+			break
+		}
+
 		if s == nil {
 			continue
 		}

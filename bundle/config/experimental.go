@@ -32,6 +32,19 @@ type Experimental struct {
 
 	// Python configures loading of Python code defined with 'databricks-bundles' package.
 	Python Python `json:"python,omitempty"`
+
+	// SkipArtifactCleanup determines whether to skip cleaning up the .internal folder
+	// containing build artifacts such as wheels. When set to true, the .internal folder
+	// and its contents will be preserved after bundle operations complete.
+	SkipArtifactCleanup bool `json:"skip_artifact_cleanup,omitempty"`
+
+	// SkipNamePrefixForSchema skips adding the `presets.name_prefix` prefix
+	// to UC schemas defined in the bundle. Currently this is a opt-in behavior
+	// because turning it on by default will cause schema recreates and lose
+	// customer data.
+	// Eventually this can be made the default once we have native CRUD in DABs
+	// at which point we can deprecate or remove this field all together.
+	SkipNamePrefixForSchema bool `json:"skip_name_prefix_for_schema,omitempty"`
 }
 
 type Python struct {

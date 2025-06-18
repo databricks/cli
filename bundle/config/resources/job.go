@@ -57,16 +57,11 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 
 func (j *Job) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "job",
-		PluralName:            "jobs",
-		SingularTitle:         "Job",
-		PluralTitle:           "Jobs",
-		TerraformResourceName: "databricks_job",
+		SingularName:  "job",
+		PluralName:    "jobs",
+		SingularTitle: "Job",
+		PluralTitle:   "Jobs",
 	}
-}
-
-func (j *Job) TerraformResourceName() string {
-	return "databricks_job"
 }
 
 func (j *Job) InitializeURL(baseURL url.URL) {

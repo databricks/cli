@@ -585,7 +585,7 @@ func newCreateWebhook() *cobra.Command {
 	cmd.Flags().StringVar(&createWebhookReq.Description, "description", createWebhookReq.Description, `User-specified description for the webhook.`)
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
+	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `If model name is not specified, a registry-wide webhook is created that listens for the specified events across all versions of all registered models.`)
 	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "create-webhook"
@@ -657,7 +657,10 @@ func newDeleteComment() *cobra.Command {
 	cmd.Short = `Delete a comment.`
 	cmd.Long = `Delete a comment.
   
-  Deletes a comment on a model version.`
+  Deletes a comment on a model version.
+
+  Arguments:
+    ID: Unique identifier of an activity`
 
 	cmd.Annotations = make(map[string]string)
 

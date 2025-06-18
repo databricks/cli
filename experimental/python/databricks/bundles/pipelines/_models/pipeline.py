@@ -153,6 +153,15 @@ class Pipeline(Resource):
     Restart window of this pipeline.
     """
 
+    root_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Root path for this pipeline.
+    This is used as the root directory when editing the pipeline in the Databricks user interface and it is
+    added to sys.path when executing Python sources during pipeline execution.
+    """
+
     run_as: VariableOrOptional[RunAs] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -171,6 +180,13 @@ class Pipeline(Resource):
     storage: VariableOrOptional[str] = None
     """
     DBFS root directory for storing checkpoints and tables.
+    """
+
+    tags: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of tags associated with the pipeline.
+    These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+    A maximum of 25 tags can be added to the pipeline.
     """
 
     target: VariableOrOptional[str] = None
@@ -287,6 +303,15 @@ class PipelineDict(TypedDict, total=False):
     Restart window of this pipeline.
     """
 
+    root_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Root path for this pipeline.
+    This is used as the root directory when editing the pipeline in the Databricks user interface and it is
+    added to sys.path when executing Python sources during pipeline execution.
+    """
+
     run_as: VariableOrOptional[RunAsParam]
     """
     :meta private: [EXPERIMENTAL]
@@ -305,6 +330,13 @@ class PipelineDict(TypedDict, total=False):
     storage: VariableOrOptional[str]
     """
     DBFS root directory for storing checkpoints and tables.
+    """
+
+    tags: VariableOrDict[str]
+    """
+    A map of tags associated with the pipeline.
+    These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+    A maximum of 25 tags can be added to the pipeline.
     """
 
     target: VariableOrOptional[str]

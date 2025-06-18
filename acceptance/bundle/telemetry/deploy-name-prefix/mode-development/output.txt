@@ -1,0 +1,36 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/development-prefix/development/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> cat out.requests.txt
+{
+  "bool_values": [
+    {
+      "key": "presets_name_prefix_is_set",
+      "value": true
+    },
+    {
+      "key": "skip_artifact_cleanup",
+      "value": false
+    },
+    {
+      "key": "python_wheel_wrapper_is_set",
+      "value": false
+    },
+    {
+      "key": "has_serverless_compute",
+      "value": false
+    },
+    {
+      "key": "has_classic_job_compute",
+      "value": false
+    },
+    {
+      "key": "has_classic_interactive_compute",
+      "value": false
+    }
+  ]
+}

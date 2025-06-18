@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -20,15 +20,10 @@ func (i *interpolateVariables) Apply(ctx context.Context, b *bundle.Bundle) diag
 		dyn.Key("config"),
 	)
 
-	tfToConfigMap := map[string]string{}
-	for k, r := range config.SupportedResources() {
-		tfToConfigMap[r.TerraformResourceName] = k
-	}
-
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
-				key, ok := tfToConfigMap[path[0].Key()]
+				key, ok := terraform.TerraformToGroupName[path[0].Key()]
 				if ok {
 					path = dyn.NewPath(dyn.Key("resources"), dyn.Key(key)).Append(path[1:]...)
 				}

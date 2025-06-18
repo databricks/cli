@@ -44,6 +44,7 @@ Identity and Access Management
 Databricks SQL
   alerts                                 The alerts API can be used to perform CRUD operations on alerts.
   alerts-legacy                          The alerts API can be used to perform CRUD operations on alerts.
+  alerts-v2                              New version of SQL Alerts.
   dashboards                             In general, there is little need to modify dashboards using the API.
   data-sources                           This API is provided to assist you in making new query objects.
   queries                                The queries API can be used to perform CRUD operations on queries.
@@ -122,6 +123,9 @@ Clean Rooms
   clean-room-assets                      Clean room assets are data and code objects — Tables, volumes, and notebooks that are shared with the clean room.
   clean-room-task-runs                   Clean room task runs are the executions of notebooks in a clean room.
   clean-rooms                            A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other’s data.
+
+Quality Monitor v2
+  quality-monitor-v2                     Manage data quality of UC objects (currently support schema).
 
 Additional Commands:
   account                                Databricks Account Commands

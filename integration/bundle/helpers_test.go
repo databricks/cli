@@ -3,7 +3,6 @@ package bundle_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,11 +14,8 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
-
-const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
 
 func initTestTemplate(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any) string {
 	bundleRoot := t.TempDir()
@@ -64,13 +60,6 @@ func writeConfigFile(t testutil.TestingT, config map[string]any) string {
 	return filepath
 }
 
-func validateBundle(t testutil.TestingT, ctx context.Context, path string) ([]byte, error) {
-	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	c := testcli.NewRunner(t, ctx, "bundle", "validate", "--output", "json")
-	stdout, _, err := c.Run()
-	return stdout.Bytes(), err
-}
-
 func deployBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
@@ -87,28 +76,9 @@ func runResource(t testutil.TestingT, ctx context.Context, path, key string) (st
 	return stdout.String(), err
 }
 
-func runResourceWithStderr(t testutil.TestingT, ctx context.Context, path, key string) (string, string) {
-	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	ctx = cmdio.NewContext(ctx, cmdio.Default())
-
-	c := testcli.NewRunner(t, ctx, "bundle", "run", key)
-	stdout, stderr, err := c.Run()
-	require.NoError(t, err)
-
-	return stdout.String(), stderr.String()
-}
-
 func destroyBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "destroy", "--auto-approve")
 	_, _, err := c.Run()
 	require.NoError(t, err)
-}
-
-func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t testutil.TestingT, uniqueId string) string {
-	// Compute root path for the bundle deployment
-	me, err := w.CurrentUser.Me(context.Background())
-	require.NoError(t, err)
-	root := fmt.Sprintf("/Workspace/Users/%s/.bundle/%s", me.UserName, uniqueId)
-	return root
 }

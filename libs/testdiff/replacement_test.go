@@ -1,6 +1,7 @@
 package testdiff
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,4 +44,16 @@ func TestReplacement_TemporaryDirectory(t *testing.T) {
 	PrepareReplacementsTemporaryDirectory(t, &repls)
 
 	assert.Equal(t, "/tmp/.../tail", repls.Replace("/tmp/foo/bar/qux/tail"))
+}
+
+func TestReplaceAppliesInOrder(t *testing.T) {
+	input := "A"
+
+	rc := ReplacementsContext{Repls: []Replacement{
+		{Old: regexp.MustCompile("B"), New: "C", Order: 2},
+		{Old: regexp.MustCompile("A"), New: "B", Order: 1},
+	}}
+
+	got := rc.Replace(input)
+	assert.Equal(t, "C", got)
 }

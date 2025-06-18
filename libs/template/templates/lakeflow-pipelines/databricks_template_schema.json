@@ -1,0 +1,57 @@
+{
+    "welcome_message": "\nWelcome to the template for Lakeflow Declarative Pipelines!",
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "default": "my_lakeflow_project",
+            "description": "Please provide the following details to tailor the template to your preferences.\n\nUnique name for this project\nproject_name",
+            "order": 1,
+            "pattern": "^[a-z0-9_]+$",
+            "pattern_match_failure_message": "Name must consist of lower case letters, numbers, and underscores."
+        },
+        "default_catalog": {
+            "type": "string",
+            "default": "{{default_catalog}}",
+            "pattern": "^\\w*$",
+            "pattern_match_failure_message": "Invalid catalog name.",
+            "description": "\nInitial catalog:\ndefault_catalog",
+            "order": 3
+        },
+        "personal_schemas": {
+            "type": "string",
+            "description": "\nUse a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
+            "default": "yes",
+            "enum": [
+                "yes",
+                "no"
+            ],
+            "order": 4
+        },
+        "shared_schema": {
+            "skip_prompt_if": {
+                "properties": {
+                    "personal_schemas": {
+                        "const": "yes"
+                    }
+                }
+            },
+            "type": "string",
+            "default": "default",
+            "pattern": "^\\w+$",
+            "pattern_match_failure_message": "Invalid schema name.",
+            "description": "\nInitial schema during development:\ndefault_schema",
+            "order": 5
+        },
+        "language": {
+            "type": "string",
+            "default": "python",
+            "description": "\nInitial language for this project:\nlanguage",
+            "enum": [
+                "python",
+                "sql"
+            ],
+            "order": 6
+        }
+    },
+    "success_message": "\n\nYour new project has been created in the '{{.project_name}}' directory!\n\nRefer to the README.md file for \"getting started\" instructions!"
+}

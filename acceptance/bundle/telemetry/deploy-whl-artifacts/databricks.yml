@@ -1,9 +1,12 @@
 variables:
   wrapper:
     default: false
+  skip_artifact_cleanup:
+    default: false
 
 experimental:
   python_wheel_wrapper: ${var.wrapper}
+  skip_artifact_cleanup: ${var.skip_artifact_cleanup}
 
 targets:
   one:
@@ -15,6 +18,7 @@ targets:
   two:
     variables:
       wrapper: true
+      skip_artifact_cleanup: true
     artifacts:
       test:
         type: whl

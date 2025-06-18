@@ -3,11 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOr,
-    VariableOrList,
-    VariableOrOptional,
-)
+from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -17,16 +13,7 @@ if TYPE_CHECKING:
 class Environment:
     """
     The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-    (Note: DLT uses a copied version of the Environment proto below, at //spark/pipelines/api/protos/copied/libraries-environments-copy.proto)
     In this minimal environment spec, only pip dependencies are supported.
-    """
-
-    client: VariableOr[str]
-    """
-    Client version used by the environment
-    The client is the user-facing environment of the runtime.
-    Each client comes with a specific set of pre-installed libraries.
-    The version is a string, consisting of the major client version.
     """
 
     dependencies: VariableOrList[str] = field(default_factory=list)
@@ -36,12 +23,9 @@ class Environment:
 
     environment_version: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    We renamed `client` to `environment_version` in notebook exports. This field is meant solely so that imported notebooks with `environment_version` can be deserialized
-    correctly, in a backwards-compatible way (i.e. if `client` is specified instead of `environment_version`, it will be deserialized correctly). Do NOT use this field
-    for any other purpose, e.g. notebook storage.
-    This field is not yet exposed to customers (e.g. in the jobs API).
+    Required. Environment version used by the environment.
+    Each version comes with a specific Python version and a set of Python packages.
+    The version is a string, consisting of an integer.
     """
 
     jar_dependencies: VariableOrList[str] = field(default_factory=list)
@@ -62,14 +46,6 @@ class Environment:
 class EnvironmentDict(TypedDict, total=False):
     """"""
 
-    client: VariableOr[str]
-    """
-    Client version used by the environment
-    The client is the user-facing environment of the runtime.
-    Each client comes with a specific set of pre-installed libraries.
-    The version is a string, consisting of the major client version.
-    """
-
     dependencies: VariableOrList[str]
     """
     List of pip dependencies, as supported by the version of pip in this environment.
@@ -77,12 +53,9 @@ class EnvironmentDict(TypedDict, total=False):
 
     environment_version: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    We renamed `client` to `environment_version` in notebook exports. This field is meant solely so that imported notebooks with `environment_version` can be deserialized
-    correctly, in a backwards-compatible way (i.e. if `client` is specified instead of `environment_version`, it will be deserialized correctly). Do NOT use this field
-    for any other purpose, e.g. notebook storage.
-    This field is not yet exposed to customers (e.g. in the jobs API).
+    Required. Environment version used by the environment.
+    Each version comes with a specific Python version and a set of Python packages.
+    The version is a string, consisting of an integer.
     """
 
     jar_dependencies: VariableOrList[str]

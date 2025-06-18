@@ -1,0 +1,38 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.app-run
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+trace $CLI bundle deploy --force-lock --auto-approve
+
+title "App should exist after bundle deployment"
+trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status}'
+APP_URL=$($CLI apps get "app-${UNIQUE_NAME}" | jq -r '.url')
+
+title "Check app config"
+trace $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/app-with-job-${UNIQUE_NAME}/files/app/app.yml"
+
+title "Try to run the app\n"
+$CLI bundle run test_app &> out.app-run
+trace cat out.app-run | grep -q "${APP_URL}"
+
+title "App should be in the running state"
+trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status}'
+
+title "Stop the app"
+trace $CLI apps stop "app-${UNIQUE_NAME}" | jq '{compute_status}'
+trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status,compute_status}'
+
+title "Try to run the app again\n"
+$CLI bundle run test_app &> out.app-run
+trace cat out.app-run | grep -q "${APP_URL}"
+
+title "App should be in the running state"
+trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status}'
+
+title "Redeploy it again just to check that it can be redeployed"
+trace $CLI bundle deploy --force-lock --auto-approve

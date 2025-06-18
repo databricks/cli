@@ -1,13 +1,15 @@
 package apps
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/exec"
 )
 
 const DEBUG_PORT = "5678"
@@ -37,16 +39,17 @@ var defaultLibraries = []string{
 }
 
 type PythonApp struct {
+	ctx    context.Context
 	config *Config
 	spec   *AppSpec
 	uvArgs []string
 }
 
-func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
+func NewPythonApp(ctx context.Context, config *Config, spec *AppSpec) *PythonApp {
 	if config.DebugPort == "" {
 		config.DebugPort = DEBUG_PORT
 	}
-	return &PythonApp{config: config, spec: spec}
+	return &PythonApp{ctx: ctx, config: config, spec: spec}
 }
 
 // PrepareEnvironment creates a Python virtual environment using uv and installs required dependencies.
@@ -68,7 +71,9 @@ func (p *PythonApp) PrepareEnvironment() error {
 
 	// Install requirements if they exist
 	if _, err := os.Stat(filepath.Join(p.config.AppPath, "requirements.txt")); err == nil {
-		reqArgs := []string{"uv", "pip", "install", "-r", filepath.Join(p.config.AppPath, "requirements.txt")}
+		// We also execute command with CWD set at p.config.AppPath
+		// so we can just path local path to requirements.txt here
+		reqArgs := []string{"uv", "pip", "install", "-r", "requirements.txt"}
 		if err := p.runCommand(reqArgs); err != nil {
 			return err
 		}
@@ -133,11 +138,19 @@ func (p *PythonApp) enableDebugging() {
 	}
 }
 
-// runCommand executes the given command as a bash command and returns any error.
+// runCommand executes the given command and returns any error.
 func (p *PythonApp) runCommand(args []string) error {
-	cmd := exec.Command("bash", "-c", strings.Join(args, " "))
-	cmd.Dir = p.spec.config.AppPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	e, err := exec.NewCommandExecutor(p.config.AppPath)
+	if err != nil {
+		return err
+	}
+	e.WithInheritOutput()
+
+	// Safe to join args with spaces here since args are passed directly inside PrepareEnvironment() and GetCommand()
+	// and don't contain user input.
+	cmd, err := e.StartCommand(p.ctx, strings.Join(args, " "))
+	if err != nil {
+		return err
+	}
+	return cmd.Wait()
 }

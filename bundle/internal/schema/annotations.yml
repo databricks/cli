@@ -75,6 +75,13 @@ github.com/databricks/cli/bundle/config.Experimental:
   "scripts":
     "description": |-
       The commands to run.
+  "skip_artifact_cleanup":
+    "description": |-
+      Determines whether to skip cleaning up the .internal folder
+  "skip_name_prefix_for_schema":
+    "description": |-
+      Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`
+      is set, to the names of UC schemas defined in the bundle.
   "use_legacy_run_as":
     "description": |-
       Whether to use the legacy run_as behavior.
@@ -97,6 +104,9 @@ github.com/databricks/cli/bundle/config.Lock:
     "description": |-
       Whether to force this lock if it is enabled.
 github.com/databricks/cli/bundle/config.Presets:
+  "artifacts_dynamic_version":
+    "description": |-
+      Whether to enable dynamic_version on all artifacts.
   "jobs_max_concurrent_runs":
     "description": |-
       The maximum concurrent runs for a job.

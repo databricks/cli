@@ -153,7 +153,8 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a pipeline.`
 	cmd.Long = `Delete a pipeline.
   
-  Deletes a pipeline.`
+  Deletes a pipeline. Deleting a pipeline is a permanent action that stops and
+  removes the pipeline and its tables. You cannot undo this action.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -975,10 +976,12 @@ func newUpdate() *cobra.Command {
 	// TODO: array: notifications
 	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
+	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)
 	// TODO: complex arg: run_as
 	cmd.Flags().StringVar(&updateReq.Schema, "schema", updateReq.Schema, `The default schema (database) where tables are read from or published to.`)
 	cmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
 	cmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	// TODO: map via StringToStringVar: tags
 	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
 

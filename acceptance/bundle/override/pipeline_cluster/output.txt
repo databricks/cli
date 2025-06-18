@@ -6,7 +6,7 @@
     "clusters": [
       {
         "label": "default",
-        "node_type_id": "i3.xlarge",
+        "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 1,
         "spark_conf": {
           "foo": "bar"

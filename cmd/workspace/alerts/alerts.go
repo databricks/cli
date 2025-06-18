@@ -329,6 +329,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: alert
+	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts.`)
 
 	cmd.Use = "update ID UPDATE_MASK"
 	cmd.Short = `Update an alert.`

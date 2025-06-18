@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
@@ -23,11 +24,11 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) (d
 	}()
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
+		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Import(opts),
-		terraform.StatePush(),
+		statemgmt.StatePush(),
 	))
 
 	return diags
@@ -46,11 +47,11 @@ func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey str
 	}()
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
+		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Unbind(resourceType, resourceKey),
-		terraform.StatePush(),
+		statemgmt.StatePush(),
 	))
 
 	return diags

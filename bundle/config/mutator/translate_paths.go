@@ -49,13 +49,24 @@ func (err ErrIsNotNotebook) Error() string {
 
 type translatePaths struct{}
 
+type translatePathsDashboards struct{}
+
 // TranslatePaths converts paths to local notebook files into paths in the workspace file system.
 func TranslatePaths() bundle.Mutator {
 	return &translatePaths{}
 }
 
+// TranslatePathsDashboards converts paths to local dashboard files into paths in the workspace file system.
+func TranslatePathsDashboards() bundle.Mutator {
+	return &translatePathsDashboards{}
+}
+
 func (m *translatePaths) Name() string {
 	return "TranslatePaths"
+}
+
+func (m *translatePathsDashboards) Name() string {
+	return "TranslatePathsDashboards"
 }
 
 // translateContext is a context for rewriting paths in a config.
@@ -141,6 +152,8 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeDirectory:
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
+	case paths.TranslateModeGlob:
+		interp, err = t.translateGlobPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalAbsoluteDirectory:
 		interp, err = t.translateLocalAbsoluteDirectoryPath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalRelative:
@@ -230,6 +243,10 @@ func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, 
 	return path.Join(t.remoteRoot, localRelPath), nil
 }
 
+func (t *translateContext) translateGlobPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	return path.Join(t.remoteRoot, localRelPath), nil
+}
+
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
 	info, err := os.Stat(filepath.FromSlash(localFullPath))
 	if errors.Is(err, fs.ErrNotExist) {
@@ -275,12 +292,7 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 	return dyn.NewValue(out, v.Locations()), nil
 }
 
-func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	t := &translateContext{
-		b:    b,
-		seen: make(map[string]string),
-	}
-
+func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
 	// Set the remote root to the sync root if source-linked deployment is enabled.
 	// Otherwise, set it to the workspace file path.
 	if config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment) {
@@ -291,13 +303,8 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
-		for _, fn := range []func(context.Context, dyn.Value) (dyn.Value, error){
-			t.applyJobTranslations,
-			t.applyPipelineTranslations,
-			t.applyArtifactTranslations,
-			t.applyDashboardTranslations,
-			t.applyAppsTranslations,
-		} {
+
+		for _, fn := range translations {
 			v, err = fn(ctx, v)
 			if err != nil {
 				return dyn.InvalidValue, err
@@ -307,6 +314,31 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	})
 
 	return diag.FromErr(err)
+}
+
+func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	t := &translateContext{
+		b:    b,
+		seen: make(map[string]string),
+	}
+
+	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
+		t.applyJobTranslations,
+		t.applyPipelineTranslations,
+		t.applyArtifactTranslations,
+		t.applyAppsTranslations,
+	})
+}
+
+func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	t := &translateContext{
+		b:    b,
+		seen: make(map[string]string),
+	}
+
+	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
+		t.applyDashboardTranslations,
+	})
 }
 
 // gatherFallbackPaths collects the fallback paths for relative paths in the configuration.
