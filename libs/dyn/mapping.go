@@ -28,6 +28,14 @@ func NewMapping() Mapping {
 	}
 }
 
+// This function is useful to create test fixtures.
+func NewMappingFromPairs(pairs []Pair, index map[string]int) Mapping {
+	return Mapping{
+		pairs: pairs,
+		index: index,
+	}
+}
+
 // newMappingWithSize creates a new Mapping preallocated to the specified size.
 func newMappingWithSize(size int) Mapping {
 	return Mapping{
