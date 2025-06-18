@@ -7,24 +7,18 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
-type installDLTResponse struct {
-	SymlinkPath string `json:"symlink_path"`
-}
-
-func installDLTSymlink(directory string) (string, error) {
+func installDLTSymlink(directory string) error {
 	path, err := os.Executable()
 	if err != nil {
-		return "", err
+		return err
 	}
 	realPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	dir := directory
@@ -36,26 +30,25 @@ func installDLTSymlink(directory string) (string, error) {
 	_, err = os.Lstat(dltPath)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
+			return err
 		}
 		err = os.Symlink(realPath, dltPath)
 		if err != nil {
-			return "", err
+			return err
 		}
 		cmdio.LogString(context.Background(), fmt.Sprintf("dlt successfully installed in directory %q", dir))
-		return dltPath, nil
+		return nil
 	}
 
 	target, err := filepath.EvalSymlinks(dltPath)
 	if err != nil {
-		return "", err
+		return err
 	}
 	if realPath == target {
 		cmdio.LogString(context.Background(), fmt.Sprintf("dlt already installed in directory %q", dir))
-		return dltPath, nil
+		return nil
 	}
-	cmdio.LogString(context.Background(), fmt.Sprintf("cannot install dlt CLI: %q already exists", dltPath))
-	return "", errors.New("installation failed")
+	return fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
 }
 
 func InstallDLT() *cobra.Command {
@@ -65,19 +58,7 @@ func InstallDLT() *cobra.Command {
 		Short:  "Install DLT",
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			dltPath, err := installDLTSymlink(directory)
-			if err != nil {
-				return err
-			}
-			response := installDLTResponse{
-				SymlinkPath: dltPath,
-			}
-			switch root.OutputType(cmd) {
-			case flags.OutputJSON:
-				return cmdio.Render(cmd.Context(), response)
-			default:
-				return nil
-			}
+			return installDLTSymlink(directory)
 		},
 	}
 	cmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory in which to install dlt CLI (defaults to databricks CLI's directory)")

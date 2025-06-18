@@ -1,20 +1,25 @@
+tmpdir="./subdir"
+dlt="$tmpdir/dlt"
+mkdir -p $tmpdir
+
 title "install dlt"
-dlt=$(trace errcode $CLI install-dlt -o json | jq -r .symlink_path)
-trace $dlt | head -n1 | grep -q "DLT CLI" && echo "DLT command verified" || echo "DLT command failed"
+trace errcode $CLI install-dlt -d $tmpdir
+trace errcode $dlt | head -n1
 
 title "dlt already installed"
-trace errcode $CLI install-dlt
-rm -f "$(dirname $CLI)/dlt"
+trace errcode $CLI install-dlt -d $tmpdir
+rm -f $dlt
 
 title "dlt file exists, should not overwrite"
-mkdir -p tmpdir
-touch tmpdir/dlt
-trace errcode $CLI install-dlt -d tmpdir -o json | jq -r .symlink_path
-rm -rf tmpdir
+touch $dlt
+trace errcode $CLI install-dlt -d $tmpdir
+rm -f $dlt
 
-title "Executable not called as databricks"
-cp $CLI notdatabricks
-dlt=$(trace errcode ./notdatabricks install-dlt -o json | jq -r .symlink_path)
-trace $dlt | head -n1 | grep -q "DLT CLI" && echo "DLT command verified" || echo "DLT command failed"
-rm -f notdatabricks
-rm -f dlt
+title "databricks executable called with alias"
+cp $CLI $tmpdir/notdatabricks
+trace errcode $tmpdir/notdatabricks install-dlt -d $tmpdir
+trace errcode $dlt | head -n1
+
+# Cleanup
+rm -f $tmpdir/notdatabricks $dlt
+rm -rf $tmpdir

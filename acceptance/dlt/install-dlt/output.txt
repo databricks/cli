@@ -1,25 +1,24 @@
 
 === install dlt
->>> errcode [CLI] install-dlt -o json
-dlt successfully installed in directory "[BUILD_DIR]"
+>>> errcode [CLI] install-dlt -d ./subdir
+dlt successfully installed in directory "./subdir"
 
->>> [BUILD_DIR]/dlt
-DLT command verified
+>>> errcode ./subdir/dlt
+DLT CLI (stub, to be filled in)
 
 === dlt already installed
->>> errcode [CLI] install-dlt
-dlt already installed in directory "[BUILD_DIR]"
+>>> errcode [CLI] install-dlt -d ./subdir
+dlt already installed in directory "./subdir"
 
 === dlt file exists, should not overwrite
->>> errcode [CLI] install-dlt -d tmpdir -o json
-cannot install dlt CLI: "tmpdir/dlt" already exists
-Error: installation failed
+>>> errcode [CLI] install-dlt -d ./subdir
+Error: cannot install dlt CLI: "subdir/dlt" already exists
 
 Exit code: 1
 
-=== Executable not called as databricks
->>> errcode ./notdatabricks install-dlt -o json
-dlt successfully installed in directory "[TEST_TMP_DIR]"
+=== databricks executable called with alias
+>>> errcode ./subdir/notdatabricks install-dlt -d ./subdir
+dlt successfully installed in directory "./subdir"
 
->>> [TEST_TMP_DIR]/dlt
-DLT command verified
+>>> errcode ./subdir/dlt
+DLT CLI (stub, to be filled in)
