@@ -74,11 +74,11 @@ Resources:
 +        "id": "[UUID]",
          "libraries": [
            {
-@@ -142,5 +145,6 @@
-         "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
-         "permissions": [],
--        "schema": "project_name_[UNIQUE_NAME]_dev"
-+        "schema": "project_name_[UNIQUE_NAME]_dev",
+@@ -145,5 +148,6 @@
+         "tags": {
+           "dev": "[USERNAME]"
+-        }
++        },
 +        "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
      }
@@ -184,7 +184,7 @@ Validation OK!
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -125,22 +114,21 @@
+@@ -125,25 +114,21 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -208,11 +208,14 @@ Validation OK!
 -        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
 +        "name": "project_name_[UNIQUE_NAME]_pipeline",
          "permissions": [],
--        "schema": "project_name_[UNIQUE_NAME]_dev"
+-        "schema": "project_name_[UNIQUE_NAME]_dev",
+-        "tags": {
+-          "dev": "[USERNAME]"
+-        }
 +        "schema": "project_name_[UNIQUE_NAME]_prod"
        }
      }
-@@ -153,10 +141,10 @@
+@@ -156,10 +141,10 @@
    "targets": null,
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
@@ -349,7 +352,7 @@ Resources:
 -        "development": true,
          "edition": "ADVANCED",
          "id": "[UUID]",
-@@ -139,11 +127,11 @@
+@@ -139,14 +127,11 @@
            {
              "notebook": {
 -              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
@@ -361,10 +364,13 @@ Resources:
 +        "name": "project_name_[UNIQUE_NAME]_pipeline",
          "permissions": [],
 -        "schema": "project_name_[UNIQUE_NAME]_dev",
+-        "tags": {
+-          "dev": "[USERNAME]"
+-        },
 +        "schema": "project_name_[UNIQUE_NAME]_prod",
          "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
-@@ -157,10 +145,10 @@
+@@ -160,10 +145,10 @@
    "targets": null,
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
