@@ -149,9 +149,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	BuildYamlfmt(t)
 
-	t.Setenv("CLI", execPath)
-	repls.SetPath(execPath, "[CLI]")
-
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -193,6 +190,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
 	}
+
+	// CLI repl has to be set after DATABRICKS_BUNDLES_WHEEL because wheel has
+	// "databricks_" prefix and replacement doesn't work otherwise
+	t.Setenv("CLI", execPath)
+	repls.SetPath(execPath, "[CLI]")
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
