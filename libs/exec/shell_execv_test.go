@@ -39,7 +39,7 @@ func TestShellExecv_WindowsCleanup(t *testing.T) {
 	testutil.NullEnvironment(t)
 
 	dir := t.TempDir()
-	t.Setenv("TMPDIR", dir)
+	t.Setenv("TMP", dir)
 
 	// Configure PATH so that only cmd.exe shows up.
 	binDir := t.TempDir()
