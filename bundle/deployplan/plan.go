@@ -6,11 +6,11 @@ import (
 )
 
 type Plan struct {
-	// Path to the plan
-	Path string
+	// TerraformPlan is the plan from the terraform CLI
+	TerraformPlan string
 
 	// If true, the plan is empty and applying it will not do anything
-	IsEmpty bool
+	TerraformIsEmpty bool
 }
 
 type Action struct {
