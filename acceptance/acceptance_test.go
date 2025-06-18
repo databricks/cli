@@ -1034,7 +1034,11 @@ func buildUVCache(t *testing.T) {
 	uvPythonInstallDir := filepath.Join(uvCache, "python_installs")
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvPythonInstallDir)
 
-	RunCommand(t, []string{"uv", "python", "install", "3.9", "3.10", "3.11", "3.12", "3.13"}, ".")
+	// we can buildUVCache again for in-process mode tests, and we can't call
+	// 'uv python install' command anymore after UV_PYTHON_DOWNLOADS is set to 'never'
+	if os.Getenv("UV_PYTHON_DOWNLOADS") != "never" {
+		RunCommand(t, []string{"uv", "python", "install", "3.9", "3.10", "3.11", "3.12", "3.13"}, ".")
+	}
 
 	// Do not ever allow Python downloads, because we expect cache to be warm
 	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
