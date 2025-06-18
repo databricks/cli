@@ -24,9 +24,12 @@ targets:
     workspace:
       host: [DATABRICKS_URL]
 
-    artifacts:
-      python_artifact:
-        dynamic_version: true
+    presets:
+      # Set dynamic_version: true on all artifacts of type "whl".
+      # This makes "bundle deploy" add a timestamp to wheel's version before uploading,
+      # new wheel takes over the previous installation even if actual wheel version is unchanged.
+      # See https://docs.databricks.com/aws/en/dev-tools/bundles/settings
+      artifacts_dynamic_version: true
 
   prod:
     mode: production

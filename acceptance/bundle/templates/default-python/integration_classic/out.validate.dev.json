@@ -33,6 +33,7 @@
     "resources/project_name_[UNIQUE_NAME].pipeline.yml"
   ],
   "presets": {
+    "artifacts_dynamic_version": true,
     "jobs_max_concurrent_runs": 4,
     "name_prefix": "[dev [USERNAME]] ",
     "pipelines_development": true,
