@@ -45,3 +45,11 @@ func CopyDirectory(t TestingT, src, dst string) {
 
 	require.NoError(t, err)
 }
+
+func CopyFile(t TestingT, src, dst string) {
+	content, err := os.ReadFile(src)
+	require.NoError(t, err)
+
+	err = os.WriteFile(dst, content, 0o644)
+	require.NoError(t, err)
+}
