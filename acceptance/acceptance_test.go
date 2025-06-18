@@ -134,6 +134,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
 	}
 
+	// Do not ever allow Python downloads, because we expect cache to be warm
+	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
+
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
 	if coverDir != "" {
