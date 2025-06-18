@@ -182,6 +182,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
+	// UV_PYTHON_BIN_DIR specifies the directory to place links to installed,
+	// managed Python executables.
+	t.Setenv("UV_PYTHON_BIN_DIR", filepath.Join(uvCache, "python_bins"))
+
 	// UV_CACHE_DIR only applies to packages but not Python installations.
 	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
 	uvInstall := filepath.Join(uvCache, "python_installs")
