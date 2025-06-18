@@ -48,21 +48,26 @@ var defaultTerraformVersion = TerraformVersion{
 
 // GetTerraformVersion returns the Terraform version to use.
 // The user can configure the Terraform version to use by setting the
-// DATABRICKS_TF_VERSION_OVERRIDE environment variable to the desired version.
+// DATABRICKS_TF_VERSION environment variable to the desired version.
 // It returns an error if the version is malformed.
 func GetTerraformVersion(ctx context.Context) (TerraformVersion, error) {
-	versionOverride, ok := env.Lookup(ctx, TerraformVersionEnv)
+	versionEnv, ok := env.Lookup(ctx, TerraformVersionEnv)
 	if !ok {
 		return defaultTerraformVersion, nil
 	}
 
-	v, err := version.NewVersion(versionOverride)
+	v, err := version.NewVersion(versionEnv)
 	if err != nil {
 		return TerraformVersion{}, err
 	}
 
 	return TerraformVersion{
 		Version: v,
+
+		// Checksums are unknown if we return a user-specified version. This is not an issue,
+		// because they are only used in the output of the `databricks bundle debug terraform` command.
+		ChecksumLinuxArm64: "",
+		ChecksumLinuxAmd64: "",
 	}, nil
 }
 
