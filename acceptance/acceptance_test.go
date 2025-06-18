@@ -128,17 +128,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Download terraform and provider and create config; this also creates build directory.
 	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
 
-	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
-	if wheelPath != "" {
-		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
-		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
-	}
-
-	RunCommand(t, []string{"uv", "python", "install", "3.10"}, ".")
-
-	// Do not ever allow Python downloads, because we expect cache to be warm
-	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
-
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
 	if coverDir != "" {
@@ -190,6 +179,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
 	uvInstall := filepath.Join(uvCache, "python_installs")
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
+
+	RunCommand(t, []string{"uv", "python", "install", "3.10"}, ".")
+
+	// Do not ever allow Python downloads, because we expect cache to be warm
+	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
+
+	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
+	if wheelPath != "" {
+		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
+		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
+	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
