@@ -134,6 +134,8 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
 	}
 
+	RunCommand(t, []string{"uv", "python", "install", "3.10"}, ".")
+
 	// Do not ever allow Python downloads, because we expect cache to be warm
 	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
 
