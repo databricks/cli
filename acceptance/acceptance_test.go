@@ -164,26 +164,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls.SetPath(tempHomeDir, "[TMPHOME]")
 	t.Logf("$TMPHOME=%v", tempHomeDir)
 
-	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
-	uvCache := getUVDefaultCacheDir(t)
-	t.Setenv("UV_CACHE_DIR", uvCache)
-
-	// UV_PYTHON_BIN_DIR specifies the directory to place links to installed,
-	// managed Python executables.
-	t.Setenv("UV_PYTHON_BIN_DIR", filepath.Join(uvCache, "python_bins"))
-
-	// UV_CACHE_DIR only applies to packages but not Python installations.
-	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
-	uvInstall := filepath.Join(uvCache, "python_installs")
-	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
-
-	RunCommand(t, []string{"uv", "python", "install", "3.9"}, ".")
-	RunCommand(t, []string{"uv", "python", "install", "3.10"}, ".")
-	RunCommand(t, []string{"uv", "python", "install", "3.11"}, ".")
-	RunCommand(t, []string{"uv", "python", "install", "3.12"}, ".")
-
-	// Do not ever allow Python downloads, because we expect cache to be warm
-	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
+	buildUVCache(t)
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -1034,6 +1015,32 @@ func getNodeTypeID(cloudEnv string) string {
 	default:
 		return "nodetype-" + cloudEnv
 	}
+}
+
+// buildUVCache sets up the UV cache directory and installs Python versions,
+// so any subsequent tests can use the cached Python installations.
+func buildUVCache(t *testing.T) {
+	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
+	uvCache := getUVDefaultCacheDir(t)
+	t.Setenv("UV_CACHE_DIR", uvCache)
+
+	// UV_PYTHON_BIN_DIR specifies the directory to place links to installed,
+	// managed Python executables.
+	uvPythonBinDir := filepath.Join(uvCache, "python_bins")
+	t.Setenv("UV_PYTHON_BIN_DIR", uvPythonBinDir)
+
+	// UV_CACHE_DIR only applies to packages but not Python installations.
+	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
+	uvPythonInstallDir := filepath.Join(uvCache, "python_installs")
+	t.Setenv("UV_PYTHON_INSTALL_DIR", uvPythonInstallDir)
+
+	cachedPythonVersions := []string{"3.9", "3.10", "3.11", "3.12"}
+	for _, version := range cachedPythonVersions {
+		RunCommand(t, []string{"uv", "python", "install", version}, ".")
+	}
+
+	// Do not ever allow Python downloads, because we expect cache to be warm
+	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
 }
 
 // buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
