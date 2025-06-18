@@ -1,6 +1,3 @@
-bundle:
-  name: artifacts_dynamic_version_test
-
 presets:
   artifacts_dynamic_version: true
 
