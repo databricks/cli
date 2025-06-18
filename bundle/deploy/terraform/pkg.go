@@ -49,16 +49,17 @@ var defaultTerraformVersion = TerraformVersion{
 // GetTerraformVersion returns the Terraform version to use.
 // The user can configure the Terraform version to use by setting the
 // DATABRICKS_TF_VERSION environment variable to the desired version.
+// It returns true if the version is the default version.
 // It returns an error if the version is malformed.
-func GetTerraformVersion(ctx context.Context) (TerraformVersion, error) {
+func GetTerraformVersion(ctx context.Context) (TerraformVersion, bool, error) {
 	versionEnv, ok := env.Lookup(ctx, TerraformVersionEnv)
 	if !ok {
-		return defaultTerraformVersion, nil
+		return defaultTerraformVersion, true, nil
 	}
 
 	v, err := version.NewVersion(versionEnv)
 	if err != nil {
-		return TerraformVersion{}, err
+		return TerraformVersion{}, false, err
 	}
 
 	return TerraformVersion{
@@ -68,7 +69,7 @@ func GetTerraformVersion(ctx context.Context) (TerraformVersion, error) {
 		// because they are only used in the output of the `databricks bundle debug terraform` command.
 		ChecksumLinuxArm64: "",
 		ChecksumLinuxAmd64: "",
-	}, nil
+	}, false, nil
 }
 
 type Checksum struct {
@@ -85,7 +86,7 @@ type TerraformMetadata struct {
 }
 
 func NewTerraformMetadata(ctx context.Context) (*TerraformMetadata, error) {
-	tv, err := GetTerraformVersion(ctx)
+	tv, _, err := GetTerraformVersion(ctx)
 	if err != nil {
 		return nil, err
 	}

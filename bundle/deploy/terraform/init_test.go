@@ -462,6 +462,56 @@ func TestFindExecPath_UseExistingBinary(t *testing.T) {
 	assert.Contains(t, testutil.ReadFile(t, b.Config.Bundle.Terraform.ExecPath), "1.2.3")
 }
 
+func TestFindExecPath_ExecPathWrongVersion(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+
+	// Configure a valid exec path.
+	version := "1.2.4"
+	execPath := createFakeTerraformBinary(t, t.TempDir(), version)
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", execPath)
+
+	// Verify that the error is returned.
+	expected := []string{
+		`Terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is ` + version + ` but expected version is ` + defaultTerraformVersion.Version.String() + `.`,
+		`Set DATABRICKS_TF_VERSION to ` + version + ` to continue.`,
+	}
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.ErrorContains(t, err, strings.Join(expected, " "))
+}
+
+func TestFindExecPath_ExecPathMatchingVersion(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+
+	// Configure a valid exec path.
+	execPath := createFakeTerraformBinary(t, t.TempDir(), defaultTerraformVersion.Version.String())
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", execPath)
+
+	// Verify that the pre-existing Terraform binary is used.
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.NoError(t, err)
+	assert.Equal(t, execPath, b.Config.Bundle.Terraform.ExecPath)
+}
+
 func TestFindExecPath_Version_NoExecPath(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
@@ -532,8 +582,12 @@ func TestFindExecPath_Version_ExecPathWrongVersion(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", execPath)
 
 	// Verify that the error is returned.
+	expected := []string{
+		`Terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is 1.2.4 but expected version is 1.2.3 (from $DATABRICKS_TF_VERSION).`,
+		`Update $DATABRICKS_TF_EXEC_PATH and $DATABRICKS_TF_VERSION so that versions match.`,
+	}
 	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
-	require.ErrorContains(t, err, "terraform version mismatch: 1.2.3 (expected) != 1.2.4 (actual)")
+	require.ErrorContains(t, err, strings.Join(expected, " "))
 }
 
 func TestFindExecPath_Version_ExecPathMatchingVersion(t *testing.T) {

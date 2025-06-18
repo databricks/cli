@@ -42,7 +42,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	}
 
 	// Resolve the version of the Terraform CLI to use.
-	tv, err := GetTerraformVersion(ctx)
+	tv, isDefault, err := GetTerraformVersion(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -62,11 +62,28 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		}
 
 		if !actualVersion.Equal(expectedVersion) {
-			return "", fmt.Errorf(
-				"terraform version mismatch: %s (expected) != %s (actual)",
-				expectedVersion.String(),
-				actualVersion.String(),
-			)
+			if isDefault {
+				return "", fmt.Errorf(
+					"Terraform binary at %s (from $%s) is %s but expected version is %s. Set %s to %s to continue.",
+					execPathValue,
+					TerraformExecPathEnv,
+					actualVersion.String(),
+					expectedVersion.String(),
+					TerraformVersionEnv,
+					actualVersion.String(),
+				)
+			} else {
+				return "", fmt.Errorf(
+					"Terraform binary at %s (from $%s) is %s but expected version is %s (from $%s). Update $%s and $%s so that versions match.",
+					execPathValue,
+					TerraformExecPathEnv,
+					actualVersion.String(),
+					expectedVersion.String(),
+					TerraformVersionEnv,
+					TerraformExecPathEnv,
+					TerraformVersionEnv,
+				)
+			}
 		}
 
 		tf.ExecPath = execPathValue
