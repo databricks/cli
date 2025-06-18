@@ -353,6 +353,47 @@ func TestInheritEnvVarsWithCorrectTFCLIConfigFile(t *testing.T) {
 
 func createFakeTerraformBinary(t *testing.T, dest, version string) string {
 	binPath := filepath.Join(dest, product.Terraform.BinaryName())
+	jsonPayload := fmt.Sprintf(`{
+  "terraform_version": "%s",
+  "provider_selections": {}
+}
+`, version)
+
+	if runtime.GOOS == "windows" {
+		// Create stub with .exe that cannot be executed.
+		// We need it because the implementation looks for this file to see if it is cached.
+		createFakeTerraformBinaryWindows(t, binPath, jsonPayload, version)
+		// Create stub with .bat that can be executed.
+		// We use this path when setting the DATABRICKS_TF_EXEC_PATH environment variable.
+		createFakeTerraformBinaryWindows(t, binPath+".bat", jsonPayload, version)
+		// Return the .bat file that can be executed.
+		return binPath + ".bat"
+	} else {
+		return createFakeTerraformBinaryOther(t, binPath, jsonPayload, version)
+	}
+}
+
+func createFakeTerraformBinaryWindows(t *testing.T, binPath, jsonPayload, version string) string {
+	f, err := os.Create(binPath)
+	require.NoError(t, err)
+	defer func() {
+		err = f.Close()
+		require.NoError(t, err)
+	}()
+	// Write the payload to a temp file and type it, to avoid escaping issues
+	tmpJsonPath := filepath.Join(t.TempDir(), "payload.json")
+	err = os.WriteFile(tmpJsonPath, []byte(jsonPayload), 0o644)
+	require.NoError(t, err)
+	_, err = f.WriteString(fmt.Sprintf(`@echo off
+REM This is a fake Terraform binary that returns the JSON payload.
+REM It stubs version %s.
+type "%s"
+`, version, tmpJsonPath))
+	require.NoError(t, err)
+	return binPath
+}
+
+func createFakeTerraformBinaryOther(t *testing.T, binPath, jsonPayload, version string) string {
 	f, err := os.Create(binPath)
 	require.NoError(t, err)
 	defer func() {
@@ -362,13 +403,11 @@ func createFakeTerraformBinary(t *testing.T, dest, version string) string {
 	err = f.Chmod(0o777)
 	require.NoError(t, err)
 	_, err = f.WriteString(fmt.Sprintf(`#!/bin/sh
+# This is a fake Terraform binary that returns the JSON payload.
+# It stubs version %s.
 cat <<EOF
-{
-  "terraform_version": "%s",
-  "provider_selections": {}
-}
-EOF
-`, version))
+%sEOF
+`, version, jsonPayload))
 	require.NoError(t, err)
 	return binPath
 }
