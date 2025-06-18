@@ -13,12 +13,12 @@ type ExecvOptions struct {
 
 	// It is not possible to execute a cmd.exe script inlined as a argument
 	// to cmd.exe. They have to be serialized to a file and executed.
-	// This if [Execv] is used to execution a script though cmd.exe,
+	// Thus if [Execv] is used to execution a script though cmd.exe,
 	// the caller should register a cleanup function to clean up the temporary file.
 	WindowsCleanup func()
 
-	// Callback to exit process in windows. Having this as a function here helps with
-	// testing.
+	// Callback to exit the current process in windows. Having this as a function here
+	// helps with testing.
 	WindowsExit func(status int)
 }
 

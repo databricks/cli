@@ -24,32 +24,22 @@ func CopyDirectory(t TestingT, src, dst string) {
 			return os.MkdirAll(filepath.Join(dst, rel), 0o755)
 		}
 
-		// Copy the file to the temporary directory
-		in, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-
-		defer in.Close()
-
-		out, err := os.Create(filepath.Join(dst, rel))
-		if err != nil {
-			return err
-		}
-
-		defer out.Close()
-
-		_, err = io.Copy(out, in)
-		return err
+		CopyFile(t, path, filepath.Join(dst, rel))
+		return nil
 	})
 
 	require.NoError(t, err)
 }
 
 func CopyFile(t TestingT, src, dst string) {
-	content, err := os.ReadFile(src)
+	srcF, err := os.Open(src)
 	require.NoError(t, err)
+	defer srcF.Close()
 
-	err = os.WriteFile(dst, content, 0o644)
+	dstF, err := os.Create(dst)
+	require.NoError(t, err)
+	defer dstF.Close()
+
+	_, err = io.Copy(dstF, srcF)
 	require.NoError(t, err)
 }
