@@ -1,0 +1,11 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/empty-bundle/default/files...
+Deploying resources...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/empty-bundle/default
+
+Deleting files...
+Destroy complete!
