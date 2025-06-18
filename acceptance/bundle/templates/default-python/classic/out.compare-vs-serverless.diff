@@ -1,11 +1,23 @@
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/databricks.yml
 +++ output/my_default_python/databricks.yml
+<<<<<<< HEAD
 @@ -25,4 +25,8 @@
        host: [DATABRICKS_URL]
 
 +    artifacts:
 +      python_artifact:
 +        dynamic_version: true
+=======
+@@ -25,4 +25,11 @@
+       host: [DATABRICKS_URL]
+
++    presets:
++      # Set dynamic_version: true on all artifacts of type "whl".
++      # This makes "bundle deploy" add a timestamp to wheel's version before uploading,
++      # new wheel takes over the previous installation even if actual wheel version is unchanged.
++      # See https://docs.databricks.com/aws/en/dev-tools/bundles/settings
++      artifacts_dynamic_version: true
+>>>>>>> 5aac9f812 (add missing output files)
 +
    prod:
      mode: production
@@ -38,7 +50,11 @@
 -          # Full documentation of this spec can be found at:
 -          # https://docs.databricks.com/api/workspace/jobs/create#environments-spec
 -          spec:
+<<<<<<< HEAD
 -            client: "2"
+=======
+-            client: "1"
+>>>>>>> 5aac9f812 (add missing output files)
 -            dependencies:
 -              - ../dist/*.whl
 +      job_clusters:
