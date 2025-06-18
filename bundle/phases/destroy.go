@@ -9,12 +9,11 @@ import (
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-
 	"github.com/databricks/cli/libs/log"
-	terraformlib "github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -37,22 +36,12 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, errors.New("terraform not initialized")
 	}
 
-	// read plan file
-	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.Path)
 	if err != nil {
 		return false, err
 	}
 
-	var deleteActions []terraformlib.Action
-	for _, rc := range plan.ResourceChanges {
-		if rc.Change.Actions.Delete() {
-			deleteActions = append(deleteActions, terraformlib.Action{
-				Action:       terraformlib.ActionTypeDelete,
-				ResourceType: rc.Type,
-				ResourceName: rc.Name,
-			})
-		}
-	}
+	deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
 
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
@@ -116,7 +105,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
 	}()
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
+		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Plan(terraform.PlanGoal("destroy")),
