@@ -26,8 +26,7 @@ func TestShellExecvOpts(t *testing.T) {
 	assert.Equal(t, "echo hello", opts.Args[2])
 }
 
-// TODO: Add cases for other cases, like non 0 exit and the command itself erroring.
-func TestShellExecv_WindowsCleanup(t *testing.T) {
+func TestShellExecv_Windows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("skipping windows test")
 	}
@@ -38,39 +37,49 @@ func TestShellExecv_WindowsCleanup(t *testing.T) {
 	// Cleanup environment so that other shells like bash and sh are not used.
 	testutil.NullEnvironment(t)
 
-	dir := t.TempDir()
-	t.Setenv("TMP", dir)
-
 	// Configure PATH so that only cmd.exe shows up.
 	binDir := t.TempDir()
 	testutil.CopyFile(t, cmdExePath, filepath.Join(binDir, "cmd.exe"))
 	os.Setenv("PATH", binDir)
 
-	content := "echo hello"
-	opts, err := shellExecvOpts(content, dir, []string{})
-	require.NoError(t, err)
-
-	// Override the exit function. You cannot call [os.Exit] from a test.
-	exitCode := -1
-	opts.WindowsExit = func(status int) {
-		exitCode = status
+	tests := []struct {
+		name     string
+		content  string
+		exitCode int
+	}{
+		{name: "success", content: "echo hello", exitCode: 0},
+		{name: "non-zero exit", content: "exit 127", exitCode: 127},
+		{name: "command error", content: "not-a-command", exitCode: 1},
 	}
 
-	// Verify that the temporary file is created.
-	files, err := os.ReadDir(dir)
-	require.NoError(t, err)
-	assert.Len(t, files, 1)
-	assert.Regexp(t, "cli-exec.*\\.cmd", files[0].Name())
+	for _, test := range tests {
+		dir := t.TempDir()
+		t.Setenv("TMP", dir)
 
-	// Execute the script.
-	err = Execv(opts)
-	require.NoError(t, err)
+		opts, err := shellExecvOpts(test.content, dir, []string{})
+		require.NoError(t, err)
 
-	// Verify that the exit code is set.
-	assert.Equal(t, 0, exitCode)
+		// Verify that the temporary file is created.
+		files, err := os.ReadDir(dir)
+		require.NoError(t, err)
+		assert.Len(t, files, 1)
+		assert.Regexp(t, "cli-exec.*\\.cmd", files[0].Name())
 
-	// Verify that the temporary file is cleaned up after execution.
-	files, err = os.ReadDir(dir)
-	require.NoError(t, err)
-	assert.Len(t, files, 0)
+		exitCode := -1
+		opts.WindowsExit = func(status int) {
+			exitCode = status
+		}
+
+		// Execute the script.
+		err = Execv(opts)
+		require.NoError(t, err)
+
+		// Verify that the temporary file is cleaned up after execution.
+		files, err = os.ReadDir(dir)
+		require.NoError(t, err)
+		assert.Len(t, files, 0)
+
+		// Verify that the exit code is set.
+		assert.Equal(t, test.exitCode, exitCode)
+	}
 }
