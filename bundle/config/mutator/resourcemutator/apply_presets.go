@@ -104,7 +104,18 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if t.TriggerPauseStatus == config.Paused {
 			p.Continuous = false
 		}
-		// As of 2024-06, pipelines don't yet support tags
+
+		if len(tags) > 0 {
+			if p.Tags == nil {
+				// Note: only create this map if tags is not empty, to avoid inserting "tags: {}" entry in the config
+				p.Tags = make(map[string]string, len(tags))
+			}
+			for _, tag := range tags {
+				if p.Tags[tag.Key] == "" {
+					p.Tags[tag.Key] = tag.Value
+				}
+			}
+		}
 	}
 
 	// Models presets: Prefix, Tags
