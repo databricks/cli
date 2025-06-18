@@ -50,11 +50,11 @@ func TestShellExecv_WindowsCleanup(t *testing.T) {
 	opts, err := shellExecvOpts(content, dir, []string{})
 	require.NoError(t, err)
 
-	var exitCode *int
+	// Override the exit function. You cannot call [os.Exit] from a test.
+	exitCode := -1
 	opts.WindowsExit = func(status int) {
-		exitCode = &status
+		exitCode = status
 	}
-	assert.Equal(t, 0, *exitCode)
 
 	// Verify that the temporary file is created.
 	files, err := os.ReadDir(dir)
@@ -65,6 +65,9 @@ func TestShellExecv_WindowsCleanup(t *testing.T) {
 	// Execute the script.
 	err = Execv(opts)
 	require.NoError(t, err)
+
+	// Verify that the exit code is set.
+	assert.Equal(t, 0, exitCode)
 
 	// Verify that the temporary file is cleaned up after execution.
 	files, err = os.ReadDir(dir)
