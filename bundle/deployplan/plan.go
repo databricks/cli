@@ -11,6 +11,9 @@ type Plan struct {
 
 	// If true, the plan is empty and applying it will not do anything
 	TerraformIsEmpty bool
+
+	// List of actions to apply (direct deployment)
+	Actions []Action
 }
 
 type Action struct {
@@ -40,6 +43,8 @@ func (a Action) IsInplaceSupported() bool {
 type ActionType string
 
 const (
+	ActionTypeUnset    ActionType = ""
+	ActionTypeNoop     ActionType = "noop"
 	ActionTypeCreate   ActionType = "create"
 	ActionTypeDelete   ActionType = "delete"
 	ActionTypeUpdate   ActionType = "update"

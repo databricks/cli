@@ -28,9 +28,9 @@ type ResourceEntry struct {
 }
 
 type ResourceNode struct {
-	Section string
-	Name    string
-	ID      string
+	Group string
+	Name  string
+	ID    string
 }
 
 func (db *TerranovaState) SaveState(section, resourceName, newID string, state any) error {
@@ -81,6 +81,28 @@ func (db *TerranovaState) GetResourceEntry(section, resourceName string) (Resour
 	return result, ok
 }
 
+/*
+func (db *TerranovaState) GetAllResourcesMap() map[string]map[string]any {
+	db.assertOpened()
+
+	nodes := make(map[string]map[string]any)
+
+	for _, group := range utils.SortedKeys(db.data.Resources) {
+		submap, ok := nodes[group]
+		if !ok {
+			submap = make(map[string]any)
+			nodes[group] = submap
+		}
+
+		sectionData := db.data.Resources[group]
+		for _, name := range sectionData {
+			submap[name] = nil
+		}
+	}
+
+	return nodes
+}*/
+
 func (db *TerranovaState) GetAllResources() []ResourceNode {
 	db.assertOpened()
 
@@ -90,9 +112,9 @@ func (db *TerranovaState) GetAllResources() []ResourceNode {
 		sectionData := db.data.Resources[section]
 		for _, name := range utils.SortedKeys(sectionData) {
 			nodes = append(nodes, ResourceNode{
-				Section: section,
-				Name:    name,
-				ID:      sectionData[name].ID,
+				Group: section,
+				Name:  name,
+				ID:    sectionData[name].ID,
 			})
 		}
 	}
@@ -151,5 +173,5 @@ func (db *TerranovaState) unlockedSave() error {
 }
 
 func (r ResourceNode) String() string {
-	return r.Section + "." + r.Name + "#" + r.ID
+	return r.Group + "." + r.Name + "#" + r.ID
 }

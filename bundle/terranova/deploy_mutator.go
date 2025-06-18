@@ -9,11 +9,11 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
@@ -33,51 +33,46 @@ func (m *terranovaDeployMutator) Name() string {
 }
 
 func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	client := b.WorkspaceClient()
-
-	g := dagrun.NewGraph[tnstate.ResourceNode]()
-
-	_, err := dyn.MapByPattern(
-		b.Config.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			section := p[1].Key()
-			name := p[2].Key()
-			g.AddNode(tnstate.ResourceNode{
-				Section: section,
-				Name:    name,
-			})
-
-			// TODO: Scan v for references and use g.AddDirectedEdge to add dependency
-			return v, nil
-		},
-	)
-
-	if g.Size() == 0 {
+	if len(b.Plan.Actions) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return nil
 	}
 
+	g := dagrun.NewGraph[deployplan.Action]()
+
+	for _, action := range b.Plan.Actions {
+		g.AddNode(action)
+		// TODO: Scan v for references and use g.AddDirectedEdge to add dependency
+	}
+
+	client := b.WorkspaceClient()
 	var diags diag.SafeDiagnostics
 
-	err = g.Run(defaultParallelism, func(node tnstate.ResourceNode) {
+	err := g.Run(defaultParallelism, func(node deployplan.Action) {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
-		config, ok := b.GetResourceConfig(node.Section, node.Name)
+		if node.ActionType == deployplan.ActionTypeUnset {
+			diags.AppendErrorf("internal error, no action set %#v", node)
+			return
+		}
+
+		config, ok := b.GetResourceConfig(node.Group, node.Name)
 		if !ok {
 			diags.AppendErrorf("internal error: cannot get config for %s", node)
 			return
 		}
 
 		d := Deployer{
-			client:       client,
-			db:           &b.ResourceDatabase,
-			section:      node.Section,
+			client: client,
+			db:     &b.ResourceDatabase,
+			// TODO: rename section to Group
+			section:      node.Group,
 			resourceName: node.Name,
 		}
 
-		err = d.Deploy(ctx, config)
+		// TODO: pass node.ActionType and respect it. Do not change Update to Recreate or Delete for example.
+		err := d.Deploy(ctx, config, node.ActionType)
 		if err != nil {
 			diags.AppendError(err)
 			return
@@ -102,15 +97,47 @@ type Deployer struct {
 	resourceName string
 }
 
-func (d *Deployer) Deploy(ctx context.Context, inputConfig any) error {
-	err := d.deploy(ctx, inputConfig)
+func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
+	if actionType == deployplan.ActionTypeDelete {
+		err := d.destroy(ctx, inputConfig)
+		if err != nil {
+			return fmt.Errorf("destroying %s.%s: %w", d.section, d.resourceName, err)
+		}
+		return nil
+	}
+
+	err := d.deploy(ctx, inputConfig, actionType)
 	if err != nil {
 		return fmt.Errorf("deploying %s.%s: %w", d.section, d.resourceName, err)
 	}
 	return nil
 }
 
-func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
+func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
+	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
+	if !hasEntry {
+		log.Infof(ctx, "%s.%s: Cannot delete, missing from state", d.section, d.resourceName)
+		return nil
+	}
+
+	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
+	if err != nil {
+		return err
+	}
+
+	if entry.ID == "" {
+		return errors.New("invalid state: empty id")
+	}
+
+	err = d.Delete(ctx, resource, entry.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
 	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
 
 	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
@@ -139,16 +166,17 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any) error {
 		return fmt.Errorf("comparing state and config: %w", err)
 	}
 
-	localDiffType := tnresources.ChangeTypeNone
+	localDiffType := deployplan.ActionTypeNoop
+
 	if len(localDiff) > 0 {
 		localDiffType = resource.ClassifyChanges(localDiff)
 	}
 
-	if localDiffType.IsRecreate() {
+	if localDiffType == deployplan.ActionTypeRecreate {
 		return d.Recreate(ctx, resource, oldID, config)
 	}
 
-	if localDiffType.IsUpdate() {
+	if localDiffType == deployplan.ActionTypeUpdate {
 		return d.Update(ctx, resource, oldID, config)
 	}
 
@@ -235,6 +263,21 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
+	return nil
+}
+
+func (d *Deployer) Delete(ctx context.Context, resource tnresources.IResource, oldID string) error {
+	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
+	err := resource.DoDelete(ctx, oldID)
+	if err != nil {
+		return fmt.Errorf("deleting id=%s: %w", oldID, err)
+	}
+
+	err = d.db.DeleteState(d.section, d.resourceName)
+	if err != nil {
+		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
+	}
+
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -35,8 +36,10 @@ type IResource interface {
 	// Get type of the struct that stores the state
 	GetType() reflect.Type
 
-	ClassifyChanges(changes []structdiff.Change) ChangeType
+	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
 }
+
+/*
 
 type ChangeType int
 
@@ -48,6 +51,7 @@ const (
 	ChangeTypeUpdate   ChangeType = 1
 	ChangeTypeRecreate ChangeType = -1
 )
+*/
 
 // invokeConstructor converts cfg to the parameter type expected by ctor and
 // executes the call, returning the IResource instance or error.
@@ -111,18 +115,4 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 	}
 
 	return invokeConstructor(ctor, client, config)
-}
-
-func DestroyResource(ctx context.Context, client *databricks.WorkspaceClient, section, id string) error {
-	ctor, ok := supportedResources[section]
-	if !ok {
-		return fmt.Errorf("unsupported resource type: %s", section)
-	}
-
-	r, err := invokeConstructor(ctor, client, nil) // zero config is enough for deletion
-	if err != nil {
-		return err
-	}
-
-	return r.DoDelete(ctx, id)
 }
