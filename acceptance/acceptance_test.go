@@ -1034,13 +1034,14 @@ func buildUVCache(t *testing.T) {
 	uvPythonInstallDir := filepath.Join(uvCache, "python_installs")
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvPythonInstallDir)
 
-	cachedPythonVersions := []string{"3.9", "3.10", "3.11", "3.12"}
-	for _, version := range cachedPythonVersions {
-		RunCommand(t, []string{"uv", "python", "install", version}, ".")
-	}
+	RunCommand(t, []string{"uv", "python", "install", "3.9", "3.10", "3.11", "3.12", "3.13"}, ".")
 
 	// Do not ever allow Python downloads, because we expect cache to be warm
 	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
+
+	// And uv should not try to connect to the internet at all
+	// TODO
+	// t.Setenv("UV_OFFLINE", "true")
 }
 
 // buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
