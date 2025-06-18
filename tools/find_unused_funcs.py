@@ -18,11 +18,13 @@ import subprocess
 import re
 
 
-def find_funcs():
-    """Returns a list of function definition lines."""
-    # `-n` adds line numbers to simplify comparison later.
+# ----------------------------- helpers -----------------------------------
+
+
+def _run_git_grep(pattern):
+    """Return git-grep output lines for *pattern* inside *.go files."""
     result = subprocess.run(
-        ["git", "grep", "-n", "-w", "^func", "--", "*.go"],
+        ["git", "grep", "-n", "-w", pattern, "--", "*.go"],
         stdout=subprocess.PIPE,
         text=True,
         encoding="utf-8",
@@ -32,24 +34,35 @@ def find_funcs():
     return result.stdout.strip().split("\n") if result.stdout else []
 
 
-def extract_func_name(line):
-    """Return function name from `git grep` result line."""
-    # line is like: path/to/file.go:123:func (r *Receiver) MyFunc(...) {
-    # we take the part after the file path and line number
+def find_defs(keyword):
+    """Return all lines that *start* with *keyword* in Go sources."""
+    return _run_git_grep(f"^{keyword}")
+
+
+# Regex patterns for extracting identifiers from a declaration line.
+_EXTRACTORS = {
+    "func": re.compile(r"^func(?:\s+\([^)]+\))?\s+([a-zA-Z0-9_]+)"),
+    "type": re.compile(r"^type\s+([a-zA-Z0-9_]+)"),
+    "var": re.compile(r"^var\s+([a-zA-Z0-9_]+)"),
+    "const": re.compile(r"^const\s+([a-zA-Z0-9_]+)"),
+}
+
+
+def extract_name(keyword, line):
+    """Extract declared identifier name from *line* that starts with *keyword*."""
     parts = line.split(":", 2)
     if len(parts) < 3:
         return None
     decl = parts[2]
+    m = _EXTRACTORS[keyword].search(decl)
+    if m:
+        return m.group(1)
 
-    match = re.search(r"^func(?:\s+\([^)]+\))?\s+([a-zA-Z0-9_]+)", decl)
-    if match:
-        return match.group(1)
 
-
-def check_usage(func_name):
-    """Return all `git grep` matches for *func_name* (may be empty)."""
+def check_usage(ident):
+    """Return all `git grep` matches for *ident* (may be empty)."""
     result = subprocess.run(
-        ["git", "grep", "-n", "-w", func_name],
+        ["git", "grep", "-n", "-w", ident],
         stdout=subprocess.PIPE,
         text=True,
         encoding="utf-8",
@@ -59,47 +72,91 @@ def check_usage(func_name):
     return result.stdout.strip().split("\n") if result.stdout else []
 
 
-def main():
-    func_defs = find_funcs()
-    print(f"{len(func_defs)} function definitions", flush=True)
+def _analyze(keyword, skip_decl_pred):
+    """Return (unused, test_only) lists for *keyword* declarations."""
+    unused = []
+    test_only = []
 
-    if not func_defs:
-        return
-
-    printed_header = False
-
-    for def_line in func_defs:
+    for def_line in find_defs(keyword):
         if not def_line:
             continue
 
         parts = def_line.split(":", 2)
         if len(parts) < 3:
             continue
-        filepath = parts[0]
 
-        func_name = extract_func_name(def_line)
-        if not func_name:
+        filepath = parts[0]
+        name = extract_name(keyword, def_line)
+        if not name:
             continue
 
-        # Ignore tests and benchmarks in test files
-        if filepath.endswith("_test.go"):
-            if func_name.startswith("Test") or func_name.startswith("Benchmark"):
-                continue
+        if skip_decl_pred(filepath, name):
+            continue
 
-        usages = check_usage(func_name)
+        usages = check_usage(name)
+        references = [u for u in usages if u != def_line]
 
-        # Only its declaration found -> unused.
-        if len(usages) == 1:
-            assert usages[0] == def_line, (usages, def_line)
-            if not printed_header:
-                print("Potentially unused functions:", flush=True)
-                printed_header = True
-            print(f"- {def_line}", flush=True)
-        else:
-            assert usages, func_name
+        if not references:
+            unused.append(def_line)
+            continue
 
-    if not printed_header:
-        print("No unused functions found.", flush=True)
+        if all(r.split(":", 1)[0].endswith("_test.go") for r in references):
+            # For functions, only track if the declaration itself is not in a test file
+            # and not inside acceptance/internal package.
+            if not (filepath.endswith("_test.go") or "acceptance/internal" in filepath):
+                test_only.append(def_line)
+
+    return unused, test_only
+
+
+def main():
+    categories = [
+        ("func", lambda path, name: path.endswith("_test.go") and name.startswith(("Test", "Benchmark"))),
+        ("type", lambda path, _n: "bundle/internal/tf/schema" in path),
+        ("var", lambda _p, _n: False),
+        ("const", lambda _p, _n: False),
+    ]
+
+    overall_unused = {}
+    overall_test_only = {}
+
+    for keyword, skip_pred in categories:
+        unused, test_only = _analyze(keyword, skip_pred)
+        if unused:
+            overall_unused[keyword] = unused
+        if test_only:
+            overall_test_only[keyword] = test_only
+
+    if overall_unused:
+        print("Potentially unused identifiers:")
+        for kw, lines in overall_unused.items():
+            header = {
+                "func": "functions",
+                "type": "types",
+                "var": "variables",
+                "const": "consts",
+            }[kw]
+            print(f"  {header}:")
+            for l in lines:
+                print(f"    - {l}")
+
+    if overall_test_only:
+        if overall_unused:
+            print()
+        print("Identifiers only referenced from tests:")
+        for kw, lines in overall_test_only.items():
+            header = {
+                "func": "functions",
+                "type": "types",
+                "var": "variables",
+                "const": "consts",
+            }[kw]
+            print(f"  {header}:")
+            for l in lines:
+                print(f"    - {l}")
+
+    if not overall_unused and not overall_test_only:
+        print("No unused or test-only identifiers found.")
 
 
 if __name__ == "__main__":
