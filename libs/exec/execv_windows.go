@@ -42,7 +42,8 @@ func execv(opts ExecvOptions) error {
 		if opts.WindowsCleanup != nil {
 			opts.WindowsCleanup()
 		}
-		os.Exit(exitErr.ExitCode())
+		opts.WindowsExit(exitErr.ExitCode())
+		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("running %s failed: %w", strings.Join(opts.Args, " "), err)
@@ -54,6 +55,6 @@ func execv(opts ExecvOptions) error {
 	if opts.WindowsCleanup != nil {
 		opts.WindowsCleanup()
 	}
-	os.Exit(0)
+	opts.WindowsExit(0)
 	return nil
 }

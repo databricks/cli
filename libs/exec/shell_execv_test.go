@@ -50,6 +50,12 @@ func TestShellExecv_WindowsCleanup(t *testing.T) {
 	opts, err := shellExecvOpts(content, dir, []string{})
 	require.NoError(t, err)
 
+	var exitCode *int
+	opts.WindowsExit = func(status int) {
+		exitCode = &status
+	}
+	assert.Equal(t, 0, *exitCode)
+
 	// Verify that the temporary file is created.
 	files, err := os.ReadDir(dir)
 	require.NoError(t, err)

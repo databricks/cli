@@ -16,6 +16,10 @@ type ExecvOptions struct {
 	// This if [Execv] is used to execution a script though cmd.exe,
 	// the caller should register a cleanup function to clean up the temporary file.
 	WindowsCleanup func()
+
+	// Callback to exit process in windows. Having this as a function here helps with
+	// testing.
+	WindowsExit func(status int)
 }
 
 func Execv(opts ExecvOptions) error {
