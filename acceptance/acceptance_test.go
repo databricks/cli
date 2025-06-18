@@ -180,7 +180,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	uvInstall := filepath.Join(uvCache, "python_installs")
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
 
+	RunCommand(t, []string{"uv", "python", "install", "3.9"}, ".")
 	RunCommand(t, []string{"uv", "python", "install", "3.10"}, ".")
+	RunCommand(t, []string{"uv", "python", "install", "3.11"}, ".")
+	RunCommand(t, []string{"uv", "python", "install", "3.12"}, ".")
 
 	// Do not ever allow Python downloads, because we expect cache to be warm
 	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
@@ -1039,7 +1042,7 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// so we prepare here by keeping only one.
 	_ = prepareWheelBuildDirectory(t, buildDir)
 
-	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
+	RunCommand(t, []string{"uv", "build", "--python=3.10", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
 
 	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
