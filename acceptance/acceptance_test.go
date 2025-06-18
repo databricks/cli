@@ -50,9 +50,6 @@ var (
 // the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 //
-// To debug integration tests you can run the "deco env flip workspace" command to configure a workspace
-// and then click on "debug test" near TestInprocessMode.
-
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
 // Also disables parallelism in tests.
@@ -111,6 +108,7 @@ func TestInprocessMode(t *testing.T) {
 
 	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
 	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+	// Run the "deco env flip workspace" command to configure a workspace.
 
 	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
