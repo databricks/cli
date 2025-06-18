@@ -103,13 +103,32 @@ func (t *PatternTrie) Insert(pattern Pattern) error {
 // SearchPath checks if the given path matches any pattern in the trie.
 // A path matches if it exactly matches a pattern or if it matches a pattern with wildcards.
 func (t *PatternTrie) SearchPath(path Path) (Pattern, bool) {
-	pattern, ok := t.searchPathRecursive(t.root, path, 0, NewPattern())
+	// We statically allocate the prefix array that is used to track the current
+	// prefix accumulated while walking the prefix tree. Having the static allocation
+	// ensures that we do not allocate memory on every recursive call.
+	prefix := make(Pattern, len(path))
+	pattern, ok := t.searchPathRecursive(t.root, path, prefix, 0)
 	return pattern, ok
 }
 
-func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, index int, prefix Pattern) (Pattern, bool) {
+// searchPathRecursive is a helper function that recursively checks if a path matches any pattern.
+// Arguments:
+// - node: the current node in the trie.
+// - path: the path to check.
+// - prefix: the prefix accumulated while walking the prefix tree.
+// - index: the current index in the path / prefix
+//
+// Note we always expect the path and prefix to be the same length because wildcards like * and [*]
+// only match a single
+func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, prefix Pattern, index int) (Pattern, bool) {
 	if node == nil {
 		return nil, false
+	}
+
+	// Zero case, when the query path is the root node. We return nil here to match
+	// the semantics of [MustPatternFromString] which returns nil for the empty string.
+	if len(path) == 0 {
+		return nil, node.isEnd
 	}
 
 	// If we've reached the end of the path, check if this node is a valid end of a pattern.
@@ -122,7 +141,8 @@ func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, index int, 
 
 	// First check if the key wildcard is set for the current index.
 	if currentComponent.isKey() && node.anyKey != nil {
-		pattern, ok := t.searchPathRecursive(node.anyKey, path, index+1, append(prefix, AnyKey()))
+		prefix[index] = AnyKey()
+		pattern, ok := t.searchPathRecursive(node.anyKey, path, prefix, index+1)
 		if ok {
 			return pattern, true
 		}
@@ -134,12 +154,14 @@ func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, index int, 
 		if !exists {
 			return prefix, false
 		}
-		return t.searchPathRecursive(child, path, index+1, append(prefix, currentComponent))
+		prefix[index] = currentComponent
+		return t.searchPathRecursive(child, path, prefix, index+1)
 	}
 
 	// First check if the index wildcard is set for the current index.
 	if currentComponent.isIndex() && node.anyIndex != nil {
-		pattern, ok := t.searchPathRecursive(node.anyIndex, path, index+1, append(prefix, AnyIndex()))
+		prefix[index] = AnyIndex()
+		pattern, ok := t.searchPathRecursive(node.anyIndex, path, prefix, index+1)
 		if ok {
 			return pattern, true
 		}
@@ -151,7 +173,8 @@ func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, index int, 
 		if !exists {
 			return prefix, false
 		}
-		return t.searchPathRecursive(child, path, index+1, append(prefix, currentComponent))
+		prefix[index] = currentComponent
+		return t.searchPathRecursive(child, path, prefix, index+1)
 	}
 
 	// If we've reached this point, the path does not match any patterns in the trie.
