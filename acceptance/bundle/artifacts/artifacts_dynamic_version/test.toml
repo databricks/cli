@@ -1,5 +1,5 @@
 RecordRequests = false
 
 [[Repls]]
-Old = '\\'
+Old = '\\\\'
 New = '/'
