@@ -1,10 +1,6 @@
 
 >>> [CLI] bundle deploy
 Building my_artifact...
-<<<<<<< HEAD
-Warn: my_artifact: Build succeeded
-=======
->>>>>>> origin
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/shell-cmd/default/files...
 Deploying resources...
 Deployment complete!
