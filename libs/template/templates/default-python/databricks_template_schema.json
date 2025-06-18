@@ -33,7 +33,7 @@
         "serverless": {
             "type": "string",
             "default": "yes",
-            "enum": ["no", "yes"],
+            "enum": ["yes", "no"],
             "description": "Use serverless compute",
             "order": 5
         }
