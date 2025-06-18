@@ -130,12 +130,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Download terraform and provider and create config; this also creates build directory.
 	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
 
-	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
-	if wheelPath != "" {
-		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
-		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
-	}
-
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
 	if coverDir != "" {
@@ -157,9 +151,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	BuildYamlfmt(t)
 
-	t.Setenv("CLI", execPath)
-	repls.SetPath(execPath, "[CLI]")
-
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -175,14 +166,18 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls.SetPath(tempHomeDir, "[TMPHOME]")
 	t.Logf("$TMPHOME=%v", tempHomeDir)
 
-	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
-	uvCache := getUVDefaultCacheDir(t)
-	t.Setenv("UV_CACHE_DIR", uvCache)
+	buildUVCache(t)
 
-	// UV_CACHE_DIR only applies to packages but not Python installations.
-	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
-	uvInstall := filepath.Join(uvCache, "python_installs")
-	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
+	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
+	if wheelPath != "" {
+		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
+		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
+	}
+
+	// CLI repl has to be set after DATABRICKS_BUNDLES_WHEEL because wheel has
+	// "databricks_" prefix and replacement doesn't work otherwise
+	t.Setenv("CLI", execPath)
+	repls.SetPath(execPath, "[CLI]")
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
@@ -1028,6 +1023,37 @@ func getNodeTypeID(cloudEnv string) string {
 	}
 }
 
+// buildUVCache sets up the UV cache directory and installs Python versions,
+// so any subsequent tests can use the cached Python installations.
+func buildUVCache(t *testing.T) {
+	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
+	uvCache := getUVDefaultCacheDir(t)
+	t.Setenv("UV_CACHE_DIR", uvCache)
+
+	// UV_PYTHON_BIN_DIR specifies the directory to place links to installed,
+	// managed Python executables.
+	uvPythonBinDir := filepath.Join(uvCache, "python_bins")
+	t.Setenv("UV_PYTHON_BIN_DIR", uvPythonBinDir)
+
+	// UV_CACHE_DIR only applies to packages but not Python installations.
+	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
+	uvPythonInstallDir := filepath.Join(uvCache, "python_installs")
+	t.Setenv("UV_PYTHON_INSTALL_DIR", uvPythonInstallDir)
+
+	// we can buildUVCache again for in-process mode tests, and we can't call
+	// 'uv python install' command anymore after UV_PYTHON_DOWNLOADS is set to 'never'
+	if os.Getenv("UV_PYTHON_DOWNLOADS") != "never" {
+		RunCommand(t, []string{"uv", "python", "install", "3.9", "3.10", "3.11", "3.12", "3.13"}, ".")
+	}
+
+	// Do not ever allow Python downloads, because we expect cache to be warm
+	t.Setenv("UV_PYTHON_DOWNLOADS", "never")
+
+	// And uv should not try to connect to the internet at all
+	// TODO
+	// t.Setenv("UV_OFFLINE", "true")
+}
+
 // buildDatabricksBundlesWheel builds the databricks-bundles wheel and returns the path to the wheel.
 func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// Clean up directory, remove all but the latest wheel
@@ -1036,7 +1062,7 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// so we prepare here by keeping only one.
 	_ = prepareWheelBuildDirectory(t, buildDir)
 
-	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
+	RunCommand(t, []string{"uv", "build", "--python=3.10", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
 
 	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
