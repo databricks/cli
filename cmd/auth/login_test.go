@@ -87,34 +87,52 @@ func TestSetAccountId(t *testing.T) {
 
 func TestLoginGetClusterID(t *testing.T) {
 	testCases := []struct {
-		name     string
-		profile  string
-		expected string
+		name          string
+		profile       string
+		configFileEnv string
+		expected      string
 	}{
 		{
-			name:     "existing cluster profile",
-			profile:  "cluster-profile",
-			expected: "cluster-from-config",
+			name:          "cluster profile",
+			profile:       "cluster-profile",
+			configFileEnv: "./testdata/.databrickscfg",
+			expected:      "cluster-from-config",
 		},
 		{
-			name:     "empty profile",
-			profile:  "no-profile",
-			expected: "",
+			name:          "empty profile",
+			profile:       "no-profile",
+			configFileEnv: "./testdata/.databrickscfg",
+			expected:      "",
 		},
 		{
-			name:     "account profile",
-			profile:  "account-profile",
-			expected: "",
+			name:          "account profile",
+			profile:       "account-profile",
+			configFileEnv: "./testdata/.databrickscfg",
+			expected:      "",
+		},
+		{
+			name:          "config doesn't exist",
+			profile:       "any-profile",
+			configFileEnv: "./nonexistent/.databrickscfg",
+			expected:      "",
+		},
+		{
+			name:          "invalid profile (missing host)",
+			profile:       "invalid-profile",
+			configFileEnv: "./testdata/.databrickscfg",
+			expected:      "",
 		},
 	}
 
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			clusterID, err := getClusterID(context.Background(), tc.profile, "./testdata/.databrickscfg")
+			t.Setenv("DATABRICKS_CONFIG_FILE", tc.configFileEnv)
+
+			clusterID, err := getClusterID(context.Background(), tc.profile)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expected, clusterID)
+			assert.Equal(t, tc.expected, clusterID,
+				"Test case '%s' failed: expected cluster ID '%s', but got '%s' (profile: %s, config file: %s)",
+				tc.name, tc.expected, clusterID, tc.profile, tc.configFileEnv)
 		})
 	}
 }

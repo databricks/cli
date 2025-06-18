@@ -140,7 +140,7 @@ depends on the existing profiles you have set in your configuration file
 		// Prior to v0.233.0, the login command would overwrite the entire profile configuration,
 		// causing loss of cluster_id and other settings. Now we first retrieve the existing
 		// cluster_id before saving the new configuration to ensure it's preserved.
-		cfg.ClusterID, err = getClusterID(ctx, profileName, defaultConfigPath)
+		cfg.ClusterID, err = getClusterID(ctx, profileName)
 		if err != nil {
 			return err
 		}
@@ -254,20 +254,28 @@ func getProfileName(authArguments *auth.AuthArguments) string {
 	return split[0]
 }
 
-func getClusterID(ctx context.Context, profileName, configPath string) (string, error) {
-	configFile, err := config.LoadFile(configPath)
+func getClusterID(ctx context.Context, profileName string) (string, error) {
+	file, err := profile.DefaultProfiler.Get(ctx)
 	if err != nil {
-		return "", err
+		// If no configuration file exists, return empty string (no error)
+		if errors.Is(err, profile.ErrNoConfiguration) {
+			return "", nil
+		}
+		return "", fmt.Errorf("cannot load Databricks config file: %w", err)
 	}
 
-	if !configFile.HasSection(profileName) {
-		return "", nil
+	for _, v := range file.Sections() {
+		if v.Name() != profileName {
+			continue
+		}
+		all := v.KeysHash()
+		_, ok := all["host"]
+		if !ok {
+			// invalid profile, skip
+			continue
+		}
+		return all["cluster_id"], nil
 	}
 
-	section, err := configFile.GetSection(profileName)
-	if err != nil {
-		return "", err
-	}
-
-	return section.Key("cluster_id").String(), nil
+	return "", nil
 }
