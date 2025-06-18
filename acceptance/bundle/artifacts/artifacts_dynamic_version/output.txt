@@ -1,6 +1,6 @@
 {
   "first_wheel": {
-    "build": "python3 setup.py bdist_wheel",
+    "build": "uv build --wheel",
     "dynamic_version": true,
     "files": [
       {
