@@ -11,7 +11,11 @@ type ExecvOptions struct {
 	// Dir is the working directory of the child process.
 	Dir string
 
-	WindowsCleanupTempScript func()
+	// It is not possible to execute a cmd.exe script inlined as a argument
+	// to cmd.exe. They have to be serialized to a file and executed.
+	// This if [Execv] is used to execution a script though cmd.exe,
+	// the caller should register a cleanup function to clean up the temporary file.
+	WindowsCleanup func()
 }
 
 func Execv(opts ExecvOptions) error {

@@ -18,7 +18,7 @@ func shellExecvOpts(content, dir string, env []string) (ExecvOptions, error) {
 		Args: args,
 		Env:  env,
 		Dir:  dir,
-		WindowsCleanupTempScript: func() {
+		WindowsCleanup: func() {
 			ec.cleanup()
 		},
 	}, nil
