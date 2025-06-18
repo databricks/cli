@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/cmd"
 	"github.com/databricks/cli/cmd/dlt"
@@ -17,7 +17,7 @@ import (
 // binary to be used for both DLT and databricks CLI commands.
 func getCommand(ctx context.Context) *cobra.Command {
 	invokedAs := filepath.Base(os.Args[0])
-	if invokedAs == "dlt" || (runtime.GOOS == "windows" && invokedAs == "dlt.exe") {
+	if strings.HasPrefix(invokedAs, "dlt") {
 		return dlt.New()
 	}
 	return cmd.New(ctx)
