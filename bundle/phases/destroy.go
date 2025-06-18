@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -32,19 +31,15 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]terraformlib.Action, error) {
+func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
 		allResources := b.ResourceDatabase.GetAllResources()
-		var deleteActions []terraformlib.Action
+		var deleteActions []deployplan.Action
 		for _, node := range allResources {
-			// TODO:
-			// Note, rType is only used for stringification so it's not important to get it right (although cutting "s" is always correct)
-			// Also, terraformlib.Action will create terraformish resources names. We should instead switch to method-neutral format.
-			rType, _ := strings.CutSuffix(node.Section, "s")
-			deleteActions = append(deleteActions, terraformlib.Action{
-				Action:       terraformlib.ActionTypeDelete,
-				ResourceType: rType,
-				ResourceName: node.Name,
+			deleteActions = append(deleteActions, deployplan.Action{
+				Action: deployplan.ActionTypeDelete,
+				Group:  node.Section,
+				Name:   node.Name,
 			})
 		}
 		return deleteActions, nil
