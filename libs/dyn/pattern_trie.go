@@ -119,7 +119,7 @@ func (t *PatternTrie) SearchPath(path Path) (Pattern, bool) {
 // - index: the current index in the path / prefix
 //
 // Note we always expect the path and prefix to be the same length because wildcards like * and [*]
-// only match a single
+// only match a single path component.
 func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, prefix Pattern, index int) (Pattern, bool) {
 	if node == nil {
 		return nil, false
