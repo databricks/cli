@@ -263,7 +263,7 @@ func BenchmarkWalkReadOnly(b *testing.B) {
 }
 
 // This took 160ms to run on 18th June 2025.
-func BenchmarkWalkReadOnly_LargeBundle(b *testing.B) {
+func BenchmarkWalk(b *testing.B) {
 	input := testutil.BundleV(b, 10000)
 
 	for b.Loop() {
