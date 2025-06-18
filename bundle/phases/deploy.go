@@ -29,21 +29,26 @@ import (
 )
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+	var actions []deployplan.Action
+	var err error
+
 	if b.DirectDeployment {
-		// TODO: implement this for DirectDeployment
-		return true, nil
+		actions, err = terranova.CalculateDeployActions(ctx, b)
+		if err != nil {
+			return false, err
+		}
+	} else {
+		tf := b.Terraform
+		if tf == nil {
+			return false, errors.New("terraform not initialized")
+		}
+		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlan)
+		if err != nil {
+			return false, err
+		}
 	}
 
-	tf := b.Terraform
-	if tf == nil {
-		return false, errors.New("terraform not initialized")
-	}
-
-	// read plan file
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlan)
-	if err != nil {
-		return false, err
-	}
+	b.Plan.Actions = actions
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
 	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)

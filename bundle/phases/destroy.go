@@ -33,16 +33,7 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
-		allResources := b.ResourceDatabase.GetAllResources()
-		var deleteActions []deployplan.Action
-		for _, node := range allResources {
-			deleteActions = append(deleteActions, deployplan.Action{
-				Action: deployplan.ActionTypeDelete,
-				Group:  node.Section,
-				Name:   node.Name,
-			})
-		}
-		return deleteActions, nil
+		return terranova.CalculateDestroyActions(ctx, b)
 	}
 
 	tf := b.Terraform
@@ -95,7 +86,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if b.DirectDeployment {
-		diags = bundle.Apply(ctx, b, terranova.TerranovaDestroy())
+		diags = bundle.Apply(ctx, b, terranova.TerranovaDeploy())
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		diags = bundle.Apply(ctx, b, terraform.Apply())

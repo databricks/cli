@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -63,8 +64,8 @@ func (r *ResourceSchema) WaitAfterUpdate(ctx context.Context) error {
 	return nil
 }
 
-func (r *ResourceSchema) ClassifyChanges(changes []structdiff.Change) ChangeType {
-	return ChangeTypeUpdate
+func (r *ResourceSchema) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
+	return deployplan.ActionTypeUpdate
 }
 
 var schemaType = reflect.TypeOf(ResourceSchema{}.config)
