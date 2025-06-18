@@ -3,8 +3,8 @@ package testutil
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -254,7 +254,7 @@ func BundleV(b *testing.B, numJobs int) dyn.Value {
 		err := json.Unmarshal([]byte(jobExample), &job)
 		require.NoError(b, err)
 
-		allJobs[fmt.Sprintf("%d", i)] = &resources.Job{
+		allJobs[strconv.Itoa(i)] = &resources.Job{
 			JobSettings: job,
 		}
 	}

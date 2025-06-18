@@ -255,9 +255,10 @@ func BenchmarkWalkReadOnly(b *testing.B) {
 	input := testutil.BundleV(b, 10000)
 
 	for b.Loop() {
-		dyn.WalkReadOnly(input, func(p dyn.Path, v dyn.Value) error {
+		err := dyn.WalkReadOnly(input, func(p dyn.Path, v dyn.Value) error {
 			return nil
 		})
+		assert.NoError(b, err)
 	}
 }
 
@@ -266,8 +267,9 @@ func BenchmarkWalkReadOnly_LargeBundle(b *testing.B) {
 	input := testutil.BundleV(b, 10000)
 
 	for b.Loop() {
-		dyn.Walk(input, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		_, err := dyn.Walk(input, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			return v, nil
 		})
+		assert.NoError(b, err)
 	}
 }
