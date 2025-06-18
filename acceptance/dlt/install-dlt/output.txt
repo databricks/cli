@@ -12,7 +12,8 @@ dlt already installed in directory "[BUILD_DIR]"
 
 === dlt file exists, should not overwrite
 >>> errcode [CLI] install-dlt -d tmpdir -o json
-Error: cannot install dlt CLI: "tmpdir/dlt" already exists
+cannot install dlt CLI: "tmpdir/dlt" already exists
+Error: installation failed
 
 Exit code: 1
 

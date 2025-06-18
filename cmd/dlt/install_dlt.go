@@ -20,11 +20,11 @@ type installDLTResponse struct {
 func installDLTSymlink(directory string) (string, error) {
 	path, err := os.Executable()
 	if err != nil {
-		return "", errors.New("databricks CLI executable not found")
+		return "", err
 	}
 	realPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve symlink: %w", err)
+		return "", err
 	}
 
 	dir := directory
@@ -36,27 +36,26 @@ func installDLTSymlink(directory string) (string, error) {
 	_, err = os.Lstat(dltPath)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("failed to check if %q exists: %w", dltPath, err)
+			return "", err
 		}
 		err = os.Symlink(realPath, dltPath)
 		if err != nil {
-			return "", fmt.Errorf("failed to install dlt CLI: %w", err)
+			return "", err
 		}
 		cmdio.LogString(context.Background(), fmt.Sprintf("dlt successfully installed in directory %q", dir))
 		return dltPath, nil
 	}
 
-	target, readErr := filepath.EvalSymlinks(dltPath)
-	if readErr != nil {
-		return "", fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
-	}
-	normalizedTarget := filepath.ToSlash(filepath.Clean(target))
-	normalizedRealPath := filepath.ToSlash(filepath.Clean(realPath))
-	if normalizedTarget == normalizedRealPath {
+	target, err := filepath.EvalSymlinks(dltPath)
+	if err == nil && realPath == target {
 		cmdio.LogString(context.Background(), fmt.Sprintf("dlt already installed in directory %q", dir))
 		return dltPath, nil
 	}
-	return "", fmt.Errorf("cannot install dlt CLI: %q already exists", dltPath)
+	cmdio.LogString(context.Background(), fmt.Sprintf("cannot install dlt CLI: %q already exists", dltPath))
+	if err != nil {
+		return "", err
+	}
+	return "", errors.New("installation failed")
 }
 
 func InstallDLT() *cobra.Command {
@@ -77,7 +76,6 @@ func InstallDLT() *cobra.Command {
 			case flags.OutputJSON:
 				return cmdio.Render(cmd.Context(), response)
 			default:
-				// In text mode, just return success (the message is already logged by installDLTSymlink)
 				return nil
 			}
 		},
