@@ -40,7 +40,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	}
 
 	// read plan file
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.Path)
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlan)
 	if err != nil {
 		return false, err
 	}
