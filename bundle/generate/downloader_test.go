@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDownloader_NormalizeFilenames(t *testing.T) {
+func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 	ctx := context.Background()
 	m := mocks.NewMockWorkspaceClient(t)
 
@@ -24,7 +24,7 @@ func TestDownloader_NormalizeFilenames(t *testing.T) {
 
 	// Test that the path is normalized to be relative to the config directory.
 	f1 := "/a/b/c"
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, "/a/b/c").Return(&workspace.ObjectInfo{
+	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, f1).Return(&workspace.ObjectInfo{
 		Path: f1,
 	}, nil)
 	err = downloader.markFileForDownload(ctx, &f1)
@@ -33,7 +33,7 @@ func TestDownloader_NormalizeFilenames(t *testing.T) {
 
 	// Test that the previous path doesn't influence the next path.
 	f2 := "/a/b/c/d"
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, "/a/b/c/d").Return(&workspace.ObjectInfo{
+	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, f2).Return(&workspace.ObjectInfo{
 		Path: f2,
 	}, nil)
 	err = downloader.markFileForDownload(ctx, &f2)
