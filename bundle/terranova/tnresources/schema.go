@@ -53,14 +53,17 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) (string, error
 }
 
 func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
+	// TODO: implement schema deletion
 	return nil
 }
 
 func (r *ResourceSchema) WaitAfterCreate(ctx context.Context) error {
+	// Intentional no-op
 	return nil
 }
 
 func (r *ResourceSchema) WaitAfterUpdate(ctx context.Context) error {
+	// Intentional no-op
 	return nil
 }
 
