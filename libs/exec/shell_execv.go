@@ -1,7 +1,5 @@
 package exec
 
-import "os"
-
 func shellExecvOpts(content, dir string, env []string) (ExecvOptions, error) {
 	shell, err := findShell()
 	if err != nil {
@@ -20,11 +18,8 @@ func shellExecvOpts(content, dir string, env []string) (ExecvOptions, error) {
 		Args: args,
 		Env:  env,
 		Dir:  dir,
-		WindowsCleanup: func() {
+		windowsCleanup: func() {
 			ec.cleanup()
-		},
-		WindowsExit: func(status int) {
-			os.Exit(status)
 		},
 	}, nil
 }

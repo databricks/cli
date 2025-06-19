@@ -66,7 +66,7 @@ func TestShellExecv_Windows(t *testing.T) {
 		assert.Regexp(t, "cli-exec.*\\.cmd", files[0].Name())
 
 		exitCode := -1
-		opts.WindowsExit = func(status int) {
+		opts.windowsExit = func(status int) {
 			exitCode = status
 		}
 

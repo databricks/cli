@@ -1,5 +1,7 @@
 package exec
 
+import "os"
+
 type ExecvOptions struct {
 	// Args is the name of the command to run and its arguments.
 	// Eg: ["echo", "hello"] for "echo hello"
@@ -15,13 +17,16 @@ type ExecvOptions struct {
 	// to cmd.exe. They have to be serialized to a file and executed.
 	// Thus if [Execv] is used to execution a script though cmd.exe,
 	// the caller should register a cleanup function to clean up the temporary file.
-	WindowsCleanup func()
+	windowsCleanup func()
 
 	// Callback to exit the current process in windows. Having this as a function here
 	// helps with testing.
-	WindowsExit func(status int)
+	windowsExit func(status int)
 }
 
 func Execv(opts ExecvOptions) error {
+	if opts.windowsExit == nil {
+		opts.windowsExit = os.Exit
+	}
 	return execv(opts)
 }
