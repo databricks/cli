@@ -1,0 +1,24 @@
+
+=== install pipelines
+>>> errcode [CLI] install-pipelines -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+>>> errcode ./subdir/pipelines
+Pipelines CLI (stub, to be filled in)
+
+=== pipelines already installed
+>>> errcode [CLI] install-pipelines -d ./subdir
+pipelines already installed in directory "./subdir"
+
+=== pipelines file exists, should not overwrite
+>>> errcode [CLI] install-pipelines -d ./subdir
+Error: cannot install pipelines CLI: "subdir/pipelines" already exists
+
+Exit code: 1
+
+=== databricks executable called with alias
+>>> errcode ./subdir/notdatabricks install-pipelines -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+>>> errcode ./subdir/pipelines
+Pipelines CLI (stub, to be filled in)

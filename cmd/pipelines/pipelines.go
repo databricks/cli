@@ -1,4 +1,4 @@
-package dlt
+package pipelines
 
 import (
 	"github.com/spf13/cobra"
@@ -6,9 +6,9 @@ import (
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dlt",
-		Short: "DLT CLI",
-		Long:  "DLT CLI (stub, to be filled in)",
+		Use:   "pipelines",
+		Short: "Pipelines CLI",
+		Long:  "Pipelines CLI (stub, to be filled in)",
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
 		},
