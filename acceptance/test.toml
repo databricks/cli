@@ -72,7 +72,3 @@ Order = 10
 Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?'
 New = "[TIMESTAMP]"
 Order = 10
-
-[[Repls]]
-Old = '"exec_path": " "'
-New = '"exec_path": "[TERRAFORM]"'

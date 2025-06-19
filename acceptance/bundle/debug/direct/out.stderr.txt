@@ -62,7 +62,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=ValidateSharedRootPermissions
 10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotateJobs
 10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotatePipelines
-10:07:59 Debug: Apply pid=12345 mutator=<func>
 10:07:59 Debug: Apply pid=12345 mutator=scripts.postinit
 10:07:59 Debug: No script defined for postinit, skipping pid=12345 mutator=scripts.postinit
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly)

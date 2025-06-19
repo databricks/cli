@@ -200,13 +200,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diags
 	}
 
-	if b.DirectDeployment {
-		// For acceptance tests, initialize terraform map
-		bundle.ApplyFunc(ctx, b, func(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-			b.Config.Bundle.Terraform = &config.Terraform{ExecPath: " "}
-			return nil
-		})
-	} else {
+	if !b.DirectDeployment {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
