@@ -13,7 +13,7 @@ type PatternTrie struct {
 // trieNode represents a node in the pattern trie.
 // Each node in the array represents one or more of:
 // 1. An [AnyKey] component. This is the "*" wildcard which matches any map key.
-// 2. An [AnyIndex] component. This is the "*" wildcard which matches any array index.
+// 2. An [AnyIndex] component. This is the "[*]" wildcard which matches any array index.
 // 3. Multiple [Key] components. These are multiple static path keys for this this node would match.
 // 4. Multiple [Index] components. These are multiple static path indices for this this node would match.
 //
