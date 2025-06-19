@@ -1,6 +1,9 @@
 package deployplan
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type Plan struct {
 	// Path to the plan
@@ -11,20 +14,22 @@ type Plan struct {
 }
 
 type Action struct {
-	// Type and name of the resource
-	ResourceType string `json:"resource_type"`
-	ResourceName string `json:"resource_name"`
+	// Resource group in the config, e.g. "jobs", "pipelines" etc
+	Group string
 
-	Action ActionType `json:"action"`
+	// Key of the resource the config
+	Name string
+
+	Action ActionType
 }
 
 func (a Action) String() string {
-	// terraform resources have the databricks_ prefix, which is not needed.
-	rtype := strings.TrimPrefix(a.ResourceType, "databricks_")
-	return strings.Join([]string{" ", string(a.Action), rtype, a.ResourceName}, " ")
+	typ, _ := strings.CutSuffix(a.Group, "s")
+	return fmt.Sprintf("  %s %s %s", a.Action, typ, a.Name)
 }
 
-func (c Action) IsInplaceSupported() bool {
+// Implements cmdio.Event for cmdio.Log
+func (a Action) IsInplaceSupported() bool {
 	return false
 }
 
@@ -38,7 +43,34 @@ const (
 	ActionTypeCreate   ActionType = "create"
 	ActionTypeDelete   ActionType = "delete"
 	ActionTypeUpdate   ActionType = "update"
-	ActionTypeNoOp     ActionType = "no-op"
-	ActionTypeRead     ActionType = "read"
 	ActionTypeRecreate ActionType = "recreate"
 )
+
+// Filter returns actions that match the specified action type
+func Filter(changes []Action, actionType ActionType) []Action {
+	var result []Action
+	for _, action := range changes {
+		if action.Action == actionType {
+			result = append(result, action)
+		}
+	}
+	return result
+}
+
+// FilterGroup returns actions that match the specified group and any of the specified action types
+func FilterGroup(changes []Action, group string, actionTypes ...ActionType) []Action {
+	var result []Action
+
+	// Create a set of action types for efficient lookup
+	actionTypeSet := make(map[ActionType]bool)
+	for _, actionType := range actionTypes {
+		actionTypeSet[actionType] = true
+	}
+
+	for _, action := range changes {
+		if action.Group == group && actionTypeSet[action.Action] {
+			result = append(result, action)
+		}
+	}
+	return result
+}

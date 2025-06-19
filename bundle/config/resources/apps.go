@@ -59,11 +59,10 @@ func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name st
 
 func (*App) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "app",
-		PluralName:            "apps",
-		SingularTitle:         "App",
-		PluralTitle:           "Apps",
-		TerraformResourceName: "databricks_app",
+		SingularName:  "app",
+		PluralName:    "apps",
+		SingularTitle: "App",
+		PluralTitle:   "Apps",
 	}
 }
 

@@ -264,6 +264,10 @@ func getClusterID(ctx context.Context, profileName string) (string, error) {
 		return "", fmt.Errorf("cannot load Databricks config file: %w", err)
 	}
 
+	// file.Sections() is used in LoadProfiles() to iterate over profiles in login.
+	// Even with multiple profiles of the same name in the config file,
+	// it associates each profile name to at most one section.
+	// It takes the cluster_id if any profiles of the same name have it.
 	for _, v := range file.Sections() {
 		if v.Name() != profileName {
 			continue

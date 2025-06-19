@@ -1,0 +1,18 @@
+{
+  "first_wheel": {
+    "build": "uv build --wheel",
+    "dynamic_version": true,
+    "files": [
+      {
+        "source": "[TEST_TMP_DIR]/dist/*.whl"
+      }
+    ],
+    "path": "[TEST_TMP_DIR]",
+    "type": "whl"
+  },
+  "second_wheel": {
+    "build": "true",
+    "path": "[TEST_TMP_DIR]",
+    "type": "jar"
+  }
+}
