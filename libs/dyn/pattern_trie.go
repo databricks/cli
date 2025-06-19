@@ -11,18 +11,33 @@ type PatternTrie struct {
 }
 
 // trieNode represents a node in the pattern trie.
-// Note that it can only be one of anyKey, anyIndex, collection of pathKeys, or collection of pathIndexes.
+// Each node in the array represents one or more of:
+// 1. An [AnyKey] component. This is the "*" wildcard which matches any map key.
+// 2. An [AnyIndex] component. This is the "*" wildcard which matches any array index.
+// 3. Multiple [Key] components. These are multiple static path keys for this this node would match.
+// 4. Multiple [Index] components. These are multiple static path indices for this this node would match.
+//
+// Note: It's valid for both anyKey and pathKey to be set at the same time.
+// For example, adding both "foo.*.bar" and "foo.bar" to a trie is valid.
+// Similarly, it's valid for both anyIndex and pathIndex to be set at the same time.
+// For example, adding both "foo[*].bar" and "foo[0]" to a trie is valid.
+//
+// Note: While we do not perform validation that both key and index are not set at the same time.
 type trieNode struct {
 	// If set this indicates the trie node is an anyKey node.
+	// Maps to the [AnyKey] component.
 	anyKey *trieNode
 
 	// Indicates the trie node is an anyIndex node.
+	// Maps to the [AnyIndex] component.
 	anyIndex *trieNode
 
 	// Set of strings which this trie node matches.
+	// Maps to the [Key] component.
 	pathKey map[string]*trieNode
 
 	// Set of indices which this trie node matches.
+	// Maps to the [Index] component.
 	pathIndex map[int]*trieNode
 
 	// Indicates if this node is the end of a pattern. Encountering a node
