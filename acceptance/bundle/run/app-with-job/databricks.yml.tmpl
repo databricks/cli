@@ -2,7 +2,7 @@ bundle:
   name: basic
 
 workspace:
-  root_path: "~/.bundle/{{.unique_id}}"
+  root_path: "~/.bundle/app-with-job-$UNIQUE_NAME"
 
 variables:
   env_var_name:
@@ -11,7 +11,7 @@ variables:
 resources:
   apps:
     test_app:
-      name: "{{.app_id}}"
+      name: "app-$UNIQUE_NAME"
       description: "App which manages job created by this bundle"
       source_code_path: ./app
       resources:
@@ -23,14 +23,13 @@ resources:
 
   jobs:
     foo:
-      name: test-job-with-cluster-{{.unique_id}}
+      name: test-job-with-cluster
       tasks:
         - task_key: my_notebook_task
           new_cluster:
             num_workers: 1
-            spark_version: "{{.spark_version}}"
-            node_type_id: "{{.node_type_id}}"
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
             data_security_mode: USER_ISOLATION
-            instance_pool_id: "{{.instance_pool_id}}"
           spark_python_task:
             python_file: ./hello_world.py

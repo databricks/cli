@@ -8,6 +8,4 @@ type ResourceDescription struct {
 	// Singular and plural title when used in summaries / terminal UI.
 	SingularTitle string
 	PluralTitle   string
-
-	TerraformResourceName string
 }

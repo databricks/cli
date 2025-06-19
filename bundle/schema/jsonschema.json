@@ -1795,6 +1795,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "artifacts_dynamic_version": {
+                      "description": "Whether to enable dynamic_version on all artifacts.",
+                      "$ref": "#/$defs/bool"
+                    },
                     "jobs_max_concurrent_runs": {
                       "description": "The maximum concurrent runs for a job.",
                       "$ref": "#/$defs/int"
