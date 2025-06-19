@@ -39,20 +39,6 @@ type IResource interface {
 	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
 }
 
-/*
-
-type ChangeType int
-
-func (c ChangeType) IsRecreate() bool { return c == ChangeTypeRecreate }
-func (c ChangeType) IsUpdate() bool   { return c == ChangeTypeUpdate }
-
-const (
-	ChangeTypeNone     ChangeType = 0
-	ChangeTypeUpdate   ChangeType = 1
-	ChangeTypeRecreate ChangeType = -1
-)
-*/
-
 // invokeConstructor converts cfg to the parameter type expected by ctor and
 // executes the call, returning the IResource instance or error.
 func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, cfg any) (IResource, error) {
