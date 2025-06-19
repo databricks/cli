@@ -14,8 +14,8 @@ import (
 // and return the exit code.
 // ref: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/execv-wexecv?view=msvc-170
 func execv(opts ExecvOptions) error {
-	if opts.WindowsCleanup != nil {
-		defer opts.WindowsCleanup()
+	if opts.windowsCleanup != nil {
+		defer opts.windowsCleanup()
 	}
 
 	path, err := exec.LookPath(opts.Args[0])
@@ -39,10 +39,10 @@ func execv(opts ExecvOptions) error {
 	err = cmd.Wait()
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		// Cleanup the temporary script since we directly exit here.
-		if opts.WindowsCleanup != nil {
-			opts.WindowsCleanup()
+		if opts.windowsCleanup != nil {
+			opts.windowsCleanup()
 		}
-		opts.WindowsExit(exitErr.ExitCode())
+		opts.windowsExit(exitErr.ExitCode())
 		return nil
 	}
 	if err != nil {
@@ -52,9 +52,9 @@ func execv(opts ExecvOptions) error {
 	// Unix implementation of execv never returns control to the CLI process.
 	// To emulate this behavior, we exit early here if the child process exits
 	// successfully.
-	if opts.WindowsCleanup != nil {
-		opts.WindowsCleanup()
+	if opts.windowsCleanup != nil {
+		opts.windowsCleanup()
 	}
-	opts.WindowsExit(0)
+	opts.windowsExit(0)
 	return nil
 }
