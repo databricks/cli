@@ -59,10 +59,15 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 }
 
 func (r *ResourcePipeline) WaitAfterCreate(ctx context.Context) error {
+	// Note, terraform provider either
+	// a) reads back state at least once and fails create if state is "failed"
+	// b) repeatededly reads state until state is "running" (if spec.Contionous is set).
+	// TODO: investigate if we need to mimic this behaviour or can rely on Create status code.
 	return nil
 }
 
 func (r *ResourcePipeline) WaitAfterUpdate(ctx context.Context) error {
+	// TODO: investigate if we need to mimic waiting behaviour in TF or can rely on Update status code.
 	return nil
 }
 

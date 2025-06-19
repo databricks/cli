@@ -56,14 +56,17 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string) (string, error) {
 }
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
+	// TODO: implement app deletion
 	return nil
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context) error {
+	// Intentional no-op
 	return nil
 }
 
 func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
+	// Intentional no-op
 	return nil
 }
 

@@ -66,10 +66,12 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
 }
 
 func (r *ResourceJob) WaitAfterCreate(ctx context.Context) error {
+	// Intentional no-op
 	return nil
 }
 
 func (r *ResourceJob) WaitAfterUpdate(ctx context.Context) error {
+	// Intentional no-op
 	return nil
 }
 
