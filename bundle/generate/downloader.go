@@ -18,7 +18,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type downloader struct {
+type Downloader struct {
 	files     map[string]string
 	w         *databricks.WorkspaceClient
 	sourceDir string
@@ -26,7 +26,7 @@ type downloader struct {
 	basePath  string
 }
 
-func (n *downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
+func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
 	if task.NotebookTask == nil {
 		return nil
 	}
@@ -34,7 +34,7 @@ func (n *downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) e
 	return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
 }
 
-func (n *downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pipelines.PipelineLibrary) error {
+func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pipelines.PipelineLibrary) error {
 	if lib.Notebook != nil {
 		return n.markNotebookForDownload(ctx, &lib.Notebook.Path)
 	}
@@ -46,7 +46,7 @@ func (n *downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pi
 	return nil
 }
 
-func (n *downloader) markFileForDownload(ctx context.Context, filePath *string) error {
+func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) error {
 	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (n *downloader) markFileForDownload(ctx context.Context, filePath *string) 
 	return nil
 }
 
-func (n *downloader) markDirectoryForDownload(ctx context.Context, dirPath *string) error {
+func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *string) error {
 	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath)
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (n *downloader) markDirectoryForDownload(ctx context.Context, dirPath *stri
 	return nil
 }
 
-func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *string) error {
+func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *string) error {
 	info, err := n.w.Workspace.GetStatusByPath(ctx, *notebookPath)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 	return nil
 }
 
-func (n *downloader) relativePath(fullPath string) string {
+func (n *Downloader) relativePath(fullPath string) string {
 	basePath := path.Dir(fullPath)
 	if n.basePath != "" {
 		basePath = n.basePath
@@ -138,7 +138,7 @@ func (n *downloader) relativePath(fullPath string) string {
 	return relPath
 }
 
-func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
+func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 	// First check that all files can be written
 	for targetPath := range n.files {
 		info, err := os.Stat(targetPath)
@@ -185,8 +185,8 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 	return errs.Wait()
 }
 
-func newDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *downloader {
-	return &downloader{
+func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *Downloader {
+	return &Downloader{
 		files:     make(map[string]string),
 		w:         w,
 		sourceDir: sourceDir,
