@@ -79,7 +79,7 @@ func TestShellExecv_Windows(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, files, 0)
 
-		// Verify that the exit code is set.
+		// Verify that CLI would exit with the correct exit code.
 		assert.Equal(t, test.exitCode, exitCode)
 	}
 }
