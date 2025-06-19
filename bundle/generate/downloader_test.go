@@ -29,7 +29,7 @@ func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 	}, nil)
 	err = downloader.markFileForDownload(ctx, &f1)
 	require.NoError(t, err)
-	assert.Equal(t, "../source/c", f1)
+	assert.Equal(t, filepath.FromSlash("../source/c"), f1)
 
 	// Test that the previous path doesn't influence the next path.
 	f2 := "/a/b/c/d"
@@ -38,5 +38,5 @@ func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 	}, nil)
 	err = downloader.markFileForDownload(ctx, &f2)
 	require.NoError(t, err)
-	assert.Equal(t, "../source/d", f2)
+	assert.Equal(t, filepath.FromSlash("../source/d"), f2)
 }
