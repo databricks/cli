@@ -22,7 +22,9 @@ type PatternTrie struct {
 // Similarly, it's valid for both anyIndex and pathIndex to be set at the same time.
 // For example, adding both "foo[*].bar" and "foo[0]" to a trie is valid.
 //
-// Note: While we do not perform validation that both key and index are not set at the same time.
+// Note: Setting both key (one of pathKey or anyKey) and index (one of pathIndex or anyIndex)
+// is not supported by the [PatternTrie.SearchPath] method. We don't perform validation for this
+// case because it's not expected to arise in practice where a field is either a map or an array.
 type trieNode struct {
 	// If set this indicates the trie node is an anyKey node.
 	// Maps to the [AnyKey] component.
