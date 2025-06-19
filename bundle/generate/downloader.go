@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/notebook"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -135,7 +136,13 @@ func (n *Downloader) relativePath(fullPath string) string {
 		relPath = relPath[1:]
 	}
 
-	return relPath
+	// Normalize path components.
+	components := strings.Split(relPath, "/")
+	for i, component := range components {
+		components[i] = textutil.NormalizePathComponent(component)
+	}
+
+	return strings.Join(components, "/")
 }
 
 func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
