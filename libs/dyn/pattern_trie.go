@@ -24,7 +24,8 @@ type PatternTrie struct {
 //
 // Note: Setting both key (one of pathKey or anyKey) and index (one of pathIndex or anyIndex)
 // is not supported by the [PatternTrie.SearchPath] method. We don't perform validation for this
-// case because it's not expected to arise in practice where a field is either a map or an array.
+// case because it's not expected to arise in practice where a field is either a map or an array,
+// but not both.
 type trieNode struct {
 	// If set this indicates the trie node is an anyKey node.
 	// Maps to the [AnyKey] component.
