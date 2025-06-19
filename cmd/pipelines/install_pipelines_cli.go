@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func installPipelinesSymlink(directory string) error {
+func installPipelinesSymlink(ctx context.Context, directory string) error {
 	path, err := os.Executable()
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func installPipelinesSymlink(directory string) error {
 		if err != nil {
 			return err
 		}
-		cmdio.LogString(context.Background(), fmt.Sprintf("pipelines successfully installed in directory %q", dir))
+		cmdio.LogString(ctx, fmt.Sprintf("pipelines successfully installed in directory %q", dir))
 		return nil
 	}
 
@@ -45,20 +45,20 @@ func installPipelinesSymlink(directory string) error {
 		return err
 	}
 	if realPath == target {
-		cmdio.LogString(context.Background(), fmt.Sprintf("pipelines already installed in directory %q", dir))
+		cmdio.LogString(ctx, fmt.Sprintf("pipelines already installed in directory %q", dir))
 		return nil
 	}
 	return fmt.Errorf("cannot install pipelines CLI: %q already exists", pipelinesPath)
 }
 
-func InstallPipelines() *cobra.Command {
+func InstallPipelinesCLI() *cobra.Command {
 	var directory string
 	cmd := &cobra.Command{
-		Use:    "install-pipelines",
-		Short:  "Install Pipelines",
+		Use:    "install-pipelines-cli",
+		Short:  "Install Pipelines CLI",
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return installPipelinesSymlink(directory)
+			return installPipelinesSymlink(cmd.Context(), directory)
 		},
 	}
 	cmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory in which to install pipelines CLI (defaults to databricks CLI's directory)")
