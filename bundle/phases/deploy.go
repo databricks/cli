@@ -131,7 +131,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if b.DirectDeployment {
-		diags = bundle.Apply(ctx, b, terranova.TerranovaDeploy())
+		diags = bundle.Apply(ctx, b, terranova.TerranovaApply())
 	} else {
 		diags = bundle.Apply(ctx, b, terraform.Apply())
 	}

@@ -22,17 +22,17 @@ import (
 // How many parallel operations (API calls) are allowed
 const defaultParallelism = 10
 
-type terranovaDeployMutator struct{}
+type terranovaApplyMutator struct{}
 
-func TerranovaDeploy() bundle.Mutator {
-	return &terranovaDeployMutator{}
+func TerranovaApply() bundle.Mutator {
+	return &terranovaApplyMutator{}
 }
 
-func (m *terranovaDeployMutator) Name() string {
+func (m *terranovaApplyMutator) Name() string {
 	return "TerranovaDeploy"
 }
 
-func (m *terranovaDeployMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Plan.Actions) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return nil
