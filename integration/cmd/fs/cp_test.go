@@ -41,14 +41,16 @@ func assertTargetFile(t *testing.T, ctx context.Context, f filer.Filer, relPath 
 
 func assertFileContent(t *testing.T, ctx context.Context, f filer.Filer, path, expectedContent string) {
 	r, err := f.Read(ctx, path)
-	if !assert.NoError(t, err) {
+	if err != nil {
+		assert.NoError(t, err)
 		return
 	}
 
 	defer r.Close()
 
 	b, err := io.ReadAll(r)
-	if !assert.NoError(t, err) {
+	if err != nil {
+		assert.NoError(t, err)
 		return
 	}
 
