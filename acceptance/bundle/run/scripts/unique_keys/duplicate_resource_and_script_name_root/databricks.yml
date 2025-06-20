@@ -1,0 +1,17 @@
+bundle:
+  name: test
+
+workspace:
+  profile: test
+
+scripts:
+  foo:
+    content: |
+      print("Hello, world!")
+
+resources:
+  jobs:
+    foo:
+      name: job foo
+    bar:
+      name: job bar
