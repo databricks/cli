@@ -2,9 +2,11 @@ package bundle
 
 import (
 	"context"
+	"time"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
 // Mutator is the interface type that mutates a bundle's configuration or internal state.
@@ -18,6 +20,22 @@ type Mutator interface {
 }
 
 func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
+	// Track the execution time of the mutator.
+	t0 := time.Now()
+	defer func() {
+		duration := time.Since(t0).Milliseconds()
+
+		// Don't track the mutator if it takes less than 1ms to execute.
+		if duration == 0 {
+			return
+		}
+
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   m.Name(),
+			Value: time.Since(t0).Milliseconds(),
+		})
+	}()
+
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
 
 	log.Debugf(ctx, "Apply")
