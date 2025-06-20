@@ -1,0 +1,13 @@
+{
+    "name": "app",
+    "version": "1.0.0",
+    "description": "A simple Node.js app",
+    "main": "app.js",
+    "scripts": {
+        "run-app": "node app.js",
+        "build": "echo 'Building app...'"
+    },
+    "dependencies": {
+        "express": "^5.1.0"
+    }
+}
