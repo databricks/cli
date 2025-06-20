@@ -106,11 +106,22 @@ depends on the existing profiles you have set in your configuration file
 			}
 		}
 
-		// Set the host and account-id based on the provided arguments and flags.
-		err := setHostAndAccountId(ctx, profile.DefaultProfiler, profileName, authArguments, args)
+		existingProfile, err := loadProfileByName(ctx, profileName, profile.DefaultProfiler)
 		if err != nil {
 			return err
 		}
+
+		// Set the host and account-id based on the provided arguments and flags.
+		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
+		if err != nil {
+			return err
+		}
+
+		clusterID := ""
+		if existingProfile != nil {
+			clusterID = existingProfile.ClusterID
+		}
+
 		oauthArgument, err := authArguments.ToOAuthArgument()
 		if err != nil {
 			return err
@@ -127,6 +138,7 @@ depends on the existing profiles you have set in your configuration file
 			Host:      authArguments.Host,
 			AccountID: authArguments.AccountID,
 			AuthType:  "databricks-cli",
+			ClusterID: clusterID,
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
@@ -136,14 +148,6 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
-		// Bug fix: Preserve cluster_id from existing profile during login
-		// Prior to v0.233.0, the login command would overwrite the entire profile configuration,
-		// causing loss of cluster_id and other settings. Now we first retrieve the existing
-		// cluster_id before saving the new configuration to ensure it's preserved.
-		cfg.ClusterID, err = getClusterID(ctx, profileName)
-		if err != nil {
-			return err
-		}
 		if configureCluster {
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
 			if err != nil {
@@ -190,7 +194,7 @@ depends on the existing profiles you have set in your configuration file
 // 1. --account-id flag.
 // 2. account-id from the specified profile, if available.
 // 3. Prompt the user for the account-id.
-func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profileName string, authArguments *auth.AuthArguments, args []string) error {
+func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
@@ -198,19 +202,13 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 	}
 
 	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
-	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
-	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
-		return err
-	}
-
 	if host == "" {
 		if len(args) > 0 {
 			// If [HOST] is provided, set the host to the provided positional argument.
 			authArguments.Host = args[0]
-		} else if len(profiles) > 0 && profiles[0].Host != "" {
+		} else if existingProfile != nil && existingProfile.Host != "" {
 			// If neither [HOST] nor --host are provided, and the profile has a host, use it.
-			authArguments.Host = profiles[0].Host
+			authArguments.Host = existingProfile.Host
 		} else {
 			// If neither [HOST] nor --host are provided, and the profile does not have a host,
 			// then prompt the user for a host.
@@ -227,8 +225,8 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
 	accountID := authArguments.AccountID
 	if isAccountClient && accountID == "" {
-		if len(profiles) > 0 && profiles[0].AccountID != "" {
-			authArguments.AccountID = profiles[0].AccountID
+		if existingProfile != nil && existingProfile.AccountID != "" {
+			authArguments.AccountID = existingProfile.AccountID
 		} else {
 			// Prompt user for the account-id if it we could not get it from a
 			// profile.
@@ -254,32 +252,24 @@ func getProfileName(authArguments *auth.AuthArguments) string {
 	return split[0]
 }
 
-func getClusterID(ctx context.Context, profileName string) (string, error) {
-	file, err := profile.DefaultProfiler.Get(ctx)
-	if err != nil {
-		// If no configuration file exists, return empty string (no error)
-		if errors.Is(err, profile.ErrNoConfiguration) {
-			return "", nil
-		}
-		return "", fmt.Errorf("cannot load Databricks config file: %w", err)
+func loadProfileByName(ctx context.Context, profileName string, profiler profile.Profiler) (*profile.Profile, error) {
+	if profileName == "" {
+		return nil, nil
 	}
 
-	// file.Sections() is used in LoadProfiles() to iterate over profiles in login.
-	// Even with multiple profiles of the same name in the config file,
-	// it associates each profile name to at most one section.
-	// It takes the cluster_id if any profiles of the same name have it.
-	for _, v := range file.Sections() {
-		if v.Name() != profileName {
-			continue
-		}
-		all := v.KeysHash()
-		_, ok := all["host"]
-		if !ok {
-			// invalid profile, skip
-			continue
-		}
-		return all["cluster_id"], nil
+	if profiler == nil {
+		return nil, errors.New("profiler cannot be nil")
 	}
 
-	return "", nil
+	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
+	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
+	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
+		return nil, err
+	}
+
+	if len(profiles) > 0 {
+		// LoadProfiles returns only one profile per name, even with multiple profiles in the config file with the same name.
+		return &profiles[0], nil
+	}
+	return nil, nil
 }
