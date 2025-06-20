@@ -3,7 +3,7 @@ IncludeRequestHeaders = ["User-Agent"]
 
 [[Repls]]
 Old = '"execution_time_ms": \d{1,5},'
-New = '"execution_time_ms": SMALL_INT,'
+New = '"execution_time_ms": "SMALL_INT",'
 
 [[Repls]]
 Old = '(linux|darwin|windows)'

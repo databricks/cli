@@ -1,3 +1,0 @@
-[[Repls]]
-Old = '"value": \d+'
-New = '"value": [INT]'

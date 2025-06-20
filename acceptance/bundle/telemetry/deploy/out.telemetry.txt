@@ -7,7 +7,7 @@
         "version": "[DEV_VERSION]",
         "command": "bundle_deploy",
         "operating_system": "[OS]",
-        "execution_time_ms": SMALL_INT,
+        "execution_time_ms": "SMALL_INT",
         "exit_code": 0
       },
       "bundle_deploy_event": {
@@ -68,77 +68,7 @@
             }
           ],
           "bundle_mode": "TYPE_UNSPECIFIED",
-          "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
-          "bundle_mutator_execution_time_ms": [
-            {
-              "key": "terraform.Apply",
-              "value": [INT]
-            },
-            {
-              "key": "files.Upload",
-              "value": [INT]
-            },
-            {
-              "key": "phases.Initialize",
-              "value": [INT]
-            },
-            {
-              "key": "terraform.Initialize",
-              "value": [INT]
-            },
-            {
-              "key": "terraform.Plan",
-              "value": [INT]
-            },
-            {
-              "key": "artifacts.CleanUp",
-              "value": [INT]
-            },
-            {
-              "key": "terraform.Load",
-              "value": [INT]
-            },
-            {
-              "key": "lock:acquire",
-              "value": [INT]
-            },
-            {
-              "key": "deploy:state-push",
-              "value": [INT]
-            },
-            {
-              "key": "ProcessStaticResources",
-              "value": [INT]
-            },
-            {
-              "key": "phases.Build",
-              "value": [INT]
-            },
-            {
-              "key": "fast_validate(readonly)",
-              "value": [INT]
-            },
-            {
-              "key": "terraform.Write",
-              "value": [INT]
-            },
-            {
-              "key": "deploy:state-update",
-              "value": [INT]
-            },
-            {
-              "key": "terraform:state-pull",
-              "value": [INT]
-            },
-            {
-              "key": "terraform:state-push",
-              "value": [INT]
-            },
-            {
-              "key": "PopulateCurrentUser",
-              "value": [INT]
-            }
-          ]
+          "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
         }
       }
     }
