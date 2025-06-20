@@ -46,14 +46,14 @@ func TestParseTerraformActions(t *testing.T) {
 
 	assert.Equal(t, []deployplan.Action{
 		{
-			Action: deployplan.ActionTypeDelete,
-			Group:  "pipelines",
-			Name:   "delete pipeline",
+			ActionType: deployplan.ActionTypeDelete,
+			Group:      "pipelines",
+			Name:       "delete pipeline",
 		},
 		{
-			Action: deployplan.ActionTypeRecreate,
-			Group:  "pipelines",
-			Name:   "recreate pipeline",
+			ActionType: deployplan.ActionTypeRecreate,
+			Group:      "pipelines",
+			Name:       "recreate pipeline",
 		},
 	}, res)
 }

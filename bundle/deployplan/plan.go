@@ -20,12 +20,12 @@ type Action struct {
 	// Key of the resource the config
 	Name string
 
-	Action ActionType
+	ActionType ActionType
 }
 
 func (a Action) String() string {
 	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.Action, typ, a.Name)
+	return fmt.Sprintf("  %s %s %s", a.ActionType, typ, a.Name)
 }
 
 // Implements cmdio.Event for cmdio.Log
@@ -50,7 +50,7 @@ const (
 func Filter(changes []Action, actionType ActionType) []Action {
 	var result []Action
 	for _, action := range changes {
-		if action.Action == actionType {
+		if action.ActionType == actionType {
 			result = append(result, action)
 		}
 	}
@@ -68,7 +68,7 @@ func FilterGroup(changes []Action, group string, actionTypes ...ActionType) []Ac
 	}
 
 	for _, action := range changes {
-		if action.Group == group && actionTypeSet[action.Action] {
+		if action.Group == group && actionTypeSet[action.ActionType] {
 			result = append(result, action)
 		}
 	}
