@@ -2,6 +2,9 @@ package root
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
@@ -109,8 +112,48 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 	return b, diags
 }
 
-// MustConfigureBundle configures a bundle on the command context.
-func MustConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) {
+func chdirRewrite(root string, paths ...*string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	if cwd == root {
+		return nil
+	}
+
+	if testing.Testing() {
+		// integration tests run cmd code, Chdir() messes up parallel tests.
+		return nil
+	}
+
+	if err := os.Chdir(root); err != nil {
+		return err
+	}
+
+	for _, pathPtr := range paths {
+		if pathPtr == nil || *pathPtr == "" {
+			continue
+		}
+
+		if filepath.IsAbs(*pathPtr) {
+			continue
+		}
+
+		abs := filepath.Join(cwd, *pathPtr)
+		rel, err := filepath.Rel(root, abs)
+		if err != nil {
+			return err
+		}
+		*pathPtr = rel
+	}
+
+	return nil
+}
+
+// MustConfigureBundle configures a bundle on the command context and updates file paths
+// to be relative to the bundle root.
+func MustConfigureBundle(cmd *cobra.Command, paths ...*string) (*bundle.Bundle, diag.Diagnostics) {
 	// A bundle may be configured on the context when testing.
 	// If it is, return it immediately.
 	b := bundle.GetOrNil(cmd.Context())
@@ -119,6 +162,11 @@ func MustConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) 
 	}
 
 	b, err := bundle.MustLoad(cmd.Context())
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	err = chdirRewrite(b.BundleRootPath, paths...)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
