@@ -32,10 +32,9 @@
         },
         "serverless": {
             "type": "string",
-            "default": "no",
-            "enum": ["no", "yes"],
+            "default": "yes",
+            "enum": ["yes", "no"],
             "description": "Use serverless compute",
-            "skip_prompt_if": {},
             "order": 5
         }
     },
