@@ -323,9 +323,7 @@ func newGet() *cobra.Command {
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get an exchange.`
-	cmd.Long = `Get an exchange.
-  
-  Get an exchange.`
+	cmd.Long = `Get an exchange.`
 
 	cmd.Annotations = make(map[string]string)
 

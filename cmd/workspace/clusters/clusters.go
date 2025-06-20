@@ -689,6 +689,7 @@ func newEvents() *cobra.Command {
 				return fmt.Errorf("expected to have the id of the cluster to retrieve events about")
 			}
 			eventsReq.ClusterId = args[0]
+
 		}
 
 		response := w.Clusters.Events(ctx, eventsReq)
@@ -1342,6 +1343,7 @@ func newResize() *cobra.Command {
 				return fmt.Errorf("expected to have the cluster to be resized")
 			}
 			resizeReq.ClusterId = args[0]
+
 		}
 
 		wait, err := w.Clusters.Resize(ctx, resizeReq)
@@ -1458,6 +1460,7 @@ func newRestart() *cobra.Command {
 				return fmt.Errorf("expected to have the cluster to be started")
 			}
 			restartReq.ClusterId = args[0]
+
 		}
 
 		wait, err := w.Clusters.Restart(ctx, restartReq)
