@@ -1,0 +1,2 @@
+trace $CLI bundle validate --debug 2> out.stderr.txt
+trace diff.py $TESTDIR/../tf/out.stderr.txt out.stderr.txt

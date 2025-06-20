@@ -1,0 +1,25 @@
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> diff.py [TESTROOT]/bundle/debug/direct/../tf/out.stderr.txt out.stderr.txt
+--- [TESTROOT]/bundle/debug/direct/../tf/out.stderr.txt
++++ out.stderr.txt
+@@ -1,2 +1,4 @@
++
++>>> [CLI] bundle validate --debug
+ 10:07:59 Info: start pid=12345 version=[DEV_VERSION] args="[CLI], bundle, validate, --debug"
+ 10:07:59 Debug: Found bundle root at [TEST_TMP_DIR] (file [TEST_TMP_DIR]/databricks.yml) pid=12345
+@@ -61,8 +63,4 @@
+ 10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotateJobs
+ 10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotatePipelines
+-10:07:59 Debug: Apply pid=12345 mutator=terraform.Initialize
+-10:07:59 Debug: Using Terraform from DATABRICKS_TF_EXEC_PATH at [TERRAFORM] pid=12345 mutator=terraform.Initialize
+-10:07:59 Debug: Using Terraform CLI config from DATABRICKS_TF_CLI_CONFIG_FILE at [DATABRICKS_TF_CLI_CONFIG_FILE] pid=12345 mutator=terraform.Initialize
+-10:07:59 Debug: Environment variables for Terraform: ...redacted... pid=12345 mutator=terraform.Initialize
+ 10:07:59 Debug: Apply pid=12345 mutator=scripts.postinit
+ 10:07:59 Debug: No script defined for postinit, skipping pid=12345 mutator=scripts.postinit

@@ -1,0 +1,131 @@
+package terranova
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
+	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/databricks-sdk-go"
+)
+
+type Planner struct {
+	client       *databricks.WorkspaceClient
+	db           *tnstate.TerranovaState
+	section      string
+	resourceName string
+}
+
+func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
+	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
+
+	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
+	if err != nil {
+		return "", err
+	}
+
+	config := resource.Config()
+
+	if !hasEntry {
+		return deployplan.ActionTypeCreate, nil
+	}
+
+	oldID := entry.ID
+	if oldID == "" {
+		return "", errors.New("invalid state: empty id")
+	}
+
+	savedState, err := typeConvert(resource.GetType(), entry.State)
+	if err != nil {
+		return "", fmt.Errorf("interpreting state: %w", err)
+	}
+
+	// TODO: GetStructDiff should deal with cases where it comes across
+	// unresolved variables (so it needs additional support for dyn.Value storage).
+	// In some cases, it should introduce "update or recreate" action, since it does not know whether
+	// field is going to be changed.
+	localDiff, err := structdiff.GetStructDiff(savedState, config)
+	if err != nil {
+		return "", fmt.Errorf("comparing state and config: %w", err)
+	}
+
+	if len(localDiff) == 0 {
+		return deployplan.ActionTypeNoop, nil
+	}
+
+	return resource.ClassifyChanges(localDiff), nil
+}
+
+func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
+	if !b.DirectDeployment {
+		panic("direct deployment required")
+	}
+
+	client := b.WorkspaceClient()
+	var actions []deployplan.Action
+
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			group := p[1].Key()
+			name := p[2].Key()
+
+			config, ok := b.GetResourceConfig(group, name)
+			if !ok {
+				return dyn.InvalidValue, fmt.Errorf("internal error: cannot get config for %s.%s", group, name)
+			}
+
+			pl := Planner{
+				client:       client,
+				db:           &b.ResourceDatabase,
+				section:      group,
+				resourceName: name,
+			}
+
+			actionType, err := pl.Plan(ctx, config)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+
+			if actionType != deployplan.ActionTypeNoop {
+				actions = append(actions, deployplan.Action{
+					Group:      group,
+					Name:       name,
+					ActionType: actionType,
+				})
+			}
+
+			return v, nil
+		},
+	)
+	if err != nil {
+		return nil, errors.New("while reading resources config")
+	}
+
+	return actions, nil
+}
+
+func CalculateDestroyActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
+	if !b.DirectDeployment {
+		panic("direct deployment required")
+	}
+
+	nodes := b.ResourceDatabase.GetAllResources()
+	var actions []deployplan.Action
+
+	for _, node := range nodes {
+		actions = append(actions, deployplan.Action{
+			Group:      node.Group,
+			Name:       node.Name,
+			ActionType: deployplan.ActionTypeDelete,
+		})
+	}
+
+	return actions, nil
+}

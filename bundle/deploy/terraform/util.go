@@ -47,7 +47,7 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (*resourcesState
 	if err != nil {
 		return nil, err
 	}
-	rawState, err := os.ReadFile(filepath.Join(cacheDir, TerraformStateFileName))
+	rawState, err := os.ReadFile(filepath.Join(cacheDir, b.StateFilename()))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return &resourcesState{Version: SupportedStateVersion}, nil
