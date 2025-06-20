@@ -138,21 +138,30 @@ func TestProcessRootIncludesGlobInRootPath(t *testing.T) {
 			},
 		},
 		{
-			name: "bracket",
-			root: "[ab]",
+			name: "left bracket",
+			root: "[ab",
 			diag: diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  "Bundle root path contains glob pattern characters",
-				Detail:   `The path to the bundle root [ab] contains glob pattern character "[". Please remove the character from this path to use bundle commands.`,
+				Detail:   `The path to the bundle root [ab contains glob pattern character "[". Please remove the character from this path to use bundle commands.`,
 			},
 		},
 		{
-			name: "bracket",
+			name: "right bracket",
 			root: "ab]/bax",
 			diag: diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  "Bundle root path contains glob pattern characters",
 				Detail:   `The path to the bundle root ab]/bax contains glob pattern character "]". Please remove the character from this path to use bundle commands.`,
+			},
+		},
+		{
+			name: "hat",
+			root: "ab^bax",
+			diag: diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Bundle root path contains glob pattern characters",
+				Detail:   `The path to the bundle root ab^bax contains glob pattern character "^". Please remove the character from this path to use bundle commands.`,
 			},
 		},
 	}
