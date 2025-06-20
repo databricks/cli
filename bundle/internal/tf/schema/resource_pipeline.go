@@ -237,11 +237,11 @@ type ResourcePipelineLatestUpdates struct {
 }
 
 type ResourcePipelineLibraryFile struct {
-	Path string `json:"path,omitempty"`
+	Path string `json:"path"`
 }
 
 type ResourcePipelineLibraryGlob struct {
-	Include string `json:"include,omitempty"`
+	Include string `json:"include"`
 }
 
 type ResourcePipelineLibraryMaven struct {
@@ -251,7 +251,7 @@ type ResourcePipelineLibraryMaven struct {
 }
 
 type ResourcePipelineLibraryNotebook struct {
-	Path string `json:"path,omitempty"`
+	Path string `json:"path"`
 }
 
 type ResourcePipelineLibrary struct {
@@ -316,6 +316,7 @@ type ResourcePipeline struct {
 	Serverless           bool                                 `json:"serverless,omitempty"`
 	State                string                               `json:"state,omitempty"`
 	Storage              string                               `json:"storage,omitempty"`
+	Tags                 map[string]string                    `json:"tags,omitempty"`
 	Target               string                               `json:"target,omitempty"`
 	Url                  string                               `json:"url,omitempty"`
 	Cluster              []ResourcePipelineCluster            `json:"cluster,omitempty"`

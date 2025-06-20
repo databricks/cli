@@ -19,4 +19,5 @@ type ResourceUser struct {
 	Repos                   string `json:"repos,omitempty"`
 	UserName                string `json:"user_name"`
 	WorkspaceAccess         bool   `json:"workspace_access,omitempty"`
+	WorkspaceConsume        bool   `json:"workspace_consume,omitempty"`
 }
