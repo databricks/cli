@@ -220,6 +220,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.Name = instance.Attributes.Name
 				config.Resources.SecretScopes[resource.Name] = cur
+			case "databricks_alert_v2":
+				if config.Resources.Alerts == nil {
+					config.Resources.Alerts = make(map[string]*resources.Alert)
+				}
+				cur := config.Resources.Alerts[resource.Name]
+				if cur == nil {
+					cur = &resources.Alert{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
+				config.Resources.Alerts[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 			case "databricks_secret_acl":
@@ -291,6 +301,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.SecretScopes {
+		if src.ModifiedStatus == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.Alerts {
 		if src.ModifiedStatus == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
