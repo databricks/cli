@@ -17,7 +17,7 @@ type ExecvOptions struct {
 	// to cmd.exe. They have to be serialized to a file and executed.
 	// Thus if [Execv] is used to execution a script though cmd.exe,
 	// the caller should register a cleanup function to clean up the temporary file.
-	windowsCleanup func()
+	cleanup func()
 
 	// Callback to exit the current process in windows. Having this as a function here
 	// helps with testing.
