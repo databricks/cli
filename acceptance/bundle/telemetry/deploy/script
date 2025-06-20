@@ -4,7 +4,7 @@ trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext
 
 # Note that the number 5 here is arbitrary. In practice I saw 16 mutators be recorded in acceptance test runs so 5 seems
 # like a reasonably safe number to assert that mutator execution times are being recorded.
-title "that there are atleast 5 mutators for which the execution time is recorded"
+title "Assert that there are atleast 5 mutators for which the execution time is recorded"
 trace cat telemetry.json | jq ' .entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms | length > 5'
 
 # bundle_mutator_execution_time_ms can have variable number of entries depending upon the runtime of the mutators. Thus we omit it from
