@@ -49,6 +49,8 @@ var getEnableNotebookTableClipboardOverrides []func(
 func newGetEnableNotebookTableClipboard() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "get-enable-notebook-table-clipboard"
 	cmd.Short = `Get the Results Table Clipboard features setting.`
 	cmd.Long = `Get the Results Table Clipboard features setting.
@@ -56,6 +58,11 @@ func newGetEnableNotebookTableClipboard() *cobra.Command {
   Gets the Results Table Clipboard features setting.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

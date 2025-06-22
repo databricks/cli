@@ -313,6 +313,8 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "list"
 	cmd.Short = `Get all private access settings objects.`
 	cmd.Long = `Get all private access settings objects.
@@ -321,6 +323,11 @@ func newList() *cobra.Command {
   by ID.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

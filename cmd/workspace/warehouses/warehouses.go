@@ -575,6 +575,8 @@ var getWorkspaceWarehouseConfigOverrides []func(
 func newGetWorkspaceWarehouseConfig() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "get-workspace-warehouse-config"
 	cmd.Short = `Get the workspace configuration.`
 	cmd.Long = `Get the workspace configuration.
@@ -583,6 +585,11 @@ func newGetWorkspaceWarehouseConfig() *cobra.Command {
   a workspace.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

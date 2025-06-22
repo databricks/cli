@@ -247,6 +247,8 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "list"
 	cmd.Short = `List available instance profiles.`
 	cmd.Long = `List available instance profiles.
@@ -256,6 +258,11 @@ func newList() *cobra.Command {
   This API is available to all users.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

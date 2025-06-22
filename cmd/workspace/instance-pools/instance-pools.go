@@ -589,6 +589,8 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "list"
 	cmd.Short = `List instance pool info.`
 	cmd.Long = `List instance pool info.
@@ -596,6 +598,11 @@ func newList() *cobra.Command {
   Gets a list of instance pools with their statistics.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

@@ -254,6 +254,8 @@ var currentOverrides []func(
 func newCurrent() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "current"
 	cmd.Short = `Get metastore assignment for workspace.`
 	cmd.Long = `Get metastore assignment for workspace.
@@ -261,6 +263,11 @@ func newCurrent() *cobra.Command {
   Gets the metastore assignment for the workspace being accessed.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -470,6 +477,8 @@ var summaryOverrides []func(
 func newSummary() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "summary"
 	cmd.Short = `Get a metastore summary.`
 	cmd.Long = `Get a metastore summary.
@@ -478,6 +487,11 @@ func newSummary() *cobra.Command {
   credential, the cloud vendor, the cloud region, and the global metastore ID.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

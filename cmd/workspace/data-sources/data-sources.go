@@ -61,6 +61,8 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "list"
 	cmd.Short = `Get a list of SQL warehouses.`
 	cmd.Long = `Get a list of SQL warehouses.
@@ -75,6 +77,11 @@ func newList() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

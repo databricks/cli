@@ -300,6 +300,8 @@ var getPermissionLevelsOverrides []func(
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "get-permission-levels"
 	cmd.Short = `Get password permission levels.`
 	cmd.Long = `Get password permission levels.
@@ -307,6 +309,11 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -342,6 +349,8 @@ var getPermissionsOverrides []func(
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "get-permissions"
 	cmd.Short = `Get password permissions.`
 	cmd.Long = `Get password permissions.
@@ -350,6 +359,11 @@ func newGetPermissions() *cobra.Command {
   their root object.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

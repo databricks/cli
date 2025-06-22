@@ -69,6 +69,8 @@ var allClusterStatusesOverrides []func(
 func newAllClusterStatuses() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "all-cluster-statuses"
 	cmd.Short = `Get all statuses.`
 	cmd.Long = `Get all statuses.
@@ -77,6 +79,11 @@ func newAllClusterStatuses() *cobra.Command {
   libraries installed on this cluster via the API or the libraries UI.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

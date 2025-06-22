@@ -991,6 +991,8 @@ var listNodeTypesOverrides []func(
 func newListNodeTypes() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "list-node-types"
 	cmd.Short = `List node types.`
 	cmd.Long = `List node types.
@@ -999,6 +1001,11 @@ func newListNodeTypes() *cobra.Command {
   launch a cluster.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1034,6 +1041,8 @@ var listZonesOverrides []func(
 func newListZones() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "list-zones"
 	cmd.Short = `List availability zones.`
 	cmd.Long = `List availability zones.
@@ -1042,6 +1051,11 @@ func newListZones() *cobra.Command {
   example, us-west-2a). These zones can be used to launch a cluster.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1594,6 +1608,8 @@ var sparkVersionsOverrides []func(
 func newSparkVersions() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "spark-versions"
 	cmd.Short = `List available Spark versions.`
 	cmd.Long = `List available Spark versions.
@@ -1602,6 +1618,11 @@ func newSparkVersions() *cobra.Command {
   launch a cluster.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

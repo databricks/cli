@@ -52,6 +52,8 @@ var createOverrides []func(
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "create"
 	cmd.Short = `Create provider analytics dashboard.`
 	cmd.Long = `Create provider analytics dashboard.
@@ -60,6 +62,11 @@ func newCreate() *cobra.Command {
   be confused with the Lakeview dashboard id.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -95,11 +102,18 @@ var getOverrides []func(
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "get"
 	cmd.Short = `Get provider analytics dashboard.`
 	cmd.Long = `Get provider analytics dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -135,11 +149,18 @@ var getLatestVersionOverrides []func(
 func newGetLatestVersion() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "get-latest-version"
 	cmd.Short = `Get latest version of provider analytics dashboard.`
 	cmd.Long = `Get latest version of provider analytics dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

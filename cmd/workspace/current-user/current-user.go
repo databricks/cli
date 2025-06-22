@@ -48,6 +48,8 @@ var meOverrides []func(
 func newMe() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "me"
 	cmd.Short = `Get current user info.`
 	cmd.Long = `Get current user info.
@@ -55,6 +57,11 @@ func newMe() *cobra.Command {
   Get details about the current method caller's identity.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

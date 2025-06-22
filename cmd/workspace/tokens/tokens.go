@@ -227,6 +227,8 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	// TODO: short flags
+
 	cmd.Use = "list"
 	cmd.Short = `List tokens.`
 	cmd.Long = `List tokens.
@@ -234,6 +236,11 @@ func newList() *cobra.Command {
   Lists all the valid tokens for a user-workspace pair.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
