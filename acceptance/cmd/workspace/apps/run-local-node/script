@@ -32,4 +32,8 @@ title "Checking app is running..."
 trace curl -s -o - http://127.0.0.1:$PROXY_PORT | grep -w "Hello From App"
 
 trace grep "To debug your app, attach a debugger to port" ./out.run.txt
+
+# Kill the background process to ensure the app is shutdown
+kill $PID 2>/dev/null || true
+
 rm out.run.txt
