@@ -172,3 +172,23 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadProfileByNameWithHomeDirectory(t *testing.T) {
+	// Test when ~/.databrickscfg exists
+	ctx := context.Background()
+	ctx = env.WithUserHomeDir(ctx, "testdata")
+
+	// The testdata directory already contains a .databrickscfg file
+	existingProfile, err := loadProfileByName(ctx, "profile-1", profile.DefaultProfiler)
+	require.NoError(t, err)
+	assert.NotNil(t, existingProfile)
+	assert.Equal(t, "https://www.host1.com", existingProfile.Host)
+
+	// Test when ~/.databrickscfg does not exist
+	ctx2 := context.Background()
+	ctx2 = env.WithUserHomeDir(ctx2, "nonexistent")
+
+	noProfile, err := loadProfileByName(ctx2, "any-profile", profile.DefaultProfiler)
+	require.NoError(t, err)
+	assert.Nil(t, noProfile, "Expected nil profile when ~/.databrickscfg doesn't exist")
+}
