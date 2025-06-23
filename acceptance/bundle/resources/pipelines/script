@@ -24,13 +24,12 @@ rm out.requests.txt
 title "Fetch pipeline ID and verify remote state"
 
 ppid=`read_id.py pipelines my`
-
 trace $CLI pipelines get $ppid
 rm out.requests.txt
 
 title "Destroy the pipeline and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
-trace print_requests
 
+trace print_requests
 trace musterr $CLI pipelines get $ppid
 rm out.requests.txt
