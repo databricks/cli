@@ -82,6 +82,7 @@ type Resources struct {
 	Pipeline                                     map[string]any `json:"databricks_pipeline,omitempty"`
 	Provider                                     map[string]any `json:"databricks_provider,omitempty"`
 	QualityMonitor                               map[string]any `json:"databricks_quality_monitor,omitempty"`
+	QualityMonitorV2                             map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	Query                                        map[string]any `json:"databricks_query,omitempty"`
 	Recipient                                    map[string]any `json:"databricks_recipient,omitempty"`
 	RecipientFederationPolicy                    map[string]any `json:"databricks_recipient_federation_policy,omitempty"`
@@ -202,6 +203,7 @@ func NewResources() *Resources {
 		Pipeline:                          make(map[string]any),
 		Provider:                          make(map[string]any),
 		QualityMonitor:                    make(map[string]any),
+		QualityMonitorV2:                  make(map[string]any),
 		Query:                             make(map[string]any),
 		Recipient:                         make(map[string]any),
 		RecipientFederationPolicy:         make(map[string]any),
