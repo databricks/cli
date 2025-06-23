@@ -148,7 +148,16 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 
 	hostFromProfile := normalizeHost(match.Key("host").Value())
 	if hostFromProfile != "" && host != "" && hostFromProfile != host {
-		return fmt.Errorf("config host mismatch: profile uses host %s, but CLI configured to use %s", hostFromProfile, host)
+		// Try to find if there's a profile which uses the same host as the bundle and suggest in error message
+		match, err = findMatchingProfile(configFile, func(s *ini.Section) bool {
+			return normalizeHost(s.Key("host").Value()) == host
+		})
+		if err == nil && match != nil {
+			profileName := match.Name()
+			return fmt.Errorf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s). Did you mean to use the profile %s?", hostFromProfile, host, profileName)
+		}
+
+		return fmt.Errorf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s)", hostFromProfile, host)
 	}
 
 	return nil
