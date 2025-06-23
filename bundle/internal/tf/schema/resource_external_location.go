@@ -14,8 +14,8 @@ type ResourceExternalLocationEncryptionDetails struct {
 type ResourceExternalLocationFileEventQueueManagedAqs struct {
 	ManagedResourceId string `json:"managed_resource_id,omitempty"`
 	QueueUrl          string `json:"queue_url,omitempty"`
-	ResourceGroup     string `json:"resource_group,omitempty"`
-	SubscriptionId    string `json:"subscription_id,omitempty"`
+	ResourceGroup     string `json:"resource_group"`
+	SubscriptionId    string `json:"subscription_id"`
 }
 
 type ResourceExternalLocationFileEventQueueManagedPubsub struct {
@@ -30,19 +30,19 @@ type ResourceExternalLocationFileEventQueueManagedSqs struct {
 
 type ResourceExternalLocationFileEventQueueProvidedAqs struct {
 	ManagedResourceId string `json:"managed_resource_id,omitempty"`
-	QueueUrl          string `json:"queue_url,omitempty"`
+	QueueUrl          string `json:"queue_url"`
 	ResourceGroup     string `json:"resource_group,omitempty"`
 	SubscriptionId    string `json:"subscription_id,omitempty"`
 }
 
 type ResourceExternalLocationFileEventQueueProvidedPubsub struct {
 	ManagedResourceId string `json:"managed_resource_id,omitempty"`
-	SubscriptionName  string `json:"subscription_name,omitempty"`
+	SubscriptionName  string `json:"subscription_name"`
 }
 
 type ResourceExternalLocationFileEventQueueProvidedSqs struct {
 	ManagedResourceId string `json:"managed_resource_id,omitempty"`
-	QueueUrl          string `json:"queue_url,omitempty"`
+	QueueUrl          string `json:"queue_url"`
 }
 
 type ResourceExternalLocationFileEventQueue struct {
