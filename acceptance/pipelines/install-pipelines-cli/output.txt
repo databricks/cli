@@ -8,9 +8,18 @@ Pipelines CLI (stub, to be filled in)
 
 Usage:
   pipelines [flags]
+  pipelines [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  deploy      Deploy bundle
+  help        Help about any command
 
 Flags:
-  -h, --help   help for pipelines
+  -h, --help          help for pipelines
+      --var strings   set values for variables defined in bundle config. Example: --var="foo=bar"
+
+Use "pipelines [command] --help" for more information about a command.
 
 === pipelines already installed
 >>> errcode [CLI] install-pipelines-cli -d ./subdir
@@ -31,6 +40,15 @@ Pipelines CLI (stub, to be filled in)
 
 Usage:
   pipelines [flags]
+  pipelines [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  deploy      Deploy bundle
+  help        Help about any command
 
 Flags:
-  -h, --help   help for pipelines
+  -h, --help          help for pipelines
+      --var strings   set values for variables defined in bundle config. Example: --var="foo=bar"
+
+Use "pipelines [command] --help" for more information about a command.

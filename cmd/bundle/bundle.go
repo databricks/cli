@@ -13,8 +13,8 @@ func New() *cobra.Command {
 		GroupID: "development",
 	}
 
-	initVariableFlag(cmd)
-	cmd.AddCommand(newDeployCommand())
+	InitVariableFlag(cmd)
+	cmd.AddCommand(NewDeployCommand())
 	cmd.AddCommand(newDestroyCommand())
 	cmd.AddCommand(newLaunchCommand())
 	cmd.AddCommand(newRunCommand())
