@@ -9,3 +9,4 @@ Hello From App
 
 >>> grep To debug your app, attach a debugger to port ./out.run.txt
 To debug your app, attach a debugger to port $(debug_port)
+script: line 130: 12567 Terminated: 15          trace $CLI apps run-local --prepare-environment --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$PORT" > ../out.run.txt 2>&1  (wd: [TEST_TMP_DIR]/app)
