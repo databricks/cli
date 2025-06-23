@@ -101,6 +101,8 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 				})
 			}
 
+			// TODO: this does not handle resources that were deleted in the config
+
 			return v, nil
 		},
 	)
