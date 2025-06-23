@@ -2,11 +2,6 @@ RecordRequests = false
 Timeout = '2m'
 TimeoutWindows = '10m'
 
-# Windows-specific settings for process cleanup
-[Windows]
-# Allow more time for process cleanup on Windows
-CleanupTimeout = '30s'
-
 Ignore = [
     'node_modules',
     'package-lock.json'
