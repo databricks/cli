@@ -154,7 +154,7 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 		})
 		if err == nil && match != nil {
 			profileName := match.Name()
-			return fmt.Errorf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s). Did you mean to use the profile %s?", hostFromProfile, host, profileName)
+			return fmt.Errorf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s). The profile \"%s\" has host=\"%s\" that matches host in the bundle. To select it, pass \"-p %s\"", hostFromProfile, host, profileName, host, profileName)
 		}
 
 		return fmt.Errorf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s)", hostFromProfile, host)
