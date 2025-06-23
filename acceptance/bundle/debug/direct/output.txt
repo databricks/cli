@@ -14,7 +14,7 @@ Validation OK!
 +>>> [CLI] bundle validate --debug
  10:07:59 Info: start pid=12345 version=[DEV_VERSION] args="[CLI], bundle, validate, --debug"
  10:07:59 Debug: Found bundle root at [TEST_TMP_DIR] (file [TEST_TMP_DIR]/databricks.yml) pid=12345
-@@ -61,8 +63,4 @@
+@@ -59,8 +61,4 @@
  10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotateJobs
  10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotatePipelines
 -10:07:59 Debug: Apply pid=12345 mutator=terraform.Initialize
