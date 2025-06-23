@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -118,15 +119,19 @@ func CalculateDestroyActions(ctx context.Context, b *bundle.Bundle) ([]deploypla
 		panic("direct deployment required")
 	}
 
-	nodes := b.ResourceDatabase.GetAllResources()
+	db := &b.ResourceDatabase
+	db.AssertOpened()
 	var actions []deployplan.Action
 
-	for _, node := range nodes {
-		actions = append(actions, deployplan.Action{
-			Group:      node.Group,
-			Name:       node.Name,
-			ActionType: deployplan.ActionTypeDelete,
-		})
+	for _, group := range utils.SortedKeys(db.Data.Resources) {
+		groupData := db.Data.Resources[group]
+		for _, name := range utils.SortedKeys(groupData) {
+			actions = append(actions, deployplan.Action{
+				Group:      group,
+				Name:       name,
+				ActionType: deployplan.ActionTypeDelete,
+			})
+		}
 	}
 
 	return actions, nil

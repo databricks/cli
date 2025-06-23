@@ -6,13 +6,12 @@ import (
 	"os"
 	"sync"
 
-	"github.com/databricks/cli/libs/utils"
 	"github.com/google/uuid"
 )
 
 type TerranovaState struct {
 	Path string
-	data Database
+	Data Database
 	mu   sync.Mutex
 }
 
@@ -27,21 +26,15 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
-type ResourceNode struct {
-	Group string
-	Name  string
-	ID    string
-}
-
 func (db *TerranovaState) SaveState(section, resourceName, newID string, state any) error {
-	db.assertOpened()
+	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	sectionData, ok := db.data.Resources[section]
+	sectionData, ok := db.Data.Resources[section]
 	if !ok {
 		sectionData = make(map[string]ResourceEntry)
-		db.data.Resources[section] = sectionData
+		db.Data.Resources[section] = sectionData
 	}
 
 	sectionData[resourceName] = ResourceEntry{
@@ -53,11 +46,11 @@ func (db *TerranovaState) SaveState(section, resourceName, newID string, state a
 }
 
 func (db *TerranovaState) DeleteState(section, resourceName string) error {
-	db.assertOpened()
+	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	sectionData, ok := db.data.Resources[section]
+	sectionData, ok := db.Data.Resources[section]
 	if !ok {
 		return nil
 	}
@@ -68,36 +61,17 @@ func (db *TerranovaState) DeleteState(section, resourceName string) error {
 }
 
 func (db *TerranovaState) GetResourceEntry(section, resourceName string) (ResourceEntry, bool) {
-	db.assertOpened()
+	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	sectionData, ok := db.data.Resources[section]
+	sectionData, ok := db.Data.Resources[section]
 	if !ok {
 		return ResourceEntry{}, false
 	}
 
 	result, ok := sectionData[resourceName]
 	return result, ok
-}
-
-func (db *TerranovaState) GetAllResources() []ResourceNode {
-	db.assertOpened()
-
-	nodes := make([]ResourceNode, 0, len(db.data.Resources)*4)
-
-	for _, section := range utils.SortedKeys(db.data.Resources) {
-		sectionData := db.data.Resources[section]
-		for _, name := range utils.SortedKeys(sectionData) {
-			nodes = append(nodes, ResourceNode{
-				Group: section,
-				Name:  name,
-				ID:    sectionData[name].ID,
-			})
-		}
-	}
-
-	return nodes
 }
 
 func (db *TerranovaState) Open(path string) error {
@@ -109,7 +83,7 @@ func (db *TerranovaState) Open(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			db.data = Database{
+			db.Data = Database{
 				Serial:    0,
 				Lineage:   uuid.New().String(),
 				Resources: make(map[string]map[string]ResourceEntry),
@@ -119,7 +93,7 @@ func (db *TerranovaState) Open(path string) error {
 		return err
 	}
 
-	return json.Unmarshal(data, &db.data)
+	return json.Unmarshal(data, &db.Data)
 }
 
 func (db *TerranovaState) Finalize() error {
@@ -129,15 +103,15 @@ func (db *TerranovaState) Finalize() error {
 	return db.unlockedSave()
 }
 
-func (db *TerranovaState) assertOpened() {
+func (db *TerranovaState) AssertOpened() {
 	if db.Path == "" {
 		panic("internal error: TerranovaState must be opened first")
 	}
 }
 
 func (db *TerranovaState) unlockedSave() error {
-	db.assertOpened()
-	data, err := json.MarshalIndent(db.data, "", " ")
+	db.AssertOpened()
+	data, err := json.MarshalIndent(db.Data, "", " ")
 	if err != nil {
 		return err
 	}
@@ -148,8 +122,4 @@ func (db *TerranovaState) unlockedSave() error {
 	}
 
 	return nil
-}
-
-func (r ResourceNode) String() string {
-	return r.Group + "." + r.Name + "#" + r.ID
 }
