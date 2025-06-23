@@ -24,18 +24,6 @@ import (
 	"github.com/databricks/cli/libs/process"
 )
 
-func TestPythonMutator_Name_load(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseLoad)
-
-	assert.Equal(t, "PythonMutator(load)", mutator.Name())
-}
-
-func TestPythonMutator_Name_init(t *testing.T) {
-	mutator := PythonMutator(PythonMutatorPhaseInit)
-
-	assert.Equal(t, "PythonMutator(init)", mutator.Name())
-}
-
 func TestPythonMutator_Name_loadResources(t *testing.T) {
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 
@@ -293,7 +281,7 @@ func TestPythonMutator_disabled(t *testing.T) {
 	b := loadYaml("databricks.yml", ``)
 
 	ctx := context.Background()
-	mutator := PythonMutator(PythonMutatorPhaseLoad)
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diag.Error())
@@ -334,19 +322,17 @@ func TestGetOps_Python(t *testing.T) {
 }
 
 func TestGetOps_PyDABs(t *testing.T) {
-	actual, err := getOpts(&bundle.Bundle{
+	_, err := getOpts(&bundle.Bundle{
 		Config: config.Root{
 			Experimental: &config.Experimental{
 				PyDABs: config.PyDABs{
-					VEnvPath: ".venv",
-					Enabled:  true,
+					Enabled: true,
 				},
 			},
 		},
-	}, PythonMutatorPhaseInit)
+	}, PythonMutatorPhaseLoadResources)
 
-	assert.NoError(t, err)
-	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: false}, actual)
+	assert.Error(t, err, "experimental/pydabs is deprecated, use experimental/python instead")
 }
 
 func TestGetOps_empty(t *testing.T) {

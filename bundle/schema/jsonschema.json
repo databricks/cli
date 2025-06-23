@@ -1840,14 +1840,6 @@
                     "enabled": {
                       "description": "Whether or not PyDABs (Private Preview) is enabled",
                       "$ref": "#/$defs/bool"
-                    },
-                    "import": {
-                      "description": "The PyDABs project to import to discover resources, resource generator and mutators",
-                      "$ref": "#/$defs/slice/string"
-                    },
-                    "venv_path": {
-                      "description": "The Python virtual environment path",
-                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
