@@ -1,0 +1,6 @@
+bundle:
+  name: foobar
+
+scripts:
+  abcd:
+    content: echo "hello"
