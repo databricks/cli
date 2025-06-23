@@ -1,1 +1,1 @@
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct"]
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct-exp"]

@@ -14,7 +14,7 @@ TimeoutCloud = '25m'
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
 EnvRepl.DATABRICKS_CLI_DEPLOYMENT = false
 
 # >>> datetime.datetime.fromtimestamp(18000000000)

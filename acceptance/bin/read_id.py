@@ -41,7 +41,7 @@ def print_resource_terranova(section, name):
     print(result.get("__id__"))
 
 
-if os.environ.get("DATABRICKS_CLI_DEPLOYMENT") == "direct":
+if os.environ.get("DATABRICKS_CLI_DEPLOYMENT", "").startswith("direct"):
     print_resource_terranova(*sys.argv[1:])
 else:
     print_resource_terraform(*sys.argv[1:])
