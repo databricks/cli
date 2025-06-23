@@ -9,10 +9,10 @@ import (
 	"path"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -436,9 +436,12 @@ func TestFilerWorkspaceNotebook(t *testing.T) {
 	}
 
 	for _, tc := range tcases {
-		f, _ := setupWsfsFiler(t)
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
+			logger.DefaultLogger = &logger.SimpleLogger{logger.LevelTrace}
+
+			f, _ := setupWsfsFiler(t)
 
 			// Upload the notebook
 			err = f.Write(ctx, tc.name, strings.NewReader(tc.content1))
@@ -461,8 +464,8 @@ func TestFilerWorkspaceNotebook(t *testing.T) {
 			// @pietern on 2025-06-23: We're debugging a read-after-write delay on GCP.
 			// Include sleep to make tests pass...
 			if testutil.GetCloud(t) == testutil.GCP {
-				t.Logf("Running on GCP; sleeping for 5 seconds to make tests pass...")
-				time.Sleep(5 * time.Second)
+				// t.Logf("Running on GCP; sleeping for 5 seconds to make tests pass...")
+				// time.Sleep(5 * time.Second)
 			}
 
 			// Assert contents after second upload
