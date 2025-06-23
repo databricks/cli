@@ -130,8 +130,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Static resources (e.g. YAML) are already loaded, we initialize and normalize them before Python
 		resourcemutator.ProcessStaticResources(),
 
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 		// This is the last mutator that can change bundle resources.
