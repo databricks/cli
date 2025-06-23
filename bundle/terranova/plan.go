@@ -105,7 +105,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		},
 	)
 	if err != nil {
-		return nil, errors.New("while reading resources config")
+		return nil, fmt.Errorf("while reading resources config: %w", err)
 	}
 
 	return actions, nil
