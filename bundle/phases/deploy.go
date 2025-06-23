@@ -42,7 +42,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		if tf == nil {
 			return false, errors.New("terraform not initialized")
 		}
-		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlan)
+		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
 		if err != nil {
 			return false, err
 		}

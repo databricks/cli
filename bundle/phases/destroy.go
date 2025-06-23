@@ -42,7 +42,7 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 		return nil, errors.New("terraform not initialized")
 	}
 
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlan)
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
 	if err != nil {
 		return nil, err
 	}

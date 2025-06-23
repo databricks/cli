@@ -28,12 +28,12 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.Errorf("terraform not initialized")
 	}
 
-	if b.Plan.TerraformPlan == "" {
+	if b.Plan.TerraformPlanPath == "" {
 		return diag.Errorf("no plan found")
 	}
 
 	// Apply terraform according to the computed plan
-	err := tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.TerraformPlan))
+	err := tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.TerraformPlanPath))
 	if err != nil {
 		diags := permissions.TryExtendTerraformPermissionError(ctx, b, err)
 		if diags != nil {

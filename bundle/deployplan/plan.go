@@ -6,8 +6,8 @@ import (
 )
 
 type Plan struct {
-	// TerraformPlan is the plan from the terraform CLI
-	TerraformPlan string
+	// TerraformPlanPath is the path to the plan from the terraform CLI
+	TerraformPlanPath string
 
 	// If true, the plan is empty and applying it will not do anything
 	TerraformIsEmpty bool
