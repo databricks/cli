@@ -81,28 +81,6 @@ func (db *TerranovaState) GetResourceEntry(section, resourceName string) (Resour
 	return result, ok
 }
 
-/*
-func (db *TerranovaState) GetAllResourcesMap() map[string]map[string]any {
-	db.assertOpened()
-
-	nodes := make(map[string]map[string]any)
-
-	for _, group := range utils.SortedKeys(db.data.Resources) {
-		submap, ok := nodes[group]
-		if !ok {
-			submap = make(map[string]any)
-			nodes[group] = submap
-		}
-
-		sectionData := db.data.Resources[group]
-		for _, name := range sectionData {
-			submap[name] = nil
-		}
-	}
-
-	return nodes
-}*/
-
 func (db *TerranovaState) GetAllResources() []ResourceNode {
 	db.assertOpened()
 
