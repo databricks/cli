@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	TerraformStateFileName  = "terraform.tfstate"
 	TerraformConfigFileName = "bundle.tf.json"
 )
 

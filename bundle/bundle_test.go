@@ -7,8 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -111,4 +114,35 @@ func TestBundleTryLoadOkIfNotFound(t *testing.T) {
 	b, err := TryLoad(context.Background())
 	assert.NoError(t, err)
 	assert.Nil(t, b)
+}
+
+func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
+	rootCfg := config.Root{
+		Resources: config.Resources{
+			Jobs: map[string]*resources.Job{
+				"my_job": {
+					// Empty job config is sufficient for this test.
+				},
+			},
+		},
+	}
+
+	// Initialize the dynamic representation so GetResourceConfig can query it.
+	require.NoError(t, rootCfg.Mutate(func(v dyn.Value) (dyn.Value, error) { return v, nil }))
+
+	b := &Bundle{Config: rootCfg}
+
+	res, ok := b.GetResourceConfig("jobs", "my_job")
+	require.True(t, ok, "expected to find jobs.my_job in config")
+
+	_, isJob := res.(*resources.Job)
+	assert.True(t, isJob, "expected *resources.Job, got %T", res)
+
+	res, ok = b.GetResourceConfig("jobs", "not_found")
+	require.False(t, ok)
+	require.Nil(t, res)
+
+	res, ok = b.GetResourceConfig("not_found", "my_job")
+	require.False(t, ok)
+	require.Nil(t, res)
 }

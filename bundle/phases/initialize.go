@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -25,9 +27,16 @@ import (
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var err error
+
 	log.Info(ctx, "Phase: initialize")
 
-	return bundle.ApplySeq(ctx, b,
+	b.DirectDeployment, err = IsDirectDeployment(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	diags := bundle.ApplySeq(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -185,15 +194,40 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+	)
 
+	if diags.HasError() {
+		return diags
+	}
+
+	if !b.DirectDeployment {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-		terraform.Initialize(),
 
-		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-		// Executes the post_init script hook defined in the bundle configuration
-		scripts.Execute(config.ScriptPostInit),
-	)
+		diags = diags.Extend(bundle.Apply(ctx, b, terraform.Initialize()))
+	}
+
+	if diags.HasError() {
+		return diags
+	}
+
+	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+	// Executes the post_init script hook defined in the bundle configuration
+	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostInit)))
+}
+
+func IsDirectDeployment(ctx context.Context) (bool, error) {
+	deployment := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
+	// We use "direct-exp" while direct backend is not suitable for end users.
+	// Once we consider it usable we'll change the value to "direct".
+	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
+	if deployment == "direct-exp" {
+		return true, nil
+	} else if deployment == "terraform" || deployment == "" {
+		return false, nil
+	} else {
+		return false, fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
+	}
 }
