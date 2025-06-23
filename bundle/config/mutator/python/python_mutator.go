@@ -118,7 +118,7 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 	pythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
 
 	if pydabsEnabled {
-		return opts{}, errors.New("experimental/pydabs is deprecated, use experimental/python instead")
+		return opts{}, errors.New("experimental/pydabs is deprecated, use experimental/python instead (https://docs.databricks.com/dev-tools/bundles/python)")
 	}
 
 	if pythonEnabled {
