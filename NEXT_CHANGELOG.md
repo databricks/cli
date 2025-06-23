@@ -10,6 +10,6 @@
 
 ### Bundles
 
-* Add support for tagging pipelines (#3086)
+* Add support for tagging pipelines ([#3086](https://github.com/databricks/cli/pull/3086))
 
 ### API Changes
