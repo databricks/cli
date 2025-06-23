@@ -58,9 +58,10 @@ func newBindCommand() *cobra.Command {
 			return nil
 		})
 
+		tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
 		diags = diags.Extend(phases.Bind(ctx, b, &terraform.BindOptions{
 			AutoApprove:  autoApprove,
-			ResourceType: resource.ResourceDescription().TerraformResourceName,
+			ResourceType: tfName,
 			ResourceKey:  args[0],
 			ResourceId:   args[1],
 		}))

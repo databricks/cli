@@ -3,7 +3,6 @@ package terraform
 import (
 	"context"
 
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -12,12 +11,6 @@ import (
 // GetActions converts Terraform resource changes into deployplan.Action values.
 // The returned slice can be filtered using deployplan.Filter and FilterGroup helpers.
 func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
-	supported := config.SupportedResources()
-	typeToGroup := make(map[string]string, len(supported))
-	for group, desc := range supported {
-		typeToGroup[desc.TerraformResourceName] = group
-	}
-
 	var result []deployplan.Action
 
 	for _, rc := range changes {
@@ -39,7 +32,7 @@ func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
 			continue
 		}
 
-		group, ok := typeToGroup[rc.Type]
+		group, ok := TerraformToGroupName[rc.Type]
 		if !ok {
 			// Happens for databricks_grant, databricks_permissions, databricks_secrets_acl.
 			// These are automatically created by DABs, no need to show them.
@@ -47,9 +40,9 @@ func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
 		}
 
 		result = append(result, deployplan.Action{
-			Action: actionType,
-			Group:  group,
-			Name:   rc.Name,
+			ActionType: actionType,
+			Group:      group,
+			Name:       rc.Name,
 		})
 	}
 
@@ -58,10 +51,6 @@ func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
 
 // ShowPlanFile reads a Terraform plan file located at planPath using the provided tfexec.Terraform handle
 // and converts it into a slice of deployplan.Action.
-//
-// The conversion maps Terraform resource types (e.g. "databricks_pipeline") to bundle configuration
-// resource groups (e.g. "pipelines") using config.SupportedResources(). If a resource type is not
-// recognised we fall back to the raw Terraform resource type so that the information is not lost.
 func ShowPlanFile(ctx context.Context, tf *tfexec.Terraform, planPath string) ([]deployplan.Action, error) {
 	plan, err := tf.ShowPlanFile(ctx, planPath)
 	if err != nil {

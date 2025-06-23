@@ -171,10 +171,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
 
-	tempHomeDir := t.TempDir()
-	repls.SetPath(tempHomeDir, "[TMPHOME]")
-	t.Logf("$TMPHOME=%v", tempHomeDir)
-
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
 	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)

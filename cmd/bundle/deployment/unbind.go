@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -44,7 +45,8 @@ func newUnbindCommand() *cobra.Command {
 			return nil
 		})
 
-		diags = diags.Extend(phases.Unbind(ctx, b, resource.ResourceDescription().TerraformResourceName, args[0]))
+		tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+		diags = diags.Extend(phases.Unbind(ctx, b, tfName, args[0]))
 		if err := diags.Error(); err != nil {
 			return fmt.Errorf("failed to unbind the resource, err: %w", err)
 		}

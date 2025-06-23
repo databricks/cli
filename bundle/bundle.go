@@ -101,7 +101,7 @@ type Bundle struct {
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
-	Plan *deployplan.Plan
+	Plan deployplan.Plan
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files

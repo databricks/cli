@@ -75,14 +75,6 @@ func (r *Runner) WaitForTextPrinted(text string, timeout time.Duration) {
 	}, timeout, 50*time.Millisecond)
 }
 
-func (r *Runner) WaitForOutput(text string, timeout time.Duration) {
-	require.Eventually(r, func() bool {
-		currentStdout := r.stdout.String()
-		currentErrout := r.stderr.String()
-		return strings.Contains(currentStdout, text) || strings.Contains(currentErrout, text)
-	}, timeout, 50*time.Millisecond)
-}
-
 func (r *Runner) WithStdin() {
 	reader, writer := io.Pipe()
 	r.stdinR = reader
