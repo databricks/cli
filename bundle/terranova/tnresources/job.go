@@ -17,7 +17,7 @@ type ResourceJob struct {
 	config jobs.JobSettings
 }
 
-func NewResourceJob(client *databricks.WorkspaceClient, job resources.Job) (*ResourceJob, error) {
+func NewResourceJob(client *databricks.WorkspaceClient, job *resources.Job) (*ResourceJob, error) {
 	return &ResourceJob{
 		client: client,
 		// TODO Use Processor with explicit field mapping

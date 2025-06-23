@@ -97,7 +97,6 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 		if v.IsNil() {
 			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
 		}
-		config = v.Elem().Interface()
 	}
 
 	return invokeConstructor(ctor, client, config)

@@ -16,7 +16,7 @@ type ResourceSchema struct {
 	config catalog.CreateSchema
 }
 
-func NewResourceSchema(client *databricks.WorkspaceClient, schema resources.Schema) (*ResourceSchema, error) {
+func NewResourceSchema(client *databricks.WorkspaceClient, schema *resources.Schema) (*ResourceSchema, error) {
 	return &ResourceSchema{
 		client: client,
 		config: schema.CreateSchema,

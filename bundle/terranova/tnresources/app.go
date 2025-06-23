@@ -16,7 +16,7 @@ type ResourceApp struct {
 	config apps.App
 }
 
-func NewResourceApp(client *databricks.WorkspaceClient, config resources.App) (*ResourceApp, error) {
+func NewResourceApp(client *databricks.WorkspaceClient, config *resources.App) (*ResourceApp, error) {
 	return &ResourceApp{
 		client: client,
 		config: config.App,

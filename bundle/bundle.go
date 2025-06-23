@@ -310,12 +310,12 @@ func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
 		return nil, false
 	}
 
-	ptr := reflect.New(typ) // *T
-	if err := json.Unmarshal(bytes, ptr.Interface()); err != nil {
+	typedConfigPtr := reflect.New(typ)
+	if err := json.Unmarshal(bytes, typedConfigPtr.Interface()); err != nil {
 		return nil, false
 	}
 
-	return ptr.Interface(), true
+	return typedConfigPtr.Interface(), true
 }
 
 func (b *Bundle) StateFilename() string {

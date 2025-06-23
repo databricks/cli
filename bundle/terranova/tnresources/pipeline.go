@@ -16,7 +16,7 @@ type ResourcePipeline struct {
 	config pipelines.CreatePipeline
 }
 
-func NewResourcePipeline(client *databricks.WorkspaceClient, resource resources.Pipeline) (*ResourcePipeline, error) {
+func NewResourcePipeline(client *databricks.WorkspaceClient, resource *resources.Pipeline) (*ResourcePipeline, error) {
 	return &ResourcePipeline{
 		client: client,
 		config: resource.CreatePipeline,
