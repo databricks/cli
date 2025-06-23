@@ -124,6 +124,8 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create SERVICE_PRINCIPAL_ID"
 	cmd.Short = `Create service principal federation policy.`
 	cmd.Long = `Create service principal federation policy.
+  
+  Create account federation policy.
 
   Arguments:
     SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.`
@@ -195,6 +197,8 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Delete service principal federation policy.`
 	cmd.Long = `Delete service principal federation policy.
+  
+  Delete account federation policy.
 
   Arguments:
     SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
@@ -256,6 +260,8 @@ func newGet() *cobra.Command {
 	cmd.Use = "get SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Get service principal federation policy.`
 	cmd.Long = `Get service principal federation policy.
+  
+  Get account federation policy.
 
   Arguments:
     SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.
@@ -320,6 +326,8 @@ func newList() *cobra.Command {
 	cmd.Use = "list SERVICE_PRINCIPAL_ID"
 	cmd.Short = `List service principal federation policies.`
 	cmd.Long = `List service principal federation policies.
+  
+  List account federation policies.
 
   Arguments:
     SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.`
@@ -384,6 +392,8 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Update service principal federation policy.`
 	cmd.Long = `Update service principal federation policy.
+  
+  Update account federation policy.
 
   Arguments:
     SERVICE_PRINCIPAL_ID: The service principal id for the federation policy.

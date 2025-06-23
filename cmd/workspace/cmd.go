@@ -4,6 +4,7 @@ package workspace
 
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
+	ai_builder "github.com/databricks/cli/cmd/workspace/ai-builder"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
 	alerts_v2 "github.com/databricks/cli/cmd/workspace/alerts-v2"
@@ -24,13 +25,13 @@ import (
 	credentials "github.com/databricks/cli/cmd/workspace/credentials"
 	credentials_manager "github.com/databricks/cli/cmd/workspace/credentials-manager"
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
-	custom_llms "github.com/databricks/cli/cmd/workspace/custom-llms"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
+	feature_store "github.com/databricks/cli/cmd/workspace/feature-store"
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
@@ -106,6 +107,7 @@ func All() []*cobra.Command {
 	var out []*cobra.Command
 
 	out = append(out, access_control.New())
+	out = append(out, ai_builder.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())
 	out = append(out, alerts_v2.New())
@@ -126,13 +128,13 @@ func All() []*cobra.Command {
 	out = append(out, credentials.New())
 	out = append(out, credentials_manager.New())
 	out = append(out, current_user.New())
-	out = append(out, custom_llms.New())
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
 	out = append(out, experiments.New())
 	out = append(out, external_locations.New())
+	out = append(out, feature_store.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
 	out = append(out, git_credentials.New())

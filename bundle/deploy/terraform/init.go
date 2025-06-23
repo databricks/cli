@@ -269,8 +269,6 @@ func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error 
 
 		if hasPython {
 			products = append(products, "databricks-pydabs/0.7.0")
-		} else if experimental.PyDABs.Enabled {
-			products = append(products, "databricks-pydabs/0.0.0")
 		}
 	}
 
