@@ -44,8 +44,5 @@ Validation OK!
     "bundle_root_path": "."
   },
   "name": "yml_outside_root",
-  "target": "default",
-  "terraform": {
-    "exec_path": "[TERRAFORM]"
-  }
+  "target": "default"
 }

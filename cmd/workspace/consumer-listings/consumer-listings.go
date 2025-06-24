@@ -62,7 +62,7 @@ func newBatchGet() *cobra.Command {
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `Get one batch of listings.`
+	cmd.Short = `Get one batch of listings. One may specify up to 50 IDs per request.`
 	cmd.Long = `Get one batch of listings. One may specify up to 50 IDs per request.
   
   Batch get a published listing in the Databricks Marketplace that the consumer

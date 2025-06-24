@@ -406,8 +406,8 @@ func newUpdate() *cobra.Command {
   
   When the caller is a metastore admin, only the __owner__ field can be updated.
   
-  In the case that the share name is changed, **updateShare** requires that the
-  caller is both the share owner and a metastore admin.
+  In the case the share name is changed, **updateShare** requires that the
+  caller is the owner of the share and has the CREATE_SHARE privilege.
   
   If there are notebook files in the share, the __storage_root__ field cannot be
   updated.

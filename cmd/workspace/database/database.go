@@ -26,10 +26,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "database",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -469,7 +466,7 @@ func newDeleteDatabaseInstance() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, a instance cannot be deleted if it has descendant instances created via PITR.`)
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `If false, the database instance is soft deleted.`)
+	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Note purge=false is in development.`)
 
 	cmd.Use = "delete-database-instance NAME"
 	cmd.Short = `Delete a Database Instance.`
