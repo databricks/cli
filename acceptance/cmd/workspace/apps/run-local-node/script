@@ -17,7 +17,7 @@ title "Starting the app in background..."
 trace $CLI apps run-local --prepare-environment --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$PORT" > ../out.run.txt 2>&1 &
 PID=$!
 # Ensure background process is killed on script exit
-trap 'kill $PID 2>/dev/null || true' EXIT
+trap '(kill -9 $PID >/dev/null 2>&1) 2>/dev/null || true' EXIT
 cd ..
 
 title Waiting for the app to start...
@@ -32,4 +32,9 @@ title "Checking app is running..."
 trace curl -s -o - http://127.0.0.1:$PROXY_PORT | grep -w "Hello From App"
 
 trace grep "To debug your app, attach a debugger to port" ./out.run.txt
+
+# Kill the background process to ensure the app is shutdown
+# Use a more robust approach that works on both Windows and Unix
+(kill -9 $PID >/dev/null 2>&1) 2>/dev/null || true
+
 rm out.run.txt

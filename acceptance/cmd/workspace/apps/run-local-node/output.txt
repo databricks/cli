@@ -9,3 +9,4 @@ Hello From App
 
 >>> grep To debug your app, attach a debugger to port ./out.run.txt
 To debug your app, attach a debugger to port $(debug_port)
+<successfully killed the app>

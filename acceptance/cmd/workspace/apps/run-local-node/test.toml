@@ -18,3 +18,7 @@ New='127.0.0.1:$(port)'
 [[Repls]]
 Old='To debug your app, attach a debugger to port [0-9]+'
 New='To debug your app, attach a debugger to port $(debug_port)'
+
+[[Repls]]
+Old='script: line .* apps run-local --prepare-environment .*'
+New='<successfully killed the app>'
