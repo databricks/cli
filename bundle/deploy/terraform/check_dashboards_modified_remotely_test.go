@@ -3,7 +3,6 @@ package terraform
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -135,11 +134,11 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T)
 }
 
 func writeFakeDashboardState(t *testing.T, ctx context.Context, b *bundle.Bundle) {
-	tfDir, err := Dir(ctx, b)
+	path, err := b.StateLocalPath(ctx)
 	require.NoError(t, err)
 
 	// Write fake state file.
-	testutil.WriteFile(t, filepath.Join(tfDir, TerraformStateFileName), `
+	testutil.WriteFile(t, path, `
     {
       "version": 4,
       "terraform_version": "1.5.5",

@@ -293,9 +293,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Use = "create"
 	cmd.Short = `Create a new job.`
-	cmd.Long = `Create a new job.
-  
-  Create a new job.`
+	cmd.Long = `Create a new job.`
 
 	cmd.Annotations = make(map[string]string)
 

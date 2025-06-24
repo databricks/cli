@@ -52,8 +52,8 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	// Set plan in main bundle struct for downstream mutators
 	b.Plan = deployplan.Plan{
-		Path:    planPath,
-		IsEmpty: !notEmpty,
+		TerraformPlanPath: planPath,
+		TerraformIsEmpty:  !notEmpty,
 	}
 
 	log.Debugf(ctx, "Planning complete and persisted at %s\n", planPath)

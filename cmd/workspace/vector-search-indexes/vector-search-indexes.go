@@ -256,8 +256,6 @@ func newDeleteIndex() *cobra.Command {
 	cmd.Use = "delete-index INDEX_NAME"
 	cmd.Short = `Delete an index.`
 	cmd.Long = `Delete an index.
-  
-  Delete an index.
 
   Arguments:
     INDEX_NAME: Name of the index`
@@ -314,8 +312,6 @@ func newGetIndex() *cobra.Command {
 	cmd.Use = "get-index INDEX_NAME"
 	cmd.Short = `Get an index.`
 	cmd.Long = `Get an index.
-  
-  Get an index.
 
   Arguments:
     INDEX_NAME: Name of the index`
