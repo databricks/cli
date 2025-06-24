@@ -60,7 +60,7 @@ func newBatchGet() *cobra.Command {
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `Get one batch of providers.`
+	cmd.Short = `Get one batch of providers. One may specify up to 50 IDs per request.`
 	cmd.Long = `Get one batch of providers. One may specify up to 50 IDs per request.
   
   Batch get a provider in the Databricks Marketplace with at least one visible
