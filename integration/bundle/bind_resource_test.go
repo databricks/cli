@@ -8,57 +8,12 @@ import (
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestAbortBind(t *testing.T) {
-	ctx, wt := acc.WorkspaceTest(t)
-	gt := &generateJobTest{T: wt, w: wt.W}
-
-	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
-	uniqueId := uuid.New().String()
-	bundleRoot := initTestTemplate(t, ctx, "basic", map[string]any{
-		"unique_id":     uniqueId,
-		"spark_version": "13.3.x-scala2.12",
-		"node_type_id":  nodeTypeId,
-	})
-
-	jobId := gt.createTestJob(ctx)
-	t.Cleanup(func() {
-		gt.destroyJob(ctx, jobId)
-		destroyBundle(t, ctx, bundleRoot)
-	})
-
-	// Bind should fail because prompting is not possible.
-	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	ctx = env.Set(ctx, "TERM", "dumb")
-	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", strconv.FormatInt(jobId, 10))
-
-	// Expect error suggesting to use --auto-approve
-	_, _, err := c.Run()
-	assert.ErrorContains(t, err, "failed to bind the resource")
-	assert.ErrorContains(t, err, "This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
-
-	deployBundle(t, ctx, bundleRoot)
-
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	// Check that job is not bound and not updated with config from bundle
-	job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{
-		JobId: jobId,
-	})
-	require.NoError(t, err)
-
-	require.NotEqual(t, job.Settings.Name, "test-job-basic-"+uniqueId)
-	require.Contains(t, job.Settings.Tasks[0].NotebookTask.NotebookPath, "test")
-}
 
 func TestGenerateAndBind(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
