@@ -7,6 +7,6 @@ Deployment complete!
 
 >>> cat out.requests.txt
 
-=== that there are atleast 5 mutators for which the execution time is recorded
+=== Assert that there are atleast 5 mutators for which the execution time is recorded
 >>> cat telemetry.json
 true
