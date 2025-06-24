@@ -37,6 +37,12 @@ func New(ctx context.Context) *cobra.Command {
 		SilenceErrors: true,
 	}
 
+	SetupRootCommand(ctx, cmd)
+	cmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
+	return cmd
+}
+
+func SetupRootCommand(ctx context.Context, cmd *cobra.Command) {
 	// Pass the context along through the command during initialization.
 	// It will be overwritten when the command is executed.
 	cmd.SetContext(ctx)
@@ -88,8 +94,6 @@ func New(ctx context.Context) *cobra.Command {
 	}
 
 	cmd.SetFlagErrorFunc(flagErrorFunc)
-	cmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
-	return cmd
 }
 
 // Wrap flag errors to include the usage string.

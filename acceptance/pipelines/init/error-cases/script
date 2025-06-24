@@ -1,0 +1,21 @@
+tmpdir="./subdir"
+pipelines="$tmpdir/pipelines"
+mkdir -p $tmpdir
+
+title "Install pipelines CLI"
+trace errcode $CLI install-pipelines-cli -d $tmpdir
+
+title "Test with invalid project name (contains uppercase letters)"
+echo '{"project_name": "InvalidProjectName"}' > invalid_input.json
+trace errcode $pipelines init --config-file ./invalid_input.json --output-dir output
+
+title "Test with missing config file"
+trace errcode $pipelines init --output-dir output
+
+title "Test with non-existent config file"
+trace errcode $pipelines init --config-file ./nonexistent.json --output-dir output
+
+# Clean up
+rm -f invalid_input.json
+rm -f $pipelines
+rm -rf $tmpdir

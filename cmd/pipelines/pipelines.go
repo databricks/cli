@@ -1,10 +1,13 @@
 package pipelines
 
 import (
+	"context"
+
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
+func New(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pipelines",
 		Short: "Pipelines CLI",
@@ -13,6 +16,8 @@ func New() *cobra.Command {
 			_ = cmd.Help()
 		},
 	}
+	root.SetupRootCommand(ctx, cmd)
 
+	cmd.AddCommand(initCommand())
 	return cmd
 }
