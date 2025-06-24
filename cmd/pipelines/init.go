@@ -13,6 +13,7 @@ func initCommand() *cobra.Command {
 		Use:     "init",
 		Short:   "Initialize a new pipelines project",
 		PreRunE: root.MustWorkspaceClient,
+		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
