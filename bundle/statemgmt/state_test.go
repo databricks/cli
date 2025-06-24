@@ -24,7 +24,7 @@ func identityFiler(f filer.Filer) deploy.FilerFactory {
 func localStateFile(t *testing.T, ctx context.Context, b *bundle.Bundle) string {
 	dir, err := tf.Dir(ctx, b)
 	require.NoError(t, err)
-	return filepath.Join(dir, tf.TerraformStateFileName)
+	return filepath.Join(dir, b.StateFilename())
 }
 
 func readLocalState(t *testing.T, ctx context.Context, b *bundle.Bundle) map[string]any {

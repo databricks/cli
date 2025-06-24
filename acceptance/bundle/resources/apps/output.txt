@@ -7,12 +7,12 @@ Deployment complete!
 
 >>> print_requests
 {
-  "method": "POST",
-  "path": "/api/2.0/apps",
   "body": {
     "description": "my_app_description",
     "name": "myapp"
-  }
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps"
 }
 apps myapp name='myapp' description='my_app_description'
 
@@ -27,12 +27,11 @@ Deployment complete!
 
 >>> print_requests
 {
-  "method": "PATCH",
-  "path": "/api/2.0/apps/myapp",
   "body": {
     "description": "MY_APP_DESCRIPTION",
-    "name": "myapp",
-    "url": "myapp-123.cloud.databricksapps.com"
-  }
+    "name": "myapp"
+  },
+  "method": "PATCH",
+  "path": "/api/2.0/apps/myapp"
 }
 apps myapp name='myapp' description='MY_APP_DESCRIPTION'

@@ -54,6 +54,11 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		return nil
 	}
 
+	if b.DirectDeployment {
+		// TODO: not implemented yet
+		return nil
+	}
+
 	// If the user has forced the deployment, skip this check.
 	if b.Config.Bundle.Force {
 		return nil

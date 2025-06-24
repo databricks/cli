@@ -1,6 +1,9 @@
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
+# Retrieves job/pipelines IDs, not populated yet
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+
 [[Repls]]
 Old = '"execution_time_ms": \d{1,5},'
 New = '"execution_time_ms": "SMALL_INT",'
