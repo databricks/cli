@@ -106,6 +106,7 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 		name              string
 		profile           string
 		configFileEnv     string
+		homeDirOverride   string
 		expectedHost      string
 		expectedClusterID string
 	}{
@@ -113,6 +114,13 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 			name:              "cluster profile",
 			profile:           "cluster-profile",
 			configFileEnv:     "./testdata/.databrickscfg",
+			expectedHost:      "https://www.host2.com",
+			expectedClusterID: "cluster-from-config",
+		},
+		{
+			name:              "profile from home directory (existing)",
+			profile:           "cluster-profile",
+			homeDirOverride:   "testdata",
 			expectedHost:      "https://www.host2.com",
 			expectedClusterID: "cluster-from-config",
 		},
@@ -138,16 +146,16 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 			expectedClusterID: "",
 		},
 		{
-			name:              "invalid profile (missing host)",
-			profile:           "invalid-profile",
-			configFileEnv:     "./testdata/.databrickscfg",
+			name:              "profile from home directory (non-existent)",
+			profile:           "any-profile",
+			homeDirOverride:   "nonexistent",
 			expectedHost:      "",
 			expectedClusterID: "",
 		},
 		{
-			name:              "no config file specified",
-			profile:           "any-profile",
-			configFileEnv:     "",
+			name:              "invalid profile (missing host)",
+			profile:           "invalid-profile",
+			configFileEnv:     "./testdata/.databrickscfg",
 			expectedHost:      "",
 			expectedClusterID: "",
 		},
@@ -155,9 +163,16 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("DATABRICKS_CONFIG_FILE", tc.configFileEnv)
+			ctx := context.Background()
 
-			profile, err := loadProfileByName(context.Background(), tc.profile, profile.DefaultProfiler)
+			if tc.configFileEnv != "" {
+				t.Setenv("DATABRICKS_CONFIG_FILE", tc.configFileEnv)
+			} else if tc.homeDirOverride != "" {
+				// Use default ~/.databrickscfg
+				ctx = env.WithUserHomeDir(ctx, tc.homeDirOverride)
+			}
+
+			profile, err := loadProfileByName(ctx, tc.profile, profile.DefaultProfiler)
 			require.NoError(t, err)
 
 			if tc.expectedHost == "" {
@@ -171,24 +186,4 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestLoadProfileByNameWithHomeDirectory(t *testing.T) {
-	// Test when ~/.databrickscfg exists
-	ctx := context.Background()
-	ctx = env.WithUserHomeDir(ctx, "testdata")
-
-	// The testdata directory already contains a .databrickscfg file
-	existingProfile, err := loadProfileByName(ctx, "profile-1", profile.DefaultProfiler)
-	require.NoError(t, err)
-	assert.NotNil(t, existingProfile)
-	assert.Equal(t, "https://www.host1.com", existingProfile.Host)
-
-	// Test when ~/.databrickscfg does not exist
-	ctx2 := context.Background()
-	ctx2 = env.WithUserHomeDir(ctx2, "nonexistent")
-
-	noProfile, err := loadProfileByName(ctx2, "any-profile", profile.DefaultProfiler)
-	require.NoError(t, err)
-	assert.Nil(t, noProfile, "Expected nil profile when ~/.databrickscfg doesn't exist")
 }

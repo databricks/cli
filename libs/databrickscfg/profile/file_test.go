@@ -19,18 +19,13 @@ func TestProfileCloud(t *testing.T) {
 
 func TestProfilesSearchCaseInsensitive(t *testing.T) {
 	profiles := Profiles{
-		Profile{Name: "foo", Host: "bar", ClusterID: "cluster123"},
+		Profile{Name: "foo", Host: "bar"},
 	}
-
 	assert.True(t, profiles.SearchCaseInsensitive("f", 0))
 	assert.True(t, profiles.SearchCaseInsensitive("OO", 0))
 	assert.True(t, profiles.SearchCaseInsensitive("b", 0))
 	assert.True(t, profiles.SearchCaseInsensitive("AR", 0))
 	assert.False(t, profiles.SearchCaseInsensitive("qu", 0))
-	assert.True(t, profiles.SearchCaseInsensitive("cluster", 0))
-	assert.True(t, profiles.SearchCaseInsensitive("123", 0))
-	assert.True(t, profiles.SearchCaseInsensitive("CLUSTER", 0))
-	assert.False(t, profiles.SearchCaseInsensitive("xyz", 0))
 }
 
 func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
