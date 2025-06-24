@@ -31,8 +31,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Expect binding to fail without an auto-approve flag:"
-trace errcode $CLI bundle deployment bind foo $JOB_ID
+title "Expect binding to fail without an auto-approve flag:\n"
+trace errcode $CLI bundle deployment bind foo $JOB_ID &> out.bind-result.txt
+grep "^Error:" out.bind-result.txt
+rm out.bind-result.txt
 
 title "Check that job is not bound and not updated with config from bundle:"
 trace $CLI jobs get $JOB_ID | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: .spark_python_task}]}}'

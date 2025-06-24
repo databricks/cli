@@ -3,53 +3,7 @@
 Created job with ID: [NUMID]
 
 === Expect binding to fail without an auto-approve flag:
->>> errcode [CLI] bundle deployment bind foo [NUMID]
-databricks_job.foo: Refreshing state... [id=[NUMID]]
-
-Terraform used the selected providers to generate the following execution
-plan. Resource actions are indicated with the following symbols:
-  ~ update in-place
-
-Terraform will perform the following actions:
-
-  # databricks_job.foo will be updated in-place
-  ~ resource "databricks_job" "foo" {
-      + always_running            = false
-      + control_run_state         = false
-      + edit_mode                 = "UI_LOCKED"
-      + format                    = "MULTI_TASK"
-        id                        = "[NUMID]"
-      ~ max_concurrent_runs       = 0 -> 1
-      ~ name                      = "test-job-bind-[UNIQUE_NAME]" -> "test-job-basic-[UNIQUE_NAME]"
-        # (5 unchanged attributes hidden)
-
-      + deployment {
-          + kind               = "BUNDLE"
-          + metadata_file_path = "/Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/state/metadata.json"
-        }
-
-      + queue {
-          + enabled = true
-        }
-
-      ~ task {
-            # (6 unchanged attributes hidden)
-
-          ~ spark_python_task {
-              ~ python_file = "/Workspace/Users/[USERNAME]/initial_hello_world.py" -> "/Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files/hello_world.py"
-                # (1 unchanged attribute hidden)
-            }
-
-            # (1 unchanged block hidden)
-        }
-    }
-
-Plan: 0 to add, 1 to change, 0 to destroy.
-
-
 Error: failed to bind the resource, err: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
-
-Exit code: 1
 
 === Check that job is not bound and not updated with config from bundle:
 >>> [CLI] jobs get [NUMID]
