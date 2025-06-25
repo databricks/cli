@@ -208,7 +208,6 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 					// because we don't really know if the app source code was updated or not.
 					cur.ModifiedStatus = resources.ModifiedStatusUpdated
 				}
-				cur.Name = instance.Attributes.Name
 				config.Resources.Apps[resource.Name] = cur
 			case "databricks_secret_scope":
 				if config.Resources.SecretScopes == nil {
@@ -218,7 +217,6 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				if cur == nil {
 					cur = &resources.SecretScope{ModifiedStatus: resources.ModifiedStatusDeleted}
 				}
-				cur.Name = instance.Attributes.Name
 				config.Resources.SecretScopes[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
