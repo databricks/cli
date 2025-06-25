@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -248,27 +250,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 }
 
-func TestSetUserAgentExtraEnvVar_PyDABs(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
-		Config: config.Root{
-			Experimental: &config.Experimental{
-				PyDABs: config.PyDABs{
-					Enabled: true,
-				},
-			},
-		},
-	}
-
-	env := make(map[string]string, 0)
-	err := setUserAgentExtraEnvVar(env, b)
-	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		"DATABRICKS_USER_AGENT_EXTRA": "cli/0.0.0-dev databricks-pydabs/0.0.0",
-	}, env)
-}
-
-func TestSetUserAgentExtraEnvVar_Python(t *testing.T) {
+func TestSetUserAgentExtra_Python(t *testing.T) {
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -349,31 +331,76 @@ func TestInheritEnvVarsWithCorrectTFCLIConfigFile(t *testing.T) {
 	require.Equal(t, configFile, envMap["TF_CLI_CONFIG_FILE"])
 }
 
-func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
-	ctx := context.Background()
-	m := &initialize{}
-	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Target:    "whatever",
-				Terraform: &config.Terraform{},
-			},
-		},
+func createFakeTerraformBinary(t *testing.T, dest, version string) string {
+	binPath := filepath.Join(dest, product.Terraform.BinaryName())
+	jsonPayload := fmt.Sprintf(`{
+  "terraform_version": "%s",
+  "provider_selections": {}
+}
+`, version)
+
+	if runtime.GOOS == "windows" {
+		// Create stub with .exe that cannot be executed.
+		// We need it because the implementation looks for this file to see if it is cached.
+		createFakeTerraformBinaryWindows(t, binPath, jsonPayload, version)
+		// Create stub with .bat that can be executed.
+		// We use this path when setting the DATABRICKS_TF_EXEC_PATH environment variable.
+		createFakeTerraformBinaryWindows(t, binPath+".bat", jsonPayload, version)
+		// Return the .bat file that can be executed.
+		return binPath + ".bat"
+	} else {
+		return createFakeTerraformBinaryOther(t, binPath, jsonPayload, version)
 	}
-	// Create a pre-existing terraform bin to avoid downloading it
-	cacheDir, _ := b.CacheDir(ctx, "bin")
-	existingExecPath := createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
-	// Create a new terraform binary and expose it through env vars
-	tmpBinPath := createTempFile(t, t.TempDir(), "terraform-bin", true)
-	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", "1.2.3")
-	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", tmpBinPath)
-	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
-	require.NoError(t, err)
-	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
 }
 
-func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) {
+func createFakeTerraformBinaryWindows(t *testing.T, binPath, jsonPayload, version string) string {
+	f, err := os.Create(binPath)
+	require.NoError(t, err)
+	defer func() {
+		err = f.Close()
+		require.NoError(t, err)
+	}()
+	// Write the payload to a temp file and type it, to avoid escaping issues
+	tmpJsonPath := filepath.Join(t.TempDir(), "payload.json")
+	err = os.WriteFile(tmpJsonPath, []byte(jsonPayload), 0o644)
+	require.NoError(t, err)
+	_, err = f.WriteString(fmt.Sprintf(`@echo off
+REM This is a fake Terraform binary that returns the JSON payload.
+REM It stubs version %s.
+type "%s"
+`, version, tmpJsonPath))
+	require.NoError(t, err)
+	return binPath
+}
+
+func createFakeTerraformBinaryOther(t *testing.T, binPath, jsonPayload, version string) string {
+	f, err := os.Create(binPath)
+	require.NoError(t, err)
+	defer func() {
+		err = f.Close()
+		require.NoError(t, err)
+	}()
+	err = f.Chmod(0o777)
+	require.NoError(t, err)
+	_, err = f.WriteString(fmt.Sprintf(`#!/bin/sh
+# This is a fake Terraform binary that returns the JSON payload.
+# It stubs version %s.
+cat <<EOF
+%sEOF
+`, version, jsonPayload))
+	require.NoError(t, err)
+	return binPath
+}
+
+type testInstaller struct {
+	t *testing.T
+}
+
+func (i testInstaller) Install(ctx context.Context, dir string, version *version.Version) (string, error) {
+	return createFakeTerraformBinary(i.t, dir, version.String()), nil
+}
+
+func TestFindExecPath_NoBinary(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
@@ -385,18 +412,135 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 			},
 		},
 	}
-	// Create a pre-existing terraform bin to avoid downloading it
-	cacheDir, _ := b.CacheDir(ctx, "bin")
-	existingExecPath := createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
 
-	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", TerraformVersion.String())
+	// Verify that the binary for the default version is downloaded.
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.NoError(t, err)
+	assert.Contains(t, testutil.ReadFile(t, b.Config.Bundle.Terraform.ExecPath), "1.5.5")
+}
+
+func TestFindExecPath_UseExistingBinary(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+
+	// Create a pre-existing Terraform binary to avoid downloading it
+	cacheDir, _ := b.CacheDir(ctx, "bin")
+	createFakeTerraformBinary(t, cacheDir, "1.2.3")
+
+	// Verify that the pre-existing Terraform binary is used.
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.NoError(t, err)
+	assert.Contains(t, testutil.ReadFile(t, b.Config.Bundle.Terraform.ExecPath), "1.2.3")
+}
+
+func TestFindExecPath_ExecPathWrongVersion(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+
+	// Configure a valid exec path.
+	version := "1.2.4"
+	execPath := createFakeTerraformBinary(t, t.TempDir(), version)
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", execPath)
+
+	// Verify that the error is returned.
+	expected := []string{
+		`Terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is ` + version + ` but expected version is ` + defaultTerraformVersion.Version.String() + `.`,
+		`Set DATABRICKS_TF_VERSION to ` + version + ` to continue.`,
+	}
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.ErrorContains(t, err, strings.Join(expected, " "))
+}
+
+func TestFindExecPath_ExecPathMatchingVersion(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+
+	// Configure a valid exec path.
+	execPath := createFakeTerraformBinary(t, t.TempDir(), defaultTerraformVersion.Version.String())
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", execPath)
+
+	// Verify that the pre-existing Terraform binary is used.
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.NoError(t, err)
+	assert.Equal(t, execPath, b.Config.Bundle.Terraform.ExecPath)
+}
+
+func TestFindExecPath_Version_NoExecPath(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+
+	// Configure a fake version.
+	version := "1.2.3"
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", version)
+
+	// Verify that the binary for the default version is downloaded.
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.NoError(t, err)
+	assert.Contains(t, testutil.ReadFile(t, b.Config.Bundle.Terraform.ExecPath), version)
+}
+
+func TestFindExecPath_Version_ExecPathBadFile(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+
+	// Configure a fake version.
+	version := "1.2.3"
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", version)
+
+	// Configure an invalid exec path.
 	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
-	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
-	require.NoError(t, err)
-	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
+
+	// Verify that the error is returned.
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.ErrorContains(t, err, "unable to execute DATABRICKS_TF_EXEC_PATH:")
 }
 
-func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
+func TestFindExecPath_Version_ExecPathWrongVersion(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
@@ -408,16 +552,49 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 			},
 		},
 	}
-	// Create a pre-existing terraform bin to avoid downloading it
-	cacheDir, _ := b.CacheDir(ctx, "bin")
-	createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
-	// Create a new terraform binary and expose it through env vars
-	tmpBinPath := createTempFile(t, t.TempDir(), "terraform-bin", true)
-	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", TerraformVersion.String())
-	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", tmpBinPath)
-	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
+
+	// Configure a fake version.
+	version := "1.2.3"
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", version)
+
+	// Configure a valid exec path.
+	execPath := createFakeTerraformBinary(t, t.TempDir(), "1.2.4")
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", execPath)
+
+	// Verify that the error is returned.
+	expected := []string{
+		`Terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is 1.2.4 but expected version is 1.2.3 (from $DATABRICKS_TF_VERSION).`,
+		`Update $DATABRICKS_TF_EXEC_PATH and $DATABRICKS_TF_VERSION so that versions match.`,
+	}
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
+	require.ErrorContains(t, err, strings.Join(expected, " "))
+}
+
+func TestFindExecPath_Version_ExecPathMatchingVersion(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+
+	// Configure a fake version.
+	otherVersion := "1.2.3"
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", otherVersion)
+
+	// Configure a valid exec path.
+	execPath := createFakeTerraformBinary(t, t.TempDir(), otherVersion)
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", execPath)
+
+	// Verify that the specified Terraform binary is used.
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
 	require.NoError(t, err)
-	require.Equal(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
+	require.Equal(t, execPath, b.Config.Bundle.Terraform.ExecPath)
 }
 
 func createTempFile(t *testing.T, dest, name string, executable bool) string {

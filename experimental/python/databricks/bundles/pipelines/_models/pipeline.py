@@ -41,6 +41,10 @@ from databricks.bundles.pipelines._models.pipeline_permission import (
     PipelinePermission,
     PipelinePermissionParam,
 )
+from databricks.bundles.pipelines._models.pipelines_environment import (
+    PipelinesEnvironment,
+    PipelinesEnvironmentParam,
+)
 from databricks.bundles.pipelines._models.restart_window import (
     RestartWindow,
     RestartWindowParam,
@@ -95,6 +99,13 @@ class Pipeline(Resource):
     edition: VariableOrOptional[str] = None
     """
     Pipeline product edition.
+    """
+
+    environment: VariableOrOptional[PipelinesEnvironment] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Environment specification for this pipeline used to install dependencies.
     """
 
     event_log: VariableOrOptional[EventLogSpec] = None
@@ -182,6 +193,13 @@ class Pipeline(Resource):
     DBFS root directory for storing checkpoints and tables.
     """
 
+    tags: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of tags associated with the pipeline.
+    These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+    A maximum of 25 tags can be added to the pipeline.
+    """
+
     target: VariableOrOptional[str] = None
     """
     Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
@@ -238,6 +256,13 @@ class PipelineDict(TypedDict, total=False):
     edition: VariableOrOptional[str]
     """
     Pipeline product edition.
+    """
+
+    environment: VariableOrOptional[PipelinesEnvironmentParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Environment specification for this pipeline used to install dependencies.
     """
 
     event_log: VariableOrOptional[EventLogSpecParam]
@@ -323,6 +348,13 @@ class PipelineDict(TypedDict, total=False):
     storage: VariableOrOptional[str]
     """
     DBFS root directory for storing checkpoints and tables.
+    """
+
+    tags: VariableOrDict[str]
+    """
+    A map of tags associated with the pipeline.
+    These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+    A maximum of 25 tags can be added to the pipeline.
     """
 
     target: VariableOrOptional[str]

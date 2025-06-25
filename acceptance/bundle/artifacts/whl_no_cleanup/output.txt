@@ -1,0 +1,44 @@
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> find.py --expect 1 whl
+dist/my_test_code-0.0.1-py3-none-any.whl
+
+=== Expecting 1 wheels to be uploaded
+>>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.0.1-py3-none-any.whl"
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== No calls to delete internal folder expected
+>>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+
+=== Expected 2 calls to create artifacts folder (because 2 deploys were done)
+>>> jq -s .[] | select(.path=="/api/2.0/workspace/mkdirs") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}

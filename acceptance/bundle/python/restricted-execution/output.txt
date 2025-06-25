@@ -2,7 +2,6 @@
 === Without DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION, all envs are accessible
 >>> uv run [UV_ARGS] -q [CLI] bundle summary -o json
 {
-  "pydabs": {},
   "python": {
     "mutators": [
       "mutators:read_envs"

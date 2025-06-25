@@ -18,8 +18,9 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		Host:      a.Host,
 		AccountID: a.AccountID,
 	}
+	host := cfg.CanonicalHostName()
 	if cfg.IsAccountClient() {
-		return u2m.NewBasicAccountOAuthArgument(cfg.Host, cfg.AccountID)
+		return u2m.NewBasicAccountOAuthArgument(host, cfg.AccountID)
 	}
-	return u2m.NewBasicWorkspaceOAuthArgument(cfg.Host)
+	return u2m.NewBasicWorkspaceOAuthArgument(host)
 }

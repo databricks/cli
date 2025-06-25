@@ -74,16 +74,11 @@ func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 
 func (s SecretScope) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "secret_scope",
-		PluralName:            "secret_scopes",
-		SingularTitle:         "Secret Scope",
-		PluralTitle:           "Secret Scopes",
-		TerraformResourceName: "databricks_secret_scope",
+		SingularName:  "secret_scope",
+		PluralName:    "secret_scopes",
+		SingularTitle: "Secret Scope",
+		PluralTitle:   "Secret Scopes",
 	}
-}
-
-func (s SecretScope) TerraformResourceName() string {
-	return "databricks_secret_scope"
 }
 
 func (s SecretScope) GetName() string {

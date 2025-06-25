@@ -161,7 +161,6 @@ jobs:
 
     needs: goreleaser
 
-
     # IMPORTANT:
     # - 'id-token: write' is mandatory for OIDC and trusted publishing to PyPi
     # - 'environment: release' is a part of OIDC assertion done by PyPi

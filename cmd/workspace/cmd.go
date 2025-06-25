@@ -4,6 +4,7 @@ package workspace
 
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
+	ai_builder "github.com/databricks/cli/cmd/workspace/ai-builder"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
 	alerts_v2 "github.com/databricks/cli/cmd/workspace/alerts-v2"
@@ -27,9 +28,10 @@ import (
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
-	database_instances "github.com/databricks/cli/cmd/workspace/database-instances"
+	database "github.com/databricks/cli/cmd/workspace/database"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
+	feature_store "github.com/databricks/cli/cmd/workspace/feature-store"
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
@@ -63,10 +65,10 @@ import (
 	provider_provider_analytics_dashboards "github.com/databricks/cli/cmd/workspace/provider-provider-analytics-dashboards"
 	provider_providers "github.com/databricks/cli/cmd/workspace/provider-providers"
 	providers "github.com/databricks/cli/cmd/workspace/providers"
+	quality_monitor_v2 "github.com/databricks/cli/cmd/workspace/quality-monitor-v2"
 	quality_monitors "github.com/databricks/cli/cmd/workspace/quality-monitors"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
 	queries_legacy "github.com/databricks/cli/cmd/workspace/queries-legacy"
-	query_execution "github.com/databricks/cli/cmd/workspace/query-execution"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
 	query_visualizations_legacy "github.com/databricks/cli/cmd/workspace/query-visualizations-legacy"
@@ -105,6 +107,7 @@ func All() []*cobra.Command {
 	var out []*cobra.Command
 
 	out = append(out, access_control.New())
+	out = append(out, ai_builder.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())
 	out = append(out, alerts_v2.New())
@@ -128,9 +131,10 @@ func All() []*cobra.Command {
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
 	out = append(out, data_sources.New())
-	out = append(out, database_instances.New())
+	out = append(out, database.New())
 	out = append(out, experiments.New())
 	out = append(out, external_locations.New())
+	out = append(out, feature_store.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
 	out = append(out, git_credentials.New())
@@ -163,10 +167,10 @@ func All() []*cobra.Command {
 	out = append(out, provider_provider_analytics_dashboards.New())
 	out = append(out, provider_providers.New())
 	out = append(out, providers.New())
+	out = append(out, quality_monitor_v2.New())
 	out = append(out, quality_monitors.New())
 	out = append(out, queries.New())
 	out = append(out, queries_legacy.New())
-	out = append(out, query_execution.New())
 	out = append(out, query_history.New())
 	out = append(out, query_visualizations.New())
 	out = append(out, query_visualizations_legacy.New())

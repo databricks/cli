@@ -30,26 +30,31 @@ func New() *cobra.Command {
   E2 version of the platform or on a select custom plan that allows multiple
   workspaces per account, you can optionally configure different storage
   destinations for each workspace. Log delivery status is also provided to know
-  the latest status of log delivery attempts. The high-level flow of billable
-  usage delivery:
+  the latest status of log delivery attempts.
+  
+  The high-level flow of billable usage delivery:
   
   1. **Create storage**: In AWS, [create a new AWS S3 bucket] with a specific
   bucket policy. Using Databricks APIs, call the Account API to create a
   [storage configuration object](:method:Storage/Create) that uses the bucket
-  name. 2. **Create credentials**: In AWS, create the appropriate AWS IAM role.
-  For full details, including the required IAM role policies and trust
-  relationship, see [Billable usage log delivery]. Using Databricks APIs, call
-  the Account API to create a [credential configuration
-  object](:method:Credentials/Create) that uses the IAM role"s ARN. 3. **Create
-  log delivery configuration**: Using Databricks APIs, call the Account API to
-  [create a log delivery configuration](:method:LogDelivery/Create) that uses
-  the credential and storage configuration objects from previous steps. You can
-  specify if the logs should include all events of that log type in your account
-  (_Account level_ delivery) or only events for a specific set of workspaces
-  (_workspace level_ delivery). Account level log delivery applies to all
-  current and future workspaces plus account level logs, while workspace level
-  log delivery solely delivers logs related to the specified workspaces. You can
-  create multiple types of delivery configurations per account.
+  name.
+  
+  2. **Create credentials**: In AWS, create the appropriate AWS IAM role. For
+  full details, including the required IAM role policies and trust relationship,
+  see [Billable usage log delivery]. Using Databricks APIs, call the Account API
+  to create a [credential configuration object](:method:Credentials/Create) that
+  uses the IAM role's ARN.
+  
+  3. **Create log delivery configuration**: Using Databricks APIs, call the
+  Account API to [create a log delivery
+  configuration](:method:LogDelivery/Create) that uses the credential and
+  storage configuration objects from previous steps. You can specify if the logs
+  should include all events of that log type in your account (_Account level_
+  delivery) or only events for a specific set of workspaces (_workspace level_
+  delivery). Account level log delivery applies to all current and future
+  workspaces plus account level logs, while workspace level log delivery solely
+  delivers logs related to the specified workspaces. You can create multiple
+  types of delivery configurations per account.
   
   For billable usage delivery: * For more information about billable usage logs,
   see [Billable usage log delivery]. For the CSV schema, see the [Usage page]. *
@@ -119,8 +124,6 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: log_delivery_configuration
-
 	cmd.Use = "create"
 	cmd.Short = `Create a new log delivery configuration.`
 	cmd.Long = `Create a new log delivery configuration.
@@ -153,11 +156,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -174,6 +172,8 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.LogDelivery.Create(ctx, createReq)
@@ -219,7 +219,7 @@ func newGet() *cobra.Command {
   specified by ID.
 
   Arguments:
-    LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID`
+    LOG_DELIVERY_CONFIGURATION_ID: The log delivery configuration id of customer`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -236,14 +236,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Log Delivery drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks log delivery configuration ID")
+			id, err := cmdio.Select(ctx, names, "The log delivery configuration id of customer")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks log delivery configuration id")
+			return fmt.Errorf("expected to have the log delivery configuration id of customer")
 		}
 		getReq.LogDeliveryConfigurationId = args[0]
 
@@ -282,9 +282,10 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
-	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED. Supported values: [DISABLED, ENABLED]`)
-	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `Filter by storage configuration ID.`)
+	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `The Credentials id to filter the search results with.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token received from a previous get all budget configurations call.`)
+	cmd.Flags().Var(&listReq.Status, "status", `The log delivery status to filter the search results with. Supported values: [DISABLED, ENABLED]`)
+	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `The Storage Configuration id to filter the search results with.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get all log delivery configurations.`
@@ -350,7 +351,7 @@ func newPatchStatus() *cobra.Command {
   [Create log delivery](:method:LogDelivery/Create).
 
   Arguments:
-    LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID
+    LOG_DELIVERY_CONFIGURATION_ID: The log delivery configuration id of customer
     STATUS: Status of log delivery configuration. Set to ENABLED (enabled) or
       DISABLED (disabled). Defaults to ENABLED. You can [enable or disable
       the configuration](#operation/patch-log-delivery-config-status) later.

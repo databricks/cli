@@ -26,7 +26,6 @@ resources:
     job_two:
       tasks: ${var.job_tasks}
 
-
 targets:
   dev:
     mode: development

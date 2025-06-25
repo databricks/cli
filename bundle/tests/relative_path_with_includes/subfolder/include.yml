@@ -9,7 +9,6 @@ artifacts:
     type: whl
     path: ./artifact_b
 
-
 resources:
   jobs:
     job_b:

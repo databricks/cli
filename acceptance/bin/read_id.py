@@ -29,4 +29,19 @@ def print_resource_terraform(section, name):
             return
 
 
-print_resource_terraform(*sys.argv[1:])
+def print_resource_terranova(section, name):
+    filename = ".databricks/bundle/default/resources.json"
+    raw = open(filename).read()
+    data = json.loads(raw)
+    resources = data["resources"].get(section, {})
+    result = resources.get(name)
+    if result is None:
+        print(f"Resource {section=} {name=} not found. Available: {raw}")
+        return
+    print(result.get("__id__"))
+
+
+if os.environ.get("DATABRICKS_CLI_DEPLOYMENT", "").startswith("direct"):
+    print_resource_terranova(*sys.argv[1:])
+else:
+    print_resource_terraform(*sys.argv[1:])

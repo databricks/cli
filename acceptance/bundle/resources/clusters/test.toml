@@ -1,0 +1,1 @@
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # clusters are not implemented yet

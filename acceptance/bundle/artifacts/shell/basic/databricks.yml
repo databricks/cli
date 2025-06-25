@@ -1,0 +1,8 @@
+bundle:
+  name: shell-basic
+
+artifacts:
+  my_artifact:
+    build: |-
+      echo "Hello, World!" > out.shell.txt
+      echo "Bye, World!" >> out.shell.txt

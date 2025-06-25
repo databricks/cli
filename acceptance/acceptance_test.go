@@ -43,15 +43,13 @@ var (
 	Forcerun    bool
 	LogRequests bool
 	LogConfig   bool
+	SkipLocal   bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
 // the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 //
-// To debug integration tests you can run the "deco env flip workspace" command to configure a workspace
-// and then click on "debug test" near TestInprocessMode.
-
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
 // Also disables parallelism in tests.
@@ -65,6 +63,7 @@ func init() {
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
+	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
 }
 
 const (
@@ -80,6 +79,13 @@ const (
 	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
 	EnvFilterVar = "ENVFILTER"
 )
+
+var exeSuffix = func() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+	return ""
+}()
 
 var Scripts = map[string]bool{
 	EntryPointScript: true,
@@ -99,16 +105,19 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
+	if os.Getenv("CLOUD_ENV") != "" {
+		t.Skip("No need to run this as integration test.")
+	}
+
+	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
+	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+	// Run the "deco env flip workspace" command to configure a workspace.
+
 	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
-	// Load debug environment when debugging a single test run from an IDE.
-	if singleTest != "" && inprocessMode {
-		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
-	}
-
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -146,15 +155,21 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		execPath = BuildCLI(t, buildDir, coverDir)
 	}
 
+	BuildYamlfmt(t)
+
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
-	// Make helper scripts available
-	t.Setenv("PATH", fmt.Sprintf("%s%c%s", filepath.Join(cwd, "bin"), os.PathListSeparator, os.Getenv("PATH")))
+	paths := []string{
+		// Make helper scripts available
+		filepath.Join(cwd, "bin"),
 
-	tempHomeDir := t.TempDir()
-	repls.SetPath(tempHomeDir, "[TMPHOME]")
-	t.Logf("$TMPHOME=%v", tempHomeDir)
+		// Make <ROOT>/tools/ available (e.g. yamlfmt)
+		filepath.Join(cwd, "..", "tools"),
+
+		os.Getenv("PATH"),
+	}
+	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
 
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
 	uvCache := getUVDefaultCacheDir(t)
@@ -176,10 +191,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
 	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
-	terraformExecPath := filepath.Join(buildDir, "terraform")
-	if runtime.GOOS == "windows" {
-		terraformExecPath += ".exe"
-	}
+	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
@@ -193,6 +205,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
 
+	t.Setenv("TESTROOT", cwd)
 	repls.SetPath(cwd, "[TESTROOT]")
 
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
@@ -268,7 +281,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
-	return len(testDirs)
+	return selectedDirs - skippedDirs
 }
 
 func getEnvFilters(t *testing.T) []string {
@@ -315,6 +328,10 @@ func getTests(t *testing.T) []string {
 
 // Return a reason to skip the test. Empty string means "don't skip".
 func getSkipReason(config *internal.TestConfig, configPath string) string {
+	if SkipLocal && isTruePtr(config.Local) {
+		return "Disabled via SkipLocal setting in " + configPath
+	}
+
 	if Forcerun {
 		return ""
 	}
@@ -1001,7 +1018,7 @@ func getNodeTypeID(cloudEnv string) string {
 	case "gcp":
 		return "n1-standard-4"
 	case "":
-		return "local-fake-node"
+		return "i3.xlarge"
 	default:
 		return "nodetype-" + cloudEnv
 	}
@@ -1136,4 +1153,12 @@ func isSameYAMLContent(str1, str2 string) bool {
 	}
 
 	return reflect.DeepEqual(obj1, obj2)
+}
+
+func BuildYamlfmt(t *testing.T) {
+	// Using make here instead of "go build" directly cause it's faster when it's already built
+	args := []string{
+		"make", "-s", "tools/yamlfmt" + exeSuffix,
+	}
+	RunCommand(t, args, "..")
 }

@@ -153,7 +153,8 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a pipeline.`
 	cmd.Long = `Delete a pipeline.
   
-  Deletes a pipeline.`
+  Deletes a pipeline. Deleting a pipeline is a permanent action that stops and
+  removes the pipeline and its tables. You cannot undo this action.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -964,6 +965,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: deployment
 	cmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode.`)
 	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
+	// TODO: complex arg: environment
 	// TODO: complex arg: event_log
 	cmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
@@ -980,6 +982,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Schema, "schema", updateReq.Schema, `The default schema (database) where tables are read from or published to.`)
 	cmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
 	cmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	// TODO: map via StringToStringVar: tags
 	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
 

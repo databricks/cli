@@ -97,9 +97,7 @@ func newGet() *cobra.Command {
 
 	cmd.Use = "get"
 	cmd.Short = `Get provider analytics dashboard.`
-	cmd.Long = `Get provider analytics dashboard.
-  
-  Get provider analytics dashboard.`
+	cmd.Long = `Get provider analytics dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -139,9 +137,7 @@ func newGetLatestVersion() *cobra.Command {
 
 	cmd.Use = "get-latest-version"
 	cmd.Short = `Get latest version of provider analytics dashboard.`
-	cmd.Long = `Get latest version of provider analytics dashboard.
-  
-  Get latest version of provider analytics dashboard.`
+	cmd.Long = `Get latest version of provider analytics dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -191,8 +187,6 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Update provider analytics dashboard.`
 	cmd.Long = `Update provider analytics dashboard.
-  
-  Update provider analytics dashboard.
 
   Arguments:
     ID: id is immutable property and can't be updated.`

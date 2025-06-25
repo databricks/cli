@@ -149,7 +149,7 @@ func newDelete() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete CLEAN_ROOM_NAME ASSET_TYPE ASSET_FULL_NAME"
+	cmd.Use = "delete CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Delete an asset.`
 	cmd.Long = `Delete an asset.
   
@@ -159,7 +159,7 @@ func newDelete() *cobra.Command {
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: The type of the asset. 
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
-    ASSET_FULL_NAME: The fully qualified name of the asset, it is same as the name field in
+    NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
 
 	cmd.Annotations = make(map[string]string)
@@ -179,7 +179,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
-		deleteReq.AssetFullName = args[2]
+		deleteReq.Name = args[2]
 
 		err = w.CleanRoomAssets.Delete(ctx, deleteReq)
 		if err != nil {
@@ -216,7 +216,7 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE ASSET_FULL_NAME"
+	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Get an asset.`
 	cmd.Long = `Get an asset.
   
@@ -226,7 +226,7 @@ func newGet() *cobra.Command {
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: The type of the asset. 
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
-    ASSET_FULL_NAME: The fully qualified name of the asset, it is same as the name field in
+    NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
 
 	cmd.Annotations = make(map[string]string)
@@ -246,7 +246,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
-		getReq.AssetFullName = args[2]
+		getReq.Name = args[2]
 
 		response, err := w.CleanRoomAssets.Get(ctx, getReq)
 		if err != nil {

@@ -1,0 +1,23 @@
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/ServicePrincipals"
+Response.Body = '''{}'''  # this body causes error, but works to check if resolution is done correctly
+
+# For some reason this body causes SDK to loop forever
+#Response.Body = '''{
+#  "Resources": [
+#    {
+#      "displayName": "TIDALDBServAccount - usdev",
+#      "groups": [],
+#      "id": "10000",
+#      "applicationId": "e700887d-8550-4667-8884-dbc94808cfb6",
+#      "schemas": [
+#        "urn:ietf:params:scim:schemas:core:2.0:ServicePrincipal"
+#      ],
+#      "active": true
+#    }
+#],
+#"totalResults": 1,
+#"startIndex": 1,
+#"itemsPerPage": 1,
+#"schemas": [
+#  "urn:ietf:params:scim:api:messages:2.0:ListResponse"]}'''

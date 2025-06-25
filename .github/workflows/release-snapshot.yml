@@ -94,6 +94,6 @@ jobs:
           prerelease: true
           tag_name: snapshot
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
+          files: |-
             dist/databricks_cli_*.zip
             dist/databricks_cli_*.tar.gz

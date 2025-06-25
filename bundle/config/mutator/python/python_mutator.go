@@ -36,39 +36,6 @@ import (
 type phase string
 
 const (
-	// PythonMutatorPhaseLoad is the phase in which bundle configuration is loaded.
-	//
-	// At this stage, PyDABs adds statically defined resources to the bundle configuration.
-	// Which resources are added should be deterministic and not depend on the bundle configuration.
-	//
-	// We also open for possibility of appending other sections of bundle configuration,
-	// for example, adding new variables. However, this is not supported yet, and CLI rejects
-	// such changes.
-	//
-	// Deprecated, left for backward-compatibility with PyDABs.
-	PythonMutatorPhaseLoad phase = "load"
-
-	// PythonMutatorPhaseInit is the phase after bundle configuration was loaded, and
-	// the list of statically declared resources is known.
-	//
-	// At this stage, PyDABs adds resources defined using generators, or mutates existing resources,
-	// including the ones defined using YAML.
-	//
-	// During this process, within generator and mutators, PyDABs can access:
-	// - selected deployment target
-	// - bundle variables values
-	// - variables provided through CLI arguments or environment variables
-	//
-	// The following is not available:
-	// - variables referencing other variables are in unresolved format
-	//
-	// PyDABs can output YAML containing references to variables, and CLI should resolve them.
-	//
-	// Existing resources can't be removed, and CLI rejects such changes.
-	//
-	// Deprecated, left for backward-compatibility with PyDABs.
-	PythonMutatorPhaseInit phase = "init"
-
 	// PythonMutatorPhaseLoadResources is the phase in which YAML configuration was loaded.
 	//
 	// At this stage, we execute Python code to load resources defined in Python.
@@ -150,24 +117,11 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 	pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
 	pythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
 
-	if pydabsEnabled && pythonEnabled {
-		return opts{}, errors.New("both experimental/pydabs and experimental/python are enabled, only one can be enabled")
-	} else if pydabsEnabled {
-		if !experimental.PyDABs.Enabled {
-			return opts{}, nil
-		}
+	if pydabsEnabled {
+		return opts{}, errors.New("experimental/pydabs is deprecated, use experimental/python instead (https://docs.databricks.com/dev-tools/bundles/python)")
+	}
 
-		// don't execute for phases for 'python' section
-		if phase == PythonMutatorPhaseInit || phase == PythonMutatorPhaseLoad {
-			return opts{
-				enabled:       true,
-				venvPath:      experimental.PyDABs.VEnvPath,
-				loadLocations: false, // not supported in PyDABs
-			}, nil
-		} else {
-			return opts{}, nil
-		}
-	} else if pythonEnabled {
+	if pythonEnabled {
 		// don't execute for phases for 'pydabs' section
 		if phase == PythonMutatorPhaseLoadResources || phase == PythonMutatorPhaseApplyMutators {
 			return opts{
@@ -258,14 +212,9 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return newRoot, nil
 	})
 
-	// don't instrument deprecated phases
-	if m.phase == PythonMutatorPhaseLoadResources || m.phase == PythonMutatorPhaseApplyMutators {
-		// we can precisely track resources that are added/updated, so sum doesn't double-count
-		b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
-		b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
-	} else {
-		mutateDiags = mutateDiags.Extend(diag.Warningf("experimental/pydabs is deprecated and will be removed in future versions, use experimental/python instead"))
-	}
+	// we can precisely track resources that are added/updated, so sum doesn't double-count
+	b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
+	b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
 
 	if err == mutateDiagsHasError {
 		if !mutateDiags.HasError() {
