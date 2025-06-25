@@ -16,6 +16,13 @@ FAIL = "❌\u200cFAIL"
 PASS = "✅\u200cpass"
 SKIP = "🙈\u200cskip"
 
+# This happens when Eventually is used - there is output for the test but no result.
+MISSING = "🤯\u200cMISS"
+PANIC = "💥\u200cPANIC"
+
+INTERESTING_ACTIONS = (FAIL, FLAKY, PANIC, MISSING)
+ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
+
 ACTION_MESSAGES = {
     # \u200c is zero-width space. It is added so that len of the string corresponds to real width.
     # ❌, ✅, 🔄 each take space of 2 characters.
@@ -94,6 +101,14 @@ def parse_file(path, filter):
         if out:
             outputs.setdefault(testname, []).append(out.rstrip())
 
+    for testname, lines in outputs.items():
+        if testname in results:
+            continue
+        if "panic: " in str(lines):
+            results.setdefault(testname, PANIC)
+        else:
+            results.setdefault(testname, MISS)
+
     return results, outputs
 
 
@@ -120,14 +135,11 @@ def print_report(filenames, filter, filter_env, show_output):
 
     table = []
     for env, stats in sorted(per_env_stats.items()):
-        if FAIL in stats:
-            status = FAIL[:2]
-        elif FLAKY in stats:
-            status = FLAKY[:2]
-        elif PASS in stats:
-            status = PASS[:2]
-        else:
-            status = "??"
+        status = "??"
+        for action in ACTIONS_WITH_ICON:
+            if action in stats:
+                status = action[:2]
+                break
 
         table.append(
             {
@@ -146,15 +158,14 @@ def print_report(filenames, filter, filter_env, show_output):
     simplified_results = {}  # testname -> env -> action
     for testname, items in sorted(per_test_per_env_stats.items()):
         per_testname_result = simplified_results.setdefault(testname, {})
-        # first record FAIL or FLAKY
+        # first select tests with interesting actions (anything but pass or skip)
         for env, counts in items.items():
-            for action in (FAIL, FLAKY):
+            for action in INTERESTING_ACTIONS:
                 if action in counts:
                     per_testname_result.setdefault(env, action)
                     break
 
-        # Test is only interesting if it had FAIL or FLAKY entries above.
-        # In that case complete the row:
+        # Once we know test is interesting, complete the row
         if per_testname_result:
             for env, counts in items.items():
                 if env not in interesting_envs:
@@ -180,7 +191,7 @@ def print_report(filenames, filter, filter_env, show_output):
     if show_output:
         for testname, stats in simplified_results.items():
             for env, action in stats.items():
-                if action not in (FAIL, FLAKY):
+                if action not in INTERESTING_ACTIONS:
                     continue
                 out = "\n".join(outputs.get(testname, {}).get(env, []))
                 print(f"### {env} {testname} {action}\n{out}")
