@@ -296,6 +296,7 @@ func TestInheritOIDCTokenEnvCustom(t *testing.T) {
 	err := inheritEnvVars(ctx, env)
 	require.NoError(t, err)
 	assert.Equal(t, "foobar", env["custom_DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "custom_DATABRICKS_OIDC_TOKEN", env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
 func TestInheritOIDCTokenEnv(t *testing.T) {
@@ -306,6 +307,7 @@ func TestInheritOIDCTokenEnv(t *testing.T) {
 	err := inheritEnvVars(ctx, env)
 	require.NoError(t, err)
 	assert.Equal(t, "foobar", env["DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {

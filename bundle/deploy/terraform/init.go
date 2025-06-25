@@ -161,7 +161,9 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	// If there's a DATABRICKS_OIDC_TOKEN_ENV set, we need to pass the value of the environment variable defined in DATABRICKS_OIDC_TOKEN_ENV to Terraform.
 	// This is necessary to ensure that Terraform can use the same OIDC token as the CLI.
 	oidcTokenEnv, ok := env.Lookup(ctx, "DATABRICKS_OIDC_TOKEN_ENV")
-	if !ok {
+	if ok {
+		environ["DATABRICKS_OIDC_TOKEN_ENV"] = env.Get(ctx, "DATABRICKS_OIDC_TOKEN_ENV")
+	} else {
 		oidcTokenEnv = "DATABRICKS_OIDC_TOKEN"
 	}
 
