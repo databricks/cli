@@ -52,7 +52,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetExperiment())
 	cmd.AddCommand(newGetHistory())
 	cmd.AddCommand(newGetLoggedModel())
-	cmd.AddCommand(newGetLoggedModels())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
 	cmd.AddCommand(newGetRun())
@@ -1098,62 +1097,6 @@ func newGetLoggedModel() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getLoggedModelOverrides {
 		fn(cmd, &getLoggedModelReq)
-	}
-
-	return cmd
-}
-
-// start get-logged-models command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var getLoggedModelsOverrides []func(
-	*cobra.Command,
-	*ml.GetLoggedModelsRequest,
-)
-
-func newGetLoggedModels() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var getLoggedModelsReq ml.GetLoggedModelsRequest
-
-	// TODO: array: model_ids
-
-	cmd.Use = "get-logged-models"
-	cmd.Short = `Get a batch of logged models.`
-	cmd.Long = `Get a batch of logged models.
-  
-  Batch endpoint for getting logged models from a list of model IDs`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		response, err := w.Experiments.GetLoggedModels(ctx, getLoggedModelsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range getLoggedModelsOverrides {
-		fn(cmd, &getLoggedModelsReq)
 	}
 
 	return cmd

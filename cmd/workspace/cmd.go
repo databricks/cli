@@ -46,7 +46,6 @@ import (
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
-	materialized_features "github.com/databricks/cli/cmd/workspace/materialized-features"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
 	model_versions "github.com/databricks/cli/cmd/workspace/model-versions"
@@ -70,7 +69,6 @@ import (
 	quality_monitors "github.com/databricks/cli/cmd/workspace/quality-monitors"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
 	queries_legacy "github.com/databricks/cli/cmd/workspace/queries-legacy"
-	query_execution "github.com/databricks/cli/cmd/workspace/query-execution"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
 	query_visualizations_legacy "github.com/databricks/cli/cmd/workspace/query-visualizations-legacy"
@@ -150,7 +148,6 @@ func All() []*cobra.Command {
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
 	out = append(out, libraries.New())
-	out = append(out, materialized_features.New())
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
 	out = append(out, model_versions.New())
@@ -174,7 +171,6 @@ func All() []*cobra.Command {
 	out = append(out, quality_monitors.New())
 	out = append(out, queries.New())
 	out = append(out, queries_legacy.New())
-	out = append(out, query_execution.New())
 	out = append(out, query_history.New())
 	out = append(out, query_visualizations.New())
 	out = append(out, query_visualizations_legacy.New())

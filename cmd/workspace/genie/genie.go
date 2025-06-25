@@ -36,7 +36,6 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateMessage())
-	cmd.AddCommand(newDeleteConversation())
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGenerateDownloadFullQueryResult())
@@ -48,7 +47,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetSpace())
 	cmd.AddCommand(newListSpaces())
 	cmd.AddCommand(newStartConversation())
-	cmd.AddCommand(newTrashSpace())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -158,67 +156,6 @@ func newCreateMessage() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createMessageOverrides {
 		fn(cmd, &createMessageReq)
-	}
-
-	return cmd
-}
-
-// start delete-conversation command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var deleteConversationOverrides []func(
-	*cobra.Command,
-	*dashboards.GenieDeleteConversationRequest,
-)
-
-func newDeleteConversation() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var deleteConversationReq dashboards.GenieDeleteConversationRequest
-
-	cmd.Use = "delete-conversation SPACE_ID CONVERSATION_ID"
-	cmd.Short = `Delete conversation.`
-	cmd.Long = `Delete conversation.
-  
-  Delete a conversation.
-
-  Arguments:
-    SPACE_ID: The ID associated with the Genie space where the conversation is located.
-    CONVERSATION_ID: The ID of the conversation to delete.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		deleteConversationReq.SpaceId = args[0]
-		deleteConversationReq.ConversationId = args[1]
-
-		err = w.Genie.DeleteConversation(ctx, deleteConversationReq)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range deleteConversationOverrides {
-		fn(cmd, &deleteConversationReq)
 	}
 
 	return cmd
@@ -966,65 +903,6 @@ func newStartConversation() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range startConversationOverrides {
 		fn(cmd, &startConversationReq)
-	}
-
-	return cmd
-}
-
-// start trash-space command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var trashSpaceOverrides []func(
-	*cobra.Command,
-	*dashboards.GenieTrashSpaceRequest,
-)
-
-func newTrashSpace() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var trashSpaceReq dashboards.GenieTrashSpaceRequest
-
-	cmd.Use = "trash-space SPACE_ID"
-	cmd.Short = `Trash Genie Space.`
-	cmd.Long = `Trash Genie Space.
-  
-  Trash a Genie Space.
-
-  Arguments:
-    SPACE_ID: The ID associated with the Genie space to be trashed.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		trashSpaceReq.SpaceId = args[0]
-
-		err = w.Genie.TrashSpace(ctx, trashSpaceReq)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range trashSpaceOverrides {
-		fn(cmd, &trashSpaceReq)
 	}
 
 	return cmd

@@ -303,8 +303,6 @@ func newGetIndex() *cobra.Command {
 
 	var getIndexReq vectorsearch.GetIndexRequest
 
-	cmd.Flags().BoolVar(&getIndexReq.EnsureRerankerCompatible, "ensure-reranker-compatible", getIndexReq.EnsureRerankerCompatible, `If true, the URL returned for the index is guaranteed to be compatible with the reranker.`)
-
 	cmd.Use = "get-index INDEX_NAME"
 	cmd.Short = `Get an index.`
 	cmd.Long = `Get an index.
@@ -423,7 +421,6 @@ func newQueryIndex() *cobra.Command {
 	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
 	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `The query type to use.`)
 	// TODO: array: query_vector
-	// TODO: complex arg: reranker
 	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Threshold for the approximate nearest neighbor search.`)
 
 	cmd.Use = "query-index INDEX_NAME"
