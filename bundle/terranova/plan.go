@@ -25,7 +25,7 @@ type Planner struct {
 func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
 	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
 
-	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
+	resource, cfgType, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
 	if err != nil {
 		return "", err
 	}
@@ -41,7 +41,7 @@ func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionT
 		return "", errors.New("invalid state: empty id")
 	}
 
-	savedState, err := typeConvert(resource.GetType(), entry.State)
+	savedState, err := typeConvert(cfgType, entry.State)
 	if err != nil {
 		return "", fmt.Errorf("interpreting state: %w", err)
 	}

@@ -2,7 +2,6 @@ package tnresources
 
 import (
 	"context"
-	"reflect"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -85,12 +84,6 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 	// Unset AccessControlList
 	err := copyViaJSON(&result, config)
 	return result, err
-}
-
-var jobSettingsType = reflect.TypeOf(jobs.JobSettings{})
-
-func (r *ResourceJob) GetType() reflect.Type {
-	return jobSettingsType
 }
 
 func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
