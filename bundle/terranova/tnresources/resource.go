@@ -83,20 +83,20 @@ func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, c
 	return res, nil
 }
 
-func New(client *databricks.WorkspaceClient, section, name string, config any) (IResource, reflect.Type, error) {
-	ctor, ok := supportedResources[section]
+func New(client *databricks.WorkspaceClient, group, name string, config any) (IResource, reflect.Type, error) {
+	ctor, ok := supportedResources[group]
 	if !ok {
-		return nil, nil, fmt.Errorf("unsupported resource type: %s", section)
+		return nil, nil, fmt.Errorf("unsupported resource type: %s", group)
 	}
 
-	cfgType, ok := supportedResourcesTypes[section]
+	cfgType, ok := supportedResourcesTypes[group]
 	if !ok {
-		return nil, nil, fmt.Errorf("unsupported resource type: %s", section)
+		return nil, nil, fmt.Errorf("unsupported resource type: %s", group)
 	}
 
 	// Disallow nil configs (including typed nil pointers).
 	if config == nil {
-		return nil, nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
+		return nil, nil, fmt.Errorf("unexpected nil in config: %s.%s", group, name)
 	}
 
 	// If the supplied config is a pointer value, dereference it so that we pass
@@ -105,7 +105,7 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 	v := reflect.ValueOf(config)
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
-			return nil, nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
+			return nil, nil, fmt.Errorf("unexpected nil in config: %s.%s", group, name)
 		}
 	}
 

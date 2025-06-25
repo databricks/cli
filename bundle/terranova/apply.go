@@ -64,10 +64,9 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 
 		d := Deployer{
-			client: client,
-			db:     &b.ResourceDatabase,
-			// TODO: rename section to Group
-			section:      node.Group,
+			client:       client,
+			db:           &b.ResourceDatabase,
+			group:        node.Group,
 			resourceName: node.Name,
 		}
 
@@ -93,7 +92,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 type Deployer struct {
 	client       *databricks.WorkspaceClient
 	db           *tnstate.TerranovaState
-	section      string
+	group        string
 	resourceName string
 }
 
@@ -101,26 +100,26 @@ func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deplo
 	if actionType == deployplan.ActionTypeDelete {
 		err := d.destroy(ctx, inputConfig)
 		if err != nil {
-			return fmt.Errorf("destroying %s.%s: %w", d.section, d.resourceName, err)
+			return fmt.Errorf("destroying %s.%s: %w", d.group, d.resourceName, err)
 		}
 		return nil
 	}
 
 	err := d.deploy(ctx, inputConfig, actionType)
 	if err != nil {
-		return fmt.Errorf("deploying %s.%s: %w", d.section, d.resourceName, err)
+		return fmt.Errorf("deploying %s.%s: %w", d.group, d.resourceName, err)
 	}
 	return nil
 }
 
 func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
-	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
+	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 	if !hasEntry {
-		log.Infof(ctx, "%s.%s: Cannot delete, missing from state", d.section, d.resourceName)
+		log.Infof(ctx, "%s.%s: Cannot delete, missing from state", d.group, d.resourceName)
 		return nil
 	}
 
-	resource, _, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
+	resource, _, err := tnresources.New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return err
 	}
@@ -138,9 +137,9 @@ func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
 }
 
 func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
-	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
+	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 
-	resource, cfgType, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
+	resource, cfgType, err := tnresources.New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return err
 	}
@@ -182,7 +181,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deplo
 
 	// localDiffType is either None or Partial: we should proceed to fetching remote state and calculate local+remote diff
 
-	log.Debugf(ctx, "Unchanged %s.%s id=%#v", d.section, d.resourceName, oldID)
+	log.Debugf(ctx, "Unchanged %s.%s id=%#v", d.group, d.resourceName, oldID)
 	return nil
 }
 
@@ -192,9 +191,9 @@ func (d *Deployer) Create(ctx context.Context, resource tnresources.IResource, c
 		return fmt.Errorf("creating: %w", err)
 	}
 
-	log.Infof(ctx, "Created %s.%s id=%#v", d.section, d.resourceName, newID)
+	log.Infof(ctx, "Created %s.%s id=%#v", d.group, d.resourceName, newID)
 
-	err = d.db.SaveState(d.section, d.resourceName, newID, config)
+	err = d.db.SaveState(d.group, d.resourceName, newID, config)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -213,12 +212,12 @@ func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResour
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	err = d.db.SaveState(d.section, d.resourceName, "", nil)
+	err = d.db.SaveState(d.group, d.resourceName, "", nil)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
-	newResource, _, err := tnresources.New(d.client, d.section, d.resourceName, config)
+	newResource, _, err := tnresources.New(d.client, d.group, d.resourceName, config)
 	if err != nil {
 		return fmt.Errorf("initializing: %w", err)
 	}
@@ -228,8 +227,8 @@ func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResour
 		return fmt.Errorf("re-creating: %w", err)
 	}
 
-	log.Warnf(ctx, "Re-created %s.%s id=%#v (previously %#v)", d.section, d.resourceName, newID, oldID)
-	err = d.db.SaveState(d.section, d.resourceName, newID, config)
+	log.Warnf(ctx, "Re-created %s.%s id=%#v (previously %#v)", d.group, d.resourceName, newID, oldID)
+	err = d.db.SaveState(d.group, d.resourceName, newID, config)
 	if err != nil {
 		return fmt.Errorf("saving state for id=%s: %w", newID, err)
 	}
@@ -249,12 +248,12 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 	}
 
 	if oldID != newID {
-		log.Infof(ctx, "Updated %s.%s id=%#v (previously %#v)", d.section, d.resourceName, newID, oldID)
+		log.Infof(ctx, "Updated %s.%s id=%#v (previously %#v)", d.group, d.resourceName, newID, oldID)
 	} else {
-		log.Infof(ctx, "Updated %s.%s id=%#v", d.section, d.resourceName, newID)
+		log.Infof(ctx, "Updated %s.%s id=%#v", d.group, d.resourceName, newID)
 	}
 
-	err = d.db.SaveState(d.section, d.resourceName, newID, config)
+	err = d.db.SaveState(d.group, d.resourceName, newID, config)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -273,7 +272,7 @@ func (d *Deployer) Delete(ctx context.Context, resource tnresources.IResource, o
 		return fmt.Errorf("deleting id=%s: %w", oldID, err)
 	}
 
-	err = d.db.DeleteState(d.section, d.resourceName)
+	err = d.db.DeleteState(d.group, d.resourceName)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
 	}
