@@ -9,7 +9,6 @@ import (
 	"path"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
@@ -457,13 +456,6 @@ func TestFilerWorkspaceNotebook(t *testing.T) {
 			// Try uploading the notebook again with overwrite flag. This time it should succeed.
 			err = f.Write(ctx, tc.name, strings.NewReader(tc.content2), filer.OverwriteIfExists)
 			require.NoError(t, err)
-
-			// @pietern on 2025-06-23: We're debugging a read-after-write delay on GCP.
-			// Include sleep to make tests pass...
-			if testutil.GetCloud(t) == testutil.GCP {
-				t.Logf("Running on GCP; sleeping for 5 seconds to make tests pass...")
-				time.Sleep(5 * time.Second)
-			}
 
 			// Assert contents after second upload
 			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected2)
