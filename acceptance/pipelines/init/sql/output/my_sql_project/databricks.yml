@@ -1,8 +1,8 @@
-# This is a Databricks pipelines definition for {{.project_name}}.
+# This is a Databricks pipelines definition for my_sql_project.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
-  name: {{.project_name}}
-  uuid: {{bundle_uuid}}
+  name: my_sql_project
+  uuid: [UUID]
 
 include:
   - resources/*.yml
@@ -27,22 +27,22 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{workspace_host}}
+      host: [DATABRICKS_URL]
     variables:
-      catalog: {{.default_catalog}}
-      schema: {{template `dev_schema` .}}
+      catalog: main
+      schema: shared_dev
       notifications: []
 
   prod:
     mode: production
     workspace:
-      host: {{workspace_host}}
-      # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
-      root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+      host: [DATABRICKS_URL]
+      # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+      root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     permissions:
-      - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
+      - user_name: [USERNAME]
         level: CAN_MANAGE
     variables:
-      catalog: {{.default_catalog}}
-      schema: {{template `prod_schema` .}}
-      notifications: [{{user_name}}]
+      catalog: main
+      schema: shared_dev
+      notifications: [[USERNAME]]

@@ -3,8 +3,18 @@
 >>> errcode [CLI] install-pipelines-cli -d ./subdir
 pipelines successfully installed in directory "./subdir"
 
+=== Test with missing config file
+>>> errcode ./subdir/pipelines init --output-dir output
+
+Welcome to the template for pipelines!
+
+
+Your new project has been created in the 'my_project' directory!
+
+Refer to the README.md file for "getting started" instructions!
+
 === Test with invalid project name (contains uppercase letters)
->>> errcode ./subdir/pipelines init --config-file ./invalid_input.json --output-dir output
+>>> errcode ./subdir/pipelines init --config-file ./invalid_input.json --output-dir invalid-output
 Error: failed to load config from file ./invalid_input.json: invalid value for project_name: "InvalidProjectName". Name must consist of lower case letters, numbers, and underscores.
 Usage:
   pipelines init [flags]
@@ -24,18 +34,8 @@ Error: failed to load config from file ./invalid_input.json: invalid value for p
 
 Exit code: 1
 
-=== Test with missing config file
->>> errcode ./subdir/pipelines init --output-dir output
-
-Welcome to the template for pipelines!
-
-
-Your new project has been created in the 'pipelines_project' directory!
-
-Refer to the README.md file for "getting started" instructions!
-
 === Test with non-existent config file
->>> errcode ./subdir/pipelines init --config-file ./nonexistent.json --output-dir output
+>>> errcode ./subdir/pipelines init --config-file ./nonexistent.json --output-dir invalid-output-2
 Error: failed to load config from file ./nonexistent.json: open ./nonexistent.json: no such file or directory
 Usage:
   pipelines init [flags]

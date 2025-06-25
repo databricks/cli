@@ -1,2 +1,2 @@
 [format]
-exclude = ["*.py"]
+exclude = ["*.py", ".ipynb"]
