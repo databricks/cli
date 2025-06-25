@@ -14,3 +14,8 @@ MSYS_NO_PATHCONV = "1"
 [[Repls]]
 Old = "[0-9a-z]{16,}"
 New = "[ALPHANUMID]"
+
+# Remove newlines and extra spaces from the output which is present in GCP
+[[Repls]]
+Old = "\\n\\s+"
+New = ""
