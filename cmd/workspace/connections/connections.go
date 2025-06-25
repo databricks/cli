@@ -69,7 +69,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateConnection
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
@@ -141,8 +140,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteConnectionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a connection.`
 	cmd.Long = `Delete a connection.
@@ -210,8 +207,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetConnectionRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a connection.`
@@ -281,8 +276,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListConnectionsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of connections to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -335,7 +328,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateConnection
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)

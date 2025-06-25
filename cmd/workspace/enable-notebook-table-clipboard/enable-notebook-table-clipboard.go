@@ -49,8 +49,6 @@ var getEnableNotebookTableClipboardOverrides []func(
 func newGetEnableNotebookTableClipboard() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "get-enable-notebook-table-clipboard"
 	cmd.Short = `Get the Results Table Clipboard features setting.`
 	cmd.Long = `Get the Results Table Clipboard features setting.
@@ -97,7 +95,6 @@ func newPatchEnableNotebookTableClipboard() *cobra.Command {
 	var patchEnableNotebookTableClipboardReq settings.UpdateEnableNotebookTableClipboardRequest
 	var patchEnableNotebookTableClipboardJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchEnableNotebookTableClipboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-notebook-table-clipboard"

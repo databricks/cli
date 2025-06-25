@@ -49,8 +49,6 @@ var getEnableExportNotebookOverrides []func(
 func newGetEnableExportNotebook() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "get-enable-export-notebook"
 	cmd.Short = `Get the Notebook and File exporting setting.`
 	cmd.Long = `Get the Notebook and File exporting setting.
@@ -97,7 +95,6 @@ func newPatchEnableExportNotebook() *cobra.Command {
 	var patchEnableExportNotebookReq settings.UpdateEnableExportNotebookRequest
 	var patchEnableExportNotebookJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchEnableExportNotebookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-export-notebook"

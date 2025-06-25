@@ -73,7 +73,6 @@ func newCreate() *cobra.Command {
 	var createReq provisioning.CreateCustomerManagedKeyRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_key_info
@@ -156,8 +155,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq provisioning.DeleteEncryptionKeyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete CUSTOMER_MANAGED_KEY_ID"
 	cmd.Short = `Delete encryption key configuration.`
 	cmd.Long = `Delete encryption key configuration.
@@ -214,8 +211,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq provisioning.GetEncryptionKeyRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get CUSTOMER_MANAGED_KEY_ID"
 	cmd.Short = `Get encryption key configuration.`
@@ -283,8 +278,6 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	// TODO: short flags
 
 	cmd.Use = "list"
 	cmd.Short = `Get all encryption key configurations.`

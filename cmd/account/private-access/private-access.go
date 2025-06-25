@@ -59,7 +59,6 @@ func newCreate() *cobra.Command {
 	var createReq provisioning.UpsertPrivateAccessSettingsRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
@@ -162,8 +161,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq provisioning.DeletePrivateAccesRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Delete a private access settings object.`
 	cmd.Long = `Delete a private access settings object.
@@ -239,8 +236,6 @@ func newGet() *cobra.Command {
 
 	var getReq provisioning.GetPrivateAccesRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Get a private access settings object.`
 	cmd.Long = `Get a private access settings object.
@@ -313,8 +308,6 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "list"
 	cmd.Short = `Get all private access settings objects.`
 	cmd.Long = `Get all private access settings objects.
@@ -362,7 +355,6 @@ func newReplace() *cobra.Command {
 	var replaceReq provisioning.UpsertPrivateAccessSettingsRequest
 	var replaceJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids

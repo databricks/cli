@@ -146,7 +146,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- if .RequestBodyField -}}
 	{{- $request = .RequestBodyField.Entity -}}
 	{{- end -}}
-    {{if $request }}// TODO: short flags
+    {{if $request }}
 	{{- if $canUseJson}}
 	cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
 	{{- end}}

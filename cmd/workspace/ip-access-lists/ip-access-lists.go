@@ -80,7 +80,6 @@ func newCreate() *cobra.Command {
 	var createReq settings.CreateIpAccessList
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: ip_addresses
@@ -190,8 +189,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteIpAccessListRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete IP_ACCESS_LIST_ID"
 	cmd.Short = `Delete access list.`
 	cmd.Long = `Delete access list.
@@ -260,8 +257,6 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetIpAccessListRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get IP_ACCESS_LIST_ID"
 	cmd.Short = `Get access list.`
 	cmd.Long = `Get access list.
@@ -327,8 +322,6 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "list"
 	cmd.Short = `Get access lists.`
 	cmd.Long = `Get access lists.
@@ -372,7 +365,6 @@ func newReplace() *cobra.Command {
 	var replaceReq settings.ReplaceIpAccessList
 	var replaceJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: ip_addresses
@@ -488,7 +480,6 @@ func newUpdate() *cobra.Command {
 	var updateReq settings.UpdateIpAccessList
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)

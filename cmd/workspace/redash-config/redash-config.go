@@ -50,8 +50,6 @@ var getConfigOverrides []func(
 func newGetConfig() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "get-config"
 	cmd.Short = `Read workspace configuration for Redash-v2.`
 	cmd.Long = `Read workspace configuration for Redash-v2.`

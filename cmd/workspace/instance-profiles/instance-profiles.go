@@ -63,7 +63,6 @@ func newAdd() *cobra.Command {
 	var addReq compute.AddInstanceProfile
 	var addJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&addJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
@@ -152,7 +151,6 @@ func newEdit() *cobra.Command {
 	var editReq compute.InstanceProfile
 	var editJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
@@ -247,8 +245,6 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "list"
 	cmd.Short = `List available instance profiles.`
 	cmd.Long = `List available instance profiles.
@@ -294,7 +290,6 @@ func newRemove() *cobra.Command {
 	var removeReq compute.RemoveInstanceProfile
 	var removeJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&removeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "remove INSTANCE_PROFILE_ARN"

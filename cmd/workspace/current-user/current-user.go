@@ -48,8 +48,6 @@ var meOverrides []func(
 func newMe() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "me"
 	cmd.Short = `Get current user info.`
 	cmd.Long = `Get current user info.

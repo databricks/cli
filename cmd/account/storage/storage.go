@@ -63,7 +63,6 @@ func newCreate() *cobra.Command {
 	var createReq provisioning.CreateStorageConfigurationRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -136,8 +135,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq provisioning.DeleteStorageRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete STORAGE_CONFIGURATION_ID"
 	cmd.Short = `Delete storage configuration.`
 	cmd.Long = `Delete storage configuration.
@@ -207,8 +204,6 @@ func newGet() *cobra.Command {
 
 	var getReq provisioning.GetStorageRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get STORAGE_CONFIGURATION_ID"
 	cmd.Short = `Get storage configuration.`
 	cmd.Long = `Get storage configuration.
@@ -273,8 +268,6 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	// TODO: short flags
 
 	cmd.Use = "list"
 	cmd.Short = `Get all storage configurations.`

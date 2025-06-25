@@ -67,7 +67,6 @@ func newCreate() *cobra.Command {
 	var createReq compute.GlobalInitScriptCreateRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.Enabled, "enabled", createReq.Enabled, `Specifies whether the script is enabled.`)
@@ -154,8 +153,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq compute.DeleteGlobalInitScriptRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete SCRIPT_ID"
 	cmd.Short = `Delete init script.`
 	cmd.Long = `Delete init script.
@@ -224,8 +221,6 @@ func newGet() *cobra.Command {
 
 	var getReq compute.GetGlobalInitScriptRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get SCRIPT_ID"
 	cmd.Short = `Get an init script.`
 	cmd.Long = `Get an init script.
@@ -291,8 +286,6 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "list"
 	cmd.Short = `Get init scripts.`
 	cmd.Long = `Get init scripts.
@@ -339,7 +332,6 @@ func newUpdate() *cobra.Command {
 	var updateReq compute.GlobalInitScriptUpdateRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether the script is enabled.`)

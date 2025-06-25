@@ -63,8 +63,6 @@ func newCancelOptimize() *cobra.Command {
 
 	var cancelOptimizeReq aibuilder.CancelCustomLlmOptimizationRunRequest
 
-	// TODO: short flags
-
 	cmd.Use = "cancel-optimize ID"
 	cmd.Short = `Cancel a Custom LLM Optimization Run.`
 	cmd.Long = `Cancel a Custom LLM Optimization Run.`
@@ -117,7 +115,6 @@ func newCreateCustomLlm() *cobra.Command {
 	var createCustomLlmReq aibuilder.CreateCustomLlmRequest
 	var createCustomLlmJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createCustomLlmJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createCustomLlmReq.AgentArtifactPath, "agent-artifact-path", createCustomLlmReq.AgentArtifactPath, `Optional: UC path for agent artifacts.`)
@@ -203,8 +200,6 @@ func newDeleteCustomLlm() *cobra.Command {
 
 	var deleteCustomLlmReq aibuilder.DeleteCustomLlmRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-custom-llm ID"
 	cmd.Short = `Delete a Custom LLM.`
 	cmd.Long = `Delete a Custom LLM.
@@ -259,8 +254,6 @@ func newGetCustomLlm() *cobra.Command {
 
 	var getCustomLlmReq aibuilder.GetCustomLlmRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-custom-llm ID"
 	cmd.Short = `Get a Custom LLM.`
 	cmd.Long = `Get a Custom LLM.
@@ -314,8 +307,6 @@ func newStartOptimize() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var startOptimizeReq aibuilder.StartCustomLlmOptimizationRunRequest
-
-	// TODO: short flags
 
 	cmd.Use = "start-optimize ID"
 	cmd.Short = `Start a Custom LLM Optimization Run.`
@@ -372,7 +363,6 @@ func newUpdateCustomLlm() *cobra.Command {
 	var updateCustomLlmReq aibuilder.UpdateCustomLlmRequest
 	var updateCustomLlmJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateCustomLlmJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-custom-llm ID"

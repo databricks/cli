@@ -52,8 +52,6 @@ var createOverrides []func(
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "create"
 	cmd.Short = `Create provider analytics dashboard.`
 	cmd.Long = `Create provider analytics dashboard.
@@ -97,8 +95,6 @@ var getOverrides []func(
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "get"
 	cmd.Short = `Get provider analytics dashboard.`
 	cmd.Long = `Get provider analytics dashboard.`
@@ -138,8 +134,6 @@ var getLatestVersionOverrides []func(
 
 func newGetLatestVersion() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	// TODO: short flags
 
 	cmd.Use = "get-latest-version"
 	cmd.Short = `Get latest version of provider analytics dashboard.`
@@ -185,7 +179,6 @@ func newUpdate() *cobra.Command {
 	var updateReq marketplace.UpdateProviderAnalyticsDashboardRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Int64Var(&updateReq.Version, "version", updateReq.Version, `this is the version of the dashboard template we want to update our user to current expectation is that it should be equal to latest version of the dashboard template.`)

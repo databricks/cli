@@ -69,8 +69,6 @@ var allClusterStatusesOverrides []func(
 func newAllClusterStatuses() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "all-cluster-statuses"
 	cmd.Short = `Get all statuses.`
 	cmd.Long = `Get all statuses.
@@ -113,8 +111,6 @@ func newClusterStatus() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var clusterStatusReq compute.ClusterStatus
-
-	// TODO: short flags
 
 	cmd.Use = "cluster-status CLUSTER_ID"
 	cmd.Short = `Get status.`
@@ -176,7 +172,6 @@ func newInstall() *cobra.Command {
 	var installReq compute.InstallLibraries
 	var installJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&installJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "install"
@@ -242,7 +237,6 @@ func newUninstall() *cobra.Command {
 	var uninstallReq compute.UninstallLibraries
 	var uninstallJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&uninstallJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "uninstall"

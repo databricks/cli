@@ -86,8 +86,6 @@ func newBuildLogs() *cobra.Command {
 
 	var buildLogsReq serving.BuildLogsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "build-logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get build logs for a served model.`
 	cmd.Long = `Get build logs for a served model.
@@ -154,7 +152,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach NOT_UPDATING state`)
 	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: ai_gateway
@@ -260,7 +258,7 @@ func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createProvisionedThroughputEndpointSkipWait, "no-wait", createProvisionedThroughputEndpointSkipWait, `do not wait to reach NOT_UPDATING state`)
 	cmd.Flags().DurationVar(&createProvisionedThroughputEndpointTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createProvisionedThroughputEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: ai_gateway
@@ -339,8 +337,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq serving.DeleteServingEndpointRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a serving endpoint.`
 	cmd.Long = `Delete a serving endpoint.`
@@ -391,8 +387,6 @@ func newExportMetrics() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var exportMetricsReq serving.ExportMetricsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "export-metrics NAME"
 	cmd.Short = `Get metrics of a serving endpoint.`
@@ -453,8 +447,6 @@ func newGet() *cobra.Command {
 
 	var getReq serving.GetServingEndpointRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a single serving endpoint.`
 	cmd.Long = `Get a single serving endpoint.
@@ -510,8 +502,6 @@ func newGetOpenApi() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getOpenApiReq serving.GetOpenApiRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-open-api NAME"
 	cmd.Short = `Get the schema for a serving endpoint.`
@@ -573,8 +563,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq serving.GetServingEndpointPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permission levels.`
 	cmd.Long = `Get serving endpoint permission levels.
@@ -630,8 +618,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq serving.GetServingEndpointPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permissions.`
@@ -689,8 +675,6 @@ func newHttpRequest() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var httpRequestReq serving.ExternalFunctionRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&httpRequestReq.Headers, "headers", httpRequestReq.Headers, `Additional headers for the request.`)
 	cmd.Flags().StringVar(&httpRequestReq.Json, "json", httpRequestReq.Json, `The JSON payload to send in the request body.`)
@@ -760,8 +744,6 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "list"
 	cmd.Short = `Get all serving endpoints.`
 	cmd.Long = `Get all serving endpoints.`
@@ -801,8 +783,6 @@ func newLogs() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var logsReq serving.LogsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get the latest logs for a served model.`
@@ -865,7 +845,6 @@ func newPatch() *cobra.Command {
 	var patchReq serving.PatchServingEndpointTags
 	var patchJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: add_tags
@@ -942,7 +921,6 @@ func newPut() *cobra.Command {
 	var putReq serving.PutRequest
 	var putJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&putJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: rate_limits
@@ -1017,7 +995,6 @@ func newPutAiGateway() *cobra.Command {
 	var putAiGatewayReq serving.PutAiGatewayRequest
 	var putAiGatewayJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&putAiGatewayJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: fallback_config
@@ -1098,7 +1075,6 @@ func newQuery() *cobra.Command {
 	var queryReq serving.QueryEndpointInput
 	var queryJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&queryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: dataframe_records
@@ -1182,7 +1158,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq serving.ServingEndpointPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -1263,7 +1238,7 @@ func newUpdateConfig() *cobra.Command {
 
 	cmd.Flags().BoolVar(&updateConfigSkipWait, "no-wait", updateConfigSkipWait, `do not wait to reach NOT_UPDATING state`)
 	cmd.Flags().DurationVar(&updateConfigTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&updateConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: auto_capture_config
@@ -1356,7 +1331,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq serving.ServingEndpointPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -1436,7 +1410,7 @@ func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
 
 	cmd.Flags().BoolVar(&updateProvisionedThroughputEndpointConfigSkipWait, "no-wait", updateProvisionedThroughputEndpointConfigSkipWait, `do not wait to reach NOT_UPDATING state`)
 	cmd.Flags().DurationVar(&updateProvisionedThroughputEndpointConfigTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&updateProvisionedThroughputEndpointConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-provisioned-throughput-endpoint-config NAME"

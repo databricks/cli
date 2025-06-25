@@ -61,8 +61,6 @@ var listOverrides []func(
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "list"
 	cmd.Short = `Get a list of SQL warehouses.`
 	cmd.Long = `Get a list of SQL warehouses.

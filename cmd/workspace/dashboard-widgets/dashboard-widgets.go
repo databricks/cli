@@ -62,7 +62,6 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateWidget
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -126,8 +125,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteDashboardWidgetRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove widget.`
 	cmd.Long = `Remove widget.
@@ -185,7 +182,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.CreateWidget
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"

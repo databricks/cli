@@ -49,8 +49,6 @@ var getEnableResultsDownloadingOverrides []func(
 func newGetEnableResultsDownloading() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	// TODO: short flags
-
 	cmd.Use = "get-enable-results-downloading"
 	cmd.Short = `Get the Notebook results download setting.`
 	cmd.Long = `Get the Notebook results download setting.
@@ -97,7 +95,6 @@ func newPatchEnableResultsDownloading() *cobra.Command {
 	var patchEnableResultsDownloadingReq settings.UpdateEnableResultsDownloadingRequest
 	var patchEnableResultsDownloadingJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchEnableResultsDownloadingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-results-downloading"
