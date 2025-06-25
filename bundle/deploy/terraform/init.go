@@ -162,7 +162,7 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	// This is necessary to ensure that Terraform can use the same OIDC token as the CLI.
 	oidcTokenEnv, ok := env.Lookup(ctx, "DATABRICKS_OIDC_TOKEN_ENV")
 	if ok {
-		environ["DATABRICKS_OIDC_TOKEN_ENV"] = env.Get(ctx, "DATABRICKS_OIDC_TOKEN_ENV")
+		environ["DATABRICKS_OIDC_TOKEN_ENV"] = oidcTokenEnv
 	} else {
 		oidcTokenEnv = "DATABRICKS_OIDC_TOKEN"
 	}
