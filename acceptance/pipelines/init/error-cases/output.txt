@@ -20,9 +20,9 @@ Usage:
   pipelines init [flags]
 
 Flags:
-      --config-file string   JSON file containing key value pairs of input parameters required for template initialization
+      --config-file string   JSON file containing key value pairs of input parameters required for template initialization.
   -h, --help                 help for init
-      --output-dir string    Directory to write the initialized template to
+      --output-dir string    Directory to write the initialized template to.
 
 Global Flags:
       --debug            enable debug logging
@@ -41,9 +41,9 @@ Usage:
   pipelines init [flags]
 
 Flags:
-      --config-file string   JSON file containing key value pairs of input parameters required for template initialization
+      --config-file string   JSON file containing key value pairs of input parameters required for template initialization.
   -h, --help                 help for init
-      --output-dir string    Directory to write the initialized template to
+      --output-dir string    Directory to write the initialized template to.
 
 Global Flags:
       --debug            enable debug logging
