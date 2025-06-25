@@ -105,6 +105,9 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
+	if os.Getenv("CLOUD_ENV") != "" {
+		t.Skip("No need to run this as integration test.")
+	}
 
 	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
 	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
