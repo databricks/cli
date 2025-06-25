@@ -7,10 +7,7 @@
       "bundle_root_path": "."
     },
     "name": "foobar",
-    "target": "default",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    }
+    "target": "default"
   },
   "resources": {
     "jobs": {

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -30,18 +31,34 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	tf := b.Terraform
-	if tf == nil {
-		return false, errors.New("terraform not initialized")
+func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
+	if b.DirectDeployment {
+		return terranova.CalculateDestroyActions(ctx, b)
 	}
 
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.Path)
+	tf := b.Terraform
+
+	if tf == nil {
+		return nil, errors.New("terraform not initialized")
+	}
+
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
+	if err != nil {
+		return nil, err
+	}
+
+	deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
+
+	return deleteActions, nil
+}
+
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+	deleteActions, err := getDeleteActions(ctx, b)
 	if err != nil {
 		return false, err
 	}
 
-	deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
+	b.Plan.Actions = deleteActions
 
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
@@ -68,11 +85,20 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 }
 
 func destroyCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Core destructive mutators for destroy. These require informed user consent.
-	diags := bundle.ApplySeq(ctx, b,
-		terraform.Apply(),
-		files.Delete(),
-	)
+	var diags diag.Diagnostics
+
+	if b.DirectDeployment {
+		diags = bundle.Apply(ctx, b, terranova.TerranovaApply())
+	} else {
+		// Core destructive mutators for destroy. These require informed user consent.
+		diags = bundle.Apply(ctx, b, terraform.Apply())
+	}
+
+	if diags.HasError() {
+		return diags
+	}
+
+	diags = diags.Extend(bundle.Apply(ctx, b, files.Delete()))
 
 	if !diags.HasError() {
 		cmdio.LogString(ctx, "Destroy complete!")
@@ -104,12 +130,24 @@ func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDestroy)))
 	}()
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		statemgmt.StatePull(),
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Plan(terraform.PlanGoal("destroy")),
-	))
+	diags = diags.Extend(bundle.Apply(ctx, b, statemgmt.StatePull()))
+	if diags.HasError() {
+		return diags
+	}
+
+	if b.DirectDeployment {
+		err := b.OpenResourceDatabase(ctx)
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+			return diags
+		}
+	} else {
+		diags = diags.Extend(bundle.ApplySeq(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Plan(terraform.PlanGoal("destroy")),
+		))
+	}
 
 	if diags.HasError() {
 		return diags

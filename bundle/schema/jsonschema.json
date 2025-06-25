@@ -306,6 +306,10 @@
                         "description": "The ID of the cluster policy used to create the cluster if applicable.",
                         "$ref": "#/$defs/string"
                       },
+                      "remote_disk_throughput": {
+                        "description": "If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+                        "$ref": "#/$defs/int"
+                      },
                       "runtime_engine": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.RuntimeEngine"
                       },
@@ -328,6 +332,10 @@
                       "ssh_public_keys": {
                         "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
                         "$ref": "#/$defs/slice/string"
+                      },
+                      "total_initial_remote_disk_size": {
+                        "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+                        "$ref": "#/$defs/int"
                       },
                       "use_ml_runtime": {
                         "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.",
@@ -1012,6 +1020,12 @@
                       "edition": {
                         "description": "Pipeline product edition.",
                         "$ref": "#/$defs/string"
+                      },
+                      "environment": {
+                        "description": "Environment specification for this pipeline used to install dependencies.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "event_log": {
                         "description": "Event log configuration for this pipeline",
@@ -1840,14 +1854,6 @@
                     "enabled": {
                       "description": "Whether or not PyDABs (Private Preview) is enabled",
                       "$ref": "#/$defs/bool"
-                    },
-                    "import": {
-                      "description": "The PyDABs project to import to discover resources, resource generator and mutators",
-                      "$ref": "#/$defs/slice/string"
-                    },
-                    "venv_path": {
-                      "description": "The Python virtual environment path",
-                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -3182,6 +3188,10 @@
                       "description": "The ID of the cluster policy used to create the cluster if applicable.",
                       "$ref": "#/$defs/string"
                     },
+                    "remote_disk_throughput": {
+                      "description": "If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+                      "$ref": "#/$defs/int"
+                    },
                     "runtime_engine": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.RuntimeEngine"
                     },
@@ -3204,6 +3214,10 @@
                     "ssh_public_keys": {
                       "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
                       "$ref": "#/$defs/slice/string"
+                    },
+                    "total_initial_remote_disk_size": {
+                      "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+                      "$ref": "#/$defs/int"
                     },
                     "use_ml_runtime": {
                       "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.",
@@ -4018,6 +4032,7 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Deprecated in favor of DbtPlatformTask",
                   "properties": {
                     "connection_resource_name": {
                       "description": "The resource name of the UC connection that authenticates the dbt Cloud for this task",
@@ -4026,6 +4041,28 @@
                     "dbt_cloud_job_id": {
                       "description": "Id of the dbt Cloud job to be triggered",
                       "$ref": "#/$defs/int64"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.DbtPlatformTask": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "connection_resource_name": {
+                      "description": "The resource name of the UC connection that authenticates the dbt platform for this task",
+                      "$ref": "#/$defs/string"
+                    },
+                    "dbt_platform_job_id": {
+                      "description": "Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -5410,8 +5447,15 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask"
                     },
                     "dbt_cloud_task": {
-                      "description": "Task type for dbt cloud",
+                      "description": "Task type for dbt cloud, deprecated in favor of the new name dbt_platform_task",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DbtCloudTask",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "dbt_platform_task": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DbtPlatformTask",
                       "x-databricks-preview": "PRIVATE",
                       "doNotSuggest": true
                     },
@@ -6313,6 +6357,25 @@
                     },
                     "manual": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.PipelinesEnvironment": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
+                  "properties": {
+                    "dependencies": {
+                      "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e",
+                      "$ref": "#/$defs/slice/string"
                     }
                   },
                   "additionalProperties": false
