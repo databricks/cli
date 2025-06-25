@@ -12,7 +12,7 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
-  deploy      Deploy bundle
+  deploy      Deploy pipelines
   help        Help about any command
 
 Flags:
@@ -44,7 +44,7 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
-  deploy      Deploy bundle
+  deploy      Deploy pipelines
   help        Help about any command
 
 Flags:
