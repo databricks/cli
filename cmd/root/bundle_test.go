@@ -109,7 +109,7 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 	require.NoError(t, err)
 
 	err = setupWithHost(t, cmd, "https://x.com")
-	assert.ErrorContains(t, err, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com")
+	assert.ErrorContains(t, err, "the host in the profile (https://a.com) doesn’t match the host configured in the bundle (https://x.com)")
 }
 
 func TestBundleConfigureWithCorrectProfile(t *testing.T) {
@@ -132,7 +132,7 @@ func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
 	cmd := emptyCommand(t)
 
 	err := setupWithHost(t, cmd, "https://x.com")
-	assert.ErrorContains(t, err, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com")
+	assert.ErrorContains(t, err, "the host in the profile (https://a.com) doesn’t match the host configured in the bundle (https://x.com)")
 }
 
 func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {

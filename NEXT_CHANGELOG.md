@@ -9,6 +9,7 @@
 ### CLI
 
 ### Bundles
+* Improve error message for host mismatch between bundle and profile used ([#3100](https://github.com/databricks/cli/pull/3100))
 * Remove support for deprecated `experimental/pydabs` config, use `experimental/python` instead. See [Configuration in Python
 ](https://docs.databricks.com/dev-tools/bundles/python). ([#3102](https://github.com/databricks/cli/pull/3102))
 
