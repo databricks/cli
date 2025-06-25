@@ -1,7 +1,8 @@
 # This is a Databricks pipelines definition for my_sql_pipelines_project.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
-project:
+bundle:
   name: my_sql_pipelines_project
+  uuid: [UUID]
 
 include:
   - resources/*.yml

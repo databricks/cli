@@ -1,7 +1,8 @@
 # This is a Databricks pipelines definition for pipelines_project.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
-project:
+bundle:
   name: pipelines_project
+  uuid: [UUID]
 
 include:
   - resources/*.yml
