@@ -125,7 +125,7 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 			expectedClusterID: "cluster-from-config",
 		},
 		{
-			name:              "empty profile",
+			name:              "profile does not exist",
 			profile:           "no-profile",
 			configFileEnv:     "./testdata/.databrickscfg",
 			expectedHost:      "",
