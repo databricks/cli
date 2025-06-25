@@ -1,7 +1,6 @@
 package pipelines
 
 import (
-	bundlecmd "github.com/databricks/cli/cmd/bundle"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +14,7 @@ func New() *cobra.Command {
 		},
 	}
 
-	bundlecmd.InitVariableFlag(cmd)
+	initVariableFlag(cmd)
 	cmd.AddCommand(Deploy())
 
 	return cmd

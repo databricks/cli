@@ -1,4 +1,4 @@
-package bundle
+package pipelines
 
 import (
 	"github.com/spf13/cobra"

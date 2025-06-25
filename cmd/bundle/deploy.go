@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewDeployCommand() *cobra.Command {
+func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy bundle",
