@@ -55,8 +55,12 @@ For more information about filesystem mirrors, see the Terraform documentation: 
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		tv, err := terraform.NewTerraformMetadata(cmd.Context())
+		if err != nil {
+			return err
+		}
 		dependencies := &Dependencies{
-			Terraform: terraform.NewTerraformMetadata(),
+			Terraform: tv,
 		}
 		switch root.OutputType(cmd) {
 		case flags.OutputText:

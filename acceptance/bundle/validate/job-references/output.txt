@@ -1,0 +1,70 @@
+
+>>> [CLI] bundle validate --output json
+{
+  "bundle": {
+    "environment": "default",
+    "git": {
+      "bundle_root_path": "."
+    },
+    "name": "foobar",
+    "target": "default"
+  },
+  "resources": {
+    "jobs": {
+      "inner_loop": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "inner loop",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        }
+      },
+      "outer_loop": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "outer loop",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        },
+        "tasks": [
+          {
+            "run_job_task": {
+              "job_id": "${resources.jobs.inner_loop.id}"
+            },
+            "task_key": "my task"
+          }
+        ]
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "targets": null,
+  "workspace": {
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/artifacts",
+    "current_user": {
+      "id": "[USERID]",
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/state"
+  }
+}

@@ -132,10 +132,6 @@ func (p *Project) IsDeveloperMode() bool {
 	return p.folder != "" && !strings.HasPrefix(p.LibDir(), p.folder)
 }
 
-func (p *Project) HasFolder() bool {
-	return p.folder != ""
-}
-
 func (p *Project) HasAccountLevelCommands() bool {
 	for _, v := range p.Commands {
 		if v.IsAccountLevel {

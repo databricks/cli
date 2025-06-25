@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.256.0
+## Release v0.257.0
 
 ### Notable Changes
 
@@ -9,9 +9,13 @@
 ### CLI
 
 ### Bundles
-* Fix reading dashboard contents when the sync root is different than the bundle root ([#3006](https://github.com/databricks/cli/pull/3006))
-* When glob for wheels is used, like "\*.whl", it will filter out different version of the same package and will only take the most recent version. ([#2982](https://github.com/databricks/cli/pull/2982))
-* When building Python artifacts as part of "bundle deploy" we no longer delete `dist`, `build`, `*egg-info` and `__pycache__` directories. ([#2982](https://github.com/databricks/cli/pull/2982))
-* Fix variable resolution for lookup variables with other references ([#3054](https://github.com/databricks/cli/pull/3054))
+* Improve error message for host mismatch between bundle and profile used ([#3100](https://github.com/databricks/cli/pull/3100))
+* Remove support for deprecated `experimental/pydabs` config, use `experimental/python` instead. See [Configuration in Python
+](https://docs.databricks.com/dev-tools/bundles/python). ([#3102](https://github.com/databricks/cli/pull/3102))
+
+* The `default-python` template now prompts if you want to use serverless compute (default to `yes`) ([#3051](https://github.com/databricks/cli/pull/3051)).
 
 ### API Changes
+* Removed `databricks custom-llms` command group.
+* Added `databricks ai-builder` command group.
+* Added `databricks feature-store` command group.

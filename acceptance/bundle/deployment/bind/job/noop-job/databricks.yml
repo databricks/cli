@@ -1,0 +1,7 @@
+bundle:
+  name: my_project
+
+resources:
+  jobs:
+    job_1:
+      name: Updated Job

@@ -1558,9 +1558,6 @@ func newLogInputs() *cobra.Command {
 	cmd.Short = `Log inputs to a run.`
 	cmd.Long = `Log inputs to a run.
   
-  **NOTE:** Experimental: This API may change or be removed in a future release
-  without warning.
-  
   Logs inputs, such as datasets and models, to an MLflow Run.
 
   Arguments:
@@ -1826,8 +1823,11 @@ func newLogModel() *cobra.Command {
 	cmd.Short = `Log a model.`
 	cmd.Long = `Log a model.
   
-  **NOTE:** Experimental: This API may change or be removed in a future release
-  without warning.`
+  **Note:** the [Create a logged
+  model](/api/workspace/experiments/createloggedmodel) API replaces this
+  endpoint.
+  
+  Log a model to an MLflow Run.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1896,9 +1896,6 @@ func newLogOutputs() *cobra.Command {
 	cmd.Use = "log-outputs RUN_ID"
 	cmd.Short = `Log outputs from a run.`
 	cmd.Long = `Log outputs from a run.
-  
-  **NOTE**: Experimental: This API may change or be removed in a future release
-  without warning.
   
   Logs outputs, such as models, from an MLflow Run.
 
@@ -2646,8 +2643,8 @@ func newSetLoggedModelTags() *cobra.Command {
 	// TODO: array: tags
 
 	cmd.Use = "set-logged-model-tags MODEL_ID"
-	cmd.Short = `Set a tag for a logged model.`
-	cmd.Long = `Set a tag for a logged model.
+	cmd.Short = `Set tags for a logged model.`
+	cmd.Long = `Set tags for a logged model.
 
   Arguments:
     MODEL_ID: The ID of the logged model to set the tags on.`

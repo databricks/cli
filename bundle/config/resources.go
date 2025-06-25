@@ -168,7 +168,7 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 	if len(found) > 1 {
 		keys := make([]string, 0, len(found))
 		for _, r := range found {
-			keys = append(keys, fmt.Sprintf("%s:%s", r.ResourceDescription().TerraformResourceName, key))
+			keys = append(keys, fmt.Sprintf("%s.%s", r.ResourceDescription().PluralName, key))
 		}
 		return nil, fmt.Errorf("ambiguous: %s (can resolve to all of %s)", key, keys)
 	}

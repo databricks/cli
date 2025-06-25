@@ -13,4 +13,5 @@ type ResourceGroup struct {
 	Id                      string `json:"id,omitempty"`
 	Url                     string `json:"url,omitempty"`
 	WorkspaceAccess         bool   `json:"workspace_access,omitempty"`
+	WorkspaceConsume        bool   `json:"workspace_consume,omitempty"`
 }

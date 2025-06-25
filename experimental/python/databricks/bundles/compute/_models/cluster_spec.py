@@ -199,6 +199,11 @@ class ClusterSpec:
     The ID of the cluster policy used to create the cluster if applicable.
     """
 
+    remote_disk_throughput: VariableOrOptional[int] = None
+    """
+    If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED disks.
+    """
+
     runtime_engine: VariableOrOptional[RuntimeEngine] = None
 
     single_user_name: VariableOrOptional[str] = None
@@ -240,6 +245,11 @@ class ClusterSpec:
     SSH public key contents that will be added to each Spark node in this cluster. The
     corresponding private keys can be used to login with the user name `ubuntu` on port `2200`.
     Up to 10 keys can be specified.
+    """
+
+    total_initial_remote_disk_size: VariableOrOptional[int] = None
+    """
+    If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.
     """
 
     use_ml_runtime: VariableOrOptional[bool] = None
@@ -402,6 +412,11 @@ class ClusterSpecDict(TypedDict, total=False):
     The ID of the cluster policy used to create the cluster if applicable.
     """
 
+    remote_disk_throughput: VariableOrOptional[int]
+    """
+    If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED disks.
+    """
+
     runtime_engine: VariableOrOptional[RuntimeEngineParam]
 
     single_user_name: VariableOrOptional[str]
@@ -443,6 +458,11 @@ class ClusterSpecDict(TypedDict, total=False):
     SSH public key contents that will be added to each Spark node in this cluster. The
     corresponding private keys can be used to login with the user name `ubuntu` on port `2200`.
     Up to 10 keys can be specified.
+    """
+
+    total_initial_remote_disk_size: VariableOrOptional[int]
+    """
+    If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.
     """
 
     use_ml_runtime: VariableOrOptional[bool]

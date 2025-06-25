@@ -90,6 +90,9 @@ __all__ = [
     "PipelinePermissionLevel",
     "PipelinePermissionLevelParam",
     "PipelinePermissionParam",
+    "PipelinesEnvironment",
+    "PipelinesEnvironmentDict",
+    "PipelinesEnvironmentParam",
     "ReportSpec",
     "ReportSpecDict",
     "ReportSpecParam",
@@ -290,6 +293,11 @@ from databricks.bundles.pipelines._models.pipeline_permission import (
 from databricks.bundles.pipelines._models.pipeline_permission_level import (
     PipelinePermissionLevel,
     PipelinePermissionLevelParam,
+)
+from databricks.bundles.pipelines._models.pipelines_environment import (
+    PipelinesEnvironment,
+    PipelinesEnvironmentDict,
+    PipelinesEnvironmentParam,
 )
 from databricks.bundles.pipelines._models.report_spec import (
     ReportSpec,

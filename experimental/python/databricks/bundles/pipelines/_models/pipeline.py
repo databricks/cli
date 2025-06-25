@@ -41,6 +41,10 @@ from databricks.bundles.pipelines._models.pipeline_permission import (
     PipelinePermission,
     PipelinePermissionParam,
 )
+from databricks.bundles.pipelines._models.pipelines_environment import (
+    PipelinesEnvironment,
+    PipelinesEnvironmentParam,
+)
 from databricks.bundles.pipelines._models.restart_window import (
     RestartWindow,
     RestartWindowParam,
@@ -95,6 +99,13 @@ class Pipeline(Resource):
     edition: VariableOrOptional[str] = None
     """
     Pipeline product edition.
+    """
+
+    environment: VariableOrOptional[PipelinesEnvironment] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Environment specification for this pipeline used to install dependencies.
     """
 
     event_log: VariableOrOptional[EventLogSpec] = None
@@ -245,6 +256,13 @@ class PipelineDict(TypedDict, total=False):
     edition: VariableOrOptional[str]
     """
     Pipeline product edition.
+    """
+
+    environment: VariableOrOptional[PipelinesEnvironmentParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Environment specification for this pipeline used to install dependencies.
     """
 
     event_log: VariableOrOptional[EventLogSpecParam]

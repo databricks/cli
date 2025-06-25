@@ -156,32 +156,36 @@ type ResourceModelServingConfigServedEntitiesExternalModel struct {
 }
 
 type ResourceModelServingConfigServedEntities struct {
-	EntityName               string                                                 `json:"entity_name,omitempty"`
-	EntityVersion            string                                                 `json:"entity_version,omitempty"`
-	EnvironmentVars          map[string]string                                      `json:"environment_vars,omitempty"`
-	InstanceProfileArn       string                                                 `json:"instance_profile_arn,omitempty"`
-	MaxProvisionedThroughput int                                                    `json:"max_provisioned_throughput,omitempty"`
-	MinProvisionedThroughput int                                                    `json:"min_provisioned_throughput,omitempty"`
-	Name                     string                                                 `json:"name,omitempty"`
-	ProvisionedModelUnits    int                                                    `json:"provisioned_model_units,omitempty"`
-	ScaleToZeroEnabled       bool                                                   `json:"scale_to_zero_enabled,omitempty"`
-	WorkloadSize             string                                                 `json:"workload_size,omitempty"`
-	WorkloadType             string                                                 `json:"workload_type,omitempty"`
-	ExternalModel            *ResourceModelServingConfigServedEntitiesExternalModel `json:"external_model,omitempty"`
+	EntityName                string                                                 `json:"entity_name,omitempty"`
+	EntityVersion             string                                                 `json:"entity_version,omitempty"`
+	EnvironmentVars           map[string]string                                      `json:"environment_vars,omitempty"`
+	InstanceProfileArn        string                                                 `json:"instance_profile_arn,omitempty"`
+	MaxProvisionedConcurrency int                                                    `json:"max_provisioned_concurrency,omitempty"`
+	MaxProvisionedThroughput  int                                                    `json:"max_provisioned_throughput,omitempty"`
+	MinProvisionedConcurrency int                                                    `json:"min_provisioned_concurrency,omitempty"`
+	MinProvisionedThroughput  int                                                    `json:"min_provisioned_throughput,omitempty"`
+	Name                      string                                                 `json:"name,omitempty"`
+	ProvisionedModelUnits     int                                                    `json:"provisioned_model_units,omitempty"`
+	ScaleToZeroEnabled        bool                                                   `json:"scale_to_zero_enabled,omitempty"`
+	WorkloadSize              string                                                 `json:"workload_size,omitempty"`
+	WorkloadType              string                                                 `json:"workload_type,omitempty"`
+	ExternalModel             *ResourceModelServingConfigServedEntitiesExternalModel `json:"external_model,omitempty"`
 }
 
 type ResourceModelServingConfigServedModels struct {
-	EnvironmentVars          map[string]string `json:"environment_vars,omitempty"`
-	InstanceProfileArn       string            `json:"instance_profile_arn,omitempty"`
-	MaxProvisionedThroughput int               `json:"max_provisioned_throughput,omitempty"`
-	MinProvisionedThroughput int               `json:"min_provisioned_throughput,omitempty"`
-	ModelName                string            `json:"model_name"`
-	ModelVersion             string            `json:"model_version"`
-	Name                     string            `json:"name,omitempty"`
-	ProvisionedModelUnits    int               `json:"provisioned_model_units,omitempty"`
-	ScaleToZeroEnabled       bool              `json:"scale_to_zero_enabled,omitempty"`
-	WorkloadSize             string            `json:"workload_size,omitempty"`
-	WorkloadType             string            `json:"workload_type,omitempty"`
+	EnvironmentVars           map[string]string `json:"environment_vars,omitempty"`
+	InstanceProfileArn        string            `json:"instance_profile_arn,omitempty"`
+	MaxProvisionedConcurrency int               `json:"max_provisioned_concurrency,omitempty"`
+	MaxProvisionedThroughput  int               `json:"max_provisioned_throughput,omitempty"`
+	MinProvisionedConcurrency int               `json:"min_provisioned_concurrency,omitempty"`
+	MinProvisionedThroughput  int               `json:"min_provisioned_throughput,omitempty"`
+	ModelName                 string            `json:"model_name"`
+	ModelVersion              string            `json:"model_version"`
+	Name                      string            `json:"name,omitempty"`
+	ProvisionedModelUnits     int               `json:"provisioned_model_units,omitempty"`
+	ScaleToZeroEnabled        bool              `json:"scale_to_zero_enabled,omitempty"`
+	WorkloadSize              string            `json:"workload_size,omitempty"`
+	WorkloadType              string            `json:"workload_type,omitempty"`
 }
 
 type ResourceModelServingConfigTrafficConfigRoutes struct {

@@ -1,0 +1,8 @@
+# Fix path with reverse slashes in the output for Windows.
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Repls]]
+Old = '\\'
+New = '/'

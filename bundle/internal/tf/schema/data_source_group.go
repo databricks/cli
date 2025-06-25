@@ -18,4 +18,5 @@ type DataSourceGroup struct {
 	ServicePrincipals       []string `json:"service_principals,omitempty"`
 	Users                   []string `json:"users,omitempty"`
 	WorkspaceAccess         bool     `json:"workspace_access,omitempty"`
+	WorkspaceConsume        bool     `json:"workspace_consume,omitempty"`
 }

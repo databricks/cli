@@ -1,0 +1,30 @@
+
+>>> [CLI] jobs create --json {"name": "My Job"}
+
+>>> [CLI] bundle deployment bind job_1 [NUMID] --auto-approve
+Updating deployment state...
+Successfully bound job with an id '[NUMID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] jobs get [NUMID] --output json
+{
+  "job_id":[NUMID],
+  "settings": {
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+    },
+    "edit_mode":"UI_LOCKED",
+    "format":"MULTI_TASK",
+    "max_concurrent_runs":1,
+    "name":"Updated Job",
+    "queue": {
+      "enabled":true
+    }
+  }
+}

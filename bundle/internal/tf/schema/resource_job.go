@@ -31,7 +31,7 @@ type ResourceJobEmailNotifications struct {
 }
 
 type ResourceJobEnvironmentSpec struct {
-	Client             string   `json:"client"`
+	Client             string   `json:"client,omitempty"`
 	Dependencies       []string `json:"dependencies,omitempty"`
 	EnvironmentVersion string   `json:"environment_version,omitempty"`
 	JarDependencies    []string `json:"jar_dependencies,omitempty"`
@@ -596,6 +596,11 @@ type ResourceJobTaskDashboardTask struct {
 	Subscription *ResourceJobTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
 
+type ResourceJobTaskDbtCloudTask struct {
+	ConnectionResourceName string `json:"connection_resource_name,omitempty"`
+	DbtCloudJobId          int    `json:"dbt_cloud_job_id,omitempty"`
+}
+
 type ResourceJobTaskDbtTask struct {
 	Catalog           string   `json:"catalog,omitempty"`
 	Commands          []string `json:"commands"`
@@ -648,6 +653,11 @@ type ResourceJobTaskForEachTaskTaskDashboardTask struct {
 	DashboardId  string                                                   `json:"dashboard_id,omitempty"`
 	WarehouseId  string                                                   `json:"warehouse_id,omitempty"`
 	Subscription *ResourceJobTaskForEachTaskTaskDashboardTaskSubscription `json:"subscription,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskDbtCloudTask struct {
+	ConnectionResourceName string `json:"connection_resource_name,omitempty"`
+	DbtCloudJobId          int    `json:"dbt_cloud_job_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskDbtTask struct {
@@ -1092,6 +1102,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	CleanRoomsNotebookTask  *ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask          `json:"condition_task,omitempty"`
 	DashboardTask           *ResourceJobTaskForEachTaskTaskDashboardTask          `json:"dashboard_task,omitempty"`
+	DbtCloudTask            *ResourceJobTaskForEachTaskTaskDbtCloudTask           `json:"dbt_cloud_task,omitempty"`
 	DbtTask                 *ResourceJobTaskForEachTaskTaskDbtTask                `json:"dbt_task,omitempty"`
 	DependsOn               []ResourceJobTaskForEachTaskTaskDependsOn             `json:"depends_on,omitempty"`
 	EmailNotifications      *ResourceJobTaskForEachTaskTaskEmailNotifications     `json:"email_notifications,omitempty"`
@@ -1536,6 +1547,7 @@ type ResourceJobTask struct {
 	CleanRoomsNotebookTask  *ResourceJobTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	ConditionTask           *ResourceJobTaskConditionTask          `json:"condition_task,omitempty"`
 	DashboardTask           *ResourceJobTaskDashboardTask          `json:"dashboard_task,omitempty"`
+	DbtCloudTask            *ResourceJobTaskDbtCloudTask           `json:"dbt_cloud_task,omitempty"`
 	DbtTask                 *ResourceJobTaskDbtTask                `json:"dbt_task,omitempty"`
 	DependsOn               []ResourceJobTaskDependsOn             `json:"depends_on,omitempty"`
 	EmailNotifications      *ResourceJobTaskEmailNotifications     `json:"email_notifications,omitempty"`

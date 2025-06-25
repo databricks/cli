@@ -1,4 +1,4 @@
 trace $CLI bundle deploy
 trace $CLI bundle deploy # We do 2 deploys because only 2nd deploy will pull state from remote after 1st created it
-jq 'select(.path | test("/api/2.0/workspace-files/Workspace/Users/.*/.bundle/state/default/state/terraform.tfstate"))' out.requests.txt > out.state.txt
+jq 'select(.path | test("/api/2.0/workspace-files/Workspace/Users/.*/.bundle/state/default/state/"))' out.requests.txt > out.state.txt
 rm out.requests.txt

@@ -3,10 +3,8 @@ package testutil
 import (
 	"os"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 // GetEnvOrSkipTest proceeds with test only with that env variable.
@@ -26,15 +24,6 @@ func RandomName(prefix ...string) string {
 	}
 	out += strings.ReplaceAll(uuid.New().String(), "-", "")
 	return out
-}
-
-func SkipUntil(t TestingT, date string) {
-	deadline, err := time.Parse(time.DateOnly, date)
-	require.NoError(t, err)
-
-	if time.Now().Before(deadline) {
-		t.Skipf("Skipping test until %s. Time right now: %s", deadline.Format(time.DateOnly), time.Now())
-	}
 }
 
 func ReplaceWindowsLineEndings(s string) string {

@@ -65,7 +65,6 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete grants volume_foo
   delete schema schema1
   delete schema schema2
   delete volume foo

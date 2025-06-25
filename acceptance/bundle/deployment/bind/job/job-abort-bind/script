@@ -1,0 +1,45 @@
+cp -r $TESTDIR/../job-spark-python-task/{databricks.yml.tmpl,hello_world.py} .
+
+title "Create a pre-defined job:\n"
+
+PYTHON_FILE="/Workspace/Users/${CURRENT_USER_NAME}/initial_hello_world.py"
+
+JOB_ID=$($CLI jobs create --json '
+{
+  "name": "test-unbound-job-'${UNIQUE_NAME}'",
+  "tasks": [
+    {
+      "task_key": "my_notebook_task",
+      "new_cluster": {
+        "spark_version": "'${DEFAULT_SPARK_VERSION}'",
+        "node_type_id": "'${NODE_TYPE_ID}'",
+        "num_workers": 1
+      },
+      "spark_python_task": {
+        "python_file": "'${PYTHON_FILE}'"
+      }
+    }
+  ]
+}' | jq -r '.job_id')
+
+echo "Created job with ID: $JOB_ID"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Delete the pre-defined job $JOB_ID:"
+    $CLI jobs delete $JOB_ID
+    echo $?
+}
+trap cleanup EXIT
+
+title "Expect binding to fail without an auto-approve flag:\n"
+trace errcode $CLI bundle deployment bind foo $JOB_ID &> out.bind-result.txt
+grep "^Error:" out.bind-result.txt
+rm out.bind-result.txt
+
+title "Deploy bundle:"
+trace $CLI bundle deploy --force-lock
+
+title "Check that job is not bound and not updated with config from bundle:"
+trace $CLI jobs get $JOB_ID | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: .spark_python_task}]}}'

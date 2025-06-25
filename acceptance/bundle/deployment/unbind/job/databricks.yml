@@ -1,0 +1,11 @@
+bundle:
+  name: my_project
+
+variables:
+  job_name:
+    description: "Job name"
+
+resources:
+  jobs:
+    job_1:
+      name: ${var.job_name}

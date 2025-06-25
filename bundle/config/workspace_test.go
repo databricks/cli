@@ -114,7 +114,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = w.Client()
-		assert.ErrorContains(t, err, "config host mismatch")
+		assert.ErrorContains(t, err, "doesn’t match the host configured in the bundle")
 	})
 
 	t.Run("custom config file with match", func(t *testing.T) {
@@ -146,6 +146,6 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
 		_, err = w.Client()
-		assert.ErrorContains(t, err, "config host mismatch")
+		assert.ErrorContains(t, err, "doesn’t match the host configured in the bundle")
 	})
 }

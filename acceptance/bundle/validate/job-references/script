@@ -1,0 +1,1 @@
+trace $CLI bundle validate --output json | jq 'del(.bundle.terraform)'

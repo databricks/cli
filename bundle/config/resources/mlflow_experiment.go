@@ -52,11 +52,10 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 
 func (j *MlflowExperiment) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "experiment",
-		PluralName:            "experiments",
-		SingularTitle:         "Experiment",
-		PluralTitle:           "Experiments",
-		TerraformResourceName: "databricks_mlflow_experiment",
+		SingularName:  "experiment",
+		PluralName:    "experiments",
+		SingularTitle: "Experiment",
+		PluralTitle:   "Experiments",
 	}
 }
 

@@ -28,9 +28,9 @@ from databricks.bundles.jobs._models.dashboard_task import (
     DashboardTask,
     DashboardTaskParam,
 )
-from databricks.bundles.jobs._models.dbt_cloud_task import (
-    DbtCloudTask,
-    DbtCloudTaskParam,
+from databricks.bundles.jobs._models.dbt_platform_task import (
+    DbtPlatformTask,
+    DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
 from databricks.bundles.jobs._models.for_each_task import (
@@ -125,11 +125,9 @@ class Task:
     The task refreshes a dashboard and sends a snapshot to subscribers.
     """
 
-    dbt_cloud_task: VariableOrOptional[DbtCloudTask] = None
+    dbt_platform_task: VariableOrOptional[DbtPlatformTask] = None
     """
     :meta private: [EXPERIMENTAL]
-    
-    Task type for dbt cloud
     """
 
     dbt_task: VariableOrOptional[DbtTask] = None
@@ -330,11 +328,9 @@ class TaskDict(TypedDict, total=False):
     The task refreshes a dashboard and sends a snapshot to subscribers.
     """
 
-    dbt_cloud_task: VariableOrOptional[DbtCloudTaskParam]
+    dbt_platform_task: VariableOrOptional[DbtPlatformTaskParam]
     """
     :meta private: [EXPERIMENTAL]
-    
-    Task type for dbt cloud
     """
 
     dbt_task: VariableOrOptional[DbtTaskParam]

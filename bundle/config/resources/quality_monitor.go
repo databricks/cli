@@ -44,11 +44,10 @@ func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClie
 
 func (*QualityMonitor) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "quality_monitor",
-		PluralName:            "quality_monitors",
-		SingularTitle:         "Quality Monitor",
-		PluralTitle:           "Quality Monitors",
-		TerraformResourceName: "databricks_quality_monitor",
+		SingularName:  "quality_monitor",
+		PluralName:    "quality_monitors",
+		SingularTitle: "Quality Monitor",
+		PluralTitle:   "Quality Monitors",
 	}
 }
 

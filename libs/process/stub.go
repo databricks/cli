@@ -138,8 +138,6 @@ func (s *processStub) normCmd(v *exec.Cmd) string {
 	return fmt.Sprintf("%s %s", binaryName, args)
 }
 
-var ErrStubContinue = errors.New("continue executing the stub after callback")
-
 func (s *processStub) run(cmd *exec.Cmd) error {
 	s.calls = append(s.calls, cmd)
 	for pattern, resp := range s.responses {

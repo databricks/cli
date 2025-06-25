@@ -18,6 +18,6 @@ func TestShellExecvOpts(t *testing.T) {
 	bashPath, err := exec.LookPath("bash")
 	require.NoError(t, err)
 	assert.Equal(t, bashPath, opts.Args[0])
-	assert.Equal(t, "-c", opts.Args[1])
+	assert.Equal(t, "-ec", opts.Args[1])
 	assert.Equal(t, "echo hello", opts.Args[2])
 }

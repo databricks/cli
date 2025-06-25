@@ -29,11 +29,11 @@ func (l resolveMetastore) Resolve(ctx context.Context, w *databricks.WorkspaceCl
 	// Return the ID of the first matching metastore.
 	switch len(entities) {
 	case 0:
-		return "", fmt.Errorf("metastoren named %q does not exist", l.name)
+		return "", fmt.Errorf("metastore named %q does not exist", l.name)
 	case 1:
 		return entities[0].MetastoreId, nil
 	default:
-		return "", fmt.Errorf("there are %d instances of clusters named %q", len(entities), l.name)
+		return "", fmt.Errorf("there are %d instances of metastores named %q", len(entities), l.name)
 	}
 }
 

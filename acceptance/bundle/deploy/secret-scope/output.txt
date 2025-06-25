@@ -43,8 +43,6 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete secret_acl secret_acl_secret_scope1_0
-  delete secret_acl secret_acl_secret_scope1_1
   delete secret_scope secret_scope1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default

@@ -14,6 +14,9 @@ TimeoutCloud = '25m'
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
+EnvRepl.DATABRICKS_CLI_DEPLOYMENT = false
+
 # >>> datetime.datetime.fromtimestamp(18000000000)
 # datetime.datetime(2027, 1, 15, 9, 0)
 # >>> datetime.datetime.fromtimestamp(1900000000)
@@ -66,6 +69,6 @@ New = "[NUMID]"
 Order = 10
 
 [[Repls]]
-Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d'
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?'
 New = "[TIMESTAMP]"
 Order = 10

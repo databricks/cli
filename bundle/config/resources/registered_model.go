@@ -50,11 +50,10 @@ func (s *RegisteredModel) Exists(ctx context.Context, w *databricks.WorkspaceCli
 
 func (*RegisteredModel) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "registered_model",
-		PluralName:            "registered_models",
-		SingularTitle:         "Registered Model",
-		PluralTitle:           "Registered Models",
-		TerraformResourceName: "databricks_registered_model",
+		SingularName:  "registered_model",
+		PluralName:    "registered_models",
+		SingularTitle: "Registered Model",
+		PluralTitle:   "Registered Models",
 	}
 }
 

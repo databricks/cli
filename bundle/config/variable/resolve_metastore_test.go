@@ -41,7 +41,25 @@ func TestResolveMetastore_ResolveNotFound(t *testing.T) {
 	ctx := context.Background()
 	l := resolveMetastore{name: "metastore"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
-	require.ErrorContains(t, err, "metastoren named \"metastore\" does not exist")
+	require.ErrorContains(t, err, "metastore named \"metastore\" does not exist")
+}
+
+func TestResolveMetastore_ResolveMultiple(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+
+	api := m.GetMockMetastoresAPI()
+	api.EXPECT().
+		ListAll(mock.Anything, mock.Anything).
+		Return([]catalog.MetastoreInfo{
+			{MetastoreId: "abcd", Name: "metastore"},
+			{MetastoreId: "efgh", Name: "metastore"},
+		}, nil)
+
+	ctx := context.Background()
+	l := resolveMetastore{name: "metastore"}
+	_, err := l.Resolve(ctx, m.WorkspaceClient)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "there are 2 instances of metastores named \"metastore\"")
 }
 
 func TestResolveMetastore_String(t *testing.T) {

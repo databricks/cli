@@ -12,7 +12,7 @@ type shShell struct {
 func (s shShell) prepare(command string) (*execContext, error) {
 	return &execContext{
 		executable: s.executable,
-		args:       []string{"-c", command},
+		args:       []string{"-ec", command},
 	}, nil
 }
 

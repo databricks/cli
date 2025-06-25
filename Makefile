@@ -48,6 +48,18 @@ checks: tidy ws links
 test:
 	${GOTESTSUM_CMD} -- ${PACKAGES}
 
+# Updates acceptance test output (local tests)
+test-update:
+	-go test ./acceptance -run '^TestAccept$$' -update
+	@# at the moment second pass is required because some tests show diff against output of another test for easier review
+	-go test ./acceptance -run '^TestAccept$$' -update
+
+# Updates acceptance test output (integration tests, requires access)
+test-update-aws:
+	deco env run -i -n aws-prod-ucws -- go test ./acceptance -run ^TestAccept$$ -update -timeout=1h -skiplocal -v
+
+test-update-all: test-update test-update-aws
+
 slowest:
 	go tool gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
 
@@ -94,4 +106,4 @@ generate:
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all

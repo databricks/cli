@@ -90,12 +90,8 @@ Warning: unknown field: description
 The following resources will be deleted:
   delete job batch_inference_job
   delete job model_training_job
-  delete mlflow_experiment experiment
-  delete mlflow_model model
-  delete permissions job_batch_inference_job
-  delete permissions job_model_training_job
-  delete permissions mlflow_experiment_experiment
-  delete permissions mlflow_model_model
+  delete experiment experiment
+  delete model model
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 

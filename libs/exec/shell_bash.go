@@ -13,7 +13,7 @@ type bashShell struct {
 func (s bashShell) prepare(command string) (*execContext, error) {
 	return &execContext{
 		executable: s.executable,
-		args:       []string{"-c", command},
+		args:       []string{"-ec", command},
 	}, nil
 }
 

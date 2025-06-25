@@ -13,7 +13,15 @@ trace print_requests
 
 trace update_file.py databricks.yml foo.py bar.py
 trace $CLI bundle deploy
-trace print_requests
+# Update requests are different between terraform and direct, because terraform also re-sends
+# fields that it previously received from the backend.
+# The get call below verifies that it does not matter -- the pipeline is the same in the end.
+#trace print_requests
+
+ppid=`read_id.py pipelines my`
+rm out.requests.txt
+
+title "Fetch pipeline ID and verify remote state"
 
 ppid=`read_id.py pipelines my`
 trace $CLI pipelines get $ppid
