@@ -18,6 +18,14 @@ var supportedResources = map[string]reflect.Value{
 	"apps":      reflect.ValueOf(NewResourceApp),
 }
 
+// This types matches what Config() returns and should match 'config' field in the resource struct
+var supportedResourcesTypes = map[string]reflect.Type{
+	"jobs":      reflect.TypeOf(ResourceJob{}.config),
+	"pipelines": reflect.TypeOf(ResourcePipeline{}.config),
+	"schemas":   reflect.TypeOf(ResourceSchema{}.config),
+	"apps":      reflect.TypeOf(ResourceApp{}.config),
+}
+
 type IResource interface {
 	Config() any
 
@@ -32,9 +40,6 @@ type IResource interface {
 
 	WaitAfterCreate(ctx context.Context) error
 	WaitAfterUpdate(ctx context.Context) error
-
-	// Get type of the struct that stores the state
-	GetType() reflect.Type
 
 	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
 }
@@ -78,15 +83,20 @@ func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, c
 	return res, nil
 }
 
-func New(client *databricks.WorkspaceClient, section, name string, config any) (IResource, error) {
+func New(client *databricks.WorkspaceClient, section, name string, config any) (IResource, reflect.Type, error) {
 	ctor, ok := supportedResources[section]
 	if !ok {
-		return nil, fmt.Errorf("unsupported resource type: %s", section)
+		return nil, nil, fmt.Errorf("unsupported resource type: %s", section)
+	}
+
+	cfgType, ok := supportedResourcesTypes[section]
+	if !ok {
+		return nil, nil, fmt.Errorf("unsupported resource type: %s", section)
 	}
 
 	// Disallow nil configs (including typed nil pointers).
 	if config == nil {
-		return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
+		return nil, nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
 	}
 
 	// If the supplied config is a pointer value, dereference it so that we pass
@@ -95,9 +105,14 @@ func New(client *databricks.WorkspaceClient, section, name string, config any) (
 	v := reflect.ValueOf(config)
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
-			return nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
+			return nil, nil, fmt.Errorf("unexpected nil in config: %s.%s", section, name)
 		}
 	}
 
-	return invokeConstructor(ctor, client, config)
+	result, err := invokeConstructor(ctor, client, config)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return result, cfgType, nil
 }

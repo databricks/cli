@@ -120,7 +120,7 @@ func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
 		return nil
 	}
 
-	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
+	resource, _, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
 func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
 	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
 
-	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
+	resource, cfgType, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deplo
 		return errors.New("invalid state: empty id")
 	}
 
-	savedState, err := typeConvert(resource.GetType(), entry.State)
+	savedState, err := typeConvert(cfgType, entry.State)
 	if err != nil {
 		return fmt.Errorf("interpreting state: %w", err)
 	}
@@ -218,7 +218,7 @@ func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResour
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
-	newResource, err := tnresources.New(d.client, d.section, d.resourceName, config)
+	newResource, _, err := tnresources.New(d.client, d.section, d.resourceName, config)
 	if err != nil {
 		return fmt.Errorf("initializing: %w", err)
 	}
