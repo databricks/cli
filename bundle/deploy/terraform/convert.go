@@ -99,15 +99,6 @@ func TerraformToBundle(ctx context.Context, state map[string]map[string]Exported
 					if err != nil {
 						return dyn.InvalidValue, err
 					}
-
-					if groupName == "apps " {
-						// If the app exists in terraform and bundle, we always set modified status to updated
-						// because we don't really know if the app source code was updated or not.
-						v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("modified_status")}, dyn.V(resources.ModifiedStatusUpdated))
-						if err != nil {
-							return dyn.InvalidValue, err
-						}
-					}
 				}
 			}
 		}
