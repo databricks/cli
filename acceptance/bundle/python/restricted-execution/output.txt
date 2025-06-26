@@ -16,6 +16,7 @@ value_from_env
 >>> musterr uv run [UV_ARGS] -q [CLI] bundle summary
 Error: Running Python code is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set
 
+
 Exit code (musterr): 1
 
 >>> musterr cat envs.txt

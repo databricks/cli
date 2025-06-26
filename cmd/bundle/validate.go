@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
@@ -63,41 +64,60 @@ func newValidateCommand() *cobra.Command {
 			diags = diags.Extend(bundle.Apply(ctx, b, mutator.PopulateLocations()))
 		}
 
-		switch root.OutputType(cmd) {
-		case flags.OutputText:
-			renderOpts := render.RenderOptions{RenderSummaryTable: true}
-			err := render.RenderDiagnostics(cmd.OutOrStdout(), b, diags, renderOpts)
-			if err != nil {
-				return fmt.Errorf("failed to render output: %w", err)
-			}
-
-			if diags.HasError() {
-				return root.ErrAlreadyPrinted
-			}
-
-			return nil
-		case flags.OutputJSON:
-			renderOpts := render.RenderOptions{RenderSummaryTable: false}
-			err1 := render.RenderDiagnostics(cmd.ErrOrStderr(), b, diags, renderOpts)
-			err2 := renderJsonOutput(cmd, b)
-
-			if err2 != nil {
-				return err2
-			}
-
-			if err1 != nil {
-				return err1
-			}
-
-			if diags.HasError() {
-				return root.ErrAlreadyPrinted
-			}
-
-			return nil
-		default:
-			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
-		}
+		return renderBundle(cmd, b, diags, false)
 	}
 
 	return cmd
+}
+
+// This function is used to render results both for "bundle validate" and "bundle summary".
+// In JSON mode, there is no difference in rendering between these two (but there is a difference in how we prepare the bundle).
+// In non-JSON mode both "bundle validate" and "bundle summary" will print diagnostics to stderr but "bundle validate"
+// will also print "summary" message via RenderSummaryTable option.
+func renderBundle(cmd *cobra.Command, b *bundle.Bundle, diags diag.Diagnostics, withBundleSummary bool) error {
+	ctx := cmd.Context()
+	switch root.OutputType(cmd) {
+	case flags.OutputText:
+		// Confusingly RenderSummaryTable relates to "Validation OK" and related messages, it has nothing
+		// to do with "bundle summary" command and we don't want to show it in bundle summary command.
+		renderOpts := render.RenderOptions{RenderSummaryTable: !withBundleSummary}
+		err1 := render.RenderDiagnostics(cmd.OutOrStdout(), b, diags, renderOpts)
+		if b != nil && withBundleSummary {
+			// Now RenderSummary actually related to "bundle summary"
+			err2 := render.RenderSummary(ctx, cmd.OutOrStdout(), b)
+			if err2 != nil {
+				return err2
+			}
+		}
+
+		if err1 != nil {
+			return err1
+		}
+
+		if diags.HasError() {
+			return root.ErrAlreadyPrinted
+		}
+
+		return nil
+	case flags.OutputJSON:
+		renderOpts := render.RenderOptions{RenderSummaryTable: false}
+		err1 := render.RenderDiagnostics(cmd.ErrOrStderr(), b, diags, renderOpts)
+		err2 := renderJsonOutput(cmd, b)
+
+		if err2 != nil {
+			return err2
+		}
+
+		if err1 != nil {
+			return err1
+		}
+
+		if diags.HasError() {
+			return root.ErrAlreadyPrinted
+		}
+
+		return nil
+	default:
+		return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
+	}
 }
