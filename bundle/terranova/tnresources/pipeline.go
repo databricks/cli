@@ -16,10 +16,11 @@ type ResourcePipeline struct {
 }
 
 func NewResourcePipeline(client *databricks.WorkspaceClient, resource *resources.Pipeline) (*ResourcePipeline, error) {
-	return &ResourcePipeline{
+	result := ResourcePipeline{
 		client: client,
 		config: resource.CreatePipeline,
-	}, nil
+	}
+	return &result, nil
 }
 
 func (r *ResourcePipeline) Config() any {

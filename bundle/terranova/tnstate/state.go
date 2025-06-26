@@ -1,11 +1,13 @@
 package tnstate
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/google/uuid"
 )
 
@@ -107,6 +109,21 @@ func (db *TerranovaState) AssertOpened() {
 	if db.Path == "" {
 		panic("internal error: TerranovaState must be opened first")
 	}
+}
+
+func (db *TerranovaState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
+	result := make(resourcestate.ExportedResourcesMap, len(db.Data.Resources))
+	for groupName, group := range db.Data.Resources {
+		resultGroup := make(map[string]resourcestate.ResourceState, len(group))
+		result[groupName] = resultGroup
+		for resourceName, entry := range group {
+			resultGroup[resourceName] = resourcestate.ResourceState{
+				ID: entry.ID,
+				// TODO: extract Etag
+			}
+		}
+	}
+	return result
 }
 
 func (db *TerranovaState) unlockedSave() error {

@@ -57,10 +57,17 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return
 		}
 
-		config, ok := b.GetResourceConfig(node.Group, node.Name)
-		if !ok {
-			diags.AppendErrorf("internal error: cannot get config for %s", node)
-			return
+		var config any
+
+		if node.ActionType == deployplan.ActionTypeDelete {
+			config = nil
+		} else {
+			var ok bool
+			config, ok = b.GetResourceConfig(node.Group, node.Name)
+			if !ok {
+				diags.AppendErrorf("internal error: cannot get config for group=%v name=%v", node.Group, node.Name)
+				return
+			}
 		}
 
 		d := Deployer{
