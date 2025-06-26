@@ -1335,7 +1335,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
 	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
-	assert.Equal(t, resources.ModifiedStatusUpdated, config.Resources.Apps["test_app"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Apps["test_app"].ModifiedStatus)
 	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].ID)
 	assert.Equal(t, "", config.Resources.Apps["test_app_old"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
