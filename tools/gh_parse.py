@@ -39,21 +39,21 @@ ACTION_MESSAGES = {
 def cleanup_env(name):
     """
     >>> cleanup_env("test-output-aws-prod-is-linux-ubuntu-latest")
-    'aws/lin'
+    'aws lin'
 
     >>> cleanup_env("test-output-gcp-prod-is-windows-server-latest")
-    'gcp/win'
+    'gcp win'
 
     >>> cleanup_env("test-output-azure-prod-ucws-is-linux-ubuntu-latest")
-    'az-ucws/lin'
+    'az-ucws lin'
     """
     if not name.startswith("test-output-"):
         return ""
     name = name.removeprefix("test-output-")
     name = name.replace("-prod-ucws-is-", "-ucws-")
     name = name.replace("-prod-is-", "-")
-    name = name.replace("-linux-ubuntu-latest", "/lin")
-    name = name.replace("-windows-server-latest", "/win")
+    name = name.replace("-linux-ubuntu-latest", " lin")
+    name = name.replace("-windows-server-latest", " win")
     name = name.replace("azure", "az")
     return name
 
@@ -207,7 +207,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
     for testname, items in simplified_results.items():
         table.append(
             {
-                "test": testname,
+                "Test Name": testname,
                 **items,
             }
         )
