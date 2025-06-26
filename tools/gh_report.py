@@ -160,7 +160,7 @@ def main():
 
     target_dir = download_run_id(args.run, repo, rm=args.rm)
     print(flush=True)
-    cmd = [str(PARSE_SCRIPT)]
+    cmd = [sys.executable, str(PARSE_SCRIPT)]
     if args.filter:
         cmd.append(f"--filter {args.filter}")
     if args.filter_env:
