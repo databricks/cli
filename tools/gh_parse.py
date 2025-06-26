@@ -114,9 +114,9 @@ def parse_file(path, filter):
 
 def print_report(filenames, filter, filter_env, show_output):
     outputs = {}  # testname -> env -> [output]
-    per_env_stats = {}  # env -> action -> count
     per_test_per_env_stats = {}  # testname -> env -> action -> count
     all_testnames = set()
+    all_envs = set()
     for filename in iter_paths(filenames):
         p = Path(filename)
         env = cleanup_env(p.parent.name)
@@ -125,13 +125,32 @@ def print_report(filenames, filter, filter_env, show_output):
             continue
         if filter_env and filter_env not in env:
             continue
+        all_envs.add(env)
         test_results, test_outputs = parse_file(p, filter)
         for testname, action in test_results.items():
             per_test_per_env_stats.setdefault(testname, {}).setdefault(env, Counter())[action] += 1
-            per_env_stats.setdefault(env, Counter())[action] += 1
         for testname, output in test_outputs.items():
             outputs.setdefault(testname, {}).setdefault(env, []).extend(output)
         all_testnames.update(test_results)
+
+    # Check for missing tests
+    for testname in all_testnames:
+        # It is possible for test to be missing if it's parent is skipped, ignore test cases with a parent.
+        # For acceptance tests, ignore tests with subtests produced via EnvMatrix
+        if testname.startswith("TestAccept/") and "=" in testname:
+            continue
+        # For non-acceptance tests ignore all subtests.
+        if not testname.startswith("TestAccept/") and "/" in testname:
+            continue
+        test_results = per_test_per_env_stats.get(testname, {})
+        for e in all_envs:
+            if e not in test_results:
+                test_results.setdefault(e, Counter())[MISSING] += 1
+
+    per_env_stats = {}  # env -> action -> count
+    for testname, items in per_test_per_env_stats.items():
+        for env, stats in items.items():
+            per_env_stats.setdefault(env, Counter()).update(stats)
 
     table = []
     for env, stats in sorted(per_env_stats.items()):
