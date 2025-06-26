@@ -830,8 +830,10 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Dashboards: map[string]*resources.Dashboard{
 				"test_dashboard": {
-					Dashboard: dashboards.Dashboard{
-						DisplayName: "test_dashboard",
+					DashboardConfig: resources.DashboardConfig{
+						Dashboard: dashboards.Dashboard{
+							DisplayName: "test_dashboard",
+						},
 					},
 				},
 			},
@@ -1019,13 +1021,17 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 			Dashboards: map[string]*resources.Dashboard{
 				"test_dashboard": {
-					Dashboard: dashboards.Dashboard{
-						DisplayName: "test_dashboard",
+					DashboardConfig: resources.DashboardConfig{
+						Dashboard: dashboards.Dashboard{
+							DisplayName: "test_dashboard",
+						},
 					},
 				},
 				"test_dashboard_new": {
-					Dashboard: dashboards.Dashboard{
-						DisplayName: "test_dashboard_new",
+					DashboardConfig: resources.DashboardConfig{
+						Dashboard: dashboards.Dashboard{
+							DisplayName: "test_dashboard_new",
+						},
 					},
 				},
 			},

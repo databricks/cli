@@ -14,7 +14,7 @@ Deployment complete!
 
 === Load the dashboard by its ID and confirm its display name: {
   "display_name": "test-dashboard-[UNIQUE_NAME]",
-  "serialized_dashboard": "{\"pages\":[{\"name\":\"fdd21a3c\",\"displayName\":\"New Page\",\"layout\":[{\"widget\":{\"name\":\"82eb9107\",\"textbox_spec\":\"# I'm a title\"},\"position\":{\"x\":0,\"y\":0,\"width\":6,\"height\":2}},{\"widget\":{\"name\":\"ffa6de4f\",\"textbox_spec\":\"Text\"},\"position\":{\"x\":0,\"y\":2,\"width\":6,\"height\":2}}],\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
+  "page_display_name": "New Page"
 }
 
 === Make an out of band modification to the dashboard and confirm that it is detected:

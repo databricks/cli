@@ -29,8 +29,10 @@ func TestTranslatePathsDashboards_FilePathRelativeSubDirectory(t *testing.T) {
 			Resources: config.Resources{
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard": {
-						Dashboard: dashboards.Dashboard{
-							DisplayName: "My Dashboard",
+						DashboardConfig: resources.DashboardConfig{
+							Dashboard: dashboards.Dashboard{
+								DisplayName: "My Dashboard",
+							},
 						},
 						FilePath: "../src/my_dashboard.lvdash.json",
 					},

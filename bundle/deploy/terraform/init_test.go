@@ -287,6 +287,29 @@ func TestInheritEnvVars(t *testing.T) {
 	}
 }
 
+func TestInheritOIDCTokenEnvCustom(t *testing.T) {
+	t.Setenv("DATABRICKS_OIDC_TOKEN_ENV", "custom_DATABRICKS_OIDC_TOKEN")
+	t.Setenv("custom_DATABRICKS_OIDC_TOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["custom_DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "custom_DATABRICKS_OIDC_TOKEN", env["DATABRICKS_OIDC_TOKEN_ENV"])
+}
+
+func TestInheritOIDCTokenEnv(t *testing.T) {
+	t.Setenv("DATABRICKS_OIDC_TOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
+}
+
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
