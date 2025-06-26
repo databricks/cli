@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 )
 
 // BundleToTerraformWithDynValue converts resources in a bundle configuration
@@ -78,7 +79,7 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 	return tfroot, nil
 }
 
-func TerraformToBundle(state map[string]map[string]ExportedStateAttributes, config *config.Root) error {
+func TerraformToBundle(ctx context.Context, state map[string]map[string]ExportedStateAttributes, config *config.Root) error {
 	return config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		for groupName, group := range state {
 			for resourceName, attrs := range group {
@@ -118,6 +119,7 @@ func TerraformToBundle(state map[string]map[string]ExportedStateAttributes, conf
 			id, _ := dyn.GetByPath(inner, idPath)
 			status, _ := dyn.GetByPath(inner, statusPath)
 			if !id.IsValid() && !status.IsValid() {
+				log.Warnf(ctx, "Setting created %s", p)
 				return dyn.SetByPath(inner, statusPath, dyn.V(resources.ModifiedStatusCreated))
 			}
 			return inner, nil

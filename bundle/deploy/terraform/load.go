@@ -44,7 +44,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Merge state into configuration.
-	err = TerraformToBundle(state, &b.Config)
+	err = TerraformToBundle(ctx, state, &b.Config)
 	if err != nil {
 		return diag.FromErr(err)
 	}
