@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// New is copied to cmd/pipelines/root.go and adapted for pipelines use.
 func New(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "databricks",
@@ -37,29 +38,23 @@ func New(ctx context.Context) *cobra.Command {
 		SilenceErrors: true,
 	}
 
-	SetupRootCommand(ctx, cmd)
-	cmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
-	return cmd
-}
-
-func SetupRootCommand(ctx context.Context, cmd *cobra.Command) {
 	// Pass the context along through the command during initialization.
 	// It will be overwritten when the command is executed.
 	cmd.SetContext(ctx)
 
 	// Initialize flags
-	logFlags := initLogFlags(cmd)
-	progressLoggerFlag := initProgressLoggerFlag(cmd, logFlags)
-	outputFlag := initOutputFlag(cmd)
-	initProfileFlag(cmd)
+	logFlags := InitLogFlags(cmd)
+	progressLoggerFlag := InitProgressLoggerFlag(cmd, logFlags)
+	outputFlag := InitOutputFlag(cmd)
+	InitProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
-	initTargetFlag(cmd)
+	InitTargetFlag(cmd)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
 		// Configure default logger.
-		ctx, err := logFlags.initializeContext(ctx)
+		ctx, err := logFlags.InitializeContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -70,7 +65,7 @@ func SetupRootCommand(ctx context.Context, cmd *cobra.Command) {
 			slog.String("args", strings.Join(os.Args, ", ")))
 
 		// Configure progress logger
-		ctx, err = progressLoggerFlag.initializeContext(ctx)
+		ctx, err = progressLoggerFlag.InitializeContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -78,7 +73,7 @@ func SetupRootCommand(ctx context.Context, cmd *cobra.Command) {
 		cmd.SetContext(ctx)
 
 		// Configure command IO
-		err = outputFlag.initializeIO(cmd)
+		err = outputFlag.InitializeIO(cmd)
 		if err != nil {
 			return err
 		}
@@ -86,18 +81,20 @@ func SetupRootCommand(ctx context.Context, cmd *cobra.Command) {
 		ctx = cmd.Context()
 
 		// Configure our user agent with the command that's about to be executed.
-		ctx = withCommandInUserAgent(ctx, cmd)
-		ctx = withCommandExecIdInUserAgent(ctx)
-		ctx = withUpstreamInUserAgent(ctx)
+		ctx = WithCommandInUserAgent(ctx, cmd)
+		ctx = WithCommandExecIdInUserAgent(ctx)
+		ctx = WithUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
 	}
 
-	cmd.SetFlagErrorFunc(flagErrorFunc)
+	cmd.SetFlagErrorFunc(FlagErrorFunc)
+	cmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
+	return cmd
 }
 
 // Wrap flag errors to include the usage string.
-func flagErrorFunc(c *cobra.Command, err error) error {
+func FlagErrorFunc(c *cobra.Command, err error) error {
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
@@ -173,7 +170,7 @@ Stack Trace:
 		exitCode = 1
 	}
 
-	commandStr := commandString(cmd)
+	commandStr := CommandString(cmd)
 	ctx = cmd.Context()
 
 	// Log bundle deploy failures. Only log if we have successfully configured

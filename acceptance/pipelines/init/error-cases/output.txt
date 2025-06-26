@@ -16,41 +16,11 @@ Refer to the README.md file for "getting started" instructions!
 === Test with invalid project name (contains uppercase letters)
 >>> errcode ./subdir/pipelines init --config-file ./invalid_input.json --output-dir invalid-output
 Error: failed to load config from file ./invalid_input.json: invalid value for project_name: "InvalidProjectName". Name must consist of lower case letters, numbers, and underscores.
-Usage:
-  pipelines init [flags]
-
-Flags:
-      --config-file string   JSON file containing key value pairs of input parameters required for template initialization.
-  -h, --help                 help for init
-      --output-dir string    Directory to write the initialized template to.
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-
-Error: failed to load config from file ./invalid_input.json: invalid value for project_name: "InvalidProjectName". Name must consist of lower case letters, numbers, and underscores.
 
 Exit code: 1
 
 === Test with non-existent config file
 >>> errcode ./subdir/pipelines init --config-file ./nonexistent.json --output-dir invalid-output-2
-Error: failed to load config from file ./nonexistent.json: open ./nonexistent.json: no such file or directory
-Usage:
-  pipelines init [flags]
-
-Flags:
-      --config-file string   JSON file containing key value pairs of input parameters required for template initialization.
-  -h, --help                 help for init
-      --output-dir string    Directory to write the initialized template to.
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-
 Error: failed to load config from file ./nonexistent.json: open ./nonexistent.json: no such file or directory
 
 Exit code: 1
