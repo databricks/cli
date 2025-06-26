@@ -4,6 +4,10 @@ Analyze downloaded GH logs and print a report. Use gh_report.py instead of this 
 """
 
 import sys
+
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+
 import json
 import argparse
 import re

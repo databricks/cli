@@ -6,6 +6,10 @@ If neither --commit nor --run are passed, will use either current PR or HEAD.
 """
 
 import sys
+
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+
 import os
 import subprocess
 import argparse
