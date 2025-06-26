@@ -152,8 +152,10 @@ def print_report(filenames, filter, filter_env, show_output):
 
     interesting_envs = set()
     for env, stats in per_env_stats.items():
-        if FAIL in stats or FLAKY in stats:
-            interesting_envs.add(env)
+        for act in INTERESTING_ACTIONS:
+            if act in stats:
+                interesting_envs.add(env)
+                break
 
     simplified_results = {}  # testname -> env -> action
     for testname, items in sorted(per_test_per_env_stats.items()):
