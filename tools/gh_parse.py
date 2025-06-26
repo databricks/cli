@@ -116,6 +116,8 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
     per_test_per_env_stats = {}  # testname -> env -> action -> count
     all_testnames = set()
     all_envs = set()
+    count_files = 0
+    count_results = 0
     for filename in iter_paths(filenames):
         p = Path(filename)
         env = cleanup_env(p.parent.name)
@@ -126,11 +128,15 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
             continue
         all_envs.add(env)
         test_results, test_outputs = parse_file(p, filter)
+        count_files += 1
+        count_results += len(test_results)
         for testname, action in test_results.items():
             per_test_per_env_stats.setdefault(testname, {}).setdefault(env, Counter())[action] += 1
         for testname, output in test_outputs.items():
             outputs.setdefault(testname, {}).setdefault(env, []).extend(output)
         all_testnames.update(test_results)
+
+    print("Parsed {count_files} files: {count_results} results", file=sys.stderr, flush=True)
 
     # Check for missing tests
     for testname in all_testnames:
