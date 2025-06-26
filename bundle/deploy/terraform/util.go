@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -42,7 +43,13 @@ type stateInstanceAttributes struct {
 	ETag string `json:"etag,omitempty"`
 }
 
-func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (*resourcesState, error) {
+type ExportedStateAttributes struct {
+	ID   string
+	ETag string
+}
+
+// Returns a mapping group -> name -> stateInstanceAttributes
+func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (map[string]map[string]ExportedStateAttributes, error) {
 	cacheDir, err := Dir(ctx, b)
 	if err != nil {
 		return nil, err
@@ -50,11 +57,51 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (*resourcesState
 	rawState, err := os.ReadFile(filepath.Join(cacheDir, b.StateFilename()))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return &resourcesState{Version: SupportedStateVersion}, nil
+			return nil, nil
 		}
 		return nil, err
 	}
 	var state resourcesState
 	err = json.Unmarshal(rawState, &state)
-	return &state, err
+	if err != nil {
+		return nil, err
+	}
+
+	if state.Version != SupportedStateVersion {
+		return nil, fmt.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", state.Version)
+	}
+
+	result := make(map[string]map[string]ExportedStateAttributes)
+
+	for _, resource := range state.Resources {
+		if resource.Mode != tfjson.ManagedResourceMode {
+			continue
+		}
+		for _, instance := range resource.Instances {
+			groupName, ok := TerraformToGroupName[resource.Type]
+			if !ok {
+				// permissions, grants, secret_acls
+				continue
+			}
+
+			group, present := result[groupName]
+			if !present {
+				group = make(map[string]ExportedStateAttributes)
+				result[groupName] = group
+			}
+
+			switch groupName {
+			case "apps":
+				fallthrough
+			case "secret_scopes":
+				group[resource.Name] = ExportedStateAttributes{ID: instance.Attributes.Name}
+			case "dashboards":
+				group[resource.Name] = ExportedStateAttributes{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
+			default:
+				group[resource.Name] = ExportedStateAttributes{ID: instance.Attributes.ID}
+			}
+		}
+	}
+
+	return result, nil
 }

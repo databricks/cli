@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
-	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/databricks/cli/libs/log"
 )
 
 // BundleToTerraformWithDynValue converts resources in a bundle configuration
@@ -79,222 +79,50 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 	return tfroot, nil
 }
 
-func TerraformToBundle(state *resourcesState, config *config.Root) error {
-	for _, resource := range state.Resources {
-		if resource.Mode != tfjson.ManagedResourceMode {
-			continue
-		}
-		for _, instance := range resource.Instances {
-			switch resource.Type {
-			case "databricks_job":
-				if config.Resources.Jobs == nil {
-					config.Resources.Jobs = make(map[string]*resources.Job)
-				}
-				cur := config.Resources.Jobs[resource.Name]
-				if cur == nil {
-					cur = &resources.Job{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.Jobs[resource.Name] = cur
-			case "databricks_pipeline":
-				if config.Resources.Pipelines == nil {
-					config.Resources.Pipelines = make(map[string]*resources.Pipeline)
-				}
-				cur := config.Resources.Pipelines[resource.Name]
-				if cur == nil {
-					cur = &resources.Pipeline{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.Pipelines[resource.Name] = cur
-			case "databricks_mlflow_model":
-				if config.Resources.Models == nil {
-					config.Resources.Models = make(map[string]*resources.MlflowModel)
-				}
-				cur := config.Resources.Models[resource.Name]
-				if cur == nil {
-					cur = &resources.MlflowModel{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.Models[resource.Name] = cur
-			case "databricks_mlflow_experiment":
-				if config.Resources.Experiments == nil {
-					config.Resources.Experiments = make(map[string]*resources.MlflowExperiment)
-				}
-				cur := config.Resources.Experiments[resource.Name]
-				if cur == nil {
-					cur = &resources.MlflowExperiment{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.Experiments[resource.Name] = cur
-			case "databricks_model_serving":
-				if config.Resources.ModelServingEndpoints == nil {
-					config.Resources.ModelServingEndpoints = make(map[string]*resources.ModelServingEndpoint)
-				}
-				cur := config.Resources.ModelServingEndpoints[resource.Name]
-				if cur == nil {
-					cur = &resources.ModelServingEndpoint{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.ModelServingEndpoints[resource.Name] = cur
-			case "databricks_registered_model":
-				if config.Resources.RegisteredModels == nil {
-					config.Resources.RegisteredModels = make(map[string]*resources.RegisteredModel)
-				}
-				cur := config.Resources.RegisteredModels[resource.Name]
-				if cur == nil {
-					cur = &resources.RegisteredModel{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.RegisteredModels[resource.Name] = cur
-			case "databricks_quality_monitor":
-				if config.Resources.QualityMonitors == nil {
-					config.Resources.QualityMonitors = make(map[string]*resources.QualityMonitor)
-				}
-				cur := config.Resources.QualityMonitors[resource.Name]
-				if cur == nil {
-					cur = &resources.QualityMonitor{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.QualityMonitors[resource.Name] = cur
-			case "databricks_schema":
-				if config.Resources.Schemas == nil {
-					config.Resources.Schemas = make(map[string]*resources.Schema)
-				}
-				cur := config.Resources.Schemas[resource.Name]
-				if cur == nil {
-					cur = &resources.Schema{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.Schemas[resource.Name] = cur
-			case "databricks_volume":
-				if config.Resources.Volumes == nil {
-					config.Resources.Volumes = make(map[string]*resources.Volume)
-				}
-				cur := config.Resources.Volumes[resource.Name]
-				if cur == nil {
-					cur = &resources.Volume{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.Volumes[resource.Name] = cur
-			case "databricks_cluster":
-				if config.Resources.Clusters == nil {
-					config.Resources.Clusters = make(map[string]*resources.Cluster)
-				}
-				cur := config.Resources.Clusters[resource.Name]
-				if cur == nil {
-					cur = &resources.Cluster{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.Clusters[resource.Name] = cur
-			case "databricks_dashboard":
-				if config.Resources.Dashboards == nil {
-					config.Resources.Dashboards = make(map[string]*resources.Dashboard)
-				}
-				cur := config.Resources.Dashboards[resource.Name]
-				if cur == nil {
-					cur = &resources.Dashboard{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.ID
-				config.Resources.Dashboards[resource.Name] = cur
-			case "databricks_app":
-				if config.Resources.Apps == nil {
-					config.Resources.Apps = make(map[string]*resources.App)
-				}
-				cur := config.Resources.Apps[resource.Name]
-				if cur == nil {
-					cur = &resources.App{ModifiedStatus: resources.ModifiedStatusDeleted}
+func TerraformToBundle(ctx context.Context, state map[string]map[string]ExportedStateAttributes, config *config.Root) error {
+	return config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		for groupName, group := range state {
+			for resourceName, attrs := range group {
+				path := dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName)}
+				resource, err := dyn.GetByPath(v, path)
+				if !resource.IsValid() {
+					m := dyn.NewMapping()
+					m.SetLoc("id", nil, dyn.V(attrs.ID))
+					m.SetLoc("modified_status", nil, dyn.V(resources.ModifiedStatusDeleted))
+					v, err = dyn.SetByPath(v, path, dyn.V(m))
+					if err != nil {
+						return dyn.InvalidValue, err
+					}
+				} else if err != nil {
+					return dyn.InvalidValue, err
 				} else {
-					// If the app exists in terraform and bundle, we always set modified status to updated
-					// because we don't really know if the app source code was updated or not.
-					cur.ModifiedStatus = resources.ModifiedStatusUpdated
+					v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("id")}, dyn.V(attrs.ID))
+					if err != nil {
+						return dyn.InvalidValue, err
+					}
+
+					if groupName == "apps " {
+						// If the app exists in terraform and bundle, we always set modified status to updated
+						// because we don't really know if the app source code was updated or not.
+						v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("modified_status")}, dyn.V(resources.ModifiedStatusUpdated))
+						if err != nil {
+							return dyn.InvalidValue, err
+						}
+					}
 				}
-				cur.ID = instance.Attributes.Name
-				config.Resources.Apps[resource.Name] = cur
-			case "databricks_secret_scope":
-				if config.Resources.SecretScopes == nil {
-					config.Resources.SecretScopes = make(map[string]*resources.SecretScope)
-				}
-				cur := config.Resources.SecretScopes[resource.Name]
-				if cur == nil {
-					cur = &resources.SecretScope{ModifiedStatus: resources.ModifiedStatusDeleted}
-				}
-				cur.ID = instance.Attributes.Name
-				config.Resources.SecretScopes[resource.Name] = cur
-			case "databricks_permissions":
-			case "databricks_grants":
-			case "databricks_secret_acl":
-				// Ignore; no need to pull these back into the configuration.
-			default:
-				return fmt.Errorf("missing mapping for %s", resource.Type)
 			}
 		}
-	}
 
-	for _, src := range config.Resources.Jobs {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.Pipelines {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.Models {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.Experiments {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.ModelServingEndpoints {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.RegisteredModels {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.QualityMonitors {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.Schemas {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.Volumes {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.Clusters {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.Dashboards {
-		if src.ModifiedStatus == "" && src.ID == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.Apps {
-		if src.ModifiedStatus == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-	for _, src := range config.Resources.SecretScopes {
-		if src.ModifiedStatus == "" {
-			src.ModifiedStatus = resources.ModifiedStatusCreated
-		}
-	}
-
-	return nil
+		return dyn.MapByPattern(v, dyn.Pattern{dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()}, func(p dyn.Path, inner dyn.Value) (dyn.Value, error) {
+			idPath := dyn.Path{dyn.Key("id")}
+			statusPath := dyn.Path{dyn.Key("modified_status")}
+			id, _ := dyn.GetByPath(inner, idPath)
+			status, _ := dyn.GetByPath(inner, statusPath)
+			if !id.IsValid() && !status.IsValid() {
+				log.Warnf(ctx, "Setting created %s", p)
+				return dyn.SetByPath(inner, statusPath, dyn.V(resources.ModifiedStatusCreated))
+			}
+			return inner, nil
+		})
+	})
 }
