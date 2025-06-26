@@ -116,7 +116,7 @@ def parse_file(path, filter):
     return results, outputs
 
 
-def print_report(filenames, filter, filter_env, show_output):
+def print_report(filenames, filter, filter_env, show_output, markdown=False):
     outputs = {}  # testname -> env -> [output]
     per_test_per_env_stats = {}  # testname -> env -> action -> count
     all_testnames = set()
@@ -171,7 +171,7 @@ def print_report(filenames, filter, filter_env, show_output):
                 **stats,
             }
         )
-    print_table(table)
+    print_table(table, markdown=markdown)
 
     interesting_envs = set()
     for env, stats in per_env_stats.items():
@@ -211,7 +211,7 @@ def print_report(filenames, filter, filter_env, show_output):
                 **items,
             }
         )
-    print_table(table)
+    print_table(table, markdown=markdown)
 
     if show_output:
         for testname, stats in simplified_results.items():
@@ -219,18 +219,22 @@ def print_report(filenames, filter, filter_env, show_output):
                 if action not in INTERESTING_ACTIONS:
                     continue
                 out = "\n".join(outputs.get(testname, {}).get(env, []))
-                print(f"### {env} {testname} {action}\n{out}")
+                if markdown:
+                    print(f"### {env} {testname} {action}\n```\n{out}\n```")
+                else:
+                    print(f"### {env} {testname} {action}\n{out}")
                 if out:
                     print()
 
 
-def print_table(table, columns=None):
+def print_table(table, columns=None, markdown=False):
     """
     Pretty-print a list-of-dicts as an aligned text table.
 
     Args:
         table (list[dict]): the data rows
         columns (list[str]): header names & column order
+        markdown (bool): whether to output in markdown format
     """
     if not table:
         return
@@ -250,11 +254,19 @@ def print_table(table, columns=None):
         for i, col in enumerate(columns):
             widths[i] = max(widths[i], len(str(row.get(col, ""))))
 
-    fmt = lambda cells: "  ".join(str(cell).ljust(w) for cell, w in zip(cells, widths))
-
-    print(fmt(columns))
-    for ind, row in enumerate(table):
-        print(fmt([row.get(col, "") for col in columns]))
+    if markdown:
+        # Header
+        print("| " + " | ".join(str(col).ljust(w) for col, w in zip(columns, widths)) + " |")
+        # Separator
+        print("| " + " | ".join("-" * w for w in widths) + " |")
+        # Data rows
+        for row in table:
+            print("| " + " | ".join(str(row.get(col, "")).ljust(w) for col, w in zip(columns, widths)) + " |")
+    else:
+        fmt = lambda cells: "  ".join(str(cell).ljust(w) for cell, w in zip(cells, widths))
+        print(fmt(columns))
+        for ind, row in enumerate(table):
+            print(fmt([row.get(col, "") for col in columns]))
 
     print()
 
@@ -265,8 +277,9 @@ def main():
     parser.add_argument("--filter", help="Filter results by test name (substring match)")
     parser.add_argument("--filter-env", help="Filter results by env name (substring match)")
     parser.add_argument("--output", help="Show output for failed tests", action="store_true")
+    parser.add_argument("--markdown", help="Output in GitHub-flavored markdown format", action="store_true")
     args = parser.parse_args()
-    print_report(args.filenames, filter=args.filter, filter_env=args.filter_env, show_output=args.output)
+    print_report(args.filenames, filter=args.filter, filter_env=args.filter_env, show_output=args.output, markdown=args.markdown)
 
 
 if __name__ == "__main__":
