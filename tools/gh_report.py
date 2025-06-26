@@ -11,12 +11,20 @@ import subprocess
 import argparse
 import json
 import pprint
+from pathlib import Path
 
 
 CLI_REPO = "databricks/cli"
 DECO_REPO = os.environ["DECO_REPO"]
 DECO_TESTS_PREFIX = "https://go/deco-tests/"
 CLI_TESTS_PREFIX = "https://github.com/databricks/cli/actions/runs/"
+DIRECTORY = Path(__file__).parent
+PARSE_SCRIPT = DIRECTORY / "gh_parse.py"
+
+try:
+    PARSE_SCRIPT = PARSE_SCRIPT.relative_to(os.getcwd())
+except Exception:
+    pass  # keep absolute
 
 
 def run(cmd, shell=False):
@@ -154,7 +162,7 @@ def main():
 
     target_dir = download_run_id(args.run, repo, rm=args.rm)
     print(flush=True)
-    cmd = ["./tools/gh_parse.py"]
+    cmd = [str(PARSE_SCRIPT)]
     if args.filter:
         cmd.append(f"--filter {args.filter}")
     if args.filter_env:
