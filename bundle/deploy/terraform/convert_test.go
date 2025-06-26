@@ -749,7 +749,8 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
-	assert.Equal(t, "app1", config.Resources.Apps["test_app"].Name)
+	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
+	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
@@ -1335,7 +1336,8 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 
 	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusUpdated, config.Resources.Apps["test_app"].ModifiedStatus)
-	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].Name)
+	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].ID)
+	assert.Equal(t, "", config.Resources.Apps["test_app_old"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
 	assert.Equal(t, "test_app_new", config.Resources.Apps["test_app_new"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
