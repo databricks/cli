@@ -28,12 +28,8 @@ except Exception:
 
 
 def run(cmd, shell=False):
-    if isinstance(cmd, str):
-        sys.stderr.write(f"+ {cmd}\n")
-        return subprocess.run(cmd, check=True, shell=True)
-    else:
-        sys.stderr.write("+ " + " ".join(cmd) + "\n")
-        return subprocess.run(cmd, check=True, shell=False)
+    sys.stderr.write("+ " + " ".join(cmd) + "\n")
+    return subprocess.run(cmd, check=True, shell=False)
 
 
 def run_text(cmd, print_command=False):
@@ -119,7 +115,7 @@ def download_run_id(run_id, repo, rm):
     target_dir = f".gh-logs/{run_id}"
     if os.path.exists(target_dir):
         if rm:
-            run(f"rm -fr {target_dir}")
+            run(["rm", "-fr", target_dir])
         else:
             print(f"Already exists: {target_dir}. If that directory contains partial results, delete it to re-download: rm -fr .gh-logs/{run_id}")
             return target_dir
@@ -173,8 +169,8 @@ def main():
         cmd.append(f"--output")
     if args.markdown:
         cmd.append(f"--markdown")
-    cmd.append(f"{target_dir}/*/*")
-    run(" ".join(cmd), shell=True)
+    cmd.append(f"{target_dir}")
+    run(cmd, shell=True)
 
 
 if __name__ == "__main__":
