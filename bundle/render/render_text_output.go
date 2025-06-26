@@ -187,6 +187,9 @@ func RenderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, 
 }
 
 func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
+	if b == nil {
+		panic("internal error: b must not be nil")
+	}
 	if err := renderSummaryHeaderTemplate(out, b); err != nil {
 		return err
 	}

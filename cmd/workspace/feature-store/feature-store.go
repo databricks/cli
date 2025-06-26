@@ -70,7 +70,6 @@ func newCreateOnlineStore() *cobra.Command {
 	createOnlineStoreReq.OnlineStore = ml.OnlineStore{}
 	var createOnlineStoreJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createOnlineStoreReq.OnlineStore.Capacity, "capacity", createOnlineStoreReq.OnlineStore.Capacity, `The capacity of the online store.`)
@@ -151,8 +150,6 @@ func newDeleteOnlineStore() *cobra.Command {
 
 	var deleteOnlineStoreReq ml.DeleteOnlineStoreRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-online-store NAME"
 	cmd.Short = `Delete an Online Feature Store.`
 	cmd.Long = `Delete an Online Feature Store.
@@ -206,8 +203,6 @@ func newGetOnlineStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getOnlineStoreReq ml.GetOnlineStoreRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-online-store NAME"
 	cmd.Short = `Get an Online Feature Store.`
@@ -263,8 +258,6 @@ func newListOnlineStores() *cobra.Command {
 
 	var listOnlineStoresReq ml.ListOnlineStoresRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listOnlineStoresReq.PageSize, "page-size", listOnlineStoresReq.PageSize, `The maximum number of results to return.`)
 	cmd.Flags().StringVar(&listOnlineStoresReq.PageToken, "page-token", listOnlineStoresReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
 
@@ -315,7 +308,6 @@ func newPublishTable() *cobra.Command {
 	var publishTableReq ml.PublishTableRequest
 	var publishTableJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&publishTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "publish-table SOURCE_TABLE_NAME"
@@ -388,7 +380,6 @@ func newUpdateOnlineStore() *cobra.Command {
 	updateOnlineStoreReq.OnlineStore = ml.OnlineStore{}
 	var updateOnlineStoreJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateOnlineStoreReq.OnlineStore.Capacity, "capacity", updateOnlineStoreReq.OnlineStore.Capacity, `The capacity of the online store.`)

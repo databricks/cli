@@ -56,8 +56,6 @@ func newDisable() *cobra.Command {
 
 	var disableReq catalog.DisableRequest
 
-	// TODO: short flags
-
 	cmd.Use = "disable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `Disable a system schema.`
 	cmd.Long = `Disable a system schema.
@@ -118,7 +116,6 @@ func newEnable() *cobra.Command {
 	var enableReq catalog.EnableRequest
 	var enableJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&enableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in.`)
@@ -193,8 +190,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListSystemSchemasRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)

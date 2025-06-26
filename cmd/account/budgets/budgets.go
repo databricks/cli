@@ -62,7 +62,6 @@ func newCreate() *cobra.Command {
 	var createReq billing.CreateBudgetConfigurationRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -127,8 +126,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq billing.DeleteBudgetConfigurationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete BUDGET_ID"
 	cmd.Short = `Delete budget.`
 	cmd.Long = `Delete budget.
@@ -185,8 +182,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq billing.GetBudgetConfigurationRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get BUDGET_ID"
 	cmd.Short = `Get budget.`
@@ -245,8 +240,6 @@ func newList() *cobra.Command {
 
 	var listReq billing.ListBudgetConfigurationsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token received from a previous get all budget configurations call.`)
 
 	cmd.Use = "list"
@@ -298,7 +291,6 @@ func newUpdate() *cobra.Command {
 	var updateReq billing.UpdateBudgetConfigurationRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update BUDGET_ID"
