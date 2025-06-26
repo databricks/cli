@@ -103,6 +103,9 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
       ],
       "name": "[dev [USERNAME]] my_jobs_as_code_pipeline",
       "permissions": [],
+      "tags": {
+        "dev": "[USERNAME]"
+      },
       "target": "my_jobs_as_code_dev"
     }
   }
