@@ -2,7 +2,6 @@ package tnresources
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -73,10 +72,4 @@ func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
 func (r *ResourceApp) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
 	// TODO: changing name is recreation
 	return deployplan.ActionTypeUpdate
-}
-
-var appType = reflect.TypeOf(ResourceApp{}.config)
-
-func (r *ResourceApp) GetType() reflect.Type {
-	return appType
 }

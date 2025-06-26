@@ -8,6 +8,7 @@ Deployment complete!
 >>> [CLI] bundle summary --output json
 {
   "backend_type": "DATABRICKS",
+  "id": "my-secrets-[UUID]",
   "modified_status": "created",
   "name": "my-secrets-[UUID]",
   "permissions": [

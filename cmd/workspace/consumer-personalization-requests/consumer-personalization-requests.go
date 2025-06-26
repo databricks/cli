@@ -58,7 +58,6 @@ func newCreate() *cobra.Command {
 	var createReq marketplace.CreatePersonalizationRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, ``)
@@ -135,8 +134,6 @@ func newGet() *cobra.Command {
 
 	var getReq marketplace.GetPersonalizationRequestRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get LISTING_ID"
 	cmd.Short = `Get the personalization request for a listing.`
 	cmd.Long = `Get the personalization request for a listing.
@@ -190,8 +187,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListAllPersonalizationRequestsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)

@@ -23,6 +23,9 @@ type SecretScopePermission struct {
 }
 
 type SecretScope struct {
+	// ID is Name that is stored in resources state, usually the same as Name unless re-deployment is pending.
+	ID string `json:"id,omitempty" bundle:"readonly"`
+
 	// A unique name to identify the secret scope.
 	Name string `json:"name"`
 
@@ -82,6 +85,9 @@ func (s SecretScope) ResourceDescription() ResourceDescription {
 }
 
 func (s SecretScope) GetName() string {
+	if s.ID != "" {
+		return s.ID
+	}
 	return s.Name
 }
 
