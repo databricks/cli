@@ -1,0 +1,16 @@
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-$UNIQUE_NAME
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      development: true
+      catalog: ${var.catalog}
+      target: ${resources.schemas.bar.id}
+
+  schemas:
+    bar:
+      name: test-schema-$UNIQUE_NAME
+      catalog_name: ${var.catalog}
+      comment: This schema was created from DABs

@@ -1,0 +1,29 @@
+
+=== install pipelines cli
+>>> errcode [CLI] install-pipelines-cli -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+>>> ./subdir/pipelines deploy
+2025/06/26 16:03:45 INFO Phase: load
+2025/06/26 16:03:45 INFO Phase: initialize
+Error: unable to define default workspace root: bundle name not defined
+
+Error: AlreadyPrinted
+Usage:
+  pipelines deploy [flags]
+
+Flags:
+      --auto-approve          Skip interactive approvals that might be required for deployment.
+      --fail-on-active-runs   Fail if there are running jobs or pipelines in the deployment.
+      --force                 Force-override Git branch validation.
+      --force-lock            Force acquisition of deployment lock.
+  -h, --help                  help for deploy
+
+Global Flags:
+      --var strings   set values for variables defined in bundle config. Example: --var="foo=bar"
+
+
+>>> [CLI] bundle destroy --auto-approve
+Error: unable to define default workspace root: bundle name not defined
+
+Exit code: 1

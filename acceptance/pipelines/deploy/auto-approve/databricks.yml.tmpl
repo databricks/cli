@@ -1,0 +1,17 @@
+bundle:
+  name: test-pipeline-auto-approve-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+variables:
+  catalog:
+    description: The catalog the DLT pipeline should use.
+    default: main
+
+include:
+  - "./*.yml"
+
+targets:
+  development:
+    default: true

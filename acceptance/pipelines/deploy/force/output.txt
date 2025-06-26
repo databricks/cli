@@ -1,0 +1,43 @@
+
+=== install pipelines cli
+>>> errcode [CLI] install-pipelines-cli -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+>>> ./subdir/pipelines deploy
+2025/06/26 16:03:45 INFO Phase: load
+2025/06/26 16:03:45 INFO Phase: initialize
+2025/06/26 16:03:45 INFO No local tasks in databricks.yml config, skipping auto detect mutator=artifacts.Prepare
+2025/06/26 16:03:45 INFO Phase: build
+2025/06/26 16:03:45 INFO Phase: deploy
+2025/06/26 16:03:45 INFO Acquiring deployment lock (force: false) mutator=lock:acquire
+2025/06/26 16:03:45 INFO Remote state file does not exist. Using local Terraform state. mutator=statemgmt:state-pull
+2025/06/26 16:03:45 INFO Opening remote deployment state file mutator=deploy:state-pull
+2025/06/26 16:03:45 INFO Remote deployment state file does not exist mutator=deploy:state-pull
+2025/06/26 16:03:45 INFO Releasing deployment lock mutator=lock:release
+Error: not on the right Git branch:
+  expected according to configuration: wrong-branch
+  actual: main
+use --force to override
+
+Error: AlreadyPrinted
+Usage:
+  pipelines deploy [flags]
+
+Flags:
+      --auto-approve          Skip interactive approvals that might be required for deployment.
+      --fail-on-active-runs   Fail if there are running jobs or pipelines in the deployment.
+      --force                 Force-override Git branch validation.
+      --force-lock            Force acquisition of deployment lock.
+  -h, --help                  help for deploy
+
+Global Flags:
+      --var strings   set values for variables defined in bundle config. Example: --var="foo=bar"
+
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1

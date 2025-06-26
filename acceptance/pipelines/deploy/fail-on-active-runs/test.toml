@@ -1,0 +1,21 @@
+RecordRequests = true
+
+# --fail-on-active-runs not implemented yet
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/list"
+Response.Body = '''
+{
+  "next_page_token": null,
+  "runs": [
+    {
+      "id": 1234567890,
+      "job_id": 1234567890,
+      "status": {
+        "state": "RUNNING"
+      }
+    }
+  ]
+}
+'''

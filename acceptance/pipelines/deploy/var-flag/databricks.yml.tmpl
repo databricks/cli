@@ -1,0 +1,37 @@
+bundle:
+  name: test-pipeline-var-flag-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+variables:
+  catalog:
+    description: The catalog the DLT pipeline should use.
+    default: main
+  schema:
+    description: The schema name for the pipeline.
+    default: test_schema
+  pipeline_name:
+    description: The name of the pipeline.
+    default: test-pipeline
+
+resources:
+  pipelines:
+    foo:
+      name: ${var.pipeline_name}-$UNIQUE_NAME
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      development: true
+      catalog: ${var.catalog}
+      target: ${resources.schemas.bar.id}
+
+  schemas:
+    bar:
+      name: ${var.schema}-$UNIQUE_NAME
+      catalog_name: ${var.catalog}
+      comment: This schema was created from DABs
+
+targets:
+  development:
+    default: true

@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+tmpdir="./subdir"
+pipelines="$tmpdir/pipelines"
+mkdir -p $tmpdir
+
+title "install pipelines cli"
+trace errcode $CLI install-pipelines-cli -d $tmpdir
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+  rm -rf $pipelines $tmpdir
+}
+trap cleanup EXIT
+
+trace $pipelines deploy
+
+title "Assert the pipeline is created"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
