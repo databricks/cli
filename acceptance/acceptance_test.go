@@ -80,6 +80,11 @@ const (
 	EnvFilterVar = "ENVFILTER"
 )
 
+// On CI, we want to increase timeout, to account for slower environment
+const CITimeoutMultiplier = 2
+
+var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
+
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
 		return ".exe"
@@ -464,6 +469,11 @@ func runTest(t *testing.T,
 	} else if isRunningOnCloud {
 		timeout = max(timeout, config.TimeoutCloud)
 	}
+
+	if ApplyCITimeoutMultipler {
+		timeout *= CITimeoutMultiplier
+	}
+
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
