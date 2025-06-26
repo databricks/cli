@@ -15,6 +15,8 @@ from collections import Counter
 from pathlib import Path
 
 
+# \u200c is zero-width space. It is added so that len of the string corresponds to real width.
+# ❌, ✅, 🔄 each take space of 2 characters.
 FLAKY = "🔄\u200cflaky"
 FAIL = "❌\u200cFAIL"
 PASS = "✅\u200cpass"
@@ -28,8 +30,6 @@ INTERESTING_ACTIONS = (FAIL, FLAKY, PANIC, MISSING)
 ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
 
 ACTION_MESSAGES = {
-    # \u200c is zero-width space. It is added so that len of the string corresponds to real width.
-    # ❌, ✅, 🔄 each take space of 2 characters.
     "fail": FAIL,
     "pass": PASS,
     "skip": SKIP,
