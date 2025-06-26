@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 CLI_REPO = "databricks/cli"
-DECO_REPO = os.environ["DECO_REPO"]
+DECO_REPO = os.environ.get("DECO_REPO") or os.environ.get("GITHUB_REPOSITORY")
 DECO_TESTS_PREFIX = "https://go/deco-tests/"
 CLI_TESTS_PREFIX = "https://github.com/databricks/cli/actions/runs/"
 DIRECTORY = Path(__file__).parent
@@ -143,6 +143,7 @@ def main():
     args = parser.parse_args()
 
     repo = CLI_REPO if args.unit else DECO_REPO
+    assert repo
 
     if not args.run and not args.commit:
         if current_branch() == "main":
