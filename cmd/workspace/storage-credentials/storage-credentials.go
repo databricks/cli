@@ -72,7 +72,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateStorageCredential
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
@@ -165,8 +164,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteStorageCredentialRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force an update even if there are dependent external locations or external tables (when purpose is **STORAGE**) or dependent services (when purpose is **SERVICE**).`)
 
 	cmd.Use = "delete NAME"
@@ -226,8 +223,6 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetStorageCredentialRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a credential.`
 	cmd.Long = `Get a credential.
@@ -286,8 +281,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListStorageCredentialsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of storage credentials to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -344,7 +337,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateStorageCredential
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
@@ -432,7 +424,6 @@ func newValidate() *cobra.Command {
 	var validateReq catalog.ValidateStorageCredential
 	var validateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&validateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role

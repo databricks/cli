@@ -52,8 +52,6 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetAutomaticClusterUpdateSettingRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
@@ -108,7 +106,6 @@ func newUpdate() *cobra.Command {
 	var updateReq settings.UpdateAutomaticClusterUpdateSettingRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"

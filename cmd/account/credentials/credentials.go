@@ -62,7 +62,6 @@ func newCreate() *cobra.Command {
 	var createReq provisioning.CreateCredentialRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -139,8 +138,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq provisioning.DeleteCredentialRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete CREDENTIALS_ID"
 	cmd.Short = `Delete credential configuration.`
 	cmd.Long = `Delete credential configuration.
@@ -210,8 +207,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq provisioning.GetCredentialRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get CREDENTIALS_ID"
 	cmd.Short = `Get credential configuration.`

@@ -66,7 +66,7 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createExperimentSkipWait, "no-wait", createExperimentSkipWait, `do not wait to reach SUCCEEDED state`)
 	cmd.Flags().DurationVar(&createExperimentTimeout, "timeout", 120*time.Minute, `maximum amount of time to reach SUCCEEDED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createExperimentReq.CustomWeightsColumn, "custom-weights-column", createExperimentReq.CustomWeightsColumn, `The column in the training table used to customize weights for each time series.`)
@@ -200,8 +200,6 @@ func newGetExperiment() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getExperimentReq ml.GetForecastingExperimentRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-experiment EXPERIMENT_ID"
 	cmd.Short = `Get a forecasting experiment.`
