@@ -136,7 +136,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
             outputs.setdefault(testname, {}).setdefault(env, []).extend(output)
         all_testnames.update(test_results)
 
-    print("Parsed {count_files} files: {count_results} results", file=sys.stderr, flush=True)
+    print(f"Parsed {count_files} files: {count_results} results", file=sys.stderr, flush=True)
 
     # Check for missing tests
     for testname in all_testnames:
