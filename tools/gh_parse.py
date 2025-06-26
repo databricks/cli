@@ -39,22 +39,21 @@ ACTION_MESSAGES = {
 def cleanup_env(name):
     """
     >>> cleanup_env("test-output-aws-prod-is-linux-ubuntu-latest")
-    'aws lin'
+    'aws linux'
 
     >>> cleanup_env("test-output-gcp-prod-is-windows-server-latest")
-    'gcp win'
+    'gcp windows'
 
     >>> cleanup_env("test-output-azure-prod-ucws-is-linux-ubuntu-latest")
-    'az-ucws lin'
+    'azure ucws linux'
     """
     if not name.startswith("test-output-"):
         return ""
     name = name.removeprefix("test-output-")
-    name = name.replace("-prod-ucws-is-", "-ucws-")
+    name = name.replace("-prod-ucws-is-", " ucws-")
     name = name.replace("-prod-is-", "-")
-    name = name.replace("-linux-ubuntu-latest", " lin")
-    name = name.replace("-windows-server-latest", " win")
-    name = name.replace("azure", "az")
+    name = name.replace("-linux-ubuntu-latest", " linux")
+    name = name.replace("-windows-server-latest", " windows")
     return name
 
 
