@@ -26,18 +26,18 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
-func (db *TerranovaState) SaveState(section, resourceName, newID string, state any) error {
+func (db *TerranovaState) SaveState(group, resourceName, newID string, state any) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	sectionData, ok := db.Data.Resources[section]
+	groupData, ok := db.Data.Resources[group]
 	if !ok {
-		sectionData = make(map[string]ResourceEntry)
-		db.Data.Resources[section] = sectionData
+		groupData = make(map[string]ResourceEntry)
+		db.Data.Resources[group] = groupData
 	}
 
-	sectionData[resourceName] = ResourceEntry{
+	groupData[resourceName] = ResourceEntry{
 		ID:    newID,
 		State: state,
 	}
@@ -45,32 +45,32 @@ func (db *TerranovaState) SaveState(section, resourceName, newID string, state a
 	return nil
 }
 
-func (db *TerranovaState) DeleteState(section, resourceName string) error {
+func (db *TerranovaState) DeleteState(group, resourceName string) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	sectionData, ok := db.Data.Resources[section]
+	groupData, ok := db.Data.Resources[group]
 	if !ok {
 		return nil
 	}
 
-	delete(sectionData, resourceName)
+	delete(groupData, resourceName)
 
 	return nil
 }
 
-func (db *TerranovaState) GetResourceEntry(section, resourceName string) (ResourceEntry, bool) {
+func (db *TerranovaState) GetResourceEntry(group, resourceName string) (ResourceEntry, bool) {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	sectionData, ok := db.Data.Resources[section]
+	groupData, ok := db.Data.Resources[group]
 	if !ok {
 		return ResourceEntry{}, false
 	}
 
-	result, ok := sectionData[resourceName]
+	result, ok := groupData[resourceName]
 	return result, ok
 }
 

@@ -285,12 +285,12 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 	return auth.Env(cfg), nil
 }
 
-// GetResourceConfig returns the configuration object for a given resource section/name pair.
+// GetResourceConfig returns the configuration object for a given resource group/name pair.
 // The returned value is a pointer to the concrete struct that represents that resource type.
-// When the section or name is not found the second return value is false.
-func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
-	// Resolve the Go type that represents a single resource in this section.
-	typ, ok := config.ResourcesTypes[section]
+// When the group or name is not found the second return value is false.
+func (b *Bundle) GetResourceConfig(group, name string) (any, bool) {
+	// Resolve the Go type that represents a single resource in this group.
+	typ, ok := config.ResourcesTypes[group]
 	if !ok {
 		return nil, false
 	}
@@ -298,7 +298,7 @@ func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
 	// Fetch the raw value from the dynamic representation of the bundle config.
 	v, err := dyn.GetByPath(
 		b.Config.Value(),
-		dyn.NewPath(dyn.Key("resources"), dyn.Key(section), dyn.Key(name)),
+		dyn.NewPath(dyn.Key("resources"), dyn.Key(group), dyn.Key(name)),
 	)
 	if err != nil {
 		return nil, false
