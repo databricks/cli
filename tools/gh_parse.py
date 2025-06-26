@@ -41,12 +41,12 @@ def cleanup_env(name):
     'gcp windows'
 
     >>> cleanup_env("test-output-azure-prod-ucws-is-linux-ubuntu-latest")
-    'azure ucws linux'
+    'azure-ucws linux'
     """
     if not name.startswith("test-output-"):
         return ""
     name = name.removeprefix("test-output-")
-    name = name.replace("-prod-ucws-is-", " ucws-")
+    name = name.replace("-prod-ucws-is-", "-ucws-")
     name = name.replace("-prod-is-", "-")
     name = name.replace("-linux-ubuntu-latest", " linux")
     name = name.replace("-windows-server-latest", " windows")
