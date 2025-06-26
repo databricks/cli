@@ -220,6 +220,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.Name
 				config.Resources.SecretScopes[resource.Name] = cur
+			case "databricks_sql_endpoint":
+				if config.Resources.SqlWarehouses == nil {
+					config.Resources.SqlWarehouses = make(map[string]*resources.SqlWarehouse)
+				}
+				cur := config.Resources.SqlWarehouses[resource.Name]
+				if cur == nil {
+					cur = &resources.SqlWarehouse{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
+				config.Resources.SqlWarehouses[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 			case "databricks_secret_acl":
@@ -292,6 +302,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 	}
 	for _, src := range config.Resources.SecretScopes {
 		if src.ModifiedStatus == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.SqlWarehouses {
+		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}
