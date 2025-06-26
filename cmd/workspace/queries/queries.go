@@ -63,7 +63,6 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateQueryRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.AutoResolveDisplayName, "auto-resolve-display-name", createReq.AutoResolveDisplayName, `If true, automatically resolve query display name conflicts.`)
@@ -133,8 +132,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.TrashQueryRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a query.`
 	cmd.Long = `Delete a query.
@@ -203,8 +200,6 @@ func newGet() *cobra.Command {
 
 	var getReq sql.GetQueryRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ID"
 	cmd.Short = `Get a query.`
 	cmd.Long = `Get a query.
@@ -270,8 +265,6 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListQueriesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
@@ -324,8 +317,6 @@ func newListVisualizations() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listVisualizationsReq sql.ListVisualizationsForQueryRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listVisualizationsReq.PageSize, "page-size", listVisualizationsReq.PageSize, ``)
 	cmd.Flags().StringVar(&listVisualizationsReq.PageToken, "page-token", listVisualizationsReq.PageToken, ``)
@@ -396,7 +387,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.UpdateQueryRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts.`)

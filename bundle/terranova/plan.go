@@ -18,14 +18,14 @@ import (
 type Planner struct {
 	client       *databricks.WorkspaceClient
 	db           *tnstate.TerranovaState
-	section      string
+	group        string
 	resourceName string
 }
 
 func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
-	entry, hasEntry := d.db.GetResourceEntry(d.section, d.resourceName)
+	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 
-	resource, err := tnresources.New(d.client, d.section, d.resourceName, inputConfig)
+	resource, cfgType, err := tnresources.New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return "", err
 	}
@@ -41,7 +41,7 @@ func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionT
 		return "", errors.New("invalid state: empty id")
 	}
 
-	savedState, err := typeConvert(resource.GetType(), entry.State)
+	savedState, err := typeConvert(cfgType, entry.State)
 	if err != nil {
 		return "", fmt.Errorf("interpreting state: %w", err)
 	}
@@ -85,7 +85,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			pl := Planner{
 				client:       client,
 				db:           &b.ResourceDatabase,
-				section:      group,
+				group:        group,
 				resourceName: name,
 			}
 

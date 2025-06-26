@@ -56,7 +56,6 @@ func newCreate() *cobra.Command {
 	var createReq billing.CreateBillingUsageDashboardRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&createReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`)
@@ -126,8 +125,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq billing.GetBillingUsageDashboardRequest
-
-	// TODO: short flags
 
 	cmd.Flags().Var(&getReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`)
 	cmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)

@@ -14,7 +14,7 @@ trace $CLI workspace get-status "${DASHBOARD_PATH}" | jq '{object_type,path}'
 
 title "Load the dashboard by its ID and confirm its display name: "
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.file_reference.id')
-$CLI lakeview get $DASHBOARD_ID | jq '{display_name,serialized_dashboard}'
+$CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name,page_display_name: (.serialized_dashboard | fromjson | .pages[0].displayName)}'
 
 title "Make an out of band modification to the dashboard and confirm that it is detected:\n"
 RESOURCE_ID=$($CLI workspace get-status "${DASHBOARD_PATH}" | jq -r '.resource_id')

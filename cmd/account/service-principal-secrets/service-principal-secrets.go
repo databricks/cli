@@ -69,7 +69,6 @@ func newCreate() *cobra.Command {
 	var createReq oauth2.CreateServicePrincipalSecretRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Lifetime, "lifetime", createReq.Lifetime, `The lifetime of the secret in seconds.`)
@@ -145,8 +144,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq oauth2.DeleteServicePrincipalSecretRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete SERVICE_PRINCIPAL_ID SECRET_ID"
 	cmd.Short = `Delete service principal secret.`
 	cmd.Long = `Delete service principal secret.
@@ -207,8 +204,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq oauth2.ListServicePrincipalSecretsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `An opaque page token which was the next_page_token in the response of the previous request to list the secrets for this service principal.`)
 
