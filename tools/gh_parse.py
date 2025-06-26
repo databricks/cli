@@ -166,7 +166,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
         table.append(
             {
                 " ": status,
-                "env": env,
+                "Env": env,
                 **stats,
             }
         )
@@ -247,6 +247,7 @@ def print_table(table, columns=None, markdown=False):
                     continue
                 seen.add(key)
                 columns.append(key)
+        columns.sort()
 
     widths = [len(col) for col in columns]
     for row in table:
