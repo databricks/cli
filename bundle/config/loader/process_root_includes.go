@@ -24,6 +24,18 @@ func (m *processRootIncludes) Name() string {
 	return "ProcessRootIncludes"
 }
 
+// hasGlobCharacters checks if a path contains any glob characters.
+func hasGlobCharacters(path string) (string, bool) {
+	// List of glob characters supported by the filepath package in [filepath.Match]
+	globCharacters := []string{"*", "?", "[", "]", "^"}
+	for _, char := range globCharacters {
+		if strings.Contains(path, char) {
+			return char, true
+		}
+	}
+	return "", false
+}
+
 func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var out []bundle.Mutator
 
@@ -38,6 +50,23 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// This is stored in the bundle configuration for observability.
 	var files []string
 	var diags diag.Diagnostics
+
+	// We error on glob characters in the bundle root path since they are
+	// parsed by [filepath.Glob] as being glob patterns and thus can cause
+	// unexpected behavior.
+	//
+	// The standard library does not support globbing from a relative path,
+	// so if we want to support this, we'll need to implement our own globbing
+	// function. We can use [filepath.Match] to do so.
+	if char, ok := hasGlobCharacters(b.BundleRootPath); ok {
+		diags = diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Bundle root path contains glob pattern characters",
+			Detail:   fmt.Sprintf("The path to the bundle root %s contains glob pattern character %q. Please remove the character from this path to use bundle commands.", b.BundleRootPath, char),
+		})
+
+		return diags
+	}
 
 	// For each glob, find all files to load.
 	// Ordering of the list of globs is maintained in the output.

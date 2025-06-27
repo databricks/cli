@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -110,4 +111,71 @@ func TestProcessRootIncludesNotExists(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, loader.ProcessRootIncludes())
 	require.True(t, diags.HasError())
 	assert.ErrorContains(t, diags.Error(), "notexist.yml defined in 'include' section does not match any files")
+}
+
+func TestProcessRootIncludesGlobInRootPath(t *testing.T) {
+	tests := []struct {
+		name string
+		root string
+		diag diag.Diagnostic
+	}{
+		{
+			name: "star",
+			root: "foo/a*",
+			diag: diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Bundle root path contains glob pattern characters",
+				Detail:   `The path to the bundle root foo/a* contains glob pattern character "*". Please remove the character from this path to use bundle commands.`,
+			},
+		},
+		{
+			name: "question mark",
+			root: "bar/?b",
+			diag: diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Bundle root path contains glob pattern characters",
+				Detail:   `The path to the bundle root bar/?b contains glob pattern character "?". Please remove the character from this path to use bundle commands.`,
+			},
+		},
+		{
+			name: "left bracket",
+			root: "[ab",
+			diag: diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Bundle root path contains glob pattern characters",
+				Detail:   `The path to the bundle root [ab contains glob pattern character "[". Please remove the character from this path to use bundle commands.`,
+			},
+		},
+		{
+			name: "right bracket",
+			root: "ab]/bax",
+			diag: diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Bundle root path contains glob pattern characters",
+				Detail:   `The path to the bundle root ab]/bax contains glob pattern character "]". Please remove the character from this path to use bundle commands.`,
+			},
+		},
+		{
+			name: "hat",
+			root: "ab^bax",
+			diag: diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Bundle root path contains glob pattern characters",
+				Detail:   `The path to the bundle root ab^bax contains glob pattern character "^". Please remove the character from this path to use bundle commands.`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				BundleRootPath: test.root,
+			}
+
+			diags := bundle.Apply(context.Background(), b, loader.ProcessRootIncludes())
+			require.True(t, diags.HasError())
+			assert.Len(t, diags, 1)
+			assert.Equal(t, test.diag, diags[0])
+		})
+	}
 }
