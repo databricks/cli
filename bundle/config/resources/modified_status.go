@@ -10,6 +10,5 @@ type ModifiedStatus = string
 
 const (
 	ModifiedStatusCreated ModifiedStatus = "created"
-	ModifiedStatusUpdated ModifiedStatus = "updated"
 	ModifiedStatusDeleted ModifiedStatus = "deleted"
 )
