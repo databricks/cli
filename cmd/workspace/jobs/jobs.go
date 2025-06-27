@@ -1201,6 +1201,7 @@ func newRepairRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.RepairRun(ctx, repairRunReq)
@@ -1403,6 +1404,7 @@ func newRunNow() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.RunNow(ctx, runNowReq)
@@ -1721,6 +1723,7 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.Update(ctx, updateReq)
