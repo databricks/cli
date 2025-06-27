@@ -42,9 +42,9 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
-// resolveRunArgument resolves the resource key to run.
+// ResolveRunArgument resolves the resource key to run.
 // It returns the remaining arguments to pass to the runner, if applicable.
-func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
+func ResolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
 	// If no arguments are specified, prompt the user to select something to run.
 	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
 		key, err := promptRunArgument(ctx, b)
@@ -61,7 +61,7 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 	return args[0], args[1:], nil
 }
 
-func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
+func KeyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	// Locate the resource to run.
 	ref, err := resources.Lookup(b, arg, run.IsRunnable)
 	if err != nil {
@@ -129,7 +129,7 @@ Example usage:
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
 		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		// If user runs the bundle run command as:
@@ -141,10 +141,10 @@ Example usage:
 
 		diags = diags.Extend(phases.Initialize(ctx, b))
 		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		key, args, err := resolveRunArgument(ctx, b, args)
+		key, args, err := ResolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
 		}
@@ -156,10 +156,10 @@ Example usage:
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
 		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		runner, err := keyToRunner(b, key)
+		runner, err := KeyToRunner(b, key)
 		if err != nil {
 			return err
 		}
@@ -227,7 +227,7 @@ Example usage:
 			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
-			runner, err := keyToRunner(b, args[0])
+			runner, err := KeyToRunner(b, args[0])
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveError
 			}
