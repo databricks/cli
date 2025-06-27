@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/cli/libs/exec"
 )
 
 const DEBUG_PORT = "5678"
@@ -59,13 +57,13 @@ func NewPythonApp(ctx context.Context, config *Config, spec *AppSpec) *PythonApp
 func (p *PythonApp) PrepareEnvironment() error {
 	// Create venv first
 	venvArgs := []string{"uv", "venv"}
-	if err := p.runCommand(venvArgs); err != nil {
+	if err := runCommand(p.ctx, p.config.AppPath, venvArgs); err != nil {
 		return err
 	}
 
 	// Install default libraries
 	installArgs := append([]string{"uv", "pip", "install"}, defaultLibraries...)
-	if err := p.runCommand(installArgs); err != nil {
+	if err := runCommand(p.ctx, p.config.AppPath, installArgs); err != nil {
 		return err
 	}
 
@@ -74,7 +72,7 @@ func (p *PythonApp) PrepareEnvironment() error {
 		// We also execute command with CWD set at p.config.AppPath
 		// so we can just path local path to requirements.txt here
 		reqArgs := []string{"uv", "pip", "install", "-r", "requirements.txt"}
-		if err := p.runCommand(reqArgs); err != nil {
+		if err := runCommand(p.ctx, p.config.AppPath, reqArgs); err != nil {
 			return err
 		}
 	}
@@ -136,21 +134,4 @@ func (p *PythonApp) enableDebugging() {
 	} else {
 		spec.Command = append([]string{"python", "-m", "debugpy", "--listen", p.config.DebugPort}, spec.Command[1:]...)
 	}
-}
-
-// runCommand executes the given command and returns any error.
-func (p *PythonApp) runCommand(args []string) error {
-	e, err := exec.NewCommandExecutor(p.config.AppPath)
-	if err != nil {
-		return err
-	}
-	e.WithInheritOutput()
-
-	// Safe to join args with spaces here since args are passed directly inside PrepareEnvironment() and GetCommand()
-	// and don't contain user input.
-	cmd, err := e.StartCommand(p.ctx, strings.Join(args, " "))
-	if err != nil {
-		return err
-	}
-	return cmd.Wait()
 }
