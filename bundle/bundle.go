@@ -52,6 +52,7 @@ type Metrics struct {
 	BoolValues                  []protos.BoolMapEntry
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
+	ExecutionTimes              []protos.IntMapEntry
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
