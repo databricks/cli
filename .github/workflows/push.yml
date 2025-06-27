@@ -95,6 +95,40 @@ jobs:
       - name: Analyze slow tests
         run: make slowest
 
+      - name: Create test counter script
+        if: always()
+        run: |
+          cat > count.py << 'EOF'
+          import json
+          fails = skips = 0
+          with open("test-output.json", "r") as f:
+              for line in f:
+                  try:
+                      e = json.loads(line)
+                      if e.get("Action") == "fail": fails += 1
+                      if e.get("Action") == "skip": skips += 1
+                  except json.JSONDecodeError:
+                      continue
+          print(f"{fails} {skips}")
+          EOF
+
+      - name: Count test results
+        if: always()
+        shell: bash
+        id: counts
+        run: |
+          read fails skips <<< "$(python3 count.py)"
+          echo "fails=$fails" >> "$GITHUB_OUTPUT"
+          echo "skips=$skips" >> "$GITHUB_OUTPUT"
+
+      - name: Update job summary
+        if: always()
+        env:
+          OS_LABEL: ${{ matrix.os }}
+        run: |
+          echo "### ${OS_LABEL}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**${{ steps.counts.outputs.fails }} failed, ${{ steps.counts.outputs.skips }} skipped**" >> "$GITHUB_STEP_SUMMARY"
+
   linters:
     needs: cleanups
     name: lint
