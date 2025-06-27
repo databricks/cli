@@ -189,6 +189,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		internal.StartDefaultServer(t)
+		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
+			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
+		}
+	}
+
+	testDefaultWarehouseId := os.Getenv("TEST_DEFAULT_WAREHOUSE_ID")
+	if testDefaultWarehouseId != "" {
+		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
 	}
 
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
