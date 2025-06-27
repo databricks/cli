@@ -5,6 +5,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
+title "Check summary before deployment -- should not have id but should have modified_status=created"
+trace $CLI bundle summary --output json | jq '.resources.dashboards.file_reference' | jq 'del(.serialized_dashboard)'
 trace $CLI bundle deploy
 
 title "Assert that the dashboard exists at the expected path and is, indeed, a dashboard:"
@@ -12,8 +14,12 @@ RESOURCE_PATH=$($CLI bundle validate -o json | jq -r '.workspace.resource_path')
 DASHBOARD_PATH="${RESOURCE_PATH}/test-dashboard-${UNIQUE_NAME}.lvdash.json"
 trace $CLI workspace get-status "${DASHBOARD_PATH}" | jq '{object_type,path}'
 
+title "Check summary again -- should have id but no modified_status"
+trace $CLI bundle summary --output json | jq '.resources.dashboards.file_reference' | jq 'del(.serialized_dashboard)' > out.summary.json
+trace cat out.summary.json
+DASHBOARD_ID=$(jq -r '.id' out.summary.json)
+rm out.summary.json
 title "Load the dashboard by its ID and confirm its display name: "
-DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.file_reference.id')
 $CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name,page_display_name: (.serialized_dashboard | fromjson | .pages[0].displayName)}'
 
 title "Make an out of band modification to the dashboard and confirm that it is detected:\n"
