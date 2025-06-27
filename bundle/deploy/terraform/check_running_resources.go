@@ -50,7 +50,7 @@ func CheckRunningResource() *checkRunningResources {
 	return &checkRunningResources{}
 }
 
-func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state map[string]map[string]ExportedStateAttributes) error {
+func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state ExportedResourcesMap) error {
 	errs, errCtx := errgroup.WithContext(ctx)
 
 	for _, jobAttrs := range state["jobs"] {

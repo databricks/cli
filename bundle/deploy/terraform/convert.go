@@ -78,7 +78,7 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 	return tfroot, nil
 }
 
-func TerraformToBundle(ctx context.Context, state map[string]map[string]ExportedStateAttributes, config *config.Root) error {
+func TerraformToBundle(ctx context.Context, state ExportedResourcesMap, config *config.Root) error {
 	return config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		for groupName, group := range state {
 			for resourceName, attrs := range group {

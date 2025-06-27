@@ -52,7 +52,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-func (l *load) validateState(state map[string]map[string]ExportedStateAttributes) error {
+func (l *load) validateState(state ExportedResourcesMap) error {
 	if len(state) == 0 && slices.Contains(l.modes, ErrorOnEmptyState) {
 		return errors.New("no deployment state. Did you forget to run 'databricks bundle deploy'?")
 	}

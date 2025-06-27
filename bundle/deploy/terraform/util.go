@@ -9,7 +9,13 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/statemgmt"
 	tfjson "github.com/hashicorp/terraform-json"
+)
+
+type (
+	ResourceState        = statemgmt.ResourceState
+	ExportedResourcesMap = statemgmt.ExportedResourcesMap
 )
 
 // Partial representation of the Terraform state file format.
@@ -43,13 +49,8 @@ type stateInstanceAttributes struct {
 	ETag string `json:"etag,omitempty"`
 }
 
-type ExportedStateAttributes struct {
-	ID   string
-	ETag string
-}
-
 // Returns a mapping group -> name -> stateInstanceAttributes
-func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (map[string]map[string]ExportedStateAttributes, error) {
+func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourcesMap, error) {
 	cacheDir, err := Dir(ctx, b)
 	if err != nil {
 		return nil, err
@@ -71,7 +72,7 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (map[string]map[
 		return nil, fmt.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", state.Version)
 	}
 
-	result := make(map[string]map[string]ExportedStateAttributes)
+	result := make(ExportedResourcesMap)
 
 	for _, resource := range state.Resources {
 		if resource.Mode != tfjson.ManagedResourceMode {
@@ -86,7 +87,7 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (map[string]map[
 
 			group, present := result[groupName]
 			if !present {
-				group = make(map[string]ExportedStateAttributes)
+				group = make(map[string]ResourceState)
 				result[groupName] = group
 			}
 
@@ -94,11 +95,11 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (map[string]map[
 			case "apps":
 				fallthrough
 			case "secret_scopes":
-				group[resource.Name] = ExportedStateAttributes{ID: instance.Attributes.Name}
+				group[resource.Name] = ResourceState{ID: instance.Attributes.Name}
 			case "dashboards":
-				group[resource.Name] = ExportedStateAttributes{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
+				group[resource.Name] = ResourceState{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
 			default:
-				group[resource.Name] = ExportedStateAttributes{ID: instance.Attributes.ID}
+				group[resource.Name] = ResourceState{ID: instance.Attributes.ID}
 			}
 		}
 	}
