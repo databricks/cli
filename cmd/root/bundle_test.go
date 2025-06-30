@@ -34,7 +34,7 @@ func emptyCommand(t *testing.T) *cobra.Command {
 	ctx := context.Background()
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
-	InitProfileFlag(cmd)
+	initProfileFlag(cmd)
 	return cmd
 }
 
@@ -209,7 +209,7 @@ func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
 
 func TestTargetFlagFull(t *testing.T) {
 	cmd := emptyCommand(t)
-	InitTargetFlag(cmd)
+	initTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "--target", "development"})
 
 	ctx := context.Background()
@@ -221,7 +221,7 @@ func TestTargetFlagFull(t *testing.T) {
 
 func TestTargetFlagShort(t *testing.T) {
 	cmd := emptyCommand(t)
-	InitTargetFlag(cmd)
+	initTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "-t", "production"})
 
 	ctx := context.Background()
@@ -234,7 +234,7 @@ func TestTargetFlagShort(t *testing.T) {
 // TODO: remove when environment flag is fully deprecated
 func TestTargetEnvironmentFlag(t *testing.T) {
 	cmd := emptyCommand(t)
-	InitTargetFlag(cmd)
+	initTargetFlag(cmd)
 	initEnvironmentFlag(cmd)
 	cmd.SetArgs([]string{"version", "--environment", "development"})
 

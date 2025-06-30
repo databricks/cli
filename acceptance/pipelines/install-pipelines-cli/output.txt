@@ -19,7 +19,7 @@ Flags:
   -h, --help             help for pipelines
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+  -t, --target string    project target to use (if applicable)
   -v, --version          version for pipelines
 
 Use "pipelines [command] --help" for more information about a command.
@@ -54,7 +54,7 @@ Flags:
   -h, --help             help for pipelines
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+  -t, --target string    project target to use (if applicable)
   -v, --version          version for pipelines
 
 Use "pipelines [command] --help" for more information about a command.
