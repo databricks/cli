@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type (
-	ResourceState        = statemgmt.ResourceState
-	ExportedResourcesMap = statemgmt.ExportedResourcesMap
+	ResourceState        = resourcestate.ResourceState
+	ExportedResourcesMap = resourcestate.ExportedResourcesMap
 )
 
 // Partial representation of the Terraform state file format.
