@@ -117,7 +117,10 @@ def download_run_id(run_id, repo, rm):
         if rm:
             run(["rm", "-fr", target_dir])
         else:
-            print(f"Already exists: {target_dir}. If that directory contains partial results, delete it to re-download: rm -fr .gh-logs/{run_id}")
+            print(
+                f"Already exists: {target_dir}. If that directory contains partial results, delete it to re-download: rm -fr .gh-logs/{run_id}",
+                file=sys.stderr,
+            )
             return target_dir
     cmd = ["gh", "run", "-R", repo, "download", str(run_id), "-D", target_dir]
     run(cmd)
@@ -162,9 +165,9 @@ def main():
     print(flush=True)
     cmd = [sys.executable, str(PARSE_SCRIPT)]
     if args.filter:
-        cmd.append(f"--filter {args.filter}")
+        cmd.extend(["--filter", args.filter])
     if args.filter_env:
-        cmd.append(f"--filter-env {args.filter_env}")
+        cmd.extend(["--filter-env", args.filter_env])
     if args.output:
         cmd.append(f"--output")
     if args.markdown:

@@ -14,3 +14,9 @@ MSYS_NO_PATHCONV = "1"
 [[Repls]]
 Old = "[0-9a-z]{16,}"
 New = "[ALPHANUMID]"
+
+[[Repls]]
+# clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[(NUMBER|NUMID)\]'
+New = ''
+Order = 1000

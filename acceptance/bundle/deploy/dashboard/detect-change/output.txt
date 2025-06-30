@@ -35,7 +35,7 @@ Deployment complete!
   "id": "[ALPHANUMID]",
   "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
   "permissions": [],
-  "url": "[DATABRICKS_URL]/dashboardsv3/[ALPHANUMID]/published?o=[NUMID]",
+  "url": "[DATABRICKS_URL]/dashboardsv3/[ALPHANUMID]/published",
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 

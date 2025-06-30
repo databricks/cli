@@ -172,7 +172,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
                 **stats,
             }
         )
-    print_table(table, markdown=markdown)
+    print(format_table(table, markdown=markdown))
 
     interesting_envs = set()
     for env, stats in per_env_stats.items():
@@ -212,7 +212,11 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
                 **items,
             }
         )
-    print_table(table, markdown=markdown)
+    table_txt = format_table(table, markdown=markdown)
+    if len(table) > 5:
+        table_txt = wrap_in_details(table_txt, f"{len(table)} failing tests:")
+    if table_txt:
+        print(table_txt)
 
     if show_output:
         for testname, stats in simplified_results.items():
@@ -228,7 +232,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
                     print()
 
 
-def print_table(table, columns=None, markdown=False):
+def format_table(table, columns=None, markdown=False):
     """
     Pretty-print a list-of-dicts as an aligned text table.
 
@@ -238,7 +242,7 @@ def print_table(table, columns=None, markdown=False):
         markdown (bool): whether to output in markdown format
     """
     if not table:
-        return
+        return []
 
     if columns is None:
         columns = []
@@ -256,21 +260,30 @@ def print_table(table, columns=None, markdown=False):
         for i, col in enumerate(columns):
             widths[i] = max(widths[i], len(str(row.get(col, ""))))
 
+    result = []
+    write = result.append
+
     if markdown:
         # Header
-        print("| " + " | ".join(str(col).ljust(w) for col, w in zip(columns, widths)) + " |")
+        write("| " + " | ".join(str(col).ljust(w) for col, w in zip(columns, widths)) + " |")
         # Separator
-        print("| " + " | ".join("-" * w for w in widths) + " |")
+        write("| " + " | ".join("-" * w for w in widths) + " |")
         # Data rows
         for row in table:
-            print("| " + " | ".join(str(row.get(col, "")).ljust(w) for col, w in zip(columns, widths)) + " |")
+            write("| " + " | ".join(str(row.get(col, "")).ljust(w) for col, w in zip(columns, widths)) + " |")
     else:
         fmt = lambda cells: "  ".join(str(cell).ljust(w) for cell, w in zip(cells, widths))
-        print(fmt(columns))
+        write(fmt(columns))
         for ind, row in enumerate(table):
-            print(fmt([row.get(col, "") for col in columns]))
+            write(fmt([row.get(col, "") for col in columns]))
 
-    print()
+    write("")
+
+    return "\n".join(result)
+
+
+def wrap_in_details(txt, summary):
+    return f"<details><summary>{summary}</summary>\n\n{txt}\n\n</details>"
 
 
 def main():

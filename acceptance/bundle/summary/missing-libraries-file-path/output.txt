@@ -2,21 +2,6 @@
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
 Error: file intentionally-missing.py not found
-Please report this issue to Databricks in the form of a GitHub issue at:
-https://github.com/databricks/cli
 
-Panic Payload: runtime error: invalid memory address or nil pointer dereference
-goroutine 1 [running]:
-runtime/debug.Stack()
-github.com/databricks/cli/cmd/root.Execute.func1()
-panic({HEX?, HEX?})
-github.com/databricks/cli/cmd/bundle.renderJsonOutput(HEX, HEX?)
-github.com/databricks/cli/cmd/bundle.renderBundle(HEX, HEX, {HEX, HEX, HEX}, HEX)
-github.com/databricks/cli/cmd/bundle.newSummaryCommand.func1(HEX, {HEX?, HEX?, HEX?})
-github.com/spf13/cobra.(*Command).execute(HEX, {HEX, HEX, HEX})
-github.com/spf13/cobra.(*Command).ExecuteC(HEX)
-github.com/spf13/cobra.(*Command).ExecuteContextC(...)
-github.com/databricks/cli/cmd/root.Execute({HEX, HEX}, HEX)
-main.main()
 
 Exit code: 1
