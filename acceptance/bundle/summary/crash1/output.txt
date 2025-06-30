@@ -2,38 +2,21 @@
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
 Error: file foo.py not found
-
-The Databricks CLI unexpectedly had a fatal error.
 Please report this issue to Databricks in the form of a GitHub issue at:
 https://github.com/databricks/cli
 
-CLI Version: [DEV_VERSION]
-
 Panic Payload: runtime error: invalid memory address or nil pointer dereference
-
-Stack Trace:
 goroutine 1 [running]:
 runtime/debug.Stack()
-	/opt/homebrew/Cellar/go/[GO_VERSION]/libexec/src/runtime/debug/stack.go:26 +0x64
 github.com/databricks/cli/cmd/root.Execute.func1()
-	/Users/denis.bilenko/work/cli/cmd/root/root.go:112 +0xa4
-panic({0x1058d1ba0?, 0x[NUMID]?})
-	/opt/homebrew/Cellar/go/[GO_VERSION]/libexec/src/runtime/panic.go:792 +0x124
-github.com/databricks/cli/cmd/bundle.renderJsonOutput(0x[NUMID], 0x[NUMID]?)
-	/Users/denis.bilenko/work/cli/cmd/bundle/validate.go:21 +0x24
-github.com/databricks/cli/cmd/bundle.renderBundle(0x[NUMID], 0x0, {0x140000fcbd0, 0x1, 0x1}, 0x1)
-	/Users/denis.bilenko/work/cli/cmd/bundle/validate.go:105 +0x174
-github.com/databricks/cli/cmd/bundle.newSummaryCommand.func1(0x[NUMID], {0x140003bfc60?, 0x4?, 0x[NUMID]e?})
-	/Users/denis.bilenko/work/cli/cmd/bundle/summary.go:34 +0x4c
-github.com/spf13/cobra.(*Command).execute(0x[NUMID], {0x140003bfc40, 0x2, 0x2})
-	/Users/denis.bilenko/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1015 +0x844
-github.com/spf13/cobra.(*Command).ExecuteC(0x140001a0c08)
-	/Users/denis.bilenko/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1148 +0x384
+panic({HEX?, HEX?})
+github.com/databricks/cli/cmd/bundle.renderJsonOutput(HEX, HEX?)
+github.com/databricks/cli/cmd/bundle.renderBundle(HEX, HEX, {HEX, HEX, HEX}, HEX)
+github.com/databricks/cli/cmd/bundle.newSummaryCommand.func1(HEX, {HEX?, HEX?, HEX?})
+github.com/spf13/cobra.(*Command).execute(HEX, {HEX, HEX, HEX})
+github.com/spf13/cobra.(*Command).ExecuteC(HEX)
 github.com/spf13/cobra.(*Command).ExecuteContextC(...)
-	/Users/denis.bilenko/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1080
-github.com/databricks/cli/cmd/root.Execute({0x105bbae30, 0x1066e3040}, 0x140001a0c08)
-	/Users/denis.bilenko/work/cli/cmd/root/root.go:141 +0x10c
+github.com/databricks/cli/cmd/root.Execute({HEX, HEX}, HEX)
 main.main()
-	/Users/denis.bilenko/work/cli/main.go:29 +0x44
 
 Exit code: 1
