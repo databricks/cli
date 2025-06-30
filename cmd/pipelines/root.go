@@ -79,6 +79,5 @@ func NewRoot(ctx context.Context) *cobra.Command {
 	}
 
 	cmd.SetFlagErrorFunc(root.FlagErrorFunc)
-	cmd.SetVersionTemplate("Pipelines CLI v{{.Version}} (based on Databricks CLI v{{.Version}})\n")
 	return cmd
 }
