@@ -1,0 +1,9 @@
+Badness = "Unexpected panic"
+
+[[Repls]]
+Old = '0x[0-9a-f]{1,}'
+New = 'HEX'
+
+[[Repls]]
+Old = '\n\s+.*\n'
+New = "\n"
