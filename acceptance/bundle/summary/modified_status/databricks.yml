@@ -1,0 +1,16 @@
+bundle:
+  name: acc-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-$UNIQUE_NAME
+      libraries:
+        - file:
+            path: "./foo.py"
+
+  schemas:
+    my_schema:
+      name: test-schema-$UNIQUE_NAME
+      catalog_name: main
+      comment: COMMENT1

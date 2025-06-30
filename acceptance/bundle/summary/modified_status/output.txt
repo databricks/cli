@@ -1,0 +1,103 @@
+
+=== Initial view of resources without id and modified_status=created
+>>> [CLI] bundle summary -o json
+{
+  "pipelines": {
+    "my_pipeline": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-$UNIQUE_NAME/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "file": {
+            "path": "/Workspace/Users/[USERNAME]/.bundle/acc-$UNIQUE_NAME/default/files/foo.py"
+          }
+        }
+      ],
+      "modified_status": "created",
+      "name": "test-pipeline-$UNIQUE_NAME",
+      "permissions": []
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "main",
+      "comment": "COMMENT1",
+      "modified_status": "created",
+      "name": "test-schema-$UNIQUE_NAME"
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-$UNIQUE_NAME/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Post-deployment view of resources with id and without modified_status
+>>> [CLI] bundle summary -o json
+{
+  "pipelines": {
+    "my_pipeline": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-$UNIQUE_NAME/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "id": "[UUID]",
+      "libraries": [
+        {
+          "file": {
+            "path": "/Workspace/Users/[USERNAME]/.bundle/acc-$UNIQUE_NAME/default/files/foo.py"
+          }
+        }
+      ],
+      "name": "test-pipeline-$UNIQUE_NAME",
+      "permissions": [],
+      "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "main",
+      "comment": "COMMENT1",
+      "id": "main.test-schema-$UNIQUE_NAME",
+      "name": "test-schema-$UNIQUE_NAME",
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema-$UNIQUE_NAME?o=[NUMID]"
+    }
+  }
+}
+
+=== Expecting all resources to have modified_status=deleted
+>>> [CLI] bundle summary -o json
+{
+  "pipelines": {
+    "my_pipeline": {
+      "id": "[UUID]",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "id": "main.test-schema-$UNIQUE_NAME",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema-$UNIQUE_NAME?o=[NUMID]"
+    }
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline my_pipeline
+  delete schema my_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-$UNIQUE_NAME/default
+
+Deleting files...
+Destroy complete!
