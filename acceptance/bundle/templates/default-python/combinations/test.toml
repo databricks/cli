@@ -12,8 +12,9 @@ EnvMatrix.DLT = ["yes", "no"]
 # INCLUDE_PYTHON
 EnvMatrix.PY = ["yes", "no"]
 
-# SERVERLESS -- configured in subtest
-#EnvMatrix.S = ["yes", "no"]
+[[Server]]
+Pattern = "PUT /api/2.0/permissions/directories/0"
+Response.Body = '{}'
 
 [[Repls]]
 Old = '202\d{5}.\d{5,}'

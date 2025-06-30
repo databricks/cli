@@ -8,8 +8,7 @@ trace $CLI bundle validate -t prod
 
 trace $TESTDIR/../check_output.py $CLI bundle deploy -t dev
 
-# Fails on testserver with: Error: Method Not Allowed
-#trace ../check_output.py $CLI bundle deploy -t prod
+trace $TESTDIR/../check_output.py $CLI bundle deploy -t prod
 
 cd ..
 rm -fr X*
