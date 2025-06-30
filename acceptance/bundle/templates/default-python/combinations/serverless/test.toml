@@ -1,2 +1,1 @@
-# SERVERLESS
-Env.S = "yes"
+Env.SERVERLESS = "yes"

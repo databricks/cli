@@ -3,8 +3,8 @@ import sys
 import os
 import subprocess
 
-SERVERLESS = os.environ["S"] == "yes"
-INCLUDE_PYTHON = os.environ["P"] == "yes"
+SERVERLESS = os.environ["SERVERLESS"] == "yes"
+INCLUDE_PYTHON = os.environ["PY"] == "yes"
 
 CLOUD_ENV = os.environ.get("CLOUD_ENV")
 if CLOUD_ENV and SERVERLESS and not os.environ.get("TEST_METASTORE_ID"):
