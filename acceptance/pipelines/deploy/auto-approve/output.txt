@@ -1,0 +1,151 @@
+
+=== install pipelines cli
+>>> errcode [CLI] install-pipelines-cli -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+>>> ./subdir/pipelines deploy
+2025/06/26 16:03:45 INFO Phase: load
+2025/06/26 16:03:45 INFO Phase: initialize
+2025/06/26 16:03:45 INFO No local tasks in databricks.yml config, skipping auto detect mutator=artifacts.Prepare
+2025/06/26 16:03:45 INFO Phase: build
+2025/06/26 16:03:45 INFO Phase: deploy
+2025/06/26 16:03:45 INFO Acquiring deployment lock (force: false) mutator=lock:acquire
+2025/06/26 16:03:46 INFO Remote state file does not exist. Using local Terraform state. mutator=statemgmt:state-pull
+2025/06/26 16:03:46 INFO Opening remote deployment state file mutator=deploy:state-pull
+2025/06/26 16:03:46 INFO Remote deployment state file does not exist mutator=deploy:state-pull
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+2025/06/26 16:03:46 INFO Uploaded bundle files mutator=files.Upload
+2025/06/26 16:03:46 INFO Loading deployment state from [TEST_TMP_DIR]/.databricks/bundle/development/deployment.json mutator=deploy:state-update
+2025/06/26 16:03:46 INFO No deployment state file found mutator=deploy:state-update
+2025/06/26 16:03:46 INFO Writing local deployment state file to remote state directory mutator=deploy:state-push
+Deploying resources...
+2025/06/26 16:03:47 INFO terraform apply completed mutator=terraform.Apply
+Updating deployment state...
+Deployment complete!
+2025/06/26 16:03:47 INFO Releasing deployment lock mutator=lock:release
+
+=== Assert the pipeline is created
+>>> [CLI] pipelines get [UUID]
+{
+  "spec": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+    },
+    "development": true,
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/nb"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "target": "main.test-schema-[UNIQUE_NAME]"
+  }
+}
+
+=== Remove resources from configuration to test auto-approve
+>>> rm resources.yml
+
+=== Try to redeploy without --auto-approve - should fail
+>>> errcode ./subdir/pipelines deploy
+2025/06/26 16:03:48 INFO Phase: load
+2025/06/26 16:03:48 INFO Phase: initialize
+2025/06/26 16:03:48 INFO No local tasks in databricks.yml config, skipping auto detect mutator=artifacts.Prepare
+2025/06/26 16:03:48 INFO Phase: build
+2025/06/26 16:03:48 INFO Phase: deploy
+2025/06/26 16:03:48 INFO Acquiring deployment lock (force: false) mutator=lock:acquire
+2025/06/26 16:03:48 INFO Opening remote deployment state file mutator=deploy:state-pull
+2025/06/26 16:03:48 INFO Local deployment state is the same or newer, ignoring remote state mutator=deploy:state-pull
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+2025/06/26 16:03:48 INFO Uploaded bundle files mutator=files.Upload
+2025/06/26 16:03:48 INFO Loading deployment state from [TEST_TMP_DIR]/.databricks/bundle/development/deployment.json mutator=deploy:state-update
+2025/06/26 16:03:48 INFO Writing local deployment state file to remote state directory mutator=deploy:state-push
+The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+  delete schema bar
+
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  delete pipeline foo
+2025/06/26 16:03:49 INFO Releasing deployment lock mutator=lock:release
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [DEV_VERSION]
+
+Panic Payload: no cmdIO found in the context. Please report it as an issue
+
+Stack Trace:
+goroutine 1 [running]:
+runtime/debug.Stack()
+	/opt/homebrew/Cellar/go/[GO_VERSION]/libexec/src/runtime/debug/stack.go:26 +0x64
+github.com/databricks/cli/cmd/root.Execute.func1()
+	/Users/alyssa.gorbaneva/repos/cli/cmd/root/root.go:112 +0xa4
+panic({0x105ddf1a0?, 0x[NUMID]?})
+	/opt/homebrew/Cellar/go/[GO_VERSION]/libexec/src/runtime/panic.go:792 +0x124
+github.com/databricks/cli/libs/cmdio.fromContext(...)
+	/Users/alyssa.gorbaneva/repos/cli/libs/cmdio/io.go:284
+github.com/databricks/cli/libs/cmdio.IsInteractive({0x10619b118, 0x[NUMID]b40})
+	/Users/alyssa.gorbaneva/repos/cli/libs/cmdio/io.go:52 +0x84
+github.com/databricks/cli/libs/cmdio.IsPromptSupported({0x10619b118, 0x[NUMID]b40})
+	/Users/alyssa.gorbaneva/repos/cli/libs/cmdio/io.go:103 +0x24
+github.com/databricks/cli/bundle/phases.approvalForDeploy({0x10619b118, 0x[NUMID]b40}, 0x140001e4c08)
+	/Users/alyssa.gorbaneva/repos/cli/bundle/phases/deploy.go:113 +0xc80
+github.com/databricks/cli/bundle/phases.Deploy({0x10619b118, 0x[NUMID]b40}, 0x140001e4c08, 0x0)
+	/Users/alyssa.gorbaneva/repos/cli/bundle/phases/deploy.go:243 +0x748
+github.com/databricks/cli/cmd/pipelines.Deploy.func1(0x[NUMID]f08, {0x106cc7060?, 0x4?, 0x105a51aae?})
+	/Users/alyssa.gorbaneva/repos/cli/cmd/pipelines/deploy.go:72 +0x574
+github.com/spf13/cobra.(*Command).execute(0x[NUMID]f08, {0x106cc7060, 0x0, 0x0})
+	/Users/alyssa.gorbaneva/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1015 +0x844
+github.com/spf13/cobra.(*Command).ExecuteC(0x[NUMID]c08)
+	/Users/alyssa.gorbaneva/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1148 +0x384
+github.com/spf13/cobra.(*Command).ExecuteContextC(...)
+	/Users/alyssa.gorbaneva/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1080
+github.com/databricks/cli/cmd/root.Execute({0x10619b0e0, 0x106cc7060}, 0x[NUMID]c08)
+	/Users/alyssa.gorbaneva/repos/cli/cmd/root/root.go:141 +0x10c
+main.main()
+	/Users/alyssa.gorbaneva/repos/cli/main.go:29 +0x44
+
+Exit code: 1
+
+=== Redeploy with --auto-approve - should succeed
+>>> ./subdir/pipelines deploy --auto-approve
+2025/06/26 16:03:49 INFO Phase: load
+2025/06/26 16:03:49 INFO Phase: initialize
+2025/06/26 16:03:49 INFO No local tasks in databricks.yml config, skipping auto detect mutator=artifacts.Prepare
+2025/06/26 16:03:49 INFO Phase: build
+2025/06/26 16:03:49 INFO Phase: deploy
+2025/06/26 16:03:49 INFO Acquiring deployment lock (force: false) mutator=lock:acquire
+2025/06/26 16:03:49 INFO Opening remote deployment state file mutator=deploy:state-pull
+2025/06/26 16:03:49 INFO Local deployment state is the same or newer, ignoring remote state mutator=deploy:state-pull
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+2025/06/26 16:03:49 INFO Uploaded bundle files mutator=files.Upload
+2025/06/26 16:03:49 INFO Loading deployment state from [TEST_TMP_DIR]/.databricks/bundle/development/deployment.json mutator=deploy:state-update
+2025/06/26 16:03:49 INFO Writing local deployment state file to remote state directory mutator=deploy:state-push
+The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+  delete schema bar
+
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  delete pipeline foo
+Deploying resources...
+2025/06/26 16:03:50 INFO terraform apply completed mutator=terraform.Apply
+Updating deployment state...
+Deployment complete!
+2025/06/26 16:03:50 INFO Releasing deployment lock mutator=lock:release
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

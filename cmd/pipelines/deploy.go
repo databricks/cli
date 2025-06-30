@@ -1,14 +1,12 @@
-package bundle
+package pipelines
 
 import (
 	"context"
-	"fmt"
-	"io"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/bundle/render"
+	bundlecmd "github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
@@ -16,27 +14,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// newDeployCommand is copied to cmd/pipelines/deploy.go and adapted for pipelines use.
-func newDeployCommand() *cobra.Command {
+// Deploy is copied from cmd/bundle/deploy.go and adapted for pipelines use.
+func Deploy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploy bundle",
+		Short: "Deploy pipelines",
 		Args:  root.NoArgs,
 	}
 
 	var force bool
 	var forceLock bool
-	var failOnActiveRuns bool
-	var clusterId string
 	var autoApprove bool
 	var verbose bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
-	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
-	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
-	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
-	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
@@ -50,17 +42,6 @@ func newDeployCommand() *cobra.Command {
 				b.Config.Bundle.Force = force
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
-
-				if cmd.Flag("compute-id").Changed {
-					b.Config.Bundle.ClusterId = clusterId
-				}
-				if cmd.Flag("cluster-id").Changed {
-					b.Config.Bundle.ClusterId = clusterId
-				}
-				if cmd.Flag("fail-on-active-runs").Changed {
-					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
-				}
-
 				return nil
 			})
 
@@ -86,21 +67,7 @@ func newDeployCommand() *cobra.Command {
 			}
 		}
 
-		return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+		return bundlecmd.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 	}
 	return cmd
-}
-
-func RenderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
-	renderOpts := render.RenderOptions{RenderSummaryTable: false}
-	err := render.RenderDiagnostics(w, b, diags, renderOpts)
-	if err != nil {
-		return fmt.Errorf("failed to render output: %w", err)
-	}
-
-	if diags.HasError() {
-		return root.ErrAlreadyPrinted
-	}
-
-	return nil
 }

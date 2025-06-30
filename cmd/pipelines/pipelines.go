@@ -14,5 +14,8 @@ func New() *cobra.Command {
 		},
 	}
 
+	initVariableFlag(cmd)
+	cmd.AddCommand(Deploy())
+
 	return cmd
 }

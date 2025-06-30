@@ -1,0 +1,60 @@
+
+=== install pipelines cli
+>>> errcode [CLI] install-pipelines-cli -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+>>> ./subdir/pipelines deploy
+2025/06/26 16:03:45 INFO Phase: load
+2025/06/26 16:03:45 INFO Phase: initialize
+2025/06/26 16:03:45 INFO No local tasks in databricks.yml config, skipping auto detect mutator=artifacts.Prepare
+2025/06/26 16:03:45 INFO Phase: build
+2025/06/26 16:03:45 INFO Phase: deploy
+2025/06/26 16:03:45 INFO Acquiring deployment lock (force: false) mutator=lock:acquire
+2025/06/26 16:03:45 INFO Remote state file does not exist. Using local Terraform state. mutator=statemgmt:state-pull
+2025/06/26 16:03:45 INFO Opening remote deployment state file mutator=deploy:state-pull
+2025/06/26 16:03:45 INFO Remote deployment state file does not exist mutator=deploy:state-pull
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+2025/06/26 16:03:46 INFO Uploaded bundle files mutator=files.Upload
+2025/06/26 16:03:46 INFO Loading deployment state from [TEST_TMP_DIR]/.databricks/bundle/development/deployment.json mutator=deploy:state-update
+2025/06/26 16:03:46 INFO No deployment state file found mutator=deploy:state-update
+2025/06/26 16:03:46 INFO Writing local deployment state file to remote state directory mutator=deploy:state-push
+Deploying resources...
+2025/06/26 16:03:47 INFO terraform apply completed mutator=terraform.Apply
+Updating deployment state...
+Deployment complete!
+2025/06/26 16:03:47 INFO Releasing deployment lock mutator=lock:release
+
+=== Assert the pipeline is created
+>>> [CLI] pipelines get [UUID]
+{
+  "spec": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+    },
+    "development": true,
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/nb"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "target": "main.test-schema-[UNIQUE_NAME]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline foo
+  delete schema bar
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
