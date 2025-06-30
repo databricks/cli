@@ -165,9 +165,9 @@ def main():
     print(flush=True)
     cmd = [sys.executable, str(PARSE_SCRIPT)]
     if args.filter:
-        cmd.append(f"--filter {args.filter}")
+        cmd.extend(["--filter", args.filter])
     if args.filter_env:
-        cmd.append(f"--filter-env {args.filter_env}")
+        cmd.extend(["--filter-env", args.filter_env])
     if args.output:
         cmd.append(f"--output")
     if args.markdown:
