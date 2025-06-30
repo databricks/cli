@@ -81,6 +81,15 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 func TerraformToBundle(ctx context.Context, state ExportedResourcesMap, config *config.Root) error {
 	return config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		for groupName, group := range state {
+			groupPath := dyn.Path{dyn.Key("resources"), dyn.Key(groupName)}
+			groupCfg, _ := dyn.GetByPath(v, groupPath)
+			if !groupCfg.IsValid() {
+				var err error
+				v, err = dyn.SetByPath(v, groupPath, dyn.V(dyn.NewMapping()))
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("internal error: failed to create resources.%s", groupName)
+				}
+			}
 			for resourceName, attrs := range group {
 				path := dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName)}
 				resource, err := dyn.GetByPath(v, path)
