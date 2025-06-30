@@ -14,6 +14,7 @@ MSYS_NO_PATHCONV = "1"
 [[Repls]]
 Old = "[0-9a-z]{16,}"
 New = "[DASHBOARD_ID]"
+# This replacement conflicts with NUMID, so apply this one first
 Order = -1000
 
 [[Repls]]
