@@ -31,7 +31,7 @@ Workspace:
 
 Validation OK!
 
->>> ../check_output.py [CLI] bundle deploy -t dev
+>>> [TESTROOT]/bundle/templates/default-python/combinations/classic/../check_output.py [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev/files...
 Deploying resources...
 Deployment complete!
