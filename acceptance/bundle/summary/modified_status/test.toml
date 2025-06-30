@@ -1,1 +1,1 @@
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # "bundle summary" not implemented
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # "bundle summary" not implemented for direct deployment
