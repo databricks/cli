@@ -1,0 +1,10 @@
+bundle:
+  name: test-pipeline-run-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-$UNIQUE_NAME
+      libraries:
+        - file:
+            path: pipeline_file.py

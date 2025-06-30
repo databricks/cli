@@ -77,6 +77,7 @@ func KeyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	return runner, nil
 }
 
+// newRunCommand is copied to cmd/pipelines/run.go and adapted for pipelines use.
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",

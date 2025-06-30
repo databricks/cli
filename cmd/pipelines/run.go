@@ -20,10 +20,11 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// newRunCommand is copied from cmd/bundle/run.go and adapted for pipelines use.
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
-		Short: "Run a pipeline update",
+		Short: "Run a pipeline",
 		Long: `Run the pipeline identified by KEY.
 The KEY is the unique identifier of the resource to run.`,
 	}
@@ -31,8 +32,9 @@ The KEY is the unique identifier of the resource to run.`,
 	var runOptions run.Options
 
 	// Only define pipeline flags, skip job flags
-	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline")
+	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline Run")
 	runOptions.Pipeline.Define(pipelineGroup.FlagSet())
+	pipelineGroup.FlagSet().MarkHidden("validate-only")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(pipelineGroup)

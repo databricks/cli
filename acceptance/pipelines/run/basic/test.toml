@@ -1,0 +1,7 @@
+
+Ignore = [
+    "databricks.yml",
+]
+
+Timeout = '30s'
+RecordRequests = true
