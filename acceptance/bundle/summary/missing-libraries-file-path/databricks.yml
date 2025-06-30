@@ -4,5 +4,4 @@ resources:
       name: test-pipeline
       libraries:
         - file:
-            # missing on purpose
-            path: "./foo.py"
+            path: "./intentionally-missing.py"
