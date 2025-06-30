@@ -44,7 +44,7 @@ jobs:
           - windows-latest
         deployment:
           - "terraform"
-          - "direct-exp"
+          - "direct"
 
     steps:
       - name: Checkout repository and submodules
