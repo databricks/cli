@@ -1,7 +1,7 @@
 
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
-Error: file foo.py not found
+Error: file intentionally-missing.py not found
 Please report this issue to Databricks in the form of a GitHub issue at:
 https://github.com/databricks/cli
 
