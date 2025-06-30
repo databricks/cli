@@ -13,6 +13,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   init        Initialize a new pipelines project
+  run         Run a pipeline update
 
 Flags:
       --debug            enable debug logging
@@ -20,6 +21,7 @@ Flags:
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
   -v, --version          version for pipelines
 
 Use "pipelines [command] --help" for more information about a command.
@@ -48,6 +50,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   init        Initialize a new pipelines project
+  run         Run a pipeline update
 
 Flags:
       --debug            enable debug logging
@@ -55,6 +58,7 @@ Flags:
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
   -v, --version          version for pipelines
 
 Use "pipelines [command] --help" for more information about a command.
