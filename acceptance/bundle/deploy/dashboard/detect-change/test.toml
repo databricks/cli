@@ -15,3 +15,7 @@ MSYS_NO_PATHCONV = "1"
 Old = "[0-9a-z]{16,}"
 New = "[DASHBOARD_ID]"
 Order = -1000
+
+[[Repls]]
+Old = '\?o=\[DASHBOARD_ID\]'
+New = ''

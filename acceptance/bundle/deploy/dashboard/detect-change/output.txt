@@ -8,7 +8,7 @@
   "modified_status": "created",
   "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]/resources",
   "permissions": [],
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  "warehouse_id": "[DASHBOARD_ID]"
 }
 
 >>> [CLI] bundle deploy
@@ -35,8 +35,8 @@ Deployment complete!
   "id": "[DASHBOARD_ID]",
   "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]/resources",
   "permissions": [],
-  "url": "[DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published?o=[NUMID]",
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  "url": "[DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published",
+  "warehouse_id": "[DASHBOARD_ID]"
 }
 
 === Load the dashboard by its ID and confirm its display name: {
