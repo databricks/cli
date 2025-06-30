@@ -1,0 +1,7 @@
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline
+      libraries:
+        - file:
+            path: "./intentionally-missing.py"
