@@ -78,18 +78,33 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 	return tfroot, nil
 }
 
+func ensureMap(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+	item, _ := dyn.GetByPath(v, path)
+	if !item.IsValid() {
+		var err error
+		v, err = dyn.SetByPath(v, path, dyn.V(dyn.NewMapping()))
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("internal error: failed to create %s: %s", path, err)
+		}
+	}
+	return v, nil
+}
+
 func TerraformToBundle(ctx context.Context, state ExportedResourcesMap, config *config.Root) error {
 	return config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		var err error
+		v, err = ensureMap(v, dyn.Path{dyn.Key("resources")})
+		if err != nil {
+			return v, err
+		}
+
 		for groupName, group := range state {
-			groupPath := dyn.Path{dyn.Key("resources"), dyn.Key(groupName)}
-			groupCfg, _ := dyn.GetByPath(v, groupPath)
-			if !groupCfg.IsValid() {
-				var err error
-				v, err = dyn.SetByPath(v, groupPath, dyn.V(dyn.NewMapping()))
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("internal error: failed to create resources.%s", groupName)
-				}
+			var err error
+			v, err = ensureMap(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName)})
+			if err != nil {
+				return v, err
 			}
+
 			for resourceName, attrs := range group {
 				path := dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName)}
 				resource, err := dyn.GetByPath(v, path)
