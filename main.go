@@ -18,7 +18,7 @@ import (
 func getCommand(ctx context.Context) *cobra.Command {
 	invokedAs := filepath.Base(os.Args[0])
 	if strings.HasPrefix(invokedAs, "pipelines") {
-		return pipelines.New()
+		return pipelines.New(ctx)
 	}
 	return cmd.New(ctx)
 }

@@ -47,7 +47,7 @@ func isCannotConfigureAuth(err error) bool {
 // Referenced by cmd/labs/project/entrypoint.go.
 var ErrCannotConfigureAuth = errors.New("cannot configure default credentials, please check https://docs.databricks.com/en/dev-tools/auth.html#databricks-client-unified-authentication to configure credentials for your preferred authentication method.")
 
-func initProfileFlag(cmd *cobra.Command) {
+func InitProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }

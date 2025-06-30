@@ -11,7 +11,7 @@ import (
 
 func TestWithCommandExecIdInUserAgent(t *testing.T) {
 	ctx := cmdctx.GenerateExecId(context.Background())
-	ctx = withCommandExecIdInUserAgent(ctx)
+	ctx = WithCommandExecIdInUserAgent(ctx)
 
 	// user agent should contain cmd-exec-id/<UUID>
 	ua := useragent.FromContext(ctx)

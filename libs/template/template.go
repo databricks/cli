@@ -27,6 +27,7 @@ const (
 	DefaultPython          TemplateName = "default-python"
 	DefaultSql             TemplateName = "default-sql"
 	LakeflowPipelines      TemplateName = "lakeflow-pipelines"
+	Pipelines              TemplateName = "pipelines"
 	DbtSql                 TemplateName = "dbt-sql"
 	MlopsStacks            TemplateName = "mlops-stacks"
 	DefaultPydabs          TemplateName = "default-pydabs"
@@ -53,6 +54,13 @@ var databricksTemplates = []Template{
 		description: "The default template for Lakeflow Declarative Pipelines",
 		Reader:      &builtinReader{name: string(LakeflowPipelines)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowPipelines}},
+	},
+	{
+		name:        Pipelines,
+		hidden:      true,
+		description: "The default template for pipelines CLI",
+		Reader:      &builtinReader{name: string(Pipelines)},
+		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pipelines}},
 	},
 	{
 		name:        DbtSql,

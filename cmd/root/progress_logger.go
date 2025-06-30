@@ -14,13 +14,13 @@ import (
 
 const envProgressFormat = "DATABRICKS_CLI_PROGRESS_FORMAT"
 
-type progressLoggerFlag struct {
+type ProgressLoggerFlag struct {
 	flags.ProgressLogFormat
 
-	log *logFlags
+	log *LogFlags
 }
 
-func (f *progressLoggerFlag) resolveModeDefault(format flags.ProgressLogFormat) flags.ProgressLogFormat {
+func (f *ProgressLoggerFlag) resolveModeDefault(format flags.ProgressLogFormat) flags.ProgressLogFormat {
 	if (f.log.level.String() == "disabled" || f.log.file.String() != "stderr") &&
 		term.IsTerminal(int(os.Stderr.Fd())) {
 		return flags.ModeInplace
@@ -28,7 +28,7 @@ func (f *progressLoggerFlag) resolveModeDefault(format flags.ProgressLogFormat) 
 	return flags.ModeAppend
 }
 
-func (f *progressLoggerFlag) initializeContext(ctx context.Context) (context.Context, error) {
+func (f *ProgressLoggerFlag) InitializeContext(ctx context.Context) (context.Context, error) {
 	// No need to initialize the logger if it's already set in the context. This
 	// happens in unit tests where the logger is setup as a fixture.
 	if _, ok := cmdio.FromContext(ctx); ok {
@@ -49,8 +49,8 @@ func (f *progressLoggerFlag) initializeContext(ctx context.Context) (context.Con
 	return cmdio.NewContext(ctx, progressLogger), nil
 }
 
-func initProgressLoggerFlag(cmd *cobra.Command, logFlags *logFlags) *progressLoggerFlag {
-	f := progressLoggerFlag{
+func InitProgressLoggerFlag(cmd *cobra.Command, logFlags *LogFlags) *ProgressLoggerFlag {
+	f := ProgressLoggerFlag{
 		ProgressLogFormat: flags.NewProgressLogFormat(),
 
 		log: logFlags,
