@@ -67,7 +67,7 @@ Deployment complete!
       "task_key": "my_notebook_task"
     }
   ],
-  "url": "[DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]"
+  "url": "[DATABRICKS_URL]/jobs/[NUMID]"
 }
 
 === Assert job 1 is created
