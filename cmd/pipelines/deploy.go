@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Deploy is copied from cmd/bundle/deploy.go and adapted for pipelines use.
 func Deploy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
@@ -23,12 +24,10 @@ func Deploy() *cobra.Command {
 
 	var force bool
 	var forceLock bool
-	var failOnActiveRuns bool
 	var autoApprove bool
 	var verbose bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
-	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
@@ -43,11 +42,6 @@ func Deploy() *cobra.Command {
 				b.Config.Bundle.Force = force
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
-
-				if cmd.Flag("fail-on-active-runs").Changed {
-					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
-				}
-
 				return nil
 			})
 

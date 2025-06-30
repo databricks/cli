@@ -1,8 +1,0 @@
-resources:
-  jobs:
-    my_job:
-      name: My Job
-      tasks:
-        - task_key: my_notebook
-          notebook_task:
-            notebook_path: my_notebook.py

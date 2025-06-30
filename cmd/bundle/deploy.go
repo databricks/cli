@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newDeployCommand is copied to cmd/pipelines/deploy.go and adapted for pipelines use.
 func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
