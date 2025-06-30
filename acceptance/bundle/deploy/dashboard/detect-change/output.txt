@@ -2,26 +2,26 @@
 === Check summary before deployment -- should not have id but should have modified_status=created
 >>> [CLI] bundle summary --output json
 {
-  "display_name": "test-dashboard-[UNIQUE_NAME]",
+  "display_name": "test-dashboard-[DASHBOARD_ID]",
   "embed_credentials": false,
   "file_path": "dashboard.lvdash.json",
   "modified_status": "created",
-  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]/resources",
   "permissions": [],
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 === Assert that the dashboard exists at the expected path and is, indeed, a dashboard:
->>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]/resources/test-dashboard-[DASHBOARD_ID].lvdash.json
 {
   "object_type": "DASHBOARD",
-  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json"
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]/resources/test-dashboard-[DASHBOARD_ID].lvdash.json"
 }
 
 === Check summary again -- should have id but no modified_status
@@ -29,18 +29,18 @@ Deployment complete!
 
 >>> cat out.summary.json
 {
-  "display_name": "test-dashboard-[UNIQUE_NAME]",
+  "display_name": "test-dashboard-[DASHBOARD_ID]",
   "embed_credentials": false,
   "file_path": "dashboard.lvdash.json",
-  "id": "[ALPHANUMID]",
-  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
+  "id": "[DASHBOARD_ID]",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]/resources",
   "permissions": [],
-  "url": "[DATABRICKS_URL]/dashboardsv3/[ALPHANUMID]/published?o=[NUMID]",
+  "url": "[DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published?o=[NUMID]",
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
 === Load the dashboard by its ID and confirm its display name: {
-  "display_name": "test-dashboard-[UNIQUE_NAME]",
+  "display_name": "test-dashboard-[DASHBOARD_ID]",
   "page_display_name": "New Page"
 }
 
@@ -68,7 +68,7 @@ Exit code: 1
 
 === Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored:
 >>> errcode [CLI] bundle deploy --force
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -77,7 +77,7 @@ Deployment complete!
 The following resources will be deleted:
   delete dashboard file_reference
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[DASHBOARD_ID]
 
 Deleting files...
 Destroy complete!
