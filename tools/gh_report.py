@@ -117,7 +117,10 @@ def download_run_id(run_id, repo, rm):
         if rm:
             run(["rm", "-fr", target_dir])
         else:
-            print(f"Already exists: {target_dir}. If that directory contains partial results, delete it to re-download: rm -fr .gh-logs/{run_id}")
+            print(
+                f"Already exists: {target_dir}. If that directory contains partial results, delete it to re-download: rm -fr .gh-logs/{run_id}",
+                file=sys.stderr,
+            )
             return target_dir
     cmd = ["gh", "run", "-R", repo, "download", str(run_id), "-D", target_dir]
     run(cmd)
