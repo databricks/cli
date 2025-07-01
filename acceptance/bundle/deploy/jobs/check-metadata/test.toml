@@ -17,6 +17,6 @@ MSYS_NO_PATHCONV = "1"
 
 [[Repls]]
 # clean up ?o=<num> suffix after URL since not all workspaces have that
-Old = '\?o=\[(NUMBER|NUMID)\]'
+Old = '\?o=\[NUMID\]'
 New = ''
 Order = 1000
