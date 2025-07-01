@@ -19,7 +19,7 @@ const (
 	upstreamVersionKey = "upstream-version"
 )
 
-func WithUpstreamInUserAgent(ctx context.Context) context.Context {
+func withUpstreamInUserAgent(ctx context.Context) context.Context {
 	value := env.Get(ctx, upstreamEnvVar)
 	if value == "" {
 		return ctx

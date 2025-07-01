@@ -168,7 +168,7 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 	return maps.Keys(b.Config.Targets), cobra.ShellCompDirectiveDefault
 }
 
-func InitTargetFlag(cmd *cobra.Command) {
+func initTargetFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "target" parameter.
 	cmd.PersistentFlags().StringP("target", "t", "", "bundle target to use (if applicable)")
 	cmd.RegisterFlagCompletionFunc("target", targetCompletion)

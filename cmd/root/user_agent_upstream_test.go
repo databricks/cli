@@ -10,20 +10,20 @@ import (
 
 func TestUpstreamSet(t *testing.T) {
 	t.Setenv(upstreamEnvVar, "foobar")
-	ctx := WithUpstreamInUserAgent(context.Background())
+	ctx := withUpstreamInUserAgent(context.Background())
 	assert.Contains(t, useragent.FromContext(ctx), "upstream/foobar")
 }
 
 func TestUpstreamSetEmpty(t *testing.T) {
 	t.Setenv(upstreamEnvVar, "")
-	ctx := WithUpstreamInUserAgent(context.Background())
+	ctx := withUpstreamInUserAgent(context.Background())
 	assert.NotContains(t, useragent.FromContext(ctx), "upstream/")
 }
 
 func TestUpstreamVersionSet(t *testing.T) {
 	t.Setenv(upstreamEnvVar, "foobar")
 	t.Setenv(upstreamVersionEnvVar, "0.0.1")
-	ctx := WithUpstreamInUserAgent(context.Background())
+	ctx := withUpstreamInUserAgent(context.Background())
 	assert.Contains(t, useragent.FromContext(ctx), "upstream/foobar")
 	assert.Contains(t, useragent.FromContext(ctx), "upstream-version/0.0.1")
 }
@@ -31,7 +31,7 @@ func TestUpstreamVersionSet(t *testing.T) {
 func TestUpstreamVersionSetEmpty(t *testing.T) {
 	t.Setenv(upstreamEnvVar, "foobar")
 	t.Setenv(upstreamVersionEnvVar, "")
-	ctx := WithUpstreamInUserAgent(context.Background())
+	ctx := withUpstreamInUserAgent(context.Background())
 	assert.Contains(t, useragent.FromContext(ctx), "upstream/foobar")
 	assert.NotContains(t, useragent.FromContext(ctx), "upstream-version/")
 }
@@ -39,7 +39,7 @@ func TestUpstreamVersionSetEmpty(t *testing.T) {
 func TestUpstreamVersionSetUpstreamNotSet(t *testing.T) {
 	t.Setenv(upstreamEnvVar, "")
 	t.Setenv(upstreamVersionEnvVar, "0.0.1")
-	ctx := WithUpstreamInUserAgent(context.Background())
+	ctx := withUpstreamInUserAgent(context.Background())
 	assert.NotContains(t, useragent.FromContext(ctx), "upstream/")
 	assert.NotContains(t, useragent.FromContext(ctx), "upstream-version/")
 }

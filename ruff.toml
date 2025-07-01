@@ -3,6 +3,5 @@ line-length = 150
 
 exclude = [
     "tagging.py", # tagging.py is synced from universe in the `openapi/tagging` directory and follows different format rules.
-    "acceptance/bundle/templates/lakeflow-pipelines/**/*.py", # files are manually formatted
-    "acceptance/bundle/templates/pipelines/**/*.py" # files are manually formatted
+    "acceptance/bundle/templates/lakeflow-pipelines/**/*.py" # files are manually formatted
 ]

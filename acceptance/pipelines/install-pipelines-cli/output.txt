@@ -20,7 +20,7 @@ Flags:
   -h, --help             help for pipelines
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+  -t, --target string    project target to use (if applicable)
       --var strings      set values for variables defined in project config. Example: --var="foo=bar"
   -v, --version          version for pipelines
 
@@ -57,7 +57,7 @@ Flags:
   -h, --help             help for pipelines
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+  -t, --target string    project target to use (if applicable)
       --var strings      set values for variables defined in project config. Example: --var="foo=bar"
   -v, --version          version for pipelines
 

@@ -9,12 +9,12 @@ import (
 
 const envOutputFormat = "DATABRICKS_OUTPUT_FORMAT"
 
-type OutputFlag struct {
+type outputFlag struct {
 	output flags.Output
 }
 
-func InitOutputFlag(cmd *cobra.Command) *OutputFlag {
-	f := OutputFlag{
+func initOutputFlag(cmd *cobra.Command) *outputFlag {
+	f := outputFlag{
 		output: flags.OutputText,
 	}
 
@@ -37,7 +37,7 @@ func OutputType(cmd *cobra.Command) flags.Output {
 	return *f
 }
 
-func (f *OutputFlag) InitializeIO(cmd *cobra.Command) error {
+func (f *outputFlag) initializeIO(cmd *cobra.Command) error {
 	var headerTemplate, template string
 	if cmd.Annotations != nil {
 		// rely on zeroval being an empty string

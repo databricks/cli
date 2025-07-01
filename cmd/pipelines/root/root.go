@@ -1,19 +1,20 @@
-package pipelines
+// Copied from cmd/root/root.go and adapted for pipelines use.
+package root
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
-// NewRoot is copied from cmd/root/root.go and adapted for pipelines use.
-func NewRoot(ctx context.Context) *cobra.Command {
+// New is copied from cmd/root/root.go and adapted for pipelines use.
+func New(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "pipelines",
 		Short:   "Pipelines CLI",
@@ -34,17 +35,17 @@ func NewRoot(ctx context.Context) *cobra.Command {
 	cmd.SetContext(ctx)
 
 	// Initialize flags
-	logFlags := root.InitLogFlags(cmd)
-	progressLoggerFlag := root.InitProgressLoggerFlag(cmd, logFlags)
-	outputFlag := root.InitOutputFlag(cmd)
-	root.InitProfileFlag(cmd)
-	root.InitTargetFlag(cmd)
+	logFlags := initLogFlags(cmd)
+	progressLoggerFlag := initProgressLoggerFlag(cmd, logFlags)
+	outputFlag := initOutputFlag(cmd)
+	initProfileFlag(cmd)
+	initTargetFlag(cmd)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
 		// Configure default logger.
-		ctx, err := logFlags.InitializeContext(ctx)
+		ctx, err := logFlags.initializeContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -55,7 +56,7 @@ func NewRoot(ctx context.Context) *cobra.Command {
 			slog.String("args", strings.Join(os.Args, ", ")))
 
 		// Configure progress logger
-		ctx, err = progressLoggerFlag.InitializeContext(ctx)
+		ctx, err = progressLoggerFlag.initializeContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -63,7 +64,7 @@ func NewRoot(ctx context.Context) *cobra.Command {
 		cmd.SetContext(ctx)
 
 		// Configure command IO
-		err = outputFlag.InitializeIO(cmd)
+		err = outputFlag.initializeIO(cmd)
 		if err != nil {
 			return err
 		}
@@ -71,14 +72,18 @@ func NewRoot(ctx context.Context) *cobra.Command {
 		ctx = cmd.Context()
 
 		// Configure our user agent with the command that's about to be executed.
-		ctx = root.WithCommandInUserAgent(ctx, cmd)
-		ctx = root.WithCommandExecIdInUserAgent(ctx)
-		ctx = root.WithUpstreamInUserAgent(ctx)
+		ctx = withCommandInUserAgent(ctx, cmd)
+		ctx = withCommandExecIdInUserAgent(ctx)
+		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
 	}
 
-	cmd.SetFlagErrorFunc(root.FlagErrorFunc)
-	cmd.SetVersionTemplate("Pipelines CLI v{{.Version}} (based on Databricks CLI v{{.Version}})\n")
+	cmd.SetFlagErrorFunc(flagErrorFunc)
 	return cmd
+}
+
+// Wrap flag errors to include the usage string.
+func flagErrorFunc(c *cobra.Command, err error) error {
+	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }

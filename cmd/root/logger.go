@@ -20,14 +20,14 @@ const (
 	envLogFormat = "DATABRICKS_LOG_FORMAT"
 )
 
-type LogFlags struct {
+type logFlags struct {
 	file   flags.LogFileFlag
 	level  flags.LogLevelFlag
 	output flags.Output
 	debug  bool
 }
 
-func (f *LogFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
+func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
 	switch f.output {
 	case flags.OutputJSON:
 		return slog.NewJSONHandler(f.file.Writer(), &opts), nil
@@ -43,7 +43,7 @@ func (f *LogFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error
 	}
 }
 
-func (f *LogFlags) InitializeContext(ctx context.Context) (context.Context, error) {
+func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {
 	if f.debug {
 		err := f.level.Set("debug")
 		if err != nil {
@@ -74,8 +74,8 @@ func (f *LogFlags) InitializeContext(ctx context.Context) (context.Context, erro
 	return log.NewContext(ctx, slog.Default()), nil
 }
 
-func InitLogFlags(cmd *cobra.Command) *LogFlags {
-	f := LogFlags{
+func initLogFlags(cmd *cobra.Command) *logFlags {
+	f := logFlags{
 		file:   flags.NewLogFileFlag(),
 		level:  flags.NewLogLevelFlag(),
 		output: flags.OutputText,
