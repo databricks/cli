@@ -107,7 +107,7 @@ func (t *PatternTrie) Insert(pattern Pattern) error {
 		}
 
 		// Mark as end of pattern if this is the last component.
-		if !next.isEnd && i == len(pattern)-1 {
+		if i == len(pattern)-1 {
 			next.isEnd = true
 		}
 
@@ -121,8 +121,8 @@ func (t *PatternTrie) Insert(pattern Pattern) error {
 // SearchPath checks if the given path matches any pattern in the trie.
 // A path matches if it exactly matches a pattern or if it matches a pattern with wildcards.
 func (t *PatternTrie) SearchPath(path Path) (Pattern, bool) {
-	// We statically allocate the prefix array that is used to track the current
-	// prefix accumulated while walking the prefix tree. Having the static allocation
+	// We pre-allocate the prefix array that is used to track the current
+	// prefix accumulated while walking the prefix tree. Pre-allocating
 	// ensures that we do not allocate memory on every recursive call.
 	prefix := make(Pattern, len(path))
 	pattern, ok := t.searchPathRecursive(t.root, path, prefix, 0)
@@ -145,6 +145,9 @@ func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, prefix Patt
 
 	// Zero case, when the query path is the root node. We return nil here to match
 	// the semantics of [MustPatternFromString] which returns nil for the empty string.
+	//
+	// We cannot return a Pattern{} object here because then MustPatternFromString(""), which
+	// returns nil will not be equal to the Pattern{} object returned by this function.
 	if len(path) == 0 {
 		return nil, node.isEnd
 	}
@@ -170,7 +173,7 @@ func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, prefix Patt
 	if currentComponent.isKey() {
 		child, exists := node.pathKey[currentComponent.Key()]
 		if !exists {
-			return prefix, false
+			return nil, false
 		}
 		prefix[index] = currentComponent
 		return t.searchPathRecursive(child, path, prefix, index+1)
@@ -189,12 +192,12 @@ func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, prefix Patt
 	if currentComponent.isIndex() {
 		child, exists := node.pathIndex[currentComponent.Index()]
 		if !exists {
-			return prefix, false
+			return nil, false
 		}
 		prefix[index] = currentComponent
 		return t.searchPathRecursive(child, path, prefix, index+1)
 	}
 
 	// If we've reached this point, the path does not match any patterns in the trie.
-	return prefix, false
+	return nil, false
 }
