@@ -147,7 +147,9 @@ func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, prefix Patt
 	// the semantics of [MustPatternFromString] which returns nil for the empty string.
 	//
 	// We cannot return a Pattern{} object here because then MustPatternFromString(""), which
-	// returns nil will not be equal to the Pattern{} object returned by this function.
+	// returns nil will not be equal to the Pattern{} object returned by this function. An equality
+	// is useful because users of this function can use it to check whether the root / empty pattern
+	// had been inserted into the trie.
 	if len(path) == 0 {
 		return nil, node.isEnd
 	}
