@@ -1,7 +1,6 @@
 tmpdir="./subdir"
 pipelines="$tmpdir/pipelines"
 mkdir -p $tmpdir
-envsubst < databricks.yml.tmpl > databricks.yml
 
 title "install pipelines cli"
 trace $CLI install-pipelines-cli -d $tmpdir
