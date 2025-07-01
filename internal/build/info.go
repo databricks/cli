@@ -10,6 +10,12 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+type Version struct {
+	Major int64
+	Minor int64
+	Patch int64
+}
+
 type Info struct {
 	ProjectName string
 	Version     string

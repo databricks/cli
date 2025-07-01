@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
@@ -352,9 +353,16 @@ func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
 		return err
 	}
 
-	err = b.ResourceDatabase.Open(statePath)
+	info := build.GetInfo()
+	version := tnstate.CLIVersion{
+		Major: info.Major,
+		Minor: info.Minor,
+		Patch: info.Patch,
+	}
+
+	err = b.ResourceDatabase.Open(statePath, version)
 	if err != nil {
-		return fmt.Errorf("Failed to open/create resoruce database in %s: %s", statePath, err)
+		return fmt.Errorf("failed to open/create resource database %s: %s", statePath, err)
 	}
 
 	return nil
