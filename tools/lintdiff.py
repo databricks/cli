@@ -48,10 +48,10 @@ def main():
             d = os.path.dirname(filename)
             dirs.add(d)
 
+    dirs = ["./" + d for d in sorted(dirs) if os.path.exists(d)]
+
     if not dirs:
         sys.exit(0)
-
-    dirs = ["./" + d for d in sorted(dirs)]
 
     cmd = ["golangci-lint"] + args.args + dirs
     print("+ " + " ".join(cmd), file=sys.stderr, flush=True)

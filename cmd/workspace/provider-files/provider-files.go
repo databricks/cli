@@ -59,7 +59,6 @@ func newCreate() *cobra.Command {
 	var createReq marketplace.CreateFileRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, ``)
@@ -126,8 +125,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq marketplace.DeleteFileRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete FILE_ID"
 	cmd.Short = `Delete a file.`
 	cmd.Long = `Delete a file.
@@ -192,8 +189,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq marketplace.GetFileRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get FILE_ID"
 	cmd.Short = `Get a file.`
@@ -261,7 +256,6 @@ func newList() *cobra.Command {
 	var listReq marketplace.ListFilesRequest
 	var listJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)

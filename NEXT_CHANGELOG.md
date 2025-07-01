@@ -1,20 +1,16 @@
 # NEXT CHANGELOG
 
-## Release v0.256.0
+## Release v0.258.0
 
 ### Notable Changes
 
 ### Dependency updates
+* Upgraded TF provider to 1.84.0 ([#3151](https://github.com/databricks/cli/pull/3151))
 
 ### CLI
+* Fixed an issue where running `databricks auth login` would remove the `cluster_id` field from profiles in `.databrickscfg`. The login process now preserves the `cluster_id` field. ([#2988](https://github.com/databricks/cli/pull/2988))
 
 ### Bundles
-* Update client version to "2" for the serverless variation of the default-python template ([#3083](https://github.com/databricks/cli/pull/3083))
-* Fix reading dashboard contents when the sync root is different than the bundle root ([#3006](https://github.com/databricks/cli/pull/3006))
-* When glob for wheels is used, like "\*.whl", it will filter out different version of the same package and will only take the most recent version. ([#2982](https://github.com/databricks/cli/pull/2982))
-* When building Python artifacts as part of "bundle deploy" we no longer delete `dist`, `build`, `*egg-info` and `__pycache__` directories. ([#2982](https://github.com/databricks/cli/pull/2982))
-* Fix variable resolution for lookup variables with other references ([#3054](https://github.com/databricks/cli/pull/3054))
-* Added preset `presets.artifacts_dynamic_version` that automatically enables `dynamic_version: true` on all "whl" artifacts.
-* Allow users to override the Terraform version to use by setting the `DATABRICKS_TF_VERSION` environment variable ([#3069](https://github.com/databricks/cli/pull/3069))
+* "bundle summary" now prints diagnostic warnings to stderr ([#3123](https://github.com/databricks/cli/pull/3123))
 
 ### API Changes

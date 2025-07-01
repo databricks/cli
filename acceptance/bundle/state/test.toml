@@ -1,1 +1,5 @@
 RecordRequests = true
+
+[[Repls]]
+Old = '(resources.json|terraform.tfstate)'
+New = 'STATE_FILENAME'

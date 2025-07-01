@@ -6,11 +6,14 @@ import (
 )
 
 type Plan struct {
-	// Path to the plan
-	Path string
+	// TerraformPlanPath is the path to the plan from the terraform CLI
+	TerraformPlanPath string
 
 	// If true, the plan is empty and applying it will not do anything
-	IsEmpty bool
+	TerraformIsEmpty bool
+
+	// List of actions to apply (direct deployment)
+	Actions []Action
 }
 
 type Action struct {
@@ -20,12 +23,12 @@ type Action struct {
 	// Key of the resource the config
 	Name string
 
-	Action ActionType
+	ActionType ActionType
 }
 
 func (a Action) String() string {
 	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.Action, typ, a.Name)
+	return fmt.Sprintf("  %s %s %s", a.ActionType, typ, a.Name)
 }
 
 // Implements cmdio.Event for cmdio.Log
@@ -40,6 +43,8 @@ func (a Action) IsInplaceSupported() bool {
 type ActionType string
 
 const (
+	ActionTypeUnset    ActionType = ""
+	ActionTypeNoop     ActionType = "noop"
 	ActionTypeCreate   ActionType = "create"
 	ActionTypeDelete   ActionType = "delete"
 	ActionTypeUpdate   ActionType = "update"
@@ -50,7 +55,7 @@ const (
 func Filter(changes []Action, actionType ActionType) []Action {
 	var result []Action
 	for _, action := range changes {
-		if action.Action == actionType {
+		if action.ActionType == actionType {
 			result = append(result, action)
 		}
 	}
@@ -68,7 +73,7 @@ func FilterGroup(changes []Action, group string, actionTypes ...ActionType) []Ac
 	}
 
 	for _, action := range changes {
-		if action.Group == group && actionTypeSet[action.Action] {
+		if action.Group == group && actionTypeSet[action.ActionType] {
 			result = append(result, action)
 		}
 	}

@@ -66,7 +66,7 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createEndpointSkipWait, "no-wait", createEndpointSkipWait, `do not wait to reach ONLINE state`)
 	cmd.Flags().DurationVar(&createEndpointTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach ONLINE state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
@@ -175,8 +175,6 @@ func newDeleteEndpoint() *cobra.Command {
 
 	var deleteEndpointReq vectorsearch.DeleteEndpointRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-endpoint ENDPOINT_NAME"
 	cmd.Short = `Delete an endpoint.`
 	cmd.Long = `Delete an endpoint.
@@ -232,8 +230,6 @@ func newGetEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getEndpointReq vectorsearch.GetEndpointRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-endpoint ENDPOINT_NAME"
 	cmd.Short = `Get an endpoint.`
@@ -291,8 +287,6 @@ func newListEndpoints() *cobra.Command {
 
 	var listEndpointsReq vectorsearch.ListEndpointsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Token for pagination.`)
 
 	cmd.Use = "list-endpoints"
@@ -344,7 +338,6 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
 	var updateEndpointBudgetPolicyReq vectorsearch.PatchEndpointBudgetPolicyRequest
 	var updateEndpointBudgetPolicyJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateEndpointBudgetPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-endpoint-budget-policy ENDPOINT_NAME BUDGET_POLICY_ID"
@@ -427,7 +420,6 @@ func newUpdateEndpointCustomTags() *cobra.Command {
 	var updateEndpointCustomTagsReq vectorsearch.UpdateEndpointCustomTagsRequest
 	var updateEndpointCustomTagsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateEndpointCustomTagsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-endpoint-custom-tags ENDPOINT_NAME"

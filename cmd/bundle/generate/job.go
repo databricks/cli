@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/bundle/config/generate"
+	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -49,7 +49,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		downloader := newDownloader(w, sourceDir, configDir)
+		downloader := generate.NewDownloader(w, sourceDir, configDir)
 
 		// Don't download files if the job is using Git source
 		// When Git source is used, the job will be using the files from the Git repository
